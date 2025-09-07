@@ -6,6 +6,43 @@ import QRModal from "./QRModal";
 import AddUserForm from "./AddUserForm";
 
 /** Icons */
+
+// Checkmark icon
+function CheckIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+      <path d="M20 6L9 17l-5-5" />
+    </svg>
+  );
+}
+
+/** Dice icon (shows random pips 1–6) */
+function DiceIcon({ value = 1, ...props }) {
+  // Define pip positions for each die face
+  const pips = {
+    1: [[12, 12]],
+    2: [[7, 7], [17, 17]],
+    3: [[7, 7], [12, 12], [17, 17]],
+    4: [[7, 7], [7, 17], [17, 7], [17, 17]],
+    5: [[7, 7], [7, 17], [12, 12], [17, 7], [17, 17]],
+    6: [[7, 7], [7, 12], [7, 17], [17, 7], [17, 12], [17, 17]],
+  };
+
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+      {pips[value]?.map(([cx, cy], i) => (
+        <circle key={i} cx={cx} cy={cy} r="1.5" fill="white" />
+      ))}
+    </svg>
+  );
+}
+
 function GithubIcon(props) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
@@ -169,6 +206,20 @@ export default function ZcashProfile() {
   const [socials, setSocials] = useState([]);
   const [socialsOpen, setSocialsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [diceValue, setDiceValue] = useState(1);
+
+
+  async function copyAddress() {
+    try {
+      await navigator.clipboard.writeText(address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000); // reset after 2s
+    } catch (e) {
+      console.error("copy failed", e);
+    }
+  }
+
 
   useEffect(() => {
     const init = async () => {
@@ -256,6 +307,7 @@ export default function ZcashProfile() {
     if (!z) return;
 
     // Optimistically hydrate UI to avoid "Unknown" flash
+    setDiceValue(Math.floor(Math.random() * 6) + 1);
     setName(z.name || "Unknown");
     setNameVerified(!!z.name_verified);
     setAddress(z.address || "Unknown");
@@ -287,7 +339,7 @@ export default function ZcashProfile() {
     <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center p-6">
       <div className="w-full max-w-lg md:max-w-xl lg:max-w-2xl">
         {/* Header: zcash.me/ + Name */}
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center justify-center mb-5">
           <div className="flex items-center gap-1 min-w-0">
             <button
               onClick={() => setShowDirectoryModal(true)}
@@ -300,36 +352,8 @@ export default function ZcashProfile() {
               {name}
             </h2>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={async () => {
-                try {
-                  if (navigator.share) {
-                    await navigator.share({
-                      title: name,
-                      text: window.location.href,
-                      url: window.location.href,
-                    });
-                  } else {
-                    await navigator.clipboard.writeText(window.location.href);
-                    alert("Link copied");
-                  }
-                } catch (_) {}
-              }}
-              className="px-3 h-9 rounded-xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center gap-2"
-            >
-              <ShareIcon className="w-4 h-4" /> <span>Share</span>
-            </button>
-
-            <button
-              ref={joinRef}
-              onClick={() => setShowAddForm(true)}
-              className="px-4 h-9 rounded-xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center gap-2"
-            >
-              <PlusIcon className="w-4 h-4" /> <span>Join</span>
-            </button>
-          </div>
         </div>
+
 
         {/* Address + actions (warning icon fixed size; Authenticate label) */}
         <div className="rounded-2xl border bg-white p-4 mb-2 flex items-start justify-between">
@@ -367,8 +391,9 @@ export default function ZcashProfile() {
               aria-label="Copy address"
               title="Copy address"
             >
-              <CopyIcon className="w-5 h-5" />
+              {copied ? <CheckIcon className="w-5 h-5 text-green-600" /> : <CopyIcon className="w-5 h-5" />}
             </button>
+
             <button
               onClick={() => setQrOpen((v) => !v)}
               className={buttonBase}
@@ -462,13 +487,53 @@ export default function ZcashProfile() {
           </div>
         </Collapse>
 
-        {/* Random */}
-        <button
-          onClick={randomize}
-          className="w-full rounded-2xl border py-3 text-sm font-medium hover:bg-gray-50 mb-6"
-        >
-          Show random Zcasher
-        </button>
+{/* Actions row: Random + Share + Join (Join is largest) */}
+<div className="w-full mb-6">
+  <div className="flex items-center gap-2">
+    {/* Random (equal size to Share) */}
+    <button
+      onClick={randomize}
+      className="flex-1 rounded-2xl border py-3 text-sm font-medium hover:bg-gray-50 flex items-center justify-center gap-2"
+    >
+      <DiceIcon className="w-5 h-5" value={diceValue} /> Random
+    </button>
+
+
+    {/* Share (equal size to Random) */}
+    <button
+      onClick={async () => {
+        try {
+          if (navigator.share) {
+            await navigator.share({
+              title: name,
+              text: window.location.href,
+              url: window.location.href,
+            });
+          } else {
+            await navigator.clipboard.writeText(window.location.href);
+            alert("Link copied");
+          }
+        } catch (_) {}
+      }}
+      className="w-32 h-11 rounded-2xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+      title="Share"
+    >
+      <ShareIcon className="w-4 h-4" /> <span>Share</span>
+    </button>
+
+    {/* Join (largest) */}
+    <button
+      ref={joinRef}
+      onClick={() => setShowAddForm(true)}
+      className="flex-1 h-11 rounded-2xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+      title="Join"
+    >
+      <PlusIcon className="w-4 h-4" /> <span>Join</span>
+    </button>
+  </div>
+</div>
+
+
 
         {/* Footer: ⓩ center, shop + reddit + GitHub right */}
         {/* Footer: Social icons centered, ⓩ below */}
@@ -526,7 +591,7 @@ export default function ZcashProfile() {
       <Modal
         isOpen={showAuthenticateModal}
         onClose={() => setShowAuthenticateModal(false)}
-        title="Verification"
+        title="Authenticate Address"
       >
         Coming soon — fund us on{" "}
         <a href="https://zda.sh" className="underline" target="_blank" rel="noreferrer">

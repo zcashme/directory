@@ -12,9 +12,16 @@ function XIcon(props) {
   );
 }
 
+// Normalize input like "https://zcash.me/alice" -> "alice"
+function normalizeRef(input = "") {
+  const s = input.trim();
+  return s.replace(/^https?:\/\/(www\.)?zcash\.me\//i, "");
+}
+
 export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [name, setName] = useState("");
   const [address, setAddress] = useState("");
+  const [referrer, setReferrer] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
@@ -23,6 +30,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     if (isOpen) {
       setName("");
       setAddress("");
+      setReferrer("");
       setError("");
       setIsLoading(false);
       // focus name on open
@@ -35,18 +43,23 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
     if (!name.trim() || !address.trim()) {
       setError("Please fill in both name and address.");
       return;
     }
+
     setIsLoading(true);
     try {
       const s = slugify(name);
+      const referred_by = normalizeRef(referrer);
+
       const { data, error } = await supabase
         .from("zcasher")
-        .insert([{ name: name.trim(), address: address.trim(), slug: s }])
+        .insert([{ name: name.trim(), address: address.trim(), slug: s, referred_by }])
         .select()
         .single();
+
       if (error) throw error;
 
       onUserAdded?.(data);
@@ -119,6 +132,20 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
               onChange={(e) => setAddress(e.target.value)}
               className="w-full rounded-2xl border px-4 py-3 text-sm font-mono outline-none focus:ring-2 focus:ring-gray-300"
               placeholder="zs1..."
+              autoComplete="off"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="referrer" className="block text-xs font-medium tracking-wide uppercase text-gray-600 mb-2">
+              Referred by zcash.me/
+            </label>
+            <input
+              id="referrer"
+              value={referrer}
+              onChange={(e) => setReferrer(e.target.value)}
+              className="w-full rounded-2xl border px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-gray-300"
+              placeholder="alice  (or paste full URL e.g. https://zcash.me/alice)"
               autoComplete="off"
             />
           </div>
