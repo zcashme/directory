@@ -336,87 +336,88 @@ export default function ZcashProfile() {
   const buttonBase = "rounded-lg border flex items-center justify-center hover:bg-gray-50";
 
   return (
-    <div className="min-h-screen bg-white text-gray-900 flex items-center justify-center p-6">
-      <div className="w-full max-w-lg md:max-w-xl lg:max-w-2xl">
-        {/* Header: zcash.me/ + Name */}
-        <div className="flex items-center justify-center mb-5">
-          <div className="flex items-center gap-1 min-w-0">
-            <button
-              onClick={() => setShowDirectoryModal(true)}
-              className="text-left text-2xl md:text-3xl font-semibold tracking-tight hover:underline underline-offset-4"
-              aria-label="Open directory info"
-            >
-              zcash.me/
-            </button>
-            <h2 className="text-2xl md:text-3xl font-semibold truncate -ml-1" title={name}>
-              {name}
-            </h2>
-          </div>
-        </div>
-
-
-        {/* Address + actions (warning icon fixed size; Authenticate label) */}
-        <div className="rounded-2xl border bg-white p-4 mb-2 flex items-start justify-between">
-          <div className="pr-3 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              {nameVerified ? (
-                <Pill color="bg-emerald-500" title="Address verified" />
-              ) : (
-                <YieldIcon className="w-4 h-4 flex-none text-yellow-500" />
-              )}
-              <span className="font-mono text-sm truncate" title={address}>
-                {address}
-              </span>
-              {!nameVerified && (
-                <>
-                  <span className="h-4 w-px bg-gray-200 flex-none" aria-hidden="true" />
+/*    <div className="min-h-screen bg-zebra text-gray-900 flex items-center justify-center p-6">*/
+      <div className="min-h-screen bg-zebra text-gray-900 flex items-center justify-center p-6">
+            <div className="w-full max-w-lg md:max-w-xl lg:max-w-2xl">
+              {/* Header: zcash.me/ + Name */}
+              <div className="flex items-center justify-center mb-5">
+                <div className="flex items-center gap-1 min-w-0">
                   <button
-                    onClick={() => setShowAuthenticateModal(true)}
-                    className="text-sm underline decoration-dotted whitespace-nowrap"
+                    onClick={() => setShowDirectoryModal(true)}
+                    className="text-left text-2xl md:text-3xl font-semibold tracking-tight hover:underline underline-offset-4"
+                    aria-label="Open directory info"
                   >
-                    Authenticate
+                    zcash.me/
                   </button>
-                </>
-              )}
-            </div>
-            <div className="mt-1 text-sm text-gray-600">
-              Since {sinceYear} · Last signed {lastSigned} · Expires Oct 2025
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={copyAddress}
-              className={buttonBase}
-              style={{ width: ctrlDims.w, height: ctrlDims.h }}
-              aria-label="Copy address"
-              title="Copy address"
-            >
-              {copied ? <CheckIcon className="w-5 h-5 text-green-600" /> : <CopyIcon className="w-5 h-5" />}
-            </button>
+                  <h2 className="text-2xl md:text-3xl font-semibold truncate -ml-1" title={name}>
+                    {name}
+                  </h2>
+                </div>
+              </div>
 
-            <button
-              onClick={() => setQrOpen((v) => !v)}
-              className={buttonBase}
-              style={{ width: ctrlDims.w, height: ctrlDims.h }}
-              aria-label="Show QR"
-              aria-expanded={qrOpen}
-              aria-controls="qr-dropdown"
-              title="Show QR"
-            >
-              <QRIcon className="w-5 h-5" />
-            </button>
+
+              <div className="rounded-2xl border p-4 mb-2 flex items-start justify-between bg-transparent">
+        <div className="pr-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            {nameVerified ? (
+              <Pill color="bg-emerald-500" title="Address verified" />
+            ) : (
+              <YieldIcon className="w-4 h-4 flex-none text-yellow-500" />
+            )}
+            <span className="font-mono text-sm truncate" title={address}>
+              {address}
+            </span>
+            {!nameVerified && (
+              <>
+                <span className="h-4 w-px bg-gray-200 flex-none" aria-hidden="true" />
+                <button
+                  onClick={() => setShowAuthenticateModal(true)}
+                  className="text-sm underline decoration-dotted whitespace-nowrap"
+                >
+                  Authenticate
+                </button>
+              </>
+            )}
+          </div>
+          <div className="mt-1 text-sm text-gray-600">
+            Since {sinceYear} · Last signed {lastSigned} · Expires Oct 2025
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={copyAddress}
+            className={buttonBase}
+            style={{ width: ctrlDims.w, height: ctrlDims.h }}
+            aria-label="Copy address"
+            title="Copy address"
+          >
+            <CopyIcon className="w-5 h-5" />
+          </button>
+          <button
+            onClick={() => setQrOpen((v) => !v)}
+            className={buttonBase}
+            style={{ width: ctrlDims.w, height: ctrlDims.h }}
+            aria-label="Show QR"
+            aria-expanded={qrOpen}
+            aria-controls="qr-dropdown"
+            title="Show QR"
+          >
+            <QRIcon className="w-5 h-5" />
+          </button>
+        </div>
+      </div>
+
 
         {/* QR dropdown */}
         <Collapse open={qrOpen} id="qr-dropdown">
-          <div className="rounded-2xl border bg-white mb-2 p-4 flex items-center justify-center">
+          <div className="rounded-2xl border mb-2 p-4 flex items-center justify-center bg-transparent">
             <QRModal address={address} />
           </div>
         </Collapse>
 
+
         {/* Social summary: Add social inline + divider before dropdown */}
-        <div className="rounded-2xl border bg-white p-3 mb-2 flex items-center justify-between">
+        <div className="rounded-2xl border p-3 mb-2 flex items-center justify-between bg-transparent">
           <div className="text-sm text-gray-700 flex items-center gap-4">
             <span className="inline-flex items-center gap-1">
               <Pill color="bg-emerald-500" /> Verified {verifiedCount}
@@ -450,9 +451,10 @@ export default function ZcashProfile() {
           </button>
         </div>
 
+
         {/* Socials dropdown */}
         <Collapse open={socialsOpen} id="socials-dropdown">
-          <div className="rounded-2xl border bg-white mb-4 divide-y">
+          <div className="rounded-2xl border mb-4 divide-y bg-transparent">
             {socials.length === 0 && (
               <div className="p-3 text-sm text-gray-500">No accounts added</div>
             )}
@@ -460,32 +462,28 @@ export default function ZcashProfile() {
               const type = platformFromUrl(s.url);
               return (
                 <div key={idx} className="flex items-center justify-between px-4 py-3">
-                  <div className="flex items-center gap-1 min-w-0">
-                    <button
-                      onClick={() => setShowDirectoryModal(true)}
-                      className="text-left text-2xl md:text-3xl font-semibold tracking-tight hover:underline underline-offset-4"
-                      aria-label="Open directory info"
+                  <span className="flex items-center gap-2 truncate">
+                    <SocialIcon type={type} />
+                    <a
+                      href={s.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="truncate hover:underline"
                     >
-                      zcash.me/
-                    </button>
-                    <div className="flex items-center gap-0 min-w-0">
-                      <h2 className="text-2xl md:text-3xl font-semibold truncate -ml-1" title={name}>
-                        {name}
-                      </h2>
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={() => setShowAuthenticateModal(true)}
-                    className="text-sm underline decoration-dotted"
-                  >
-                    Authenticate
-                  </button>
+                      {s.url}
+                    </a>
+                  </span>
+                  {s.verified ? (
+                    <Pill color="bg-emerald-500" title="Verified" />
+                  ) : (
+                    <YieldIcon className="w-4 h-4 text-yellow-500" />
+                  )}
                 </div>
               );
             })}
           </div>
         </Collapse>
+
 
 {/* Actions row: Random + Share + Join (Join is largest) */}
 <div className="w-full mb-6">
@@ -515,7 +513,7 @@ export default function ZcashProfile() {
           }
         } catch (_) {}
       }}
-      className="w-32 h-11 rounded-2xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+      className="w-32 h-11 rounded-2xl border bg-transparent text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
       title="Share"
     >
       <ShareIcon className="w-4 h-4" /> <span>Share</span>
@@ -525,7 +523,7 @@ export default function ZcashProfile() {
     <button
       ref={joinRef}
       onClick={() => setShowAddForm(true)}
-      className="flex-1 h-11 rounded-2xl border bg-white text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
+      className="flex-1 h-11 rounded-2xl border bg-transparent text-sm hover:bg-gray-50 inline-flex items-center justify-center gap-2"
       title="Join"
     >
       <PlusIcon className="w-4 h-4" /> <span>Join</span>
