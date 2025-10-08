@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { QRCodeCanvas } from "qrcode.react";
 import { useFeedback } from "./store";
+const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS;
 
 function toBase64Url(str) {
   try {
@@ -41,11 +42,11 @@ function MemoCounter({ text }) {
 }
 
 export default function ZcashFeedback() {
-  const ADMIN_ADDRESS =
-    "u1s6qvd4lfrrvjkr9xp8kpgjsrfr5azw0mum8xvcs2286fn4u6ugqsyh5h2r24peg4kqaxfvrullqnkry48crqw60w7lczhl2sthh57k433lnya9dr6lz5u8cj3ckfy9lzplnsvhfect0g3y87rf69r8pxpt7hh8pr7lkwegmxzez8aeguqwhdrtnj83mfg443msyuvaqx7nnry6q3j7q";
+  const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS;
+;
 
   const [profiles, setProfiles] = useState([]);
-  const [selectedAddress, setSelectedAddress] = useState(ADMIN_ADDRESS);
+// using global selectedAddress from store (local state removed)
   const [manualAddress, setManualAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
@@ -57,7 +58,7 @@ export default function ZcashFeedback() {
   const [showFull, setShowFull] = useState(false);
   const [qrShownOnce, setQrShownOnce] = useState(false);
 const [showDraft, setShowDraft] = useState(true);
-const { selectedAddress: globalAddress } = useFeedback();
+const { selectedAddress, setSelectedAddress } = useFeedback();
 const [showEditLabel, setShowEditLabel] = useState(true);
 
 useEffect(() => {
@@ -72,14 +73,8 @@ useEffect(() => {
     setToastMsg(msg);
     setShowToast(true);
   };
-useEffect(() => {
-  if (globalAddress && globalAddress !== selectedAddress) {
-    setSelectedAddress(globalAddress);
-    document
-      .getElementById("zcash-feedback")
-      ?.scrollIntoView({ behavior: "smooth" });
-  }
-}, [globalAddress]);
+// removed: global selection is already the source of truth
+
 
   useEffect(() => {
     async function fetchProfiles() {
@@ -106,12 +101,19 @@ useEffect(() => {
 
 
   // handle t-address memo behavior
-  useEffect(() => {
-    const addrToCheck =
-      selectedAddress === "other" ? manualAddress : selectedAddress;
-    if (addrToCheck.startsWith("t")) setMemo("N/A");
-    else if (memo === "N/A") setMemo("");
-  }, [selectedAddress, manualAddress]);
+useEffect(() => {
+  const addrToCheck =
+    selectedAddress === "other" ? manualAddress : selectedAddress;
+
+  if (!addrToCheck || typeof addrToCheck !== "string") return;
+
+  if (addrToCheck?.startsWith("t")) {
+    setMemo("N/A");
+  } else if (memo === "N/A") {
+    setMemo("");
+  }
+}, [selectedAddress, manualAddress]);
+
 
   // construct URI
   useEffect(() => {
@@ -283,21 +285,22 @@ useEffect(() => {
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               disabled={
-                (selectedAddress === "other"
-                  ? manualAddress.startsWith("t")
-                  : selectedAddress.startsWith("t")) || false
-              }
-              className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
-                (selectedAddress === "other"
-                  ? manualAddress.startsWith("t")
-                  : selectedAddress.startsWith("t"))
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : ""
-              }`}
+  (selectedAddress === "other"
+    ? manualAddress?.startsWith("t")
+    : selectedAddress?.startsWith("t")) || false
+}
+className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
+  (selectedAddress === "other"
+    ? manualAddress?.startsWith("t")
+    : selectedAddress?.startsWith("t"))
+    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+    : ""
+}`}
+
             />
 {/* Memo counter + individual Clear pills */}
 <div className="flex justify-between items-center mt-1 text-xs text-gray-500">
-  {!selectedAddress.startsWith("t") && <MemoCounter text={memo} />}
+  {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
 
   <div className="flex gap-2 flex-wrap justify-end">
     {(() => {
