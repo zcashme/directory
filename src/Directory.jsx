@@ -13,8 +13,37 @@ export default function Directory() {
   const [search, setSearch] = useState("");
   const [activeLetter, setActiveLetter] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const alphaRef = useRef(null);
-  const searchBarRef = useRef(null);
+  const [showLetterGrid, setShowLetterGrid] = useState(false)
+const alphaRef = useRef(null);
+const searchBarRef = useRef(null);
+
+// Auto-show A–Z tray on scroll, hide after ~2.8s of inactivity
+const [showAlpha, setShowAlpha] = useState(false);
+const idleRef = useRef(null);
+
+useEffect(() => {
+  const show = () => {
+    setShowAlpha(true);
+    if (idleRef.current) clearTimeout(idleRef.current);
+    idleRef.current = setTimeout(() => setShowAlpha(false), 2800); // 2.8s fade window
+  };
+
+  const onScroll = () => show();
+  const onWheel = () => show();
+  const onTouchMove = () => show();
+
+  window.addEventListener("scroll", onScroll, { passive: true });
+  window.addEventListener("wheel", onWheel, { passive: true });
+  window.addEventListener("touchmove", onTouchMove, { passive: true });
+
+  return () => {
+    window.removeEventListener("scroll", onScroll);
+    window.removeEventListener("wheel", onWheel);
+    window.removeEventListener("touchmove", onTouchMove);
+    if (idleRef.current) clearTimeout(idleRef.current);
+  };
+}, []);
+
   const { setSelectedAddress } = useFeedback(); // 🟢 from global context
 const [toastMsg, setToastMsg] = useState("");
 const [showToast, setShowToast] = useState(false);
@@ -56,7 +85,7 @@ const showNotice = (msg) => {
   const socialVerifiedCount = profiles.filter((p) => !!p.last_signed_at).length;
 
   const scrollToLetter = (letter) => {
-    if (letter === "🔍") {
+    if (letter === "⌕") {
       searchBarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
@@ -68,6 +97,10 @@ const showNotice = (msg) => {
       scrollToLetter._to = window.setTimeout(() => setActiveLetter(null), 600);
     }
   };
+  const handleGridSelect = (letter) => {
+  setShowLetterGrid(false);
+  setTimeout(() => scrollToLetter(letter), 200);
+};
 
   const handleAlphaTouch = (clientY) => {
     const container = alphaRef.current;
@@ -101,12 +134,12 @@ const showNotice = (msg) => {
       {/* --- Header row --- */}
       <div ref={searchBarRef} className="flex items-center gap-2 mb-4">
         <a href="/" className="font-bold text-lg">
-          zcash.me/
+          Zcash.me/
         </a>
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="search zcash usernames"
+          placeholder="search names"
           className="flex-1 border rounded-lg px-3 py-2 text-sm"
         />
       </div>
@@ -114,7 +147,13 @@ const showNotice = (msg) => {
       {/* --- Directory list --- */}
       {letters.map((letter) => (
         <div key={letter} id={`letter-${letter}`} className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2">{letter}</h2>
+          <h2
+  className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition"
+  onClick={() => setShowLetterGrid(true)}
+>
+  {letter}
+</h2>
+
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {grouped[letter].map((p) => (
               <div
@@ -178,26 +217,29 @@ const showNotice = (msg) => {
       ))}
 
       {/* --- Alphabet bar with search icon --- */}
-      <div
-        ref={alphaRef}
-        className="fixed right-2 top-1/4 flex flex-col items-center select-none"
-        onTouchStart={(e) => handleAlphaTouch(e.touches[0].clientY)}
-        onTouchMove={(e) => {
-          e.preventDefault();
-          handleAlphaTouch(e.touches[0].clientY);
-        }}
-      >
-        {[..."🔍", ...letters].map((l) => (
-          <button
-            key={l}
-            data-letter={l}
-            className="text-gray-500 text-sm py-0.5"
-            onMouseDown={() => scrollToLetter(l)}
-          >
-            {l}
-          </button>
-        ))}
-      </div>
+<div
+  ref={alphaRef}
+  className={`fixed right-2 top-1/4 flex flex-col items-center select-none z-40 transition-opacity duration-500 ease-out
+    ${showAlpha ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
+  onTouchStart={(e) => handleAlphaTouch(e.touches[0].clientY)}
+  onTouchMove={(e) => {
+    e.preventDefault();
+    handleAlphaTouch(e.touches[0].clientY);
+  }}
+>
+  {[..."🔍", ...letters].map((l) => (
+    <button
+      key={l}
+      data-letter={l}
+      className="text-gray-500 text-sm py-0.5 hover:text-black active:scale-110"
+      onMouseDown={() => scrollToLetter(l)}
+    >
+      {l}
+    </button>
+  ))}
+</div>
+
+
 
       {/* --- Floating letter indicator --- */}
       {activeLetter && activeLetter !== "🔍" && (
@@ -205,6 +247,40 @@ const showNotice = (msg) => {
           {activeLetter}
         </div>
       )}
+{showLetterGrid && (
+  <div
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+    onClick={() => setShowLetterGrid(false)}
+  >
+    <div
+      className="grid grid-cols-5 gap-4 text-white text-4xl font-bold text-center select-none"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* Search symbol at top-left */}
+      <button
+        onClick={() => {
+          setShowLetterGrid(false);
+          scrollToLetter("⌕");
+        }}
+        className="hover:text-yellow-400 active:scale-125 transition-transform"
+        title="Search"
+      >
+        ⌕
+      </button>
+
+      {/* All other letters */}
+      {letters.map((l) => (
+        <button
+          key={l}
+          onClick={() => handleGridSelect(l)}
+          className="hover:text-yellow-400 active:scale-125 transition-transform"
+        >
+          {l}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
       {/* --- AddUserForm modal --- */}
       <AddUserForm

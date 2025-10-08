@@ -91,12 +91,12 @@ export default function ZcashStats() {
       ) : (
         <>
           <p className="text-sm text-gray-700">
-            {total} zcash addresses{" "}
+            {total} Zcash addresses{" "}
             <button
               onClick={() => setShow((s) => !s)}
               className="text-blue-600 hover:underline ml-1"
             >
-              {show ? "hide stats" : "more stats"}
+              {show ? "Hide stats" : " Show stats"}
             </button>
           </p>
 {show && (
