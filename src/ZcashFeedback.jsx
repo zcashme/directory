@@ -58,6 +58,15 @@ export default function ZcashFeedback() {
   const [qrShownOnce, setQrShownOnce] = useState(false);
 const [showDraft, setShowDraft] = useState(true);
 const { selectedAddress: globalAddress } = useFeedback();
+const [showEditLabel, setShowEditLabel] = useState(true);
+
+useEffect(() => {
+  if (showDraft && (memo.trim() || amount.trim())) {
+    setShowEditLabel(true);
+    const t = setTimeout(() => setShowEditLabel(false), 4000);
+    return () => clearTimeout(t);
+  }
+}, [showDraft, memo, amount]);
 
   const showNotice = (msg) => {
     setToastMsg(msg);
@@ -159,32 +168,54 @@ useEffect(() => {
 
   const showResult = !!(amount || (memo && memo !== "N/A"));
 
-  useEffect(() => {
-    if (showResult && !error && uri && !qrShownOnce) {
-      showNotice(
-        "Scan the QR or click 'Open in Wallet' to prepare the transaction. Review and approve it in your wallet."
-      );
-      setQrShownOnce(true);
-    }
-  }, [showResult, error, uri, qrShownOnce]);
+
 
   return (
     <>
-     {/* Animated Draft Button */}
-  <button
-    id="draft-button"
-    onClick={() =>
-      document
-        .getElementById("zcash-feedback")
-        ?.scrollIntoView({ behavior: "smooth" })
-    }
-    className={`fixed bottom-6 right-6 z-40 text-white rounded-full w-14 h-14 shadow-lg transition-all duration-300 text-lg font-bold
-      ${showDraft ? "opacity-100 scale-100" : "opacity-0 scale-90 pointer-events-none"}
-      bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
-    title="Go to Feedback"
-  >
-    ✎
-  </button>
+{/* --- Floating Feedback (Write) button & label (left-aligned label) --- */}
+<div className="fixed bottom-6 right-6 z-[9999]">
+  <div className="relative">
+    {/* Circular write/draft button */}
+    <button
+      id="draft-button"
+      onClick={() =>
+        document
+          .getElementById("zcash-feedback")
+          ?.scrollIntoView({ behavior: "smooth" })
+      }
+      className={`relative text-white rounded-full w-14 h-14 shadow-lg text-lg font-bold transition-all duration-300
+        ${showDraft ? "opacity-100 scale-100" : "opacity-70 scale-90"}
+        bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
+      title="Go to Feedback"
+    >
+      ✎
+    </button>
+
+    {/* Label floats to the left of the button */}
+    <div
+      className={`absolute bottom-1 right-full mr-3 transition-all duration-500 ease-out ${
+        showDraft && (memo.trim() || amount.trim()) && showEditLabel
+          ? "opacity-100 -translate-x-0"
+          : "opacity-0 translate-x-2"
+      }`}
+    >
+      {showDraft && (memo.trim() || amount.trim()) && showEditLabel && (
+        <button
+          onClick={() =>
+            document
+              .getElementById("zcash-feedback")
+              ?.scrollIntoView({ behavior: "smooth" })
+          }
+          className="text-sm font-semibold text-white bg-blue-700/90 px-3 py-1 rounded-full shadow-md hover:bg-blue-600 transition-colors duration-300 whitespace-nowrap"
+          style={{ backdropFilter: "blur(4px)" }}
+        >
+          Edit Draft
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
 
 
       <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">

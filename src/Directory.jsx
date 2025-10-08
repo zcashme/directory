@@ -5,6 +5,9 @@ import ZcashFeedback from "./ZcashFeedback";
 import ZcashStats from "./ZcashStats";
 import { useFeedback } from "./store";
 import Toast from "./Toast"; // 🟢 add this line
+import writeIcon from "./assets/write.svg"; // ✎ feedback form icon
+import bookOpen from "./assets/book-open.svg"; // 📖 new icon (expanded)
+import bookClosed from "./assets/book-closed.svg"; // 📕 new icon (collapsed)
 
 
 export default function Directory() {
@@ -13,13 +16,24 @@ export default function Directory() {
   const [search, setSearch] = useState("");
   const [activeLetter, setActiveLetter] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const [showLetterGrid, setShowLetterGrid] = useState(false)
-const alphaRef = useRef(null);
-const searchBarRef = useRef(null);
-
+  const [showLetterGrid, setShowLetterGrid] = useState(false);
+  const [showStats, setShowStats] = useState(true);
+  const [showDirectory, setShowDirectory] = useState(true); // toggles directory + stats
+  const alphaRef = useRef(null);
+  const searchBarRef = useRef(null);
 // Auto-show A–Z tray on scroll, hide after ~2.8s of inactivity
 const [showAlpha, setShowAlpha] = useState(false);
 const idleRef = useRef(null);
+const [showDirLabel, setShowDirLabel] = useState(true);
+
+useEffect(() => {
+  if (!showDirectory) {
+    setShowDirLabel(true);
+    const t = setTimeout(() => setShowDirLabel(false), 4000);
+    return () => clearTimeout(t);
+  }
+}, [showDirectory]);
+
 
 useEffect(() => {
   const show = () => {
@@ -116,7 +130,7 @@ const showNotice = (msg) => {
   if (loading) return <p className="text-center mt-8">Loading directory…</p>;
 
   return (
-    <div className="relative max-w-3xl mx-auto p-4 pb-24">
+<div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
       {/* --- Fixed Join button --- */}
       <button
         onClick={() => setIsJoinOpen(true)}
@@ -128,24 +142,35 @@ const showNotice = (msg) => {
         ＋ Join
       </button>
 
-      {/* --- Header stats --- */}
-      <ZcashStats />
+        {/* --- Header stats --- */}
+        {showStats && showDirectory && <ZcashStats />}
 
-      {/* --- Header row --- */}
-      <div ref={searchBarRef} className="flex items-center gap-2 mb-4">
+        {/* --- Fixed Header row --- */}
+        <div
+        ref={searchBarRef}
+        className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex items-center gap-3 px-4 py-2"
+        >
         <a href="/" className="font-bold text-lg">
-          Zcash.me/
+            Zcash.me/
         </a>
         <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="search names"
-          className="flex-1 border rounded-lg px-3 py-2 text-sm"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="search names"
+            className="flex-1 border rounded-lg px-3 py-2 text-sm"
         />
-      </div>
+        <button
+            onClick={() => setShowStats((prev) => !prev)}
+            className="text-sm font-semibold text-blue-700 hover:text-blue-900 transition"
+        >
+            {showStats ? "Hide Stats" : "Show Stats"}
+        </button>
+        </div>
+
 
       {/* --- Directory list --- */}
-      {letters.map((letter) => (
+      {showDirectory &&
+  letters.map((letter) => (
         <div key={letter} id={`letter-${letter}`} className="mb-6">
           <h2
   className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition"
@@ -158,38 +183,27 @@ const showNotice = (msg) => {
             {grouped[letter].map((p) => (
               <div
                 key={p.name}
-                className="relative border rounded-xl p-3 shadow-sm hover:shadow-md transition bg-transparent"
-              >
-                {/* --- Top-right icons --- */}
-                <div className="absolute top-2 right-2 flex gap-2">
-                 {/* Copy address */}
-<button
-  onClick={async () => {
-    await navigator.clipboard.writeText(p.address);
-    showNotice("Address copied to clipboard!");
-  }}
-  className="text-black transition-transform hover:scale-110"
-  title="Copy address"
->
-  ⧉
-</button>
+                className="relative border rounded-xl p-3 shadow-sm hover:shadow-md transition bg-transparent cursor-pointer"
+                onClick={(e) => {
+                    // Avoid triggering when the user clicks the name link
+                    if (e.target.tagName.toLowerCase() === "a") return;
+                    setSelectedAddress(p.address);
+                    setShowDirectory(false); // 🔻 collapse directory
+                    document
+                    .getElementById("zcash-feedback")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+                >
 
+                {/* --- Top-right icons  deleted --- */}
+                {() => {
+                setSelectedAddress(p.address);
+                setShowDirectory(false); // 🔻 collapse directory
+                document
+                    .getElementById("zcash-feedback")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
 
-
-                  {/* Draft message */}
-                  <button
-                    onClick={() => {
-                      setSelectedAddress(p.address);
-                      document
-                        .getElementById("zcash-feedback")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
-    className="text-black transition-transform hover:scale-110"
-                    title="Draft message"
-                  >
-                    ✎
-                  </button>
-                </div>
 
                 {/* --- Card content --- */}
                 <a
@@ -296,6 +310,66 @@ const showNotice = (msg) => {
       <div id="zcash-feedback">
         <ZcashFeedback />
       </div>
+
+{/* --- Floating Directory toggle button & label (right-aligned label) --- */}
+<div className="fixed bottom-6 left-6 z-[9999]">
+  <div className="relative">
+    {/* Circle toggle button */}
+    <button
+      onClick={() => {
+        if (showDirectory) {
+          setShowDirectory(false);
+        } else {
+          const currentY = window.scrollY;
+          setShowDirectory(true);
+          requestAnimationFrame(() =>
+            window.scrollTo({ top: currentY, behavior: "auto" })
+          );
+        }
+      }}
+      className={`relative text-white p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${
+        showDirectory
+          ? "bg-yellow-600 hover:bg-yellow-700"
+          : "bg-gray-600 hover:bg-gray-700"
+      }`}
+      title={showDirectory ? "Collapse Directory" : "Expand Directory"}
+    >
+      <img
+        src={showDirectory ? bookOpen : bookClosed}
+        alt="Toggle Directory"
+        className="w-6 h-6"
+      />
+    </button>
+
+    {/* Label floats to the right of the button */}
+    <div
+      className={`absolute bottom-1 left-full ml-3 transition-all duration-500 ease-out ${
+        !showDirectory && showDirLabel
+          ? "opacity-100 translate-x-0"
+          : "opacity-0 translate-x-2"
+      }`}
+    >
+      {!showDirectory && showDirLabel && (
+        <button
+          onClick={() => {
+            const currentY = window.scrollY;
+            setShowDirectory(true);
+            requestAnimationFrame(() =>
+              window.scrollTo({ top: currentY, behavior: "auto" })
+            );
+          }}
+          className="text-sm font-semibold text-white bg-gray-700/90 px-3 py-1 rounded-full shadow-md hover:bg-gray-600 transition-colors duration-300 whitespace-nowrap"
+          style={{ backdropFilter: "blur(4px)" }}
+        >
+          Show Directory
+        </button>
+      )}
+    </div>
+  </div>
+</div>
+
+
+
 
 <Toast
   message={toastMsg}
