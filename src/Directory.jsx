@@ -50,6 +50,19 @@ export default function Directory() {
       return () => clearTimeout(t);
     }
   }, [showDirectory]);
+  // Collapse directory automatically if visiting a slug directly
+useEffect(() => {
+  const path = window.location.pathname.slice(1); // e.g., "Alice"
+  if (path) {
+    const profile = profiles.find(
+      (p) => p.name.toLowerCase() === decodeURIComponent(path).toLowerCase()
+    );
+    if (profile) {
+      setSelectedAddress(profile.address);
+      setShowDirectory(false); // 🔻 collapse to focus on namecard
+    }
+  }
+}, [profiles]);
 
   useEffect(() => {
     const show = () => {
@@ -170,19 +183,32 @@ export default function Directory() {
               Zcash.me/
             </a>
 
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="search names"
-              className="flex-1 px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
-              style={{
-                background: "transparent",
-                borderBottom: "1px solid transparent",
-                transition: "border-color 0.2s ease-in-out",
-              }}
-              onFocus={(e) => (e.target.style.borderBottom = "1px solid rgb(29, 78, 216)")}
-              onBlur={(e) => (e.target.style.borderBottom = "1px solid transparent")}
-            />
+            <div className="relative flex-1">
+  <input
+    value={search}
+    onChange={(e) => setSearch(e.target.value)}
+    placeholder="search names"
+    className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
+    style={{
+      background: "transparent",
+      borderBottom: "1px solid transparent",
+      transition: "border-color 0.2s ease-in-out",
+    }}
+    onFocus={(e) => (e.target.style.borderBottom = '1px solid rgb(29, 78, 216)')} // text-blue-700
+    onBlur={(e) => (e.target.style.borderBottom = '1px solid transparent')}
+  />
+
+  {search && (
+    <button
+      onClick={() => setSearch("")}
+      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg font-semibold leading-none"
+      aria-label="Clear search"
+    >
+      ×
+    </button>
+  )}
+</div>
+
           </div>
 
           <button
@@ -401,9 +427,16 @@ export default function Directory() {
                     <br />
                     <strong>{selectedProfile.name}</strong> may not be who you think it is.
                     <br />
-                    <span className="text-blue-600 underline font-medium cursor-default">
-                      Is this your address? Verify
-                    </span>
+<span
+  onClick={() => {
+    setToastMsg("Coming soon!");
+    setShowToast(true);
+  }}
+  className="text-blue-600 underline font-medium cursor-pointer hover:text-blue-800 transition-colors"
+>
+  Is this your address? Verify
+</span>
+
                   </div>
                 </div>
               )

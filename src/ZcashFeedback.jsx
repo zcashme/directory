@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { QRCodeCanvas } from "qrcode.react";
 import { useFeedback } from "./store";
+
 const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS;
 
 function toBase64Url(str) {
@@ -42,39 +43,32 @@ function MemoCounter({ text }) {
 }
 
 export default function ZcashFeedback() {
-  const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS;
-;
-
   const [profiles, setProfiles] = useState([]);
-// using global selectedAddress from store (local state removed)
   const [manualAddress, setManualAddress] = useState("");
   const [amount, setAmount] = useState("");
   const [memo, setMemo] = useState("");
   const [uri, setUri] = useState("");
   const [error, setError] = useState("");
-
   const [toastMsg, setToastMsg] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [showFull, setShowFull] = useState(false);
   const [qrShownOnce, setQrShownOnce] = useState(false);
-const [showDraft, setShowDraft] = useState(true);
-const { selectedAddress, setSelectedAddress } = useFeedback();
-const [showEditLabel, setShowEditLabel] = useState(true);
-
-useEffect(() => {
-  if (showDraft && (memo.trim() || amount.trim())) {
-    setShowEditLabel(true);
-    const t = setTimeout(() => setShowEditLabel(false), 4000);
-    return () => clearTimeout(t);
-  }
-}, [showDraft, memo, amount]);
+  const [showDraft, setShowDraft] = useState(true);
+  const { selectedAddress, setSelectedAddress } = useFeedback();
+  const [showEditLabel, setShowEditLabel] = useState(true);
 
   const showNotice = (msg) => {
     setToastMsg(msg);
     setShowToast(true);
   };
-// removed: global selection is already the source of truth
 
+  useEffect(() => {
+    if (showDraft && (memo.trim() || amount.trim())) {
+      setShowEditLabel(true);
+      const t = setTimeout(() => setShowEditLabel(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [showDraft, memo, amount]);
 
   useEffect(() => {
     async function fetchProfiles() {
@@ -88,34 +82,30 @@ useEffect(() => {
   }, []);
 
   useEffect(() => {
-  const handleScroll = () => {
-    const feedback = document.getElementById("zcash-feedback");
-    if (!feedback) return;
-    const rect = feedback.getBoundingClientRect();
-    const nearBottom = rect.top < window.innerHeight * 0.8;
-    setShowDraft(!nearBottom);
-  };
-  window.addEventListener("scroll", handleScroll);
-  return () => window.removeEventListener("scroll", handleScroll);
-}, []);
+    const handleScroll = () => {
+      const feedback = document.getElementById("zcash-feedback");
+      if (!feedback) return;
+      const rect = feedback.getBoundingClientRect();
+      const nearBottom = rect.top < window.innerHeight * 0.8;
+      setShowDraft(!nearBottom);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
+  useEffect(() => {
+    const addrToCheck =
+      selectedAddress === "other" ? manualAddress : selectedAddress;
 
-  // handle t-address memo behavior
-useEffect(() => {
-  const addrToCheck =
-    selectedAddress === "other" ? manualAddress : selectedAddress;
+    if (!addrToCheck || typeof addrToCheck !== "string") return;
 
-  if (!addrToCheck || typeof addrToCheck !== "string") return;
+    if (addrToCheck.startsWith("t")) {
+      setMemo("N/A");
+    } else if (memo === "N/A") {
+      setMemo("");
+    }
+  }, [selectedAddress, manualAddress]);
 
-  if (addrToCheck?.startsWith("t")) {
-    setMemo("N/A");
-  } else if (memo === "N/A") {
-    setMemo("");
-  }
-}, [selectedAddress, manualAddress]);
-
-
-  // construct URI
   useEffect(() => {
     const addrToUse =
       selectedAddress === "other" ? manualAddress.trim() : selectedAddress;
@@ -170,68 +160,63 @@ useEffect(() => {
 
   const showResult = !!(amount || (memo && memo !== "N/A"));
 
-
-
   return (
     <>
-{/* --- Floating Feedback (Write) button & label (left-aligned label) --- */}
-<div className="fixed bottom-6 right-6 z-[9999]">
-  <div className="relative">
-    {/* Circular write/draft button */}
-    <button
-      id="draft-button"
-      onClick={() =>
-        document
-          .getElementById("zcash-feedback")
-          ?.scrollIntoView({ behavior: "smooth" })
-      }
-      className={`relative text-white rounded-full w-14 h-14 shadow-lg text-lg font-bold transition-all duration-300
-        ${showDraft ? "opacity-100 scale-100" : "opacity-70 scale-90"}
-        bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
-      title="Go to Feedback"
-    >
-      ✎
-    </button>
+      {/* Floating Feedback (Write) button */}
+      <div className="fixed bottom-6 right-6 z-[9999]">
+        <div className="relative">
+          <button
+            id="draft-button"
+            onClick={() =>
+              document
+                .getElementById("zcash-feedback")
+                ?.scrollIntoView({ behavior: "smooth" })
+            }
+            className={`relative text-white rounded-full w-14 h-14 shadow-lg text-lg font-bold transition-all duration-300
+              ${showDraft ? "opacity-100 scale-100" : "opacity-70 scale-90"}
+              bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
+            title="Go to Feedback"
+          >
+            ✎
+          </button>
 
-    {/* Label floats to the left of the button */}
-    <div
-      className={`absolute bottom-1 right-full mr-3 transition-all duration-500 ease-out ${
-        showDraft && (memo.trim() || amount.trim()) && showEditLabel
-          ? "opacity-100 -translate-x-0"
-          : "opacity-0 translate-x-2"
-      }`}
-    >
-      {showDraft && (memo.trim() || amount.trim()) && showEditLabel && (
-        <button
-          onClick={() =>
-            document
-              .getElementById("zcash-feedback")
-              ?.scrollIntoView({ behavior: "smooth" })
-          }
-          className="text-sm font-semibold text-white bg-blue-700/90 px-3 py-1 rounded-full shadow-md hover:bg-blue-600 transition-colors duration-300 whitespace-nowrap"
-          style={{ backdropFilter: "blur(4px)" }}
-        >
-          Edit Draft
-        </button>
-      )}
-    </div>
-  </div>
-</div>
-
-
+          <div
+            className={`absolute bottom-1 right-full mr-3 transition-all duration-500 ease-out ${
+              showDraft && (memo.trim() || amount.trim()) && showEditLabel
+                ? "opacity-100 -translate-x-0"
+                : "opacity-0 translate-x-2"
+            }`}
+          >
+            {showDraft && (memo.trim() || amount.trim()) && showEditLabel && (
+              <button
+                onClick={() =>
+                  document
+                    .getElementById("zcash-feedback")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+                className="text-sm font-semibold text-white bg-blue-700/90 px-3 py-1 rounded-full shadow-md hover:bg-blue-600 transition-colors duration-300 whitespace-nowrap"
+                style={{ backdropFilter: "blur(4px)" }}
+              >
+                Edit Draft
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
 
       <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
-        <p className="text-sm text-gray-600 mb-4">
-          Prepare a message to approve on your wallet.
+        <p className="text-sm text-gray-700 mb-4 flex items-center justify-center gap-2">
+          <span className="text-black text-base leading-none">✎</span>
+          Draft a message and finalize it on your wallet.
         </p>
 
-        {/* Top row: recipient, copy button, amount */}
-        <div className="flex flex-col sm:flex-row justify-center gap-3 mb-3">
-          <div className="flex flex-col w-full sm:w-1/3">
+        {/* Top controls */}
+        <div className="flex flex-col sm:flex-row justify-center gap-3 mb-4">
+          <div className="relative flex flex-col w-full sm:w-1/3">
             <select
               value={selectedAddress}
               onChange={(e) => setSelectedAddress(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm"
+              className="border rounded-lg px-3 py-2 text-sm appearance-none"
             >
               <option value={ADMIN_ADDRESS}>Feedback to Zcash.me Admin</option>
               {profiles.map((p) => (
@@ -241,6 +226,11 @@ useEffect(() => {
               ))}
               <option value="other">Other (enter manually)</option>
             </select>
+
+            <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
+              Recipient
+            </span>
+
             {selectedAddress === "other" && (
               <input
                 type="text"
@@ -252,12 +242,6 @@ useEffect(() => {
             )}
           </div>
 
-          <button
-            onClick={handleCopyAddress}
-            className="px-3 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300"
-          >
-            ⧉  Address
-          </button>
 
           <div className="relative w-full sm:w-1/4">
             <input
@@ -265,9 +249,7 @@ useEffect(() => {
               inputMode="decimal"
               placeholder="Amount (optional)"
               value={amount}
-              onChange={(e) =>
-                setAmount(e.target.value.replace(/[^\d.]/g, ""))
-              }
+              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
               className="border rounded-lg px-3 py-2 text-sm w-full pr-10"
             />
             <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
@@ -285,61 +267,58 @@ useEffect(() => {
               value={memo}
               onChange={(e) => setMemo(e.target.value)}
               disabled={
-  (selectedAddress === "other"
-    ? manualAddress?.startsWith("t")
-    : selectedAddress?.startsWith("t")) || false
-}
-className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
-  (selectedAddress === "other"
-    ? manualAddress?.startsWith("t")
-    : selectedAddress?.startsWith("t"))
-    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-    : ""
-}`}
-
+                (selectedAddress === "other"
+                  ? manualAddress?.startsWith("t")
+                  : selectedAddress?.startsWith("t")) || false
+              }
+              className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
+                (selectedAddress === "other"
+                  ? manualAddress?.startsWith("t")
+                  : selectedAddress?.startsWith("t"))
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : ""
+              }`}
             />
-{/* Memo counter + individual Clear pills */}
-<div className="flex justify-between items-center mt-1 text-xs text-gray-500">
-  {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
 
-  <div className="flex gap-2 flex-wrap justify-end">
-    {(() => {
-      const filled = {
-        address:
-          selectedAddress !== ADMIN_ADDRESS ||
-          manualAddress.trim() !== "",
-        amount: !!amount.trim(),
-        memo: !!memo.trim(),
-      };
+            <div className="flex justify-between items-center mt-1 text-xs text-gray-500">
+              {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
 
-      const handleClear = (field) => {
-        if (field === "address") {
-          setManualAddress("");
-          setSelectedAddress(ADMIN_ADDRESS);
-        } else if (field === "amount") {
-          setAmount("");
-        } else if (field === "memo") {
-          setMemo("");
-        }
-      };
+              <div className="flex gap-2 flex-wrap justify-end">
+                {(() => {
+                  const filled = {
+                    address:
+                      selectedAddress !== ADMIN_ADDRESS ||
+                      manualAddress.trim() !== "",
+                    amount: !!amount.trim(),
+                    memo: !!memo.trim(),
+                  };
 
-      return Object.entries(filled)
-        .filter(([_, v]) => v)
-        .map(([field]) => (
-          <button
-            key={field}
-            onClick={() => handleClear(field)}
-            className="flex items-center gap-1 px-2 py-0.5 bg-gray-200 hover:bg-red-100 text-gray-700 hover:text-red-600 rounded-full transition text-xs font-medium shadow-sm"
-          >
-            <span className="text-sm font-bold leading-none">✕</span>
-            {field.charAt(0).toUpperCase() + field.slice(1)}
-          </button>
-        ));
-    })()}
-  </div>
-</div>
+                  const handleClear = (field) => {
+                    if (field === "address") {
+                      setManualAddress("");
+                      setSelectedAddress(ADMIN_ADDRESS);
+                    } else if (field === "amount") {
+                      setAmount("");
+                    } else if (field === "memo") {
+                      setMemo("");
+                    }
+                  };
 
-
+                  return Object.entries(filled)
+                    .filter(([_, v]) => v)
+                    .map(([field]) => (
+                      <button
+                        key={field}
+                        onClick={() => handleClear(field)}
+                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-200 hover:bg-red-100 text-gray-700 hover:text-red-600 rounded-full transition text-xs font-medium shadow-sm"
+                      >
+                        <span className="text-sm font-bold leading-none">✕</span>
+                        {field.charAt(0).toUpperCase() + field.slice(1)}
+                      </button>
+                    ));
+                })()}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -394,27 +373,20 @@ className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
           </div>
         )}
 
-        {/* Toast Notification */}
         <Toast
           message={toastMsg}
           show={showToast}
           onClose={() => setShowToast(false)}
         />
-
-        <style>
-          {`
-          @keyframes fadeIn { from {opacity:0;transform:scale(.98)} to {opacity:1;transform:scale(1)} }
-          .animate-fadeIn { animation: fadeIn .4s ease-out }
-          @keyframes pulseSlow {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.00); opacity: 1; }
-}
-.animate-pulse-slow { animation: pulseSlow 2.5s ease-in-out infinite; }
-
-          `}
-          
-        </style>
       </div>
+
+      {/* Scoped styles */}
+      <style>{`
+        @keyframes fadeIn { from {opacity:0;transform:scale(.98)} to {opacity:1;transform:scale(1)} }
+        .animate-fadeIn { animation: fadeIn .4s ease-out }
+        @keyframes pulseSlow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.00); opacity: 1; } }
+        .animate-pulse-slow { animation: pulseSlow 2.5s ease-in-out infinite; }
+      `}</style>
     </>
   );
 }
