@@ -1,0 +1,10 @@
+﻿Transactions:
+7f0d2949438cf0e235ff4f46050dcd5a9bcead96477bbb329ee63f97e3c084ff
+     Mined: 3088995 (2025-10-05 18:45:31.0 +00:00:00)
+    Amount:   0.00010000 ZEC
+  Fee paid: Unknown
+  Sent 0 notes, received 1 notes, 0 memos
+  Output 1 (Orchard)
+    Value:   0.00010000 ZEC
+    Received by account: 3e086003-d57e-4f72-b442-25ce8bec47ce (auth-service)
+    To: u1pzuglr8avtjf0xv48pgytep4fjsjs074x4d2wltkred0zqujqu44a3pktju0cpzw6edfe0quelchrmjj7mucem34jtg3p2gs0evg44at5n5nhzkhv6dzsq878hkj43wxsfxf2lylfvpd2pcmlc6fyhvlj6gdlse25eentw3fqng3vxdfm9880kg4mcjzvhgqft5tarwuvltq7w4k75d

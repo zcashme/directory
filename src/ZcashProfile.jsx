@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useLayoutEffect, useState } from "react";
+import React, { useEffect, useMemo, useRef, useLayoutEffect, useState } from "react";
 import "./index.css";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRandomZcasher, getTotalCount, getZcasherBySlug, slugify } from "./selectRandom";
@@ -586,16 +586,164 @@ export default function ZcashProfile() {
         onClose={() => setShowAddForm(false)}
         onUserAdded={handleUserAdded}
       />
-      <Modal
-        isOpen={showAuthenticateModal}
-        onClose={() => setShowAuthenticateModal(false)}
-        title="Authenticate Address"
-      >
-        Coming soon — fund us on{" "}
-        <a href="https://zda.sh" className="underline" target="_blank" rel="noreferrer">
-          zda.sh
-        </a>
-        .
+<Modal
+  isOpen={showAuthenticateModal}
+  onClose={() => setShowAuthenticateModal(false)}
+>
+  {(() => {
+    const recipient = "u1s6qvd4lfrrvjkr9xp8kpgjsrfr5azw0mum8xvcs2286fn4u6ugqsyh5h2r24peg4kqaxfvrullqnkry48crqw60w7lczhl2sthh57k433lnya9dr6lz5u8cj3ckfy9lzplnsvhfect0g3y87rf69r8pxpt7hh8pr7lkwegmxzez8aeguqwhdrtnj83mfg443msyuvaqx7nnry6q3j7q";
+    const senderAddr = address || "";
+    const amount = 0.001;
+    const nonce = crypto.randomUUID();
+    const readableMemo = `My address is ${senderAddr}. Nonce: ${nonce}. I request a verification code from zcash.me to this Zcash address. This transaction includes ${amount} ZEC to keep the lights on. Love, ${name}`;
+
+    let memoBase64Url = "";
+    try {
+      memoBase64Url = btoa(readableMemo)
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/, "");
+    } catch {}
+
+    const uri = `zcash:${recipient}?amount=${amount}&memo=${memoBase64Url}`;
+    const isValid = uri.startsWith("zcash:") && memoBase64Url.length > 0;
+
+    const [showFullUri, setShowFullUri] = React.useState(false);
+    const [showCodeField, setShowCodeField] = React.useState(false);
+    const [codeInput, setCodeInput] = React.useState("");
+
+    const shortAddr = `${senderAddr.slice(0, 10)}...${senderAddr.slice(-10)}`;
+    const shortUri = `${uri.slice(0, 32)}...${uri.slice(-16)}`;
+
+    const copyUri = async () => {
+      try {
+        await navigator.clipboard.writeText(uri);
+      } catch {}
+    };
+
+    // --- added handlers ---
+    const handleCheck = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/verify/check`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: senderAddr, nonce }),
+        });
+        const data = await res.json();
+        if (data.seen) {
+          setShowCodeField(true);
+        } else {
+          alert("Your transaction hasn’t been seen yet. Please wait a bit and try again.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Network or backend error while checking verification status.");
+      }
+    };
+
+    const handleSubmitCode = async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/verify/complete`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ address: senderAddr, nonce, code: codeInput }),
+        });
+        const data = await res.json();
+        if (data.verified) {
+          alert("Address verified successfully!");
+        } else {
+          alert("Verification failed or code invalid.");
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Error completing verification.");
+      }
+    };
+    // ----------------------
+
+    return (
+      <div className="flex flex-col items-center gap-3 text-center">
+        <h3 className="text-lg font-semibold">Authenticate Address</h3>
+        <p className="text-sm text-gray-700 max-w-md">
+          My address is {shortAddr}. I request a verification code from zcash.me
+          to confirm that I control this Zcash address. This transaction includes
+          0.001 ZEC to keep the lights on. Love, ${name}
+        </p>
+
+        {isValid ? (
+          <>
+            <div className="flex flex-col items-center gap-1">
+              <a
+                href={uri}
+                className="text-blue-600 underline break-all max-w-md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {showFullUri ? uri : shortUri}
+              </a>
+              <button
+                onClick={() => setShowFullUri(!showFullUri)}
+                className="text-xs text-gray-500 underline hover:text-gray-700"
+              >
+                {showFullUri ? "Hide full URI" : "Show full URI"}
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mt-1">
+              <button
+                onClick={copyUri}
+                className="px-3 py-1 bg-gray-200 rounded text-sm"
+                title="Copy full payment URI"
+              >
+                Copy URI
+              </button>
+            </div>
+
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+                uri
+              )}&size=350x350`}
+              alt="Zcash payment QR"
+              className="rounded-lg shadow mt-2"
+            />
+
+            {/* Added verification step section */}
+            <div className="mt-6 text-center">
+              {!showCodeField ? (
+                <button
+                  onClick={handleCheck}
+                  className="mt-4 px-4 py-2 bg-yellow-400 text-black rounded hover:bg-yellow-300"
+                >
+                  I sent the message
+                </button>
+              ) : (
+                <div className="mt-4">
+                  <label className="block mb-2 font-semibold text-yellow-600">
+                    Enter the verification code you received
+                  </label>
+                  <input
+                    type="text"
+                    maxLength="6"
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(e.target.value)}
+                    className="px-3 py-2 w-40 text-center rounded bg-gray-900 border border-yellow-400 text-yellow-100"
+                  />
+                  <button
+                    onClick={handleSubmitCode}
+                    className="ml-3 px-4 py-2 bg-green-500 text-black rounded hover:bg-green-400"
+                  >
+                    Submit Code
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        ) : (
+          <p className="text-red-600 text-sm">Invalid payment URI.</p>
+        )}
+      </div>
+    );
+  })()}
       </Modal>
       <Modal
         isOpen={showDirectoryModal}
