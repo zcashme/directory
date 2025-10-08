@@ -230,7 +230,7 @@ useEffect(() => {
             <input
               type="text"
               inputMode="decimal"
-              placeholder="Amount"
+              placeholder="Amount (optional)"
               value={amount}
               onChange={(e) =>
                 setAmount(e.target.value.replace(/[^\d.]/g, ""))
