@@ -295,7 +295,48 @@ useEffect(() => {
                   : ""
               }`}
             />
-            {!selectedAddress.startsWith("t") && <MemoCounter text={memo} />}
+{/* Memo counter + individual Clear pills */}
+<div className="flex justify-between items-center mt-1 text-xs text-gray-500">
+  {!selectedAddress.startsWith("t") && <MemoCounter text={memo} />}
+
+  <div className="flex gap-2 flex-wrap justify-end">
+    {(() => {
+      const filled = {
+        address:
+          selectedAddress !== ADMIN_ADDRESS ||
+          manualAddress.trim() !== "",
+        amount: !!amount.trim(),
+        memo: !!memo.trim(),
+      };
+
+      const handleClear = (field) => {
+        if (field === "address") {
+          setManualAddress("");
+          setSelectedAddress(ADMIN_ADDRESS);
+        } else if (field === "amount") {
+          setAmount("");
+        } else if (field === "memo") {
+          setMemo("");
+        }
+      };
+
+      return Object.entries(filled)
+        .filter(([_, v]) => v)
+        .map(([field]) => (
+          <button
+            key={field}
+            onClick={() => handleClear(field)}
+            className="flex items-center gap-1 px-2 py-0.5 bg-gray-200 hover:bg-red-100 text-gray-700 hover:text-red-600 rounded-full transition text-xs font-medium shadow-sm"
+          >
+            <span className="text-sm font-bold leading-none">✕</span>
+            {field.charAt(0).toUpperCase() + field.slice(1)}
+          </button>
+        ));
+    })()}
+  </div>
+</div>
+
+
           </div>
         </div>
 

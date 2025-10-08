@@ -17,14 +17,18 @@ export default function Directory() {
   const [activeLetter, setActiveLetter] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [showLetterGrid, setShowLetterGrid] = useState(false);
-  const [showStats, setShowStats] = useState(true);
-  const [showDirectory, setShowDirectory] = useState(true); // toggles directory + stats
+const [showStats, setShowStats] = useState(true);
+const [showDirectory, setShowDirectory] = useState(true); // (already present in your file)
+const [showFullAddr, setShowFullAddr] = useState(false);  // 👈 new: toggle full/short address
+
   const alphaRef = useRef(null);
   const searchBarRef = useRef(null);
 // Auto-show A–Z tray on scroll, hide after ~2.8s of inactivity
 const [showAlpha, setShowAlpha] = useState(false);
 const idleRef = useRef(null);
 const [showDirLabel, setShowDirLabel] = useState(true);
+
+// Show stats again if address resets to admin feedback mode
 
 useEffect(() => {
   if (!showDirectory) {
@@ -58,7 +62,7 @@ useEffect(() => {
   };
 }, []);
 
-  const { setSelectedAddress } = useFeedback(); // 🟢 from global context
+const { setSelectedAddress, selectedAddress } = useFeedback(); // include current selection
 const [toastMsg, setToastMsg] = useState("");
 const [showToast, setShowToast] = useState(false);
 
@@ -127,7 +131,9 @@ const showNotice = (msg) => {
     if (btn) scrollToLetter(btn.dataset.letter);
   };
 
-  if (loading) return <p className="text-center mt-8">Loading directory…</p>;
+  const selectedProfile = profiles.find((p) => p.address === selectedAddress);
+
+if (loading) return <p className="text-center mt-8">Loading directory…</p>;
 
   return (
 <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
@@ -146,26 +152,32 @@ const showNotice = (msg) => {
         {showStats && showDirectory && <ZcashStats />}
 
         {/* --- Fixed Header row --- */}
+        {/* --- Fixed Header row (responsive & pinned toggle) --- */}
         <div
         ref={searchBarRef}
-        className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex items-center gap-3 px-4 py-2"
+        className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 px-4 py-2"
         >
-        <a href="/" className="font-bold text-lg">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+            <a href="/" className="font-bold text-lg whitespace-nowrap">
             Zcash.me/
-        </a>
-        <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="search names"
-            className="flex-1 border rounded-lg px-3 py-2 text-sm"
-        />
+            </a>
+            <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="search names"
+                className="flex-1 rounded-lg px-3 py-2 text-sm border-0 bg-transparent/60 focus:bg-white outline-none focus:ring-2 focus:ring-blue-200"
+                />
+
+        </div>
+
         <button
             onClick={() => setShowStats((prev) => !prev)}
-            className="text-sm font-semibold text-blue-700 hover:text-blue-900 transition"
+            className="text-sm font-semibold text-blue-700 hover:text-blue-900 transition whitespace-nowrap"
         >
             {showStats ? "Hide Stats" : "Show Stats"}
         </button>
         </div>
+
 
 
       {/* --- Directory list --- */}
@@ -306,10 +318,78 @@ const showNotice = (msg) => {
         }}
       />
 
-      {/* --- Feedback section --- */}
-      <div id="zcash-feedback">
-        <ZcashFeedback />
-      </div>
+{/* --- Selected user summary (only when directory is collapsed and a known profile is selected) --- */}
+{/* --- Selected user summary (only when directory collapsed and not feedback mode) --- */}
+{!showDirectory && selectedProfile && selectedProfile.address !== "u1s6qvd4lfrrvjkr9xp8kpgjsrfr5azw0mum8xvcs2286fn4u6ugqsyh5h2r24peg4kqaxfvrullqnkry48crqw60w7lczhl2sthh57k433lnya9dr6lz5u8cj3ckfy9lzplnsvhfect0g3y87rf69r8pxpt7hh8pr7lkwegmxzez8aeguqwhdrtnj83mfg443msyuvaqx7nnry6q3j7q" && (
+  <div className="mt-6 mb-2 p-4 rounded-xl bg-transparent animate-fadeIn text-center">
+    {/* Name */}
+    <h2 className="text-2xl font-bold text-gray-800 mb-2">{selectedProfile.name}</h2>
+
+    {/* Address (static, shortened only) */}
+    <p className="text-sm text-gray-700 font-mono mb-2">
+      {selectedProfile.address
+        ? `${selectedProfile.address.slice(0, 10)}…${selectedProfile.address.slice(-10)}`
+        : "—"}
+    </p>
+
+    {/* Since / activity dates */}
+    <p className="text-xs text-gray-500 mb-3">
+      Since{" "}
+      {selectedProfile.since
+        ? new Date(selectedProfile.since).toLocaleDateString()
+        : "—"}
+      {selectedProfile.last_signed_at && (
+        <> • Last active {new Date(selectedProfile.last_signed_at).toLocaleDateString()}</>
+      )}
+      {selectedProfile.good_thru && (
+        <> • Good thru {new Date(selectedProfile.good_thru).toLocaleDateString()}</>
+      )}
+    </p>
+
+    {/* Social media placeholders */}
+    <div className="flex justify-center gap-4 mb-3">
+      {[
+        { name: "Twitter", verified: false },
+        { name: "GitHub", verified: false },
+        { name: "Mastodon", verified: false },
+      ].map((s) => (
+        <div
+          key={s.name}
+          className="flex flex-col items-center text-xs text-gray-600"
+        >
+          <div
+            className={`w-10 h-10 flex items-center justify-center rounded-full border ${
+              s.verified
+                ? "border-green-500 text-green-600"
+                : "border-red-400 text-red-500"
+            }`}
+          >
+            {s.verified ? "✔" : "✖"}
+          </div>
+          <span className="mt-1">{s.name}</span>
+        </div>
+      ))}
+    </div>
+
+    {/* Warning banner */}
+    <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
+      ⚠ 0 social media accounts associated with this Zcash address.
+      <br />
+      <strong>{selectedProfile.name}</strong> may not be who you think it is.
+      <br />
+      <span className="text-blue-600 underline font-medium cursor-default">
+        Is this your address? Verify
+      </span>
+    </div>
+  </div>
+)}
+
+
+{/* --- Feedback section --- */}
+<div id="zcash-feedback">
+  <ZcashFeedback />
+</div>
+
 
 {/* --- Floating Directory toggle button & label (right-aligned label) --- */}
 <div className="fixed bottom-6 left-6 z-[9999]">
