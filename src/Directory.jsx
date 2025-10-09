@@ -49,6 +49,11 @@ useEffect(() => {
   }
 }, [selectedAddress, profiles, navigate, showDirectory]);
 
+useEffect(() => {
+  const handleCloseDir = () => setShowDirectory(false);
+  window.addEventListener("closeDirectory", handleCloseDir);
+  return () => window.removeEventListener("closeDirectory", handleCloseDir);
+}, []);
 
 
   useEffect(() => {

@@ -167,11 +167,17 @@ export default function ZcashFeedback() {
         <div className="relative">
           <button
             id="draft-button"
-            onClick={() =>
-              document
-                .getElementById("zcash-feedback")
-                ?.scrollIntoView({ behavior: "smooth" })
-            }
+            onClick={() => {
+  // scroll to feedback form
+  document
+    .getElementById("zcash-feedback")
+    ?.scrollIntoView({ behavior: "smooth" });
+
+  // hide directory if it's currently open
+  const event = new CustomEvent("closeDirectory");
+  window.dispatchEvent(event);
+}}
+
             className={`relative text-white rounded-full w-14 h-14 shadow-lg text-lg font-bold transition-all duration-300
               ${showDraft ? "opacity-100 scale-100" : "opacity-70 scale-90"}
               bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
