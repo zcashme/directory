@@ -296,9 +296,12 @@ useEffect(() => {
     ) : (
       letters.map((letter) => (
         <div key={letter} id={`letter-${letter}`} className="mb-6">
-          <h2 className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition">
-            {letter}
-          </h2>
+<h2
+  onClick={() => setShowLetterGrid(true)}
+  className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition"
+>
+  {letter}
+</h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {grouped[letter].map((p) => (
@@ -421,6 +424,47 @@ useEffect(() => {
             </div>
           </div>
         )}
+{/* --- Letter Grid Modal --- */}
+{showLetterGrid && (
+  <div
+    className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center"
+    onClick={() => setShowLetterGrid(false)}
+  >
+    <div
+      className="grid grid-cols-5 gap-4 text-white text-4xl font-bold text-center select-none"
+      onClick={(e) => e.stopPropagation()}
+    >
+      {/* 🔍 Search button */}
+      <button
+        onClick={() => {
+          setShowLetterGrid(false);
+          setTimeout(() => {
+            const input = document.querySelector('input[placeholder^="search"]');
+            if (input) input.focus();
+          }, 150);
+        }}
+        className="hover:text-yellow-400 active:scale-125 transition-transform"
+        title="Search"
+      >
+        ⌕
+      </button>
+
+      {/* 🅰️ Letter buttons */}
+      {letters.map((l) => (
+        <button
+          key={l}
+          onClick={() => {
+            setShowLetterGrid(false);
+            setTimeout(() => scrollToLetter(l), 200);
+          }}
+          className="hover:text-yellow-400 active:scale-125 transition-transform"
+        >
+          {l}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
 
         {/* --- AddUserForm Modal --- */}
         <AddUserForm
