@@ -107,13 +107,17 @@ export default function ZcashFeedback() {
   }, [selectedAddress, manualAddress]);
 
   useEffect(() => {
-    const addrToUse =
-      selectedAddress === "other" ? manualAddress.trim() : selectedAddress;
-    if (!addrToUse || !isValidZcashAddress(addrToUse)) {
-      setUri("");
-      setError("Invalid or missing Zcash address.");
-      return;
-    }
+const addrToUse =
+  selectedAddress === "other" ? manualAddress.trim() : selectedAddress;
+
+// ✅ Always trust the admin address
+if (addrToUse === ADMIN_ADDRESS) {
+  setError("");
+} else if (!addrToUse || !isValidZcashAddress(addrToUse)) {
+  setUri("");
+  setError("Invalid or missing Zcash address.");
+  return;
+}
 
     setError("");
     const params = new URLSearchParams();
