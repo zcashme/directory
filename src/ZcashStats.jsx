@@ -85,18 +85,20 @@ export default function ZcashStats() {
   }, []);
 
   return (
-    <div className="text-center mb-6">
+<div className="text-left mb-6 pl-0 ml-1">
+
+
       {loading ? (
         <p className="text-sm text-gray-700">loading stats...</p>
       ) : (
         <>
           <p className="text-sm text-gray-700">
-            {total} Zcash addresses{" "}
+{/* address count removed for cleaner header */}
             <button
               onClick={() => setShow((s) => !s)}
               className="text-blue-600 hover:underline ml-1"
             >
-              {show ? "Hide stats" : " Show stats"}
+              {show ? "◕ Hide stats" : "◔ Show stats"}
             </button>
           </p>
 {show && (

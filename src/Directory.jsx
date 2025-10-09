@@ -4,6 +4,7 @@ import AddUserForm from "./AddUserForm";
 import ZcashFeedback from "./ZcashFeedback";
 import ZcashStats from "./ZcashStats";
 import { useFeedback } from "./store";
+import { useLocation } from "react-router-dom";
 
 const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS || "";
 import Toast from "./Toast";
@@ -23,6 +24,7 @@ export default function Directory() {
   const [showStats, setShowStats] = useState(true);
   const [showDirectory, setShowDirectory] = useState(true);
   const [showFullAddr, setShowFullAddr] = useState(false);
+const location = useLocation();
 
   const alphaRef = useRef(null);
   const searchBarRef = useRef(null);
@@ -30,18 +32,24 @@ export default function Directory() {
   const idleRef = useRef(null);
   const [showDirLabel, setShowDirLabel] = useState(true);
 
-  const { setSelectedAddress, selectedAddress } = useFeedback();
+const { setSelectedAddress, selectedAddress, setForceShowQR } = useFeedback();
 
   // 🧩 NEW: sync slug to selected profile name
-  useEffect(() => {
-    if (!profiles.length) return;
-    const match = profiles.find((p) => p.address === selectedAddress);
-    if (match?.name) {
-      navigate(`/${match.name}`, { replace: false });
-    } else {
+useEffect(() => {
+  if (!profiles.length) return;
+
+  const match = profiles.find((p) => p.address === selectedAddress);
+
+  if (match?.name) {
+    navigate(`/${match.name}`, { replace: false });
+  } else {
+    if (showDirectory) {
       navigate(`/`, { replace: false });
     }
-  }, [selectedAddress, profiles, navigate]);
+  }
+}, [selectedAddress, profiles, navigate, showDirectory]);
+
+
 
   useEffect(() => {
     if (!showDirectory) {
@@ -97,12 +105,34 @@ useEffect(() => {
 
   useEffect(() => {
     async function fetchProfiles() {
-      const { data, error } = await supabase
-        .from("public_profile")
-        .select("name, since, status_computed, last_signed_at, address");
-      if (error) console.error(error);
-      else setProfiles(data || []);
-      setLoading(false);
+const { data, error } = await supabase
+  .from("public_profile")
+  .select("name, since, status_computed, last_signed_at, address");
+
+if (error) {
+  console.error(error);
+} else {
+  // ✅ compute good_thru locally (60 days past since or last_signed_at)
+  const enriched = (data || []).map((p) => {
+    const sinceDate = p.since ? new Date(p.since) : null;
+    const lastSigned = p.last_signed_at ? new Date(p.last_signed_at) : null;
+
+    const latest = lastSigned && sinceDate
+      ? (lastSigned > sinceDate ? lastSigned : sinceDate)
+      : (lastSigned || sinceDate);
+
+    const goodThru = latest
+      ? new Date(latest.getTime() + 60 * 24 * 60 * 60 * 1000)
+      : null;
+
+    return { ...p, good_thru: goodThru };
+  });
+
+  setProfiles(enriched);
+}
+
+setLoading(false);
+
     }
     fetchProfiles();
   }, []);
@@ -149,10 +179,26 @@ useEffect(() => {
 
   const [selectedProfile, setSelectedProfile] = useState(null);
 
-  useEffect(() => {
-    const match = profiles.find((p) => p.address === selectedAddress);
-    setSelectedProfile(match || null);
-  }, [selectedAddress, profiles]);
+useEffect(() => {
+  const match = profiles.find((p) => p.address === selectedAddress);
+
+  if (match) {
+    const sinceDate = match.since ? new Date(match.since) : null;
+    const lastSigned = match.last_signed_at ? new Date(match.last_signed_at) : null;
+
+    // pick whichever is later
+    const latest = lastSigned && sinceDate
+      ? (lastSigned > sinceDate ? lastSigned : sinceDate)
+      : (lastSigned || sinceDate);
+
+    // compute good_thru = latest + 60 days
+    const goodThru = latest ? new Date(latest.getTime() + 60 * 24 * 60 * 60 * 1000) : null;
+
+    setSelectedProfile({ ...match, good_thru: goodThru });
+  } else {
+    setSelectedProfile(null);
+  }
+}, [selectedAddress, profiles]);
 
   if (loading) return <p className="text-center mt-8">Loading directory…</p>;
 
@@ -168,114 +214,136 @@ useEffect(() => {
           ＋ Join
         </button>
 
-        {showStats && showDirectory && <ZcashStats />}
+        {/* {showStats && showDirectory && <ZcashStats />} */}
 
-        {/* --- Header --- */}
-        <div
-          ref={searchBarRef}
-          className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2 px-4 py-2"
-        >
-          <div className="flex items-center gap-2 min-w-0 flex-1">
-            <a
-              href="/"
-              className="font-bold text-lg whitespace-nowrap text-blue-700 hover:text-blue-800 transition-colors duration-200"
-            >
-              Zcash.me/
-            </a>
+{showDirectory && <ZcashStats />}
 
-            <div className="relative flex-1">
-  <input
-    value={search}
-    onChange={(e) => setSearch(e.target.value)}
-    placeholder="search names"
-    className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
-    style={{
-      background: "transparent",
-      borderBottom: "1px solid transparent",
-      transition: "border-color 0.2s ease-in-out",
-    }}
-    onFocus={(e) => (e.target.style.borderBottom = '1px solid rgb(29, 78, 216)')} // text-blue-700
-    onBlur={(e) => (e.target.style.borderBottom = '1px solid transparent')}
-  />
+{/* --- Header --- */}
 
+ <div
+  ref={searchBarRef}
+  className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex flex-wrap sm:flex-nowrap items-center gap-2 px-4 py-2 justify-start"
+>
+  <div className="flex items-center gap-2 min-w-0 flex-1">
+    <a
+      href="/"
+      className="font-bold text-lg whitespace-nowrap text-blue-700 hover:text-blue-800 transition-colors duration-200"
+    >
+      Zcash.me/
+    </a>
+
+    <div className="relative flex-1">
+     <input
+  value={search}
+  onChange={(e) => setSearch(e.target.value)}
+  onKeyDown={(e) => {
+    if (e.key === "Enter") {
+      // 👇 when pressing Enter, reveal the directory
+      setShowDirectory(true);
+    }
+  }}
+  placeholder={`search ${profiles.length} names`}
+  className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
+  style={{
+    background: "transparent",
+    borderBottom: "1px solid transparent",
+    transition: "border-color 0.2s ease-in-out",
+  }}
+  onFocus={(e) =>
+    (e.target.style.borderBottom = "1px solid rgb(29, 78, 216)")
+  }
+  onBlur={(e) =>
+    (e.target.style.borderBottom = "1px solid transparent")
+  }
+/>
+
+  {/* 👇 Clear search button (only shows when text exists) */}
   {search && (
     <button
       onClick={() => setSearch("")}
-      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg font-semibold leading-none"
+      className="absolute left-70 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg font-semibold leading-none"
       aria-label="Clear search"
     >
-      ×
+      ⛌
     </button>
   )}
 </div>
+  </div>
 
-          </div>
+{/* removed outer Show/Hide Stats toggle (handled inside ZcashStats) */}
 
-          <button
-            onClick={() => setShowStats((prev) => !prev)}
-            className="text-sm font-semibold text-blue-700 hover:text-blue-900 transition whitespace-nowrap"
-          >
-            {showStats ? "Hide Stats" : "Show Stats"}
-          </button>
-        </div>
+</div>
 
-        {/* --- Directory Cards --- */}
-        {showDirectory &&
-          letters.map((letter) => (
-            <div key={letter} id={`letter-${letter}`} className="mb-6">
-              <h2
-                className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition"
-                onClick={() => setShowLetterGrid(true)}
+
+        {showDirectory && (
+  <>
+    {sorted.length === 0 ? (
+      <div className="text-center text-gray-500 italic mt-10">
+        No Zcash names match "<span className="text-blue-700">{search}</span>".
+        <br />
+        Maybe it’s time to <button
+          onClick={() => setIsJoinOpen(true)}
+          className="text-blue-700 hover:underline font-medium"
+        >
+          claim it
+        </button>?
+      </div>
+    ) : (
+      letters.map((letter) => (
+        <div key={letter} id={`letter-${letter}`} className="mb-6">
+          <h2 className="text-lg font-semibold text-gray-700 mb-2 cursor-pointer hover:text-blue-600 transition">
+            {letter}
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+            {grouped[letter].map((p) => (
+              <div
+                key={p.name}
+                className="relative border rounded-xl p-3 shadow-sm hover:shadow-md transition bg-transparent cursor-pointer"
+                onClick={() => {
+                  setSelectedAddress(p.address);
+                  setShowDirectory(false);
+                  document
+                    .getElementById("zcash-feedback")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
               >
-                {letter}
-              </h2>
+                <button
+                  onClick={() => {
+                    setSelectedAddress(p.address);
+                    setShowDirectory(false);
+                    document
+                      .getElementById("zcash-feedback")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                  className="font-medium text-blue-700 hover:underline truncate text-left focus:outline-none"
+                >
+                  {p.name}
+                </button>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {grouped[letter].map((p) => (
-                  <div
-                    key={p.name}
-                    className="relative border rounded-xl p-3 shadow-sm hover:shadow-md transition bg-transparent cursor-pointer"
-                    onClick={(e) => {
-                      if (e.target.tagName.toLowerCase() === "button") return;
-                      setSelectedAddress(p.address);
-                      setShowDirectory(false);
-                      document
-                        .getElementById("zcash-feedback")
-                        ?.scrollIntoView({ behavior: "smooth" });
-                    }}
+                <div className="text-xs text-gray-600 mt-1">
+                  <span
+                    className={
+                      p.status_computed === "claimed"
+                        ? "text-green-600"
+                        : "text-red-500"
+                    }
                   >
-                    <button
-                      onClick={() => {
-                        setSelectedAddress(p.address);
-                        setShowDirectory(false);
-                        document
-                          .getElementById("zcash-feedback")
-                          ?.scrollIntoView({ behavior: "smooth" });
-                      }}
-                      className="font-medium text-blue-700 hover:underline truncate text-left focus:outline-none"
-                    >
-                      {p.name}
-                    </button>
-
-                    <div className="text-xs text-gray-600 mt-1">
-                      <span
-                        className={
-                          p.status_computed === "claimed"
-                            ? "text-green-600"
-                            : "text-red-500"
-                        }
-                      >
-                        {p.status_computed === "claimed"
-                          ? "verified"
-                          : "unverified"}
-                      </span>{" "}
-                      • since {new Date(p.since).toLocaleDateString()}
-                    </div>
-                  </div>
-                ))}
+                    {p.status_computed === "claimed"
+                      ? "verified"
+                      : "unverified"}
+                  </span>{" "}
+                  • since {new Date(p.since).toLocaleDateString()}
+                </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
+        </div>
+      ))
+    )}
+  </>
+)}
+
 
         {/* --- Alphabet Bar --- */}
         <div
@@ -372,72 +440,110 @@ useEffect(() => {
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">
                     {selectedProfile.name}
                   </h2>
-                  <p className="text-sm text-gray-700 font-mono mb-2">
-                    {selectedProfile.address
-                      ? `${selectedProfile.address.slice(0, 10)}…${selectedProfile.address.slice(
-                          -10
-                        )}`
-                      : "—"}
-                  </p>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Since{" "}
-                    {selectedProfile.since
-                      ? new Date(selectedProfile.since).toLocaleDateString()
-                      : "—"}
-                    {selectedProfile.last_signed_at && (
-                      <>
-                        {" "}
-                        • Last active{" "}
-                        {new Date(selectedProfile.last_signed_at).toLocaleDateString()}
-                      </>
-                    )}
-                    {selectedProfile.good_thru && (
-                      <>
-                        {" "}
-                        • Good thru{" "}
-                        {new Date(selectedProfile.good_thru).toLocaleDateString()}
-                      </>
-                    )}
-                  </p>
-                  <div className="flex justify-center gap-4 mb-3">
-                    {[
-                      { name: "Twitter", verified: false },
-                      { name: "GitHub", verified: false },
-                      { name: "Mastodon", verified: false },
-                    ].map((s) => (
-                      <div
-                        key={s.name}
-                        className="flex flex-col items-center text-xs text-gray-600"
-                      >
-                        <div
-                          className={`w-10 h-10 flex items-center justify-center rounded-full border ${
-                            s.verified
-                              ? "border-green-500 text-green-600"
-                              : "border-red-400 text-red-500"
-                          }`}
-                        >
-                          {s.verified ? "✔" : "✖"}
-                        </div>
-                        <span className="mt-1">{s.name}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
-                    ⚠ 0 social media accounts associated with this Zcash address.
-                    <br />
-                    <strong>{selectedProfile.name}</strong> may not be who you think it is.
-                    <br />
-<span
+<p className="text-sm text-gray-700 font-mono mb-2 flex items-center justify-center gap-2">
+  {selectedProfile.address ? (
+    <>
+      <span className="select-all">
+        {selectedProfile.address.slice(0, 10)}…{selectedProfile.address.slice(-10)}
+      </span>
+      <button
+        onClick={() => {
+          navigator.clipboard.writeText(selectedProfile.address);
+          setToastMsg("Zcash address copied!");
+          setShowToast(true);
+        }}
+        className="text-gray-500 hover:text-blue-600 transition-colors text-base"
+        title="Copy Zcash address"
+      >
+        ⧉
+      </button>
+<button
   onClick={() => {
-    setToastMsg("Coming soon!");
+    setForceShowQR(true); // ✅ tell ZcashFeedback to show QR now
+    const qrSection = document.getElementById("zcash-feedback");
+    if (qrSection) qrSection.scrollIntoView({ behavior: "smooth" });
+    setToastMsg("QR code shown.");
     setShowToast(true);
   }}
-  className="text-blue-600 underline font-medium cursor-pointer hover:text-blue-800 transition-colors"
+  className="text-blue-700 hover:underline text-xs font-semibold"
 >
-  Is this your address? Verify
-</span>
+  Show QR
+</button>
 
-                  </div>
+    </>
+  ) : (
+    "—"
+  )}
+</p>
+
+<p className="text-xs text-gray-500 mb-3">
+  Since{" "}
+  {selectedProfile.since
+    ? new Date(selectedProfile.since).toLocaleDateString()
+    : "NULL"}
+  {" "}
+  • Last active{" "}
+  {selectedProfile.last_signed_at
+    ? new Date(selectedProfile.last_signed_at).toLocaleDateString()
+    : "NULL"}
+  {" "}
+  • Good thru{" "}
+  {selectedProfile.good_thru
+    ? new Date(selectedProfile.good_thru).toLocaleDateString()
+    : "NULL"}
+</p>
+
+{/* --- Warning boxes --- */}
+{(() => {
+  const now = new Date();
+  const lastSeen = selectedProfile.last_signed_at
+    ? new Date(selectedProfile.last_signed_at)
+    : null;
+
+  // If never signed, treat as very old
+  const inactiveDays =
+    lastSeen ? Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24)) : Infinity;
+
+  const socialWarning = true; // (placeholder until social verification exists)
+  const inactivityWarning = inactiveDays > 7;
+
+  return (
+    <>
+      {/* Social warning */}
+      {socialWarning && (
+        <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
+          ⚠ <strong>{selectedProfile.name}</strong> may not be who you think.
+          <br />
+          0 verified accounts.
+        </div>
+      )}
+
+      {/* Inactivity warning */}
+      {inactivityWarning && (
+        <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
+          ⚠ <strong>{selectedProfile.name}</strong> may not be monitoring this address.
+          <br />
+          &gt;7 days without response.
+        </div>
+      )}
+
+<div>    
+   </div>
+<button
+  onClick={() => {
+    setToastMsg("Sign-in coming soon!");
+    setShowToast(true);
+  }}
+  className="text-blue-700 hover:underline text-xs font-semibold"
+>
+  Are you <strong>{selectedProfile.name}</strong>? Sign in.
+</button>
+
+    </>
+  );
+})()}
+
+
                 </div>
               )
             )}

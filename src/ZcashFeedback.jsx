@@ -31,8 +31,8 @@ function MemoCounter({ text }) {
 
   return (
     <p
-      className={`text-xs text-right mt-1 ${
-        over ? "text-red-600" : "text-gray-500"
+      className={`text-xs text-right ${
+        over ? "text-red-600" : "text-gray-400"
       }`}
     >
       {over
@@ -54,7 +54,7 @@ export default function ZcashFeedback() {
   const [showFull, setShowFull] = useState(false);
   const [qrShownOnce, setQrShownOnce] = useState(false);
   const [showDraft, setShowDraft] = useState(true);
-  const { selectedAddress, setSelectedAddress } = useFeedback();
+  const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useFeedback();
   const [showEditLabel, setShowEditLabel] = useState(true);
 
   const showNotice = (msg) => {
@@ -158,7 +158,7 @@ export default function ZcashFeedback() {
     }
   };
 
-  const showResult = !!(amount || (memo && memo !== "N/A"));
+  const showResult = forceShowQR || !!(amount || (memo && memo !== "N/A"));
 
   return (
     <>
@@ -175,7 +175,7 @@ export default function ZcashFeedback() {
             className={`relative text-white rounded-full w-14 h-14 shadow-lg text-lg font-bold transition-all duration-300
               ${showDraft ? "opacity-100 scale-100" : "opacity-70 scale-90"}
               bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
-            title="Go to Feedback"
+            title="Draft a memo"
           >
             ✎
           </button>
@@ -205,118 +205,117 @@ export default function ZcashFeedback() {
       </div>
 
       <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
-        <p className="text-sm text-gray-700 mb-4 flex items-center justify-center gap-2">
-          <span className="text-black text-base leading-none">✎</span>
-          Draft a message and finalize it on your wallet.
+        <p className="text-sm text-gray-700 mb-4 text-center">
+          <span className="text-black text-base leading-none align-middle">✎</span>{" "}
+          Draft a message to{" "}
+          <span className="font-semibold text-blue-700">
+            {(() => {
+              const match = profiles.find((p) => p.address === selectedAddress);
+              return match?.name || "this Zcash user";
+            })()}
+          </span>{" "}
+          and finalize it in your wallet.
         </p>
 
-        {/* Top controls */}
-        <div className="flex flex-col sm:flex-row justify-center gap-3 mb-4">
-          <div className="relative flex flex-col w-full sm:w-1/3">
-            <select
-              value={selectedAddress}
-              onChange={(e) => setSelectedAddress(e.target.value)}
-              className="border rounded-lg px-3 py-2 text-sm appearance-none"
-            >
-              <option value={ADMIN_ADDRESS}>Feedback to Zcash.me Admin</option>
-              {profiles.map((p) => (
-                <option key={p.address} value={p.address}>
-                  {p.name} — {p.address.slice(0, 10)}…
-                </option>
-              ))}
-              <option value="other">Other (enter manually)</option>
-            </select>
+        {/* Unified input section */}
+        <div className="flex flex-col items-center gap-3 mb-4">
+          <div className="w-full max-w-xl">
+            {/* Recipient */}
+            <div className="relative flex flex-col w-full">
+              <select
+                value={selectedAddress}
+                onChange={(e) => setSelectedAddress(e.target.value)}
+                className="border rounded-lg px-3 py-2 text-sm appearance-none w-full pr-8"
+              >
+                <option value={ADMIN_ADDRESS}>Feedback to Zcash.me Admin</option>
+                {profiles.map((p) => (
+                  <option key={p.address} value={p.address}>
+                    {p.name} — {p.address.slice(0, 10)}…
+                  </option>
+                ))}
+                <option value="other">Other (enter manually)</option>
+              </select>
 
-            <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
-              Recipient
-            </span>
+
+              <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
+                Recipient
+              </span>
+            </div>
 
             {selectedAddress === "other" && (
+              <div className="relative w-full mt-2">
+                <input
+                  type="text"
+                  placeholder="Enter Zcash address"
+                  value={manualAddress}
+                  onChange={(e) => setManualAddress(e.target.value)}
+                  className="border rounded-lg px-3 py-2 text-sm w-full pr-8"
+                />
+                {manualAddress && (
+                  <button
+                    onClick={() => setManualAddress("")}
+                    className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+                    aria-label="Clear manual address"
+                  >
+                    ⛌
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Amount */}
+            <div className="relative w-full mt-3">
               <input
                 type="text"
-                placeholder="Enter Zcash address"
-                value={manualAddress}
-                onChange={(e) => setManualAddress(e.target.value)}
-                className="border rounded-lg px-3 py-2 text-sm mt-2"
+                inputMode="decimal"
+                placeholder="Amount (ZEC) (optional)"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+                className="border rounded-lg px-3 py-2 text-sm w-full pr-10"
               />
-            )}
-          </div>
+              {amount && (
+                <button
+                  onClick={() => setAmount("")}
+                  className="absolute right-3  top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+                  aria-label="Clear amount"
+                >
+                  ⛌
+                </button>
+              )}
 
+            </div>
 
-          <div className="relative w-full sm:w-1/4">
-            <input
-              type="text"
-              inputMode="decimal"
-              placeholder="Amount (optional)"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-              className="border rounded-lg px-3 py-2 text-sm w-full pr-10"
-            />
-            <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
-              ZEC
-            </span>
-          </div>
-        </div>
-
-        {/* Memo row */}
-        <div className="flex flex-col items-center mb-4">
-          <div className="w-full sm:w-3/4">
-            <textarea
-              rows={3}
-              placeholder="Memo (optional)"
-              value={memo}
-              onChange={(e) => setMemo(e.target.value)}
-              disabled={
-                (selectedAddress === "other"
-                  ? manualAddress?.startsWith("t")
-                  : selectedAddress?.startsWith("t")) || false
-              }
-              className={`border rounded-lg px-3 py-2 text-sm w-full resize-y ${
-                (selectedAddress === "other"
-                  ? manualAddress?.startsWith("t")
-                  : selectedAddress?.startsWith("t"))
-                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                  : ""
-              }`}
-            />
-
-            <div className="flex justify-between items-center mt-1 text-xs text-gray-500">
-              {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
-
-              <div className="flex gap-2 flex-wrap justify-end">
-                {(() => {
-                  const filled = {
-                    address:
-                      selectedAddress !== ADMIN_ADDRESS ||
-                      manualAddress.trim() !== "",
-                    amount: !!amount.trim(),
-                    memo: !!memo.trim(),
-                  };
-
-                  const handleClear = (field) => {
-                    if (field === "address") {
-                      setManualAddress("");
-                      setSelectedAddress(ADMIN_ADDRESS);
-                    } else if (field === "amount") {
-                      setAmount("");
-                    } else if (field === "memo") {
-                      setMemo("");
-                    }
-                  };
-
-                  return Object.entries(filled)
-                    .filter(([_, v]) => v)
-                    .map(([field]) => (
-                      <button
-                        key={field}
-                        onClick={() => handleClear(field)}
-                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-200 hover:bg-red-100 text-gray-700 hover:text-red-600 rounded-full transition text-xs font-medium shadow-sm"
-                      >
-                        <span className="text-sm font-bold leading-none">✕</span>
-                        {field.charAt(0).toUpperCase() + field.slice(1)}
-                      </button>
-                    ));
-                })()}
+            {/* Memo */}
+            <div className="relative w-full mt-3">
+              <textarea
+                rows={3}
+                placeholder="Memo (optional)"
+                value={memo}
+                onChange={(e) => setMemo(e.target.value)}
+                disabled={
+                  (selectedAddress === "other"
+                    ? manualAddress?.startsWith("t")
+                    : selectedAddress?.startsWith("t")) || false
+                }
+                className={`border rounded-lg px-3 py-2 text-sm w-full resize-y pr-8 ${
+                  (selectedAddress === "other"
+                    ? manualAddress?.startsWith("t")
+                    : selectedAddress?.startsWith("t"))
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : ""
+                }`}
+              />
+              {memo && memo !== "N/A" && (
+                <button
+                  onClick={() => setMemo("")}
+                  className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+                  aria-label="Clear memo"
+                >
+                  ⛌
+                </button>
+              )}
+              <div className="absolute right-3 -bottom-5">
+                {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
               </div>
             </div>
           </div>
@@ -327,7 +326,6 @@ export default function ZcashFeedback() {
         {showResult && !error && uri && (
           <div className="flex flex-col items-center gap-3 mt-6 animate-fadeIn">
             <QRCodeCanvas value={uri} size={200} includeMargin={true} />
-
             {showFull ? (
               <>
                 <a
@@ -353,7 +351,6 @@ export default function ZcashFeedback() {
                 Show More
               </button>
             )}
-
             <div className="flex gap-3 mt-2">
               <button
                 onClick={handleCopyUri}
@@ -380,11 +377,16 @@ export default function ZcashFeedback() {
         />
       </div>
 
-      {/* Scoped styles */}
       <style>{`
-        @keyframes fadeIn { from {opacity:0;transform:scale(.98)} to {opacity:1;transform:scale(1)} }
+        @keyframes fadeIn { 
+          from {opacity:0;transform:scale(.98)} 
+          to {opacity:1;transform:scale(1)} 
+        }
         .animate-fadeIn { animation: fadeIn .4s ease-out }
-        @keyframes pulseSlow { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.00); opacity: 1; } }
+        @keyframes pulseSlow { 
+          0%, 100% { transform: scale(1); opacity: 1; } 
+          50% { transform: scale(1.00); opacity: 1; } 
+        }
         .animate-pulse-slow { animation: pulseSlow 2.5s ease-in-out infinite; }
       `}</style>
     </>
