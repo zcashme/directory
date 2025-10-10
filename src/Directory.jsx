@@ -258,7 +258,7 @@ const [showAllWarnings, setShowAllWarnings] = useState(false);
 
 <div
   ref={searchBarRef}
-  className="fixed top-0 left-0 right-0 bg-white/70 backdrop-blur-md z-[60] flex items-center justify-between px-4 py-2 shadow-sm"
+  className="fixed top-0 left-0 right-0 bg-transparent/20 backdrop-blur-md z-[40] flex items-center justify-between px-4 py-2 shadow-sm"
 >
   {/* Left side: site title + search bar */}
   <div className="flex items-center gap-2 flex-1">
