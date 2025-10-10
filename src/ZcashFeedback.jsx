@@ -218,8 +218,8 @@ if (addrToUse === ADMIN_ADDRESS) {
 
       <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
         <p className="text-sm text-gray-700 mb-4 text-center">
-          <span className="text-black text-base leading-none align-middle">✎</span>{" "}
-          Draft a message to{" "}
+          <span className="text-black text-base leading-none align-middle"></span>{" "}
+          ✎ Draft a message to{" "}
           <span className="font-semibold text-blue-700">
             {(() => {
               const match = profiles.find((p) => p.address === selectedAddress);

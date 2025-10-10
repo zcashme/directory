@@ -207,6 +207,7 @@ useEffect(() => {
 
 const [copied, setCopied] = useState(false);
 const [qrShown, setQRShown] = useState(false);
+const [showAllWarnings, setShowAllWarnings] = useState(false);
 
 
   if (loading) return <p className="text-center mt-8">Loading directory…</p>;
@@ -501,57 +502,10 @@ const [qrShown, setQRShown] = useState(false);
       </span>
 
       {/* Copy address button */}
-      <button
-        onClick={() => {
-          navigator.clipboard.writeText(selectedProfile.address);
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        }}
-        className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
-          copied
-            ? "border-green-500 text-green-600 bg-green-50"
-            : "border-gray-300 hover:border-blue-500 hover:bg-transparent-50 text-gray-700"
-        }`}
-      >
-        {copied ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-          </svg>
-        )}
-        <span>{copied ? "Copy Uaddr" : "Copy Uaddr"}</span>
-      </button>
+
 
       {/* Show QR button */}
-      <button
-        onClick={() => {
-          setForceShowQR(true);
-          const qrSection = document.getElementById("zcash-feedback");
-          if (qrSection) qrSection.scrollIntoView({ behavior: "smooth" });
-          setQRShown(true);
-          setTimeout(() => setQRShown(false), 1500);
-        }}
-        className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
-          qrShown
-            ? "border-green-500 text-green-600 bg-green-50"
-            : "border-gray-300 hover:border-blue-500 hover:bg-transparent-50 text-gray-700"
-        }`}
-      >
-        {qrShown ? (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
-        ) : (
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h4v4H3V3zM3 17h4v4H3v-4zM17 3h4v4h-4V3zM17 17h4v4h-4v-4z" />
-          </svg>
-        )}
-        <span>{qrShown ? "Show QR" : "Show QR"}</span>
-      </button>
+      
     </>
   ) : (
     "—"
@@ -575,53 +529,154 @@ const [qrShown, setQRShown] = useState(false);
     : "NULL"}
 </p>
 
-{/* --- Warning boxes --- */}
+{/* Action Buttons: Copy, Show QR, Share */}
+{/* Action Buttons: Copy, Show QR, Share */}
+<div className="flex flex-wrap justify-center gap-2 mt-3 mb-4">
+  {/* Copy Uaddr */}
+  <button
+    onClick={() => {
+      navigator.clipboard.writeText(selectedProfile.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    }}
+    className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+      copied
+        ? "border-green-500 text-green-600 bg-green-50"
+        : "border-gray-300 hover:border-blue-500 text-gray-700"
+    }`}
+  >
+    {copied ? (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+      </svg>
+    ) : (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+      </svg>
+    )}
+    <span>Copy Uaddr</span>
+  </button>
+
+  {/* Show QR */}
+  <button
+    onClick={() => {
+      setForceShowQR(true);
+      requestAnimationFrame(() => {
+        const qrSection = document.getElementById("zcash-feedback");
+        if (qrSection) {
+          setTimeout(() => {
+            qrSection.scrollIntoView({ behavior: "smooth" });
+          }, 50);
+        }
+      });
+      setQRShown(true);
+      setTimeout(() => setQRShown(false), 1500);
+    }}
+    className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+      qrShown
+        ? "border-green-500 text-green-600 bg-green-50"
+        : "border-gray-300 hover:border-blue-500 text-gray-700"
+    }`}
+  >
+    {qrShown ? (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+      </svg>
+    ) : (
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h4v4H3V3zM3 17h4v4H3v-4zM17 3h4v4h-4V3zM17 17h4v4h-4v-4z" />
+      </svg>
+    )}
+    <span>Show QR</span>
+  </button>
+
+  {/* Share Profile */}
+  <button
+    onClick={() => {
+      const shareUrl = `${window.location.origin}/${encodeURIComponent(selectedProfile.name)}`;
+      if (navigator.share) {
+        navigator.share({
+          title: `${selectedProfile.name} on Zcash.me`,
+          text: "Check out this Zcash profile:",
+          url: shareUrl,
+        }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }
+    }}
+    className="flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm border-gray-300 hover:border-yellow-500 text-gray-700 transition-all duration-200"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4m0 0L8 6m4-4v16" />
+    </svg>
+    <span>Share Profile</span>
+  </button>
+</div>
+
+
+{/* --- Warning boxes with Show/Hide --- */}
+{/* --- Warning boxes with Show/Hide --- */}
 {(() => {
   const now = new Date();
   const lastSeen = selectedProfile.last_signed_at
     ? new Date(selectedProfile.last_signed_at)
     : null;
+  const inactiveDays = lastSeen ? Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24)) : Infinity;
 
-  // If never signed, treat as very old
-  const inactiveDays =
-    lastSeen ? Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24)) : Infinity;
-
-  const socialWarning = true; // (placeholder until social verification exists)
+  const socialWarning = true;
   const inactivityWarning = inactiveDays > 7;
 
+  const warnings = [];
+  if (socialWarning)
+    warnings.push({
+      type: "red",
+      text: `${selectedProfile.name} may not be who you think. 0 verified accounts.`,
+    });
+  if (inactivityWarning)
+    warnings.push({
+      type: "yellow",
+      text: `${selectedProfile.name} may not be monitoring this address. >7 days without response.`,
+    });
+
+  const shown = showAllWarnings ? warnings : warnings.slice(0, 1);
+
   return (
-    <>
-      {/* Social warning */}
-      {socialWarning && (
-        <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
-          ⚠ <strong>{selectedProfile.name}</strong> may not be who you think.
-          <br />
-          0 verified accounts.
+    <div className="mt-3">
+      {shown.map((w, i) => (
+        <div
+          key={i}
+          className={`mt-2 text-xs ${
+            w.type === "red"
+              ? "text-red-600 bg-red-50 border border-red-200"
+              : "text-yellow-700 bg-yellow-50 border border-yellow-200"
+          } rounded-lg px-3 py-2 inline-block max-w-sm mx-auto block`}
+        >
+          ⚠ <strong>{selectedProfile.name}</strong> {w.text}
         </div>
+      ))}
+
+      {warnings.length > 1 && (
+        <button
+          onClick={() => setShowAllWarnings(!showAllWarnings)}
+          className="block mx-auto mt-2 text-xs text-blue-600 hover:underline"
+        >
+          {showAllWarnings ? "Hide warnings" : `Show ${warnings.length - 1} more`}
+        </button>
       )}
 
-      {/* Inactivity warning */}
-      {inactivityWarning && (
-        <div className="mt-2 text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
-          ⚠ <strong>{selectedProfile.name}</strong> may not be monitoring this address.
-          <br />
-          &gt;7 days without response.
-        </div>
-      )}
-
-<div>    
-   </div>
-<button
-  onClick={() => {
-    setToastMsg("Sign-in coming soon!");
-    setShowToast(true);
-  }}
-  className="text-blue-700 hover:underline text-xs font-semibold"
->
-  Are you <strong>{selectedProfile.name}</strong>? Sign in.
-</button>
-
-    </>
+      <button
+        onClick={() => {
+          setToastMsg("Sign-in coming soon!");
+          setShowToast(true);
+        }}
+        className="block mx-auto mt-2 text-blue-700 hover:underline text-xs font-semibold"
+      >
+        Are you <strong>{selectedProfile.name}</strong>? Sign in.
+      </button>
+    </div>
   );
 })()}
 
