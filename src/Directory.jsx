@@ -356,9 +356,22 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
 
       {/* Name and info */}
       <div className="flex flex-col overflow-hidden">
-        <span className="font-semibold text-blue-700 leading-tight truncate">
-          {p.name}
-        </span>
+<span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
+  {p.name}
+  {(() => {
+    const sinceDate = new Date(p.since);
+    const today = new Date();
+const todayUTC = new Date().toISOString().slice(0, 10);
+const isNew = (p.since || "").slice(0, 10) === todayUTC;
+
+    return isNew ? (
+      <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
+        NEW
+      </span>
+    ) : null;
+  })()}
+</span>
+
         <span className="text-sm text-gray-400 truncate">
           <span
             className={
@@ -573,7 +586,7 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
   </div>
 
   {/* Right side: Share + Sign In */}
-<div className="flex items-start gap-2 absolute right-0 top-0">
+<div className="flex items-start gap-2 absolute right-0 top-0 ">
 
     {/* Share button */}
    
@@ -592,7 +605,7 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
           setTimeout(() => setCopied(false), 1500);
         }
       }}
-      className="flex items-center gap-1 border rounded-lg px-4 py-2 text-xs border-gray-400 hover:border-yellow-500 text-gray-600 transition-all duration-200"
+      className="flex items-center gap-1 border rounded-lg h-7 w-20 px-4 py-2 text-xs border-gray-400 hover:border-yellow-500 text-gray-600 transition-all duration-200"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4m0 0L8 6m4-4v16" />
@@ -632,9 +645,9 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     }}
-    className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+    className={`flex items-center gap-1 border rounded-xl h-7 px-3 py-1.5 text-sm transition-all duration-200 ${
       copied
-        ? "border-green-500 text-green-600 bg-green-50"
+        ? ""
         : "border-gray-400 hover:border-blue-500 text-gray-700"
     }`}
   >
@@ -666,9 +679,9 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
       setQRShown(true);
       setTimeout(() => setQRShown(false), 1500);
     }}
-    className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+    className={`flex items-center gap-1 border rounded-xl px-3 h-7 py-1.5 text-sm transition-all duration-200 ${
       qrShown
-        ? "border-green-500 text-green-600 bg-green-50"
+        ? ""
         : "border-gray-400 hover:border-blue-500 text-gray-700"
     }`}
   >
@@ -692,9 +705,9 @@ onClick={() => {
   setLinksShown(true);
   setTimeout(() => setLinksShown(false), 1500);
 }}
-className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 h-7 text-sm transition-all duration-200 ${
   linksShown
-    ? "border-green-500 text-green-600 bg-green-50"
+    ? ""
     : "border-gray-400 hover:border-blue-500 text-gray-700"
 }`}
 
@@ -799,7 +812,7 @@ className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transi
       </button>
       {showDetail && (
         <span className="block mt-1 text-red-400">
-          {selectedProfile.name} does not have any verified accounts.
+          {selectedProfile.name} did not add or verify any links.
         </span>
       )}
     </div>

@@ -351,20 +351,25 @@ className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidd
   </div>
 
   {/* Right half: Copy URI + Open in Wallet */}
-<div className="flex-1 w-full sm:w-1/2 flex justify-center sm:justify-end gap-2 mt-4 sm:mt-6">
+<div className="flex-1 w-full sm:w-1/2 flex  justify-center sm:justify-end gap-2 mt-4 sm:mt-6">
 
     <button
-      onClick={async () => {
-        await navigator.clipboard.writeText(uri);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 1500);
-      }}
-      className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
-        copied
-          ? "border-green-500 text-green-600 bg-green-50"
-          : "border-gray-500 hover:border-blue-500 text-gray-700"
-      }`}
-    >
+  onClick={async () => {
+    if (error) return;
+    await navigator.clipboard.writeText(uri);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }}
+  disabled={!!error}
+  className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+    error
+      ? "border-gray-300 text-gray-400 cursor-not-allowed opacity-60"
+      : copied
+      ? "border-green-500 text-green-600 bg-green-50"
+      : "border-gray-500 hover:border-blue-500 text-gray-700"
+  }`}
+>
+
       {copied ? (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
@@ -379,17 +384,22 @@ className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidd
     </button>
 
     <button
-      onClick={() => {
-        window.open(uri, "_blank");
-        setWalletOpened(true);
-        setTimeout(() => setWalletOpened(false), 1500);
-      }}
-      className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
-        walletOpened
-          ? "border-green-500 text-green-600 bg-green-50"
-          : "border-gray-500 hover:border-blue-500 text-gray-700"
-      }`}
-    >
+  onClick={() => {
+    if (error) return;
+    window.open(uri, "_blank");
+    setWalletOpened(true);
+    setTimeout(() => setWalletOpened(false), 1500);
+  }}
+  disabled={!!error}
+  className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+    error
+      ? "border-gray-300 text-gray-400 cursor-not-allowed opacity-60"
+      : walletOpened
+      ? "border-green-500 text-green-600 bg-green-50"
+      : "border-gray-500 hover:border-blue-500 text-gray-700"
+  }`}
+>
+
       {walletOpened ? (
         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
