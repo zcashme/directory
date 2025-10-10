@@ -304,7 +304,7 @@ className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidd
       (selectedAddress === "other"
         ? manualAddress?.startsWith("t")
         : selectedAddress?.startsWith("t"))
-        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+        ? "bg-gray-300 text-gray-400 cursor-not-allowed"
         : ""
     }`}
   />

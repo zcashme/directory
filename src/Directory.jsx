@@ -699,109 +699,159 @@ const isNew = (p.since || "").slice(0, 10) === todayUTC;
     <span>Show QR</span>
   </button>
 {/* Show Links */}
-{/* Show Links */}
-
-  <button
-onClick={() => {
-  setShowLinks((prev) => !prev);
-  setLinksShown(true);
-  setTimeout(() => setLinksShown(false), 1500);
-}}
-className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 h-7 text-sm transition-all duration-200 ${
-  linksShown
-    ? ""
-    : "border-gray-400 hover:border-blue-500 text-gray-700"
-}`}
-
-  >
-{linksShown ? (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-  </svg>
-) : (
-  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2 2 2m0 0l-2-2-2 2m2-2v6m0-8V4" />
-  </svg>
-)}
-<span>{showLinks ? "Hide Links" : "Show Links"}</span>
-
-  </button>
-
-  {showLinks && (
-    <div className="mt-4 w-full border border-black/30 rounded-2xl p-4 text-sm text-gray-700 bg-transparent shadow-sm animate-fadeIn">
-      <div className="grid grid-cols-3 gap-2 items-center text-left border-b pb-2 mb-2">
-        <button className="flex items-center gap-2 text-blue-700 font-semibold hover:underline">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M22.54 6.42c-.81.36-1.68.6-2.59.71a4.5 4.5 0 001.98-2.48 9.1 9.1 0 01-2.86 1.1 4.52 4.52 0 00-7.7 4.13A12.84 12.84 0 013 4.79a4.5 4.5 0 001.4 6.04 4.4 4.4 0 01-2.05-.56v.06a4.52 4.52 0 003.63 4.43 4.6 4.6 0 01-2.04.08 4.52 4.52 0 004.22 3.13A9.07 9.07 0 012 19.54a12.77 12.77 0 006.93 2.03c8.32 0 12.87-6.9 12.87-12.88 0-.2 0-.41-.02-.61a9.18 9.18 0 002.25-2.34z" />
-          </svg>
-          Twitter
-        </button>
-
-<div className="flex items-center justify-start gap-2">
-  <button
-    onClick={() => navigator.clipboard.writeText("https://twitter.com/zcashme")}
-    className="text-gray-400 hover:text-blue-600"
-    title="Copy link"
-  >
-    ⧉
-  </button>
-  <a
-    href="https://twitter.com/zcashme"
-    target="_blank"
-    rel="noopener noreferrer"
-    className="text-blue-600 truncate hover:underline"
-  >
-    /zcashme
-  </a>
-</div>
-
-        <div className="text-green-600 font-semibold flex items-center gap-1">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-          </svg>
-          Verified
-        </div>
-      </div>
-<div className="grid grid-cols-3 gap-2 items-center text-left">
-  <button className="flex items-center gap-2 text-blue-700 font-semibold hover:underline">
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
-      <path d="M12 2C6.477 2 2 6.478 2 12a10 10 0 0015.546 8.032l4.452 1.196-1.196-4.452A10 10 0 0012 2z" />
+<button
+  onClick={() => {
+    setShowLinks((prev) => !prev);
+    setLinksShown(true);
+    setTimeout(() => setLinksShown(false), 1500);
+  }}
+  className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 h-7 text-sm transition-all duration-200 ${
+    linksShown
+      ? ""
+      : "border-gray-400 hover:border-blue-500 text-gray-700"
+  }`}
+>
+  {linksShown ? (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
     </svg>
-    Signal
-  </button>
-
-  <div className="flex items-center justify-start gap-2">
-    <button
-      onClick={() => navigator.clipboard.writeText("https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH")}
-      className="text-gray-400 hover:text-blue-600"
-      title="Copy link"
-    >
-      ⧉
-    </button>
-    <a
-      href="https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH"
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-blue-600 truncate hover:underline"
-    >
-      /#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH
-    </a>
-  </div>
-
-  <div className="text-red-500 font-semibold flex items-center gap-1">
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2 2 2m0 0l-2-2-2 2m2-2v6m0-8V4" />
     </svg>
-    Unverified
-  </div>
-</div>
-
-    </div>
   )}
-</div>
+  <span>{showLinks ? "Hide Links" : "Show Links"}</span>
+</button>
 
+{showLinks && (
+  <div className="mt-4 w-full border border-black/30 rounded-2xl p-4 text-sm text-gray-700 bg-transparent shadow-sm animate-fadeIn">
+    {/* --- Twitter (Verified) --- */}
+    <div className="grid grid-cols-3 gap-2 items-center text-left border-b pb-2 mb-2">
+      <button className="flex items-center gap-2 text-blue-700 font-semibold hover:underline">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M22.54 6.42c-.81.36-1.68.6-2.59.71a4.5 4.5 0 001.98-2.48 9.1 9.1 0 01-2.86 1.1 4.52 4.52 0 00-7.7 4.13A12.84 12.84 0 013 4.79a4.5 4.5 0 001.4 6.04 4.4 4.4 0 01-2.05-.56v.06a4.52 4.52 0 003.63 4.43 4.6 4.6 0 01-2.04.08 4.52 4.52 0 004.22 3.13A9.07 9.07 0 012 19.54a12.77 12.77 0 006.93 2.03c8.32 0 12.87-6.9 12.87-12.88 0-.2 0-.41-.02-.61a9.18 9.18 0 002.25-2.34z" />
+        </svg>
+        Twitter
+      </button>
 
+      <div className="flex items-center justify-start gap-2">
+        <button
+          onClick={() => navigator.clipboard.writeText("https://twitter.com/zcashme")}
+          className="text-gray-400 hover:text-blue-600"
+          title="Copy link"
+        >
+          ⧉
+        </button>
+        <a
+          href="https://twitter.com/zcashme"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 truncate hover:underline"
+        >
+          /zcashme
+        </a>
+      </div>
 
+      <div className="text-green-600 font-semibold flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Verified
+      </div>
+    </div>
+
+    {/* --- Signal (Unverified) --- */}
+    <div className="grid grid-cols-3 gap-2 items-center text-left border-b pb-2 mb-2">
+      <button className="flex items-center gap-2 text-blue-700 font-semibold hover:underline">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M12 2C6.477 2 2 6.478 2 12a10 10 0 0015.546 8.032l4.452 1.196-1.196-4.452A10 10 0 0012 2z" />
+        </svg>
+        Signal
+      </button>
+
+      <div className="flex items-center justify-start gap-2">
+        <button
+          onClick={() =>
+            navigator.clipboard.writeText(
+              "https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH"
+            )
+          }
+          className="text-gray-400 hover:text-blue-600"
+          title="Copy link"
+        >
+          ⧉
+        </button>
+        <a
+          href="https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 truncate hover:underline"
+        >
+          /#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH
+        </a>
+      </div>
+
+      <div className="text-red-500 font-semibold flex items-center gap-1">
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Unverified
+      </div>
+    </div>
+
+    {/* --- Dynamically loaded local links --- */}
+    {(() => {
+      const slug =
+        selectedProfile?.name?.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "") || "";
+      const stored = slug ? localStorage.getItem(`links_${slug}`) : null;
+      if (!stored) return null;
+
+      try {
+        const parsed = JSON.parse(stored);
+        return parsed.map((url, i) => {
+          const linkObj = new URL(url);
+          const domain = linkObj.hostname.replace(/^www\./, "");
+          const path = linkObj.href.replace(/^https?:\/\/(www\.)?[^/]+/, "");
+          return (
+            <div key={i} className="grid grid-cols-3 gap-2 items-center text-left border-b pb-2 mb-2">
+              <button className="flex items-center gap-2 text-blue-700 font-semibold hover:underline">
+                {domain}
+              </button>
+
+              <div className="flex items-center justify-start gap-2">
+                <button
+                  onClick={() => navigator.clipboard.writeText(url)}
+                  className="text-gray-400 hover:text-blue-600"
+                  title="Copy link"
+                >
+                  ⧉
+                </button>
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 truncate hover:underline"
+                >
+                  {path || "/"}
+                </a>
+              </div>
+
+              <div className="text-red-500 font-semibold flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Unverified
+              </div>
+            </div>
+          );
+        });
+      } catch {
+        return null;
+      }
+    })()}
+  </div>
+)}
+  </div>
 
     {/* ⚠ Warning message (left) */}
     <div className="text-xs text-red-400 bg-red-50 border border-red-200 rounded-md px-3 py-1">
