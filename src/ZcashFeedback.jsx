@@ -339,7 +339,8 @@ if (addrToUse === ADMIN_ADDRESS) {
   </div>
 
   {/* Right half: Copy URI + Open in Wallet */}
-  <div className="flex flex-row items-center justify-end gap-2 sm:ml-4 w-full sm:w-1/2">
+<div className="flex-1 w-full sm:w-1/2 flex justify-center sm:justify-end gap-2 mt-4 sm:mt-6">
+
     <button
       onClick={async () => {
         await navigator.clipboard.writeText(uri);
@@ -398,7 +399,14 @@ if (addrToUse === ADMIN_ADDRESS) {
 
         {showResult && !error && uri && (
           <div className="flex flex-col items-center gap-3 mt-6 animate-fadeIn">
-            <QRCodeCanvas value={uri} size={200} includeMargin={true} />
+            <QRCodeCanvas
+  value={uri}
+  size={300}
+  includeMargin={true}
+  bgColor="transparent"
+  fgColor="#000000"
+/>
+
             {showFull ? (
               <>
                 <a
@@ -421,7 +429,7 @@ if (addrToUse === ADMIN_ADDRESS) {
                 onClick={() => setShowFull(true)}
                 className="text-xs text-blue-600 hover:underline"
               >
-                Show More
+                Show URI
               </button>
             )}
 

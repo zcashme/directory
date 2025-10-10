@@ -24,6 +24,8 @@ export default function Directory() {
   const [showStats, setShowStats] = useState(true);
   const [showDirectory, setShowDirectory] = useState(true);
   const [showFullAddr, setShowFullAddr] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
+
 const location = useLocation();
 
   const alphaRef = useRef(null);
@@ -617,68 +619,36 @@ const [showAllWarnings, setShowAllWarnings] = useState(false);
 </div>
 
 
-{/* --- Warning boxes with Show/Hide --- */}
-{/* --- Warning boxes with Show/Hide --- */}
-{(() => {
-  const now = new Date();
-  const lastSeen = selectedProfile.last_signed_at
-    ? new Date(selectedProfile.last_signed_at)
-    : null;
-  const inactiveDays = lastSeen ? Math.floor((now - lastSeen) / (1000 * 60 * 60 * 24)) : Infinity;
+{/* --- Sign-in prompt + Single expandable warning --- */}
+<div className="mt-3 text-center">
+  {/* Sign-in link (below buttons) */}
+  <button
+    onClick={() => {
+      setToastMsg("Sign-in coming soon!");
+      setShowToast(true);
+    }}
+    className="text-blue-700 hover:underline text-xs font-semibold mb-2 block mx-auto"
+  >
+    Are you <strong>{selectedProfile.name}</strong>? Sign in.
+  </button>
 
-  const socialWarning = true;
-  const inactivityWarning = inactiveDays > 7;
+  {/* Single red warning with expandable text */}
+  <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2 inline-block max-w-sm mx-auto">
+    ⚠ <strong>{selectedProfile.name}</strong> may not be who you think.
+    <button
+      onClick={() => setShowDetail(!showDetail)}
+      className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
+    >
+      {showDetail ? "Hide" : "More"}
+    </button>
+    {showDetail && (
+      <span className="block mt-1 text-red-700">
+        {selectedProfile.name} does not have any verified accounts.
+      </span>
+    )}
+  </div>
+</div>
 
-  const warnings = [];
-  if (socialWarning)
-    warnings.push({
-      type: "red",
-      text: `${selectedProfile.name} may not be who you think. 0 verified accounts.`,
-    });
-  if (inactivityWarning)
-    warnings.push({
-      type: "yellow",
-      text: `${selectedProfile.name} may not be monitoring this address. >7 days without response.`,
-    });
-
-  const shown = showAllWarnings ? warnings : warnings.slice(0, 1);
-
-  return (
-    <div className="mt-3">
-      {shown.map((w, i) => (
-        <div
-          key={i}
-          className={`mt-2 text-xs ${
-            w.type === "red"
-              ? "text-red-600 bg-red-50 border border-red-200"
-              : "text-yellow-700 bg-yellow-50 border border-yellow-200"
-          } rounded-lg px-3 py-2 inline-block max-w-sm mx-auto block`}
-        >
-          ⚠ <strong>{selectedProfile.name}</strong> {w.text}
-        </div>
-      ))}
-
-      {warnings.length > 1 && (
-        <button
-          onClick={() => setShowAllWarnings(!showAllWarnings)}
-          className="block mx-auto mt-2 text-xs text-blue-600 hover:underline"
-        >
-          {showAllWarnings ? "Hide warnings" : `Show ${warnings.length - 1} more`}
-        </button>
-      )}
-
-      <button
-        onClick={() => {
-          setToastMsg("Sign-in coming soon!");
-          setShowToast(true);
-        }}
-        className="block mx-auto mt-2 text-blue-700 hover:underline text-xs font-semibold"
-      >
-        Are you <strong>{selectedProfile.name}</strong>? Sign in.
-      </button>
-    </div>
-  );
-})()}
 
 
                 </div>
