@@ -137,7 +137,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
-          <h2 className="text-lg font-semibold text-gray-800">＋ Zcash is better with friends</h2>
+          <h2 className="text-lg font-semibold text-gray-800"> Zcash is better with friends</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
@@ -217,7 +217,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           {/* Links Section */}
           <div>
             <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
-              Links (optional)
+              Profile links
             </label>
             {links.map((link, index) => (
               <div key={index} className="mb-2">
@@ -226,7 +226,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
                     type="text"
                     value={link.url}
                     onChange={(e) => handleLinkChange(index, e.target.value)}
-                    placeholder="https://example.com"
+                    placeholder="https://x.com/my_page"
                     className={`flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
                       link.valid
                         ? "border-black/30 focus:border-blue-600"
