@@ -223,7 +223,7 @@ if (addrToUse === ADMIN_ADDRESS) {
           <span className="font-semibold text-blue-700">
             {(() => {
               const match = profiles.find((p) => p.address === selectedAddress);
-              return match?.name || "this Zcash user";
+              return match?.name || "a Zcash user";
             })()}
           </span>{" "}
           and finalize it in your wallet.
