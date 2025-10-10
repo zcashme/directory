@@ -43,13 +43,16 @@ useEffect(() => {
 
   const match = profiles.find((p) => p.address === selectedAddress);
 
-  if (match?.name) {
-    navigate(`/${match.name}`, { replace: false });
-  } else {
-    if (showDirectory) {
-      navigate(`/`, { replace: false });
-    }
-  }
+const currentSlug = window.location.pathname.slice(1).trim().toLowerCase();
+
+if (match?.name) {
+  // keep slug in lowercase, matching selected profile
+  navigate(`/${encodeURIComponent(match.name.toLowerCase())}`, { replace: false });
+} else if (!currentSlug) {
+  // only go home if there’s no slug in URL
+  if (showDirectory) navigate(`/`, { replace: false });
+}
+
 }, [selectedAddress, profiles, navigate, showDirectory]);
 
 useEffect(() => {
@@ -69,16 +72,25 @@ useEffect(() => {
   // Collapse directory automatically if visiting a slug directly
 useEffect(() => {
   const path = window.location.pathname.slice(1); // e.g., "Alice"
-  if (path) {
-    const profile = profiles.find(
-      (p) => p.name.toLowerCase() === decodeURIComponent(path).toLowerCase()
-    );
-    if (profile) {
-      setSelectedAddress(profile.address);
-      setShowDirectory(false); // 🔻 collapse to focus on namecard
-    }
+  if (!path) return;
+
+  const slug = decodeURIComponent(path).trim().toLowerCase();
+  const profile = profiles.find(
+    (p) => (p.name || "").trim().toLowerCase() === slug
+  );
+
+  if (profile) {
+    // ✅ Known name: show its card
+    setSelectedAddress(profile.address);
+    setShowDirectory(false);
+  } else {
+    // ❌ Unknown name: show “no match” view
+    setSearch(slug);
+    setSelectedAddress(ADMIN_ADDRESS); // default to feedback admin
+    setShowDirectory(true);
   }
 }, [profiles]);
+
 
   useEffect(() => {
     const show = () => {
@@ -244,58 +256,48 @@ const [showAllWarnings, setShowAllWarnings] = useState(false);
 
 {/* --- Header --- */}
 
- <div
+<div
   ref={searchBarRef}
-  className="fixed top-0 left-0 right-0 bg-transparent backdrop-blur-sm z-40 flex flex-wrap sm:flex-nowrap items-center gap-2 px-4 py-2 justify-start"
+  className="fixed top-0 left-0 right-0 bg-white/70 backdrop-blur-md z-[60] flex items-center justify-between px-4 py-2 shadow-sm"
 >
-  <div className="flex items-center gap-2 min-w-0 flex-1">
+  {/* Left side: site title + search bar */}
+  <div className="flex items-center gap-2 flex-1">
     <a
       href="/"
-      className="font-bold text-lg whitespace-nowrap text-blue-700 hover:text-blue-800 transition-colors duration-200"
+      className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap"
     >
       Zcash.me/
     </a>
 
-    <div className="relative flex-1">
-     <input
-  value={search}
-  onChange={(e) => setSearch(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      // 👇 when pressing Enter, reveal the directory
-      setShowDirectory(true);
-    }
-  }}
-  placeholder={`Search ${profiles.length} names`}
-  className="w-full px-0 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
-  style={{
-    background: "transparent",
-    borderBottom: "1px solid transparent",
-    transition: "border-color 0.2s ease-in-out",
-  }}
-  onFocus={(e) =>
-    (e.target.style.borderBottom = "1px solid rgb(29, 78, 216)")
-  }
-  onBlur={(e) =>
-    (e.target.style.borderBottom = "1px solid transparent")
-  }
-/>
-
-  {/* 👇 Clear search button (only shows when text exists) */}
-  {search && (
-    <button
-      onClick={() => setSearch("")}
-      className="absolute left-70 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 text-lg font-semibold leading-none"
-      aria-label="Clear search"
-    >
-      ⛌
-    </button>
-  )}
-</div>
+    <div className="relative flex-1 max-w-sm">
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") setShowDirectory(true);
+        }}
+        placeholder={`search ${profiles.length} names`}
+        className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
+      />
+      {search && (
+        <button
+          onClick={() => setSearch("")}
+          className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
+          aria-label="Clear search"
+        >
+          ⛌
+        </button>
+      )}
+    </div>
   </div>
 
-{/* removed outer Show/Hide Stats toggle (handled inside ZcashStats) */}
-
+  {/* Right side: Join button */}
+  <button
+    onClick={() => setIsJoinOpen(true)}
+    className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-md hover:bg-green-700 transition-all z-[50]"
+  >
+    ＋ Join
+  </button>
 </div>
 
 
@@ -618,7 +620,7 @@ const isNew = (p.since || "").slice(0, 10) === todayUTC;
 
 </div>
 
-<p className="text-xs text-gray-400 mb-5">
+<p className="text-xs text-gray-400 mb-5 text-left ml-[3.75rem]">
   Joined {" "}
   {selectedProfile.since
     ? new Date(selectedProfile.since).toLocaleString("default", { month: "short", year: "numeric" })
@@ -812,7 +814,7 @@ className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 h-7 text-sm tr
       </button>
       {showDetail && (
         <span className="block mt-1 text-red-400">
-          {selectedProfile.name} did not add or verify any links.
+          {selectedProfile.name} added 0 links of which 0 are verified.
         </span>
       )}
     </div>

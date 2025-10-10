@@ -1,7 +1,6 @@
 import "./index.css";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import ZcashProfile from "./ZcashProfile";
 import Directory from "./Directory";
 import { FeedbackProvider } from "./store";
 
@@ -19,9 +18,9 @@ function App() {
   return (
     <FeedbackProvider>
       <Routes>
-        {/* Root route: directory view, passes search control */}
+        {/* Wildcard route: handles / and all slugs */}
         <Route
-          path="/"
+          path="/*"
           element={
             <Directory
               searchQuery={searchQuery}
@@ -29,8 +28,6 @@ function App() {
             />
           }
         />
-        {/* Profile route */}
-        <Route path="/:slug" element={<ZcashProfile />} />
       </Routes>
     </FeedbackProvider>
   );
