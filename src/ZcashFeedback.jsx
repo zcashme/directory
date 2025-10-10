@@ -250,7 +250,7 @@ if (addrToUse === ADMIN_ADDRESS) {
 
 
               <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
-                 Recipient
+                 ˅
               </span>
             </div>
 
@@ -317,11 +317,12 @@ className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidd
       ⛌
     </button>
   )}
-  {!selectedAddress?.startsWith("t") && (
-    <div className="absolute bottom-3 right-3 text-xs text-gray-400 pointer-events-none">
-      <MemoCounter text={memo} />
-    </div>
-  )}
+{memo && !selectedAddress?.startsWith("t") && (
+  <div className="absolute bottom-3 right-3 text-xs text-gray-400 pointer-events-none">
+    <MemoCounter text={memo} />
+  </div>
+)}
+
 </div>
 
 {/* Amount + Buttons (aligned row) */}

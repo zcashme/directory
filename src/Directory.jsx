@@ -161,13 +161,22 @@ setLoading(false);
       searchBarRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-    const el = document.getElementById(`letter-${letter}`);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-      setActiveLetter(letter);
-      window.clearTimeout(scrollToLetter._to);
-      scrollToLetter._to = window.setTimeout(() => setActiveLetter(null), 600);
-    }
+const el = document.getElementById(`letter-${letter}`);
+if (el) {
+  const headerOffset = 70; // adjust if header height changes
+  const rect = el.getBoundingClientRect();
+  const offsetPosition = window.scrollY + rect.top - headerOffset;
+
+  window.scrollTo({
+    top: offsetPosition,
+    behavior: "smooth",
+  });
+
+  setActiveLetter(letter);
+  window.clearTimeout(scrollToLetter._to);
+  scrollToLetter._to = window.setTimeout(() => setActiveLetter(null), 600);
+}
+
   };
   const handleGridSelect = (letter) => {
     setShowLetterGrid(false);
@@ -258,7 +267,7 @@ const [showAllWarnings, setShowAllWarnings] = useState(false);
     }
   }}
   placeholder={`Search ${profiles.length} names`}
-  className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
+  className="w-full px-0 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-none shadow-none focus:outline-none"
   style={{
     background: "transparent",
     borderBottom: "1px solid transparent",
@@ -727,7 +736,7 @@ className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transi
     rel="noopener noreferrer"
     className="text-blue-600 truncate hover:underline"
   >
-    https://twitter.com/zcashme
+    /zcashme
   </a>
 </div>
 
@@ -748,19 +757,19 @@ className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transi
 
   <div className="flex items-center justify-start gap-2">
     <button
-      onClick={() => navigator.clipboard.writeText("https://signal.org/zcashme")}
+      onClick={() => navigator.clipboard.writeText("https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH")}
       className="text-gray-400 hover:text-blue-600"
       title="Copy link"
     >
       ⧉
     </button>
     <a
-      href="https://signal.org/zcashme"
+      href="https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH"
       target="_blank"
       rel="noopener noreferrer"
       className="text-blue-600 truncate hover:underline"
     >
-      https://signal.group/#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH
+      /#CjQKIKDM76KMttnFqmbtbKzcfDrGeLtR6wWQq82YM8LWdyNhEhBGKNSZVjTREwDLqhatYhLH
     </a>
   </div>
 
