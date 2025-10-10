@@ -205,6 +205,10 @@ useEffect(() => {
   }
 }, [selectedAddress, profiles]);
 
+const [copied, setCopied] = useState(false);
+const [qrShown, setQRShown] = useState(false);
+
+
   if (loading) return <p className="text-center mt-8">Loading directory…</p>;
 
   return (
@@ -489,36 +493,65 @@ useEffect(() => {
                   <h2 className="text-2xl font-bold text-gray-800 mb-2">
                     {selectedProfile.name}
                   </h2>
-<p className="text-sm text-gray-700 font-mono mb-2 flex items-center justify-center gap-2">
+<p className="text-sm text-gray-700 font-mono mb-2 flex flex-wrap items-center justify-center gap-2">
   {selectedProfile.address ? (
     <>
       <span className="select-all">
         {selectedProfile.address.slice(0, 10)}…{selectedProfile.address.slice(-10)}
       </span>
+
+      {/* Copy address button */}
       <button
         onClick={() => {
           navigator.clipboard.writeText(selectedProfile.address);
-          setToastMsg("Zcash address copied!");
-          setShowToast(true);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
         }}
-        className="text-gray-500 hover:text-blue-600 transition-colors text-base"
-        title="Copy Zcash address"
+        className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+          copied
+            ? "border-green-500 text-green-600 bg-green-50"
+            : "border-gray-300 hover:border-blue-500 hover:bg-transparent-50 text-gray-700"
+        }`}
       >
-        ⧉
+        {copied ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+          </svg>
+        )}
+        <span>{copied ? "Copy Uaddr" : "Copy Uaddr"}</span>
       </button>
-<button
-  onClick={() => {
-    setForceShowQR(true); // ✅ tell ZcashFeedback to show QR now
-    const qrSection = document.getElementById("zcash-feedback");
-    if (qrSection) qrSection.scrollIntoView({ behavior: "smooth" });
-    setToastMsg("QR code shown.");
-    setShowToast(true);
-  }}
-  className="text-blue-700 hover:underline text-xs font-semibold"
->
-  Show QR
-</button>
 
+      {/* Show QR button */}
+      <button
+        onClick={() => {
+          setForceShowQR(true);
+          const qrSection = document.getElementById("zcash-feedback");
+          if (qrSection) qrSection.scrollIntoView({ behavior: "smooth" });
+          setQRShown(true);
+          setTimeout(() => setQRShown(false), 1500);
+        }}
+        className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+          qrShown
+            ? "border-green-500 text-green-600 bg-green-50"
+            : "border-gray-300 hover:border-blue-500 hover:bg-transparent-50 text-gray-700"
+        }`}
+      >
+        {qrShown ? (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h4v4H3V3zM3 17h4v4H3v-4zM17 3h4v4h-4V3zM17 17h4v4h-4v-4z" />
+          </svg>
+        )}
+        <span>{qrShown ? "Show QR" : "Show QR"}</span>
+      </button>
     </>
   ) : (
     "—"

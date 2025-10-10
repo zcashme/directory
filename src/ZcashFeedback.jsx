@@ -56,6 +56,8 @@ export default function ZcashFeedback() {
   const [showDraft, setShowDraft] = useState(true);
   const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useFeedback();
   const [showEditLabel, setShowEditLabel] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const [walletOpened, setWalletOpened] = useState(false);
 
   const showNotice = (msg) => {
     setToastMsg(msg);
@@ -273,63 +275,124 @@ if (addrToUse === ADMIN_ADDRESS) {
               </div>
             )}
 
-            {/* Amount */}
-            <div className="relative w-full mt-3">
-              <input
-                type="text"
-                inputMode="decimal"
-                placeholder="Amount (ZEC) (optional)"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
-                className="border rounded-lg px-3 py-2 text-sm w-full pr-10"
-              />
-              {amount && (
-                <button
-                  onClick={() => setAmount("")}
-                  className="absolute right-3  top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
-                  aria-label="Clear amount"
-                >
-                  ⛌
-                </button>
-              )}
+{/* Memo (full width) */}
+{/* Memo (full width, counter inside field) */}
+<div className="relative w-full mt-3">
+  <textarea
+    rows={3}
+    placeholder="Memo (optional)"
+    value={memo}
+    onChange={(e) => setMemo(e.target.value)}
+    disabled={
+      (selectedAddress === "other"
+        ? manualAddress?.startsWith("t")
+        : selectedAddress?.startsWith("t")) || false
+    }
+    className={`border rounded-lg px-3 py-2 text-sm w-full resize-y pr-8 pb-6 relative ${
+      (selectedAddress === "other"
+        ? manualAddress?.startsWith("t")
+        : selectedAddress?.startsWith("t"))
+        ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+        : ""
+    }`}
+  />
+  {memo && memo !== "N/A" && (
+    <button
+      onClick={() => setMemo("")}
+      className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+      aria-label="Clear memo"
+    >
+      ⛌
+    </button>
+  )}
+  {!selectedAddress?.startsWith("t") && (
+    <div className="absolute bottom-3 right-3 text-xs text-gray-400 pointer-events-none">
+      <MemoCounter text={memo} />
+    </div>
+  )}
+</div>
 
-            </div>
+{/* Amount + Buttons (split row) */}
+{/* Amount + Buttons (aligned row) */}
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+  {/* Left half: Amount field */}
+  <div className="flex-1 w-full sm:w-1/2 flex items-center">
+    <div className="relative w-full">
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="0.00 ZEC (optional)"
+        value={amount}
+        onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+        className="border rounded-lg px-3 py-2 text-sm w-full pr-10 bg-transparent"
+      />
+      {amount && (
+        <button
+          onClick={() => setAmount("")}
+          className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+          aria-label="Clear amount"
+        >
+          ⛌
+        </button>
+      )}
+    </div>
+  </div>
 
-            {/* Memo */}
-            <div className="relative w-full mt-3">
-              <textarea
-                rows={3}
-                placeholder="Memo (optional)"
-                value={memo}
-                onChange={(e) => setMemo(e.target.value)}
-                disabled={
-                  (selectedAddress === "other"
-                    ? manualAddress?.startsWith("t")
-                    : selectedAddress?.startsWith("t")) || false
-                }
-                className={`border rounded-lg px-3 py-2 text-sm w-full resize-y pr-8 ${
-                  (selectedAddress === "other"
-                    ? manualAddress?.startsWith("t")
-                    : selectedAddress?.startsWith("t"))
-                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-                    : ""
-                }`}
-              />
-              {memo && memo !== "N/A" && (
-                <button
-                  onClick={() => setMemo("")}
-                  className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
-                  aria-label="Clear memo"
-                >
-                  ⛌
-                </button>
-              )}
-              <div className="absolute right-3 -bottom-5">
-                {!selectedAddress?.startsWith("t") && <MemoCounter text={memo} />}
-              </div>
-            </div>
-          </div>
-        </div>
+  {/* Right half: Copy URI + Open in Wallet */}
+  <div className="flex flex-row items-center justify-end gap-2 sm:ml-4 w-full sm:w-1/2">
+    <button
+      onClick={async () => {
+        await navigator.clipboard.writeText(uri);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      }}
+      className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+        copied
+          ? "border-green-500 text-green-600 bg-green-50"
+          : "border-gray-300 hover:border-blue-500 text-gray-700"
+      }`}
+    >
+      {copied ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+        </svg>
+      )}
+      <span>Copy URI</span>
+    </button>
+
+    <button
+      onClick={() => {
+        window.open(uri, "_blank");
+        setWalletOpened(true);
+        setTimeout(() => setWalletOpened(false), 1500);
+      }}
+      className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
+        walletOpened
+          ? "border-green-500 text-green-600 bg-green-50"
+          : "border-gray-300 hover:border-blue-500 text-gray-700"
+      }`}
+    >
+      {walletOpened ? (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+        </svg>
+      ) : (
+        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 7h18a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2zm0-2a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2H3V5z" />
+        </svg>
+      )}
+      <span>Open in Wallet</span>
+    </button>
+  </div>
+</div>
+          </div> {/* closes .w-full.max-w-xl */}
+        </div> {/* closes .flex.flex-col.items-center.gap-3.mb-4 */}
+
 
         {error && <p className="text-red-600 text-sm mb-3">{error}</p>}
 
@@ -361,22 +424,7 @@ if (addrToUse === ADMIN_ADDRESS) {
                 Show More
               </button>
             )}
-            <div className="flex gap-3 mt-2">
-              <button
-                onClick={handleCopyUri}
-                className="px-3 py-1 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-              >
-                Copy URI
-              </button>
-              <a
-                href={uri}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-1 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700"
-              >
-                Open in Wallet
-              </a>
-            </div>
+
           </div>
         )}
 
