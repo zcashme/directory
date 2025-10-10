@@ -219,14 +219,14 @@ if (addrToUse === ADMIN_ADDRESS) {
       <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
         <p className="text-sm text-gray-700 mb-4 text-center">
           <span className="text-black text-base leading-none align-middle"></span>{" "}
-          ✎ Draft a message to{" "}
+          ✎ Draft a note to{" "}
           <span className="font-semibold text-blue-700">
             {(() => {
               const match = profiles.find((p) => p.address === selectedAddress);
               return match?.name || "a Zcash user";
             })()}
           </span>{" "}
-          and finalize it in your wallet.
+          :
         </p>
 
         {/* Unified input section */}
@@ -279,16 +279,28 @@ if (addrToUse === ADMIN_ADDRESS) {
 {/* Memo (full width, counter inside field) */}
 <div className="relative w-full mt-3">
   <textarea
-    rows={3}
-    placeholder="Memo (optional)"
-    value={memo}
-    onChange={(e) => setMemo(e.target.value)}
+  ref={(el) => {
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }}
+  rows={1}
+  placeholder="Memo (optional)"
+  value={memo}
+  onChange={(e) => {
+    const el = e.target;
+    setMemo(el.value);
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+  }}
     disabled={
       (selectedAddress === "other"
         ? manualAddress?.startsWith("t")
         : selectedAddress?.startsWith("t")) || false
     }
-    className={`border rounded-lg px-3 py-2 text-sm w-full resize-y pr-8 pb-6 relative ${
+className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative ${
+
       (selectedAddress === "other"
         ? manualAddress?.startsWith("t")
         : selectedAddress?.startsWith("t"))

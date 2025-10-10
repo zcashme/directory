@@ -493,24 +493,9 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
           }}
         />
 
-{/* Top bar above card: warning (left) + Sign in (right) */}
+{/*  Sign in (right) */}
 {selectedProfile && (
-  <div className="max-w-3xl mx-auto flex justify-between items-center mb-2 px-1">
-    {/* ⚠ Warning message (left) */}
-    <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-md px-3 py-1">
-      ⚠ <strong>{selectedProfile.name}</strong> may not be who you think.
-      <button
-        onClick={() => setShowDetail(!showDetail)}
-        className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
-      >
-        {showDetail ? "Hide" : "More"}
-      </button>
-      {showDetail && (
-        <span className="block mt-1 text-red-600">
-          {selectedProfile.name} does not have any verified accounts.
-        </span>
-      )}
-    </div>
+  <div className="max-w-3xl mx-auto flex justify-end items-center mb-2 px-1">
 
     {/* Sign-in button (right) */}
     <button
@@ -702,6 +687,21 @@ className="flex items-center gap-3 p-3 mb-2 rounded-2xl bg-transparent border bo
 </div>
 
 
+    {/* ⚠ Warning message (left) */}
+    <div className="text-xs text-red-500 bg-red-50 border border-red-200 rounded-md px-3 py-1">
+      ⚠ <strong>{selectedProfile.name}</strong> may not be who you think.
+      <button
+        onClick={() => setShowDetail(!showDetail)}
+        className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
+      >
+        {showDetail ? "Hide" : "More"}
+      </button>
+      {showDetail && (
+        <span className="block mt-1 text-red-600">
+          {selectedProfile.name} does not have any verified accounts.
+        </span>
+      )}
+    </div>
 
 
 
