@@ -250,7 +250,7 @@ if (addrToUse === ADMIN_ADDRESS) {
 
 
               <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">
-                Recipient
+                 Recipient
               </span>
             </div>
 
@@ -312,16 +312,15 @@ if (addrToUse === ADMIN_ADDRESS) {
   )}
 </div>
 
-{/* Amount + Buttons (split row) */}
 {/* Amount + Buttons (aligned row) */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-5">
+<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 mt-2">
   {/* Left half: Amount field */}
   <div className="flex-1 w-full sm:w-1/2 flex items-center">
     <div className="relative w-full">
       <input
         type="text"
         inputMode="decimal"
-        placeholder="0.00 ZEC (optional)"
+        placeholder="0.0000 ZEC (optional)"
         value={amount}
         onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
         className="border rounded-lg px-3 py-2 text-sm w-full pr-10 bg-transparent"
@@ -350,7 +349,7 @@ if (addrToUse === ADMIN_ADDRESS) {
       className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
         copied
           ? "border-green-500 text-green-600 bg-green-50"
-          : "border-gray-300 hover:border-blue-500 text-gray-700"
+          : "border-gray-500 hover:border-blue-500 text-gray-700"
       }`}
     >
       {copied ? (
@@ -375,7 +374,7 @@ if (addrToUse === ADMIN_ADDRESS) {
       className={`flex items-center gap-1 border rounded-xl px-3 py-1.5 text-sm transition-all duration-200 ${
         walletOpened
           ? "border-green-500 text-green-600 bg-green-50"
-          : "border-gray-300 hover:border-blue-500 text-gray-700"
+          : "border-gray-500 hover:border-blue-500 text-gray-700"
       }`}
     >
       {walletOpened ? (
