@@ -128,6 +128,20 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
       return () => clearTimeout(t);
     }
   }, [showDraft, memo, amount]);
+// 🔧 INSERT THIS EFFECT (keeps everything else unchanged)
+useEffect(() => {
+  // compute the user's address to show inside the memo
+  const addr =
+    selectedAddress === "other"
+      ? (manualAddress || "").trim()
+      : (selectedAddress || "");
+
+  // only update the sign-in memo when you're actually in sign-in mode,
+  // otherwise leave the draft memo untouched
+  if (mode === "signin") {
+    setSignInMemo(getSignInMemoText(addr || "(unknown)"));
+  }
+}, [mode, selectedAddress, manualAddress]);
 
   useEffect(() => {
     async function fetchProfiles() {
