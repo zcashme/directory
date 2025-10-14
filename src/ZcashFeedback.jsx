@@ -32,7 +32,7 @@ function isValidZcashAddress(addr = "") {
 
 function getSignInMemoText(userAddr = "") {
   return `
-✎  Optional: Replace this (180 chars msg max). 
+[✎  Optional: Replace this with feedback (180 chars msg max).] 
 --- Do not modify this or below! ---
 ZM! Sign-in code request for
 ${userAddr}
@@ -60,8 +60,16 @@ function MemoCounter({ text }) {
 export default function ZcashFeedback({ compact = false }) {
   const [profiles, setProfiles] = useState([]);
   const [manualAddress, setManualAddress] = useState("");
-  const [amount, setAmount] = useState("");
-  const [memo, setMemo] = useState("");
+// Independent values for each mode
+const [draftAmount, setDraftAmount] = useState("");
+const [draftMemo, setDraftMemo] = useState("");
+const [signInMemo, setSignInMemo] = useState(getSignInMemoText());
+const [signInAmount, setSignInAmount] = useState("0.001");
+// Derived display values based on mode
+const [mode, setMode] = useState("note");
+const amount = mode === "signin" ? signInAmount : draftAmount;
+const memo = mode === "signin" ? signInMemo : draftMemo;
+
   const [uri, setUri] = useState("");
   const [error, setError] = useState("");
   const [toastMsg, setToastMsg] = useState("");
@@ -72,7 +80,7 @@ export default function ZcashFeedback({ compact = false }) {
   const [showEditLabel, setShowEditLabel] = useState(true);
   const [copied, setCopied] = useState(false);
   const [walletOpened, setWalletOpened] = useState(false);
-  const [mode, setMode] = useState("note");
+  
 const [showCodeInput, setShowCodeInput] = useState(false);
 const [codeValue, setCodeValue] = useState("");
 const [codeSubmitted, setCodeSubmitted] = useState(false);
@@ -144,13 +152,14 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (mode === "signin") return;
-    const addr = selectedAddress === "other" ? manualAddress : selectedAddress;
-    if (!addr) return;
-    if (addr.startsWith("t")) setMemo("N/A");
-    else if (memo === "N/A") setMemo("");
-  }, [mode, selectedAddress, manualAddress]);
+useEffect(() => {
+  if (mode === "signin") return;
+  const addr = selectedAddress === "other" ? manualAddress : selectedAddress;
+  if (!addr) return;
+  if (addr.startsWith("t")) setDraftMemo("N/A");
+  else if (draftMemo === "N/A") setDraftMemo("");
+}, [mode, selectedAddress, manualAddress]);
+
 
   useEffect(() => {
     const addr =
@@ -240,42 +249,39 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
         {/* Toggle */}
         <div className="flex justify-center items-center mb-2 relative">
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 transform">
-            <div className="inline-flex border border-gray-300 rounded-full overflow-hidden text-sm shadow-sm">
-              <button
-                onClick={() => {
-                  setMode("note");
-                  setAmount("");
-                  setMemo("");
-                  setForceShowQR(false);
-                }}
-                className={`px-3 py-1 font-medium transition-colors ${
-                  mode === "note"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                ✎ Draft
-              </button>
-              <button
-                onClick={() => {
-                  const userAddr =
-                    selectedAddress === "other" ? manualAddress.trim() : selectedAddress || "(unknown)";
-                  const memoText = getSignInMemoText(userAddr);
-                  setMode("signin");
-                  setAmount(MIN_SIGNIN_AMOUNT.toFixed(3));
-                  setMemo(memoText);
-                  setForceShowQR(true);
-                  setShowFull(false);
-                }}
-                className={`px-3 py-1 font-medium transition-colors ${
-                  mode === "signin"
-                    ? "bg-blue-600 text-white"
-                    : "bg-white text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                🔐 Sign In
-              </button>
-            </div>
+           <div className="inline-flex border border-gray-300 rounded-full overflow-hidden text-sm shadow-sm">
+  <button
+    onClick={() => {
+      setMode("note");
+      setForceShowQR(false);
+      // Do not clear or overwrite draft fields
+    }}
+    className={`px-3 py-1 font-medium transition-colors ${
+      mode === "note"
+        ? "bg-blue-600 text-white"
+        : "bg-white text-gray-600 hover:bg-gray-100"
+    }`}
+  >
+    ✎ Draft
+  </button>
+
+  <button
+    onClick={() => {
+      setMode("signin");
+      setForceShowQR(true);
+      setShowFull(false);
+      // The sign-in form already has its own prefilled memo/amount
+    }}
+    className={`px-3 py-1 font-medium transition-colors ${
+      mode === "signin"
+        ? "bg-blue-600 text-white"
+        : "bg-white text-gray-600 hover:bg-gray-100"
+    }`}
+  >
+    🔐 Sign In
+  </button>
+</div>
+
           </div>
         </div>
 
@@ -377,49 +383,54 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
               </div>
             )}
 
-            {/* Memo */}
-            <div className="relative w-full mt-3">
-              <textarea
-                ref={(el) => {
-                  if (el) {
-                    el.style.height = "auto";
-                    el.style.height = el.scrollHeight + "px";
-                  }
-                }}
-                rows={1}
-                placeholder={mode === "signin" ? "Enter code when received" : "Memo (optional)"}
-                value={memo}
-                onChange={(e) => {
-                  const el = e.target;
-                  setMemo(el.value);
-                  el.style.height = "auto";
-                  el.style.height = el.scrollHeight + "px";
-                }}
-                disabled={
-                  mode !== "signin" &&
-                  ((selectedAddress === "other"
-                    ? manualAddress?.startsWith("t")
-                    : selectedAddress?.startsWith("t")) ||
-                    false)
-                }
-                className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative ${
-                  mode !== "signin" &&
-                  (selectedAddress === "other"
-                    ? manualAddress?.startsWith("t")
-                    : selectedAddress?.startsWith("t"))
-                    ? "bg-gray-300 text-gray-400 cursor-not-allowed"
-                    : ""
-                }`}
-              />
-              {memo && memo !== "N/A" && (
-                <button
-                  onClick={() => setMemo("")}
-                  className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
-                  aria-label="Clear memo"
-                >
-                  ⛌
-                </button>
-              )}
+{/* Memo */}
+<div className="relative w-full mt-3">
+  <textarea
+    ref={(el) => {
+      if (el) {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      }
+    }}
+    rows={1}
+    placeholder={mode === "signin" ? "Enter code when received" : "Memo (optional)"}
+    value={mode === "signin" ? signInMemo : draftMemo}
+    onChange={(e) => {
+      const el = e.target;
+      if (mode === "signin") setSignInMemo(el.value);
+      else setDraftMemo(el.value);
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }}
+    disabled={
+      mode !== "signin" &&
+      ((selectedAddress === "other"
+        ? manualAddress?.startsWith("t")
+        : selectedAddress?.startsWith("t")) ||
+        false)
+    }
+    className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative ${
+      mode !== "signin" &&
+      (selectedAddress === "other"
+        ? manualAddress?.startsWith("t")
+        : selectedAddress?.startsWith("t"))
+        ? "bg-gray-300 text-gray-400 cursor-not-allowed"
+        : ""
+    }`}
+  />
+  {(mode === "signin" ? signInMemo : draftMemo) &&
+    (mode === "signin" ? signInMemo : draftMemo) !== "N/A" && (
+      <button
+        onClick={() =>
+          mode === "signin" ? setSignInMemo("") : setDraftMemo("")
+        }
+        className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+        aria-label="Clear memo"
+      >
+        ⛌
+      </button>
+    )}
+
               {memo &&
                 (mode === "signin" ||
                   !(selectedAddress === "other"
@@ -439,20 +450,23 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
                     type="text"
                     inputMode="decimal"
                     placeholder={mode === "signin" ? `${MIN_SIGNIN_AMOUNT} ZEC` : "0.0000 ZEC (optional)"}
-
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value.replace(/[^\d.]/g, ""))}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d.]/g, "");
+                      mode === "signin" ? setSignInAmount(value) : setDraftAmount(value);
+                    }}
                     className="border rounded-lg px-3 py-2 text-sm w-full pr-10 bg-transparent"
                   />
                   {amount && (
                     <button
-                      onClick={() => setAmount("")}
+                      onClick={() => (mode === "signin" ? setSignInAmount("") : setDraftAmount(""))}
                       className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
                       aria-label="Clear amount"
                     >
                       ⛌
                     </button>
                   )}
+
                 </div>
               </div>
 {/* Codewords input (Sign-In mode only) */}
