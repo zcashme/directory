@@ -5,7 +5,6 @@ export default function ZcashStats() {
   const [loading, setLoading] = useState(true);
   const [line, setLine] = useState("");
   const [referralLine, setReferralLine] = useState("");
-  const [show, setShow] = useState(false);
   const [total, setTotal] = useState(0);
   const [counts, setCounts] = useState({
     referred: 0,
@@ -54,10 +53,10 @@ export default function ZcashStats() {
       // --- Generate bar lines for each day ---
       const barLines = sorted.map((d, i) => {
         const prevTotal = i > 0 ? sorted[i - 1].total : 0;
-        const n = d.total - prevTotal; // change from yesterday
-        const N = d.total; // total after that day
-        const len = Math.min(30, Math.abs(n)); // bar length by |n|
-        const bar = n >= 0 ? "▇".repeat(len) : "▁".repeat(len); // down days are low bars
+        const n = d.total - prevTotal;
+        const N = d.total;
+        const len = Math.min(30, Math.abs(n));
+        const bar = n >= 0 ? "▇".repeat(len) : "▁".repeat(len);
         const sign = n > 0 ? "+" : n < 0 ? "−" : " ";
         return `${d.date.slice(5)} ${bar} ${sign}${n} (${N})`;
       });
@@ -96,39 +95,26 @@ export default function ZcashStats() {
       {loading ? (
         <p className="text-sm text-gray-700">loading stats...</p>
       ) : (
-        <>
-          <p className="text-sm text-gray-700">
-            <button
-              onClick={() => setShow((s) => !s)}
-              className="text-blue-600 hover:underline ml-1"
-            >
-              {show ? "◕ Hide stats" : "◔ Show stats"}
-            </button>
+        <div className="overflow-x-auto mt-2 text-left font-mono text-xs text-gray-700">
+          <p className="text-gray-600 mb-2">
+            {total} total names since 8/27/2025: {counts.referred} referred •{" "}
+            {counts.verified} verified*
           </p>
 
-          {show && (
-            <div className="overflow-x-auto mt-2 text-left font-mono text-xs text-gray-700">
-              <p className="text-gray-600 mb-2">
-                {total} total names since 8/27/2025: {counts.referred} referred •{" "}
-                {counts.verified} verified*
-              </p>
-
-              {referralLine && (
-                <>
-                  <p className="font-semibold text-gray-700 mb-1">referral frequency</p>
-                  <pre className="whitespace-pre leading-tight mb-4">{referralLine}</pre>
-                </>
-              )}
-
-              <p className="font-semibold text-gray-700 mb-1">daily join activity</p>
-              <pre className="whitespace-pre leading-tight mb-4">{line}</pre>
-
-              <p className="text-gray-500 text-[10px] italic mt-2">
-                *Coming soon: verify accounts
-              </p>
-            </div>
+          {referralLine && (
+            <>
+              <p className="font-semibold text-gray-700 mb-1">referral frequency</p>
+              <pre className="whitespace-pre leading-tight mb-4">{referralLine}</pre>
+            </>
           )}
-        </>
+
+          <p className="font-semibold text-gray-700 mb-1">daily join activity</p>
+          <pre className="whitespace-pre leading-tight mb-4">{line}</pre>
+
+          <p className="text-gray-500 text-[10px] italic mt-2">
+            *Coming soon: verify accounts
+          </p>
+        </div>
       )}
     </div>
   );
