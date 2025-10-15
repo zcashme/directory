@@ -354,22 +354,73 @@ useEffect(() => {
     
   ) : (
     <>
-      <select
-        value={selectedAddress}
-        onChange={(e) => setSelectedAddress(e.target.value)}
-        className="border rounded-lg px-3 py-2 text-sm appearance-none w-full pr-8"
-      >
-        <option value="" disabled>
-          Select a member of the directory
-        </option>
-        {profiles.map((p) => (
-          <option key={p.address} value={p.address}>
+      {/* Searchable Recipient Input */}
+<div className="relative">
+  <input
+    type="text"
+    value={
+      selectedAddress === "other"
+        ? manualAddress
+        : profiles.find((p) => p.address === selectedAddress)?.name || ""
+    }
+    onChange={(e) => {
+      const input = e.target.value;
+      // Detect “Other” case
+      const match = profiles.find(
+        (p) => p.name.toLowerCase() === input.toLowerCase()
+      );
+      if (match) setSelectedAddress(match.address);
+      else {
+        setSelectedAddress("other");
+        setManualAddress(input);
+      }
+    }}
+    placeholder="Search or enter a Zcash user"
+    className="border rounded-lg px-3 py-2 text-sm w-full bg-transparent outline-none focus:border-blue-500"
+    autoComplete="off"
+  />
+
+  {manualAddress && (
+    <button
+      onClick={() => {
+        setManualAddress("");
+        setSelectedAddress("");
+      }}
+      className="absolute right-3 top-2 text-gray-400 hover:text-red-500 text-sm font-semibold"
+      aria-label="Clear recipient"
+    >
+      ⛌
+    </button>
+  )}
+
+  {((!selectedAddress && manualAddress) || manualAddress.length > 0) && (
+    <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
+      {profiles
+        .filter((p) =>
+          p.name.toLowerCase().includes(manualAddress.toLowerCase())
+        )
+        .slice(0, 20)
+        .map((p) => (
+          <div
+            key={p.address}
+            onClick={() => {
+              setSelectedAddress(p.address);
+              setManualAddress("");
+            }}
+            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+          >
             {p.name} — {p.address.slice(0, 10)}…
-          </option>
+          </div>
         ))}
-        <option value="other">Other (enter manually)</option>
-      </select>
-      <span className="absolute right-3 top-2 text-gray-500 text-sm select-none">˅</span>
+      {!profiles.some((p) =>
+        p.name.toLowerCase().includes(manualAddress.toLowerCase())
+      ) && (
+        <div className="px-3 py-2 text-sm text-gray-500">No matches found</div>
+      )}
+    </div>
+  )}
+</div>
+
     </>
   )}
 </div>

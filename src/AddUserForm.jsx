@@ -192,28 +192,53 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           </div>
 
           {/* Referrer Dropdown */}
-          <div>
-            <label
-              htmlFor="referrer"
-              className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
-            >
-              Referred by Zcash.me/
-            </label>
-            <select
-              id="referrer"
-              value={referrer}
-              onChange={(e) => setReferrer(e.target.value)}
-              className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
-            >
-              <option value="">— None —</option>
-              {profiles.map((p) => (
-                <option key={p.name} value={p.name}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </div>
+{/* Referrer Searchable Input */}
+<div className="relative">
+  <label
+    htmlFor="referrer"
+    className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
+  >
+    Referred by Zcash.me/
+  </label>
 
+  <input
+    id="referrer"
+    type="text"
+    value={referrer}
+    onChange={(e) => setReferrer(e.target.value)}
+    placeholder="Type to search..."
+    className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
+    autoComplete="off"
+  />
+
+  {/* Filtered suggestion list */}
+  {referrer && (
+    <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
+      {profiles
+        .filter((p) =>
+          p.name.toLowerCase().includes(referrer.toLowerCase())
+        )
+        .slice(0, 20)
+        .map((p) => (
+          <div
+            key={p.name}
+            onClick={() => setReferrer(p.name)}
+            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+          >
+            {p.name}
+          </div>
+        ))}
+      {!profiles.some((p) =>
+        p.name.toLowerCase().includes(referrer.toLowerCase())
+      ) && (
+        <div className="px-3 py-2 text-sm text-gray-500">
+          No matches found
+        </div>
+      )}
+    </div>
+  )}
+</div>
+  
           {/* Links Section */}
           <div>
             <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
