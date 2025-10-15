@@ -63,6 +63,7 @@ export default function Directory() {
 
   // refs
   const searchBarRef = useRef(null);
+const lastScrollRef = useRef(0);
 
   // routing sync (merged effects) with identical behavior
   useProfileRouting(profiles, selectedAddress, setSelectedAddress, showDirectory, setShowDirectory);
@@ -229,11 +230,12 @@ export default function Directory() {
         )}
 
         {/* --- Alphabet Bar --- */}
-        <AlphabetSidebar
-          letters={letters}
-          show={showDirectory && showAlpha}
-          scrollToLetter={scrollToLetter}
-        />
+<AlphabetSidebar
+  letters={letters}
+  scrollToLetter={scrollToLetter}
+  showDirectory={showDirectory}
+/>
+
 
         {/* --- Floating Letter Indicator --- */}
         {activeLetter && (
@@ -283,17 +285,21 @@ export default function Directory() {
         <div className="fixed bottom-6 left-6 z-[9999]">
           <div className="relative">
             <button
-              onClick={() => {
-                if (showDirectory) {
-                  setShowDirectory(false);
-                } else {
-                  const currentY = window.scrollY;
-                  setShowDirectory(true);
-                  requestAnimationFrame(() =>
-                    window.scrollTo({ top: currentY, behavior: "auto" })
-                  );
-                }
-              }}
+       onClick={() => {
+  if (showDirectory) {
+    // store position before hiding
+    localStorage.setItem("lastScrollY", window.scrollY);
+    setShowDirectory(false);
+  } else {
+    // restore after DOM paints
+    setShowDirectory(true);
+    setTimeout(() => {
+      const lastY = parseFloat(localStorage.getItem("lastScrollY")) || 0;
+      window.scrollTo({ top: lastY, behavior: "instant" });
+    }, 100); // wait 100ms for directory to render
+  }
+}}
+
               className={`relative text-white p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${
                 showDirectory ? "bg-yellow-600 hover:bg-yellow-700" : "bg-gray-600 hover:bg-gray-700"
               }`}

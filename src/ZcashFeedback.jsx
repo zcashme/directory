@@ -289,7 +289,7 @@ useEffect(() => {
     className={`px-3 py-1 font-medium transition-colors ${
       mode === "signin"
         ? "bg-blue-600 text-white"
-        : "bg-white text-gray-600 hover:bg-gray-100"
+        : "bg-gray-100 text-gray-600 hover:bg-gray-100"
     }`}
   >
     🔐 Sign In

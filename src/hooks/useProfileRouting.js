@@ -11,7 +11,14 @@ export default function useProfileRouting(
 ) {
   const navigate = useNavigate();
 
-  const norm = (s = "") => s.normalize("NFKC").trim().toLowerCase();
+  // unified normalization: underscores instead of spaces
+  const norm = (s = "") =>
+    s
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "");
 
   // Keep URL in sync when a profile is selected
   useEffect(() => {
@@ -24,8 +31,7 @@ export default function useProfileRouting(
     if (match?.name) {
       const nextSlug = norm(match.name);
       if (currentSlug !== nextSlug) {
-        // keep slug human-readable (emojis stay visible)
-        navigate(`/${match.name.normalize("NFKC").trim().toLowerCase()}`, { replace: false });
+        navigate(`/${nextSlug}`, { replace: false });
       }
     } else if (!currentSlug && showDirectory) {
       navigate("/", { replace: false });
@@ -36,7 +42,6 @@ export default function useProfileRouting(
   useEffect(() => {
     const rawPath = decodeURIComponent(window.location.pathname.slice(1)).trim();
 
-    // homepage -> open directory, clear selection
     if (!rawPath) {
       setSelectedAddress(null);
       setShowDirectory(true);
@@ -50,7 +55,6 @@ export default function useProfileRouting(
       setSelectedAddress(profile.address);
       setShowDirectory(false);
     } else {
-      // unknown slug -> show directory, do not auto-select admin
       setSelectedAddress(null);
       setShowDirectory(true);
     }

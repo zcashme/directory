@@ -1,19 +1,36 @@
 ﻿import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
-import enrichProfile from "../utils/enrichProfile";
+
+let cachedProfiles = null; // memory cache
+
 export default function useProfiles() {
-  const [profiles, setProfiles] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [profiles, setProfiles] = useState(cachedProfiles || []);
+  const [loading, setLoading] = useState(!cachedProfiles);
+
   useEffect(() => {
-    async function fetchProfiles() {
-      const { data, error } = await supabase
-        .from("public_profile")
-        .select("name, since, status_computed, last_signed_at, address");
-      if (error) console.error(error);
-      else setProfiles((data || []).map(enrichProfile));
-      setLoading(false);
-    }
-    fetchProfiles();
+    if (cachedProfiles) return; // already cached, skip fetch
+
+    let active = true;
+    setLoading(true);
+
+    supabase
+      .from("public_profile")
+      .select("*")
+      .order("name", { ascending: true })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) console.error("Error loading profiles:", error);
+        else {
+          cachedProfiles = data;
+          setProfiles(data);
+        }
+      })
+      .finally(() => setLoading(false));
+
+    return () => {
+      active = false;
+    };
   }, []);
+
   return { profiles, loading };
 }

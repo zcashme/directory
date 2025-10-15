@@ -1,26 +1,53 @@
-﻿import { useRef } from "react";
-export default function AlphabetSidebar({ letters, show, scrollToLetter }) {
-  const alphaRef = useRef(null);
-  const handleTouch = (clientY) => {
-    const container = alphaRef.current;
-    if (!container) return;
-    const buttons = Array.from(container.querySelectorAll("button[data-letter]"));
-    const btn = buttons.find((b) => {
-      const r = b.getBoundingClientRect();
-      return clientY >= r.top && clientY <= r.bottom;
-    });
-    if (btn) scrollToLetter(btn.dataset.letter);
-  };
+﻿import { useEffect, useState } from "react";
+
+export default function AlphabetSidebar({ letters, activeLetter, scrollToLetter, showDirectory }) {
+  const [visible, setVisible] = useState(false);
+  const [hasShownOnce, setHasShownOnce] = useState(false);
+
+  // Show briefly on first directory load
+  useEffect(() => {
+    if (!showDirectory || hasShownOnce) return;
+    setHasShownOnce(true);
+    setVisible(true);
+    const timer = setTimeout(() => setVisible(false), 4000);
+    return () => clearTimeout(timer);
+  }, [hasShownOnce, showDirectory]);
+
+  // Show again on scroll when directory is visible
+  useEffect(() => {
+    if (!showDirectory) return;
+    let scrollTimeout;
+    const handleScroll = () => {
+      setVisible(true);
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => setVisible(false), 2000);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, [showDirectory]);
+
+  if (!showDirectory) return null; // hide completely when not in directory
+
   return (
     <div
-      ref={alphaRef}
-      className={`fixed right-2 top-1/4 flex flex-col items-center select-none z-40 transition-opacity duration-500 ease-out ${show ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"}`}
-      onTouchStart={(e) => handleTouch(e.touches[0].clientY)}
-      onTouchMove={(e) => { e.preventDefault(); handleTouch(e.touches[0].clientY); }}
+      className={`fixed right-2 top-1/2 -translate-y-1/2 flex flex-col items-center space-y-1 transition-opacity duration-700 ${
+        visible ? "opacity-100" : "opacity-0"
+      }`}
     >
-      {letters.map((l) => (
-        <button key={l} data-letter={l} className="text-gray-400 text-sm py-0.5 hover:text-black active:scale-110" onMouseDown={() => scrollToLetter(l)}>
-          {l}
+      {letters.map((letter) => (
+        <button
+          key={letter}
+          onClick={() => scrollToLetter(letter)}
+          className={`w-6 h-6 text-xs font-semibold rounded-full flex items-center justify-center transition-all duration-200 ${
+            activeLetter === letter
+              ? "bg-blue-600 text-white"
+              : "text-gray-600 hover:text-blue-600"
+          }`}
+        >
+          {letter}
         </button>
       ))}
     </div>

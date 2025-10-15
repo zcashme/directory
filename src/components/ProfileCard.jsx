@@ -69,7 +69,12 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         {/* Share button */}
         <button
           onClick={() => {
-            const shareUrl = `${window.location.origin}/${profile.name.normalize("NFKC").trim().toLowerCase()}`;
+            const shareUrl = `${window.location.origin}/${profile.name
+  .normalize("NFKC")
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, "_")
+  .replace(/[^a-z0-9_]/g, "")}`;
             if (navigator.share) {
               navigator
                 .share({
@@ -135,7 +140,25 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       {/* Expanding Links */}
       {showLinks && (
         <div className="mt-4 w-full border border-black/30 rounded-2xl p-4 text-sm text-gray-700 bg-transparent shadow-sm animate-fadeIn">
-          <p className="italic text-gray-500">No additional links found.</p>
+          {/* User-contributed links from Supabase */}
+<div className="flex flex-col gap-2">
+  {profile.links && profile.links.length > 0 ? (
+    profile.links.map((link) => (
+      <a
+        key={link.id}
+        href={link.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between border-b border-gray-200 py-1 hover:text-blue-600 transition-colors"
+      >
+        <span className="truncate">{link.label || link.url}</span>
+        <span className="text-gray-400 text-xs">⇱</span>
+      </a>
+    ))
+  ) : (
+    <p className="italic text-gray-500">No contributed links yet.</p>
+  )}
+</div>
         </div>
       )}
 
