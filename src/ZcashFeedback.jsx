@@ -32,11 +32,11 @@ function isValidZcashAddress(addr = "") {
 
 function getSignInMemoText(userAddr = "") {
   return `
-[✎  Optional: Replace this with feedback (180 chars msg max).] 
---- Do not modify this or below! ---
+
+  --- Do not modify below! ---
 ZM! Sign-in code request for
 ${userAddr}
-`.trim();
+`;
 }
 
 function MemoCounter({ text }) {
