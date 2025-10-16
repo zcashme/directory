@@ -15,13 +15,17 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const { setSelectedAddress, setForceShowQR } = useFeedback();
 
   // Derive trust states
-  const verifiedAddress = !!profile.address_verified;
-  const totalLinks = profile.links?.length || 0;
-  const verifiedLinks = profile.links?.filter((l) => l.is_verified).length || 0;
-  const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
-  const hasUnverifiedLinks = totalLinks > 0 && verifiedLinks === 0;
-const isVerified = profile.verified_count > 0 || profile.status_computed === "claimed";
-const isRanked = (profile.refRank && profile.refRank > 0) || (profile.referral_rank && profile.referral_rank > 0);
+// Derive trust states (consistent with verified badge logic)
+const verifiedAddress = !!profile.address_verified;
+const verifiedLinks = profile.verified_links_count ?? (profile.links?.filter(l => l.is_verified).length || 0);
+const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
+const hasUnverifiedLinks = (profile.total_links ?? profile.links?.length ?? 0) > 0 && verifiedLinks === 0;
+
+const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
+
+// Use the unified logic for colors
+const isVerified = totalVerifications > 0;
+const isRanked = (profile.referral_rank ?? profile.refRank ?? 0) > 0;
 
 
 let circleClass = "bg-blue-400";
@@ -50,8 +54,9 @@ const CheckIcon = (
     // Compact directory card
     return (
       <VerifiedCardWrapper
-        verifiedCount={profile.verified_count}
-        onClick={() => {
+  verifiedCount={profile.verified_links_count ?? 0}
+  featured={profile.featured}
+  onClick={() => {
           onSelect(profile.address);
           requestAnimationFrame(() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
@@ -73,9 +78,9 @@ const CheckIcon = (
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
               {profile.name}
-              {profile.referral_rank && profile.referral_rank > 0 && (
-                <ReferRankBadge rank={profile.referral_rank} />
-              )}
+              {profile.referral_rank > 0 && (
+  <ReferRankBadge rank={profile.referral_rank} />
+)}
               {isNewProfile(profile) && (
                 <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
                   NEW
@@ -84,15 +89,17 @@ const CheckIcon = (
             </span>
 
             <span className="text-sm text-gray-500 truncate flex items-center gap-2">
-              {(profile.verified_count && profile.verified_count > 0) ||
-              profile.status_computed === "claimed" ? (
-                <VerifiedBadge
-                  verified={true}
-                  verifiedCount={profile.verified_count || 1}
-                />
-              ) : (
-                <span className="text-red-400">Unverified</span>
-              )}
+             {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) ? (
+  <VerifiedBadge
+    verified={true}
+    verifiedCount={
+      (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
+    }
+  />
+) : (
+  <span className="text-red-400">Unverified</span>
+)}
+
               • Joined{" "}
               {new Date(profile.since).toLocaleString("default", {
                 month: "short",
@@ -108,21 +115,28 @@ const CheckIcon = (
   // Full expanded vertical profile card
   return (
     <VerifiedCardWrapper
-      verifiedCount={profile.verified_count}
-      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg rounded-2xl border border-gray-400 bg-amber-50 shadow-sm backdrop-blur-sm hover:shadow-md transition-all"
-    >
+  verifiedCount={
+    (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
+  }
+  featured={profile.featured}
+  className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
+>
+
       {/* Verified/Unverified badge in top-right corner */}
-      <div className="absolute top-4 right-4">
-        {(profile.verified_count && profile.verified_count > 0) ||
-        profile.status_computed === "claimed" ? (
-          <VerifiedBadge
-            verified={true}
-            verifiedCount={profile.verified_count || 1}
-          />
-        ) : (
-          <VerifiedBadge verified={false} />
-        )}
-      </div>
+{/* Verified/Unverified badge in top-right corner */}
+<div className="absolute top-4 right-4">
+  {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) ? (
+    <VerifiedBadge
+      verified={true}
+      verifiedCount={
+        (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
+      }
+    />
+  ) : (
+    <VerifiedBadge verified={false} />
+  )}
+</div>
+
 
       {/* Avatar */}
       <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm ${circleClass}`}>
@@ -151,9 +165,9 @@ const CheckIcon = (
 
       {/* Referrer badge */}
       <div className="mt-2 flex flex-col items-center justify-center gap-1">
-        {profile.referral_rank && profile.referral_rank > 0 && (
-          <ReferRankBadge rank={profile.referral_rank} />
-        )}
+        {profile.referral_rank > 0 && (
+  <ReferRankBadge rank={profile.referral_rank} />
+)}
       </div>
 
       {/* Dates */}

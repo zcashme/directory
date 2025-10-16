@@ -36,11 +36,13 @@ export default function Directory() {
   const [showStats, setShowStats] = useState(false);
 
   // multi-filter state
-  const [filters, setFilters] = useState({
-    verified: false,
-    referred: false,
-    ranked: false,
-  });
+const [filters, setFilters] = useState({
+  verified: false,
+  referred: false,
+  ranked: false,
+  featured: false,
+});
+
 
   const searchBarRef = useRef(null);
 
@@ -62,15 +64,18 @@ const referralCounts = useMemo(() => {
   // derived data
 const processedProfiles = useMemo(() => {
   return profiles.map((p) => {
-    const verifiedLinks = p.links?.filter((l) => l.is_verified).length || 0;
+    const verifiedLinks = p.verified_links_count ?? (p.links?.filter(l => l.is_verified).length || 0);
     const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
-    const refRank =
-      referralCounts[p.name?.toLowerCase()] ||
-      referralCounts[p.slug?.toLowerCase()] ||
-      0;
-    return { ...p, verifications, refRank };
+    const refRank = Number(p.referral_rank ?? 0);
+    return {
+  ...p,
+  verifications,
+  refRank,
+  featured: p.featured === true, // force strict boolean
+};
   });
-}, [profiles, referralCounts]);
+}, [profiles]);
+
 
 
   const selectedProfile = useMemo(() => {
@@ -86,17 +91,23 @@ const processedProfiles = useMemo(() => {
       p.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    // apply filters
-    const { verified, referred, ranked } = filters;
-    if (verified) {
-      s = s.filter((p) => p.address_verified || p.links?.some((l) => l.is_verified));
-    }
-    if (referred) {
-      s = s.filter((p) => !!p.referred_by);
-    }
-if (ranked) {
-  s = s.filter((p) => Number(p.refRank || 0) > 0);
+// apply filters
+// apply filters
+const { verified, referred, ranked, featured } = filters;
+
+if (verified) {
+  s = s.filter((p) => p.address_verified || (p.verifications ?? 0) > 0);
 }
+if (referred) {
+  s = s.filter((p) => !!p.referred_by);
+}
+if (ranked) {
+  s = s.filter((p) => Number(p.refRank ?? 0) > 0);
+}
+if (featured) {
+  s = s.filter((p) => Boolean(p.featured) === true);
+}
+
 
     // Default sort by name
     s.sort((a, b) => a.name.localeCompare(b.name));
@@ -166,6 +177,7 @@ if (ranked) {
 {/* Filter bar */}
 <span className="text-gray-700 text-sm mr-1"></span>
 
+
 <button
   onClick={clearFilters}
   className={`transition-all ${
@@ -204,7 +216,15 @@ if (ranked) {
 >
 🟠Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
 </button>
-
+<button
+  onClick={() => toggleFilter("featured")}
+  className={`hover:underline flex items-center gap-1 ${
+    filters.featured ? "underline text-blue-700" : "text-blue-700"
+  }`}
+>
+  <span>⭐</span> Featured (
+  {processedProfiles.filter((p) => p.featured).length})
+</button>
 
             </div>
           </div>
@@ -256,11 +276,15 @@ if (ranked) {
         {showDirectory && (
           <>
 {sorted.length === 0 ? (() => {
-  const activeLabels = Object.entries(filters)
-    .filter(([_, v]) => v)
-    .map(([k]) =>
-      k === "verified" ? "Verified" : k === "referred" ? "Referred" : "Ranked"
-    );
+const activeLabels = Object.entries(filters)
+  .filter(([_, v]) => v)
+  .map(([k]) => {
+    if (k === "verified") return "Verified";
+    if (k === "ranked") return "Ranked";
+    if (k === "featured") return "Featured";
+    return k;
+  });
+
 
   const labelText =
     activeLabels.length > 1
