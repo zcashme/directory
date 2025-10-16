@@ -20,8 +20,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const verifiedLinks = profile.links?.filter((l) => l.is_verified).length || 0;
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const hasUnverifiedLinks = totalLinks > 0 && verifiedLinks === 0;
-  const isVerified = profile.verified_count > 0 || profile.status_computed === "claimed";
-const isRanked = profile.referral_rank && profile.referral_rank > 0;
+const isVerified = profile.verified_count > 0 || profile.status_computed === "claimed";
+const isRanked = (profile.refRank && profile.refRank > 0) || (profile.referral_rank && profile.referral_rank > 0);
+
 
 let circleClass = "bg-blue-400";
 if (isVerified && isRanked) {
@@ -204,14 +205,6 @@ const CheckIcon = (
           >
             ▣ Show QR
           </button>
-
-          <button
-            onClick={() => setShowLinks(!showLinks)}
-            className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-          >
-            {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
-          </button>
-
           <button
             onClick={() => {
               const shareUrl = `${window.location.origin}/${profile.name
@@ -234,8 +227,16 @@ const CheckIcon = (
             }}
             className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
           >
-            ⇪ Share
+            𝇑  Share
           </button>
+          <button
+            onClick={() => setShowLinks(!showLinks)}
+            className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
+          >
+            {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
+          </button>
+
+
         </div>
 
         {/* Links Tray (visually attached to action tray) */}
@@ -244,7 +245,7 @@ const CheckIcon = (
             showLinks ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="px-4 pt-2 pb-3 bg-white/70 border-t border-gray-200 flex flex-col gap-2">
+          <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
             {profile.links && profile.links.length > 0 ? (
               profile.links.map((link) => (
                 <a

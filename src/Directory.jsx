@@ -47,25 +47,31 @@ export default function Directory() {
   useProfileRouting(profiles, selectedAddress, setSelectedAddress, showDirectory, setShowDirectory);
 
   // compute referrals (RefRank)
-  const referralCounts = useMemo(() => {
-    const counts = {};
-    profiles.forEach((p) => {
-      const ref = p.referred_by?.trim();
-      if (!ref) return;
-      counts[ref] = (counts[ref] || 0) + 1;
-    });
-    return counts;
-  }, [profiles]);
+ // compute referrals (RefRank) — case-insensitive + safer
+const referralCounts = useMemo(() => {
+  const counts = {};
+  profiles.forEach((p) => {
+    const ref = p.referred_by?.trim().toLowerCase();
+    if (!ref) return;
+    counts[ref] = (counts[ref] || 0) + 1;
+  });
+  return counts;
+}, [profiles]);
+
 
   // derived data
-  const processedProfiles = useMemo(() => {
-    return profiles.map((p) => {
-      const verifiedLinks = p.links?.filter((l) => l.is_verified).length || 0;
-      const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
-      const refRank = referralCounts[p.name] || referralCounts[p.slug] || 0;
-      return { ...p, verifications, refRank };
-    });
-  }, [profiles, referralCounts]);
+const processedProfiles = useMemo(() => {
+  return profiles.map((p) => {
+    const verifiedLinks = p.links?.filter((l) => l.is_verified).length || 0;
+    const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
+    const refRank =
+      referralCounts[p.name?.toLowerCase()] ||
+      referralCounts[p.slug?.toLowerCase()] ||
+      0;
+    return { ...p, verifications, refRank };
+  });
+}, [profiles, referralCounts]);
+
 
   const selectedProfile = useMemo(() => {
     const match = processedProfiles.find((p) => p.address === selectedAddress);
@@ -88,9 +94,9 @@ export default function Directory() {
     if (referred) {
       s = s.filter((p) => !!p.referred_by);
     }
-    if (ranked) {
-      s = s.filter((p) => p.refRank > 0);
-    }
+if (ranked) {
+  s = s.filter((p) => Number(p.refRank || 0) > 0);
+}
 
     // Default sort by name
     s.sort((a, b) => a.name.localeCompare(b.name));
@@ -157,40 +163,49 @@ export default function Directory() {
               </button>
 
               <span className="text-gray-400">|</span>
-              <span className="text-gray-700">Filter:</span>
+{/* Filter bar */}
+<span className="text-gray-700 text-sm mr-1"></span>
 
-              <button
-                onClick={clearFilters}
-                className={`hover:underline ${
-                  !anyFilterActive ? "underline text-blue-700" : "text-blue-700"
-                }`}
-              >
-                All
-              </button>
-              <button
-                onClick={() => toggleFilter("verified")}
-                className={`hover:underline ${
-                  filters.verified ? "underline text-blue-700" : "text-blue-700"
-                }`}
-              >
-                Verified
-              </button>
-              <button
-                onClick={() => toggleFilter("referred")}
-                className={`hover:underline ${
-                  filters.referred ? "underline text-blue-700" : "text-blue-700"
-                }`}
-              >
-                Referred
-              </button>
-              <button
-                onClick={() => toggleFilter("ranked")}
-                className={`hover:underline ${
-                  filters.ranked ? "underline text-blue-700" : "text-blue-700"
-                }`}
-              >
-                Ranked
-              </button>
+<button
+  onClick={clearFilters}
+  className={`transition-all ${
+    !anyFilterActive
+      ? "underline underline-offset-4 text-blue-700"
+      : "text-blue-700 hover:underline hover:underline-offset-4"
+  }`}
+>
+  🔵All ({profiles.length})
+</button>
+
+<button
+  onClick={() => toggleFilter("verified")}
+  className={`transition-all ${
+    filters.verified
+      ? "underline underline-offset-4 text-blue-700"
+      : "text-blue-700 hover:underline hover:underline-offset-4"
+  }`}
+>
+  🟢Verified (
+  {
+    profiles.filter(
+      (p) => p.address_verified || p.links?.some((l) => l.is_verified)
+    ).length
+  }
+  )
+</button>
+
+<button
+  onClick={() => toggleFilter("ranked")}
+  className={`transition-all ${
+    filters.ranked
+      ? "underline underline-offset-4 text-blue-700"
+      : "text-blue-700 hover:underline hover:underline-offset-4"
+  }`}
+>
+🟠Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
+</button>
+
+
             </div>
           </div>
         )}
