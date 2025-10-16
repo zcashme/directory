@@ -30,7 +30,12 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
   // Use the unified logic for colors
   const isVerified = totalVerifications > 0;
-  const isRanked = (profile.referral_rank ?? profile.refRank ?? 0) > 0;
+  const hasReferrals = (profile.referral_count ?? 0) > 0;
+const isRanked =
+  hasReferrals &&
+  profile.referral_rank &&
+  profile.referral_rank > 0 &&
+  profile.referral_rank <= 10;
 
   let circleClass = "bg-blue-400";
   if (isVerified && isRanked) {
@@ -38,8 +43,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   } else if (isVerified) {
     circleClass = "bg-green-400";
   } else if (isRanked) {
-    circleClass = "bg-orange-400";
+    circleClass = "bg-orange-300";
   }
+else if (hasReferrals) {
+  circleClass = "bg-orange-300"; // could be softer orange for general referrers
+}
 
   const CheckIcon = (
     <svg
