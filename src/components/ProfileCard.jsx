@@ -20,6 +20,19 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const verifiedLinks = profile.links?.filter((l) => l.is_verified).length || 0;
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const hasUnverifiedLinks = totalLinks > 0 && verifiedLinks === 0;
+  const isVerified = profile.verified_count > 0 || profile.status_computed === "claimed";
+const isRanked = profile.referral_rank && profile.referral_rank > 0;
+
+let circleClass = "bg-blue-400";
+if (isVerified && isRanked) {
+  circleClass = "bg-gradient-to-b from-green-400 to-orange-400"; // vertical split
+} else if (isVerified) {
+  circleClass = "bg-green-400";
+} else if (isRanked) {
+  circleClass = "bg-orange-400";
+}
+
+
 const CheckIcon = (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -46,7 +59,7 @@ const CheckIcon = (
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-blue-400 flex items-center justify-center">
+          <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${circleClass}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-6 h-6 text-blue-700"
@@ -111,7 +124,7 @@ const CheckIcon = (
       </div>
 
       {/* Avatar */}
-      <div className="mx-auto w-20 h-20 rounded-full bg-blue-400 flex items-center justify-center shadow-sm">
+      <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm ${circleClass}`}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="w-10 h-10 text-blue-700"
