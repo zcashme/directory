@@ -50,31 +50,85 @@ const [filters, setFilters] = useState({
 
   // compute referrals (RefRank)
  // compute referrals (RefRank) — case-insensitive + safer
-const referralCounts = useMemo(() => {
-  const counts = {};
+// compute referrals (RefRank) — unique global top-10 by actual profile, with tie-breaks
+const { referralCounts, rankedProfiles } = useMemo(() => {
+  // Normalizer: lower-case, trim, collapse spaces/underscores, strip non-alnum except underscores
+  const norm = (s) =>
+    (s || "")
+      .toString()
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/ /g, "_")
+      .replace(/[^a-z0-9_]/g, "");
+
+  // Build identity index: map normalized name/slug -> profile id
+  const idByIdentity = new Map();
+  const metaById = new Map(); // for tiebreakers (since, name)
   profiles.forEach((p) => {
-    const ref = p.referred_by?.trim().toLowerCase();
+    const nName = norm(p.name);
+    if (nName) idByIdentity.set(nName, p.id);
+    const nSlug = norm(p.slug);
+    if (nSlug) idByIdentity.set(nSlug, p.id);
+    metaById.set(p.id, { since: p.since, name: p.name || "" });
+  });
+
+  // Count referrals by referred_by text mapped to a real profile id
+  const countsById = new Map();
+  profiles.forEach((p) => {
+    const ref = norm(p.referred_by);
     if (!ref) return;
-    counts[ref] = (counts[ref] || 0) + 1;
+    const refId = idByIdentity.get(ref);
+    if (!refId) return; // skip refs that don't map to an existing profile
+    countsById.set(refId, (countsById.get(refId) || 0) + 1);
   });
-  return counts;
-}, [profiles]);
 
+  // Sort unique referrers by: count desc, since asc, name asc
+  const sorted = Array.from(countsById.entries()).sort(([idA, cA], [idB, cB]) => {
+    if (cB !== cA) return cB - cA;
+    const a = metaById.get(idA) || {};
+    const b = metaById.get(idB) || {};
+    const aSince = a.since ? new Date(a.since).getTime() : Number.MAX_SAFE_INTEGER;
+    const bSince = b.since ? new Date(b.since).getTime() : Number.MAX_SAFE_INTEGER;
+    if (aSince !== bSince) return aSince - bSince;
+    const aName = (a.name || "").toLowerCase();
+    const bName = (b.name || "").toLowerCase();
+    return aName.localeCompare(bName);
+  });
 
-  // derived data
-const processedProfiles = useMemo(() => {
-  return profiles.map((p) => {
-    const verifiedLinks = p.verified_links_count ?? (p.links?.filter(l => l.is_verified).length || 0);
+  // Assign unique ranks 1..10 to the top 10 ids
+  const rankById = new Map();
+  sorted.slice(0, 10).forEach(([id], idx) => rankById.set(id, idx + 1));
+
+  // For display/debug if you need counts by identity (optional)
+  const countsByIdentity = {};
+  idByIdentity.forEach((id, ident) => {
+    const c = countsById.get(id) || 0;
+    if (c > 0) countsByIdentity[ident] = c;
+  });
+
+  // Map profiles and compute derived fields
+  const enriched = profiles.map((p) => {
+    const verifiedLinks =
+      p.verified_links_count ??
+      (p.links?.filter((l) => l.is_verified).length || 0);
     const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
-    const refRank = Number(p.referral_rank ?? 0);
+    const refRank = rankById.get(p.id) || 0; // rank bound to the unique profile id
+
     return {
-  ...p,
-  verifications,
-  refRank,
-  featured: p.featured === true, // force strict boolean
-};
+      ...p,
+      verifications,
+      refRank,
+      featured: p.featured === true,
+    };
   });
+
+  return { referralCounts: countsByIdentity, rankedProfiles: enriched };
 }, [profiles]);
+
+const processedProfiles = rankedProfiles;
+
 
 
 
@@ -102,7 +156,8 @@ if (referred) {
   s = s.filter((p) => !!p.referred_by);
 }
 if (ranked) {
-  s = s.filter((p) => Number(p.refRank ?? 0) > 0);
+  // only top 10 referrers get ranked badge
+  s = s.filter((p) => Number(p.referral_rank ?? 0) > 0 && Number(p.referral_rank) <= 10);
 }
 if (featured) {
   s = s.filter((p) => Boolean(p.featured) === true);
@@ -186,7 +241,7 @@ if (featured) {
       : "text-blue-700 hover:underline hover:underline-offset-4"
   }`}
 >
-  🔵All ({profiles.length})
+  🔵 All ({profiles.length})
 </button>
 
 <button
@@ -197,7 +252,7 @@ if (featured) {
       : "text-blue-700 hover:underline hover:underline-offset-4"
   }`}
 >
-  🟢Verified (
+  🟢 Verified (
   {
     profiles.filter(
       (p) => p.address_verified || p.links?.some((l) => l.is_verified)
@@ -214,7 +269,7 @@ if (featured) {
       : "text-blue-700 hover:underline hover:underline-offset-4"
   }`}
 >
-🟠Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
+🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
 </button>
 <button
   onClick={() => toggleFilter("featured")}

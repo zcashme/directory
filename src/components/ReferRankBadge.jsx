@@ -27,6 +27,13 @@ export default function ReferRankBadge({ rank }) {
       text: "text-orange-900",
       border: "border-orange-400",
     };
+  } else if (rank >= 4 && rank <= 10) {
+    // Muted transparent style for honorable mentions
+    colors = {
+      bg: "bg-transparent",
+      text: "text-gray-500",
+      border: "border-gray-300",
+    };
   }
 
   const label =

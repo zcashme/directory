@@ -14,7 +14,7 @@ export default function useProfiles() {
     setLoading(true);
 
     supabase
-      .from("public_profile")
+      .from("zcasher_with_referral_rank")
       .select("*")
       .order("name", { ascending: true })
       .then(({ data, error }) => {
