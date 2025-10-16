@@ -91,30 +91,44 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       .map((l) => l.url.trim())
       .filter((url) => url && isValidUrl(url));
 
-    if (validLinks.length) {
-      localStorage.setItem(`links_${slug}`, JSON.stringify(validLinks));
-    }
+setIsLoading(true);
+try {
+  // 1️⃣ Insert new profile
+  const { data: profile, error: profileError } = await supabase
+    .from("zcasher")
+    .insert([
+      {
+        name: name.trim(),
+        address: address.trim(),
+        referred_by: referrer || null,
+        created_at: new Date().toISOString(),
+      },
+    ])
+    .select()
+    .single();
 
-    setIsLoading(true);
-    try {
-// ✅ fix: insert into the real table, not the view
-const { data, error } = await supabase
-  .from("zcasher")
-  .insert([
-    {
-      name: name.trim(),
-      address: address.trim(),
-      referred_by: referrer || null,
-      created_at: new Date().toISOString(),
-    },
-  ])
-  .select()
-  .single();
+  if (profileError) throw profileError;
 
+  // 2️⃣ Insert profile links into zcasher_links
+  const validLinks = links
+    .map((l) => l.url.trim())
+    .filter((url) => url && isValidUrl(url));
 
-      if (error) throw error;
-      onUserAdded?.(data);
-      onClose?.();
+  for (const url of validLinks) {
+    await supabase.from("zcasher_links").insert([
+      {
+        zcasher_id: profile.id,
+        label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""), // quick readable label
+        url,
+        is_verified: false,
+      },
+    ]);
+  }
+
+  // 3️⃣ Done
+  onUserAdded?.(profile);
+  onClose?.();
+
     } catch (err) {
       console.error("Add name failed:", err);
       setError(err?.message || "Failed to add name.");

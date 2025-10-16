@@ -274,27 +274,47 @@ else if (hasReferrals) {
           }`}
         >
           <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
-            {profile.links && profile.links.length > 0 ? (
-              profile.links.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between py-1 hover:text-blue-600 transition-colors"
-                >
-                  <span className="truncate flex items-center gap-2">
-                    {link.label || link.url}
-                    <VerifiedBadge verified={link.is_verified} />
-                  </span>
-                  <span className="text-gray-400 text-xs">⇱</span>
-                </a>
-              ))
-            ) : (
-              <p className="italic text-gray-500 text-center">
-                No contributed links yet.
-              </p>
-            )}
+{profile.links && profile.links.length > 0 ? (
+  profile.links.map((link) => (
+    <div
+      key={link.id}
+      className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"
+    >
+      {/* Left section: label + verified badge */}
+      <div className="flex items-center gap-2">
+        <span className="font-medium text-gray-800 truncate">
+          {link.label || "Untitled"}
+        </span>
+        <VerifiedBadge verified={link.is_verified} />
+      </div>
+
+      {/* Right section: actual link + copy icon */}
+      <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
+        <a
+          href={link.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="truncate hover:text-blue-600 transition-colors"
+        >
+          {link.url.replace(/^https?:\/\//, "")}
+        </a>
+        <button
+          onClick={() => navigator.clipboard.writeText(link.url)}
+          title="Copy link"
+          className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
+        >
+          ⧉
+        </button>
+      </div>
+    </div>
+  ))
+) : (
+  <p className="italic text-gray-500 text-center">
+    No contributed links yet.
+  </p>
+)}
+
+
           </div>
         </div>
       </div>
@@ -352,7 +372,7 @@ else if (hasReferrals) {
               }`}
             >
               {profile.name} added {totalLinks} link
-              {totalLinks !== 1 ? "s" : ""}, of which {verifiedLinks}{" "}
+              {totalLinks !== 1 ? "s" : ""}, {verifiedLinks}{" "}
               {verifiedLinks === 1 ? "is" : "are"} verified.
             </span>
           )}
