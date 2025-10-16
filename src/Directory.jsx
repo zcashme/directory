@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AddUserForm from "./AddUserForm";
@@ -26,7 +26,7 @@ export default function Directory() {
   const navigate = useNavigate();
   const { setSelectedAddress, selectedAddress } = useFeedback();
   const { profiles, loading } = useProfiles();
-  const { showDirectory, setShowDirectory, showDirLabel } = useDirectoryVisibility();
+  const { showDirectory, setShowDirectory } = useDirectoryVisibility();
   const showAlpha = useAlphaVisibility(showDirectory);
   const { toastMsg, showToast, closeToast } = useToastMessage();
 
@@ -35,11 +35,12 @@ export default function Directory() {
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
 
-  // sorting/filter states
-  const [verifiedSort, setVerifiedSort] = useState("none");
-  const [nameSort, setNameSort] = useState("none");
-  const [refRankSort, setRefRankSort] = useState("none");
-  const [ageSort, setAgeSort] = useState("none");
+  // multi-filter state
+  const [filters, setFilters] = useState({
+    verified: false,
+    referred: false,
+    ranked: false,
+  });
 
   const searchBarRef = useRef(null);
 
@@ -73,64 +74,40 @@ export default function Directory() {
     return { ...match, good_thru };
   }, [processedProfiles, selectedAddress]);
 
-  const cycle = (state, setter) => {
-    const next = state === "none" ? "asc" : state === "asc" ? "desc" : "none";
-    setter(next);
-  };
-
-  const anySortActive =
-    verifiedSort !== "none" || nameSort !== "none" || refRankSort !== "none" || ageSort !== "none";
-
+  // filter + grouping logic
   const { sorted, grouped, letters } = useMemo(() => {
     let s = [...processedProfiles].filter((p) =>
       p.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    const sorters = [];
-    if (verifiedSort !== "none")
-      sorters.push((a, b) =>
-        verifiedSort === "asc" ? a.verifications - b.verifications : b.verifications - a.verifications
-      );
-    if (nameSort !== "none")
-      sorters.push((a, b) =>
-        nameSort === "asc" ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name)
-      );
-    if (refRankSort !== "none")
-      sorters.push((a, b) =>
-        refRankSort === "asc" ? a.refRank - b.refRank : b.refRank - a.refRank
-      );
-    if (ageSort !== "none")
-      sorters.push((a, b) => {
-        const da = new Date(a.since);
-        const db = new Date(b.since);
-        return ageSort === "asc" ? da - db : db - da;
-      });
-
-    if (sorters.length)
-      s.sort((a, b) => {
-        for (const sortFn of sorters) {
-          const res = sortFn(a, b);
-          if (res !== 0) return res;
-        }
-        return 0;
-      });
-    else s.sort((a, b) => a.name.localeCompare(b.name));
-
-    // only build grouping when no sorts active
-    if (!anySortActive) {
-      const g = s.reduce((acc, p) => {
-        const first = p.name?.[0]?.toUpperCase() || "#";
-        (acc[first] ||= []).push(p);
-        return acc;
-      }, {});
-      const L = Object.keys(g).sort();
-      return { sorted: s, grouped: g, letters: L };
+    // apply filters
+    const { verified, referred, ranked } = filters;
+    if (verified) {
+      s = s.filter((p) => p.address_verified || p.links?.some((l) => l.is_verified));
+    }
+    if (referred) {
+      s = s.filter((p) => !!p.referred_by);
+    }
+    if (ranked) {
+      s = s.filter((p) => p.refRank > 0);
     }
 
-    return { sorted: s, grouped: null, letters: [] };
-  }, [processedProfiles, search, verifiedSort, nameSort, refRankSort, ageSort]);
+    // Default sort by name
+    s.sort((a, b) => a.name.localeCompare(b.name));
+
+    // Group by first letter
+    const g = s.reduce((acc, p) => {
+      const first = p.name?.[0]?.toUpperCase() || "#";
+      (acc[first] ||= []).push(p);
+      return acc;
+    }, {});
+    const L = Object.keys(g).sort();
+
+    return { sorted: s, grouped: g, letters: L };
+  }, [processedProfiles, search, filters]);
 
   const [showLetterGrid, setShowLetterGrid] = useState(false);
+
   const scrollToLetter = (letter) => {
     const el = document.getElementById(`letter-${letter}`);
     if (el) {
@@ -142,14 +119,23 @@ export default function Directory() {
       scrollToLetter._t = setTimeout(() => setActiveLetter(null), 600);
     }
   };
+
   const handleGridSelect = (letter) => {
     setShowLetterGrid(false);
     setTimeout(() => scrollToLetter(letter), 200);
   };
 
-  if (loading) return <p className="text-center mt-8">Loading directory…</p>;
+  const toggleFilter = (key) => {
+    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
 
-  const arrow = (state) => (state === "asc" ? "▲" : state === "desc" ? "▼" : "");
+  const clearFilters = () => {
+    setFilters({ verified: false, referred: false, ranked: false });
+  };
+
+  const anyFilterActive = Object.values(filters).some(Boolean);
+
+  if (loading) return <p className="text-center mt-8">Loading directory…</p>;
 
   return (
     <>
@@ -166,49 +152,44 @@ export default function Directory() {
         {showDirectory && (
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-3 text-sm text-blue-700 flex-wrap">
-              <button
-                onClick={() => setShowStats((s) => !s)}
-                className="hover:underline"
-              >
+              <button onClick={() => setShowStats((s) => !s)} className="hover:underline">
                 {showStats ? "◕ Hide stats" : "◔ Show stats"}
               </button>
 
               <span className="text-gray-400">|</span>
               <span className="text-gray-700">Filter:</span>
-              <button
-                onClick={() => cycle(verifiedSort, setVerifiedSort)}
-                className={`hover:underline ${
-                  verifiedSort !== "none" ? "underline text-blue-700" : "text-blue-700"
-                }`}
-              >
-                Verified {arrow(verifiedSort)}
-              </button>
 
-              <span className="text-gray-400">|</span>
-              <span className="text-gray-700">Sort:</span>
               <button
-                onClick={() => cycle(nameSort, setNameSort)}
+                onClick={clearFilters}
                 className={`hover:underline ${
-                  nameSort !== "none" ? "underline text-blue-700" : "text-blue-700"
+                  !anyFilterActive ? "underline text-blue-700" : "text-blue-700"
                 }`}
               >
-                Name {arrow(nameSort)}
+                All
               </button>
               <button
-                onClick={() => cycle(refRankSort, setRefRankSort)}
+                onClick={() => toggleFilter("verified")}
                 className={`hover:underline ${
-                  refRankSort !== "none" ? "underline text-blue-700" : "text-blue-700"
+                  filters.verified ? "underline text-blue-700" : "text-blue-700"
                 }`}
               >
-                RefRank {arrow(refRankSort)}
+                Verified
               </button>
               <button
-                onClick={() => cycle(ageSort, setAgeSort)}
+                onClick={() => toggleFilter("referred")}
                 className={`hover:underline ${
-                  ageSort !== "none" ? "underline text-blue-700" : "text-blue-700"
+                  filters.referred ? "underline text-blue-700" : "text-blue-700"
                 }`}
               >
-                Age {arrow(ageSort)}
+                Referred
+              </button>
+              <button
+                onClick={() => toggleFilter("ranked")}
+                className={`hover:underline ${
+                  filters.ranked ? "underline text-blue-700" : "text-blue-700"
+                }`}
+              >
+                Ranked
               </button>
             </div>
           </div>
@@ -259,38 +240,51 @@ export default function Directory() {
         {/* Directory List */}
         {showDirectory && (
           <>
-            {sorted.length === 0 ? (
-              <div className="text-center text-gray-400 italic mt-10">
-                No Zcash names match "<span className="text-blue-700">{search}</span>".
-                <br />
-                Maybe it’s time to{" "}
-                <button
-                  onClick={() => setIsJoinOpen(true)}
-                  className="text-blue-700 hover:underline font-medium"
-                >
-                  claim it
-                </button>
-                ?
-              </div>
-            ) : anySortActive ? (
-              // flat sorted list
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                {sorted.map((p) => (
-                  <ProfileCard
-                    key={p.name}
-                    profile={p}
-                    onSelect={(addr) => {
-                      setSelectedAddress(addr);
-                      setShowDirectory(false);
-                      requestAnimationFrame(() =>
-                        window.scrollTo({ top: 0, behavior: "smooth" })
-                      );
-                    }}
-                  />
-                ))}
-              </div>
-            ) : (
-              // grouped view (default)
+{sorted.length === 0 ? (
+  <div className="text-center text-gray-400 italic mt-10">
+    {search ? (
+      <>
+        No Zcash names match "<span className="text-blue-700">{search}</span>".
+        <br />
+        Maybe it’s time to{" "}
+        <button
+          onClick={() => setIsJoinOpen(true)}
+          className="text-blue-700 hover:underline font-medium"
+        >
+          claim it
+        </button>
+        ?
+      </>
+    ) : (
+      <>
+        {(() => {
+          const activeLabels = Object.entries(filters)
+            .filter(([_, v]) => v)
+            .map(([k]) =>
+              k === "verified" ? "Verified" : k === "referred" ? "Referred" : "Ranked"
+            );
+          const labelText =
+            activeLabels.length > 1
+              ? activeLabels.slice(0, -1).join(", ") + " and " + activeLabels.slice(-1)
+              : activeLabels[0];
+          return (
+            <>
+              No Zcash names are {labelText || "filtered out"}.
+              <br />
+              <button
+                onClick={clearFilters}
+                className="text-blue-700 hover:underline font-medium"
+              >
+                Reset filters
+              </button>
+            </>
+          );
+        })()}
+      </>
+    )}
+  </div>
+) : (
+
               letters.map((letter) => (
                 <div key={letter} id={`letter-${letter}`} className="mb-6">
                   <h2
@@ -320,15 +314,12 @@ export default function Directory() {
           </>
         )}
 
-        {/* Sidebar only in alpha view */}
-        {!anySortActive && (
-          <AlphabetSidebar
-            letters={letters}
-            activeLetter={activeLetter}
-            onSelect={scrollToLetter}
-            show={showDirectory && showAlpha}
-          />
-        )}
+        <AlphabetSidebar
+          letters={letters}
+          activeLetter={activeLetter}
+          onSelect={scrollToLetter}
+          show={showDirectory && showAlpha}
+        />
 
         {activeLetter && (
           <div className="fixed right-1/2 top-1/2 -translate-y-1/2 translate-x-1/2 bg-gray-800 text-white text-4xl font-bold rounded-2xl px-6 py-4 opacity-90">

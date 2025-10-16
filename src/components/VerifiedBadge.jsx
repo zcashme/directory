@@ -4,6 +4,7 @@ export default function VerifiedBadge({ verified = true, verifiedCount = 1 }) {
 
   const checksToShow = Math.min(Math.max(verifiedCount, 1), 3); // clamp between 1–3
 
+  // ✅ Updated checkmark path only (matches Copy Uaddr)
   const renderChecks = (color) => (
     <span className="relative flex -space-x-1">
       {[...Array(checksToShow)].map((_, i) => (
@@ -12,13 +13,15 @@ export default function VerifiedBadge({ verified = true, verifiedCount = 1 }) {
           xmlns="http://www.w3.org/2000/svg"
           className={`h-3.5 w-3.5 ${color} drop-shadow-sm`}
           style={{ zIndex: 3 - i }}
-          viewBox="0 0 20 20"
-          fill="currentColor"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
         >
           <path
-            fillRule="evenodd"
-            d="M16.707 5.293a1 1 0 0 1 0 1.414l-7.071 7.071a1 1 0 0 1-1.414 0L3.293 8.85a1 1 0 0 1 1.414-1.414l4.221 4.221 6.364-6.364a1 1 0 0 1 1.415 0z"
-            clipRule="evenodd"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M5 13l4 4L19 7"
           />
         </svg>
       ))}

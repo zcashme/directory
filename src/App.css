@@ -59,3 +59,12 @@ html, body {
   overflow-x: hidden;
 }
 
+/* Prevent profile cards from colliding with alphabet sidebar on narrow screens */
+.profile-card-wrapper {
+  max-width: calc(100% - 2.5rem); /* leaves space for sidebar */
+  margin: 0 auto; /* centers cards */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  overflow: hidden;
+}
