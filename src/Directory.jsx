@@ -223,7 +223,8 @@ if (featured) {
   }`}
 >
   <span>⭐</span> Featured (
-  {processedProfiles.filter((p) => p.featured).length})
+  {processedProfiles.filter((p) => p.featured === true).length}
+)
 </button>
 
             </div>
@@ -349,18 +350,19 @@ const activeLabels = Object.entries(filters)
                   </h2>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     {grouped[letter].map((p) => (
-                      <ProfileCard
-                        key={p.name}
-                        profile={p}
-                        onSelect={(addr) => {
-                          setSelectedAddress(addr);
-                          setShowDirectory(false);
-                          requestAnimationFrame(() =>
-                            window.scrollTo({ top: 0, behavior: "smooth" })
-                          );
-                        }}
-                      />
-                    ))}
+  <ProfileCard
+    key={p.id ?? p.address}
+    profile={p}
+    onSelect={(addr) => {
+      setSelectedAddress(addr);
+      setShowDirectory(false);
+      requestAnimationFrame(() =>
+        window.scrollTo({ top: 0, behavior: "smooth" })
+      );
+    }}
+  />
+))}
+
                   </div>
                 </div>
               ))
