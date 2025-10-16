@@ -43,7 +43,7 @@ const isRanked =
   } else if (isVerified) {
     circleClass = "bg-green-400";
   } else if (isRanked) {
-    circleClass = "bg-orange-300";
+    circleClass = "bg-orange-400";
   }
 else if (hasReferrals) {
   circleClass = "bg-orange-300"; // could be softer orange for general referrers

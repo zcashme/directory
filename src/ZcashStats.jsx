@@ -16,7 +16,7 @@ export default function ZcashStats() {
     async function fetchData() {
       const { data, error } = await supabase
         .from("public_profile")
-        .select("since, status_computed, last_signed_at, referred_by");
+        .select("since, last_signed_at, referred_by");
 
       if (error) {
         console.error("Error fetching data:", error);
