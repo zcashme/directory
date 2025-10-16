@@ -41,7 +41,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
     async function fetchProfiles() {
       const { data, error } = await supabase
-        .from("public_profile")
+        .from("zcasher")
         .select("name")
         .order("name", { ascending: true });
       if (!error && data) setProfiles(data);
@@ -97,19 +97,20 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
     setIsLoading(true);
     try {
-      // ✅ insert only the valid fields from current schema
-      const { data, error } = await supabase
-        .from("public_profile")
-        .insert([
-          {
-            name: name.trim(),
-            address: address.trim(),
-            referred_by: referrer || null,
-            since: new Date().toISOString(),
-          },
-        ])
-        .select()
-        .single();
+// ✅ fix: insert into the real table, not the view
+const { data, error } = await supabase
+  .from("zcasher")
+  .insert([
+    {
+      name: name.trim(),
+      address: address.trim(),
+      referred_by: referrer || null,
+      created_at: new Date().toISOString(),
+    },
+  ])
+  .select()
+  .single();
+
 
       if (error) throw error;
       onUserAdded?.(data);
