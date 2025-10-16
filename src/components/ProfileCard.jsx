@@ -20,21 +20,18 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const verifiedLinks = profile.links?.filter((l) => l.is_verified).length || 0;
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const hasUnverifiedLinks = totalLinks > 0 && verifiedLinks === 0;
-
-  // Shared check icon (matches Copy Uaddr + VerifiedBadge)
-  const CheckIcon = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="inline-block w-3.5 h-3.5 text-green-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
-
+const CheckIcon = (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="inline-block w-3.5 h-3.5 text-green-600"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+    strokeWidth="2"
+  >
+    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+  </svg>
+);
   if (!fullView) {
     // Compact directory card
     return (
@@ -42,7 +39,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         verifiedCount={profile.verified_count}
         onClick={() => {
           onSelect(profile.address);
-          requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "smooth" }));
+          requestAnimationFrame(() =>
+            window.scrollTo({ top: 0, behavior: "smooth" })
+          );
         }}
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
@@ -73,9 +72,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             <span className="text-sm text-gray-500 truncate flex items-center gap-2">
               {(profile.verified_count && profile.verified_count > 0) ||
               profile.status_computed === "claimed" ? (
-                <span className="flex items-center gap-1 text-green-600">
-                  {CheckIcon} Verified
-                </span>
+                <VerifiedBadge
+                  verified={true}
+                  verifiedCount={profile.verified_count || 1}
+                />
               ) : (
                 <span className="text-red-400">Unverified</span>
               )}
@@ -91,23 +91,22 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     );
   }
 
-  // Full vertical profile card
+  // Full expanded vertical profile card
   return (
     <VerifiedCardWrapper
       verifiedCount={profile.verified_count}
-      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg rounded-2xl border border-gray-400 bg-transparent shadow-sm backdrop-blur-sm hover:shadow-md transition-all"
+      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg rounded-2xl border border-gray-400 bg-amber-50 shadow-sm backdrop-blur-sm hover:shadow-md transition-all"
     >
-      {/* Verified/Unverified badge (top-right) */}
+      {/* Verified/Unverified badge in top-right corner */}
       <div className="absolute top-4 right-4">
         {(profile.verified_count && profile.verified_count > 0) ||
         profile.status_computed === "claimed" ? (
-          <span className="flex items-center gap-1 text-green-600 bg-green-50 border border-green-200 rounded-full px-2 py-0.5 text-xs font-semibold">
-            {CheckIcon} Verified
-          </span>
+          <VerifiedBadge
+            verified={true}
+            verifiedCount={profile.verified_count || 1}
+          />
         ) : (
-          <span className="flex items-center gap-1 text-gray-500 bg-gray-100 border border-gray-200 rounded-full px-2 py-0.5 text-xs font-semibold">
-            ✖ Unverified
-          </span>
+          <VerifiedBadge verified={false} />
         )}
       </div>
 
@@ -166,14 +165,15 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           : "NULL"}
       </p>
 
-      {/* Simplified transparent action tray */}
-      <div
-        className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-400 bg-transparent transition-all overflow-hidden mt-5 ${
-          showLinks ? "pb-0" : ""
-        }`}
-      >
-        {/* Action buttons (reordered) */}
-        <div className="p-3 flex flex-wrap justify-center gap-3 border-b border-gray-400 w-full">
+      {/* Unified Action + Links Tray */}
+     <div
+  className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-transparent/60 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
+    showLinks ? "pb-0" : ""
+  }`}
+>
+
+        {/* Action Buttons */}
+        <div className="p-3 flex flex-wrap justify-center gap-3 border-b border-gray-200 w-full">
           <CopyButton text={profile.address} label="Copy Uaddr" />
 
           <button
@@ -190,6 +190,13 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             className="flex items-center justify-center gap-1 border rounded-xl px-3 h-8 py-1.5 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
           >
             ▣ Show QR
+          </button>
+
+          <button
+            onClick={() => setShowLinks(!showLinks)}
+            className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
+          >
+            {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
           </button>
 
           <button
@@ -216,22 +223,15 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           >
             ⇪ Share
           </button>
-
-          <button
-            onClick={() => setShowLinks(!showLinks)}
-            className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-          >
-            {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
-          </button>
         </div>
 
-        {/* Links Tray (attached visually) */}
+        {/* Links Tray (visually attached to action tray) */}
         <div
           className={`w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden ${
             showLinks ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
           }`}
         >
-          <div className="px-4 pt-2 pb-3 bg-transparent border-t border-gray-400 flex flex-col gap-2">
+          <div className="px-4 pt-2 pb-3 bg-white/70 border-t border-gray-200 flex flex-col gap-2">
             {profile.links && profile.links.length > 0 ? (
               profile.links.map((link) => (
                 <a
@@ -243,14 +243,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 >
                   <span className="truncate flex items-center gap-2">
                     {link.label || link.url}
-                    {link.is_verified && (
-                      <span className="flex items-center gap-1 text-green-600 text-xs">
-                        {CheckIcon} Verified
-                      </span>
-                    )}
-                    {!link.is_verified && (
-                      <span className="text-gray-400 text-xs">Unverified</span>
-                    )}
+                    <VerifiedBadge verified={link.is_verified} />
                   </span>
                   <span className="text-gray-400 text-xs">⇱</span>
                 </a>
@@ -264,33 +257,34 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         </div>
       </div>
 
-      {/* Warning (unchanged) */}
-      {warning && (
-        <div
-          className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${
-            hasVerifiedContent
-              ? "text-green-600 bg-green-50 border-green-200"
-              : hasUnverifiedLinks
-              ? "text-gray-800 bg-yellow-50 border-yellow-200"
-              : "text-red-500 bg-red-50 border-red-200"
-          }`}
-        >
-          {hasVerifiedContent ? (
-            <>
-              <span className="inline-flex items-center gap-1">
-                {CheckIcon}
-                <strong>{profile.name}</strong> appears to be verified.
-              </span>
-            </>
-          ) : hasUnverifiedLinks ? (
-            <>
-              ⚠ <strong>{profile.name}</strong> has contributed links, but none are verified.
-            </>
-          ) : (
-            <>
-              ✖ <strong>{profile.name}</strong> may not be who you think.
-            </>
-          )}
+      {/* Centered Dynamic Warning */}
+{warning && (
+  <div
+    className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${
+      hasVerifiedContent
+        ? "text-green-600 bg-green-50 border-green-200"
+        : hasUnverifiedLinks
+        ? "text-gray-800 bg-yellow-50 border-yellow-200"
+        : "text-red-500 bg-red-50 border-red-200"
+    }`}
+  >
+    {hasVerifiedContent ? (
+      <>
+        <span className="inline-flex items-center gap-1">
+          {CheckIcon}  {/* ✅ this is the fix */}
+          <strong>{profile.name}</strong> appears to be verified.
+        </span>
+      </>
+    ) : hasUnverifiedLinks ? (
+      <>
+        ⚠ <strong>{profile.name}</strong> has contributed links, but none are verified.
+      </>
+    ) : (
+      <>
+        ✖ <strong>{profile.name}</strong> may not be who you think.
+      </>
+    )}
+
 
           <button
             onClick={() => setShowDetail(!showDetail)}

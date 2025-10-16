@@ -240,50 +240,65 @@ export default function Directory() {
         {/* Directory List */}
         {showDirectory && (
           <>
-{sorted.length === 0 ? (
-  <div className="text-center text-gray-400 italic mt-10">
-    {search ? (
-      <>
-        No Zcash names match "<span className="text-blue-700">{search}</span>".
-        <br />
-        Maybe it’s time to{" "}
-        <button
-          onClick={() => setIsJoinOpen(true)}
-          className="text-blue-700 hover:underline font-medium"
-        >
-          claim it
-        </button>
-        ?
-      </>
-    ) : (
-      <>
-        {(() => {
-          const activeLabels = Object.entries(filters)
-            .filter(([_, v]) => v)
-            .map(([k]) =>
-              k === "verified" ? "Verified" : k === "referred" ? "Referred" : "Ranked"
-            );
-          const labelText =
-            activeLabels.length > 1
-              ? activeLabels.slice(0, -1).join(", ") + " and " + activeLabels.slice(-1)
-              : activeLabels[0];
-          return (
+{sorted.length === 0 ? (() => {
+  const activeLabels = Object.entries(filters)
+    .filter(([_, v]) => v)
+    .map(([k]) =>
+      k === "verified" ? "Verified" : k === "referred" ? "Referred" : "Ranked"
+    );
+
+  const labelText =
+    activeLabels.length > 1
+      ? activeLabels.slice(0, -1).join(", ") + " and " + activeLabels.slice(-1)
+      : activeLabels[0];
+
+  const filterSummary =
+    activeLabels.length > 0
+      ? ` who are ${labelText}`
+      : "";
+
+  return (
+    <div className="text-center text-gray-400 italic mt-10">
+      {search ? (
+        <>
+          No Zcash names match "<span className="text-blue-700">{search}</span>"
+          {filterSummary}.
+          <br />
+          {activeLabels.length > 0 ? (
+            <button
+              onClick={clearFilters}
+              className="text-blue-700 hover:underline font-medium"
+            >
+              Reset the filters
+            </button>
+          ) : (
             <>
-              No Zcash names are {labelText || "filtered out"}.
-              <br />
+              Maybe it’s time to{" "}
               <button
-                onClick={clearFilters}
+                onClick={() => setIsJoinOpen(true)}
                 className="text-blue-700 hover:underline font-medium"
               >
-                Reset filters
+                claim it
               </button>
+              ?
             </>
-          );
-        })()}
-      </>
-    )}
-  </div>
-) : (
+          )}
+        </>
+      ) : (
+        <>
+          No Zcash names are {labelText || "filtered out"}.
+          <br />
+          <button
+            onClick={clearFilters}
+            className="text-blue-700 hover:underline font-medium"
+          >
+            Reset filters
+          </button>
+        </>
+      )}
+    </div>
+  );
+})() : (
 
               letters.map((letter) => (
                 <div key={letter} id={`letter-${letter}`} className="mb-6">
