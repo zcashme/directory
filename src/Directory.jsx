@@ -286,9 +286,9 @@ if (featured) {
   href="https://zcash.me/zechariah"
   target="_blank"
   rel="noopener noreferrer"
-  className="ml-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm hover:from-blue-500 hover:to-blue-400 transition-all"
+  className="ml-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm hover:from-blue-500 hover:to-blue-400 transition-all"
 >
-  💚 Donate
+  💚 Feedback
 </a>
             </div>
           </div>
