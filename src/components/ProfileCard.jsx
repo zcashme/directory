@@ -15,48 +15,52 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const { setSelectedAddress, setForceShowQR } = useFeedback();
 
   // Derive trust states
-// Derive trust states (consistent with verified badge logic)
-const verifiedAddress = !!profile.address_verified;
-const verifiedLinks = profile.verified_links_count ?? (profile.links?.filter(l => l.is_verified).length || 0);
-const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
-const hasUnverifiedLinks = (profile.total_links ?? profile.links?.length ?? 0) > 0 && verifiedLinks === 0;
+  // Derive trust states (consistent with verified badge logic)
+  const verifiedAddress = !!profile.address_verified;
+  const totalLinks = profile.total_links ?? (profile.links?.length || 0); // ✅ fix added here
+  const verifiedLinks =
+    profile.verified_links_count ??
+    (profile.links?.filter((l) => l.is_verified).length || 0);
+  const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
+  const hasUnverifiedLinks =
+    (profile.total_links ?? profile.links?.length ?? 0) > 0 &&
+    verifiedLinks === 0;
 
-const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
+  const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
 
-// Use the unified logic for colors
-const isVerified = totalVerifications > 0;
-const isRanked = (profile.referral_rank ?? profile.refRank ?? 0) > 0;
+  // Use the unified logic for colors
+  const isVerified = totalVerifications > 0;
+  const isRanked = (profile.referral_rank ?? profile.refRank ?? 0) > 0;
 
+  let circleClass = "bg-blue-400";
+  if (isVerified && isRanked) {
+    circleClass = "bg-gradient-to-b from-green-400 to-orange-400"; // vertical split
+  } else if (isVerified) {
+    circleClass = "bg-green-400";
+  } else if (isRanked) {
+    circleClass = "bg-orange-400";
+  }
 
-let circleClass = "bg-blue-400";
-if (isVerified && isRanked) {
-  circleClass = "bg-gradient-to-b from-green-400 to-orange-400"; // vertical split
-} else if (isVerified) {
-  circleClass = "bg-green-400";
-} else if (isRanked) {
-  circleClass = "bg-orange-400";
-}
+  const CheckIcon = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="inline-block w-3.5 h-3.5 text-green-600"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth="2"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+    </svg>
+  );
 
-
-const CheckIcon = (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="inline-block w-3.5 h-3.5 text-green-600"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-    strokeWidth="2"
-  >
-    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-  </svg>
-);
   if (!fullView) {
     // Compact directory card
     return (
       <VerifiedCardWrapper
-  verifiedCount={profile.verified_links_count ?? 0}
-  featured={profile.featured}
-  onClick={() => {
+        verifiedCount={profile.verified_links_count ?? 0}
+        featured={profile.featured}
+        onClick={() => {
           onSelect(profile.address);
           requestAnimationFrame(() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
@@ -65,7 +69,9 @@ const CheckIcon = (
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
-          <div className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${circleClass}`}>
+          <div
+            className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${circleClass}`}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               className="w-6 h-6 text-blue-700"
@@ -79,8 +85,8 @@ const CheckIcon = (
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
               {profile.name}
               {profile.referral_rank > 0 && (
-  <ReferRankBadge rank={profile.referral_rank} />
-)}
+                <ReferRankBadge rank={profile.referral_rank} />
+              )}
               {isNewProfile(profile) && (
                 <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
                   NEW
@@ -89,17 +95,18 @@ const CheckIcon = (
             </span>
 
             <span className="text-sm text-gray-500 truncate flex items-center gap-2">
-             {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) ? (
-  <VerifiedBadge
-    verified={true}
-    verifiedCount={
-      (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
-    }
-  />
-) : (
-  <span className="text-red-400">Unverified</span>
-)}
-
+              {profile.address_verified ||
+              (profile.verified_links_count ?? 0) > 0 ? (
+                <VerifiedBadge
+                  verified={true}
+                  verifiedCount={
+                    (profile.verified_links_count ?? 0) +
+                    (profile.address_verified ? 1 : 0)
+                  }
+                />
+              ) : (
+                <span className="text-red-400">Unverified</span>
+              )}
               • Joined{" "}
               {new Date(profile.since).toLocaleString("default", {
                 month: "short",
@@ -115,31 +122,33 @@ const CheckIcon = (
   // Full expanded vertical profile card
   return (
     <VerifiedCardWrapper
-  verifiedCount={
-    (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
-  }
-  featured={profile.featured}
-  className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
->
-
-      {/* Verified/Unverified badge in top-right corner */}
-{/* Verified/Unverified badge in top-right corner */}
-<div className="absolute top-4 right-4">
-  {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) ? (
-    <VerifiedBadge
-      verified={true}
       verifiedCount={
-        (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
+        (profile.verified_links_count ?? 0) +
+        (profile.address_verified ? 1 : 0)
       }
-    />
-  ) : (
-    <VerifiedBadge verified={false} />
-  )}
-</div>
-
+      featured={profile.featured}
+      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
+    >
+      {/* Verified/Unverified badge in top-right corner */}
+      <div className="absolute top-4 right-4">
+        {profile.address_verified ||
+        (profile.verified_links_count ?? 0) > 0 ? (
+          <VerifiedBadge
+            verified={true}
+            verifiedCount={
+              (profile.verified_links_count ?? 0) +
+              (profile.address_verified ? 1 : 0)
+            }
+          />
+        ) : (
+          <VerifiedBadge verified={false} />
+        )}
+      </div>
 
       {/* Avatar */}
-      <div className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm ${circleClass}`}>
+      <div
+        className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm ${circleClass}`}
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="w-10 h-10 text-blue-700"
@@ -166,8 +175,8 @@ const CheckIcon = (
       {/* Referrer badge */}
       <div className="mt-2 flex flex-col items-center justify-center gap-1">
         {profile.referral_rank > 0 && (
-  <ReferRankBadge rank={profile.referral_rank} />
-)}
+          <ReferRankBadge rank={profile.referral_rank} />
+        )}
       </div>
 
       {/* Dates */}
@@ -194,12 +203,11 @@ const CheckIcon = (
       </p>
 
       {/* Unified Action + Links Tray */}
-     <div
-  className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-transparent/60 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
-    showLinks ? "pb-0" : ""
-  }`}
->
-
+      <div
+        className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-transparent/60 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
+          showLinks ? "pb-0" : ""
+        }`}
+      >
         {/* Action Buttons */}
         <div className="p-3 flex flex-wrap justify-center gap-3 border-b border-gray-200 w-full">
           <CopyButton text={profile.address} label="Copy Uaddr" />
@@ -249,8 +257,6 @@ const CheckIcon = (
           >
             {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
           </button>
-
-
         </div>
 
         {/* Links Tray (visually attached to action tray) */}
@@ -286,33 +292,33 @@ const CheckIcon = (
       </div>
 
       {/* Centered Dynamic Warning */}
-{warning && (
-  <div
-    className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${
-      hasVerifiedContent
-        ? "text-green-600 bg-green-50 border-green-200"
-        : hasUnverifiedLinks
-        ? "text-gray-800 bg-yellow-50 border-yellow-200"
-        : "text-red-500 bg-red-50 border-red-200"
-    }`}
-  >
-    {hasVerifiedContent ? (
-      <>
-        <span className="inline-flex items-center gap-1">
-          {CheckIcon}  {/* ✅ this is the fix */}
-          <strong>{profile.name}</strong> appears to be verified.
-        </span>
-      </>
-    ) : hasUnverifiedLinks ? (
-      <>
-        ⚠ <strong>{profile.name}</strong> has contributed links, but none are verified.
-      </>
-    ) : (
-      <>
-        ✖ <strong>{profile.name}</strong> may not be who you think.
-      </>
-    )}
-
+      {warning && (
+        <div
+          className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${
+            hasVerifiedContent
+              ? "text-green-600 bg-green-50 border-green-200"
+              : hasUnverifiedLinks
+              ? "text-gray-800 bg-yellow-50 border-yellow-200"
+              : "text-red-500 bg-red-50 border-red-200"
+          }`}
+        >
+          {hasVerifiedContent ? (
+            <>
+              <span className="inline-flex items-center gap-1">
+                {CheckIcon} {/* ✅ this is the fix */}
+                <strong>{profile.name}</strong> appears to be verified.
+              </span>
+            </>
+          ) : hasUnverifiedLinks ? (
+            <>
+              ⚠ <strong>{profile.name}</strong> has contributed links, but none
+              are verified.
+            </>
+          ) : (
+            <>
+              ✖ <strong>{profile.name}</strong> may not be who you think.
+            </>
+          )}
 
           <button
             onClick={() => setShowDetail(!showDetail)}

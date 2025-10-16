@@ -14,13 +14,15 @@ export default function useProfiles() {
     setLoading(true);
 
     supabase
-      .from("zcasher_with_referral_rank")
-      .select("*")
+.from("public_profile")
+.select("*, links:zcasher_links(id, label, url, is_verified, created_at)")
+
       .order("name", { ascending: true })
       .then(({ data, error }) => {
         if (!active) return;
-        if (error) console.error("Error loading profiles:", error);
-        else {
+        if (error) {
+          console.error("Error loading profiles:", error);
+        } else {
           cachedProfiles = data;
           setProfiles(data);
         }
