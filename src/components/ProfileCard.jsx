@@ -77,17 +77,26 @@ else if (hasReferrals) {
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
-          <div
-            className={`flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center ${circleClass}`}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-6 h-6 text-blue-700"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            />
-          </div>
+        <div className={`relative mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${circleClass}`}>
+  {/* background color circle */}
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="w-10 h-10 text-blue-700 opacity-20"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  />
+
+  {/* overlayed profile image if available */}
+  {profile.profile_image_url && (
+    <img
+      src={profile.profile_image_url}
+      alt={`${profile.name}'s profile`}
+      className="absolute inset-0 w-full h-full object-contain"
+    />
+  )}
+</div>
+
 
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
@@ -154,17 +163,28 @@ else if (hasReferrals) {
       </div>
 
       {/* Avatar */}
-      <div
-        className={`mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm ${circleClass}`}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-10 h-10 text-blue-700"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        />
-      </div>
+<div className={`relative mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${circleClass}`}>
+  {/* Base gradient / color circle */}
+  
+  {/* Overlayed transparent profile image */}
+  {profile.profile_image_url ? (
+    <img
+      src={profile.profile_image_url}
+      alt={`${profile.name}'s profile`}
+      className="absolute inset-0 w-full h-full object-contain"
+      draggable="false"
+    />
+  ) : (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-10 h-10 text-blue-700 opacity-50"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    />
+  )}
+</div>
+
 
       {/* Name */}
       <h2 className="mt-3 text-2xl font-bold text-gray-800">{profile.name}</h2>
