@@ -223,74 +223,92 @@ if (featured) {
 
         {showDirectory && (
           <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3 text-sm text-blue-700 flex-wrap">
-              <button onClick={() => setShowStats((s) => !s)} className="hover:underline">
-                {showStats ? "◕ Hide stats" : "◔ Show stats"}
-              </button>
+     <div className="flex items-center gap-3 text-sm flex-wrap">
+  {/* Filter toggles */}
+  <div className="flex items-center flex-wrap gap-2">
+    {/* All */}
+    <button
+      onClick={clearFilters}
+      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+        !anyFilterActive
+          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+          : "bg-transparent text-blue-700 border-blue-400 hover:bg-blue-50"
+      }`}
+    >
+      🔵 All ({profiles.length})
+    </button>
 
-              <span className="text-gray-400">|</span>
-{/* Filter bar */}
-<span className="text-gray-700 text-sm mr-1"></span>
+    {/* Verified */}
+    <button
+      onClick={() => toggleFilter("verified")}
+      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+        filters.verified
+          ? "bg-green-600 text-white border-green-600 shadow-sm"
+          : "bg-transparent text-green-700 border-green-400 hover:bg-green-50"
+      }`}
+    >
+      🟢 Verified (
+      {
+        profiles.filter(
+          (p) => p.address_verified || p.links?.some((l) => l.is_verified)
+        ).length
+      }
+      )
+    </button>
+
+    {/* Ranked */}
+    <button
+      onClick={() => toggleFilter("ranked")}
+      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+        filters.ranked
+          ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+          : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
+      }`}
+    >
+      🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
+    </button>
+
+    {/* Featured */}
+    <button
+      onClick={() => toggleFilter("featured")}
+      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+        filters.featured
+          ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-sm"
+          : "bg-transparent text-yellow-700 border-yellow-400 hover:bg-yellow-50"
+      }`}
+    >
+      ⭐ Featured ({processedProfiles.filter((p) => p.featured).length})
+    </button>
+
+  {/* Spacer */}
 
 
-<button
-  onClick={clearFilters}
-  className={`transition-all ${
-    !anyFilterActive
-      ? "underline underline-offset-4 text-blue-700"
-      : "text-blue-700 hover:underline hover:underline-offset-4"
-  }`}
->
-  🔵 All ({profiles.length})
-</button>
+  {/* Show stats (moved to end) */}
+  <button
+    onClick={() => setShowStats((s) => !s)}
+    className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+      showStats
+        ? "bg-gray-700 text-white border-gray-700 shadow-sm"
+        : "bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
+    }`}
+  >
+    {showStats ? "◕ Hide stats" : "◔ Show stats"}
+  </button>
 
-<button
-  onClick={() => toggleFilter("verified")}
-  className={`transition-all ${
-    filters.verified
-      ? "underline underline-offset-4 text-blue-700"
-      : "text-blue-700 hover:underline hover:underline-offset-4"
-  }`}
->
-  🟢 Verified (
-  {
-    profiles.filter(
-      (p) => p.address_verified || p.links?.some((l) => l.is_verified)
-    ).length
-  }
-  )
-</button>
-
-<button
-  onClick={() => toggleFilter("ranked")}
-  className={`transition-all ${
-    filters.ranked
-      ? "underline underline-offset-4 text-blue-700"
-      : "text-blue-700 hover:underline hover:underline-offset-4"
-  }`}
->
-🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
-</button>
-<button
-  onClick={() => toggleFilter("featured")}
-  className={`hover:underline flex items-center gap-1 ${
-    filters.featured ? "underline text-blue-700" : "text-blue-700"
-  }`}
->
-  <span>⭐</span> Featured (
-  {processedProfiles.filter((p) => p.featured === true).length}
-)
-</button>
-{/* Donate button */}
+    {/* Feedback (unchanged) */}
 <a
-  href="https://zcash.me/zechariah"
-  target="_blank"
-  rel="noopener noreferrer"
-  className="ml-3 bg-gradient-to-r from-blue-400 to-blue-500 text-white px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm hover:from-blue-500 hover:to-blue-400 transition-all"
+  href="/Zechariah"
+  className="px-2 py-0.5 rounded-full border text-xs font-medium transition-all
+             bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
 >
-  💚 Feedback
+  ⚑ Feedback
 </a>
-            </div>
+
+
+  </div>
+
+
+</div>
           </div>
         )}
 

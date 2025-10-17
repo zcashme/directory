@@ -77,22 +77,31 @@ else if (hasReferrals) {
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
-        <div className={`relative mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${circleClass}`}>
-  {/* background color circle */}
+<div
+  className={`relative flex-shrink-0 rounded-full overflow-hidden shadow-sm ${circleClass}`}
+style={{
+  width: fullView ? "80px" : "45px",
+  height: fullView ? "80px" : "45px",
+  aspectRatio: "1 / 1",
+}}
+
+>
+  {/* Optional background icon for empty */}
   <svg
     xmlns="http://www.w3.org/2000/svg"
-    className="w-10 h-10 text-blue-700 opacity-20"
+    className="absolute inset-0 w-full h-full text-blue-700 opacity-20"
     fill="none"
     viewBox="0 0 24 24"
     stroke="currentColor"
   />
 
-  {/* overlayed profile image if available */}
+  {/* Overlayed profile image if available */}
   {profile.profile_image_url && (
     <img
       src={profile.profile_image_url}
       alt={`${profile.name}'s profile`}
       className="absolute inset-0 w-full h-full object-contain"
+      draggable="false"
     />
   )}
 </div>
@@ -111,25 +120,27 @@ else if (hasReferrals) {
               )}
             </span>
 
-            <span className="text-sm text-gray-500 truncate flex items-center gap-2">
-              {profile.address_verified ||
-              (profile.verified_links_count ?? 0) > 0 ? (
-                <VerifiedBadge
-                  verified={true}
-                  verifiedCount={
-                    (profile.verified_links_count ?? 0) +
-                    (profile.address_verified ? 1 : 0)
-                  }
-                />
-              ) : (
-                <span className="text-red-400">Unverified</span>
-              )}
-              • Joined{" "}
-              {new Date(profile.since).toLocaleString("default", {
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
+           <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-snug">
+  {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) ? (
+    <VerifiedBadge
+      verified={true}
+      verifiedCount={
+        (profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)
+      }
+    />
+  ) : (
+    <span className="text-red-400">Unverified</span>
+  )}
+  <span className="text-gray-400">•</span>
+  <span>
+    Joined{" "}
+    {new Date(profile.since).toLocaleString("default", {
+      month: "short",
+      year: "numeric",
+    })}
+  </span>
+</div>
+
           </div>
         </div>
       </VerifiedCardWrapper>
