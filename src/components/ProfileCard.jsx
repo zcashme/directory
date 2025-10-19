@@ -13,7 +13,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [linksShown, setLinksShown] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showBack, setShowBack] = useState(false);
-const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const { setSelectedAddress, setForceShowQR } = useFeedback();
 
@@ -169,65 +169,70 @@ const [menuOpen, setMenuOpen] = useState(false);
         {/* FRONT SIDE */}
         <div className="backface-hidden">
           {/* Top-left more menu */}
-{/* Top-left action: flip toggle button */}
-{/* FRONT SIDE BUTTON (⋮) */}
-<div className="absolute top-4 left-4 z-10 backface-hidden">
-<div className="relative">
-  <button
-    onClick={(e) => {
-      e.stopPropagation();
-      setMenuOpen((prev) => !prev);
-    }}
-    className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-    title="More options"
-  >
-    ☰
-  </button>
+          <div className="absolute top-4 left-4 z-10 backface-hidden">
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpen((prev) => !prev);
+                }}
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                title="More options"
+              >
+                ☰
+              </button>
 
-  {/* Dropdown Menu */}
-  {menuOpen && (
-    <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-      <button
-        onClick={() => {
-          setShowStats(true);
-          setShowLinks(false);
-          setMenuOpen(false);
-        }}
-        className="w-full text-left px-4 py-2 hover:bg-blue-50"
-      >
-        ◔ Show Stats
-      </button>
-      <button
-        onClick={() => {
-          setShowBack(true);
-          setMenuOpen(false);
-        }}
-        className="w-full text-left px-4 py-2 hover:bg-blue-50"
-      >
-        ✎ Edit Card
-      </button>
-    </div>
-  )}
-</div>
+              {/* Dropdown Menu */}
+              {menuOpen && (
+                <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
+                  {!showStats ? (
+                    <button
+                      onClick={() => {
+                        setShowStats(true);
+                        setShowLinks(false);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
+                    >
+                      ◔ Show Stats
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        setShowStats(false);
+                        setMenuOpen(false);
+                      }}
+                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
+                    >
+                      ◕ Hide Stats
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      setShowBack(true);
+                      setMenuOpen(false);
+                    }}
+                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
+                  >
+                    ✎ Edit Card
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
-</div>
-
-{/* BACK SIDE BUTTON (⟲) */}
-<div className="absolute top-4 left-4 z-10 rotate-y-180 backface-hidden">
-{/* Back button positioned top-left, same look as trigram */}
-<div className="absolute top-4 left-4">
-  <button
-    onClick={() => setShowBack(false)}
-    title="Return to front"
-    className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-  >
-    <span className="text-lg leading-none select-none">⟲</span>
-  </button>
-</div>
-
-</div>
-
-
+          {/* BACK SIDE BUTTON (⟲) */}
+          <div className="absolute top-4 left-4 z-10 rotate-y-180 backface-hidden">
+            <div className="absolute top-4 left-4">
+              <button
+                onClick={() => setShowBack(false)}
+                title="Return to front"
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              >
+                <span className="text-lg leading-none select-none">⟲</span>
+              </button>
+            </div>
+          </div>
 
           {/* Top-right verified badge */}
           <div className="absolute top-4 right-4">
@@ -288,7 +293,7 @@ const [menuOpen, setMenuOpen] = useState(false);
             )}
           </div>
 
-          {/* Dates (referral summary moved into STATS tray) */}
+          {/* Dates */}
           <p className="mt-3 text-xs text-gray-500">
             Joined{" "}
             {new Date(profile.since).toLocaleString("default", {
@@ -313,11 +318,11 @@ const [menuOpen, setMenuOpen] = useState(false);
 
           {/* Action tray */}
           <div
-            className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-transparent/60 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
-              showLinks || showStats ? "pb-0" : ""
+            className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
+              showLinks ? "pb-0" : ""
             }`}
           >
-            {/* Buttons (two rows by wrapping) */}
+            {/* Buttons */}
             <div className="p-3 flex flex-wrap justify-center gap-3 border-b border-gray-200 w-full">
               <CopyButton text={profile.address} label="Copy Uaddr" />
 
@@ -337,70 +342,67 @@ const [menuOpen, setMenuOpen] = useState(false);
                 ▣ Show QR
               </button>
 
-<button
-  onClick={() => {
-    const shareUrl = `${window.location.origin}/${profile.name
-      .normalize("NFKC")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "")}`;
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `${profile.name} on Zcash.me`,
-          text: "Check out this Zcash profile:",
-          url: shareUrl,
-        })
-        .catch(() => {});
-    } else {
-      navigator.clipboard.writeText(shareUrl);
-    }
-  }}
-  className="flex items-center justify-center gap-2 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-  aria-label={`Share ${profile.name}`}
->
-  {/* Custom share SVG (three nodes connected) */}
-{/* Custom share SVG (rotated -90° for correct orientation) */}
-<svg
-  xmlns="http://www.w3.org/2000/svg"
-  width="16"
-  height="16"
-  viewBox="0 0 24 24"
-  fill="none"
-  className="inline-block transform -rotate-90"
->
-  <circle cx="6.5" cy="17.5" r="2" fill="currentColor" />
-  <circle cx="17.5" cy="17.5" r="2" fill="currentColor" />
-  <circle cx="12" cy="6.5" r="2" fill="currentColor" />
-  <path
-    d="M12 8.5v6.5"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
-  <path
-    d="M6.5 15.5l5.2-4.5"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
-  <path
-    d="M17.5 15.5l-5.2-4.5"
-    stroke="currentColor"
-    strokeWidth="1.5"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-  />
-</svg>
+              {/* Share */}
+              <button
+                onClick={() => {
+                  const shareUrl = `${window.location.origin}/${profile.name
+                    .normalize("NFKC")
+                    .trim()
+                    .toLowerCase()
+                    .replace(/\s+/g, "_")
+                    .replace(/[^a-z0-9_]/g, "")}`;
+                  if (navigator.share) {
+                    navigator
+                      .share({
+                        title: `${profile.name} on Zcash.me`,
+                        text: "Check out this Zcash profile:",
+                        url: shareUrl,
+                      })
+                      .catch(() => {});
+                  } else {
+                    navigator.clipboard.writeText(shareUrl);
+                  }
+                }}
+                className="flex items-center justify-center gap-2 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
+                aria-label={`Share ${profile.name}`}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="inline-block transform -rotate-90"
+                >
+                  <circle cx="6.5" cy="17.5" r="2" fill="currentColor" />
+                  <circle cx="17.5" cy="17.5" r="2" fill="currentColor" />
+                  <circle cx="12" cy="6.5" r="2" fill="currentColor" />
+                  <path
+                    d="M12 8.5v6.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M6.5 15.5l5.2-4.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                  <path
+                    d="M17.5 15.5l-5.2-4.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="ml-1">Share</span>
+              </button>
 
-  <span className="ml-1">Share</span>
-</button>
-
-
-              {/* Show Links Button */}
+              {/* Show Links */}
               <button
                 onClick={() => {
                   setShowLinks((prev) => !prev);
@@ -410,14 +412,14 @@ const [menuOpen, setMenuOpen] = useState(false);
               >
                 {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
               </button>
-
-
             </div>
 
-            {/* Shared expandable tray (Links or Stats) */}
+            {/* Expandable tray */}
             <div
               className={`w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden ${
-                showLinks || showStats ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"
+                showLinks || showStats
+                  ? "max-h-[500px] opacity-100"
+                  : "max-h-0 opacity-0"
               }`}
             >
               <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
@@ -445,7 +447,9 @@ const [menuOpen, setMenuOpen] = useState(false);
                               {link.url.replace(/^https?:\/\//, "")}
                             </a>
                             <button
-                              onClick={() => navigator.clipboard.writeText(link.url)}
+                              onClick={() =>
+                                navigator.clipboard.writeText(link.url)
+                              }
                               title="Copy link"
                               className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
                             >
@@ -468,11 +472,24 @@ const [menuOpen, setMenuOpen] = useState(false);
                       <p className="font-medium">
                         Referred {profile.referral_count} User
                         {profile.referral_count !== 1 ? "s" : ""}{" "}
-                        {isRanked ? `(${ordinal(profile.referral_rank)})` : ""}
+                        {isRanked
+                          ? `(${ordinal(
+                              profile.referral_rank
+                            )} place, all-time)`
+                          : ""}
                       </p>
                     )}
                     <p className="italic text-gray-600">
-                      More stats coming soon for <strong>{profile.name}</strong>…
+                      More stats coming soon for{" "}
+                      <strong>{profile.name}</strong>…
+                    </p>
+
+                    {/* NEW Close link */}
+                    <p
+                      onClick={() => setShowStats(false)}
+                      className="mt-2 text-xs font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer transition-opacity duration-300"
+                    >
+                      Close
                     </p>
                   </div>
                 )}
@@ -480,7 +497,7 @@ const [menuOpen, setMenuOpen] = useState(false);
             </div>
           </div>
 
-          {/* Warning (kept OUTSIDE the expandable tray) */}
+          {/* Warning */}
           {warning && (
             <div
               className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${
@@ -498,8 +515,8 @@ const [menuOpen, setMenuOpen] = useState(false);
                 </span>
               ) : hasUnverifiedLinks ? (
                 <>
-                  ⚠ <strong>{profile.name}</strong> has contributed links, but none
-                  are verified.
+                  ⚠ <strong>{profile.name}</strong> has contributed links, but
+                  none are verified.
                 </>
               ) : (
                 <>
@@ -541,20 +558,21 @@ const [menuOpen, setMenuOpen] = useState(false);
 
         {/* BACK SIDE placeholder */}
         <div className="absolute inset-0 rotate-y-180 backface-hidden flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-300 shadow-inner">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">More Options</h3>
+          <h3 className="text-lg font-semibold text-gray-700 mb-2">
+            More Options
+          </h3>
           <p className="text-sm text-gray-500 mb-4">(Coming soon…)</p>
-{/* Move the Back button to the top-right corner */}
-<div className="absolute top-4 left-4 z-10">
-  <button
-    onClick={() => setShowBack(false)}   // flip back to front
-    title="Return to front"
-    aria-label="Return to front"
-    className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
-  >
-    ⟲
-  </button>
-</div>
 
+          <div className="absolute top-4 left-4 z-10">
+            <button
+              onClick={() => setShowBack(false)}
+              title="Return to front"
+              aria-label="Return to front"
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
+            >
+              ⟲
+            </button>
+          </div>
         </div>
       </div>
 
