@@ -40,7 +40,7 @@ const [filters, setFilters] = useState({
   verified: false,
   referred: false,
   ranked: false,
-  featured: false,
+  featured: true, // default to featured profiles
 });
 
 
@@ -248,16 +248,28 @@ if (featured) {
      <div className="flex items-center gap-3 text-sm flex-wrap">
   {/* Filter toggles */}
   <div className="flex items-center flex-wrap gap-2">
-    {/* All */}
+    {/* Featured */}
     <button
-      onClick={clearFilters}
+      onClick={() => toggleFilter("featured")}
       className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
-        !anyFilterActive
-          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
-          : "bg-transparent text-blue-700 border-blue-400 hover:bg-blue-50"
+        filters.featured
+          ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-sm"
+          : "bg-transparent text-yellow-700 border-yellow-400 hover:bg-yellow-50"
       }`}
     >
-      🔵 All ({profiles.length})
+      ⭐ Featured ({processedProfiles.filter((p) => p.featured).length})
+    </button>
+    
+    {/* Ranked */}
+    <button
+      onClick={() => toggleFilter("ranked")}
+      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
+        filters.ranked
+          ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+          : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
+      }`}
+    >
+      🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
     </button>
 
     {/* Verified */}
@@ -278,29 +290,19 @@ if (featured) {
       )
     </button>
 
-    {/* Ranked */}
+    {/* All */}
     <button
-      onClick={() => toggleFilter("ranked")}
+      onClick={clearFilters}
       className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
-        filters.ranked
-          ? "bg-orange-500 text-white border-orange-500 shadow-sm"
-          : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
+        !anyFilterActive
+          ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+          : "bg-transparent text-blue-700 border-blue-400 hover:bg-blue-50"
       }`}
     >
-      🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
+      🔵 All ({profiles.length})
     </button>
 
-    {/* Featured */}
-    <button
-      onClick={() => toggleFilter("featured")}
-      className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${
-        filters.featured
-          ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-sm"
-          : "bg-transparent text-yellow-700 border-yellow-400 hover:bg-yellow-50"
-      }`}
-    >
-      ⭐ Featured ({processedProfiles.filter((p) => p.featured).length})
-    </button>
+
 
   {/* Spacer */}
 
@@ -313,6 +315,8 @@ if (featured) {
         ? "bg-gray-700 text-white border-gray-700 shadow-sm"
         : "bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
     }`}
+    
+    
   >
     {showStats ? "◕ Hide stats" : "◔ Show stats"}
   </button>
