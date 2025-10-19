@@ -28,6 +28,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [profiles, setProfiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
   const dialogRef = useRef(null);
 
   useEffect(() => {
@@ -42,7 +43,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     async function fetchProfiles() {
       const { data, error } = await supabase
         .from("zcasher")
-        .select("name")
+        .select("id, name, address_verified, zcasher_links(is_verified)")
         .order("name", { ascending: true });
       if (!error && data) setProfiles(data);
     }
@@ -83,52 +84,44 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       return;
     }
 
-    // create slug for local use (not inserted)
     const slug = name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
-
-    // store links locally for now (until a column exists)
     const validLinks = links
       .map((l) => l.url.trim())
       .filter((url) => url && isValidUrl(url));
 
-setIsLoading(true);
-try {
-  // 1️⃣ Insert new profile
-  const { data: profile, error: profileError } = await supabase
-    .from("zcasher")
-    .insert([
-      {
-        name: name.trim(),
-        address: address.trim(),
-        referred_by: referrer || null,
-        created_at: new Date().toISOString(),
-      },
-    ])
-    .select()
-    .single();
+    setIsLoading(true);
+    try {
+      // 1️⃣ Insert new profile
+      const { data: profile, error: profileError } = await supabase
+        .from("zcasher")
+        .insert([
+          {
+            name: name.trim(),
+            address: address.trim(),
+            referred_by: referrer || null,
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
 
-  if (profileError) throw profileError;
+      if (profileError) throw profileError;
 
-  // 2️⃣ Insert profile links into zcasher_links
-  const validLinks = links
-    .map((l) => l.url.trim())
-    .filter((url) => url && isValidUrl(url));
+      // 2️⃣ Insert profile links into zcasher_links
+      for (const url of validLinks) {
+        await supabase.from("zcasher_links").insert([
+          {
+            zcasher_id: profile.id,
+            label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+            url,
+            is_verified: false,
+          },
+        ]);
+      }
 
-  for (const url of validLinks) {
-    await supabase.from("zcasher_links").insert([
-      {
-        zcasher_id: profile.id,
-        label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""), // quick readable label
-        url,
-        is_verified: false,
-      },
-    ]);
-  }
-
-  // 3️⃣ Done
-  onUserAdded?.(profile);
-  onClose?.();
-
+      // 3️⃣ Done
+      onUserAdded?.(profile);
+      onClose?.();
     } catch (err) {
       console.error("Add name failed:", err);
       setError(err?.message || "Failed to add name.");
@@ -142,7 +135,9 @@ try {
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onClose();
+        }}
       />
 
       {/* Modal */}
@@ -152,7 +147,7 @@ try {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
-          <h2 className="text-lg font-semibold text-gray-800"> Zcash is better with friends</h2>
+          <h2 className="text-lg font-semibold text-gray-800">Zcash is better with friends</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
@@ -206,54 +201,63 @@ try {
             />
           </div>
 
-          {/* Referrer Dropdown */}
-{/* Referrer Searchable Input */}
-<div className="relative">
-  <label
-    htmlFor="referrer"
-    className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
-  >
-    Referred by Zcash.me/
-  </label>
+          {/* Referrer Searchable Input */}
+          <div className="relative">
+            <label
+              htmlFor="referrer"
+              className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
+            >
+              Referred by Zcash.me/
+            </label>
 
-  <input
-    id="referrer"
-    type="text"
-    value={referrer}
-    onChange={(e) => setReferrer(e.target.value)}
-    placeholder="Type to search..."
-    className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
-    autoComplete="off"
-  />
+            <input
+              id="referrer"
+              type="text"
+              value={referrer}
+              onChange={(e) => {
+                setReferrer(e.target.value);
+                setShowDropdown(true);
+              }}
+              placeholder="Type to search..."
+              className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
+              autoComplete="off"
+            />
 
-  {/* Filtered suggestion list */}
-  {referrer && (
-    <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
-      {profiles
-        .filter((p) =>
-          p.name.toLowerCase().includes(referrer.toLowerCase())
-        )
-        .slice(0, 20)
-        .map((p) => (
-          <div
-            key={p.name}
-            onClick={() => setReferrer(p.name)}
-            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-          >
-            {p.name}
+            {/* Filtered suggestion list */}
+            {showDropdown && referrer && (
+              <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
+                {profiles
+                  .filter((p) =>
+                    p.name.toLowerCase().includes(referrer.toLowerCase())
+                  )
+                  .slice(0, 20)
+                  .map((p) => (
+                    <div
+                      key={p.name}
+                      onClick={() => {
+                        setReferrer(p.name);
+                        setShowDropdown(false);
+                      }}
+                      className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer flex items-center gap-1"
+                    >
+                      {p.name}
+                      {(p.address_verified ||
+                        p.zcasher_links?.some((l) => l.is_verified)) && (
+                        <span title="Verified" className="text-green-600">✔</span>
+                      )}
+                    </div>
+                  ))}
+                {!profiles.some((p) =>
+                  p.name.toLowerCase().includes(referrer.toLowerCase())
+                ) && (
+                  <div className="px-3 py-2 text-sm text-gray-500">
+                    No matches found
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-        ))}
-      {!profiles.some((p) =>
-        p.name.toLowerCase().includes(referrer.toLowerCase())
-      ) && (
-        <div className="px-3 py-2 text-sm text-gray-500">
-          No matches found
-        </div>
-      )}
-    </div>
-  )}
-</div>
-  
+
           {/* Links Section */}
           <div>
             <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
