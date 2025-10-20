@@ -1,10 +1,14 @@
-﻿import { useState } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
 import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadge from "./ReferRankBadge";
+
+// Caching and CDN settings
+const CDN_PROXY_URL = import.meta.env.VITE_CDN_PROXY_URL || "";
+const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const [showLinks, setShowLinks] = useState(false);
@@ -14,6 +18,61 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showDetail, setShowDetail] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+// image cache and lazy load setup
+const imgRef = useRef(null);
+const [visible, setVisible] = useState(false);
+
+const rawUrl = profile.profile_image_url || "";
+const versionSuffix = profile.last_signed_at
+  ? `?v=${encodeURIComponent(profile.last_signed_at)}`
+  : profile.created_at
+  ? `?v=${encodeURIComponent(profile.created_at)}`
+  : "";
+const finalUrl = rawUrl + versionSuffix;
+
+console.log("Profile image URL for", profile.name, "=>", finalUrl);
+
+
+useEffect(() => {
+  // Always make visible for fullView or if already cached
+  if (fullView || memoryCache.has(finalUrl)) {
+    setVisible(true);
+    return;
+  }
+
+  // Ensure we have a ref
+  const el = imgRef.current;
+  if (!el || !finalUrl) {
+    setVisible(true); // fallback: always show
+    return;
+  }
+
+  // Fallback if browser doesn't support IntersectionObserver
+  if (typeof IntersectionObserver === "undefined") {
+    setVisible(true);
+    return;
+  }
+
+  // Lazy-load observer
+  const obs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          memoryCache.set(finalUrl, true);
+          obs.disconnect();
+        }
+      });
+    },
+    { rootMargin: "200px", threshold: 0.05 } // preload earlier
+  );
+
+  obs.observe(el);
+
+  return () => obs.disconnect();
+}, [finalUrl, fullView]);
+
+
 
   const { setSelectedAddress, setForceShowQR } = useFeedback();
 
@@ -100,14 +159,21 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               viewBox="0 0 24 24"
               stroke="currentColor"
             />
-            {profile.profile_image_url && (
-              <img
-                src={profile.profile_image_url}
-                alt={`${profile.name}'s profile`}
-                className="absolute inset-0 w-full h-full object-contain"
-                draggable="false"
-              />
-            )}
+{/* Optimized lazy-loading profile image */}
+{profile.profile_image_url && (
+  <img
+    ref={imgRef}
+    src={finalUrl}
+    alt={`${profile.name}'s profile`}
+    className="absolute inset-0 w-full h-full object-contain"
+    draggable="false"
+    loading="lazy"
+    decoding="async"
+    referrerPolicy="no-referrer"
+  />
+)}
+
+
           </div>
 
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
@@ -254,14 +320,20 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           <div
             className={`relative mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${circleClass}`}
           >
-            {profile.profile_image_url ? (
-              <img
-                src={profile.profile_image_url}
-                alt={`${profile.name}'s profile`}
-                className="absolute inset-0 w-full h-full object-contain"
-                draggable="false"
-              />
-            ) : (
+{/* Optimized lazy-loading profile image */}
+{visible && profile.profile_image_url ? (
+  <img
+    ref={imgRef}
+    src={finalUrl}
+    alt={`${profile.name}'s profile`}
+    className="absolute inset-0 w-full h-full object-contain"
+    draggable="false"
+    loading="lazy"
+    decoding="async"
+    referrerPolicy="no-referrer"
+  />
+) : (
+
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="w-10 h-10 text-blue-700 opacity-50"
@@ -556,24 +628,90 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           )}
         </div>
 
-        {/* BACK SIDE placeholder */}
-        <div className="absolute inset-0 rotate-y-180 backface-hidden flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm rounded-2xl p-6 border border-gray-300 shadow-inner">
-          <h3 className="text-lg font-semibold text-gray-700 mb-2">
-            More Options
-          </h3>
-          <p className="text-sm text-gray-500 mb-4">(Coming soon…)</p>
+{/* BACK SIDE (editable and animated) */}
+<div
+  className="absolute inset-0 rotate-y-180 backface-hidden flex flex-col items-center justify-start bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 transition-all duration-500 ease-in-out overflow-hidden"
+>
+  {/* Flip-back button */}
+  <div className="absolute top-4 left-4 z-10">
+    <button
+      onClick={() => setShowBack(false)}
+      title="Return to front"
+      aria-label="Return to front"
+      className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
+    >
+      ⟲
+    </button>
+  </div>
 
-          <div className="absolute top-4 left-4 z-10">
+  <h3 className="text-lg font-semibold text-gray-700 mb-3">Edit Profile</h3>
+
+  {/* Animated inner tray */}
+  <div
+    className="w-full max-w-sm bg-white/70 rounded-xl border border-gray-200 shadow-sm p-4 text-left text-sm text-gray-800 overflow-hidden transition-[max-height] duration-500 ease-in-out"
+    style={{ maxHeight: showBack ? "800px" : "0px" }}
+  >
+    {[
+      { key: "name", label: "Name", value: profile.name || "" },
+      { key: "bio", label: "Bio", value: profile.bio || "" },
+      {
+        key: "profile_image_url",
+        label: "Profile Image URL",
+        value: profile.profile_image_url || "",
+      },
+      {
+        key: "links",
+        label: "Links (comma-separated)",
+        value: (profile.links || []).map((l) => l.url).join(", "),
+      },
+    ].map((field) => {
+      const [editing, setEditing] = useState(false);
+      return (
+        <div key={field.key} className="mb-3">
+          <div className="flex items-center justify-between">
+            <label className="font-semibold text-gray-700">{field.label}</label>
             <button
-              onClick={() => setShowBack(false)}
-              title="Return to front"
-              aria-label="Return to front"
-              className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
+              onClick={() => setEditing((prev) => !prev)}
+              className="text-xs text-blue-600 hover:underline"
             >
-              ⟲
+              {editing ? "Save" : "✎ Edit"}
             </button>
           </div>
+
+          {editing ? (
+            field.key === "bio" ? (
+              <textarea
+                rows={3}
+                defaultValue={field.value}
+                onChange={(e) =>
+                  useFeedback().setPendingEdit(field.key, e.target.value)
+                }
+                className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+              />
+            ) : (
+              <input
+                type="text"
+                defaultValue={field.value}
+                onChange={(e) =>
+                  useFeedback().setPendingEdit(field.key, e.target.value)
+                }
+                className="w-full mt-1 border rounded-lg px-3 py-2 text-sm font-mono"
+              />
+            )
+          ) : (
+            <p className="mt-1 text-gray-600 break-all">
+              {field.value || <span className="italic text-gray-400">empty</span>}
+            </p>
+          )}
         </div>
+      );
+    })}
+
+    <p className="text-xs text-gray-400 mt-2">
+      (Changes are tracked locally and reflected instantly in your sign-in form.)
+    </p>
+  </div>
+</div>
       </div>
 
       <style>{`
