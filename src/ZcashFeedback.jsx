@@ -49,7 +49,7 @@ function MemoCounter({ text }) {
     <p className={`text-xs text-right ${over ? "text-red-600" : "text-gray-400"}`}>
       {over
         ? `Over limit by ${-remaining} bytes (512 max)`
-        : `${remaining} bytes remaining`}
+        : `+${remaining} bytes`}
     </p>
   );
 }
