@@ -5,6 +5,178 @@ import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadge from "./ReferRankBadge";
+import ProfileEditor from "./ProfileEditor";
+
+import { motion } from "framer-motion";
+
+function EditableField({ label, value, fieldKey, multiline }) {
+  const { setPendingEdit } = useFeedback();
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(value);
+
+  return (
+    <motion.div layout className="mb-3">
+      <div className="flex items-center justify-between">
+        <label className="font-semibold text-gray-700">{label}</label>
+        <button
+          onClick={() => {
+            if (editing) setPendingEdit(fieldKey, draft);
+            setEditing(!editing);
+          }}
+          className="text-xs text-blue-600 hover:underline"
+        >
+          {editing ? "Save" : "✎ Edit"}
+        </button>
+      </div>
+
+      {editing ? (
+        multiline ? (
+          <textarea
+            rows={3}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+          />
+        ) : (
+          <input
+            type="text"
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm font-mono"
+          />
+        )
+      ) : (
+        <p className="mt-1 text-gray-600 break-all">
+          {value || <span className="italic text-gray-400">empty</span>}
+        </p>
+      )}
+    </motion.div>
+  );
+}
+
+function EditableLinks({ links }) {
+  const { setPendingEdit } = useFeedback();
+  const [linkList, setLinkList] = useState(
+    links.length > 0 ? links.map((l) => ({ id: l.id || null, url: l.url })) : []
+  );
+
+  const handleChange = (index, value) => {
+    const updated = [...linkList];
+    updated[index].url = value;
+    setLinkList(updated);
+    setPendingEdit(
+      "links",
+      updated.map((l) => l.url)
+    );
+  };
+
+  const addLink = () => {
+    const updated = [...linkList, { id: null, url: "" }];
+    setLinkList(updated);
+  };
+
+  const removeLink = (index) => {
+    const updated = linkList.filter((_, i) => i !== index);
+    setLinkList(updated);
+    setPendingEdit(
+      "links",
+      updated.map((l) => l.url)
+    );
+  };
+
+  return (
+    <motion.div layout className="mt-4">
+      <label className="font-semibold text-gray-700 block mb-2">Links</label>
+      {linkList.map((link, index) => (
+        <motion.div
+          layout
+          key={index}
+          className="flex items-center gap-2 mb-2"
+          transition={{ layout: { duration: 0.3 } }}
+        >
+          <input
+            type="text"
+            value={link.url}
+            onChange={(e) => handleChange(index, e.target.value)}
+            placeholder="https://example.com"
+            className="flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono border-gray-300 focus:border-blue-500"
+          />
+          {link.id ? (
+            <span className="text-gray-400 text-xs">saved</span>
+          ) : (
+            <button
+              onClick={() => removeLink(index)}
+              className="text-xs text-red-600 hover:underline"
+            >
+              ✖ Remove
+            </button>
+          )}
+        </motion.div>
+      ))}
+      <button
+        onClick={addLink}
+        className="text-sm font-semibold text-blue-700 hover:underline mt-1"
+      >
+        ＋ Add Link
+      </button>
+    </motion.div>
+  );
+}
+
+
+function LinkEditor() {
+  const { setPendingEdit, pendingEdits } = useFeedback();
+  const [newLinks, setNewLinks] = useState([]);
+
+  const handleLinkChange = (index, value) => {
+    const updated = [...newLinks];
+    updated[index].url = value;
+    updated[index].valid = !value || /^https?:\/\//.test(value);
+    setNewLinks(updated);
+    const validLinks = updated.filter((l) => l.valid && l.url);
+    setPendingEdit(
+      "new_links",
+      validLinks.map((l) => l.url)
+    );
+  };
+
+  const addLink = () => setNewLinks([...newLinks, { url: "", valid: true }]);
+  const removeLink = (i) =>
+    setNewLinks(newLinks.filter((_, idx) => idx !== i));
+
+  return (
+    <div>
+      {newLinks.map((link, index) => (
+        <div key={index} className="flex items-center gap-2 mb-2">
+          <input
+            type="text"
+            value={link.url}
+            onChange={(e) => handleLinkChange(index, e.target.value)}
+            placeholder="https://example.com"
+            className={`flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono ${
+              link.valid
+                ? "border-gray-300 focus:border-blue-500"
+                : "border-red-400 focus:border-red-500"
+            }`}
+          />
+          <button
+            onClick={() => removeLink(index)}
+            className="text-xs text-red-600 hover:underline"
+          >
+            ✖ Remove
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={addLink}
+        className="text-sm font-semibold text-blue-700 hover:underline mt-1"
+      >
+        ＋ Add Link
+      </button>
+    </div>
+  );
+}
+
 
 // Caching and CDN settings
 const CDN_PROXY_URL = import.meta.env.VITE_CDN_PROXY_URL || "";
@@ -227,13 +399,21 @@ useEffect(() => {
       featured={profile.featured}
       className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
     >
-      <div
-        className={`relative transition-transform duration-500 transform-style-preserve-3d ${
-          showBack ? "rotate-y-180" : ""
-        }`}
-      >
+<div
+  className={`relative transition-transform duration-500 transform-style-preserve-3d ${
+    showBack ? "rotate-y-180" : ""
+  }`}
+  style={{
+    position: "relative",
+    height: "auto",
+    transformOrigin: "top center",
+  }}
+>
+
         {/* FRONT SIDE */}
-        <div className="backface-hidden">
+<div
+  className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
+>
           {/* Top-left more menu */}
           <div className="absolute top-4 left-4 z-10 backface-hidden">
             <div className="relative">
@@ -628,11 +808,12 @@ useEffect(() => {
           )}
         </div>
 
-{/* BACK SIDE (editable and animated) */}
+{/* BACK SIDE (auto-expand editable) */}
 <div
-  className="absolute inset-0 rotate-y-180 backface-hidden flex flex-col items-center justify-start bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 transition-all duration-500 ease-in-out overflow-hidden"
+  className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${
+    showBack ? "relative h-auto" : ""
+  } bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 flex flex-col items-center justify-start overflow-visible`}
 >
-  {/* Flip-back button */}
   <div className="absolute top-4 left-4 z-10">
     <button
       onClick={() => setShowBack(false)}
@@ -645,73 +826,10 @@ useEffect(() => {
   </div>
 
   <h3 className="text-lg font-semibold text-gray-700 mb-3">Edit Profile</h3>
-
-  {/* Animated inner tray */}
-  <div
-    className="w-full max-w-sm bg-white/70 rounded-xl border border-gray-200 shadow-sm p-4 text-left text-sm text-gray-800 overflow-hidden transition-[max-height] duration-500 ease-in-out"
-    style={{ maxHeight: showBack ? "800px" : "0px" }}
-  >
-    {[
-      { key: "name", label: "Name", value: profile.name || "" },
-      { key: "bio", label: "Bio", value: profile.bio || "" },
-      {
-        key: "profile_image_url",
-        label: "Profile Image URL",
-        value: profile.profile_image_url || "",
-      },
-      {
-        key: "links",
-        label: "Links (comma-separated)",
-        value: (profile.links || []).map((l) => l.url).join(", "),
-      },
-    ].map((field) => {
-      const [editing, setEditing] = useState(false);
-      return (
-        <div key={field.key} className="mb-3">
-          <div className="flex items-center justify-between">
-            <label className="font-semibold text-gray-700">{field.label}</label>
-            <button
-              onClick={() => setEditing((prev) => !prev)}
-              className="text-xs text-blue-600 hover:underline"
-            >
-              {editing ? "Save" : "✎ Edit"}
-            </button>
-          </div>
-
-          {editing ? (
-            field.key === "bio" ? (
-              <textarea
-                rows={3}
-                defaultValue={field.value}
-                onChange={(e) =>
-                  useFeedback().setPendingEdit(field.key, e.target.value)
-                }
-                className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
-              />
-            ) : (
-              <input
-                type="text"
-                defaultValue={field.value}
-                onChange={(e) =>
-                  useFeedback().setPendingEdit(field.key, e.target.value)
-                }
-                className="w-full mt-1 border rounded-lg px-3 py-2 text-sm font-mono"
-              />
-            )
-          ) : (
-            <p className="mt-1 text-gray-600 break-all">
-              {field.value || <span className="italic text-gray-400">empty</span>}
-            </p>
-          )}
-        </div>
-      );
-    })}
-
-    <p className="text-xs text-gray-400 mt-2">
-      (Changes are tracked locally and reflected instantly in your sign-in form.)
-    </p>
-  </div>
+  <ProfileEditor profile={profile} />
 </div>
+
+
       </div>
 
       <style>{`
