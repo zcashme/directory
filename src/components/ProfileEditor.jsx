@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useFeedback } from "../store";
 
 // Simple character counter (replaces old byte logic)
@@ -19,18 +19,51 @@ function CharCounter({ text }) {
 
 export default function ProfileEditor({ profile }) {
   const { setPendingEdit } = useFeedback();
+
+  // ✅ all fields start empty
   const [form, setForm] = useState({
-    address: profile.address || "",
-    name: profile.name || "",
-    bio: profile.bio || "",
-    profile_image_url: profile.profile_image_url || "",
-    links: profile.links?.map((l) => l.url) || [""],
+    address: "",
+    name: "",
+    bio: "",
+    profile_image_url: "",
+    links: profile.links?.map(() => "") || [""],
   });
 
-  // Auto-sync pending edits to store
-  useEffect(() => {
-    setPendingEdit("profile", form);
-  }, [form, setPendingEdit]);
+  // keep originals for placeholder display
+  const originals = useMemo(
+    () => ({
+      address: profile.address || "",
+      name: profile.name || "",
+      bio: profile.bio || "",
+      profile_image_url: profile.profile_image_url || "",
+      links: profile.links?.map((l) => l.url) || [],
+    }),
+    [profile]
+  );
+
+  // ✅ only include changed fields in pendingEdits (guarded to avoid render loop)
+useEffect(() => {
+  const changed = {};
+
+  Object.entries(form).forEach(([key, value]) => {
+    if (key === "links") {
+      const diffLinks = value.filter(
+        (v, i) => v && v.trim() !== "" && v !== originals.links[i]
+      );
+      if (diffLinks.length > 0) changed.links = diffLinks;
+    } else if (value && value.trim() !== "" && value !== originals[key]) {
+      changed[key] = value;
+    }
+  });
+
+  // Compare to last pending edit snapshot to avoid infinite loops
+  const changedStr = JSON.stringify(changed);
+  if (ProfileEditor._lastPending !== changedStr) {
+    ProfileEditor._lastPending = changedStr;
+    setPendingEdit("profile", changed);
+  }
+}, [form, originals, setPendingEdit]);
+
 
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -61,8 +94,9 @@ export default function ProfileEditor({ profile }) {
         <input
           type="text"
           value={form.address}
+          placeholder={originals.address}
           onChange={(e) => handleChange("address", e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 font-mono text-sm"
+          className="w-full border rounded-lg px-3 py-2 font-mono text-sm placeholder-gray-400"
         />
       </div>
 
@@ -72,8 +106,9 @@ export default function ProfileEditor({ profile }) {
         <input
           type="text"
           value={form.name}
+          placeholder={originals.name}
           onChange={(e) => handleChange("name", e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm"
+          className="w-full border rounded-lg px-3 py-2 text-sm placeholder-gray-400"
         />
       </div>
 
@@ -86,8 +121,9 @@ export default function ProfileEditor({ profile }) {
           rows={3}
           maxLength={100}
           value={form.bio}
+          placeholder={originals.bio}
           onChange={(e) => handleChange("bio", e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm resize-none pr-16"
+          className="border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative text-left whitespace-pre-wrap break-words"
         />
         <CharCounter text={form.bio} />
       </div>
@@ -100,8 +136,9 @@ export default function ProfileEditor({ profile }) {
         <input
           type="text"
           value={form.profile_image_url}
+          placeholder={originals.profile_image_url}
           onChange={(e) => handleChange("profile_image_url", e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 text-sm font-mono"
+          className="w-full border rounded-lg px-3 py-2 text-sm font-mono placeholder-gray-400"
         />
       </div>
 
@@ -113,9 +150,9 @@ export default function ProfileEditor({ profile }) {
             <input
               type="text"
               value={url}
+              placeholder={originals.links[i] || "https://example.com"}
               onChange={(e) => handleLinkChange(i, e.target.value)}
-              placeholder="https://example.com"
-              className="flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono border-gray-300 focus:border-blue-500"
+              className="flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono border-gray-300 focus:border-blue-500 placeholder-gray-400"
             />
             {form.links.length > 1 && (
               <button
@@ -138,7 +175,8 @@ export default function ProfileEditor({ profile }) {
       </div>
 
       <p className="text-xs text-gray-400">
-        (Changes auto-save locally and update your sign-in form in real time.)
+        To apply these changes to your profile, submit the Verification Request
+        below.
       </p>
     </div>
   );

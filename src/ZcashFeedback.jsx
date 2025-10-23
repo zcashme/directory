@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { QRCodeCanvas } from "qrcode.react";
 import { useFeedback } from "./store";
+import useProfiles from "./hooks/useProfiles";
 
 /* -------------------------------------------------------
    Constants
@@ -10,6 +11,8 @@ import { useFeedback } from "./store";
 const SIGNIN_ADDR =
   "u1qzt502u9fwh67s7an0e202c35mm0h534jaa648t4p2r6mhf30guxjjqwlkmvthahnz5myz2ev7neff5pmveh54xszv9njcmu5g2eent82ucpd3lwyzkmyrn6rytwsqefk475hl5tl4tu8yehc0z8w9fcf4zg6r03sq7lldx0uxph7c0lclnlc4qjwhu2v52dkvuntxr8tmpug3jntvm";
 const MIN_SIGNIN_AMOUNT = 0.0005;
+
+
 
 /* -------------------------------------------------------
    Helpers
@@ -30,14 +33,54 @@ function isValidZcashAddress(addr = "") {
   return typeof addr === "string" && prefixes.some((p) => addr.startsWith(p));
 }
 
-function getSignInMemoText(userAddr = "") {
-  return `
+/* -------------------------------------------------------
+   Build Compact Edit Memo
+------------------------------------------------------- */
+function buildZcashEditMemo(profile = {}, zid = "?", addr = "") {
+  // Compact field mappings
+  const fieldMap = {
+    name: "n",
+    bio: "b",
+    profile_image_url: "i",
+    links: "l",
+  };
 
-  --- Do not modify below! ---
-ZM! Sign-in code request for
-${userAddr}
-`;
+  // Filter out blank values
+  const clean = Object.fromEntries(
+    Object.entries(profile).filter(([_, v]) => {
+      if (Array.isArray(v)) return v.some((x) => x && x.trim() !== "");
+      return v !== "" && v !== null && v !== undefined;
+    })
+  );
+
+  // Detect if user actually changed the address (and it’s not blank)
+  const includeAddress = "address" in clean && clean.address.trim() !== "";
+
+  // Build compact list
+  const compactPairs = Object.entries(clean)
+    .filter(([k]) => k !== "address") // handle address separately
+    .map(([key, value]) => {
+      const shortKey = fieldMap[key] || key;
+      if (Array.isArray(value)) {
+        return `${shortKey}:[${value
+          .filter((x) => x && x.trim() !== "")
+          .map((x) => `"${x}"`)
+          .join(",")}]`;
+      }
+      return `${shortKey}:"${value}"`;
+    });
+
+  // 🧩 Construct final payload
+  const payload =
+    compactPairs.length > 0 || includeAddress
+      ? `{z:${zid}${
+          includeAddress ? `,a:"${clean.address.trim()}"` : ""
+        }${compactPairs.length ? `,${compactPairs.join(",")}` : ""}}`
+      : "No changes detected.";
+
+  return payload;
 }
+
 
 function MemoCounter({ text }) {
   const rawBytes = new TextEncoder().encode(text).length;
@@ -58,12 +101,13 @@ function MemoCounter({ text }) {
    Component
 ------------------------------------------------------- */
 export default function ZcashFeedback({ compact = false }) {
-  const [profiles, setProfiles] = useState([]);
+   const [activeZId, setActiveZId] = useState(null);
+const [profiles, setProfiles] = useState([]);
   const [manualAddress, setManualAddress] = useState("");
 // Independent values for each mode
 const [draftAmount, setDraftAmount] = useState("");
 const [draftMemo, setDraftMemo] = useState("");
-const [signInMemo, setSignInMemo] = useState(getSignInMemoText());
+const [signInMemo, setSignInMemo] = useState("pro:{}");
 const [signInAmount, setSignInAmount] = useState("0.001");
 // Derived display values based on mode
 const [mode, setMode] = useState("note");
@@ -88,11 +132,35 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
 
 
   const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useFeedback();
+// 🔄 Bring in the same cached profiles used by the Directory
+const { profiles: cachedProfiles } = useProfiles();
+
+// ✅ Auto-sync selected profile when navigating to /[user]
+useEffect(() => {
+  // Look for an active card in the DOM (ProfileCard full view)
+  const activeCard = document.querySelector('[data-active-profile]');
+  if (activeCard) {
+    const addr = activeCard.getAttribute('data-address');
+    if (addr && addr !== selectedAddress) {
+      setSelectedAddress(addr);
+    }
+  }
+}, [setSelectedAddress, selectedAddress]);
+
+  const { pendingEdits } = useFeedback();
 
   const showNotice = (msg) => {
     setToastMsg(msg);
     setShowToast(true);
   };
+
+  useEffect(() => {
+  if (import.meta.env.DEV && selectedAddress) {
+    console.log(
+      `💬 ZcashFeedback linked: selectedAddress=${selectedAddress}`
+    );
+  }
+}, [selectedAddress]);
 
   /* -----------------------------------------------------
      Sign-in quick action
@@ -100,8 +168,13 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
   const handleSignIn = () => {
     const userAddr =
       selectedAddress === "other" ? manualAddress.trim() : selectedAddress || "(unknown)";
-    const memoText = getSignInMemoText(userAddr);
-
+    
+    const memoText = buildZcashEditMemo(
+  pendingEdits?.profile || {},
+  activeZId ?? "?",
+  addr
+);
+ 
     const params = new URLSearchParams();
     params.set("address", SIGNIN_ADDR);
     params.set("amount", MIN_SIGNIN_AMOUNT.toFixed(3));
@@ -121,6 +194,61 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
   /* -----------------------------------------------------
      Effects
   ----------------------------------------------------- */
+  // Listen for the flip event to switch to sign-in mode and load edits
+// ✅ Enhanced flip handling with Supabase ID and address sync
+// ✅ Enhanced flip handling with Supabase ID, address, and verification sync
+useEffect(() => {
+  // If this component loads after a flip already happened, restore last known details
+if (window.lastZcashFlipDetail) {
+  const { zId, address, name, verified } = window.lastZcashFlipDetail;
+  if (zId && address) {
+    setActiveZId(zId);
+    setSelectedAddress(address);
+    setMode("signin");
+  }
+}
+
+  const updateMemo = (zId = null, addr = "", name = "", verified = false) => {
+    if (mode !== "signin") return;
+
+    const memoText = buildZcashEditMemo(
+      pendingEdits?.profile || {},
+      zId ?? "?",
+      addr
+    );
+    setSignInMemo(memoText);
+  };
+
+  const handleFlip = (e) => {
+    const zId = e.detail?.zId ?? null;
+    const addr = e.detail?.address ?? "";
+    const name = e.detail?.name ?? "";
+    const verified = e.detail?.verified ?? false;
+
+    // console.log("🪪 Received enterSignInMode →", { zId, addr, name, verified });
+window.lastZcashFlipDetail = { zId, address: addr, name, verified };
+
+    setMode("signin");
+    setActiveZId(zId);
+    setSelectedAddress(addr);
+    updateMemo(zId, addr, name, verified);
+  };
+
+  window.addEventListener("enterSignInMode", handleFlip);
+  return () => window.removeEventListener("enterSignInMode", handleFlip);
+}, []);
+
+
+// ✅ Listen for card rotating back → switch to Draft mode automatically
+useEffect(() => {
+  const handleDraftMode = () => {
+    setMode("note");
+    setForceShowQR(false);
+  };
+  window.addEventListener("enterDraftMode", handleDraftMode);
+  return () => window.removeEventListener("enterDraftMode", handleDraftMode);
+}, []);
+
   useEffect(() => {
     if (showDraft && (memo.trim() || amount.trim())) {
       setShowEditLabel(true);
@@ -130,29 +258,61 @@ const [showSigninWarning, setShowSigninWarning] = useState(false);
   }, [showDraft, memo, amount]);
 // 🔧 INSERT THIS EFFECT (keeps everything else unchanged)
 useEffect(() => {
-  // compute the user's address to show inside the memo
-  const addr =
-    selectedAddress === "other"
-      ? (manualAddress || "").trim()
-      : (selectedAddress || "");
+  if (mode !== "signin") return;
 
-  // only update the sign-in memo when you're actually in sign-in mode,
-  // otherwise leave the draft memo untouched
-  if (mode === "signin") {
-    setSignInMemo(getSignInMemoText(addr || "(unknown)"));
+  // ensure we have zId and address before building the memo
+  let zId = activeZId;
+  let addr = selectedAddress;
+
+  // fallback to event detail cache if missing
+  if ((!zId || !addr) && window.lastZcashFlipDetail) {
+    zId = window.lastZcashFlipDetail.zId;
+    addr = window.lastZcashFlipDetail.address;
   }
-}, [mode, selectedAddress, manualAddress]);
 
-  useEffect(() => {
-    async function fetchProfiles() {
-      const { data, error } = await supabase
-        .from("public_profile")
-        .select("name, address")
-        .order("name", { ascending: true });
-      if (!error && data) setProfiles(data);
+  const memoText = buildZcashEditMemo(
+    pendingEdits?.profile || {},
+    zId ?? "?",
+    addr
+  );
+  setSignInMemo(memoText);
+}, [pendingEdits, mode]);
+
+
+useEffect(() => {
+  async function fetchProfiles() {
+    const { data, error } = await supabase
+      .from("zcasher")
+      .select(`
+        id,
+        name,
+        address,
+        bio,
+        profile_image_url,
+        featured,
+        slug,
+        referred_by,
+        address_verified,
+        links:zcasher_links(
+          id,
+          label,
+          url,
+          is_verified,
+          created_at
+        )
+      `)
+      .order("name", { ascending: true });
+
+    if (error) {
+      console.error("Error loading profiles in ZcashFeedback:", error);
+    } else if (data) {
+      setProfiles(data);
     }
-    fetchProfiles();
-  }, []);
+  }
+  fetchProfiles();
+}, []);
+
+
 
   useEffect(() => {
     const handleScroll = () => {
@@ -166,13 +326,7 @@ useEffect(() => {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-useEffect(() => {
-  if (mode === "signin") return;
-  const addr = selectedAddress === "other" ? manualAddress : selectedAddress;
-  if (!addr) return;
-  if (addr.startsWith("t")) setDraftMemo("N/A");
-  else if (draftMemo === "N/A") setDraftMemo("");
-}, [mode, selectedAddress, manualAddress]);
+
 
 
   useEffect(() => {
@@ -263,12 +417,14 @@ useEffect(() => {
         {/* Toggle */}
         <div className="flex justify-center items-center mb-2 relative">
           <div className="absolute -top-10 left-1/2 -translate-x-1/2 transform">
-           <div className="inline-flex border border-gray-300 rounded-full overflow-hidden text-sm shadow-sm">
+ <div className="inline-flex border border-gray-300 rounded-full overflow-hidden text-sm shadow-sm">
+  {/* 🧭 Draft Button */}
   <button
     onClick={() => {
       setMode("note");
       setForceShowQR(false);
-      // Do not clear or overwrite draft fields
+      // ✅ Tell the card to flip to FRONT
+      window.dispatchEvent(new CustomEvent("enterDraftMode"));
     }}
     className={`px-3 py-1 font-medium transition-colors ${
       mode === "note"
@@ -279,12 +435,34 @@ useEffect(() => {
     ✎ Draft
   </button>
 
+  {/* 🔐 Sign In Button */}
   <button
     onClick={() => {
       setMode("signin");
       setForceShowQR(true);
       setShowFull(false);
-      // The sign-in form already has its own prefilled memo/amount
+      // ✅ Tell the card to flip to BACK (Edit Profile)
+      // look up the zId from cachedProfiles if not already set
+const resolvedZId =
+  activeZId ??
+  cachedProfiles.find((p) => p.address === selectedAddress)?.id ??
+  "?";
+
+window.dispatchEvent(
+  new CustomEvent("enterSignInMode", {
+    detail: {
+      zId: resolvedZId,
+      address: selectedAddress,
+      name:
+        cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
+        "",
+      verified:
+        cachedProfiles.find((p) => p.address === selectedAddress)
+          ?.address_verified || false,
+    },
+  })
+);
+
     }}
     className={`px-3 py-1 font-medium transition-colors ${
       mode === "signin"
@@ -292,7 +470,7 @@ useEffect(() => {
         : "bg-gray-100 text-gray-600 hover:bg-gray-100"
     }`}
   >
-    🔐 Sign In
+    ⛊ Verify
   </button>
 </div>
 
@@ -301,10 +479,10 @@ useEffect(() => {
 
         {/* Recipient Label */}
 {/* Recipient Label */}
-<p className="text-sm text-gray-700 mb-4 text-center">
+<div className="text-sm text-gray-700 mb-4 text-center">
   {mode === "signin" ? (
-    <div className="mt-2 text-xs text-red-400 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-left">
-      ⚠ <strong>Sign-In Requests</strong> are not yet active.
+    <div className="mt-2 text-xs text-red-400 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-center">
+      ⚠ <strong>Verification Requests</strong>: This feature is currently under development.
       <button
         onClick={() => setShowSigninWarning(!showSigninWarning)}
         className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
@@ -312,10 +490,8 @@ useEffect(() => {
         {showSigninWarning ? "Hide" : "More"}
       </button>
       {showSigninWarning && (
-        <span className="block mt-1 text-blue-400">
-          This feature is currently under development.  
-          You can experiment safely, but no codes will be validated and  
-          sign-in requests will not produce a working authentication flow yet.
+        <span className="block mt-1 text-red-400">
+          You can experiment safely, but no codes will be validated and sign-in requests will not produce a working authentication flow yet.
         </span>
       )}
 
@@ -323,16 +499,19 @@ useEffect(() => {
   ) : (
     <>
       ✎ Draft a note to{" "}
-      <span className="font-semibold text-blue-700">
-        {(() => {
-          const match = profiles.find((p) => p.address === selectedAddress);
-          return match?.name || "a Zcash user";
-        })()}
-      </span>
-      :
+<span className="font-semibold text-blue-700">
+  {(() => {
+const match = cachedProfiles.find((p) => p.address === selectedAddress);
+const name = match?.name || "(unknown)";
+return name;
+
+  })()}
+</span>
+:
+
     </>
   )}
-</p>
+</div>
 
 
         {/* Form */}
@@ -345,10 +524,11 @@ useEffect(() => {
 <div className="relative flex flex-col w-full">
   {mode === "signin" ? (
     <div className="border rounded-lg px-3 py-2 text-sm bg-transparent-50 text-gray-700">
-      <span className="font-semibold">Send Request for Codewords</span>{" "}
+      <span className="font-semibold">Verification Request</span>{" "}
     
       <div className="truncate text-gray-500 text-xs mt-1">
-         Requires at least {MIN_SIGNIN_AMOUNT} ZEC</div>
+        Send this message with <u>></u>{MIN_SIGNIN_AMOUNT} ZEC to receive a code. Enter the code to complete verification.
+       </div>
 
     </div>
     
@@ -361,7 +541,7 @@ useEffect(() => {
     value={
       selectedAddress === "other"
         ? manualAddress
-        : profiles.find((p) => p.address === selectedAddress)?.name || ""
+        : cachedProfiles.find((p) => p.address === selectedAddress)?.name || ""
     }
     onChange={(e) => {
       const input = e.target.value;
@@ -395,26 +575,33 @@ useEffect(() => {
 
   {((!selectedAddress && manualAddress) || manualAddress.length > 0) && (
     <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
-      {profiles
-        .filter((p) =>
-          p.name.toLowerCase().includes(manualAddress.toLowerCase())
-        )
-        .slice(0, 20)
-        .map((p) => (
-          <div
-            key={p.address}
-            onClick={() => {
-              setSelectedAddress(p.address);
-              setManualAddress("");
-            }}
-            className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-          >
-            {p.name} — {p.address.slice(0, 10)}…
-          </div>
-        ))}
-      {!profiles.some((p) =>
-        p.name.toLowerCase().includes(manualAddress.toLowerCase())
-      ) && (
+     {cachedProfiles
+  .filter((p) =>
+    p.name.toLowerCase().includes(manualAddress.toLowerCase())
+  )
+  .slice(0, 20)
+  .map((p) => (
+    <div
+      key={p.address}
+      onClick={() => {
+        setSelectedAddress(p.address);
+        setManualAddress("");
+      }}
+      className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
+    >
+      {p.name} — {p.address.slice(0, 10)}…
+    </div>
+  ))}
+{!cachedProfiles.some((p) =>
+  p.name.toLowerCase().includes(manualAddress.toLowerCase())
+) && (
+  <div className="px-3 py-2 text-sm text-gray-500">No matches found</div>
+)}
+
+{!cachedProfiles.some((p) =>
+  p.name.toLowerCase().includes(manualAddress.toLowerCase())
+) && (
+
         <div className="px-3 py-2 text-sm text-gray-500">No matches found</div>
       )}
     </div>
@@ -450,32 +637,41 @@ useEffect(() => {
 
 {/* Memo */}
 <div className="relative w-full mt-3">
+{mode === "signin" ? (
+  // Read-only wallet-style memo preview
+  <div className="relative group w-full">
+    <pre
+className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transparent text-gray-800 font-mono whitespace-pre-wrap break-words text-left shadow-sm backdrop-blur-sm"
+  style={{ minHeight: "6rem" }}
+>
+
+      {signInMemo || "(waiting for edits…)"}
+    </pre>
+
+
+
+    <p className="text-xs text-gray-400 mt-1 italic text-center">
+      (Auto-generated change requests — Read-only —  Do not modify before sending.)
+    </p>
+  </div>
+) : (
+  // Regular editable draft mode
   <textarea
-    ref={(el) => {
-      if (el) {
-        el.style.height = "auto";
-        el.style.height = el.scrollHeight + "px";
-      }
-    }}
     rows={1}
-    placeholder={mode === "signin" ? "Enter code when received" : "Memo (optional)"}
-    value={mode === "signin" ? signInMemo : draftMemo}
+    placeholder="Memo (optional)"
+    value={draftMemo}
     onChange={(e) => {
       const el = e.target;
-      if (mode === "signin") setSignInMemo(el.value);
-      else setDraftMemo(el.value);
+      setDraftMemo(el.value);
       el.style.height = "auto";
       el.style.height = el.scrollHeight + "px";
     }}
     disabled={
-      mode !== "signin" &&
-      ((selectedAddress === "other"
+      (selectedAddress === "other"
         ? manualAddress?.startsWith("t")
-        : selectedAddress?.startsWith("t")) ||
-        false)
+        : selectedAddress?.startsWith("t")) || false
     }
-    className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative ${
-      mode !== "signin" &&
+    className={`border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 ${
       (selectedAddress === "other"
         ? manualAddress?.startsWith("t")
         : selectedAddress?.startsWith("t"))
@@ -483,6 +679,8 @@ useEffect(() => {
         : ""
     }`}
   />
+)}
+
   {(mode === "signin" ? signInMemo : draftMemo) &&
     (mode === "signin" ? signInMemo : draftMemo) !== "N/A" && (
       <button
@@ -501,7 +699,7 @@ useEffect(() => {
                   !(selectedAddress === "other"
                     ? manualAddress?.startsWith("t")
                     : selectedAddress?.startsWith("t"))) && (
-                  <div className="absolute bottom-3 right-3 text-xs text-gray-400 pointer-events-none">
+                  <div className="absolute bottom-5 right-3 text-xs text-gray-400 pointer-events-none">
                     <MemoCounter text={memo} />
                   </div>
                 )}
@@ -540,12 +738,12 @@ useEffect(() => {
     <label className="block text-sm text-gray-700 mb-1">Sign-In Code</label>
     <input
       type="text"
-      placeholder="Enter the codewords you receive"
+      placeholder="Enter the code you received"
       value={codeValue}
       onChange={(e) => setCodeValue(e.target.value)}
       className="border rounded-lg px-3 py-2 text-sm w-full"
     />
-    <p className="text-xs text-gray-500 mt-1">Enter the codewords you receive.</p>
+    <p className="text-xs text-gray-500 mt-1">You must send the Verification Request to receive a code.</p>
   </div>
 )}
 

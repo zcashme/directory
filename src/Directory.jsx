@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import AddUserForm from "./AddUserForm";
@@ -52,6 +52,9 @@ export default function Directory() {
     showDirectory,
     setShowDirectory
   );
+
+
+
 
   // compute referrals (RefRank)
   const { referralCounts, rankedProfiles } = useMemo(() => {
@@ -139,6 +142,24 @@ export default function Directory() {
     const good_thru = computeGoodThru(match.since, match.last_signed_at);
     return { ...match, good_thru };
   }, [processedProfiles, selectedAddress]);
+
+    // ✅ Keep feedback form in sync with the active profile (for /:username route)
+  // ✅ Keep feedback form in sync with the active profile (for /:username route)
+  useEffect(() => {
+    if (selectedProfile?.address) {
+      setSelectedAddress(selectedProfile.address);
+
+      // 🪪 Dev-only log to confirm the sync link
+      if (import.meta.env.DEV) {
+        console.log(
+          `🪪 Feedback linked to ${selectedProfile.name || "(unknown)"} (zId: ${
+            selectedProfile.id
+          })`
+        );
+      }
+    }
+  }, [selectedProfile?.address, selectedProfile?.id, selectedProfile?.name, setSelectedAddress]);
+
 
   // filter + grouping logic
   const { sorted, grouped, letters } = useMemo(() => {

@@ -35,7 +35,7 @@ function EditableField({ label, value, fieldKey, multiline }) {
             rows={3}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm"
+            className="border rounded-lg px-3 py-2 text-sm w-full resize-none bg-transparent cursor-default text-gray-700"
           />
         ) : (
           <input
@@ -202,8 +202,61 @@ const versionSuffix = profile.last_signed_at
   : "";
 const finalUrl = rawUrl + versionSuffix;
 
-console.log("Profile image URL for", profile.name, "=>", finalUrl);
 
+useEffect(() => {
+const handleEnterSignIn = (e) => {
+  setShowBack(true);
+
+  // Forward the event payload when triggered from other sources
+  if (!e?.detail && profile) {
+// ✅ Guard: only dispatch if profile data is ready
+if (!profile?.id || !profile?.address) {
+  console.warn("ProfileCard: profile not ready, skipping verify dispatch");
+} else {
+  window.dispatchEvent(
+    new CustomEvent("enterSignInMode", {
+      detail: {
+        zId: profile.id,
+        address: profile.address || "",
+        name: profile.name || "",
+        verified: !!profile.address_verified,
+        since: profile.since || null,
+      },
+    })
+  );
+
+  // ✅ Cache last known payload in case event fires before listener is attached
+  window.lastZcashFlipDetail = {
+    zId: profile.id,
+    address: profile.address || "",
+    name: profile.name || "",
+    verified: !!profile.address_verified,
+    since: profile.since || null,
+  };
+}
+
+    window.lastZcashFlipDetail = {
+  zId: profile.id,
+  address: profile.address || "",
+  name: profile.name || "",
+  verified: !!profile.address_verified,
+  since: profile.since || null,
+};
+
+  }
+};
+
+  const handleEnterDraft = () => {
+    setShowBack(false);
+  };
+
+  window.addEventListener("enterSignInMode", handleEnterSignIn);
+  window.addEventListener("enterDraftMode", handleEnterDraft);
+  return () => {
+    window.removeEventListener("enterSignInMode", handleEnterSignIn);
+    window.removeEventListener("enterDraftMode", handleEnterDraft);
+  };
+}, []);
 
 useEffect(() => {
   // Always make visible for fullView or if already cached
@@ -249,19 +302,30 @@ useEffect(() => {
   const { setSelectedAddress, setForceShowQR } = useFeedback();
 
   // Derive trust states (consistent with verified badge logic)
-  const verifiedAddress = !!profile.address_verified;
-  const totalLinks = profile.total_links ?? (profile.links?.length || 0);
-  const verifiedLinks =
-    profile.verified_links_count ??
-    (profile.links?.filter((l) => l.is_verified).length || 0);
-  const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
+const verifiedAddress = !!profile.address_verified || !!profile.verified;
+
+const verifiedLinks =
+  (typeof profile.verified_links === "number"
+    ? profile.verified_links
+    : (typeof profile.verified_links_count === "number"
+        ? profile.verified_links_count
+        : null)) ??
+  (profile.links?.filter((l) => l.is_verified).length || 0);
+
+const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
+const isVerified = hasVerifiedContent;
+
+const expired =
+  profile.last_verified_at &&
+  new Date(profile.last_verified_at).getTime() <
+    Date.now() - 1000 * 60 * 60 * 24 * 90; // expired if older than 90 days
+
   const hasUnverifiedLinks =
     (profile.total_links ?? profile.links?.length ?? 0) > 0 &&
     verifiedLinks === 0;
 
   const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
 
-  const isVerified = totalVerifications > 0;
   const hasReferrals = (profile.referral_count ?? 0) > 0;
   const isRanked =
     hasReferrals &&
@@ -277,15 +341,13 @@ useEffect(() => {
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  let circleClass = "bg-blue-400";
+  let circleClass = "bg-blue-500"; // default = All
   if (isVerified && isRanked) {
-    circleClass = "bg-gradient-to-b from-green-400 to-orange-400";
+    circleClass = "bg-gradient-to-r from-green-500 to-red-500"; // Verified + Ranked
   } else if (isVerified) {
-    circleClass = "bg-green-400";
+    circleClass = "bg-green-500"; // Verified
   } else if (isRanked) {
-    circleClass = "bg-orange-400";
-  } else if (hasReferrals) {
-    circleClass = "bg-orange-300";
+    circleClass = "bg-red-400"; // Ranked
   }
 
   const CheckIcon = (
@@ -396,9 +458,11 @@ useEffect(() => {
         (profile.verified_links_count ?? 0) +
         (profile.address_verified ? 1 : 0)
       }
-      featured={profile.featured}
-      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
-    >
+    featured={profile.featured}
+    className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
+    data-active-profile
+    data-address={profile.address}
+  >
 <div
   className={`relative transition-transform duration-500 transform-style-preserve-3d ${
     showBack ? "rotate-y-180" : ""
@@ -454,14 +518,30 @@ useEffect(() => {
                     </button>
                   )}
                   <button
-                    onClick={() => {
-                      setShowBack(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                  >
-                    ✎ Edit Card
-                  </button>
+onClick={() => {
+  setShowBack(true);
+  setMenuOpen(false);
+  console.log("🪪 Dispatching enterSignInMode with:", profile.id, profile.address);
+
+window.dispatchEvent(
+  new CustomEvent("enterSignInMode", {
+    detail: {
+      zId: profile.id,
+      address: profile.address || "",
+      name: profile.name || "",
+      verified: !!profile.address_verified,
+      since: profile.since || null,
+    },
+  })
+);
+
+}}
+
+
+  className="w-full text-left px-4 py-2 hover:bg-blue-50"
+>
+  ✎ Edit Card
+</button>
                 </div>
               )}
             </div>
@@ -495,6 +575,19 @@ useEffect(() => {
               <VerifiedBadge verified={false} />
             )}
           </div>
+{profile.last_verified_at && (
+  <p className="text-xs text-gray-500 mt-1">
+    Last verified:{" "}
+    {new Date(profile.last_verified_at).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    })}
+    {expired && (
+      <span className="ml-2 text-red-500 font-semibold">(expired)</span>
+    )}
+  </p>
+)}
 
           {/* Avatar */}
           <div
@@ -812,11 +905,14 @@ useEffect(() => {
 <div
   className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${
     showBack ? "relative h-auto" : ""
-  } bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 flex flex-col items-center justify-start overflow-visible`}
+  } bg-white/20 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 flex flex-col items-center justify-start overflow-visible`}
 >
   <div className="absolute top-4 left-4 z-10">
     <button
-      onClick={() => setShowBack(false)}
+onClick={() => {
+  setShowBack(false);
+  window.dispatchEvent(new CustomEvent("enterDraftMode"));
+}}
       title="Return to front"
       aria-label="Return to front"
       className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
