@@ -13,23 +13,26 @@ export function FeedbackProvider({ children }) {
   const [pendingEdits, setPendingEdits] = useState({});
 
   // Add or update a single field
-  const setPendingEdit = (field, value) => {
-    setPendingEdits((prev) => {
-      const updated = { ...prev, [field]: value };
+const setPendingEdit = (field, value) => {
+  setPendingEdits((prev) => {
+    const updated = {
+      ...prev,
+      [field]: value,
+    };
 
-      // Serialize edits to compact string form for the feedback QR memo
-      const serialized = Object.entries(updated)
-        .map(([k, v]) => `${k}:${String(v).slice(0, 64)}`)
-        .join("; ");
+    // Keep internal structure (arrays, objects) intact
+    // but still broadcast a lightweight serialized summary
+    const summary = Object.keys(updated)
+      .map((k) => `${k}${Array.isArray(updated[k]) ? `[${updated[k].length}]` : ""}`)
+      .join("; ");
 
-      // Notify listeners (e.g., ZcashFeedback)
-      window.dispatchEvent(
-        new CustomEvent("pendingEditsUpdated", { detail: serialized })
-      );
+    window.dispatchEvent(
+      new CustomEvent("pendingEditsUpdated", { detail: summary })
+    );
 
-      return updated;
-    });
-  };
+    return updated;
+  });
+};
 
   // Clear all edits
   const clearPendingEdits = () => setPendingEdits({});

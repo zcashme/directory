@@ -6,6 +6,7 @@ import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadge from "./ReferRankBadge";
 import ProfileEditor from "./ProfileEditor";
+import HelpIcon from "./HelpIcon";
 
 import { motion } from "framer-motion";
 
@@ -319,6 +320,9 @@ const expired =
   profile.last_verified_at &&
   new Date(profile.last_verified_at).getTime() <
     Date.now() - 1000 * 60 * 60 * 24 * 90; // expired if older than 90 days
+
+  const totalLinks = profile.total_links ?? (profile.links?.length ?? 0);
+
 
   const hasUnverifiedLinks =
     (profile.total_links ?? profile.links?.length ?? 0) > 0 &&
@@ -865,7 +869,7 @@ window.dispatchEvent(
                 </>
               ) : (
                 <>
-                  ✖ <strong>{profile.name}</strong> may not be who you think.
+                  ⚠ <strong>{profile.name}</strong> may not be who you think.
                 </>
               )}
 
@@ -876,7 +880,7 @@ window.dispatchEvent(
                     ? "text-green-600"
                     : hasUnverifiedLinks
                     ? "text-gray-800"
-                    : "text-red-500"
+                    : "text-blue-500"
                 }`}
               >
                 {showDetail ? "Hide" : "More"}
@@ -889,7 +893,7 @@ window.dispatchEvent(
                       ? "text-green-600"
                       : hasUnverifiedLinks
                       ? "text-gray-800"
-                      : "text-red-500"
+                      : "text-blue-500"
                   }`}
                 >
                   {profile.name} added {totalLinks} link
@@ -905,7 +909,7 @@ window.dispatchEvent(
 <div
   className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${
     showBack ? "relative h-auto" : ""
-  } bg-white/20 backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-6 flex flex-col items-center justify-start overflow-visible`}
+  } bg-white backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
 >
   <div className="absolute top-4 left-4 z-10">
     <button
@@ -917,11 +921,17 @@ onClick={() => {
       aria-label="Return to front"
       className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
     >
-      ⟲
+      ⟲ 
     </button>
   </div>
 
-  <h3 className="text-lg font-semibold text-gray-700 mb-3">Edit Profile</h3>
+<div className="relative mb-3">
+  <h3 className="text-lg font-semibold text-gray-700 text-center">Edit Profile</h3>
+  <div className="absolute top-0 left-30">
+    <HelpIcon text="Changes, if any, are included as part of your verification request below." />
+  </div>
+</div>
+
   <ProfileEditor profile={profile} />
 </div>
 

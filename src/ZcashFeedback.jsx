@@ -10,8 +10,8 @@ import useProfiles from "./hooks/useProfiles";
 ------------------------------------------------------- */
 const SIGNIN_ADDR =
   "u1qzt502u9fwh67s7an0e202c35mm0h534jaa648t4p2r6mhf30guxjjqwlkmvthahnz5myz2ev7neff5pmveh54xszv9njcmu5g2eent82ucpd3lwyzkmyrn6rytwsqefk475hl5tl4tu8yehc0z8w9fcf4zg6r03sq7lldx0uxph7c0lclnlc4qjwhu2v52dkvuntxr8tmpug3jntvm";
-const MIN_SIGNIN_AMOUNT = 0.0005;
-
+const MIN_SIGNIN_AMOUNT = 0.001;
+const DEFAULT_SIGNIN_AMOUNT = MIN_SIGNIN_AMOUNT * 2;
 
 
 /* -------------------------------------------------------
@@ -76,7 +76,7 @@ function buildZcashEditMemo(profile = {}, zid = "?", addr = "") {
       ? `{z:${zid}${
           includeAddress ? `,a:"${clean.address.trim()}"` : ""
         }${compactPairs.length ? `,${compactPairs.join(",")}` : ""}}`
-      : "No changes detected.";
+      : `{z:${zid}}`;
 
   return payload;
 }
@@ -108,7 +108,8 @@ const [profiles, setProfiles] = useState([]);
 const [draftAmount, setDraftAmount] = useState("");
 const [draftMemo, setDraftMemo] = useState("");
 const [signInMemo, setSignInMemo] = useState("pro:{}");
-const [signInAmount, setSignInAmount] = useState("0.001");
+// const [signInAmount, setSignInAmount] = useState("0.002");
+const [signInAmount, setSignInAmount] = useState(DEFAULT_SIGNIN_AMOUNT.toFixed(3));
 // Derived display values based on mode
 const [mode, setMode] = useState("note");
 const amount = mode === "signin" ? signInAmount : draftAmount;
@@ -169,26 +170,39 @@ useEffect(() => {
     const userAddr =
       selectedAddress === "other" ? manualAddress.trim() : selectedAddress || "(unknown)";
     
-    const memoText = buildZcashEditMemo(
-  pendingEdits?.profile || {},
-  activeZId ?? "?",
+// Build memo using both profile edits and link tokens
+// Build memo using both profile edits and link tokens
+const linkTokens = pendingEdits?.l || [];
+
+// merge profile edits + link tokens before building
+const mergedProfile = {
+  ...(pendingEdits?.profile || {}),
+  links: pendingEdits?.l || [],
+};
+
+const memoText = buildZcashEditMemo(
+  { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
+  zId ?? "?",
   addr
 );
- 
-    const params = new URLSearchParams();
-    params.set("address", SIGNIN_ADDR);
-    params.set("amount", MIN_SIGNIN_AMOUNT.toFixed(3));
-    params.set("memo", toBase64Url(memoText));
 
-    const signinUri = `zcash:?${params.toString()}`;
 
-    setMode("signin");
-    setMemo(memoText);
-    setAmount(MIN_SIGNIN_AMOUNT.toFixed(3));
-    setForceShowQR(true);
-    setError("");
-    setUri(signinUri);
-    window.open(signinUri, "_blank");
+const params = new URLSearchParams();
+params.set("address", SIGNIN_ADDR);
+params.set("amount", MIN_SIGNIN_AMOUNT.toFixed(3));
+params.set("memo", toBase64Url(memoText));
+
+const signinUri = `zcash:?${params.toString()}`;
+
+setMode("signin");
+setMemo(memoText);
+setAmount(MIN_SIGNIN_AMOUNT.toFixed(3));
+setForceShowQR(true);
+setError("");
+setUri(signinUri);
+window.open(signinUri, "_blank");
+
+
   };
 
   /* -----------------------------------------------------
@@ -211,11 +225,12 @@ if (window.lastZcashFlipDetail) {
   const updateMemo = (zId = null, addr = "", name = "", verified = false) => {
     if (mode !== "signin") return;
 
-    const memoText = buildZcashEditMemo(
-      pendingEdits?.profile || {},
-      zId ?? "?",
-      addr
-    );
+const memoText = buildZcashEditMemo(
+  { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
+  zId ?? "?",
+  addr
+);
+
     setSignInMemo(memoText);
   };
 
@@ -270,11 +285,12 @@ useEffect(() => {
     addr = window.lastZcashFlipDetail.address;
   }
 
-  const memoText = buildZcashEditMemo(
-    pendingEdits?.profile || {},
-    zId ?? "?",
-    addr
-  );
+const memoText = buildZcashEditMemo(
+  { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
+  zId ?? "?",
+  addr
+);
+
   setSignInMemo(memoText);
 }, [pendingEdits, mode]);
 
@@ -481,8 +497,8 @@ window.dispatchEvent(
 {/* Recipient Label */}
 <div className="text-sm text-gray-700 mb-4 text-center">
   {mode === "signin" ? (
-    <div className="mt-2 text-xs text-red-400 bg-red-50 border border-red-200 rounded-md px-3 py-2 text-center">
-      ⚠ <strong>Verification Requests</strong>: This feature is currently under development.
+    <div className="max-w-[600px] mx-auto mt-2 text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
+      ⚠ <strong>This feature is currently under development</strong>
       <button
         onClick={() => setShowSigninWarning(!showSigninWarning)}
         className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
@@ -490,8 +506,8 @@ window.dispatchEvent(
         {showSigninWarning ? "Hide" : "More"}
       </button>
       {showSigninWarning && (
-        <span className="block mt-1 text-red-400">
-          You can experiment safely, but no codes will be validated and sign-in requests will not produce a working authentication flow yet.
+        <span className="block mt-1 text-blue-600 leading-snug">
+          Verification is handled manually, so please allow extra time to receive your code and instructions. Need it faster? Zcash.me/Zechariah. 
         </span>
       )}
 
@@ -524,10 +540,21 @@ return name;
 <div className="relative flex flex-col w-full">
   {mode === "signin" ? (
     <div className="border rounded-lg px-3 py-2 text-sm bg-transparent-50 text-gray-700">
-      <span className="font-semibold">Verification Request</span>{" "}
+<span className="font-semibold flex items-center justify-center gap-2 text-center w-full">
+  Request a One-Time Password
+  <div className="relative group inline-block">
+    <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-gray-500 text-[10px] font-bold hover:text-blue-600 hover:border-blue-600 cursor-pointer bg-transparent">
+      ?
+    </span>
+    <div className="absolute right-0 top-5 hidden group-hover:block w-56 text-xs bg-white border border-gray-300 rounded-lg shadow-lg p-2 text-gray-700 z-50">
+      After sending the message below, we send a one-time code to the Zcash address associated with this profile. Enter the code below to verify access to the Zcash address and approve the changes to your Zcash.me profile above, if any.
+    </div>
+  </div>
+</span>
+
     
       <div className="truncate text-gray-500 text-xs mt-1">
-        Send this message with <u>></u>{MIN_SIGNIN_AMOUNT} ZEC to receive a code. Enter the code to complete verification.
+Send this message with {MIN_SIGNIN_AMOUNT} or more ZEC.
        </div>
 
     </div>
@@ -651,7 +678,7 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
 
 
     <p className="text-xs text-gray-400 mt-1 italic text-center">
-      (Auto-generated change requests — Read-only —  Do not modify before sending.)
+      (Do not modify before sending!)
     </p>
   </div>
 ) : (
