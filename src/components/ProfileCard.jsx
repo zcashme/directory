@@ -109,7 +109,7 @@ function EditableLinks({ links }) {
               onClick={() => removeLink(index)}
               className="text-xs text-red-600 hover:underline"
             >
-              ✖ Remove
+              ␡ Remove Link
             </button>
           )}
         </motion.div>
@@ -543,8 +543,7 @@ window.dispatchEvent(
 
 
   className="w-full text-left px-4 py-2 hover:bg-blue-50"
->
-  ✎ Edit Card
+>  ✎ Edit Profile
 </button>
                 </div>
               )}
@@ -925,11 +924,8 @@ onClick={() => {
     </button>
   </div>
 
-<div className="relative mb-3">
+<div className="relative">
   <h3 className="text-lg font-semibold text-gray-700 text-center">Edit Profile</h3>
-  <div className="absolute top-0 left-30">
-    <HelpIcon text="Changes, if any, are included as part of your verification request below." />
-  </div>
 </div>
 
   <ProfileEditor profile={profile} />

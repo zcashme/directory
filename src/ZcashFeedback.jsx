@@ -492,26 +492,9 @@ window.dispatchEvent(
 
           </div>
         </div>
-
-        {/* Recipient Label */}
-{/* Recipient Label */}
 <div className="text-sm text-gray-700 mb-4 text-center">
   {mode === "signin" ? (
-    <div className="max-w-[600px] mx-auto mt-2 text-xs text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-center">
-      ⚠ <strong>This feature is currently under development</strong>
-      <button
-        onClick={() => setShowSigninWarning(!showSigninWarning)}
-        className="ml-2 text-blue-600 hover:underline text-xs font-semibold"
-      >
-        {showSigninWarning ? "Hide" : "More"}
-      </button>
-      {showSigninWarning && (
-        <span className="block mt-1 text-blue-600 leading-snug">
-          Verification is handled manually, so please allow extra time to receive your code and instructions. Need it faster? Zcash.me/Zechariah. 
-        </span>
-      )}
-
-    </div>
+    <div></div>
   ) : (
     <>
       ✎ Draft a note to{" "}
@@ -541,20 +524,20 @@ return name;
   {mode === "signin" ? (
     <div className="border rounded-lg px-3 py-2 text-sm bg-transparent-50 text-gray-700">
 <span className="font-semibold flex items-center justify-center gap-2 text-center w-full">
-  Request a One-Time Password
+  Request One-Time Passcode
   <div className="relative group inline-block">
     <span className="inline-flex items-center justify-center w-4 h-4 rounded-full border border-gray-400 text-gray-500 text-[10px] font-bold hover:text-blue-600 hover:border-blue-600 cursor-pointer bg-transparent">
       ?
     </span>
     <div className="absolute right-0 top-5 hidden group-hover:block w-56 text-xs bg-white border border-gray-300 rounded-lg shadow-lg p-2 text-gray-700 z-50">
-      After sending the message below, we send a one-time code to the Zcash address associated with this profile. Enter the code below to verify access to the Zcash address and approve the changes to your Zcash.me profile above, if any.
+      You will receive four emojis in a shielded message.
     </div>
   </div>
 </span>
 
     
       <div className="truncate text-gray-500 text-xs mt-1">
-Send this message with {MIN_SIGNIN_AMOUNT} or more ZEC.
+Send below to verify address or approve changes (min. {MIN_SIGNIN_AMOUNT} ZEC)
        </div>
 
     </div>
@@ -762,7 +745,7 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
 {/* Codewords input (Sign-In mode only) */}
 {mode === "signin" && showCodeInput && (
   <div className="w-full mt-3 text-left animate-fadeIn">
-    <label className="block text-sm text-gray-700 mb-1">Sign-In Code</label>
+    <label className="block text-sm text-gray-700 mb-1">One-Time Passcode</label>
     <input
       type="text"
       placeholder="Enter the code you received"
@@ -770,7 +753,7 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
       onChange={(e) => setCodeValue(e.target.value)}
       className="border rounded-lg px-3 py-2 text-sm w-full"
     />
-    <p className="text-xs text-gray-500 mt-1">You must send the Verification Request to receive a code.</p>
+    <p className="text-xs text-gray-500 mt-1">The code is unique to you and your update.</p>
   </div>
 )}
 

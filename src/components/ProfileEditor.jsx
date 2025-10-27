@@ -138,7 +138,6 @@ export default function ProfileEditor({ profile }) {
   }, [form.address, form.name, form.bio, form.profile_image_url, originals, setPendingEdit]);
 
 // Compute link tokens
-// Compute link tokens
 useEffect(() => {
   const effectTokens = [];
   const originalByUrl = new Map();
@@ -312,14 +311,17 @@ useEffect(() => {
     Array.isArray(pendingEdits?.l) && pendingEdits.l.includes(token);
 
   return (
-<div className="w-full -mx-6 -mb-4 bg-transparent text-left text-sm text-gray-800 overflow-visible">
-<div className="bg-transparent overflow-hidden">
+<div className="w-full -mx-6 -mb-1 bg-transparent text-left text-sm text-gray-800 overflow-visible">
+<div className="bg-transparent  overflow-hidden">
+      <p className="text-sm text-gray-400 text-center">
+                <br></br>
+    </p>
      
       {/* Address */}
       <div className="mb-3">
 <label className="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
   <span>Zcash Address</span>
-  <HelpIcon text="This is your Zcash unified address where verification codes are sent." />
+  <HelpIcon text="Your Zcash address where verification codes are sent." />
 </label>
         <input
           type="text"
@@ -350,7 +352,7 @@ useEffect(() => {
       <div className="mb-3 relative">
 <label className="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
   <span>Biography</span>
-  <HelpIcon text="A short public description of your current story arc (up to 100 characters)." />
+  <HelpIcon text="Your current story arc in 100 characters or less." />
 </label>
         <textarea
           rows={3}
@@ -367,7 +369,7 @@ useEffect(() => {
       <div className="mb-3">
 <label className="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
   <span>Profile Image URL</span>
-  <HelpIcon text="Paste a link to your profile image. We prefer a square with sides less than 400 pixels in .png with a transparent background" />
+  <HelpIcon text="Link to PNG or JPG. Search 'free image link host'.  Try remove.bg & compresspng.com. " />
 </label>
         <input
           type="text"
@@ -391,7 +393,7 @@ useEffect(() => {
       >
         Reset
       </button>
-      <HelpIcon text="Add, remove, or verify links displayed on your profile. Links must start with 'https://'. Verified links are shown with a green badge." />
+      <HelpIcon text="Link verification requires OTP. Verified links cannot be changed." />
     </div>
   </div>
     </div>
@@ -457,7 +459,7 @@ useEffect(() => {
                   onClick={() => removeLink(row._uid)}
                   className="text-xs text-red-600 hover:underline"
                 >
-                  ✖ Remove
+                  ⌫ Remove Link
                 </button>
               </div>
             </div>
@@ -473,10 +475,10 @@ useEffect(() => {
           ＋ Add Link
         </button>
       </div>
-
-      <p className="text-xs text-gray-400">
-        To verify your Zcash address or apply any changes to your profile, submit the Verification Request below and await further instructions.
-      </p>
+      <p className="text-sm text-gray-400 text-left">
+                <br></br>To submit changes, send the message below and enter the code you receive. 
+        <br></br>        <br></br>
+    </p>
     </div>
   );
 }
