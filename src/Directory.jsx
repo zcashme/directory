@@ -515,11 +515,25 @@ export default function Directory() {
         <AddUserForm
           isOpen={isJoinOpen}
           onClose={() => setIsJoinOpen(false)}
-          onUserAdded={() => {
+          onUserAdded={(newProfile) => {
             setIsJoinOpen(false);
-            window.location.reload();
+            if (newProfile?.name) {
+              const norm = (s = "") =>
+                s
+                  .normalize("NFKC")
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, "_")
+                  .replace(/[^a-z0-9_]/g, "");
+              const slug = norm(newProfile.name);
+              navigate(`/${slug}`, { replace: false });
+              // ✅ Force reload to ensure new profile appears immediately
+              setTimeout(() => window.location.reload(), 100);
+            }
           }}
+
         />
+
 
         {!showDirectory && selectedProfile && (
           <ProfileCard

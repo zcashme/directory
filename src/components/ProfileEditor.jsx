@@ -318,7 +318,8 @@ useEffect(() => {
     </p>
      
       {/* Address */}
-      <div className="mb-3">
+      <div className="mb-3 text-center">
+        Enter changes then verify one-time password.
 <label className="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
   <span>Zcash Address</span>
   <HelpIcon text="Your Zcash address where verification codes are sent." />
@@ -475,8 +476,8 @@ useEffect(() => {
           ＋ Add Link
         </button>
       </div>
-      <p className="text-sm text-gray-400 text-left">
-                <br></br>To submit changes, send the message below and enter the code you receive. 
+      <p className="text-sm text-gray-400 text-center">
+                <br></br>Verify your changes below. 
         <br></br>        <br></br>
     </p>
     </div>
