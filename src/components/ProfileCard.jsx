@@ -893,36 +893,42 @@ const shareUrl = `${window.location.origin}/${profile.address_verified
             {showDetail && (
   <div className="mt-1 text-xs space-y-1">
     {hasVerifiedContent ? (
-      <div className="text-green-700">
+      <div className="text-gray-700">
 
         <div>{profile.name} verified their address with OTP.</div>
         <div>{profile.name} verified links with OTP.</div>
       </div>
+    ) : hasUnverifiedLinks ? (
+      <div className="text-gray-800 space-y-1">
+        <div>
+          {profile.name} can verify their address or links to increase trust and
+          visibility.
+        </div>
+      </div>
     ) : (
       !profile.address_verified && (
         <div className="text-gray-800 space-y-1">
-          <div>There are other profiles with this name.</div>
-          {!hasUnverifiedLinks && (
-            <div>
-              {" "}
-              {totalLinks > 0
-                ? `${profile.name} has contributed ${totalLinks} link${
-                    totalLinks !== 1 ? "s" : ""
-                  }, but ${
-                    verifiedLinks > 0
-                      ? `only ${verifiedLinks} ${
-                          verifiedLinks === 1 ? "is" : "are"
-                        } verified.`
-                      : "none are verified."
-                  }`
-                : `${profile.name} has not contributed any verified links.`}
-            </div>
-          )}
+          <div> There are other profiles with this name.</div>
+          <div>
+            {" "}
+            {totalLinks > 0
+              ? `${profile.name} has contributed ${totalLinks} link${
+                  totalLinks !== 1 ? "s" : ""
+                }, but ${
+                  verifiedLinks > 0
+                    ? `only ${verifiedLinks} ${
+                        verifiedLinks === 1 ? "is" : "are"
+                      } verified.`
+                    : "none are verified."
+                }`
+              : `${profile.name} has not contributed any verified links.`}
+          </div>
         </div>
       )
     )}
   </div>
 )}
+
 
             </div>
           )}
