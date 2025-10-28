@@ -891,43 +891,35 @@ const shareUrl = `${window.location.origin}/${profile.address_verified
               </button>
 
             {showDetail && (
-  <div className="mt-1">
-    <span
-      className={`block ${
-        hasVerifiedContent
-          ? "text-green-600"
-          : hasUnverifiedLinks
-          ? "text-gray-800"
-          : "text-gray-500"
-      }`}
-    >
-      {profile.name} added {totalLinks} link
-      {totalLinks !== 1 ? "s" : ""}, {verifiedLinks}{" "}
-      {verifiedLinks === 1 ? "is" : "are"} verified.
-    </span>
+  <div className="mt-1 text-xs space-y-1">
+    {hasVerifiedContent ? (
+      <div className="text-green-700">
 
-    {/* 👇 Add this line below only for unverified duplicates */}
-    {!profile.address_verified && (
-      <span className="block text-xs text-gray-600 mt-0.5">
-        There are other profiles with this name.{" "}
-        <button
-          className="text-blue-600 underline hover:text-blue-800"
-          onClick={() => {
-            const nameSlug = profile.name
-              .normalize("NFKC")
-              .trim()
-              .toLowerCase()
-              .replace(/\s+/g, "_")
-              .replace(/[^a-z0-9_]/g, "");
-
-            window.history.pushState({}, "", `/?q=${encodeURIComponent(nameSlug)}`);
-            window.dispatchEvent(new PopStateEvent("popstate"));
-          }}
-        >
-          View them
-        </button>
-        .
-      </span>
+        <div>{profile.name} verified their address with OTP.</div>
+        <div>{profile.name} verified links with OTP.</div>
+      </div>
+    ) : (
+      !profile.address_verified && (
+        <div className="text-gray-800 space-y-1">
+          <div>There are other profiles with this name.</div>
+          {!hasUnverifiedLinks && (
+            <div>
+              {" "}
+              {totalLinks > 0
+                ? `${profile.name} has contributed ${totalLinks} link${
+                    totalLinks !== 1 ? "s" : ""
+                  }, but ${
+                    verifiedLinks > 0
+                      ? `only ${verifiedLinks} ${
+                          verifiedLinks === 1 ? "is" : "are"
+                        } verified.`
+                      : "none are verified."
+                  }`
+                : `${profile.name} has not contributed any verified links.`}
+            </div>
+          )}
+        </div>
+      )
     )}
   </div>
 )}
