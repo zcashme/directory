@@ -1,6 +1,7 @@
 import ZcashAddressInput from "./components/ZcashAddressInput";
 import { validateZcashAddress } from "./utils/zcashAddressUtils";
-
+import useProfiles from "./hooks/useProfiles"; // (add this at top if not imported)
+import { cachedProfiles } from "./hooks/useProfiles"; // if exported (we’ll adjust below)
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { AnimatePresence, motion } from "framer-motion";
@@ -47,7 +48,7 @@ const PLATFORMS = [
   { key: "Instagram", label: "Instagram", base: "https://instagram.com/" },
   { key: "Reddit", label: "Reddit", base: "https://reddit.com/user/" },
   { key: "LinkedIn", label: "LinkedIn", base: "https://linkedin.com/in/" },
-  { key: "Discord", label: "Discord Invite", base: "https://discord.gg/" },
+  { key: "Discord", label: "Discord", base: "https://discord.gg/" },
   { key: "TikTok", label: "TikTok", base: "https://tiktok.com/@" },
   { key: "Bluesky", label: "Bluesky", base: "https://bsky.app/profile/" },
   { key: "Mastodon", label: "Mastodon", base: "https://mastodon.social/@" },
@@ -153,14 +154,14 @@ if (matchingProfile) {
   } else {
     setNameConflict({
       type: "info",
-      text: "That name is used by an unverified profile. You can still proceed and verify later to secure this short link.",
+      text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me\ name for yourself.",
     });
   }
 } else {
   setNameConflict(null);
 }
 
-  setNameHelp(`Displayed as: ${toSlugish(name)}`);
+  setNameHelp(`Shared as: Zcash.me/${toSlugish(name)}`);
 }, [name, profiles, verifiedNameKeys]);
 
 // --- Effect 3: Validate address (using full spec check) ---
@@ -301,12 +302,13 @@ useEffect(() => {
         return (
           !!name.trim() &&
           !!address.trim() &&
-          !nameConflict &&
+          (!nameConflict || nameConflict.type !== "error") &&
           res.valid &&
           res.type !== "tex" &&
           res.type !== "transparent"
         );
       }
+
 
       default:
         return false;
@@ -421,15 +423,21 @@ if (!addrErr && addrMatch && addrMatch.length) {
       ]);
     }
 
-    // 3️⃣ Redirect user to their new profile
-    onUserAdded?.(profile);
+    
 
-    // Give Supabase a moment to sync before navigation
-    setTimeout(() => {
-      window.location.href = `/${profile.name.trim().toLowerCase().replace(/\s+/g, "_")}`;
-    }, 150);
 
-    onClose?.();
+// ✅ Generate a router-safe slug
+const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
+const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
+
+onUserAdded?.(profile);
+onClose?.();
+
+// ✅ Redirect to /name-id (React Router friendly)
+window.location.replace(`/${slug}`);
+
+
+
 
   } catch (err) {
     console.error("Add name failed:", err);
@@ -472,7 +480,7 @@ if (!addrErr && addrMatch && addrMatch.length) {
   // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
   const filtered = input
     .normalize("NFKC")
-    .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}]+/gu, "");
+    .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
 
   setName(filtered);
 }}
@@ -629,31 +637,30 @@ const StepAddress = (
                   }`}
                 />
               ) : (
-                <div className="flex-1 flex items-center">
-                  <span className="px-3 py-2 rounded-l-xl border border-r-0 border-black/30 bg-gray-50 text-xs font-mono text-gray-600 select-none">
-                    {platform.base}
-                  </span>
-                  <input
-                    type="text"
-                    value={link.username}
-                    onChange={(e) => updateLink(index, { username: e.target.value })}
-                    placeholder="your_username"
-                    className={`flex-1 rounded-r-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
-                      link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
-                    }`}
-                  />
-                </div>
+<div className="flex-1">
+  <input
+    type="text"
+    value={link.username}
+    onChange={(e) => updateLink(index, { username: e.target.value })}
+    placeholder="your_username"
+    className={`w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
+      link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
+    }`}
+  />
+</div>
+
               )}
 
               {links.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeLinkField(index)}
-                  className="text-red-600 hover:text-red-700 text-sm font-semibold self-center"
-                  title="Remove link"
-                >
-                  ⛌
-                </button>
+<button
+  type="button"
+  onClick={() => removeLinkField(index)}
+  className="text-red-600 hover:text-red-700 text-xs font-medium mt-2 flex items-center gap-1"
+  title="Remove link"
+>
+  ⌫ Remove link
+</button>
+
               )}
             </div>
 
@@ -679,7 +686,7 @@ const StepAddress = (
         ＋ Add another link
       </button>
       <p className="mt-2 text-xs text-gray-500">
-        Tip: You can verify your links when you edit your profile. 
+        Tip: You can add, remove and verify links from Edit Profile. 
       </p>
     </motion.div>
   );

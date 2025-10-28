@@ -37,3 +37,6 @@ export default function useProfiles() {
 
   return { profiles, loading };
 }
+export { cachedProfiles };
+if (typeof window !== "undefined") window.cachedProfiles = cachedProfiles;
+

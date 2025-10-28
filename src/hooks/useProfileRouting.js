@@ -18,7 +18,7 @@ export default function useProfileRouting(
       .trim()
       .toLowerCase()
       .replace(/\s+/g, "_")
-      .replace(/[^a-z0-9_]/g, "");
+      .replace(/[^a-z0-9_-]/g, ""); // allow dash
 
   // Keep URL in sync when a profile is selected
   useEffect(() => {
@@ -29,7 +29,10 @@ export default function useProfileRouting(
     const currentSlug = norm(currentPathRaw);
 
     if (match?.name) {
-      const nextSlug = norm(match.name);
+      const nextSlugBase = norm(match.name);
+      const nextSlug =
+        match.slug ||
+        (match.address_verified ? nextSlugBase : `${nextSlugBase}-${match.id}`);
       if (currentSlug !== nextSlug) {
         navigate(`/${nextSlug}`, { replace: false });
       }
@@ -48,8 +51,46 @@ export default function useProfileRouting(
       return;
     }
 
-    const slug = norm(rawPath);
-    const profile = profiles.find((p) => norm(p.name || "") === slug);
+    const slug = rawPath.toLowerCase();
+
+    // 🧩 detect /name-id format
+    const matchDash = slug.match(/^(?<base>[a-z0-9_]+)-(?<id>\d+)$/);
+    if (matchDash?.groups?.id) {
+      const id = parseInt(matchDash.groups.id, 10);
+      const profile = profiles.find((p) => p.id === id);
+      if (profile) {
+        setSelectedAddress(profile.address);
+        setShowDirectory(false);
+        return;
+      }
+    }
+
+    // ✅ Exact slug match
+    let profile = profiles.find((p) => (p.slug || "").toLowerCase() === slug);
+
+    // ✅ Fallback: normalized name (for verified or legacy)
+    if (!profile) {
+      const matching = profiles.filter((p) => norm(p.name || "") === norm(slug));
+      if (matching.length) {
+        // 🥇 Prefer verified
+        const verified = matching.find(
+          (p) => p.address_verified || p.zcasher_links?.some((l) => l.is_verified)
+        );
+
+        if (verified) {
+          profile = verified;
+        } else {
+          // 🕓 No verified? → pick latest by created_at
+          profile = matching
+            .slice()
+            .sort(
+              (a, b) =>
+                new Date(b.created_at).getTime() -
+                new Date(a.created_at).getTime()
+            )[0];
+        }
+      }
+    }
 
     if (profile) {
       setSelectedAddress(profile.address);
