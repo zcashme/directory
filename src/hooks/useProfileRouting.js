@@ -80,14 +80,11 @@ export default function useProfileRouting(
         if (verified) {
           profile = verified;
         } else {
-          // 🕓 No verified? → pick latest by created_at
+          // 🕓 No verified? → pick oldest (lowest id)
           profile = matching
             .slice()
-            .sort(
-              (a, b) =>
-                new Date(b.created_at).getTime() -
-                new Date(a.created_at).getTime()
-            )[0];
+            .sort((a, b) => a.id - b.id)[0];
+
         }
       }
     }

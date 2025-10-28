@@ -693,12 +693,17 @@ window.dispatchEvent(
               {/* Share */}
               <button
                 onClick={() => {
-                  const shareUrl = `${window.location.origin}/${profile.name
-                    .normalize("NFKC")
-                    .trim()
-                    .toLowerCase()
-                    .replace(/\s+/g, "_")
-                    .replace(/[^a-z0-9_]/g, "")}`;
+const baseSlug = profile.name
+  .normalize("NFKC")
+  .trim()
+  .toLowerCase()
+  .replace(/\s+/g, "_")
+  .replace(/[^a-z0-9_]/g, "");
+
+const shareUrl = `${window.location.origin}/${profile.address_verified
+  ? baseSlug
+  : `${baseSlug}-${profile.id}`}`;
+
                   if (navigator.share) {
                     navigator
                       .share({
@@ -885,21 +890,48 @@ window.dispatchEvent(
                 {showDetail ? "Hide" : "More"}
               </button>
 
-              {showDetail && (
-                <span
-                  className={`block mt-1 ${
-                    hasVerifiedContent
-                      ? "text-green-600"
-                      : hasUnverifiedLinks
-                      ? "text-gray-800"
-                      : "text-blue-500"
-                  }`}
-                >
-                  {profile.name} added {totalLinks} link
-                  {totalLinks !== 1 ? "s" : ""}, {verifiedLinks}{" "}
-                  {verifiedLinks === 1 ? "is" : "are"} verified.
-                </span>
-              )}
+            {showDetail && (
+  <div className="mt-1">
+    <span
+      className={`block ${
+        hasVerifiedContent
+          ? "text-green-600"
+          : hasUnverifiedLinks
+          ? "text-gray-800"
+          : "text-gray-500"
+      }`}
+    >
+      {profile.name} added {totalLinks} link
+      {totalLinks !== 1 ? "s" : ""}, {verifiedLinks}{" "}
+      {verifiedLinks === 1 ? "is" : "are"} verified.
+    </span>
+
+    {/* 👇 Add this line below only for unverified duplicates */}
+    {!profile.address_verified && (
+      <span className="block text-xs text-gray-600 mt-0.5">
+        There are other profiles with this name.{" "}
+        <button
+          className="text-blue-600 underline hover:text-blue-800"
+          onClick={() => {
+            const nameSlug = profile.name
+              .normalize("NFKC")
+              .trim()
+              .toLowerCase()
+              .replace(/\s+/g, "_")
+              .replace(/[^a-z0-9_]/g, "");
+
+            window.history.pushState({}, "", `/?q=${encodeURIComponent(nameSlug)}`);
+            window.dispatchEvent(new PopStateEvent("popstate"));
+          }}
+        >
+          View them
+        </button>
+        .
+      </span>
+    )}
+  </div>
+)}
+
             </div>
           )}
         </div>
