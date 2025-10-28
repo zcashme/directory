@@ -319,7 +319,7 @@ useEffect(() => {
      
       {/* Address */}
       <div className="mb-3 text-center">
-        Enter changes then verify one-time password.
+        Then, verify changes (if any).
 <label className="block font-semibold text-gray-700 mb-1 flex items-center justify-between">
   <span>Zcash Address</span>
   <HelpIcon text="Your Zcash address where verification codes are sent." />

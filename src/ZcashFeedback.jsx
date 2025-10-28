@@ -530,14 +530,14 @@ return name;
       ?
     </span>
     <div className="absolute right-0 top-5 hidden group-hover:block w-56 text-xs bg-white border border-gray-300 rounded-lg shadow-lg p-2 text-gray-700 z-50">
-      You will receive four emojis in a shielded message.
+      You will receive four emojis in a message to your Zcash address.
     </div>
   </div>
 </span>
 
     
       <div className="truncate text-gray-500 text-xs mt-1">
-Send below to verify address or approve changes (min. {MIN_SIGNIN_AMOUNT} ZEC)
+to verify address and/or approve changes
        </div>
 
     </div>
@@ -661,7 +661,7 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
 
 
     <p className="text-xs text-gray-400 mt-1 italic text-center">
-      (Do not modify before sending!)
+      (Do not modify before sending! Include >{MIN_SIGNIN_AMOUNT} ZEC)
     </p>
   </div>
 ) : (
