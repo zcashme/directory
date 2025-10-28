@@ -896,7 +896,13 @@ const shareUrl = `${window.location.origin}/${profile.address_verified
       <div className="text-gray-700">
 
         <div>{profile.name} verified their address with OTP.</div>
-        <div>{profile.name} verified links with OTP.</div>
+        <div>
+  {profile.name} verified{" "}
+  {verifiedLinks > 0
+    ? `${verifiedLinks} of ${totalLinks} link${totalLinks !== 1 ? "s" : ""}`
+    : "links"}{" "}
+  with OTP.
+</div>
       </div>
     ) : hasUnverifiedLinks ? (
       <div className="text-gray-800 space-y-1">
