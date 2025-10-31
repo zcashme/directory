@@ -185,6 +185,9 @@ const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const [showLinks, setShowLinks] = useState(false);
+  // 🔗 Lazy-load links from Supabase when needed
+// (linksArray state/effect is defined later; duplicate removed)
+
   const [showStats, setShowStats] = useState(false);
   const [qrShown, setQRShown] = useState(false);
   const [linksShown, setLinksShown] = useState(false);
@@ -221,7 +224,7 @@ if (!profile?.id || !profile?.address) {
         address: profile.address || "",
         name: profile.name || "",
         verified: !!profile.address_verified,
-        since: profile.since || null,
+        since: (profile.joined_at || profile.created_at || profile.since || null),
       },
     })
   );
@@ -232,7 +235,7 @@ if (!profile?.id || !profile?.address) {
     address: profile.address || "",
     name: profile.name || "",
     verified: !!profile.address_verified,
-    since: profile.since || null,
+    since: (profile.joined_at || profile.created_at || profile.since || null),
   };
 }
 
@@ -321,12 +324,41 @@ const expired =
   new Date(profile.last_verified_at).getTime() <
     Date.now() - 1000 * 60 * 60 * 24 * 90; // expired if older than 90 days
 
-  const totalLinks = profile.total_links ?? (profile.links?.length ?? 0);
+  // 🔗 start with whatever might already be in profile.links or profile.links_json
+const [linksArray, setLinksArray] = useState(() => {
+  if (Array.isArray(profile.links)) return profile.links;
+  if (typeof profile.links_json === "string") {
+    try { return JSON.parse(profile.links_json); } catch { return []; }
+  }
+  if (Array.isArray(profile.links_json)) return profile.links_json;
+  return [];
+});
+
+// 🔄 whenever "Show Links" is opened, fetch live links from Supabase
+useEffect(() => {
+  if (!profile?.id || !showLinks) return;
+
+  import("../supabase").then(async ({ supabase }) => {
+    const { data, error } = await supabase
+      .from("zcasher_links")
+      .select("id,label,url,is_verified")
+      .eq("zcasher_id", profile.id)
+      .order("id", { ascending: true });
+
+    if (error) {
+      console.error("❌ Error fetching links:", error);
+      return;
+    }
+    if (Array.isArray(data)) setLinksArray(data);
+  });
+}, [showLinks, profile?.id]);
+const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
 
 
-  const hasUnverifiedLinks =
-    (profile.total_links ?? profile.links?.length ?? 0) > 0 &&
-    verifiedLinks === 0;
+const hasUnverifiedLinks =
+  (profile.total_links ?? linksArray.length ?? 0) > 0 &&
+  verifiedLinks === 0;
+
 
   const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
 
@@ -442,11 +474,12 @@ const expired =
               )}
               <span className="text-gray-400">•</span>
               <span>
-                Joined{" "}
-                {new Date(profile.since).toLocaleString("default", {
-                  month: "short",
-                  year: "numeric",
-                })}
+Joined{" "}
+{new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+  month: "short",
+  year: "numeric",
+})}
+
               </span>
             </div>
           </div>
@@ -643,12 +676,13 @@ window.dispatchEvent(
 
           {/* Dates */}
           <p className="mt-3 text-xs text-gray-500">
-            Joined{" "}
-            {new Date(profile.since).toLocaleString("default", {
-              month: "short",
-              year: "numeric",
-            })}{" "}
-            • Last signed{" "}
+Joined{" "}
+{new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+  month: "short",
+  year: "numeric",
+})}{" "}
+• Last signed{" "}
+
             {profile.last_signed_at
               ? new Date(profile.last_signed_at).toLocaleString("default", {
                   month: "short",
@@ -778,8 +812,9 @@ const shareUrl = `${window.location.origin}/${profile.address_verified
               <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                 {showLinks && (
                   <>
-                    {profile.links && profile.links.length > 0 ? (
-                      profile.links.map((link) => (
+{linksArray.length > 0 ? (
+  linksArray.map((link) => (
+
                         <div
                           key={link.id}
                           className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"

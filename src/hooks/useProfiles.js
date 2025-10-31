@@ -42,9 +42,16 @@ export default function useProfiles() {
 
       if (active) {
         console.log(`✅ Loaded ${all.length} profiles (count: ${total})`);
-        cachedProfiles = all;
-        window.cachedProfiles = all;
-        setProfiles(all);
+cachedProfiles = all;
+window.cachedProfiles = all;
+
+if (all.length > 0) {
+  console.log("🧩 Example profile record:", all[0]);
+  console.log("🪪 Field keys:", Object.keys(all[0]));
+}
+
+setProfiles(all);
+
         setLoading(false);
       }
     }

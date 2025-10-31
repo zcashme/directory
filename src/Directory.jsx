@@ -75,7 +75,8 @@ export default function Directory() {
       if (nName) idByIdentity.set(nName, p.id);
       const nSlug = norm(p.slug);
       if (nSlug) idByIdentity.set(nSlug, p.id);
-      metaById.set(p.id, { since: p.since, name: p.name || "" });
+      const joinDate = p.joined_at || p.created_at || p.since || null;
+metaById.set(p.id, { since: joinDate, name: p.name || "" });
     });
 
     const countsById = new Map();
@@ -139,7 +140,8 @@ export default function Directory() {
       (p) => p.address === selectedAddress
     );
     if (!match) return null;
-    const good_thru = computeGoodThru(match.since, match.last_signed_at);
+    const joinedAt = match.joined_at || match.created_at || match.since || null;
+const good_thru = computeGoodThru(joinedAt, match.last_signed_at);
     return { ...match, good_thru };
   }, [processedProfiles, selectedAddress]);
 
@@ -302,9 +304,13 @@ export default function Directory() {
 >
   🟢 Verified (
   {
-    profiles.filter(
-      (p) => p.address_verified || p.links?.some((l) => l.is_verified)
-    ).length
+profiles.filter(
+  (p) =>
+    p.address_verified ||
+    (p.verified_links_count ?? 0) > 0 ||
+    p.links?.some((l) => l.is_verified)
+).length
+
   }
   )
 </button>
