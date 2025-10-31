@@ -374,10 +374,58 @@ const legendTotals = useMemo(() => {
       {/* Chart section */}
       {activeTab !== "all" && (
         <div className="mb-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
-          <div className="flex justify-between items-center mb-2">
+          {/* Overview header with pill toggles; toggles hide when collapsed */}
+          <div className="flex items-center justify-between mb-2">
             <p className="font-semibold text-gray-800">
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Overview
+             🔵 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Overview
             </p>
+
+            {showChart && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={() => setChartMode("totals")}
+                  className={`px-3 py-1 rounded-full border text-[11px] ${
+                    chartMode === "totals"
+                      ? "bg-gray-800 text-white border-gray-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Σ
+                </button>
+                <button
+                  onClick={() => setChartMode("change")}
+                  className={`px-3 py-1 rounded-full border text-[11px] ${
+                    chartMode === "change"
+                      ? "bg-gray-800 text-white border-gray-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  Δ
+                </button>
+
+                <button
+                  onClick={() => setChartScale("counts")}
+                  className={`px-3 py-1 rounded-full border text-[11px] ${
+                    chartScale === "counts"
+                      ? "bg-gray-800 text-white border-gray-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  n
+                </button>
+                <button
+                  onClick={() => setChartScale("percent")}
+                  className={`px-3 py-1 rounded-full border text-[11px] ${
+                    chartScale === "percent"
+                      ? "bg-gray-800 text-white border-gray-800"
+                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
+                  }`}
+                >
+                  %
+                </button>
+              </div>
+            )}
+
             <button
               onClick={() => setShowChart((v) => !v)}
               className="text-xs text-blue-600 hover:underline"
@@ -388,52 +436,6 @@ const legendTotals = useMemo(() => {
 
           {showChart && (
             <>
-              <div className="flex items-center gap-2 mb-2">
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setChartMode("totals")}
-                    className={`px-3 py-1 rounded-full border ${
-                      chartMode === "totals"
-                        ? "bg-gray-800 text-white border-gray-800"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    Totals
-                  </button>
-                  <button
-                    onClick={() => setChartMode("change")}
-                    className={`px-3 py-1 rounded-full border ${
-                      chartMode === "change"
-                        ? "bg-gray-800 text-white border-gray-800"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    Change Since Last
-                  </button>
-                </div>
-                <div className="flex gap-2 ml-3">
-                  <button
-                    onClick={() => setChartScale("counts")}
-                    className={`px-3 py-1 rounded-full border ${
-                      chartScale === "counts"
-                        ? "bg-gray-800 text-white border-gray-800"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    Counts
-                  </button>
-                  <button
-                    onClick={() => setChartScale("percent")}
-                    className={`px-3 py-1 rounded-full border ${
-                      chartScale === "percent"
-                        ? "bg-gray-800 text-white border-gray-800"
-                        : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                    }`}
-                  >
-                    %
-                  </button>
-                </div>
-              </div>
 
               <svg width="0" height="0">
                 <defs>
@@ -456,7 +458,13 @@ const legendTotals = useMemo(() => {
                     <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                       <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis domain={yDomain} tick={{ fontSize: 10 }} />
+                      <YAxis
+  domain={yDomain}
+  tick={{ fontSize: 10 }}
+  tickFormatter={(v) =>
+    chartScale === "percent" ? `${Math.round(Math.min(Math.max(v, 0), 100))}%` : v
+  }
+/>
                       <Tooltip content={<CustomTooltip />} />
                       <Legend wrapperStyle={{ fontSize: 12 }} payload={legendPayload} />
                       <Bar dataKey="other" name="Other" stackId="a" fill={COLOR_OTHER} />
@@ -477,8 +485,8 @@ const legendTotals = useMemo(() => {
         <div className="flex items-center justify-between">
 <p className="font-semibold text-gray-800">
   {activeTab === "all"
-    ? "All-time Summary"
-    : `${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Summary`}
+    ? "🔵 All-time Summary"
+    : `🔵 ${activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Summary`}
 </p>
 <div className="flex gap-2">
   <button
@@ -489,7 +497,7 @@ const legendTotals = useMemo(() => {
         : "border-gray-300 text-gray-700 hover:bg-gray-100"
     }`}
   >
-    Totals
+     Σ
   </button>
   <button
     onClick={() => setChartMode("change")}
@@ -499,7 +507,7 @@ const legendTotals = useMemo(() => {
         : "border-gray-300 text-gray-700 hover:bg-gray-100"
     }`}
   >
-    Change Since Last
+    Δ
   </button>
 </div>
 
@@ -611,7 +619,7 @@ const legendTotals = useMemo(() => {
                   onClick={() => setSummaryCols(summaryCols + 1)}
                   className="text-xs text-blue-600 mt-2 hover:underline"
                 >
-                  Add More Columns ➕
+                  Add More Columns +
                 </button>
               )}
             </div>
@@ -624,11 +632,8 @@ const legendTotals = useMemo(() => {
         <div className="flex items-center justify-between">
           <p className="font-semibold text-gray-800 flex items-center gap-2">
             {/* small referral/chain icon */}
-            <svg width="14" height="14" viewBox="0 0 24 24" className="text-gray-700">
-              <path fill="currentColor" d="M3.9 12a4.1 4.1 0 0 1 4.1-4.1h3a1 1 0 1 1 0 2h-3A2.1 2.1 0 0 0 5.9 12a2.1 2.1 0 0 0 2.1 2.1h3a1 1 0 1 1 0 2h-3A4.1 4.1 0 0 1 3.9 12Zm12-3.1a1 1 0 1 1 0-2h3a4.1 4.1 0 0 1 0 8.2h-3a1 1 0 1 1 0-2h3a2.1 2.1 0 1 0 0-4.2h-3Z"/>
-              <path fill="currentColor" d="M8 11h8v2H8z"/>
-            </svg>
-            Top Referrers ({activeTab === "all" ? "All-time" : activeTab}, Top {leaderboardLimit})
+            
+            🟠 Top Referrers ({activeTab === "all" ? "All-time" : activeTab}, Top {leaderboardLimit})
           </p>
           <button
             onClick={() => setShowReferrers((s) => !s)}
