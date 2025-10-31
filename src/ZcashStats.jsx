@@ -515,7 +515,7 @@ const legendTotals = useMemo(() => {
             onClick={() => setShowSummary((s) => !s)}
             className="text-xs text-blue-600 hover:underline"
           >
-            {showSummary ? "Hide Summary ▲" : "Show Summary ▼"}
+            {showSummary ? "Hide ▲" : "Show ▼"}
           </button>
         </div>
 
@@ -639,7 +639,7 @@ const legendTotals = useMemo(() => {
             onClick={() => setShowReferrers((s) => !s)}
             className="text-xs text-blue-600 hover:underline"
           >
-            {showReferrers ? "Hide Referrers ▲" : "Show Referrers ▼"}
+            {showReferrers ? "Hide ▲" : "Show ▼"}
           </button>
         </div>
 
