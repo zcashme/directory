@@ -176,21 +176,36 @@ const formatCell = (rowKey, colValues, colIndex = 0, allCols = []) => {
   }, []);
 
   useEffect(() => {
-    async function loadLeaderboard() {
-      setLoadingLeaderboard(true);
-      let view = "referrer_ranked_weekly";
-      if (activeTab === "daily") view = "referrer_ranked_daily";
-      if (activeTab === "monthly") view = "referrer_ranked_monthly";
-      if (activeTab === "all") view = "referrer_ranked_alltime";
-      const { data: rank, error } = await supabase
-        .from(view)
-        .select("*")
-        .order("rank_overall", { ascending: true })
-        .limit(leaderboardLimit);
-      if (error) console.error(error);
-      setRanked(rank || []);
-      setLoadingLeaderboard(false);
-    }
+async function loadLeaderboard() {
+  setLoadingLeaderboard(true);
+  let view =
+    activeTab === "daily"
+      ? "referrer_ranked_daily"
+      : activeTab === "monthly"
+      ? "referrer_ranked_monthly"
+      : activeTab === "weekly"
+      ? "referrer_ranked_weekly"
+      : "referrer_ranked_alltime";
+
+  const { data: rank, error } = await supabase
+    .from(view)
+    .select("*")
+    .order(
+      activeTab === "daily"
+        ? "rank_daily"
+        : activeTab === "monthly"
+        ? "rank_monthly"
+        : activeTab === "weekly"
+        ? "rank_weekly"
+        : "rank_alltime",
+      { ascending: true }
+    )
+    .limit(leaderboardLimit);
+
+  if (error) console.error(error);
+  setRanked(rank || []);
+  setLoadingLeaderboard(false);
+}
     loadLeaderboard();
   }, [activeTab, leaderboardLimit]);
 
@@ -519,50 +534,98 @@ const legendTotals = useMemo(() => {
         </div>
 
         {showSummary && (
-          loadingBase ? (
-            <p className="text-sm text-gray-600 mt-2">loading summary…</p>
-          ) : activeTab === "all" ? (
-  <div className="mt-2">
-    <div className="overflow-x-auto">
-      <table className="min-w-full text-[11px] border-collapse">
-        <thead>
-          <tr className="border-b border-gray-300 text-gray-600">
-            <th className="text-left pr-3">Metric</th>
-            <th className="text-right pr-3">All Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {summaryMatrix.rows.map((r) => (
-            <tr key={r.key} className="border-b border-gray-100">
-              <td className="text-left pr-3">
-                <span
-                  className="inline-block w-3 h-3 rounded-sm mr-2 align-middle"
-                  style={
-                    r.key === "both"
-                      ? { backgroundImage: "linear-gradient(90deg,#f97316,#16a34a)" }
-                      : { backgroundColor: r.color }
-                  }
-                />
-                {r.label}
-              </td>
-              <td className="text-right pr-3">
-                {formatCell(r.key, summaryMatrix.cols[0].values)}
-              </td>
+  loadingBase ? (
+    <p className="text-sm text-gray-600 mt-2">loading summary…</p>
+  ) : activeTab === "all" ? (
+    <div className="mt-2">
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-[11px] border-collapse">
+          <thead>
+            <tr className="border-b border-gray-300 text-gray-600">
+              <th className="text-left pr-3">Metric</th>
+              <th className="text-right pr-3">Daily</th>
+              <th className="text-right pr-3">Weekly</th>
+              <th className="text-right pr-3">Monthly</th>
+              <th className="text-right pr-3">All Time</th>
             </tr>
-          ))}
-          {/* Total row (all-time single column) */}
-          <tr className="font-semibold border-t border-gray-300">
-            <td className="text-left pr-3">Total</td>
-            <td className="text-right pr-3">
-              {`${summaryMatrix.cols?.[0]?.values?.members ?? 0} (100%)`}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
+          </thead>
+          <tbody>
+            {summaryMatrix.rows.map((r) => (
+              <tr key={r.key} className="border-b border-gray-100">
+                <td className="text-left pr-3">
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm mr-2 align-middle"
+                    style={
+                      r.key === "both"
+                        ? { backgroundImage: "linear-gradient(90deg,#f97316,#16a34a)" }
+                        : { backgroundColor: r.color }
+                    }
+                  />
+                  {r.label}
+                </td>
+                {["daily", "weekly", "monthly", "alltime"].map((period) => {
+                  const src =
+                    period === "daily"
+                      ? growthDaily.at(-1)
+                      : period === "weekly"
+                      ? growthWeekly.at(-1)
+                      : period === "monthly"
+                      ? growthMonthly.at(-1)
+                      : summaryMatrix.cols[0]?.values;
 
-          ) : summaryMatrix.cols.length === 0 ? (
+                  let vals;
+                  if (!src) {
+                    vals = { members: 0, other: 0, referred: 0, verified: 0, both: 0 };
+                  } else if (src.members !== undefined) {
+                    vals = src;
+                  } else {
+                    const m = Number(src.total_new_members || 0);
+                    const r0 = Number(src.referred_members || 0);
+                    const v0 = Number(src.verified_members || 0);
+                    const b0 = Number(src.verified_and_referred_members || 0);
+                    const onlyRef = Math.max(0, r0 - b0);
+                    const onlyVer = Math.max(0, v0 - b0);
+                    const both = Math.max(0, b0);
+                    const other = Math.max(0, m - (onlyRef + onlyVer + both));
+                    vals = { members: m, other, referred: onlyRef, verified: onlyVer, both };
+                  }
+
+                  return (
+                    <td key={period} className="text-right pr-3">
+                      {formatCell(r.key, vals)}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+            <tr className="font-semibold border-t border-gray-300">
+              <td className="text-left pr-3">Total</td>
+              {["daily", "weekly", "monthly", "alltime"].map((period) => {
+                const src =
+                  period === "daily"
+                    ? growthDaily.at(-1)
+                    : period === "weekly"
+                    ? growthWeekly.at(-1)
+                    : period === "monthly"
+                    ? growthMonthly.at(-1)
+                    : summaryMatrix.cols[0]?.values;
+                const members =
+                  src?.members ??
+                  src?.total_new_members ??
+                  0;
+                return (
+                  <td key={period} className="text-right pr-3">
+                    {`${members} (100%)`}
+                  </td>
+                );
+              })}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  ) : summaryMatrix.cols.length === 0 ? (
+
             <p className="text-gray-500 italic text-xs mt-2">No data available.</p>
           ) : (
             <div className="mt-2">
