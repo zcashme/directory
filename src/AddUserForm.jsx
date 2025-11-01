@@ -402,7 +402,8 @@ if (!addrErr && addrMatch && addrMatch.length) {
         {
           name: name.trim(),
           address: address.trim(),
-          referred_by: referrer || null,
+          referred_by: referrer?.name || null,
+referred_by_zcasher_id: referrer?.id || null,
           created_at: new Date().toISOString(),
         },
       ])
@@ -430,6 +431,13 @@ if (!addrErr && addrMatch && addrMatch.length) {
 const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
 const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
 
+// 🧹 Clear cached profiles so directory reloads fresh
+window.cachedProfiles = null;
+
+// Optionally, reload or navigate directly
+window.location.reload();
+
+// If you prefer not to reload, you could instead trigger the callback:
 onUserAdded?.(profile);
 onClose?.();
 
@@ -574,11 +582,12 @@ const StepAddress = (
               .slice(0, 20)
               .map((p) => (
                 <div
-                  key={p.name}
-                  onClick={() => {
-                    setReferrer(p.name);
-                    setShowDropdown(false);
-                  }}
+  key={p.id || p.name}
+
+onClick={() => {
+  setReferrer(p); // store the full profile object
+  setShowDropdown(false);
+}}
                   className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer flex items-center gap-1"
                 >
                   {p.name}
@@ -704,7 +713,7 @@ const StepAddress = (
         </div>
         <div>
           <span className="font-semibold text-gray-700">Referred by:</span>{" "}
-          <span>{referrer || "—"}</span>
+          <span>{referrer?.name || "—"}</span>
         </div>
         <div>
           <span className="font-semibold text-gray-700">Links:</span>
