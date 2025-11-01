@@ -34,7 +34,7 @@ export default function ZcashStats() {
 
   // palette
   const COLOR_MEMBERS = "#2563eb";
-  const COLOR_OTHER = "#000000"; // fully opaque black
+const COLOR_OTHER = "#2563eb"; // match All/Members blue for softer contrast
   const COLOR_ONLY_REF = "#f97316";
   const COLOR_ONLY_VER = "#16a34a";
   // ----- Summary matrix + format helpers -----
@@ -43,7 +43,7 @@ export default function ZcashStats() {
       { key: "other", label: "Other", color: COLOR_OTHER },
       { key: "referred", label: "Referred", color: COLOR_ONLY_REF },
       { key: "verified", label: "Verified", color: COLOR_ONLY_VER },
-      { key: "both", label: "Verified+Ref", color: "linear-gradient(90deg,#f97316,#16a34a)" },
+      { key: "both", label: "Verified+Ref", color: "linear-gradient(90deg,#2563eb,#16a34a)" },
     ];
 
     const growthSrc =
