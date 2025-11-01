@@ -5,6 +5,7 @@ import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadge from "./ReferRankBadge";
+import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
 import HelpIcon from "./HelpIcon";
 
@@ -363,11 +364,19 @@ const hasUnverifiedLinks =
   const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
 
   const hasReferrals = (profile.referral_count ?? 0) > 0;
-  const isRanked =
-    hasReferrals &&
-    profile.referral_rank &&
-    profile.referral_rank > 0 &&
-    profile.referral_rank <= 10;
+const isRanked =
+  (profile.rank_alltime > 0 && profile.rank_alltime <= 10) ||
+  (profile.rank_weekly > 0 && profile.rank_weekly <= 10) ||
+  (profile.rank_monthly > 0 && profile.rank_monthly <= 10) ||
+  (profile.rank_daily > 0 && profile.rank_daily <= 10) ||
+  (profile.refRank ?? profile.referral_rank) <= 10;
+
+
+let rankType = null;
+if (profile.rank_alltime > 0 && profile.rank_alltime <= 10) rankType = "alltime";
+else if (profile.rank_weekly > 0 && profile.rank_weekly <= 10) rankType = "weekly";
+else if (profile.rank_monthly > 0 && profile.rank_monthly <= 10) rankType = "monthly";
+else if (profile.rank_daily > 0 && profile.rank_daily <= 10) rankType = "daily";
 
   // ordinal helper for rank
   const ordinal = (n) => {
@@ -377,14 +386,31 @@ const hasUnverifiedLinks =
     return n + (s[(v - 20) % 10] || s[v] || s[0]);
   };
 
-  let circleClass = "bg-blue-500"; // default = All
-  if (isVerified && isRanked) {
-    circleClass = "bg-gradient-to-r from-green-500 to-red-500"; // Verified + Ranked
-  } else if (isVerified) {
-    circleClass = "bg-green-500"; // Verified
-  } else if (isRanked) {
-    circleClass = "bg-red-400"; // Ranked
+let circleClass = "bg-blue-500"; // default = All
+
+if (isVerified && isRanked) {
+  // Verified + ranked (any period)
+  circleClass = "bg-gradient-to-r from-green-400  to-orange-500";
+} else if (isVerified) {
+  // Verified only
+  circleClass = "bg-green-500";
+} else if (rankType) {
+  // Unverified + ranked (any period) → base blue blended with red/orange
+  if (rankType === "alltime") {
+    circleClass = "bg-gradient-to-r from-blue-500  to-red-500";
+  } else if (rankType === "weekly") {
+    circleClass = "bg-gradient-to-r from-blue-500  to-orange-500";
+  } else if (rankType === "monthly") {
+    circleClass = "bg-gradient-to-r from-blue-500  to-red-500";
+  } else if (rankType === "daily") {
+    circleClass = "bg-gradient-to-r from-blue-500  to-cyan-500";
   }
+} else {
+  // Default unverified + unranked
+  circleClass = "bg-blue-500";
+}
+
+
 
   const CheckIcon = (
     <svg
@@ -449,9 +475,16 @@ const hasUnverifiedLinks =
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
               {profile.name}
-              {profile.referral_rank > 0 && (
-                <ReferRankBadge rank={profile.referral_rank} />
-              )}
+              {(profile.rank_alltime ?? 0) > 0 && (
+  <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
+)}
+{(profile.rank_weekly ?? 0) > 0 && (
+  <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
+)}
+{(profile.rank_monthly ?? 0) > 0 && (
+  <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
+)}
+
               {isNewProfile(profile) && (
                 <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
                   NEW

@@ -14,7 +14,6 @@ import {
 export default function ZcashStats() {
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-
   const [network, setNetwork] = useState(null);
   const [growthDaily, setGrowthDaily] = useState([]);
   const [growthWeekly, setGrowthWeekly] = useState([]);
@@ -710,4 +709,6 @@ const legendTotals = useMemo(() => {
       </div>
     </div>
   );
+  // after successful fetch of all three leaderboards:
+
 }

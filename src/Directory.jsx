@@ -115,20 +115,22 @@ metaById.set(p.id, { since: joinDate, name: p.name || "" });
       if (c > 0) countsByIdentity[ident] = c;
     });
 
-    const enriched = profiles.map((p) => {
-      const verifiedLinks =
-        p.verified_links_count ??
-        (p.links?.filter((l) => l.is_verified).length || 0);
-      const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
-      const refRank = rankById.get(p.id) || 0;
+const enriched = profiles.map((p) => {
+  const verifiedLinks =
+    p.verified_links_count ??
+    (p.links?.filter((l) => l.is_verified).length || 0);
+  const verifications = (p.address_verified ? 1 : 0) + verifiedLinks;
+  const refRank = rankById.get(p.id) || 0;
 
-      return {
-        ...p,
-        verifications,
-        refRank,
-        featured: p.featured === true,
-      };
-    });
+  return {
+    ...p,
+    verifications,
+    refRank,
+    referral_rank: refRank || p.referral_rank || 0, // 🟠 ensure backward-compatible rank field
+    featured: p.featured === true,
+  };
+});
+
 
     return { referralCounts: countsByIdentity, rankedProfiles: enriched };
   }, [profiles]);
@@ -177,12 +179,21 @@ const good_thru = computeGoodThru(joinedAt, match.last_signed_at);
     if (referred) {
       s = s.filter((p) => !!p.referred_by);
     }
-    if (ranked) {
-      s = s.filter(
-        (p) =>
-          Number(p.referral_rank ?? 0) > 0 && Number(p.referral_rank) <= 10
-      );
-    }
+    // Defining who appears under Ranked filter (top 10 in any leaderboard period)
+if (ranked) {
+  s = s.filter((p) => {
+    const allRank = Number(p.rank_alltime) || 0;
+    const weekRank = Number(p.rank_weekly) || 0;
+    const monthRank = Number(p.rank_monthly) || 0;
+    return (
+      (allRank > 0 && allRank <= 10) ||
+      (weekRank > 0 && weekRank <= 10) ||
+      (monthRank > 0 && monthRank <= 10)
+    );
+  });
+}
+
+
     if (featured) {
       s = s.filter((p) => Boolean(p.featured) === true);
     }
@@ -290,7 +301,16 @@ const good_thru = computeGoodThru(joinedAt, match.last_signed_at);
       : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
   }`}
 >
-  🟠 Ranked ({processedProfiles.filter((p) => p.refRank > 0).length})
+  🟠 Top Rank ({processedProfiles.filter((p) => {
+  const allRank = Number(p.rank_alltime) || 0;
+  const weekRank = Number(p.rank_weekly) || 0;
+  const monthRank = Number(p.rank_monthly) || 0;
+  return (
+    (allRank > 0 && allRank <= 10) ||
+    (weekRank > 0 && weekRank <= 10) ||
+    (monthRank > 0 && monthRank <= 10)
+  );
+}).length})
 </button>
 
 {/* Verified */}
