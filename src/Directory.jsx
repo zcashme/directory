@@ -369,8 +369,17 @@ profiles.filter(
   <div className="relative flex-1 max-w-sm">
     <input
       value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      onKeyDown={(e) => e.key === "Enter" && setShowDirectory(true)}
+      onChange={(e) => {
+        setSearch(e.target.value);
+        setFilters({ verified: false, referred: false, ranked: false, featured: false });
+      }}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") {
+          setShowDirectory(true);
+          setFilters({ verified: false, referred: false, ranked: false, featured: false });
+        }
+      }}
+
       placeholder={`search ${profiles.length} names`}
       className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
     />
