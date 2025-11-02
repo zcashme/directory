@@ -473,48 +473,54 @@ if (isVerified && isRanked) {
           </div>
 
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
-            <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
-              {profile.name}
-              {(profile.rank_alltime ?? 0) > 0 && (
-  <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
-)}
-{(profile.rank_weekly ?? 0) > 0 && (
-  <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
-)}
-{(profile.rank_monthly ?? 0) > 0 && (
-  <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
-)}
+<span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
+  {profile.name}
+  {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
+    <VerifiedBadge
+      verified={true}
+      verifiedCount={
+        (profile.verified_links_count ?? 0) +
+        (profile.address_verified ? 1 : 0)
+      }
+    />
+  )}
+  {isNewProfile(profile) && (
+    <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
+      NEW
+    </span>
+  )}
+</span>
 
-              {isNewProfile(profile) && (
-                <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
-                  NEW
-                </span>
-              )}
-            </span>
+<div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-snug mt-0.5">
+  <span>
+    Joined{" "}
+    {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+      month: "short",
+      year: "numeric",
+    })}
+  </span>
 
-            <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-snug">
-              {(profile.address_verified ||
-              (profile.verified_links_count ?? 0) > 0) ? (
-                <VerifiedBadge
-                  verified={true}
-                  verifiedCount={
-                    (profile.verified_links_count ?? 0) +
-                    (profile.address_verified ? 1 : 0)
-                  }
-                />
-              ) : (
-                <span className="text-red-400">Unverified</span>
-              )}
-              <span className="text-gray-400">•</span>
-              <span>
-Joined{" "}
-{new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
-  month: "short",
-  year: "numeric",
-})}
+  {/* Show dot only if there are any referral badges */}
+  {((profile.rank_alltime ?? 0) > 0 ||
+    (profile.rank_weekly ?? 0) > 0 ||
+    (profile.rank_monthly ?? 0) > 0 ||
+    (profile.rank_daily ?? 0) > 0) && (
+    <span className="text-gray-400">•</span>
+  )}
 
-              </span>
-            </div>
+  {(profile.rank_alltime ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
+  )}
+  {(profile.rank_weekly ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
+  )}
+  {(profile.rank_monthly ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
+  )}
+  {(profile.rank_daily ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_daily} period="daily" />
+  )}
+</div>
           </div>
         </div>
       </VerifiedCardWrapper>
