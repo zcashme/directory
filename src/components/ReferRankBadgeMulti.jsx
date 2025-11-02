@@ -12,12 +12,12 @@ export default function ReferRankBadgeMulti({ rank, period = "all" }) {
     weekly: {
       emoji: "📅",
       bg: "bg-sky-100/80 border-sky-300 text-sky-800",
-      label: `#${rank} Weekly`,
+      label: `#${rank} This Week`,
     },
     monthly: {
       emoji: "🗓️",
       bg: "bg-violet-100/80 border-violet-300 text-violet-800",
-      label: `#${rank} Monthly`,
+      label: `#${rank} This Month`,
     },
   };
 

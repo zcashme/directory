@@ -700,12 +700,22 @@ window.dispatchEvent(
             )}
           </p>
 
-          {/* Referrer badge (unchanged) */}
-          <div className="mt-2 flex flex-col items-center justify-center gap-1">
-            {profile.referral_rank > 0 && (
-              <ReferRankBadge rank={profile.referral_rank} />
-            )}
-          </div>
+          {/* Referrer badges (multi-period) */}
+<div className="mt-2 flex flex-col items-center justify-center gap-1">
+  {(profile.rank_alltime ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
+  )}
+  {(profile.rank_weekly ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
+  )}
+  {(profile.rank_monthly ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
+  )}
+  {(profile.rank_daily ?? 0) > 0 && (
+    <ReferRankBadgeMulti rank={profile.rank_daily} period="daily" />
+  )}
+</div>
+
 
           {/* Dates */}
           <p className="mt-3 text-xs text-gray-500">
