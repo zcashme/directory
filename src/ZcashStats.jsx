@@ -479,7 +479,7 @@ const legendTotals = useMemo(() => {
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip contentStyle={{ fontSize: "11px" }} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Line type="monotone" dataKey="other" name="Other" stroke="#64748b" dot={false} />
+                <Line type="monotone" dataKey="other" name="Other" stroke={COLOR_OTHER} dot={false} />
                 <Line type="monotone" dataKey="referred" name="Referred" stroke="#f97316" dot={false} />
                 <Line type="monotone" dataKey="verified" name="Verified" stroke="#16a34a" dot={false} />
                 <Line type="monotone" dataKey="both" name="Verified+Ref" stroke="url(#vrGrad)" dot={false} />
@@ -505,7 +505,7 @@ const legendTotals = useMemo(() => {
                 />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend wrapperStyle={{ fontSize: 12 }} payload={legendPayload} />
-                <Bar dataKey="other" name="Other" stackId="a" fill="#64748b" />
+                <Bar dataKey="other" name="Other" stackId="a" fill={COLOR_OTHER} />
                 <Bar dataKey="only_referred" name="Referred" stackId="a" fill="#f97316" />
                 <Bar dataKey="only_verified" name="Verified" stackId="a" fill="#16a34a" />
                 <Bar dataKey="both" name="Verified+Ref" stackId="a" fill="url(#vrGrad)" />
