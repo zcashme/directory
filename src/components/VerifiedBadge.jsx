@@ -30,15 +30,25 @@ export default function VerifiedBadge({ verified = true, verifiedCount = 1 }) {
 
   if (verified) {
     // ✅ Verified or partially verified
-    return (
-      <span
-        className={`${baseClasses} text-green-800 bg-gradient-to-r from-green-100 to-green-200 border border-green-300 shadow-sm`}
-        style={{ fontFamily: "inherit" }}
-      >
-        {renderChecks("text-green-600")}
-        Verified
-      </span>
-    );
+return (
+<span
+  className={`${baseClasses} group inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
+      text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+  style={{ fontFamily: "inherit" }}
+>
+
+<div className="flex items-center justify-center gap-0 group-hover:gap-1 transition-[gap] duration-300">
+  {renderChecks("text-green-600")}
+  <span
+    className="overflow-hidden inline-block max-w-0 group-hover:max-w-[70px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out whitespace-nowrap"
+  >
+    Verified
+  </span>
+</div>
+
+
+  </span>
+);
   }
 
   // ⚪ Unverified state

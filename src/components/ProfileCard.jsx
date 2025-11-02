@@ -629,21 +629,7 @@ window.dispatchEvent(
             </div>
           </div>
 
-          {/* Top-right verified badge */}
-          <div className="absolute top-4 right-4">
-            {profile.address_verified ||
-            (profile.verified_links_count ?? 0) > 0 ? (
-              <VerifiedBadge
-                verified={true}
-                verifiedCount={
-                  (profile.verified_links_count ?? 0) +
-                  (profile.address_verified ? 1 : 0)
-                }
-              />
-            ) : (
-              <VerifiedBadge verified={false} />
-            )}
-          </div>
+         
 {profile.last_verified_at && (
   <p className="text-xs text-gray-500 mt-1">
     Last verified:{" "}
@@ -687,7 +673,18 @@ window.dispatchEvent(
           </div>
 
           {/* Name */}
-          <h2 className="mt-3 text-2xl font-bold text-gray-800">{profile.name}</h2>
+<div className="mt-3 flex items-center justify-center gap-2">
+  <h2 className="text-2xl font-bold text-gray-800">{profile.name}</h2>
+  {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
+    <VerifiedBadge
+      verified={true}
+      verifiedCount={
+        (profile.verified_links_count ?? 0) +
+        (profile.address_verified ? 1 : 0)
+      }
+    />
+  )}
+</div>
 
           {/* Address */}
           <p className="mt-2 text-sm text-gray-600 font-mono select-all">

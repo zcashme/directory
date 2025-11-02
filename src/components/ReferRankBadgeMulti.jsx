@@ -23,12 +23,23 @@ export default function ReferRankBadgeMulti({ rank, period = "all" }) {
 
   const scheme = colorSchemes[period] || colorSchemes.all;
 
-  return (
+return (
+  <span
+    className={`group inline-flex items-center gap-1 rounded-full border text-xs font-medium shadow-sm select-none transition-all duration-300 hover:px-2.5 px-1.5 py-0.5 ${scheme.bg}`}
+    title={`Ranked #${rank} on ${period} leaderboard`}
+  >
+    {scheme.emoji}
+    <span className="font-semibold">#{rank}</span>
     <span
-      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs font-semibold shadow-sm select-none ${scheme.bg} ${scheme.text}`}
-      title={`Ranked #${rank} on ${period} leaderboard`}
+      className="overflow-hidden inline-block max-w-0 group-hover:max-w-[80px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out whitespace-nowrap"
     >
-      {scheme.emoji} {scheme.label}
+      {period === "all"
+        ? " All-Time"
+        : period === "weekly"
+        ? " This Week"
+        : " This Month"}
     </span>
-  );
+  </span>
+);
+
 }
