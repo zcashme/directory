@@ -229,9 +229,16 @@ if (ranked) {
     setTimeout(() => scrollToLetter(letter), 200);
   };
 
-  const toggleFilter = (key) => {
-    setFilters((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
+const toggleFilter = (key) => {
+  setFilters((prev) => {
+    const next = { verified: false, referred: false, ranked: false, featured: false };
+    // If clicking an already active filter → deselect all
+    if (prev[key]) return next;
+    // Otherwise, activate only the chosen one
+    next[key] = true;
+    return next;
+  });
+};
 
   const clearFilters = () => {
     setFilters({ verified: false, referred: false, ranked: false });
@@ -301,7 +308,7 @@ if (ranked) {
       : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
   }`}
 >
-  🟠 Top Rank ({processedProfiles.filter((p) => {
+  🔥 Top Rank ({processedProfiles.filter((p) => {
   const allRank = Number(p.rank_alltime) || 0;
   const weekRank = Number(p.rank_weekly) || 0;
   const monthRank = Number(p.rank_monthly) || 0;
@@ -365,7 +372,7 @@ profiles.filter(
   className="px-2 py-0.5 rounded-full border text-xs font-medium transition-all
              bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
 >
-  ⚑ Feedback
+  ❤️ Feedback
 </a>
               </div>
             </div>

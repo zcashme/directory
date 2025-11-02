@@ -4,6 +4,8 @@ import {
   ResponsiveContainer,
   BarChart,
   Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   Tooltip,
@@ -386,113 +388,135 @@ const legendTotals = useMemo(() => {
 </div>
 
       {/* Chart section */}
-      {activeTab !== "all" && (
-        <div className="mb-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
-          {/* Overview header with pill toggles; toggles hide when collapsed */}
-          <div className="flex items-center justify-between mb-2">
-            <p className="font-semibold text-gray-800">
-             🔵 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Overview
-            </p>
+{(activeTab !== "all" || activeTab === "all") && (
+  <div className="mb-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
+    {/* Overview header with pill toggles; toggles hide when collapsed */}
+    <div className="flex items-center justify-between mb-2">
+      <p className="font-semibold text-gray-800">
+        🔵 {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Overview
+      </p>
 
-            {showChart && (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setChartMode("totals")}
-                  className={`px-3 py-1 rounded-full border text-[11px] ${
-                    chartMode === "totals"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  Σ
-                </button>
-                <button
-                  onClick={() => setChartMode("change")}
-                  className={`px-3 py-1 rounded-full border text-[11px] ${
-                    chartMode === "change"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  Δ
-                </button>
-
-                <button
-                  onClick={() => setChartScale("counts")}
-                  className={`px-3 py-1 rounded-full border text-[11px] ${
-                    chartScale === "counts"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  n
-                </button>
-                <button
-                  onClick={() => setChartScale("percent")}
-                  className={`px-3 py-1 rounded-full border text-[11px] ${
-                    chartScale === "percent"
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "border-gray-300 text-gray-700 hover:bg-gray-100"
-                  }`}
-                >
-                  %
-                </button>
-              </div>
-            )}
-
+      {showChart && (
+        <div className="flex flex-wrap gap-2">
+          {["Σ", "Δ"].map((symbol, i) => (
             <button
-              onClick={() => setShowChart((v) => !v)}
-              className="text-xs text-blue-600 hover:underline"
+              key={symbol}
+              onClick={() => setChartMode(i === 0 ? "totals" : "change")}
+              className={`px-3 py-1 rounded-full border text-[11px] ${
+                chartMode === (i === 0 ? "totals" : "change")
+                  ? "bg-gray-800 text-white border-gray-800"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-100"
+              }`}
             >
-              {showChart ? "Hide ▲" : "Show ▼"}
+              {symbol}
             </button>
-          </div>
-
-          {showChart && (
-            <>
-
-              <svg width="0" height="0">
-                <defs>
-                  <linearGradient id="vrGrad" x1="0" y1="0" x2="1" y2="0">
-                    <stop offset="0%" stopColor={COLOR_ONLY_REF} />
-                    <stop offset="100%" stopColor={COLOR_ONLY_VER} />
-                  </linearGradient>
-                </defs>
-              </svg>
-
-              {loadingBase ? (
-                <p className="text-sm text-gray-600">loading chart…</p>
-              ) : chartData.length === 0 ? (
-                <p className="text-gray-500 italic text-xs">
-                  No data available.
-                </p>
-              ) : (
-                <div style={{ width: "100%", height: 280 }}>
-                  <ResponsiveContainer>
-                    <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                      <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-                      <YAxis
-  domain={yDomain}
-  tick={{ fontSize: 10 }}
-  tickFormatter={(v) =>
-    chartScale === "percent" ? `${Math.round(Math.min(Math.max(v, 0), 100))}%` : v
-  }
-/>
-                      <Tooltip content={<CustomTooltip />} />
-                      <Legend wrapperStyle={{ fontSize: 12 }} payload={legendPayload} />
-                      <Bar dataKey="other" name="Other" stackId="a" fill={COLOR_OTHER} />
-                      <Bar dataKey="only_referred" name="Referred" stackId="a" fill={COLOR_ONLY_REF} />
-                      <Bar dataKey="only_verified" name="Verified" stackId="a" fill={COLOR_ONLY_VER} />
-                      <Bar dataKey="both" name="Verified+Ref" stackId="a" fill="url(#vrGrad)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              )}
-            </>
-          )}
+          ))}
+          {["n", "%"].map((symbol, i) => (
+            <button
+              key={symbol}
+              onClick={() => setChartScale(i === 0 ? "counts" : "percent")}
+              className={`px-3 py-1 rounded-full border text-[11px] ${
+                chartScale === (i === 0 ? "counts" : "percent")
+                  ? "bg-gray-800 text-white border-gray-800"
+                  : "border-gray-300 text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {symbol}
+            </button>
+          ))}
         </div>
       )}
+
+      <button
+        onClick={() => setShowChart((v) => !v)}
+        className="text-xs text-blue-600 hover:underline"
+      >
+        {showChart ? "Hide ▲" : "Show ▼"}
+      </button>
+    </div>
+
+    {showChart && (
+      <>
+        <svg width="0" height="0">
+          <defs>
+            <linearGradient id="vrGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#f97316" />
+              <stop offset="100%" stopColor="#16a34a" />
+            </linearGradient>
+          </defs>
+        </svg>
+
+        {loadingBase ? (
+          <p className="text-sm text-gray-600">loading chart…</p>
+        ) : activeTab === "all" ? (
+          // 🟢 All-time view → cumulative line chart over daily data
+          <div style={{ width: "100%", height: 280 }}>
+            <ResponsiveContainer>
+              <LineChart
+                data={growthDaily.map((g, i, arr) => {
+                  // accumulate cumulatively
+                  const prev = i > 0 ? arr[i - 1] : {};
+                  const m = (prev.total_new_members || 0) + (g.total_new_members || 0);
+                  const r = (prev.referred_members || 0) + (g.referred_members || 0);
+                  const v = (prev.verified_members || 0) + (g.verified_members || 0);
+                  const b = (prev.verified_and_referred_members || 0) + (g.verified_and_referred_members || 0);
+                  const onlyRef = Math.max(0, r - b);
+                  const onlyVer = Math.max(0, v - b);
+                  const both = Math.max(0, b);
+                  const other = Math.max(0, m - (onlyRef + onlyVer + both));
+                  return {
+                    label: g.day_start?.slice(0, 10),
+                    other,
+                    referred: onlyRef,
+                    verified: onlyVer,
+                    both,
+                  };
+                })}
+                margin={{ top: 8, right: 16, bottom: 8, left: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip contentStyle={{ fontSize: "11px" }} />
+                <Legend wrapperStyle={{ fontSize: 12 }} />
+                <Line type="monotone" dataKey="other" name="Other" stroke="#64748b" dot={false} />
+                <Line type="monotone" dataKey="referred" name="Referred" stroke="#f97316" dot={false} />
+                <Line type="monotone" dataKey="verified" name="Verified" stroke="#16a34a" dot={false} />
+                <Line type="monotone" dataKey="both" name="Verified+Ref" stroke="url(#vrGrad)" dot={false} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        ) : chartData.length === 0 ? (
+          <p className="text-gray-500 italic text-xs">No data available.</p>
+        ) : (
+          <div style={{ width: "100%", height: 280 }}>
+            <ResponsiveContainer>
+              <BarChart data={chartData} margin={{ top: 8, right: 16, bottom: 8, left: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="label" tick={{ fontSize: 10 }} />
+                <YAxis
+                  domain={yDomain}
+                  tick={{ fontSize: 10 }}
+                  tickFormatter={(v) =>
+                    chartScale === "percent"
+                      ? `${Math.round(Math.min(Math.max(v, 0), 100))}%`
+                      : v
+                  }
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend wrapperStyle={{ fontSize: 12 }} payload={legendPayload} />
+                <Bar dataKey="other" name="Other" stackId="a" fill="#64748b" />
+                <Bar dataKey="only_referred" name="Referred" stackId="a" fill="#f97316" />
+                <Bar dataKey="only_verified" name="Verified" stackId="a" fill="#16a34a" />
+                <Bar dataKey="both" name="Verified+Ref" stackId="a" fill="url(#vrGrad)" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </>
+    )}
+  </div>
+)}
 
       {/* --- Summary (collapsed by default; Add More Columns) --- */}
       <div className="mb-3 border border-gray-200 rounded-lg p-3 bg-gray-50">
@@ -695,7 +719,7 @@ const legendTotals = useMemo(() => {
           <p className="font-semibold text-gray-800 flex items-center gap-2">
             {/* small referral/chain icon */}
             
-            🟠 Top Referrers ({activeTab === "all" ? "All-time" : activeTab}, Top {leaderboardLimit})
+            🔥 Top Referrers ({activeTab === "all" ? "All-time" : activeTab}, Top {leaderboardLimit})
           </p>
           <button
             onClick={() => setShowReferrers((s) => !s)}
