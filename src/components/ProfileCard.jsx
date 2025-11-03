@@ -9,6 +9,7 @@ import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
 import HelpIcon from "./HelpIcon";
 import CheckIcon from "../assets/CheckIcon";
+import shareIcon from "../assets/share.svg";
 
 import { motion } from "framer-motion";
 import React from "react";
@@ -709,7 +710,7 @@ if (isVerified && isRanked) {
     title={`Share ${profile.name}`}
   >
 <img
-  src="/src/assets/share.svg"
+  src={shareIcon}
   alt="Share"
   className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
 />
@@ -843,7 +844,7 @@ if (isVerified && isRanked) {
   >
     ▣
     <span className="inline-block max-w-0 group-hover:max-w-[60px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">
-      Show QR
+      QR
     </span>
   </button>
 
