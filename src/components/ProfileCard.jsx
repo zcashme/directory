@@ -396,7 +396,7 @@ const [linksArray, setLinksArray] = useState(() => {
 
 // 🔄 whenever "Show Links" is opened, fetch live links from Supabase
 useEffect(() => {
-  if (!profile?.id || !showLinks) return;
+  if (!profile?.id) return;
 
   import("../supabase").then(async ({ supabase }) => {
     const { data, error } = await supabase
