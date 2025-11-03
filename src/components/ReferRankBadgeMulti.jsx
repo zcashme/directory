@@ -1,7 +1,9 @@
-import React from "react";
+import React, { useState } from "react";
 
-export default function ReferRankBadgeMulti({ rank, period = "all" }) {
+export default function ReferRankBadgeMulti({ rank, period = "all", alwaysOpen = false }) {
   if (!rank || rank > 10) return null; // show only top 10
+
+  const [open, setOpen] = useState(false);
 
   const colorSchemes = {
     all: {
@@ -23,23 +25,30 @@ export default function ReferRankBadgeMulti({ rank, period = "all" }) {
 
   const scheme = colorSchemes[period] || colorSchemes.all;
 
-return (
-  <span
-    className={`group inline-flex items-center gap-1 rounded-full border text-xs font-medium shadow-sm select-none transition-all duration-300 hover:px-2.5 px-1.5 py-0.5 ${scheme.bg}`}
-    title={`Ranked #${rank} on ${period} leaderboard`}
-  >
-    {scheme.emoji}
-    <span className="font-semibold">#{rank}</span>
+  return (
     <span
-      className="overflow-hidden inline-block max-w-0 group-hover:max-w-[80px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out whitespace-nowrap"
+      onTouchStart={(e) => {
+        e.stopPropagation();
+        setOpen((prev) => !prev);
+      }}
+      className={`group inline-flex items-center gap-1 rounded-full border text-xs font-medium shadow-sm select-none transition-all duration-300 hover:px-2.5 px-1.5 py-0.5 ${scheme.bg}`}
+      title={`Ranked #${rank} on ${period} leaderboard`}
     >
-      {period === "all"
-        ? " All-Time"
-        : period === "weekly"
-        ? " This Week"
-        : " This Month"}
+      {scheme.emoji}
+      <span className="font-semibold">#{rank}</span>
+      <span
+        className={`overflow-hidden inline-block transition-all duration-300 ease-in-out whitespace-nowrap ${
+          alwaysOpen || open
+            ? "max-w-[80px] opacity-100"
+            : "max-w-0 opacity-0 group-hover:max-w-[80px] group-hover:opacity-100"
+        }`}
+      >
+        {period === "all"
+          ? " All-Time"
+          : period === "weekly"
+          ? " This Week"
+          : " This Month"}
+      </span>
     </span>
-  </span>
-);
-
+  );
 }

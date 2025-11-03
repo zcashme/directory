@@ -451,43 +451,50 @@ useEffect(() => {
     ✎ Draft
   </button>
 
-  {/* 🔐 Sign In Button */}
-  <button
-    onClick={() => {
-      setMode("signin");
-      setForceShowQR(true);
-      setShowFull(false);
-      // ✅ Tell the card to flip to BACK (Edit Profile)
-      // look up the zId from cachedProfiles if not already set
-const resolvedZId =
-  activeZId ??
-  cachedProfiles.find((p) => p.address === selectedAddress)?.id ??
-  "?";
+{/* 🔐 Sign In Button */}
+<button
+  onClick={() => {
+    setMode("signin");
+    setForceShowQR(true);
+    setShowFull(false);
 
-window.dispatchEvent(
-  new CustomEvent("enterSignInMode", {
-    detail: {
-      zId: resolvedZId,
-      address: selectedAddress,
-      name:
-        cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
-        "",
-      verified:
-        cachedProfiles.find((p) => p.address === selectedAddress)
-          ?.address_verified || false,
-    },
-  })
-);
+    // ✅ Smoothly scroll this section into view
+    setTimeout(() => {
+      const feedbackSection = document.getElementById("zcash-feedback");
+      if (feedbackSection) {
+        feedbackSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 150);
 
-    }}
-    className={`px-3 py-1 font-medium transition-colors ${
-      mode === "signin"
-        ? "bg-blue-600 text-white"
-        : "bg-gray-100 text-gray-600 hover:bg-gray-100"
-    }`}
-  >
-    ⛊ Verify
-  </button>
+    // ✅ Tell the card to flip to BACK (Edit Profile)
+    const resolvedZId =
+      activeZId ??
+      cachedProfiles.find((p) => p.address === selectedAddress)?.id ??
+      "?";
+
+    window.dispatchEvent(
+      new CustomEvent("enterSignInMode", {
+        detail: {
+          zId: resolvedZId,
+          address: selectedAddress,
+          name:
+            cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
+            "",
+          verified:
+            cachedProfiles.find((p) => p.address === selectedAddress)
+              ?.address_verified || false,
+        },
+      })
+    );
+  }}
+  className={`px-3 py-1 font-medium transition-colors ${
+    mode === "signin"
+      ? "bg-blue-600 text-white"
+      : "bg-gray-100 text-gray-600 hover:bg-gray-100"
+  }`}
+>
+  ⛊ Verify
+</button>
 </div>
 
           </div>

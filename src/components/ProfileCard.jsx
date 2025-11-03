@@ -8,8 +8,53 @@ import ReferRankBadge from "./ReferRankBadge";
 import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
 import HelpIcon from "./HelpIcon";
+import CheckIcon from "../assets/CheckIcon";
 
 import { motion } from "framer-motion";
+import React from "react";
+
+function AddressCopyChip({ address }) {
+  const [copied, setCopied] = React.useState(false);
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(address);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div
+      className={`flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] transition-colors duration-300 ${
+        copied ? "border-green-400 bg-green-50" : "border-gray-300 bg-gray-50"
+      }`}
+    >
+      <span
+        className="truncate max-w-[180px] select-all"
+        title={address}
+      >
+        {address}
+      </span>
+
+      <button
+        onClick={handleCopy}
+        className={`flex items-center justify-center transition-all ${
+          copied
+            ? "text-green-600 hover:text-green-600"
+            : "text-gray-500 hover:text-blue-600"
+        }`}
+        title={copied ? "Copied!" : "Copy address"}
+      >
+        {copied ? (
+  <CheckIcon className="h-4 w-4 text-green-600 drop-shadow-sm" />
+) : (
+  "⧉"
+)}
+
+      </button>
+    </div>
+  );
+}
+
 
 function EditableField({ label, value, fieldKey, multiline }) {
   const { setPendingEdit } = useFeedback();
@@ -186,6 +231,8 @@ const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const [showLinks, setShowLinks] = useState(false);
+  const [copied, setCopied] = React.useState(false);
+
   // 🔗 Lazy-load links from Supabase when needed
 // (linksArray state/effect is defined later; duplicate removed)
 
@@ -261,6 +308,17 @@ if (!profile?.id || !profile?.address) {
     window.removeEventListener("enterSignInMode", handleEnterSignIn);
     window.removeEventListener("enterDraftMode", handleEnterDraft);
   };
+}, []);
+// 🔹 Animate label expansion on mount (desktop only)
+useEffect(() => {
+  if (window.matchMedia("(hover: none)").matches) return; // skip on mobile
+  const labels = document.querySelectorAll(".group span");
+  labels.forEach((el) => {
+    el.classList.add("max-w-[50px]", "opacity-100");
+    setTimeout(() => {
+      el.classList.remove("max-w-[50px]", "opacity-100");
+    }, 2000);
+  });
 }, []);
 
 useEffect(() => {
@@ -554,73 +612,109 @@ if (isVerified && isRanked) {
 <div
   className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
 >
-          {/* Top-left more menu */}
-          <div className="absolute top-4 left-4 z-10 backface-hidden">
-            <div className="relative">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpen((prev) => !prev);
-                }}
-                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-                title="More options"
-              >
-                ☰
-              </button>
+{/* Top buttons row (menu + share) */}
+<div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-500 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
+  {/* Menu button */}
+  <div className="relative">
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        setMenuOpen((prev) => !prev);
+      }}
+      className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+      title="More options"
+    >
+      ☰
+    </button>
 
-              {/* Dropdown Menu */}
-              {menuOpen && (
-                <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-                  {!showStats ? (
-                    <button
-                      onClick={() => {
-                        setShowStats(true);
-                        setShowLinks(false);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                    >
-                      ◔ Show Stats
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        setShowStats(false);
-                        setMenuOpen(false);
-                      }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                    >
-                      ◕ Hide Stats
-                    </button>
-                  )}
-                  <button
-onClick={() => {
-  setShowBack(true);
-  setMenuOpen(false);
-  console.log("🪪 Dispatching enterSignInMode with:", profile.id, profile.address);
+    {/* Dropdown Menu */}
+    {menuOpen && (
+      <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
+        {!showStats ? (
+          <button
+            onClick={() => {
+              setShowStats(true);
+              setShowLinks(false);
+              setMenuOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-blue-50"
+          >
+            ◔ Show Stats
+          </button>
+        ) : (
+          <button
+            onClick={() => {
+              setShowStats(false);
+              setMenuOpen(false);
+            }}
+            className="w-full text-left px-4 py-2 hover:bg-blue-50"
+          >
+            ◕ Hide Stats
+          </button>
+        )}
+        <button
+          onClick={() => {
+            setShowBack(true);
+            setMenuOpen(false);
+            console.log("🪪 Dispatching enterSignInMode with:", profile.id, profile.address);
 
-window.dispatchEvent(
-  new CustomEvent("enterSignInMode", {
-    detail: {
-      zId: profile.id,
-      address: profile.address || "",
-      name: profile.name || "",
-      verified: !!profile.address_verified,
-      since: profile.since || null,
-    },
-  })
-);
+            window.dispatchEvent(
+              new CustomEvent("enterSignInMode", {
+                detail: {
+                  zId: profile.id,
+                  address: profile.address || "",
+                  name: profile.name || "",
+                  verified: !!profile.address_verified,
+                  since: profile.since || null,
+                },
+              })
+            );
+          }}
+          className="w-full text-left px-4 py-2 hover:bg-blue-50"
+        >
+          ✎ Edit Profile
+        </button>
+      </div>
+    )}
+  </div>
 
-}}
+  {/* Share button (top-right) */}
+  <button
+    onClick={() => {
+      const baseSlug = profile.name
+        .normalize("NFKC")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "_")
+        .replace(/[^a-z0-9_]/g, "");
 
+      const shareUrl = `${window.location.origin}/${profile.address_verified
+        ? baseSlug
+        : `${baseSlug}-${profile.id}`}`;
 
-  className="w-full text-left px-4 py-2 hover:bg-blue-50"
->  ✎ Edit Profile
-</button>
-                </div>
-              )}
-            </div>
-          </div>
+      if (navigator.share) {
+        navigator
+          .share({
+            title: `${profile.name} on Zcash.me`,
+            text: "Check out this Zcash profile:",
+            url: shareUrl,
+          })
+          .catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl);
+        alert("Profile link copied to clipboard!");
+      }
+    }}
+    className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+    title={`Share ${profile.name}`}
+  >
+<img
+  src="/src/assets/share.svg"
+  alt="Share"
+  className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
+/>
+  </button>
+</div>
 
           {/* BACK SIDE BUTTON (⟲) */}
           <div className="absolute top-4 left-4 z-10 rotate-y-180 backface-hidden">
@@ -634,21 +728,7 @@ window.dispatchEvent(
               </button>
             </div>
           </div>
-
-         
-{profile.last_verified_at && (
-  <p className="text-xs text-gray-500 mt-1">
-    Last verified:{" "}
-    {new Date(profile.last_verified_at).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    })}
-    {expired && (
-      <span className="ml-2 text-red-500 font-semibold">(expired)</span>
-    )}
-  </p>
-)}
+      
 
           {/* Avatar */}
           <div
@@ -692,244 +772,155 @@ window.dispatchEvent(
   )}
 </div>
 
-          {/* Address */}
-          <p className="mt-2 text-sm text-gray-600 font-mono select-all">
-            {profile.address ? (
-              <>
-                {profile.address.slice(0, 10)}…{profile.address.slice(-10)}
-              </>
-            ) : (
-              "—"
-            )}
-          </p>
+{/* Biography (only if present) */}
+{profile.bio && profile.bio.trim() !== "" && (
+  <p className="mt-1 text-sm text-gray-700 text-center max-w-[90%] mx-auto whitespace-pre-line break-words">
+    {profile.bio}
+  </p>
+)}
 
-          {/* Referrer badges (multi-period) */}
-<div className="mt-2 flex flex-col items-center justify-center gap-1">
-  {(profile.rank_alltime ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
-  )}
-  {(profile.rank_weekly ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
-  )}
-  {(profile.rank_monthly ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
-  )}
-  {(profile.rank_daily ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_daily} period="daily" />
-  )}
+
+
+{/* Dates */}
+<p className="mt-3 text-xs text-gray-500">
+  Joined{" "}
+  {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+    month: "short",
+    year: "numeric",
+  })}{" "}
+  • Last verified{" "}
+  {profile.last_verified_at || profile.last_verified ? (
+    `${Math.max(
+  0,
+  Math.round(
+    (Date.now() -
+      new Date(profile.last_verified_at || profile.last_verified).getTime()) /
+      (1000 * 60 * 60 * 24 * 7)
+  )
+)
+} weeks ago`
+  ) : (
+    "N/A"
+  )}{" "}
+  • Good thru{" "}
+  {profile.good_thru
+    ? new Date(profile.good_thru).toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      })
+    : "NULL"}
+</p>
+
+{/* Address with integrated copy button and feedback */}
+{profile.address ? (
+  <div className="mt-2 flex items-center justify-center">
+    <div
+      className={`flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] transition-colors duration-300 ${
+        copied ? "border-green-400 bg-green-50" : "border-gray-300 bg-gray-50"
+      }`}
+    >
+  <span className="select-all" title={profile.address}>
+  {profile.address
+    ? `${profile.address.slice(0, 6)}...${profile.address.slice(-6)}`
+    : "—"}
+</span>
+
+{/* QR + Copy Buttons with animated label expansion */}
+<div className="flex items-center gap-1 whitespace-nowrap">
+  {/* QR Button */}
+  <button
+    onClick={() => {
+      if (typeof setSelectedAddress === "function") setSelectedAddress(profile.address);
+      if (typeof setForceShowQR === "function") setForceShowQR(true);
+      if (typeof setQRShown === "function") setQRShown(true);
+      setTimeout(() => {
+        const el = document.getElementById("zcash-feedback");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }, 1);
+    }}
+    className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
+    title="Show QR"
+  >
+    ▣
+    <span className="inline-block max-w-0 group-hover:max-w-[60px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">
+      Show QR
+    </span>
+  </button>
+
+  {/* Copy Button */}
+  <button
+    onClick={() => {
+      navigator.clipboard.writeText(profile.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }}
+    className={`group flex items-center justify-center transition-all px-1 overflow-hidden ${
+      copied
+        ? "text-green-600 hover:text-green-600"
+        : "text-gray-500 hover:text-blue-600"
+    }`}
+    title={copied ? "Copied!" : "Copy address"}
+  >
+    {copied ? "☑" : "⧉"}
+    <span className="inline-block max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">
+      {copied ? "Copied!" : "Copy"}
+    </span>
+  </button>
 </div>
+    </div>
+  </div>
+) : (
+  <p className="mt-2 text-sm text-gray-500 italic">—</p>
+)}
 
 
-          {/* Dates */}
-          <p className="mt-3 text-xs text-gray-500">
-Joined{" "}
-{new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
-  month: "short",
-  year: "numeric",
-})}{" "}
-• Last signed{" "}
-
-            {profile.last_signed_at
-              ? new Date(profile.last_signed_at).toLocaleString("default", {
-                  month: "short",
-                  year: "numeric",
-                })
-              : "NULL"}{" "}
-            • Good thru{" "}
-            {profile.good_thru
-              ? new Date(profile.good_thru).toLocaleString("default", {
-                  month: "short",
-                  year: "numeric",
-                })
-              : "NULL"}
-          </p>
 
           {/* Action tray */}
+<div
+  className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 pb-0"
+>
+  {/* Links tray only */}
+  <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
+    <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
+      {linksArray.length > 0 ? (
+        linksArray.map((link) => (
           <div
-            className={`relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 ${
-              showLinks ? "pb-0" : ""
-            }`}
+            key={link.id}
+            className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"
           >
-            {/* Buttons */}
-            <div className="p-3 flex flex-wrap justify-center gap-3 border-b border-gray-200 w-full">
-              <CopyButton text={profile.address} label="Copy Uaddr" />
-
-              <button
-                onClick={() => {
-                  setSelectedAddress(profile.address);
-                  setForceShowQR(true);
-                  setQRShown(true);
-                  setTimeout(() => {
-                    const el = document.getElementById("zcash-feedback");
-                    if (el)
-                      el.scrollIntoView({ behavior: "smooth", block: "center" });
-                  }, 1);
-                }}
-                className="flex items-center justify-center gap-1 border rounded-xl px-3 h-8 py-1.5 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-              >
-                ▣ Show QR
-              </button>
-
-              {/* Share */}
-              <button
-                onClick={() => {
-const baseSlug = profile.name
-  .normalize("NFKC")
-  .trim()
-  .toLowerCase()
-  .replace(/\s+/g, "_")
-  .replace(/[^a-z0-9_]/g, "");
-
-const shareUrl = `${window.location.origin}/${profile.address_verified
-  ? baseSlug
-  : `${baseSlug}-${profile.id}`}`;
-
-                  if (navigator.share) {
-                    navigator
-                      .share({
-                        title: `${profile.name} on Zcash.me`,
-                        text: "Check out this Zcash profile:",
-                        url: shareUrl,
-                      })
-                      .catch(() => {});
-                  } else {
-                    navigator.clipboard.writeText(shareUrl);
-                  }
-                }}
-                className="flex items-center justify-center gap-2 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-                aria-label={`Share ${profile.name}`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  className="inline-block transform -rotate-90"
-                >
-                  <circle cx="6.5" cy="17.5" r="2" fill="currentColor" />
-                  <circle cx="17.5" cy="17.5" r="2" fill="currentColor" />
-                  <circle cx="12" cy="6.5" r="2" fill="currentColor" />
-                  <path
-                    d="M12 8.5v6.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M6.5 15.5l5.2-4.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                  <path
-                    d="M17.5 15.5l-5.2-4.5"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <span className="ml-1">Share</span>
-              </button>
-
-              {/* Show Links */}
-              <button
-                onClick={() => {
-                  setShowLinks((prev) => !prev);
-                  setShowStats(false);
-                }}
-                className="flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm border-gray-400 text-gray-700 hover:border-blue-500 hover:text-blue-600 transition-all sm:basis-[48%]"
-              >
-                {showLinks ? "⎘ Hide Links" : "⌹ Show Links"}
-              </button>
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-gray-800 truncate">
+                {link.label || "Untitled"}
+              </span>
+              <VerifiedBadge verified={link.is_verified} />
             </div>
-
-            {/* Expandable tray */}
-            <div
-              className={`w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden ${
-                showLinks || showStats
-                  ? "max-h-[500px] opacity-100"
-                  : "max-h-0 opacity-0"
-              }`}
-            >
-              <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
-                {showLinks && (
-                  <>
-{linksArray.length > 0 ? (
-  linksArray.map((link) => (
-
-                        <div
-                          key={link.id}
-                          className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-800 truncate">
-                              {link.label || "Untitled"}
-                            </span>
-                            <VerifiedBadge verified={link.is_verified} />
-                          </div>
-                          <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
-                            <a
-                              href={link.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="truncate hover:text-blue-600 transition-colors"
-                            >
-                              {link.url.replace(/^https?:\/\//, "")}
-                            </a>
-                            <button
-                              onClick={() =>
-                                navigator.clipboard.writeText(link.url)
-                              }
-                              title="Copy link"
-                              className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
-                            >
-                              ⧉
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="italic text-gray-500 text-center">
-                        No contributed links yet.
-                      </p>
-                    )}
-                  </>
-                )}
-
-                {showStats && (
-                  <div className="text-sm text-gray-700 text-left space-y-2">
-                    {hasReferrals && (
-                      <p className="font-medium">
-                        Referred {profile.referral_count} User
-                        {profile.referral_count !== 1 ? "s" : ""}{" "}
-                        {isRanked
-                          ? `(${ordinal(
-                              profile.referral_rank
-                            )} place, all-time)`
-                          : ""}
-                      </p>
-                    )}
-                    <p className="italic text-gray-600">
-                      More stats coming soon for{" "}
-                      <strong>{profile.name}</strong>…
-                    </p>
-
-                    {/* NEW Close link */}
-                    <p
-                      onClick={() => setShowStats(false)}
-                      className="mt-2 text-xs font-semibold text-gray-500 hover:text-blue-600 hover:underline cursor-pointer transition-opacity duration-300"
-                    >
-                      Close
-                    </p>
-                  </div>
-                )}
-              </div>
+            <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
+              <a
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="truncate hover:text-blue-600 transition-colors"
+              >
+                {link.url.replace(/^https?:\/\//, "")}
+              </a>
+              <button
+                onClick={() => navigator.clipboard.writeText(link.url)}
+                title="Copy link"
+                className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
+              >
+                ⧉
+              </button>
             </div>
           </div>
+        ))
+      ) : (
+        <p className="italic text-gray-500 text-center">
+          No contributed links yet.
+        </p>
+      )}
+    </div>
+  </div>
+</div>
 
           {/* Warning */}
           {warning && (
