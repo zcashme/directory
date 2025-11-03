@@ -11,7 +11,7 @@ import HelpIcon from "./HelpIcon";
 import CheckIcon from "../assets/CheckIcon";
 import shareIcon from "../assets/share.svg";
 
-import { motion } from "framer-motion";
+import { motion, AnimatePresence  } from "framer-motion";
 import React from "react";
 
 function AddressCopyChip({ address }) {
@@ -238,6 +238,12 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 // (linksArray state/effect is defined later; duplicate removed)
 
   const [showStats, setShowStats] = useState(false);
+  const hasAwards =
+  (profile?.rank_alltime ?? 0) > 0 ||
+  (profile?.rank_weekly ?? 0) > 0 ||
+  (profile?.rank_monthly ?? 0) > 0 ||
+  (profile?.rank_daily ?? 0) > 0;
+
   const [qrShown, setQRShown] = useState(false);
   const [linksShown, setLinksShown] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
@@ -631,28 +637,38 @@ if (isVerified && isRanked) {
     {/* Dropdown Menu */}
     {menuOpen && (
       <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-        {!showStats ? (
-          <button
-            onClick={() => {
-              setShowStats(true);
-              setShowLinks(false);
-              setMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2 hover:bg-blue-50"
-          >
-            ◔ Show Stats
-          </button>
-        ) : (
-          <button
-            onClick={() => {
-              setShowStats(false);
-              setMenuOpen(false);
-            }}
-            className="w-full text-left px-4 py-2 hover:bg-blue-50"
-          >
-            ◕ Hide Stats
-          </button>
-        )}
+  {/* Determine if profile has any awards */}
+
+
+{!showStats ? (
+  <button
+    onClick={() => {
+      if (!hasAwards) return; // ignore click if no awards
+      setShowStats(true);
+      setMenuOpen(false);
+    }}
+    disabled={!hasAwards}
+    className={`w-full text-left px-4 py-2 transition-colors ${
+      hasAwards
+        ? "hover:bg-blue-50 text-gray-800"
+        : "text-gray-400 cursor-not-allowed opacity-60"
+    }`}
+  >
+    ⭔ Show Awards
+  </button>
+) : (
+  <button
+    onClick={() => {
+      setShowStats(false);
+      setMenuOpen(false);
+    }}
+    className="w-full text-left px-4 py-2 hover:bg-blue-50"
+  >
+     ⭓ Hide Awards
+  </button>
+)}
+
+
         <button
           onClick={() => {
             setShowBack(true);
@@ -673,7 +689,7 @@ if (isVerified && isRanked) {
           }}
           className="w-full text-left px-4 py-2 hover:bg-blue-50"
         >
-          ✎ Edit Profile
+          ⮊ Edit Profile
         </button>
       </div>
     )}
@@ -717,18 +733,7 @@ if (isVerified && isRanked) {
   </button>
 </div>
 
-          {/* BACK SIDE BUTTON (⟲) */}
-          <div className="absolute top-4 left-4 z-10 rotate-y-180 backface-hidden">
-            <div className="absolute top-4 left-4">
-              <button
-                onClick={() => setShowBack(false)}
-                title="Return to front"
-                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-              >
-                <span className="text-lg leading-none select-none">⟲</span>
-              </button>
-            </div>
-          </div>
+
       
 
           {/* Avatar */}
@@ -759,7 +764,57 @@ if (isVerified && isRanked) {
             )}
           </div>
 
+{/* Awards section (animated, appears when Show Awards is active) */}
+<AnimatePresence>
+  {showStats && (
+    <motion.div
+      key="awards"
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      transition={{
+        type: "spring",
+        stiffness: 220,
+        damping: 20,
+        mass: 0.8,
+      }}
+      className="flex flex-wrap justify-center gap-2 mt-3 mb-1"
+    >
+      {(profile.rank_alltime ?? 0) > 0 && (
+        <ReferRankBadgeMulti
+          rank={profile.rank_alltime}
+          period="all"
+          alwaysOpen
+        />
+      )}
+      {(profile.rank_weekly ?? 0) > 0 && (
+        <ReferRankBadgeMulti
+          rank={profile.rank_weekly}
+          period="weekly"
+          alwaysOpen
+        />
+      )}
+      {(profile.rank_monthly ?? 0) > 0 && (
+        <ReferRankBadgeMulti
+          rank={profile.rank_monthly}
+          period="monthly"
+          alwaysOpen
+        />
+      )}
+      {(profile.rank_daily ?? 0) > 0 && (
+        <ReferRankBadgeMulti
+          rank={profile.rank_daily}
+          period="daily"
+          alwaysOpen
+        />
+      )}
+    </motion.div>
+  )}
+</AnimatePresence>
+
+
           {/* Name */}
+
 <div className="mt-3 flex items-center justify-center gap-2">
   <h2 className="text-2xl font-bold text-gray-800">{profile.name}</h2>
   {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
@@ -783,34 +838,46 @@ if (isVerified && isRanked) {
 
 
 {/* Dates */}
-<p className="mt-3 text-xs text-gray-500">
-  Joined{" "}
-  {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
-    month: "short",
-    year: "numeric",
-  })}{" "}
-  • Last verified{" "}
-  {profile.last_verified_at || profile.last_verified ? (
-    `${Math.max(
-  0,
-  Math.round(
-    (Date.now() -
-      new Date(profile.last_verified_at || profile.last_verified).getTime()) /
-      (1000 * 60 * 60 * 24 * 7)
-  )
-)
-} weeks ago`
-  ) : (
-    "N/A"
-  )}{" "}
-  • Good thru{" "}
-  {profile.good_thru
-    ? new Date(profile.good_thru).toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      })
-    : "NULL"}
+<p className="mt-3 text-xs text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5">
+  <span className="whitespace-nowrap">
+    Joined{" "}
+    {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+      month: "short",
+      year: "numeric",
+    })}
+  </span>
+
+  <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+
+  <span className="whitespace-nowrap">
+    Last verified{" "}
+    {profile.last_verified_at || profile.last_verified ? (
+      `${Math.max(
+        0,
+        Math.round(
+          (Date.now() -
+            new Date(profile.last_verified_at || profile.last_verified).getTime()) /
+            (1000 * 60 * 60 * 24 * 7)
+        )
+      )} weeks ago`
+    ) : (
+      "N/A"
+    )}
+  </span>
+
+  <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+
+  <span className="whitespace-nowrap">
+    Good thru{" "}
+    {profile.good_thru
+      ? new Date(profile.good_thru).toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        })
+      : "NULL"}
+  </span>
 </p>
+
 
 {/* Address with integrated copy button and feedback */}
 {profile.address ? (
@@ -1029,7 +1096,7 @@ onClick={() => {
       aria-label="Return to front"
       className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
     >
-      ⟲ 
+      🡄 
     </button>
   </div>
 

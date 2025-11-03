@@ -544,7 +544,7 @@ return name;
 
     
       <div className="truncate text-gray-500 text-xs mt-1">
-to verify address and/or approve changes
+to verify address or approve changes
        </div>
 
     </div>
