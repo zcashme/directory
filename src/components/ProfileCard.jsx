@@ -689,7 +689,8 @@ if (isVerified && isRanked) {
           }}
           className="w-full text-left px-4 py-2 hover:bg-blue-50"
         >
-          ⮊ Edit Profile
+                <span>&#x2BAA;</span> {/* 🡪 equivalent */}
+ Edit Profile
         </button>
       </div>
     )}
@@ -1096,7 +1097,9 @@ onClick={() => {
       aria-label="Return to front"
       className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
     >
-      🡄 
+<span>&#x2B8C;</span> {/* ⮌ left arrow, opposite of ⮎ */}
+
+ 
     </button>
   </div>
 
