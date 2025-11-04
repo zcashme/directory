@@ -273,14 +273,7 @@ const toggleFilter = (key) => {
   return (
     <>
       <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
-        {/* Floating Join Button */}
-        <button
-          onClick={() => setIsJoinOpen(true)}
-          className="fixed top-3 right-4 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-md hover:bg-green-700 transition-all animate-pulse hover:scale-110 z-50"
-          style={{ animation: "pulseJoin 2.5s infinite" }}
-        >
-          ＋ Join
-        </button>
+        
 
         {showDirectory && (
           <div className="flex items-center justify-between mb-3">
@@ -424,10 +417,22 @@ profiles.filter(
 
 <button
   onClick={() => setIsJoinOpen(true)}
-  className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold shadow-md hover:bg-green-700 transition-all z-[50]"
+  className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold 
+  shadow-md hover:bg-green-700 transition-all z-[50] animate-joinPulse"
 >
   ＋ Join
 </button>
+
+<style>{`
+  @keyframes joinPulse {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94, 0.6); }
+    50% { transform: scale(.85); box-shadow: 0 0 0 8px rgba(34,197,94, 0); }
+  }
+  .animate-joinPulse {
+    animation: joinPulse 5.5s ease-in-out infinite;
+  }
+`}</style>
+
         </div>
 
         {/* Directory List */}
