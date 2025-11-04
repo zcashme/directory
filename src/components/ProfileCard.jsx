@@ -902,10 +902,11 @@ if (isVerified && isRanked) {
       if (typeof setSelectedAddress === "function") setSelectedAddress(profile.address);
       if (typeof setForceShowQR === "function") setForceShowQR(true);
       if (typeof setQRShown === "function") setQRShown(true);
-      setTimeout(() => {
-        const el = document.getElementById("zcash-feedback");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }, 1);
+    setTimeout(() => {
+  const el = document.getElementById("zcash-feedback");
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+}, 400); // small delay to allow label expansion before scroll
+
     }}
     className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
     title="Show QR"

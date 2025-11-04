@@ -5,6 +5,7 @@ import { cachedProfiles } from "./hooks/useProfiles"; // if exported (we’ll ad
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { AnimatePresence, motion } from "framer-motion";
+import VerifiedBadge from "./components/VerifiedBadge";
 
 function XIcon(props) {
   return (
@@ -592,9 +593,18 @@ onClick={() => {
                 >
                   {p.name}
                   {(p.address_verified || p.zcasher_links?.some((l) => l.is_verified)) && (
-                    <span title="Verified" className="text-green-600">
-                      ✔
-                    </span>
+  <VerifiedBadge
+    verified
+    compact
+    verifiedCount={
+      [
+        p.address_verified ? 1 : 0,
+        ...(p.zcasher_links?.filter((l) => l.is_verified) || []),
+      ].length
+    }
+  />
+
+
                   )}
                 </div>
               ))}

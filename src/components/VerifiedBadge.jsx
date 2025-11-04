@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import CheckIcon from "../assets/CheckIcon";
 
-export default function VerifiedBadge({ verified = true, verifiedCount = 1 }) {
+export default function VerifiedBadge({
+  verified = true,
+  verifiedCount = 1,
+  compact = false,
+}) {
   const [open, setOpen] = useState(false);
 
   // Detect touch-capable devices
@@ -38,35 +42,52 @@ export default function VerifiedBadge({ verified = true, verifiedCount = 1 }) {
     </span>
   );
 
-  if (verified) {
-    // ✅ Verified or partially verified
+if (verified) {
+  // ✅ Verified or partially verified
+  if (compact) {
+    // Minimal display: just the green checks, no animation or label
+    const checksToShow = Math.min(Math.max(verifiedCount, 1), 3);
     return (
-      <span
-        onTouchStart={(e) => {
-          e.stopPropagation();
-          if (isTouchDevice) {
-            setOpen(true); // Open on tap
-          }
-        }}
-        className={`${baseClasses} group inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-        text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
-        style={{ fontFamily: "inherit" }}
-      >
-        <div className="flex items-center justify-center gap-0 group-hover:gap-1 transition-[gap] duration-300">
-          {renderChecks("text-green-600")}
-          <span
-            className={`overflow-hidden inline-block transition-all duration-300 ease-in-out whitespace-nowrap ${
-              open
-                ? "max-w-[70px] opacity-100"
-                : "max-w-0 opacity-0 group-hover:max-w-[70px] group-hover:opacity-100"
-            }`}
-          >
-            Verified
-          </span>
-        </div>
+      <span className="inline-flex items-center gap-0.5">
+        {[...Array(checksToShow)].map((_, i) => (
+          <CheckIcon
+            key={i}
+            className="h-3.5 w-3.5 text-green-600 drop-shadow-sm"
+            style={{ zIndex: 3 - i }}
+          />
+        ))}
       </span>
     );
   }
+
+  // Default full mode
+  return (
+    <span
+      onTouchStart={(e) => {
+        e.stopPropagation();
+        if (isTouchDevice) {
+          setOpen(true); // Open on tap
+        }
+      }}
+      className={`${baseClasses} group inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
+      text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+      style={{ fontFamily: "inherit" }}
+    >
+      <div className="flex items-center justify-center gap-0 group-hover:gap-1 transition-[gap] duration-300">
+        {renderChecks("text-green-600")}
+        <span
+          className={`overflow-hidden inline-block transition-all duration-300 ease-in-out whitespace-nowrap ${
+            open
+              ? "max-w-[70px] opacity-100"
+              : "max-w-0 opacity-0 group-hover:max-w-[70px] group-hover:opacity-100"
+          }`}
+        >
+          Verified
+        </span>
+      </div>
+    </span>
+  );
+}
 
   // ⚪ Unverified state
   return (

@@ -4,6 +4,7 @@ import { supabase } from "./supabase";
 import { QRCodeCanvas } from "qrcode.react";
 import { useFeedback } from "./store";
 import useProfiles from "./hooks/useProfiles";
+import VerifiedBadge from "./components/VerifiedBadge";
 
 /* -------------------------------------------------------
    Constants
@@ -297,27 +298,17 @@ const memoText = buildZcashEditMemo(
 
 useEffect(() => {
   async function fetchProfiles() {
-    const { data, error } = await supabase
-      .from("zcasher")
-      .select(`
-        id,
-        name,
-        address,
-        bio,
-        profile_image_url,
-        featured,
-        slug,
-        referred_by,
-        address_verified,
-        links:zcasher_links(
-          id,
-          label,
-          url,
-          is_verified,
-          created_at
-        )
-      `)
-      .order("name", { ascending: true });
+const { data, error } = await supabase
+  .from("zcasher")
+  .select(`
+    id,
+    name,
+    address,
+    address_verified,
+    zcasher_links(is_verified),
+    zcasher_items(is_verified, kind)
+  `)
+  .order("name", { ascending: true });
 
     if (error) {
       console.error("Error loading profiles in ZcashFeedback:", error);
@@ -598,16 +589,38 @@ to verify address or approve changes
   )
   .slice(0, 20)
   .map((p) => (
-    <div
-      key={p.address}
-      onClick={() => {
-        setSelectedAddress(p.address);
-        setManualAddress("");
-      }}
-      className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer"
-    >
-      {p.name} — {p.address.slice(0, 10)}…
-    </div>
+<div
+  key={p.address}
+  onClick={() => {
+    setSelectedAddress(p.address);
+    setManualAddress("");
+  }}
+  className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer flex items-center gap-2"
+>
+  <span>{p.name}</span>
+
+{(p.address_verified ||
+  p.zcasher_links?.some((l) => l.is_verified) ||
+  p.zcasher_items?.some((i) => i.is_verified && i.kind === "address")) && (
+  <VerifiedBadge
+    verified
+    compact
+    verifiedCount={
+      (p.address_verified ? 1 : 0) +
+      ((p.zcasher_links?.filter((l) => l.is_verified).length) || 0) +
+      ((p.zcasher_items?.filter((i) => i.is_verified && i.kind === "address").length) || 0)
+    }
+  />
+)}
+
+
+  <span className="text-gray-500 text-xs ml-auto font-mono">
+    {p.address.length > 12
+      ? `${p.address.slice(0, 6)}...${p.address.slice(-6)}`
+      : p.address}
+  </span>
+</div>
+
   ))}
 {!cachedProfiles.some((p) =>
   p.name.toLowerCase().includes(manualAddress.toLowerCase())
@@ -791,11 +804,10 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
   <button
     onClick={() => {
       if (error) return;
-      if (mode === "signin") {
-        handleSignIn();
-        return;
-      }
-      window.open(uri, "_blank");
+window.open(uri, "_blank");
+setWalletOpened(true);
+setTimeout(() => setWalletOpened(false), 1500);
+
       setWalletOpened(true);
       setTimeout(() => setWalletOpened(false), 1500);
     }}
