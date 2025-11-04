@@ -418,20 +418,22 @@ profiles.filter(
 <button
   onClick={() => setIsJoinOpen(true)}
   className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold 
-  shadow-md hover:bg-green-700 transition-all z-[50] animate-joinPulse"
+  shadow-md transition-all duration-300 z-[50] animate-joinPulse
+  hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
 >
   ＋ Join
 </button>
 
 <style>{`
   @keyframes joinPulse {
-    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(34,197,94, 0.6); }
-    50% { transform: scale(.85); box-shadow: 0 0 0 8px rgba(34,197,94, 0); }
+    0%, 100% { transform: scale(.9); box-shadow: 0 0 0 0 rgba(34,197,94, 0.6); }
+    50% { transform: scale(1.0); box-shadow: 0 0 0 8px rgba(34,197,94, 0); }
   }
   .animate-joinPulse {
     animation: joinPulse 5.5s ease-in-out infinite;
   }
 `}</style>
+
 
         </div>
 
