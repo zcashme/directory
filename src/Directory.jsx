@@ -4,7 +4,8 @@ import { useNavigate } from "react-router-dom";
 import AddUserForm from "./AddUserForm";
 import ZcashFeedback from "./ZcashFeedback";
 import ZcashStats from "./ZcashStats";
-import Toast from "./Toast";
+// import Toast from "./Toast";
+// import useToastMessage from "./hooks/useToastMessage";
 
 import ProfileCard from "./components/ProfileCard";
 import LetterGridModal from "./components/LetterGridModal";
@@ -14,7 +15,6 @@ import useProfiles from "./hooks/useProfiles";
 import useProfileRouting from "./hooks/useProfileRouting";
 import useAlphaVisibility from "./hooks/useAlphaVisibility";
 import useDirectoryVisibility from "./hooks/useDirectoryVisibility";
-import useToastMessage from "./hooks/useToastMessage";
 
 import computeGoodThru from "./utils/computeGoodThru";
 import { useFeedback } from "./store";
@@ -28,7 +28,7 @@ export default function Directory() {
   const { profiles, loading } = useProfiles();
   const { showDirectory, setShowDirectory } = useDirectoryVisibility();
   const showAlpha = useAlphaVisibility(showDirectory);
-  const { toastMsg, showToast, closeToast } = useToastMessage();
+ // const { toastMsg, showToast, closeToast } = useToastMessage();
 
   const [search, setSearch] = useState("");
   const [activeLetter, setActiveLetter] = useState(null);
@@ -380,12 +380,26 @@ profiles.filter(
           className="fixed top-0 left-0 right-0 bg-transparent/20 backdrop-blur-md z-[40] flex items-center justify-between px-4 py-2 shadow-sm"
         >
           <div className="flex items-center gap-2 flex-1">
-  <a
-    href="/"
-    className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap"
-  >
-    Zcash.me/
-  </a>
+  <button
+  onClick={(e) => {
+    e.preventDefault();
+    // mimic "Expand Directory" button behavior
+    if (showDirectory) {
+      localStorage.setItem("lastScrollY", window.scrollY);
+      setShowDirectory(false);
+    } else {
+      setShowDirectory(true);
+      setTimeout(() => {
+        const lastY = parseFloat(localStorage.getItem("lastScrollY")) || 0;
+        window.scrollTo({ top: lastY, behavior: "instant" });
+      }, 100);
+    }
+  }}
+  className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
+>
+  Zcash.me/
+</button>
+
   <div className="relative flex-1 max-w-sm">
     <input
       value={search}
@@ -521,13 +535,18 @@ profiles.filter(
                       <ProfileCard
                         key={p.id ?? p.address}
                         profile={p}
-                        onSelect={(addr) => {
-                          setSelectedAddress(addr);
-                          setShowDirectory(false);
-                          requestAnimationFrame(() =>
-                            window.scrollTo({ top: 0, behavior: "smooth" })
-                          );
-                        }}
+                        data-address={p.address} // 👈 add this
+onSelect={(addr) => {
+  // Save the scroll position and selected address
+  localStorage.setItem("lastScrollY", window.scrollY.toString());
+  localStorage.setItem("lastSelectedAddress", addr);
+  setSelectedAddress(addr);
+  setShowDirectory(false);
+  requestAnimationFrame(() =>
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  );
+}}
+
                         cacheVersion={
                           p.last_signed_at || p.created_at || 0
                         } // passed to ProfileCard for ?v=
@@ -605,47 +624,83 @@ profiles.filter(
           <ZcashFeedback />
         </div>
 
-        <div className="fixed bottom-6 left-6 z-[9999]">
-          <div className="relative">
-            <button
-              onClick={() => {
-                if (showDirectory) {
-                  localStorage.setItem("lastScrollY", window.scrollY);
-                  setShowDirectory(false);
-                } else {
-                  setShowDirectory(true);
-                  setTimeout(() => {
-                    const lastY =
-                      parseFloat(localStorage.getItem("lastScrollY")) || 0;
-                    window.scrollTo({ top: lastY, behavior: "instant" });
-                  }, 100);
-                }
-              }}
-              className={`relative text-white p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${
-                showDirectory
-                  ? "bg-yellow-600 hover:bg-yellow-700"
-                  : "bg-gray-600 hover:bg-gray-700"
-              }`}
-              title={showDirectory ? "Collapse Directory" : "Expand Directory"}
-            >
-              <img
-                src={showDirectory ? bookOpen : bookClosed}
-                alt="Toggle Directory"
-                className="w-6 h-6"
-              />
-            </button>
-          </div>
-        </div>
+<div className="fixed bottom-6 left-6 z-[9999] flex items-center gap-2">
+  <div className="relative">
+    <button
+      onClick={() => {
+        if (showDirectory) {
+          localStorage.setItem("lastScrollY", window.scrollY);
+          setShowDirectory(false);
+        } else {
+          setShowDirectory(true);
+          setTimeout(() => {
+            const lastAddr = localStorage.getItem("lastSelectedAddress");
+            if (lastAddr) {
+              const el = document.querySelector(`[data-address="${lastAddr}"]`);
+              if (el) {
+                el.scrollIntoView({ behavior: "instant", block: "center" });
+                return;
+              }
+            }
+            const lastY = parseFloat(localStorage.getItem("lastScrollY")) || 0;
+            window.scrollTo({ top: lastY, behavior: "instant" });
+          }, 100);
+        }
+      }}
+      className={`relative text-white p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${
+        showDirectory
+          ? "bg-yellow-600 hover:bg-yellow-700"
+          : "bg-gray-600 hover:bg-gray-700"
+      }`}
+      title={showDirectory ? "Collapse Directory" : "Expand Directory"}
+    >
+      <img
+        src={showDirectory ? bookOpen : bookClosed}
+        alt="Toggle Directory"
+        className="w-6 h-6"
+      />
+    </button>
+  </div>
+
+  {/* 🩶 Show toast-like prompt when viewing a profile */}
+  {!showDirectory && (
+    <div
+      onClick={() => setShowDirectory(true)}
+      className="cursor-pointer bg-gray-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md hover:bg-gray-700 transition-all animate-toastSlideLeft"
+    >
+      Reopen Directory
+    </div>
+  )}
+</div>
+
+<style>{`
+  /* Unified toast animation — slide in from left, pause, fade & slide out left */
+  @keyframes toastSlideLeft {
+    0% { opacity: 0; transform: translateX(-40px); }
+    10% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(-40px); }
+  }
+
+  .animate-toastSlideLeft {
+    animation: toastSlideLeft 5s ease-in-out forwards;
+  }
+     /* mirror animation for right side toast */
+  @keyframes toastSlideRight {
+    0% { opacity: 0; transform: translateX(40px); }
+    10% { opacity: 1; transform: translateX(0); }
+    80% { opacity: 1; transform: translateX(0); }
+    100% { opacity: 0; transform: translateX(40px); }
+  }
+
+  .animate-toastSlideRight {
+    animation: toastSlideRight 5s ease-in-out forwards;
+  }
+`}</style>
       </div>
 
-      <Toast message={toastMsg} show={showToast} onClose={closeToast} />
 
-      <style>{`
-        @keyframes pulseJoin {
-          0%, 100% { transform: scale(1); }
-          50% { transform: scale(1.08); }
-        }
-      `}</style>
+
     </>
   );
 }
