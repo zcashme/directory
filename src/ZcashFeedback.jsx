@@ -405,15 +405,27 @@ const { data, error } = await supabase
             }`}
           >
             {showDraft && (memo.trim() || amount.trim()) && showEditLabel && (
-              <button
-                onClick={() =>
-                  document.getElementById("zcash-feedback")?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="text-sm font-semibold text-white bg-blue-700/90 px-3 py-1 rounded-full shadow-md hover:bg-blue-600 transition-colors duration-300 whitespace-nowrap"
-                style={{ backdropFilter: "blur(4px)" }}
-              >
-                Edit Draft
-              </button>
+<button
+  onClick={() =>
+    document.getElementById("zcash-feedback")?.scrollIntoView({ behavior: "smooth" })
+  }
+  className="text-sm font-semibold text-white bg-blue-700/90 px-3 py-1 rounded-full shadow-md hover:bg-blue-600 transition-colors duration-300 whitespace-nowrap animate-editDraftInOut"
+  style={{ backdropFilter: "blur(4px)" }}
+>
+  Edit Draft
+  <style>{`
+    @keyframes editDraftInOut {
+      0%   { opacity: 0; transform: translateX(12px); }
+      10%  { opacity: 1; transform: translateX(0); }
+      80%  { opacity: 1; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(120px); }
+    }
+    .animate-editDraftInOut {
+      animation: editDraftInOut 4.5s ease-in-out forwards;
+    }
+  `}</style>
+</button>
+
             )}
           </div>
         </div>
