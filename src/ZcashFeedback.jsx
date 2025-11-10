@@ -265,18 +265,23 @@ useEffect(() => {
   return () => window.removeEventListener("enterDraftMode", handleDraftMode);
 }, []);
 
-  useEffect(() => {
-    if (showDraft && (memo.trim() || amount.trim())) {
-      setShowEditLabel(true);
-      const t = setTimeout(() => setShowEditLabel(false), 4000);
-      return () => clearTimeout(t);
-    }
-  }, [showDraft, memo, amount]);
-// 🔧 INSERT THIS EFFECT (keeps everything else unchanged)
+// ✅ When the selected profile changes (e.g., you click a different card in the directory),
+// force the feedback form out of Verify mode and clear the previous memo/id.
+// This guarantees you must click "Verify" again for the new profile.
+useEffect(() => {
+  if (!selectedAddress) return;
+  if (mode === "signin") {
+    setMode("note");
+    setForceShowQR(false);
+    setActiveZId(null);
+    setSignInMemo(""); // clear stale {z:...}
+  }
+}, [selectedAddress]);
+
+// ✅ Rebuild the sign-in memo whenever anything relevant changes, not only on edits
 useEffect(() => {
   if (mode !== "signin") return;
 
-  // ensure we have zId and address before building the memo
   let zId = activeZId;
   let addr = selectedAddress;
 
@@ -286,14 +291,41 @@ useEffect(() => {
     addr = window.lastZcashFlipDetail.address;
   }
 
-const memoText = buildZcashEditMemo(
-  { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
-  zId ?? "?",
-  addr
-);
+  const memoText = buildZcashEditMemo(
+    { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
+    zId ?? "?",
+    addr
+  );
 
   setSignInMemo(memoText);
-}, [pendingEdits, mode]);
+}, [pendingEdits, mode, activeZId, selectedAddress]);
+
+  useEffect(() => {
+    if (showDraft && (memo.trim() || amount.trim())) {
+      setShowEditLabel(true);
+      const t = setTimeout(() => setShowEditLabel(false), 4000);
+      return () => clearTimeout(t);
+    }
+  }, [showDraft, memo, amount]);
+useEffect(() => {
+  if (mode !== "signin") return;
+
+  let zId = activeZId;
+  let addr = selectedAddress;
+
+  if ((!zId || !addr) && window.lastZcashFlipDetail) {
+    zId = window.lastZcashFlipDetail.zId;
+    addr = window.lastZcashFlipDetail.address;
+  }
+
+  const memoText = buildZcashEditMemo(
+    { ...(pendingEdits?.profile || {}), links: pendingEdits?.l || [] },
+    zId ?? "?",
+    addr
+  );
+
+  setSignInMemo(memoText);
+}, [pendingEdits, mode, activeZId, selectedAddress]);
 
 
 useEffect(() => {
@@ -692,9 +724,10 @@ className="border border-gray-300 rounded-xl px-4 py-3 text-sm w-full bg-transpa
 
 
 
-    <p className="text-xs text-gray-400 mt-1 italic text-center">
-      (Do not modify before sending! Include >{MIN_SIGNIN_AMOUNT} ZEC)
-    </p>
+<p className="text-xs text-gray-400 mt-1 italic text-center">
+  (Do not modify before sending! Include &gt;{MIN_SIGNIN_AMOUNT} ZEC)
+</p>
+
   </div>
 ) : (
   // Regular editable draft mode
