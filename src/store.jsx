@@ -1,52 +1,72 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 
 const FeedbackContext = createContext();
 
 export function FeedbackProvider({ children }) {
-  const ADMIN_ADDRESS = import.meta.env.VITE_ADMIN_ADDRESS || "";
+  
 
-  // Existing state
-  const [selectedAddress, setSelectedAddress] = useState(ADMIN_ADDRESS);
+  // core state
+  const [selectedAddress, setSelectedAddress] = useState(null);
   const [forceShowQR, setForceShowQR] = useState(false);
 
-  // --- NEW: Pending-edit state for live profile updates ---
-  const [pendingEdits, setPendingEdits] = useState({});
+  // pending edits are plain state only (no events emitted here)
+  const [pendingEdits, _setPendingEdits] = useState({});
 
-  // Add or update a single field
-const setPendingEdit = (field, value) => {
-  setPendingEdits((prev) => {
-    const updated = {
-      ...prev,
-      [field]: value,
-    };
+  // harmless independent flag for title changes ONLY
+  const [editChangesRequested, setEditChangesRequested] = useState(false);
 
-    // Keep internal structure (arrays, objects) intact
-    // but still broadcast a lightweight serialized summary
-    const summary = Object.keys(updated)
-      .map((k) => `${k}${Array.isArray(updated[k]) ? `[${updated[k].length}]` : ""}`)
-      .join("; ");
+  // feedback UI state
+  const [mode, setMode] = useState("note"); // "note" or "signin"
+  const [draft, setDraft] = useState({ memo: "", amount: "0" });
+  const [verify, setVerify] = useState({ memo: "", amount: "0", zId: null });
 
-    window.dispatchEvent(
-      new CustomEvent("pendingEditsUpdated", { detail: summary })
-    );
+  // setters
+  const setDraftMemo = (v) => setDraft((p) => ({ ...p, memo: v ?? "" }));
+  const setDraftAmount = (v) => setDraft((p) => ({ ...p, amount: v ?? "0" }));
+  const setVerifyMemo = (v) => setVerify((p) => ({ ...p, memo: v ?? "" }));
+  const setVerifyAmount = (v) => setVerify((p) => ({ ...p, amount: v ?? "0" }));
+  const setVerifyId = (zId) => setVerify((p) => ({ ...p, zId }));
 
-    return updated;
-  });
-};
+  // external helpers for editor components
+  const setPendingEdits = (field, value) => {
+    _setPendingEdits((prev) => ({ ...prev, [field]: value }));
+  };
+  const clearPendingEdits = () => _setPendingEdits({});
 
-  // Clear all edits
-  const clearPendingEdits = () => setPendingEdits({});
+  useEffect(() => {
+    if (!pendingEdits) return;
+    console.log("✅ pendingEdits changed:", pendingEdits);
+    window.pendingEdits = pendingEdits;
+  }, [pendingEdits]);
 
   return (
     <FeedbackContext.Provider
       value={{
+        // directory/selection
         selectedAddress,
         setSelectedAddress,
         forceShowQR,
         setForceShowQR,
+
+        // edits
         pendingEdits,
-        setPendingEdit,
+        setPendingEdits,
         clearPendingEdits,
+
+        // edit-change flag for title (SAFE, independent)
+        editChangesRequested,
+        setEditChangesRequested,
+
+        // feedback UI
+        mode,
+        setMode,
+        draft,
+        verify,
+        setDraftMemo,
+        setDraftAmount,
+        setVerifyMemo,
+        setVerifyAmount,
+        setVerifyId,
       }}
     >
       {children}

@@ -1,6 +1,5 @@
 ﻿import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_ADDRESS } from "../DirectoryConstants";
 
 export default function useProfileRouting(
   profiles,

@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
+import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 
 function XIcon(props) {
   return (
@@ -16,15 +17,7 @@ function XIcon(props) {
   );
 }
 
-// Simple URL validation
-function isValidUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.protocol === "http:" || u.protocol === "https:";
-  } catch {
-    return false;
-  }
-}
+import { isValidUrl } from "./utils/validateUrl";
 
 
 // Normalize for identity: spaces → underscores, case-insensitive
@@ -81,6 +74,21 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
   
+  // Prefill referrer when Directory broadcasts an active profile
+useEffect(() => {
+  const handler = (e) => {
+    if (!e.detail) return;
+    const { id, name } = e.detail;
+    if (id && name) {
+      setReferrer({ id, name });
+      window.lastReferrer = { id, name };
+    }
+  };
+
+  window.addEventListener("prefillReferrer", handler);
+  return () => window.removeEventListener("prefillReferrer", handler);
+}, []);
+
   // --- Effect 1: Reset and load data ---
   
   useEffect(() => {
@@ -93,41 +101,39 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       setNameConflict(null);
       setAddress("");
       setAddressHelp("");
-      setReferrer("");
+      // Default reset
+setReferrer("");
+
+// Auto-prefill from global event (last selected profile)
+const fromEvent = window.lastReferrer;
+if (fromEvent?.id && fromEvent?.name) {
+  setReferrer({
+    id: fromEvent.id,
+    name: fromEvent.name,
+  });
+}
+
       setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
       setError("");
       setIsLoading(false);
 
-      const [{ data: zrows }, { data: linkRows }, { data: itemRows }] = await Promise.all([
-        supabase
-          .from("zcasher")
-          .select("id, name, address, address_verified, zcasher_links(is_verified)")
-          .order("name", { ascending: true }),
-        supabase.from("zcasher_links").select("zcasher_id, is_verified").eq("is_verified", true),
-        supabase
-          .from("zcasher_items")
-          .select("zcasher_id, is_verified, kind")
-          .eq("is_verified", true)
-          .eq("kind", "address"),
-      ]);
+const profilesData = cachedProfiles || [];
+setProfiles(profilesData);
 
-      const profilesData = Array.isArray(zrows) ? zrows : [];
-      setProfiles(profilesData);
+// Recompute verified-name keys using the same data source
+const verifiedIds = new Set(
+  profilesData
+    .filter((p) => p.address_verified)
+    .map((p) => p.id)
+);
 
-      const verifiedIds = new Set(
-        [
-          ...profilesData.filter((p) => p.address_verified).map((p) => p.id),
-          ...((linkRows || []).filter((r) => r.is_verified).map((r) => r.zcasher_id)),
-          ...((itemRows || []).filter((r) => r.is_verified).map((r) => r.zcasher_id)),
-        ].filter(Boolean)
-      );
+const vNameKeys = new Set(
+  profilesData
+    .filter((p) => verifiedIds.has(p.id))
+    .map((p) => normForConflict(p.name || ""))
+);
 
-      const vNameKeys = new Set(
-        profilesData
-          .filter((p) => verifiedIds.has(p.id))
-          .map((p) => normForConflict(p.name || ""))
-      );
-      setVerifiedNameKeys(vNameKeys);
+setVerifiedNameKeys(vNameKeys);
 
       setTimeout(() => dialogRef.current?.querySelector("#name")?.focus(), 50);
     })();
@@ -239,16 +245,29 @@ useEffect(() => {
       }
 
       // Validate: if Other → validate otherUrl as full URL; else require username, ensure final URL is valid-looking
-      if (cur.platform === "Other") {
-        cur.valid = cur.otherUrl ? isValidUrl(cur.otherUrl.trim()) : true; // empty allowed
-      } else {
-        const base = PLATFORMS.find((p) => p.key === cur.platform)?.base || "";
-        const built = base + (cur.username || "");
-        // if username present, ensure built URL is valid (add check that base is present)
-        cur.valid =
-          !cur.username || // empty username allowed → treated as skip
-          (base.length > 0 && isValidUrl(built));
-      }
+if (cur.platform === "Other") {
+  if (!cur.otherUrl) {
+    cur.valid = true;
+    cur.reason = null;
+  } else {
+    const res = isValidUrl(cur.otherUrl.trim());
+    cur.valid = res.valid;
+    cur.reason = res.reason;
+  }
+} else {
+  const base = PLATFORMS.find((p) => p.key === cur.platform)?.base || "";
+  const built = base + (cur.username || "");
+
+  if (!cur.username) {
+    cur.valid = true;
+    cur.reason = null;
+  } else {
+    const res = isValidUrl(built);
+    cur.valid = res.valid;
+    cur.reason = res.reason;
+  }
+}
+
 
       next[index] = cur;
       return next;
@@ -263,15 +282,21 @@ useEffect(() => {
     setLinks(links.filter((_, i) => i !== index));
   }
 
-  const builtLinks = links
-    .map((l) => {
-      if (l.platform === "Other") {
-        return l.otherUrl?.trim() || "";
-      }
-      const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-      return l.username ? `${base}${l.username.trim()}` : "";
-    })
-    .filter(Boolean);
+// Build the final list of fully-formed links (only valid ones kept)
+const builtLinks = links
+  .map((l) => {
+    if (l.platform === "Other") {
+      return l.otherUrl?.trim() || "";
+    }
+    const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
+    return l.username ? `${base}${l.username.trim()}` : "";
+  })
+  .filter((url) => {
+    if (!url) return false;
+    const res = isValidUrl(url);
+    return res.valid;
+  });
+
   // ---------- Step Validation ----------
   const stepIsValid = (() => {
     switch (step) {
@@ -329,7 +354,8 @@ async function handleSubmit(e) {
     } else {
       if (!l.username) return false; // empty row is okay
       const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-      return !(base && isValidUrl(base + l.username.trim()));
+      const res = isValidUrl(base + l.username.trim());
+return !(base && res.valid);
     }
   });
   if (invalid) {
@@ -369,7 +395,10 @@ const finalLinks = links
     const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
     return base + l.username.trim();
   })
-  .filter((u) => u && isValidUrl(u));
+  .filter((u) => {
+  const res = isValidUrl(u);
+  return u && res.valid;
+});
 
 // 🚫 Duplicate address guard (frontend)
 const addrNorm = address.trim().toLowerCase();
@@ -562,58 +591,15 @@ const StepAddress = (
         Referred by Zcash.me/
       </label>
 
-      <div className="relative">
-        <input
-          id="referrer"
-          type="text"
-          value={referrer}
-          onChange={(e) => {
-            setReferrer(e.target.value);
-            setShowDropdown(true);
-          }}
-          placeholder="Type to search (optional)…"
-          className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
-          autoComplete="off"
-        />
-
-        {showDropdown && referrer && (
-          <div className="absolute z-50 w-full mt-1 max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white shadow-lg">
-            {profiles
-              .filter((p) => p.name.toLowerCase().includes(referrer.toLowerCase()))
-              .slice(0, 20)
-              .map((p) => (
-                <div
-  key={p.id || p.name}
-
-onClick={() => {
-  setReferrer(p); // store the full profile object
-  setShowDropdown(false);
-}}
-                  className="px-3 py-2 text-sm hover:bg-blue-50 cursor-pointer flex items-center gap-1"
-                >
-                  {p.name}
-                  {(p.address_verified || p.zcasher_links?.some((l) => l.is_verified)) && (
-  <VerifiedBadge
-    verified
-    compact
-    verifiedCount={
-      [
-        p.address_verified ? 1 : 0,
-        ...(p.zcasher_links?.filter((l) => l.is_verified) || []),
-      ].length
-    }
+<div className="relative w-full">
+  <ProfileSearchDropdown
+    value={referrer?.name || referrer || ""}
+    onChange={(v) => setReferrer(v)}
+    profiles={profiles}
+    placeholder="Type to search (optional)…"
   />
+</div>
 
-
-                  )}
-                </div>
-              ))}
-            {!profiles.some((p) => p.name.toLowerCase().includes(referrer.toLowerCase())) && (
-              <div className="px-3 py-2 text-sm text-gray-500">No matches found</div>
-            )}
-          </div>
-        )}
-      </div>
 
       <p className="mt-1 text-xs text-gray-500">Optional. Helps us rank referrals.</p>
     </motion.div>
@@ -690,13 +676,12 @@ onClick={() => {
               </div>
             )}
 
-            {!link.valid && (
+            {!link.valid && link.reason && (
               <p className="text-xs text-red-600 mt-1 ml-1">
-                {link.platform === "Other"
-                  ? "Enter a full URL starting with http:// or https://"
-                  : "Do not include http:// or https:// in the username field."}
+                {link.reason}
               </p>
             )}
+
           </div>
         );
       })}

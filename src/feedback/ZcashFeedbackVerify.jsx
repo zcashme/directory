@@ -1,0 +1,185 @@
+import React, { useEffect, useMemo, useState } from "react";
+import QrUriBlock from "../components/QrUriBlock";
+import AmountAndWallet from "../components/AmountAndWallet.jsx";
+
+import useFeedbackController from "../hooks/useFeedbackController";
+import { useFeedback } from "../store";
+import SubmitOtp from "../SubmitOtp.jsx";
+import { buildZcashUri } from "../utils/zcashWalletUtils";
+import { cachedProfiles } from "../hooks/useProfiles";
+
+const SIGNIN_ADDR = 
+  "u12p8lslmrnrfyjtx83lu5mllghvsyt8d7cnajrj7nls05rlk9dendhrznz7wzsulth2zktfy7ynpguj53gehdgakmj0sjayud3kzl58wjx7lakm29r3t4a3qgq6elplxm5llxkdaws9t4uslvz42dycvg34n423k3s74dh0eeqx0825nzprrtrl6eaj3pmshtuj96wcq9cycy5x2ywq9";
+const SIGNIN_ADDR_old =
+  "u1qzt502u9fwh67s7an0e202c35mm0h534jaa648t4p2r6mhf30guxjjqwlkmvthahnz5myz2ev7neff5pmveh54xszv9njcmu5g2eent82ucpd3lwyzkmyrn6rytwsqefk475hl5tl4tu8yehc0z8w9fcf4zg6r03sq7lldx0uxph7c0lclnlc4qjwhu2v52dkvuntxr8tmpug3jntvm";
+
+const MIN_SIGNIN_AMOUNT = 0.001;
+const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
+
+export default function ZcashFeedbackVerify() {
+  const { verifyMemo: memo, verifyAmount: amount, setVerifyAmount } =
+    useFeedbackController();
+
+  const { selectedAddress } = useFeedback();
+  const profile = cachedProfiles.find((p) => p.address === selectedAddress);
+
+  const [isOtpOpen, setIsOtpOpen] = useState(false);
+  const [showFooterHelp, setShowFooterHelp] = useState(false);
+
+  useEffect(() => {
+    const trimmed = (amount || "").trim();
+    if (!trimmed || trimmed === "0") {
+      setVerifyAmount(DEFAULT_SIGNIN_AMOUNT);
+    }
+  }, [amount, setVerifyAmount]);
+
+  const { numericAmount, validAmount, error, verifyUri } = useMemo(() => {
+    const cleaned = (amount || "").trim();
+    const raw = cleaned.replace(/[^\d.]/g, "");
+    const num = parseFloat(raw);
+    const validMin = !Number.isNaN(num) && num >= MIN_SIGNIN_AMOUNT;
+    const uri = buildZcashUri(
+      SIGNIN_ADDR,
+      raw,
+      memo && memo !== "N/A" ? memo : ""
+    );
+    return {
+      numericAmount: raw,
+      validAmount: validMin,
+      error: validMin
+        ? ""
+        : `Authentication requires at least ${MIN_SIGNIN_AMOUNT} ZEC`,
+      verifyUri: uri
+    };
+  }, [amount, memo]);
+
+  const [copied, setCopied] = useState(false);
+  const [walletOpened, setWalletOpened] = useState(false);
+
+  const handleCopy = async () => {
+    if (!verifyUri || error) return;
+    await navigator.clipboard.writeText(verifyUri);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  const handleOpen = () => {
+    if (!verifyUri || error) return;
+    window.open(verifyUri, "_blank");
+    setWalletOpened(true);
+    setTimeout(() => setWalletOpened(false), 1200);
+  };
+
+  return (
+    <>
+      <div className="bg-transparent border-none shadow-none p-0 mt-1">
+
+
+        {/* Header */}
+        <div className="text-left mb-2">
+          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+
+            <span>
+              Send from {" "}
+              <span
+                className="text-blue-600 cursor-pointer"
+                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              >
+                {cachedProfiles.find((p) => p.address === selectedAddress)
+                  ?.name || "Your profile"}
+              </span>
+            </span>
+
+{/* removed amount requirement + help from header */}
+          </h3>
+        </div>
+
+        {/* Memo Display */}
+        <div className="relative group w-full mb-1">
+<pre
+  className="
+    w-full
+    border border-[#000000]/90
+    rounded-xl
+    px-3 py-2
+    text-[14px]
+    bg-transparent
+    text-gray-800
+    font-mono
+    whitespace-pre-wrap break-words text-left
+    cursor-not-allowed select-none
+    transition-shadow duration-200
+  "
+  style={{ minHeight: '6rem', lineHeight: '1.35' }}
+>
+
+
+            {memo || "(waiting for edits)"}
+          </pre>
+        </div>
+
+        {/* Amount + Wallet */}
+        <div className="mt-3 w-full">
+          <AmountAndWallet
+            amount={amount}
+            setAmount={setVerifyAmount}
+            openWallet={handleOpen}
+          />
+          {!validAmount && (
+            <span className="text-xs text-red-600">{error}</span>
+          )}
+        </div>
+
+        {showFooterHelp && (
+          <p className="mx-1 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
+            You will receive your OTP within 24-hours. Then,
+            {" "}
+            <button
+              type="button"
+              onClick={() => setIsOtpOpen(true)}
+              className="font-semibold text-blue-600 underline cursor-pointer"
+            >
+              enter your OTP
+            </button>{" "}
+            to approve your changes.
+          </p>
+        )}
+{/* Requirement line under help, above QR divider */}
+<div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
+  <p className="text-[12px] text-gray-600 italic m-0">
+    Do not modify — include at least {MIN_SIGNIN_AMOUNT} ZEC.
+  </p>
+
+  <button
+    type="button"
+    onClick={() => setShowFooterHelp(!showFooterHelp)}
+    className="text-[12px] font-semibold text-blue-600 underline m-0"
+  >
+    {showFooterHelp ? "Hide help" : "Help"}
+  </button>
+</div>
+
+        {/* Divider + centered QR/URI (matches Draft EXACTLY) */}
+        <div className="border-t border-black/10 mt-4 pt-4">
+          {verifyUri && !error && (
+            <div className="-mt-2 flex justify-center">
+              <QrUriBlock
+                uri={verifyUri}
+                profileName="verification"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* OTP Modal */}
+      {isOtpOpen && (
+        <SubmitOtp
+          isOpen={isOtpOpen}
+          onClose={() => setIsOtpOpen(false)}
+          profile={profile}
+        />
+      )}
+    </>
+  );
+}

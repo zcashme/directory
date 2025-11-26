@@ -4,6 +4,35 @@ import { useState, useEffect } from "react";
 import Directory from "./Directory";
 import { FeedbackProvider } from "./store";
 
+// DEBUG: log all scroll calls
+if (typeof window !== "undefined" && !window.__scrollDebugPatched) {
+  window.__scrollDebugPatched = true;
+
+  const origScrollTo = window.scrollTo.bind(window);
+  window.scrollTo = function (...args) {
+    console.log(
+      "[SCROLL DEBUG] window.scrollTo called with:",
+      args,
+      "\nstack:\n",
+      new Error().stack
+    );
+    return origScrollTo(...args);
+  };
+
+  const origScrollIntoView = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function (...args) {
+    console.log(
+      "[SCROLL DEBUG] scrollIntoView on:",
+      this.id || this.className || this.tagName,
+      "args:",
+      args,
+      "\nstack:\n",
+      new Error().stack
+    );
+    return origScrollIntoView.apply(this, args);
+  };
+}
+
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const navigate = useNavigate();

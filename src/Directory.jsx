@@ -8,6 +8,8 @@ import ZcashStats from "./ZcashStats";
 // import useToastMessage from "./hooks/useToastMessage";
 
 import ProfileCard from "./components/ProfileCard";
+import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
+
 import LetterGridModal from "./components/LetterGridModal";
 import AlphabetSidebar from "./components/AlphabetSidebar";
 
@@ -29,6 +31,8 @@ export default function Directory() {
   const { showDirectory, setShowDirectory } = useDirectoryVisibility();
   const showAlpha = useAlphaVisibility(showDirectory);
  // const { toastMsg, showToast, closeToast } = useToastMessage();
+const searchInputRef = useRef(null);
+const dropdownRef = useRef(null);
 
   const [search, setSearch] = useState("");
   const [activeLetter, setActiveLetter] = useState(null);
@@ -164,6 +168,22 @@ const good_thru = computeGoodThru(joinedAt, match.last_signed_at);
     }
   }, [selectedProfile?.address, selectedProfile?.id, selectedProfile?.name, setSelectedAddress]);
 
+useEffect(() => {
+  function handleClickOutside(e) {
+    if (!dropdownRef.current) return;
+    if (!searchInputRef.current) return;
+
+    const insideDropdown = dropdownRef.current.contains(e.target);
+    const insideInput = searchInputRef.current.contains(e.target);
+
+    if (!insideDropdown && !insideInput) {
+      setSearch(""); // collapse results
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => document.removeEventListener("mousedown", handleClickOutside);
+}, []);
 
   // filter + grouping logic
   const { sorted, grouped, letters } = useMemo(() => {
@@ -399,44 +419,112 @@ profiles.filter(
 >
   Zcash.me/
 </button>
+<div className="relative flex-1 max-w-sm">
+<input
+  ref={searchInputRef}
 
-  <div className="relative flex-1 max-w-sm">
-    <input
-      value={search}
-      onChange={(e) => {
-        setSearch(e.target.value);
+    value={search}
+    onChange={(e) => {
+      setSearch(e.target.value);
+      setFilters({ verified: false, referred: false, ranked: false, featured: false });
+    }}
+    onKeyDown={(e) => {
+      if (e.key === "Enter") {
+        setShowDirectory(true);
         setFilters({ verified: false, referred: false, ranked: false, featured: false });
-      }}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") {
-          setShowDirectory(true);
-          setFilters({ verified: false, referred: false, ranked: false, featured: false });
-        }
-      }}
+      }
+    }}
 
-      placeholder={`search ${profiles.length} names`}
-      className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
-    />
-    {search && (
-      <button
-        onClick={() => setSearch("")}
-        className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
-        aria-label="Clear search"
-      >
-        ⛌
-      </button>
-    )}
-  </div>
+    placeholder={`search ${profiles.length} names`}
+    className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
+  />
+
+  {search && (
+<button
+  onClick={() => {
+    setSearch("");
+    requestAnimationFrame(() => {
+      if (searchInputRef.current) {
+        const el = searchInputRef.current;
+        el.focus();
+        el.setSelectionRange(0, 0); // cursor at start
+      }
+    });
+  }}
+
+      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
+      aria-label="Clear search"
+    >
+      ⛌
+    </button>
+  )}
+
+  {/* Shared dropdown placed directly below search input */}
+  {search && (
+<div
+  ref={dropdownRef}
+  className="absolute left-0 right-0 top-full mt-1 z-[9999]"
+>
+  <ProfileSearchDropdown
+
+        listOnly={true}
+        value={search}
+        onChange={(v) => {
+          if (typeof v === "object") {
+            // User selected a profile from the dropdown
+            const addr = v.address;
+            setSelectedAddress(addr);
+            window.dispatchEvent(
+              new CustomEvent("selectAddress", { detail: { address: addr } })
+            );
+
+            setShowDirectory(false);
+            requestAnimationFrame(() =>
+              window.scrollTo({ top: 0, behavior: "smooth" })
+            );
+          } else {
+            setSearch(v);
+          }
+        }}
+        profiles={profiles}
+        placeholder="search"
+      />
+    </div>
+  )}
+</div>
 </div>
 
 <button
-  onClick={() => setIsJoinOpen(true)}
+  onClick={() => {
+    // Broadcast the currently active ProfileCard to AddUserForm
+    if (selectedProfile) {
+      window.dispatchEvent(
+        new CustomEvent("prefillReferrer", {
+          detail: {
+            id: selectedProfile.id,
+            name: selectedProfile.name,
+            address: selectedProfile.address,
+          },
+        })
+      );
+
+      // Fallback storage — AddUserForm can read this synchronously
+      window.lastReferrer = {
+        id: selectedProfile.id,
+        name: selectedProfile.name,
+        address: selectedProfile.address,
+      };
+    }
+
+    setIsJoinOpen(true);
+  }}
   className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold 
   shadow-md transition-all duration-300 z-[50] animate-joinPulse
   hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
 >
   ＋ Join
 </button>
+
 
 <style>{`
   @keyframes joinPulse {
@@ -541,6 +629,9 @@ onSelect={(addr) => {
   localStorage.setItem("lastScrollY", window.scrollY.toString());
   localStorage.setItem("lastSelectedAddress", addr);
   setSelectedAddress(addr);
+window.dispatchEvent(
+  new CustomEvent("selectAddress", { detail: { address: addr } })
+);
   setShowDirectory(false);
   requestAnimationFrame(() =>
     window.scrollTo({ top: 0, behavior: "smooth" })
@@ -605,6 +696,7 @@ onSelect={(addr) => {
 
         {!showDirectory && selectedProfile && (
           <ProfileCard
+            key={selectedProfile.address} 
             profile={selectedProfile}
             onSelect={() => {}}
             fullView

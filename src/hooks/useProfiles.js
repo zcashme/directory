@@ -75,21 +75,44 @@ const rankMonth = new Map(
         from += pageSize;
       }
 
-      // 🟢 4️⃣ Enrich with rank data
-      const enriched = all.map((p) => {
-        const pid = String(p.id);
-        return {
-          ...p,
-          rank_alltime: rankAll.get(pid) || 0,
-          rank_weekly: rankWeek.get(pid) || 0,
-          rank_monthly: rankMonth.get(pid) || 0,
-        };
-      });
+// 🟢 4️⃣ Normalize + Enrich with rank data + Hydrate verification fields
+const enriched = all.map((p) => {
+  const pid = String(p.id);
+
+  // Normalize verification sources
+  const addressVerified =
+    p.address_verified ||
+    p.verified ||
+    false;
+
+  const linkList =
+    p.links ||
+    p.zcasher_links ||
+    [];
+
+  const linkVerifiedCount =
+    p.verified_links_count ??
+    linkList.filter((l) => l.is_verified).length;
+
+  return {
+    ...p,
+
+    // Ranking from leaderboard
+    rank_alltime: rankAll.get(pid) || 0,
+    rank_weekly: rankWeek.get(pid) || 0,
+    rank_monthly: rankMonth.get(pid) || 0,
+
+    // Normalized fields used everywhere
+    address_verified: addressVerified,
+    links: linkList,
+    verified_links_count: linkVerifiedCount,
+  };
+});
 
       // 🧩 Debug known case
-      const test = enriched.find((p) => p.name === "UlatPadi");
+      const test = enriched.find((p) => p.name === "Zechariah");
       if (test) {
-        console.log("🧩 Debug UlatPadi:", {
+        console.log("🧩 Debug Zechariah:", {
           id: test.id,
           rank_alltime: test.rank_alltime,
           rank_weekly: test.rank_weekly,

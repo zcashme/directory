@@ -20,3 +20,28 @@ html, body, #root {
   background: var(--color-background);
   color: var(--color-primary);
 }
+
+
+/* --- Zcash.me Mid-Intensity Custom Scrollbar --- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06); /* subtle contrast on dark bg */
+  border-radius: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1a73e8, #174ea6); /* soft blue gradient */
+  border-radius: 8px;
+  border: 2px solid rgba(0, 0, 0, 0.25); /* subtle inset */
+  box-shadow: 0 0 6px rgba(26, 115, 232, 0.4); /* soft glow */
+  transition: all 0.2s ease-in-out;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #3b8bff, #1d63c8);
+  box-shadow: 0 0 10px rgba(59, 139, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.35);
+}

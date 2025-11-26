@@ -4,235 +4,29 @@ import CopyButton from "./CopyButton";
 import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
-import ReferRankBadge from "./ReferRankBadge";
 import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
-import HelpIcon from "./HelpIcon";
-import CheckIcon from "../assets/CheckIcon";
 import shareIcon from "../assets/share.svg";
+// --- Domain utils + favicon maps ---
+import { extractDomain, betweenTwoPeriods } from "../utils/domainParsing.js";
+import { KNOWN_DOMAINS, FALLBACK_ICON } from "../utils/domainLabels.js";
 
+import SubmitOtp from "../SubmitOtp.jsx";
+import CheckIcon from "../assets/CheckIcon.jsx";
 import { motion, AnimatePresence  } from "framer-motion";
-import React from "react";
-
-function AddressCopyChip({ address }) {
-  const [copied, setCopied] = React.useState(false);
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(address);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  return (
-    <div
-      className={`flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] transition-colors duration-300 ${
-        copied ? "border-green-400 bg-green-50" : "border-gray-300 bg-gray-50"
-      }`}
-    >
-      <span
-        className="truncate max-w-[180px] select-all"
-        title={address}
-      >
-        {address}
-      </span>
-
-      <button
-        onClick={handleCopy}
-        className={`flex items-center justify-center transition-all ${
-          copied
-            ? "text-green-600 hover:text-green-600"
-            : "text-gray-500 hover:text-blue-600"
-        }`}
-        title={copied ? "Copied!" : "Copy address"}
-      >
-        {copied ? (
-  <CheckIcon className="h-4 w-4 text-green-600 drop-shadow-sm" />
-) : (
-  "⧉"
-)}
-
-      </button>
-    </div>
-  );
-}
 
 
-function EditableField({ label, value, fieldKey, multiline }) {
-  const { setPendingEdit } = useFeedback();
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(value);
-
-  return (
-    <motion.div layout className="mb-3">
-      <div className="flex items-center justify-between">
-        <label className="font-semibold text-gray-700">{label}</label>
-        <button
-          onClick={() => {
-            if (editing) setPendingEdit(fieldKey, draft);
-            setEditing(!editing);
-          }}
-          className="text-xs text-blue-600 hover:underline"
-        >
-          {editing ? "Save" : "✎ Edit"}
-        </button>
-      </div>
-
-      {editing ? (
-        multiline ? (
-          <textarea
-            rows={3}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm w-full resize-none bg-transparent cursor-default text-gray-700"
-          />
-        ) : (
-          <input
-            type="text"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="w-full mt-1 border rounded-lg px-3 py-2 text-sm font-mono"
-          />
-        )
-      ) : (
-        <p className="mt-1 text-gray-600 break-all">
-          {value || <span className="italic text-gray-400">empty</span>}
-        </p>
-      )}
-    </motion.div>
-  );
-}
-
-function EditableLinks({ links }) {
-  const { setPendingEdit } = useFeedback();
-  const [linkList, setLinkList] = useState(
-    links.length > 0 ? links.map((l) => ({ id: l.id || null, url: l.url })) : []
-  );
-
-  const handleChange = (index, value) => {
-    const updated = [...linkList];
-    updated[index].url = value;
-    setLinkList(updated);
-    setPendingEdit(
-      "links",
-      updated.map((l) => l.url)
-    );
-  };
-
-  const addLink = () => {
-    const updated = [...linkList, { id: null, url: "" }];
-    setLinkList(updated);
-  };
-
-  const removeLink = (index) => {
-    const updated = linkList.filter((_, i) => i !== index);
-    setLinkList(updated);
-    setPendingEdit(
-      "links",
-      updated.map((l) => l.url)
-    );
-  };
-
-  return (
-    <motion.div layout className="mt-4">
-      <label className="font-semibold text-gray-700 block mb-2">Links</label>
-      {linkList.map((link, index) => (
-        <motion.div
-          layout
-          key={index}
-          className="flex items-center gap-2 mb-2"
-          transition={{ layout: { duration: 0.3 } }}
-        >
-          <input
-            type="text"
-            value={link.url}
-            onChange={(e) => handleChange(index, e.target.value)}
-            placeholder="https://example.com"
-            className="flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono border-gray-300 focus:border-blue-500"
-          />
-          {link.id ? (
-            <span className="text-gray-400 text-xs">saved</span>
-          ) : (
-            <button
-              onClick={() => removeLink(index)}
-              className="text-xs text-red-600 hover:underline"
-            >
-              ␡ Remove Link
-            </button>
-          )}
-        </motion.div>
-      ))}
-      <button
-        onClick={addLink}
-        className="text-sm font-semibold text-blue-700 hover:underline mt-1"
-      >
-        ＋ Add Link
-      </button>
-    </motion.div>
-  );
-}
 
 
-function LinkEditor() {
-  const { setPendingEdit, pendingEdits } = useFeedback();
-  const [newLinks, setNewLinks] = useState([]);
 
-  const handleLinkChange = (index, value) => {
-    const updated = [...newLinks];
-    updated[index].url = value;
-    updated[index].valid = !value || /^https?:\/\//.test(value);
-    setNewLinks(updated);
-    const validLinks = updated.filter((l) => l.valid && l.url);
-    setPendingEdit(
-      "new_links",
-      validLinks.map((l) => l.url)
-    );
-  };
-
-  const addLink = () => setNewLinks([...newLinks, { url: "", valid: true }]);
-  const removeLink = (i) =>
-    setNewLinks(newLinks.filter((_, idx) => idx !== i));
-
-  return (
-    <div>
-      {newLinks.map((link, index) => (
-        <div key={index} className="flex items-center gap-2 mb-2">
-          <input
-            type="text"
-            value={link.url}
-            onChange={(e) => handleLinkChange(index, e.target.value)}
-            placeholder="https://example.com"
-            className={`flex-1 border rounded-lg px-3 py-1.5 text-sm font-mono ${
-              link.valid
-                ? "border-gray-300 focus:border-blue-500"
-                : "border-red-400 focus:border-red-500"
-            }`}
-          />
-          <button
-            onClick={() => removeLink(index)}
-            className="text-xs text-red-600 hover:underline"
-          >
-            ✖ Remove
-          </button>
-        </div>
-      ))}
-      <button
-        onClick={addLink}
-        className="text-sm font-semibold text-blue-700 hover:underline mt-1"
-      >
-        ＋ Add Link
-      </button>
-    </div>
-  );
-}
 
 
 // Caching and CDN settings
-const CDN_PROXY_URL = import.meta.env.VITE_CDN_PROXY_URL || "";
 const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const [showLinks, setShowLinks] = useState(false);
-  const [copied, setCopied] = React.useState(false);
+    const [isOtpOpen, setIsOtpOpen] = useState(false);
 
   // 🔗 Lazy-load links from Supabase when needed
 // (linksArray state/effect is defined later; duplicate removed)
@@ -244,8 +38,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   (profile?.rank_monthly ?? 0) > 0 ||
   (profile?.rank_daily ?? 0) > 0;
 
-  const [qrShown, setQRShown] = useState(false);
-  const [linksShown, setLinksShown] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -294,20 +86,16 @@ if (!profile?.id || !profile?.address) {
   };
 }
 
-    window.lastZcashFlipDetail = {
-  zId: profile.id,
-  address: profile.address || "",
-  name: profile.name || "",
-  verified: !!profile.address_verified,
-  since: profile.since || null,
-};
-
+ 
   }
 };
 
   const handleEnterDraft = () => {
     setShowBack(false);
   };
+// window.addEventListener("enterSignInMode", e => {
+//  console.log("ENTER-SIGNIN fired with:", e.detail);
+// });
 
   window.addEventListener("enterSignInMode", handleEnterSignIn);
   window.addEventListener("enterDraftMode", handleEnterDraft);
@@ -315,18 +103,7 @@ if (!profile?.id || !profile?.address) {
     window.removeEventListener("enterSignInMode", handleEnterSignIn);
     window.removeEventListener("enterDraftMode", handleEnterDraft);
   };
-}, []);
-// 🔹 Animate label expansion on mount (desktop only)
-useEffect(() => {
-  if (window.matchMedia("(hover: none)").matches) return; // skip on mobile
-  const labels = document.querySelectorAll(".group span");
-  labels.forEach((el) => {
-    el.classList.add("max-w-[50px]", "opacity-100");
-    setTimeout(() => {
-      el.classList.remove("max-w-[50px]", "opacity-100");
-    }, 2000);
-  });
-}, []);
+}, [profile?.id, profile?.address]);
 
 useEffect(() => {
   // Always make visible for fullView or if already cached
@@ -388,9 +165,27 @@ const isVerified = hasVerifiedContent;
 const expired =
   profile.last_verified_at &&
   new Date(profile.last_verified_at).getTime() <
-    Date.now() - 1000 * 60 * 60 * 24 * 90; // expired if older than 90 days
+    Date.now() - 1000 * 60 * 60 * 24 * 90;
 
-  // 🔗 start with whatever might already be in profile.links or profile.links_json
+// --- Local favicon + label resolver ---
+function enrichLink(link) {
+  const domain = extractDomain(link.url);
+
+  if (KNOWN_DOMAINS[domain]) {
+    return {
+      ...link,
+      label: KNOWN_DOMAINS[domain].label,
+      icon: KNOWN_DOMAINS[domain].icon,
+    };
+  }
+
+  return {
+    ...link,
+    label: link.label || betweenTwoPeriods(domain) || "Unknown",
+    icon: FALLBACK_ICON,
+  };
+}
+
 const [linksArray, setLinksArray] = useState(() => {
   if (Array.isArray(profile.links)) return profile.links;
   if (typeof profile.links_json === "string") {
@@ -415,7 +210,7 @@ useEffect(() => {
       console.error("❌ Error fetching links:", error);
       return;
     }
-    if (Array.isArray(data)) setLinksArray(data);
+    if (Array.isArray(data)) setLinksArray(data.map(enrichLink));
   });
 }, [showLinks, profile?.id]);
 const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
@@ -426,69 +221,40 @@ const hasUnverifiedLinks =
   verifiedLinks === 0;
 
 
-  const totalVerifications = (verifiedAddress ? 1 : 0) + verifiedLinks;
-
   const hasReferrals = (profile.referral_count ?? 0) > 0;
-const isRanked =
-  (profile.rank_alltime > 0 && profile.rank_alltime <= 10) ||
-  (profile.rank_weekly > 0 && profile.rank_weekly <= 10) ||
-  (profile.rank_monthly > 0 && profile.rank_monthly <= 10) ||
-  (profile.rank_daily > 0 && profile.rank_daily <= 10) ||
-  (profile.refRank ?? profile.referral_rank) <= 10;
 
 
 let rankType = null;
-if (profile.rank_alltime > 0 && profile.rank_alltime <= 10) rankType = "alltime";
-else if (profile.rank_weekly > 0 && profile.rank_weekly <= 10) rankType = "weekly";
-else if (profile.rank_monthly > 0 && profile.rank_monthly <= 10) rankType = "monthly";
-else if (profile.rank_daily > 0 && profile.rank_daily <= 10) rankType = "daily";
+if (profile.rank_alltime > 0) rankType = "alltime";
+else if (profile.rank_weekly > 0) rankType = "weekly";
+else if (profile.rank_monthly > 0) rankType = "monthly";
+else if (profile.rank_daily > 0) rankType = "daily";
 
-  // ordinal helper for rank
-  const ordinal = (n) => {
-    if (!n || typeof n !== "number") return "";
-    const s = ["th", "st", "nd", "rd"];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  };
 
 let circleClass = "bg-blue-500"; // default = All
 
-if (isVerified && isRanked) {
-  // Verified + ranked (any period)
-  circleClass = "bg-gradient-to-r from-green-400  to-orange-500";
+if (isVerified && rankType) {
+  circleClass = "bg-gradient-to-r from-green-400 to-orange-500";
 } else if (isVerified) {
-  // Verified only
   circleClass = "bg-green-500";
 } else if (rankType) {
-  // Unverified + ranked (any period) → base blue blended with red/orange
   if (rankType === "alltime") {
-    circleClass = "bg-gradient-to-r from-blue-500  to-red-500";
+    circleClass = "bg-gradient-to-r from-blue-500 to-red-500";
   } else if (rankType === "weekly") {
-    circleClass = "bg-gradient-to-r from-blue-500  to-orange-500";
+    circleClass = "bg-gradient-to-r from-blue-500 to-orange-500";
   } else if (rankType === "monthly") {
-    circleClass = "bg-gradient-to-r from-blue-500  to-red-500";
+    circleClass = "bg-gradient-to-r from-blue-500 to-red-500";
   } else if (rankType === "daily") {
-    circleClass = "bg-gradient-to-r from-blue-500  to-cyan-500";
+    circleClass = "bg-gradient-to-r from-blue-500 to-cyan-500";
   }
 } else {
-  // Default unverified + unranked
   circleClass = "bg-blue-500";
 }
 
 
 
-  const CheckIcon = (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      className="inline-block w-3.5 h-3.5 text-green-600"
-      fill="none"
-      viewBox="0 0 24 24"
-      stroke="currentColor"
-      strokeWidth="2"
-    >
-      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-    </svg>
-  );
+
+
 
   if (!fullView) {
     // Compact card (unchanged)
@@ -573,22 +339,30 @@ if (isVerified && isRanked) {
     <span className="text-gray-400">•</span>
   )}
 
-  {(profile.rank_alltime ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_alltime} period="all" />
-  )}
-  {(profile.rank_weekly ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_weekly} period="weekly" />
-  )}
-  {(profile.rank_monthly ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_monthly} period="monthly" />
-  )}
-  {(profile.rank_daily ?? 0) > 0 && (
-    <ReferRankBadgeMulti rank={profile.rank_daily} period="daily" />
-  )}
+{["alltime", "weekly", "monthly", "daily"].map(period => {
+  const rank = profile[`rank_${period}`];
+  return rank > 0 && <ReferRankBadgeMulti key={period} rank={rank} period={period.replace("time","")} />;
+})}
 </div>
           </div>
         </div>
-      </VerifiedCardWrapper>
+      {isOtpOpen && (
+  <SubmitOtp
+    isOpen={isOtpOpen}
+    onClose={() => setIsOtpOpen(false)}
+    profile={profile}
+  />
+)}
+
+{isOtpOpen && (
+  <SubmitOtp
+    isOpen={isOtpOpen}
+    onClose={() => setIsOtpOpen(false)}
+    profile={profile}
+  />
+)}
+</VerifiedCardWrapper>
+
     );
   }
 
@@ -689,11 +463,23 @@ if (isVerified && isRanked) {
           }}
           className="w-full text-left px-4 py-2 hover:bg-blue-50"
         >
-                <span>↺</span> {/* 🡪 equivalent */}
- Edit Profile
+ ↺ Edit Profile
         </button>
+
+        <button
+  onClick={() => {
+    setMenuOpen(false);
+    setIsOtpOpen(true);
+  }}
+  className="w-full text-left px-4 py-2 hover:bg-blue-50"
+>
+⛨ Enter Passcode
+</button>
+
+
       </div>
     )}
+    
   </div>
 
   {/* Share button (top-right) */}
@@ -851,43 +637,41 @@ if (isVerified && isRanked) {
   <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
 
   <span className="whitespace-nowrap">
-    Last verified{" "}
-    {profile.last_verified_at || profile.last_verified ? (
-      `${Math.max(
-        0,
-        Math.round(
-          (Date.now() -
-            new Date(profile.last_verified_at || profile.last_verified).getTime()) /
-            (1000 * 60 * 60 * 24 * 7)
-        )
-      )} weeks ago`
-    ) : (
-      "N/A"
-    )}
+    Verified{" "}{" "}
+    {profile.last_verified_at || profile.last_verified ? (() => {
+      const ts = new Date(profile.last_verified_at || profile.last_verified).getTime();
+      const weeks = (Date.now() - ts) / (1000 * 60 * 60 * 24 * 7);
+
+      if (weeks < 1) return "<1 week ago";
+      if (weeks < 2) return "<2 week ago";
+      if (weeks < 3) return "<3 weeks ago";
+      if (weeks < 4) return "<4 weeks ago";
+      return "<1 month ago";
+    })() : "N/A"}
   </span>
+
 
   <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
 
   <span className="whitespace-nowrap">
-    Good thru{" "}
-    {profile.good_thru
-      ? new Date(profile.good_thru).toLocaleString("default", {
-          month: "short",
-          year: "numeric",
-        })
-      : "NULL"}
-  </span>
+  Good thru{" "}
+  {profile.verif_expires_at
+    ? new Date(profile.verif_expires_at).toLocaleString("default", {
+        month: "short",
+        year: "numeric",
+      })
+    : "NULL"}
+</span>
+
 </p>
 
 
 {/* Address with integrated copy button and feedback */}
 {profile.address ? (
   <div className="mt-2 flex items-center justify-center">
-    <div
-      className={`flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] transition-colors duration-300 ${
-        copied ? "border-green-400 bg-green-50" : "border-gray-300 bg-gray-50"
-      }`}
-    >
+<div
+  className="flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] border-gray-300 bg-gray-50"
+>
   <span className="select-all" title={profile.address}>
   {profile.address
     ? `${profile.address.slice(0, 6)}...${profile.address.slice(-6)}`
@@ -899,13 +683,22 @@ if (isVerified && isRanked) {
   {/* QR Button */}
   <button
     onClick={() => {
-      if (typeof setSelectedAddress === "function") setSelectedAddress(profile.address);
-      if (typeof setForceShowQR === "function") setForceShowQR(true);
-      if (typeof setQRShown === "function") setQRShown(true);
-    setTimeout(() => {
+console.log("QR BUTTON CLICKED — should trigger scroll + QR");
+if (typeof setSelectedAddress === "function") {
+  setSelectedAddress(profile.address);
+}
+
+// Explicit QR-open request (ONLY triggered by QR icon click)
+if (typeof setForceShowQR === "function") {
+  setForceShowQR(Date.now()); 
+}
+
+// Scroll ONLY because user intentionally pressed QR button
+setTimeout(() => {
   const el = document.getElementById("zcash-feedback");
   if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-}, 400); // small delay to allow label expansion before scroll
+}, 400);
+
 
     }}
     className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
@@ -918,24 +711,7 @@ if (isVerified && isRanked) {
   </button>
 
   {/* Copy Button */}
-  <button
-    onClick={() => {
-      navigator.clipboard.writeText(profile.address);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }}
-    className={`group flex items-center justify-center transition-all px-1 overflow-hidden ${
-      copied
-        ? "text-green-600 hover:text-green-600"
-        : "text-gray-500 hover:text-blue-600"
-    }`}
-    title={copied ? "Copied!" : "Copy address"}
-  >
-    {copied ? "☑" : "⧉"}
-    <span className="inline-block max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">
-      {copied ? "Copied!" : "Copy"}
-    </span>
-  </button>
+<CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
 </div>
     </div>
   </div>
@@ -958,12 +734,17 @@ if (isVerified && isRanked) {
             key={link.id}
             className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"
           >
-            <div className="flex items-center gap-2">
-              <span className="font-medium text-gray-800 truncate">
-                {link.label || "Untitled"}
-              </span>
-              <VerifiedBadge verified={link.is_verified} />
-            </div>
+<div className="flex items-center gap-2">
+  <img
+    src={link.icon}
+    alt=""
+    className="w-4 h-4 rounded-sm opacity-80"
+  />
+  <span className="font-medium text-gray-800 truncate">
+    {link.label}
+  </span>
+  <VerifiedBadge verified={link.is_verified} />
+</div>
             <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
               <a
                 href={link.url}
@@ -973,13 +754,9 @@ if (isVerified && isRanked) {
               >
                 {link.url.replace(/^https?:\/\//, "")}
               </a>
-              <button
-                onClick={() => navigator.clipboard.writeText(link.url)}
-                title="Copy link"
-                className="text-gray-400 hover:text-blue-600 transition-colors text-sm"
-              >
-                ⧉
-              </button>
+<CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+
+
             </div>
           </div>
         ))
@@ -1003,12 +780,15 @@ if (isVerified && isRanked) {
                   : "text-red-500 bg-red-50 border-red-200"
               }`}
             >
-              {hasVerifiedContent ? (
-                <span className="inline-flex items-center gap-1">
-                  {CheckIcon}
-                  <strong>{profile.name}</strong> appears to be verified.
-                </span>
-              ) : hasUnverifiedLinks ? (
+{hasVerifiedContent ? (
+  <span className="inline-flex items-center gap-1">
+    <span className="h-4 w-4 inline-flex items-center justify-center text-green-600">
+      <CheckIcon className="h-4 w-4 text-green-600" />
+
+    </span>
+    <strong>{profile.name}</strong> appears to be authentic.
+  </span>
+) : hasUnverifiedLinks ? (
                 <>
                   ⚠ <strong>{profile.name}</strong> has contributed links, but
                   none are verified.
@@ -1091,9 +871,14 @@ if (isVerified && isRanked) {
   <div className="absolute top-4 left-4 z-10">
     <button
 onClick={() => {
+  // tell feedback NOT to auto-scroll
+  window.skipZcashFeedbackScroll = true;
+
   setShowBack(false);
   window.dispatchEvent(new CustomEvent("enterDraftMode"));
+  window.dispatchEvent(new CustomEvent("forceFeedbackNoteMode"));
 }}
+
       title="Return to front"
       aria-label="Return to front"
       className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
@@ -1104,11 +889,8 @@ onClick={() => {
     </button>
   </div>
 
-<div className="relative">
-  <h3 className="text-lg font-semibold text-gray-700 text-center">Edit Profile</h3>
-</div>
 
-  <ProfileEditor profile={profile} />
+  <ProfileEditor profile={profile} links={linksArray} />
 </div>
 
 
@@ -1119,6 +901,15 @@ onClick={() => {
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
       `}</style>
-    </VerifiedCardWrapper>
+
+      
+    {isOtpOpen && (
+  <SubmitOtp
+    isOpen={isOtpOpen}
+    onClose={() => setIsOtpOpen(false)}
+    profile={profile}
+  />
+)}
+</VerifiedCardWrapper>
   );
 }

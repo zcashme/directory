@@ -1,29 +1,39 @@
 ﻿import { useState } from "react";
 
-export default function CopyButton({ text, label = "Copy" }) {
+export default function CopyButton({
+  text,
+  label = "Copy",
+  copiedLabel = "Copied",
+  className = "",
+  icon = "⧉",
+  copiedIcon = "⮼",
+  timeout = 2000,
+}) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (err) {
-      console.error("Copy failed:", err);
-    }
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), timeout);
   };
 
   return (
     <button
       onClick={handleCopy}
-      className={`flex items-center justify-center gap-1 border rounded-xl px-3 py-1.5 h-8 text-sm transition-all duration-200 sm:basis-[48%] ${
-        copied
-          ? "border-green-500 text-green-600 bg-green-50"
-          : "border-gray-400 hover:border-blue-500 text-gray-700"
-      }`}
+      title={copied ? copiedLabel : label}
+      className={
+        `group flex items-center justify-center transition-all px-1 overflow-hidden ` +
+        (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-blue-600") +
+        " " +
+        className
+      }
     >
-      <span className="text-base">{copied ? "✓" : "⧉"}</span>
-      <span>{copied ? "Copied" : label}</span>
+      {copied ? copiedIcon : icon}
+      <span
+        className="inline-block max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1"
+      >
+        {copied ? copiedLabel : label}
+      </span>
     </button>
   );
 }
