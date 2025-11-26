@@ -5,6 +5,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
   const qrRef = useRef(null);
   const [showQR, setShowQR] = useState(false);
   const [showFull, setShowFull] = useState(false);
+  const [embeddedLogo, setEmbeddedLogo] = useState(null);
 
   useEffect(() => {
     if (forceShowQR) setShowQR(true);
@@ -13,6 +14,27 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
   useEffect(() => {
     if (forceShowURI) setShowFull(true);
   }, [forceShowURI]);
+
+  useEffect(() => {
+    const rawSrc = "/Zcashme_logo.png";
+    if (!rawSrc) return;
+    if (rawSrc.startsWith("data:")) {
+      setEmbeddedLogo(rawSrc);
+      return;
+    }
+    fetch(rawSrc)
+      .then((resp) => resp.blob())
+      .then(
+        (blob) =>
+          new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.readAsDataURL(blob);
+          })
+      )
+      .then((dataUrl) => setEmbeddedLogo(dataUrl))
+      .catch(() => setEmbeddedLogo(null));
+  }, []);
 
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -101,8 +123,19 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
             value={uri}
             size={300}
             includeMargin={true}
-            bgColor="transparent"
+            bgColor="#ffffff"
             fgColor="#000000"
+            level="H"
+            imageSettings={
+              embeddedLogo
+                ? {
+                    src: embeddedLogo,
+                    height: 64,
+                    width: 64,
+                    excavate: true,
+                  }
+                : undefined
+            }
           />
           <button
             onClick={handleSaveQR}
