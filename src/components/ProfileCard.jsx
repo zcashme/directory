@@ -51,7 +51,14 @@ const versionSuffix = profile.last_signed_at
   : profile.created_at
   ? `?v=${encodeURIComponent(profile.created_at)}`
   : "";
-const finalUrl = rawUrl + versionSuffix;
+const isTwitter = rawUrl.includes("pbs.twimg.com");
+
+const finalUrl = isTwitter
+  ? rawUrl                          // do NOT append anything to Twitter
+  : rawUrl.includes("?")
+  ? rawUrl                           // already has query params → leave it
+  : `${rawUrl}?v=${profile.last_signed_at || profile.created_at}`;
+
 
 
 useEffect(() => {
@@ -296,7 +303,8 @@ if (isVerified && rankType) {
     draggable="false"
     loading="lazy"
     decoding="async"
-    referrerPolicy="no-referrer"
+    // referrerPolicy="strict-origin-when-cross-origin"
+   referrerPolicy="no-referrer"
   />
 )}
 
@@ -537,6 +545,7 @@ if (isVerified && rankType) {
     draggable="false"
     loading="lazy"
     decoding="async"
+    // referrerPolicy="strict-origin-when-cross-origin"
     referrerPolicy="no-referrer"
   />
 ) : (

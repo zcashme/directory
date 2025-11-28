@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Directory from "./Directory";
 import { FeedbackProvider } from "./store";
+import AdminRefundPage from "./components/AdminRefundPage";
 
 // DEBUG: log all scroll calls
 if (typeof window !== "undefined" && !window.__scrollDebugPatched) {
@@ -47,6 +48,17 @@ function App() {
   return (
     <FeedbackProvider>
       <Routes>
+        <Route
+        path="/admin/refunds"
+        element={
+          import.meta.env.DEV ? (
+            <AdminRefundPage />
+          ) : (
+            <div className="p-6 text-red-600">Admin page only available in development.</div>
+          )
+        }
+      />
+
         {/* Wildcard route: handles / and all slugs */}
         <Route
           path="/*"
