@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import ZcashGridButton from "./components/ZcashGridButton";
 
 import AddUserForm from "./AddUserForm";
 import ZcashFeedback from "./ZcashFeedback";
@@ -508,7 +509,6 @@ profiles.filter(
         })
       );
 
-      // Fallback storage — AddUserForm can read this synchronously
       window.lastReferrer = {
         id: selectedProfile.id,
         name: selectedProfile.name,
@@ -525,6 +525,8 @@ profiles.filter(
   ＋ Join
 </button>
 
+{/* Zcash App Grid Button (added to the right of Join button) */}
+<ZcashGridButton className="ml-2 z-[50]" />
 
 <style>{`
   @keyframes joinPulse {
