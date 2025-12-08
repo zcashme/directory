@@ -55,7 +55,7 @@ export default function ZcashFeedback() {
             } bg-blue-600 hover:bg-blue-700 animate-pulse-slow`}
             title="Draft a memo"
           >
-            🖉
+            ✎
           </button>
         </div>
       </div>

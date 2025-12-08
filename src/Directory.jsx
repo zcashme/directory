@@ -178,7 +178,13 @@ useEffect(() => {
     const insideInput = searchInputRef.current.contains(e.target);
 
     if (!insideDropdown && !insideInput) {
-      setSearch(""); // collapse results
+      // Previously this cleared the search and reset the directory.
+      // That’s why your filter disappears when you click any card.
+      console.log(
+        "[DIR] clickOutside search - NOT clearing search anymore. target:",
+        e.target
+      );
+       setSearch(""); // ← removed to keep search filter when clicking cards
     }
   }
 
@@ -625,20 +631,30 @@ profiles.filter(
                       <ProfileCard
                         key={p.id ?? p.address}
                         profile={p}
-                        data-address={p.address} // 👈 add this
+                        data-address={p.address} 
 onSelect={(addr) => {
+
+  // mark that the user intentionally selected a specific profile
+  window.lastSelectionWasExplicit = true;
+
   // Save the scroll position and selected address
   localStorage.setItem("lastScrollY", window.scrollY.toString());
   localStorage.setItem("lastSelectedAddress", addr);
+
   setSelectedAddress(addr);
-window.dispatchEvent(
-  new CustomEvent("selectAddress", { detail: { address: addr } })
-);
-  setShowDirectory(false);
-  requestAnimationFrame(() =>
-    window.scrollTo({ top: 0, behavior: "smooth" })
+
+  window.dispatchEvent(
+    new CustomEvent("selectAddress", { detail: { address: addr } })
   );
+
+  setShowDirectory(false);
+
+  requestAnimationFrame(() => {
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  });
 }}
+
 
                         cacheVersion={
                           p.last_signed_at || p.created_at || 0
