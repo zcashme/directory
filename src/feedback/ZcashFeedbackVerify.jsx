@@ -132,22 +132,22 @@ export default function ZcashFeedbackVerify() {
 
         {showFooterHelp && (
           <p className="mx-1 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
-            You will receive your OTP within 24-hours. Then,
+            After sending this message, you will receive your OTP within 24-hours. <br></br>Then,
             {" "}
             <button
               type="button"
               onClick={() => setIsOtpOpen(true)}
               className="font-semibold text-blue-600 underline cursor-pointer"
             >
-              enter your OTP
+              submit your OTP
             </button>{" "}
-            to approve your changes.
+            to verify changes.
           </p>
         )}
 {/* Requirement line under help, above QR divider */}
 <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
   <p className="text-[12px] text-gray-600 italic m-0">
-    Do not modify — include at least {MIN_SIGNIN_AMOUNT} ZEC.
+    Include at least {MIN_SIGNIN_AMOUNT} ZEC — Do not modify message
   </p>
 
   <button

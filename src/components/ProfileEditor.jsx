@@ -24,12 +24,22 @@ function HelpIcon({ text }) {
   const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
 
   return (
-    <div
-      className="relative inline-block ml-1"
-      onMouseEnter={() => !isTouch && setShow(true)}
-      onMouseLeave={() => !isTouch && setShow(false)}
-      onClick={() => isTouch && setShow((s) => !s)}
-    >
+<div
+  className="relative inline-block ml-1"
+  onMouseEnter={(e) => {
+    e.stopPropagation();
+    !isTouch && setShow(true);
+  }}
+  onMouseLeave={(e) => {
+    e.stopPropagation();
+    !isTouch && setShow(false);
+  }}
+  onClick={(e) => {
+    e.stopPropagation();
+    isTouch && setShow((s) => !s);
+  }}
+>
+
       <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold border border-gray-400 rounded-full text-gray-600 cursor-pointer hover:bg-gray-100 select-none">
         ?
       </span>
@@ -412,48 +422,84 @@ if (/^\+[0-9]+:/.test(t)) {
   </div>
      
 {/* Address */}
+{/* ZCASH ADDRESS */}
 <div className="mb-3 text-center">
 
-  <label className="block text-gray-700 mb-1 flex items-center justify-between">
-    <span className="font-semibold">Zcash Address</span>
+  <div className="mb-1 flex items-center justify-between">
+    <label htmlFor="addr" className="font-semibold text-gray-700">
+      Zcash Address
+    </label>
 
     <div className="flex items-center gap-3">
-      <button
-        type="button"
-        onClick={() =>
-          setDeletedFields((prev) => {
-            const next = !prev.address;
-            if (next) {
-              setForm(f => ({ ...f, address: "" }));  // clear field
-            } else {
-              setForm(f => ({ ...f, address: originals.address }));
+      <div className="relative inline-block">
+        <button
+          type="button"
+          onClick={(e) => {
+            if (!profile.address_verified) {
+              const btn = e.currentTarget;
+              const popup = e.currentTarget.nextElementSibling;
+
+              btn.classList.remove("shake");
+              void btn.offsetWidth;
+              btn.classList.add("shake");
+
+              popup.classList.add("show");
+              clearTimeout(popup._timer);
+              popup._timer = setTimeout(() => {
+                popup.classList.remove("show");
+              }, 3000);
+
+              return;
             }
-            return { ...prev, address: next };
-          })
-        }
-        className={`text-xs underline font-normal ${
-          deletedFields.address ? "text-green-700" : "text-red-600"
-        }`}
-      >
-        {deletedFields.address ? "⌦ Reset" : "⌫ Delete"}
-      </button>
+
+            setDeletedFields((prev) => {
+              const next = !prev.address;
+              if (next) {
+                setForm((f) => ({ ...f, address: "" }));
+              } else {
+                setForm((f) => ({ ...f, address: originals.address }));
+              }
+              return { ...prev, address: next };
+            });
+          }}
+          className={`text-xs underline font-normal ${
+            profile.address_verified
+              ? deletedFields.address
+                ? "text-green-700"
+                : "text-red-600"
+              : "text-gray-400 cursor-not-allowed"
+          }`}
+        >
+          {deletedFields.address ? "⌦ Reset" : "⌫ Delete"}
+        </button>
+
+        <div className="absolute fade-popup z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
+          Cannot change unverified address. <br /> Lost access? Create new profile.
+        </div>
+      </div>
 
       <HelpIcon text="Your Zcash address where verification codes are sent." />
     </div>
-  </label>
+  </div>
 
-        <input
-          type="text"
-          value={form.address}
-          placeholder={originals.address}
-          onChange={(e) => handleChange("address", e.target.value)}
-          className="w-full border rounded-lg px-3 py-2 font-mono text-sm placeholder-gray-400"
-        />
-      </div>
+  <input
+    id="addr"
+    type="text"
+    value={form.address}
+    placeholder={originals.address}
+    onChange={(e) => handleChange("address", e.target.value)}
+    className="w-full border rounded-lg px-3 py-2 font-mono text-sm placeholder-gray-400"
+  />
+</div>
+
+
+{/* NAME */}
 <div className="mb-3">
-  <label className="block text-gray-700 mb-1 flex items-center justify-between">
 
-    <span className="font-semibold">Name</span>
+  <div className="mb-1 flex items-center justify-between">
+    <label htmlFor="name" className="font-semibold text-gray-700">
+      Name
+    </label>
 
     <div className="flex items-center gap-3">
       <button
@@ -478,10 +524,10 @@ if (/^\+[0-9]+:/.test(t)) {
 
       <HelpIcon text="Your public display name for this profile." />
     </div>
-
-  </label>
+  </div>
 
   <input
+    id="name"
     type="text"
     value={form.name}
     placeholder={originals.name}
@@ -490,39 +536,42 @@ if (/^\+[0-9]+:/.test(t)) {
   />
 </div>
 
+
+{/* BIOGRAPHY */}
 <div className="mb-3 relative">
-<label className="block text-gray-700 mb-1 flex items-center justify-between">
 
-  <span className="font-semibold">Biography</span>
+  <div className="mb-1 flex items-center justify-between">
+    <label htmlFor="bio" className="font-semibold text-gray-700">
+      Biography
+    </label>
 
-  <div className="flex items-center gap-3">
-    <button
-      type="button"
-      onClick={() =>
-        setDeletedFields((prev) => {
-          const next = !prev.bio;
-          if (next) {
-            setForm((f) => ({ ...f, bio: "" }));
-          } else {
-            setForm((f) => ({ ...f, bio: originals.bio }));
-          }
-          return { ...prev, bio: next };
-        })
-      }
-      className={`text-xs underline ${
-        deletedFields.bio ? "text-green-700" : "text-red-600"
-      }`}
-    >
-      {deletedFields.bio ? "⌦ Reset" : "⌫ Delete"}
-    </button>
+    <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={() =>
+          setDeletedFields((prev) => {
+            const next = !prev.bio;
+            if (next) {
+              setForm((f) => ({ ...f, bio: "" }));
+            } else {
+              setForm((f) => ({ ...f, bio: originals.bio }));
+            }
+            return { ...prev, bio: next };
+          })
+        }
+        className={`text-xs underline ${
+          deletedFields.bio ? "text-green-700" : "text-red-600"
+        }`}
+      >
+        {deletedFields.bio ? "⌦ Reset" : "⌫ Delete"}
+      </button>
 
-    <HelpIcon text="Your current story arc in 100 characters or less." />
+      <HelpIcon text="Your current story arc in 100 characters or less." />
+    </div>
   </div>
 
-</label>
-
-
   <textarea
+    id="bio"
     rows={3}
     maxLength={100}
     value={form.bio}
@@ -534,9 +583,13 @@ if (/^\+[0-9]+:/.test(t)) {
 </div>
 
 
+{/* PROFILE IMAGE URL */}
 <div className="mb-3">
-  <label className="block text-gray-700 mb-1 flex items-center justify-between">
-    <span className="font-semibold">Profile Image URL</span>
+
+  <div className="mb-1 flex items-center justify-between">
+    <label htmlFor="pimg" className="font-semibold text-gray-700">
+      Profile Image URL
+    </label>
 
     <div className="flex items-center gap-3">
       <button
@@ -561,9 +614,10 @@ if (/^\+[0-9]+:/.test(t)) {
 
       <HelpIcon text="Link to PNG or JPG. Search 'free image link host'. Try remove.bg & compresspng.com." />
     </div>
-  </label>
+  </div>
 
   <input
+    id="pimg"
     type="text"
     value={form.profile_image_url}
     placeholder={originals.profile_image_url}

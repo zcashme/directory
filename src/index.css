@@ -45,3 +45,24 @@ html, body, #root {
   box-shadow: 0 0 10px rgba(59, 139, 255, 0.6);
   border-color: rgba(0, 0, 0, 0.35);
 }
+@keyframes shake-x {
+  0% { transform: translateX(0); }
+  20% { transform: translateX(-4px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+.shake {
+  animation: shake-x 0.35s ease;
+}
+.fade-popup {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+.fade-popup.show {
+  opacity: 1;
+  pointer-events: auto;
+}
