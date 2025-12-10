@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Directory from "./Directory";
 import { FeedbackProvider } from "./store";
 import AdminRefundPage from "./components/AdminRefundPage";
+import TermsOfService from "./components/TermsOfService";
+import PrivacyPolicy from "./components/PrivacyPolicy";
 
 // DEBUG: log all scroll calls
 if (typeof window !== "undefined" && !window.__scrollDebugPatched) {
@@ -48,6 +50,8 @@ function App() {
   return (
     <FeedbackProvider>
       <Routes>
+        <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route
         path="/admin/refunds"
         element={
