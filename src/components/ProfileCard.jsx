@@ -1,4 +1,4 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
 import { useFeedback } from "../store";
