@@ -7,6 +7,7 @@ import { supabase } from "./supabase";
 import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
 import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
+import CitySearchDropdown from "./components/CitySearchDropdown"; // add with the imports if missing
 
 function XIcon(props) {
   return (
@@ -66,6 +67,10 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [addressConflict, setAddressConflict] = useState(null);
 
   const [referrer, setReferrer] = useState("");
+
+  const [nearestCity, setNearestCity] = useState(null);
+  const [nearestCityInput, setNearestCityInput] = useState(""); 
+
   const [showDropdown, setShowDropdown] = useState(false);
   const [links, setLinks] = useState([{ platform: "X", username: "", otherUrl: "", valid: true }]);
   const [profiles, setProfiles] = useState([]);
@@ -316,24 +321,24 @@ const builtLinks = links
 }
 
 
-      case 2:
-        return true; // referrer optional
+  case 2:
+    return true; // nearest city optional
+  case 3:
+    return true; // referrer optional
+  case 4:
+    return links.every((l) => l.valid !== false);
+  case 5: {
+    const res = validateZcashAddress(address.trim());
+    return (
+      !!name.trim() &&
+      !!address.trim() &&
+      (!nameConflict || nameConflict.type !== "error") &&
+      res.valid &&
+      res.type !== "tex" &&
+      res.type !== "transparent"
+    );
+  }
 
-      case 3:
-        // All link rows must be valid if filled; at least zero links allowed
-        return links.every((l) => l.valid !== false);
-
-      case 4: {
-        const res = validateZcashAddress(address.trim());
-        return (
-          !!name.trim() &&
-          !!address.trim() &&
-          (!nameConflict || nameConflict.type !== "error") &&
-          res.valid &&
-          res.type !== "tex" &&
-          res.type !== "transparent"
-        );
-      }
 
 
       default:
@@ -433,7 +438,11 @@ if (!addrErr && addrMatch && addrMatch.length) {
           name: name.trim(),
           address: address.trim(),
           referred_by: referrer?.name || null,
-referred_by_zcasher_id: referrer?.id || null,
+          referred_by_zcasher_id: referrer?.id || null,
+
+          nearest_city_id: nearestCity?.id || null,
+          nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || null,
+
           created_at: new Date().toISOString(),
         },
       ])
@@ -493,7 +502,7 @@ window.location.replace(`/${slug}`);
   const goNext = () => {
     if (!stepIsValid) return;
     setDir(1);
-    setStep((s) => Math.min(4, s + 1));
+    setStep((s) => Math.min(5, s + 1));
   };
   const goBack = () => {
     setDir(-1);
@@ -558,7 +567,7 @@ window.location.replace(`/${slug}`);
   );
 
 
-// then later inside the StepAddress definition
+
 const StepAddress = (
   <motion.div key="step-address" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
     <ZcashAddressInput value={address} onChange={setAddress} />
@@ -584,6 +593,51 @@ const StepAddress = (
   </motion.div>
 );
 
+const StepCity = (
+  <motion.div
+    key="step-city"
+    custom={dir}
+    variants={slide}
+    initial="initial"
+    animate="animate"
+    exit="exit"
+  >
+    <label
+      htmlFor="nearest-city"
+      className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
+    >
+      Nearest City
+    </label>
+
+    <div className="relative w-full">
+      <CitySearchDropdown
+        value={nearestCityInput}
+        onChange={(val) => {
+          if (typeof val === "string") {
+            setNearestCityInput(val);
+            setNearestCity(null);
+          } else {
+            setNearestCity(val);
+
+            const pretty = [
+              val.city_ascii || val.city,
+              val.admin_name,
+              val.country,
+            ].filter(Boolean).join(", ");
+
+            setNearestCityInput(pretty);
+
+          }
+        }}
+        placeholder="Type to search city…"
+      />
+    </div>
+
+    <p className="mt-1 text-xs text-gray-500">
+      Optional. Helps people understand where you are based.
+    </p>
+  </motion.div>
+);
 
   const StepReferrer = (
     <motion.div key="step-ref" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
@@ -703,8 +757,14 @@ const StepAddress = (
           <span className="font-mono">{name || "—"}</span>
         </div>
         <div>
-          <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
-          <span className="font-mono break-all">{address || "—"}</span>
+<span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
+<span className="font-mono break-all">{address || "—"}</span>
+</div>
+
+<div>
+  <span className="font-semibold text-gray-700">Nearest City:</span>{" "}
+  <span>{nearestCity?.city_ascii || nearestCity?.city || "—"}</span>
+
         </div>
         <div>
           <span className="font-semibold text-gray-700">Referred by:</span>{" "}
@@ -766,9 +826,10 @@ const StepAddress = (
   onKeyDown={(e) => {
     if (e.key === "Enter") {
       e.preventDefault(); // stop default submit
-      if (step < 4 && stepIsValid) {
-        goNext(); // go to next slide instead
-      }
+if (step < 5 && stepIsValid) {
+    goNext();
+}
+
     }
   }}
   className="px-5 py-4 space-y-4"
@@ -780,9 +841,10 @@ const StepAddress = (
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             {step === 0 && StepName}
             {step === 1 && StepAddress}
-            {step === 2 && StepReferrer}
-            {step === 3 && StepLinks}
-            {step === 4 && StepReview}
+            {step === 2 && StepCity}
+            {step === 3 && StepReferrer}
+            {step === 4 && StepLinks}
+            {step === 5 && StepReview}
           </AnimatePresence>
         </form>
 
@@ -809,7 +871,7 @@ const StepAddress = (
           </div>
 
           <div className="flex-1">
-            {step < 4 ? (
+            {step < 5 ? (
               <button
   type="button"
   onClick={goNext}
