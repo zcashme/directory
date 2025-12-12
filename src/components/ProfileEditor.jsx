@@ -1,8 +1,14 @@
+console.log("PROFILE.nearest_city_name =", profile.nearest_city_name);
+
+
 import { useState, useEffect, useMemo } from "react";
 import { useFeedback } from "../store";
 import LinkInput from "../components/LinkInput"; 
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { isValidUrl } from "../utils/validateUrl";
+import CitySearchDropdown from "../components/CitySearchDropdown.jsx";
+
+
 
 // Simple character counter
 function CharCounter({ text }) {
@@ -56,6 +62,16 @@ function HelpIcon({ text }) {
 export default function ProfileEditor({ profile, links }) {
 //  console.log("DEBUG incoming profile.links =", profile.links, "links prop =", links);
   const { setPendingEdits, pendingEdits } = useFeedback();
+// stored values (read-only originals)
+
+// stored values
+const origCityId = profile.nearest_city_id || null;
+const origCityName = profile.nearest_city_name || "";
+
+// editable UI state — SAME AS OTHER FIELDS
+const [nearestCityDisplay, setNearestCityDisplay] = useState(origCityName);
+const [nearestCityId, setNearestCityId] = useState(origCityId);
+
 
 
   // Normalize incoming DB links
@@ -78,6 +94,9 @@ const [form, setForm] = useState({
     profile_image_url: "",
     links: originalLinks.map((l) => ({ ...l })),
 });
+
+const [deletedCity, setDeletedCity] = useState(false);
+
 
 const [deletedFields, setDeletedFields] = useState({
     address: false,
@@ -135,6 +154,28 @@ useEffect(() => {
 // Profile field diffs including deletions
 useEffect(() => {
     const changed = {};
+// nearest city change detection
+// RULE: Only emit c: token when:
+// 1) User actually selected a city OR cleared one
+// 2) Result differs from DB
+let cityToken = undefined;
+
+// Case 1: user selected a city from dropdown
+if (nearestCityId && nearestCityId !== profile.nearest_city_id) {
+  cityToken = String(nearestCityId);
+}
+
+// Case 2: user cleared city
+if (deletedCity && profile.nearest_city_id) {
+  cityToken = "-";
+}
+
+// Only apply token if a real change happened
+if (cityToken !== undefined) {
+  changed.c = cityToken;
+}
+
+
 
     // normal changed fields
     if (!deletedFields.address && form.address && form.address.trim() !== "" && form.address !== originals.address)
@@ -177,14 +218,20 @@ if (deleted.length > 0) {
     form.name,
     form.bio,
     form.profile_image_url,
+
+    nearestCityId,            // <<< REQUIRED
+    profile.nearest_city_id,  // <<< REQUIRED
+
     originals.address,
     originals.name,
     originals.bio,
     originals.profile_image_url,
+
     deletedFields.address,
     deletedFields.name,
     deletedFields.bio,
     deletedFields.profile_image_url,
+
     setPendingEdits
 ]);
 // Compute link tokens
@@ -582,6 +629,60 @@ if (/^\+[0-9]+:/.test(t)) {
   <CharCounter text={form.bio} />
 </div>
 
+{/* NEAREST CITY */}
+<div className="mb-3">
+  <div className="mb-1 flex items-center justify-between">
+    <label className="font-semibold text-gray-700">Nearest City</label>
+
+<button
+  type="button"
+  onClick={() => {
+    const next = !deletedCity;
+    setDeletedCity(next);
+
+    if (next) {
+      // DELETE
+      setNearestCityId(null);
+      setNearestCityDisplay("");
+    } else {
+      // RESET
+      setNearestCityId(origCityId);
+      setNearestCityDisplay("");
+    }
+  }}
+  className={`text-xs underline ${
+    deletedCity ? "text-green-700" : "text-red-600"
+  }`}
+>
+  {deletedCity ? "⌦ Reset" : "⌫ Delete"}
+</button>
+
+
+  </div>
+
+<CitySearchDropdown
+  value={nearestCityDisplay}
+placeholder={
+  !deletedCity && origCityId && nearestCityDisplay === ""
+    ? origCityName
+    : "Search nearest city…"
+}
+
+  onChange={(val) => {
+    if (typeof val === "string") {
+      // user is typing
+      setNearestCityDisplay(val);
+      setNearestCityId(null);
+    } else {
+      // user selected a city
+      setNearestCityDisplay(val.fullLabel);
+      setNearestCityId(val.id);
+    }
+  }}
+/>
+
+
+</div>
 
 {/* PROFILE IMAGE URL */}
 <div className="mb-3">
