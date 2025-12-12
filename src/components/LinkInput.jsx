@@ -2,6 +2,10 @@
 import { useState, useEffect } from "react";
 import { isValidUrl } from "../utils/validateUrl";
 
+const BASE_FIELD_CLASS =
+  "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-none text-gray-800 placeholder-gray-400";
+
+
 export default function LinkInput({ value, onChange, readOnly = false, placeholder = "" }) {
 const [valid, setValid] = useState(true);
 const [reason, setReason] = useState(null);
@@ -26,13 +30,14 @@ useEffect(() => {
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
         readOnly={readOnly}
-        className={`w-full border rounded-lg px-3 py-1.5 text-sm font-mono ${
+        className={`${BASE_FIELD_CLASS} ${
           readOnly
-            ? "bg-gray-100 text-gray-500 cursor-not-allowed"
+            ? "bg-gray-100 text-gray-500 cursor-not-allowed border-[#0a1126]/40"
             : valid
-            ? "border-gray-300 focus:border-blue-500"
+            ? "border-[#0a1126]/60 focus:border-blue-500"
             : "border-red-400 focus:border-red-500"
         }`}
+
       />
 {/* error message */}
 {!valid && reason && (

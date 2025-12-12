@@ -1,12 +1,28 @@
-console.log("PROFILE.nearest_city_name =", profile.nearest_city_name);
-
-
 import { useState, useEffect, useMemo } from "react";
 import { useFeedback } from "../store";
 import LinkInput from "../components/LinkInput"; 
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { isValidUrl } from "../utils/validateUrl";
 import CitySearchDropdown from "../components/CitySearchDropdown.jsx";
+
+const FIELD_CLASS =
+  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
+
+const isValidImageUrl = (url) => {
+  if (!url) return { valid: true, reason: null };
+
+  const trimmed = url.trim();
+  const { valid } = isValidUrl(trimmed);
+  if (!valid) {
+    return { valid: false, reason: "Invalid URL format" };
+  }
+
+  if (!/\.(png|jpg)$/i.test(trimmed)) {
+    return { valid: false, reason: "Image URL must end in .png or .jpg" };
+  }
+
+  return { valid: true, reason: null };
+};
 
 
 
@@ -99,11 +115,20 @@ const [deletedCity, setDeletedCity] = useState(false);
 
 
 const [deletedFields, setDeletedFields] = useState({
-    address: false,
-    name: false,
-    bio: false,
-    profile_image_url: false,
+  address: false,
+  name: false,
+  bio: false,
+  profile_image_url: false,
 });
+
+const [imageUrlValid, setImageUrlValid] = useState(true);
+const [imageUrlReason, setImageUrlReason] = useState(null);
+
+useEffect(() => {
+  const { valid, reason } = isValidImageUrl(form.profile_image_url);
+  setImageUrlValid(valid);
+  setImageUrlReason(reason);
+}, [form.profile_image_url]);
 
 useEffect(() => {
   // auto reset links when profile or links prop changes
@@ -184,13 +209,16 @@ if (cityToken !== undefined) {
       changed.name = form.name;
     if (!deletedFields.bio && form.bio && form.bio.trim() !== "" && form.bio !== originals.bio)
       changed.bio = form.bio;
-    if (
-      !deletedFields.profile_image_url &&
-      form.profile_image_url &&
-      form.profile_image_url.trim() !== "" &&
-      form.profile_image_url !== originals.profile_image_url
-    )
-      changed.profile_image_url = form.profile_image_url;
+if (
+  !deletedFields.profile_image_url &&
+  imageUrlValid &&
+  form.profile_image_url &&
+  form.profile_image_url.trim() !== "" &&
+  form.profile_image_url !== originals.profile_image_url
+) {
+  changed.profile_image_url = form.profile_image_url;
+}
+
 
     // deletion tokens
 // deleted fields go into d:[]
@@ -535,7 +563,7 @@ if (/^\+[0-9]+:/.test(t)) {
     value={form.address}
     placeholder={originals.address}
     onChange={(e) => handleChange("address", e.target.value)}
-    className="w-full border rounded-lg px-3 py-2 font-mono text-sm placeholder-gray-400"
+    className={`${FIELD_CLASS} font-mono`}
   />
 </div>
 
@@ -579,7 +607,7 @@ if (/^\+[0-9]+:/.test(t)) {
     value={form.name}
     placeholder={originals.name}
     onChange={(e) => handleChange("name", e.target.value)}
-    className="w-full border rounded-lg px-3 py-2 text-sm placeholder-gray-400"
+    className={FIELD_CLASS}
   />
 </div>
 
@@ -624,41 +652,43 @@ if (/^\+[0-9]+:/.test(t)) {
     value={form.bio}
     placeholder={originals.bio}
     onChange={(e) => handleChange("bio", e.target.value)}
-    className="border rounded-lg px-3 py-2 text-sm w-full resize-none overflow-hidden pr-8 pb-6 relative text-left whitespace-pre-wrap break-words"
+    className={`${FIELD_CLASS} resize-none overflow-hidden pr-8 pb-6 relative text-left whitespace-pre-wrap break-words`}
   />
   <CharCounter text={form.bio} />
 </div>
 
 {/* NEAREST CITY */}
 <div className="mb-3">
-  <div className="mb-1 flex items-center justify-between">
-    <label className="font-semibold text-gray-700">Nearest City</label>
+<div className="mb-1 flex items-center justify-between">
+  <label className="font-semibold text-gray-700">Nearest City</label>
 
-<button
-  type="button"
-  onClick={() => {
-    const next = !deletedCity;
-    setDeletedCity(next);
+  <div className="flex items-center gap-3">
+    <button
+      type="button"
+      onClick={() => {
+        const next = !deletedCity;
+        setDeletedCity(next);
 
-    if (next) {
-      // DELETE
-      setNearestCityId(null);
-      setNearestCityDisplay("");
-    } else {
-      // RESET
-      setNearestCityId(origCityId);
-      setNearestCityDisplay("");
-    }
-  }}
-  className={`text-xs underline ${
-    deletedCity ? "text-green-700" : "text-red-600"
-  }`}
->
-  {deletedCity ? "⌦ Reset" : "⌫ Delete"}
-</button>
+        if (next) {
+          // DELETE
+          setNearestCityId(null);
+          setNearestCityDisplay("");
+        } else {
+          // RESET
+          setNearestCityId(origCityId);
+          setNearestCityDisplay("");
+        }
+      }}
+      className={`text-xs underline ${
+        deletedCity ? "text-green-700" : "text-red-600"
+      }`}
+    >
+      {deletedCity ? "⌦ Reset" : "⌫ Delete"}
+    </button>
 
-
+    <HelpIcon text="Select the city closest to you. This helps with regional discovery and relevance." />
   </div>
+</div>
 
 <CitySearchDropdown
   value={nearestCityDisplay}
@@ -713,18 +743,27 @@ placeholder={
         {deletedFields.profile_image_url ? "⌦ Reset" : "⌫ Delete"}
       </button>
 
-      <HelpIcon text="Link to PNG or JPG. Search 'free image link host'. Try remove.bg & compresspng.com." />
+      <HelpIcon text="Link to PNG or JPG. Search 'free image link host'." />
     </div>
   </div>
 
-  <input
-    id="pimg"
-    type="text"
-    value={form.profile_image_url}
-    placeholder={originals.profile_image_url}
-    onChange={(e) => handleChange("profile_image_url", e.target.value)}
-    className="w-full border rounded-lg px-3 py-2 text-sm font-mono placeholder-gray-400"
-  />
+<input
+  id="pimg"
+  type="text"
+  value={form.profile_image_url}
+  placeholder={originals.profile_image_url}
+  onChange={(e) => handleChange("profile_image_url", e.target.value)}
+  className={`${FIELD_CLASS} font-mono ${
+    imageUrlValid
+      ? "border-[#0a1126]/60 focus:border-blue-500"
+      : "border-red-400 focus:border-red-500"
+  }`}
+/>
+{!imageUrlValid && imageUrlReason && (
+  <p className="text-xs text-red-600 mt-1">{imageUrlReason}</p>
+)}
+
+
 </div>
 
 {/* Links */}
