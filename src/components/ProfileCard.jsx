@@ -687,11 +687,11 @@ if (isVerified && rankType) {
     className="opacity-70 transition-opacity duration-300"
     aria-hidden="true"
   >
-    •
+    
   </span>
-
+{/*
   <span className="whitespace-nowrap">
-    Good thru{" "}
+    • Good thru{" "}
     {profile.verif_expires_at
       ? new Date(profile.verif_expires_at).toLocaleString("default", {
           month: "short",
@@ -699,6 +699,7 @@ if (isVerified && rankType) {
         })
       : "NULL"}
   </span>
+*/}
 </p>
 
 
