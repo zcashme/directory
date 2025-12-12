@@ -112,8 +112,38 @@ if (!profile?.id || !profile?.address) {
   };
 }, [profile?.id, profile?.address]);
 
-useEffect(() => {
-  // Always make visible for fullView or if already cached
+  // Check for auto-flip if returning from X verification
+  useEffect(() => {
+    const checkAutoFlip = () => {
+        // Only run if we are looking at the correct profile
+        const pId = localStorage.getItem("verifying_profile_id");
+        
+        // Add debug log to see if this effect fires
+        
+
+        if (pId && String(pId) === String(profile.id)) {
+          
+          
+          // ✅ Force state to true immediately to ensure Editor mounts
+          setShowBack(true);
+          
+          // Also dispatch event to ensure global state syncs if needed
+          // Use a small timeout to let the initial render settle
+          setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("enterSignInMode"));
+          }, 100);
+        }
+    };
+    
+    checkAutoFlip();
+    const timer = setTimeout(checkAutoFlip, 500);
+    return () => clearTimeout(timer);
+  }, [profile.id]);
+
+  
+
+  useEffect(() => {
+    // Always make visible for fullView or if already cached
   if (fullView || memoryCache.has(finalUrl)) {
     setVisible(true);
     return;

@@ -3,6 +3,7 @@ import { useFeedback } from "../store";
 import LinkInput from "../components/LinkInput"; 
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { isValidUrl } from "../utils/validateUrl";
+import { supabase } from "../supabase";
 
 // Simple character counter
 function CharCounter({ text }) {
@@ -52,10 +53,244 @@ function HelpIcon({ text }) {
   );
 }
 
+function RedirectModal({ isOpen }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
+        <div className="mb-4 text-blue-500">
+           <svg className="w-12 h-12 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
+             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+           </svg>
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Redirecting to X.com</h3>
+        <p className="text-sm text-gray-600">
+          Please authorize the app to verify your profile.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 export default function ProfileEditor({ profile, links }) {
-//  console.log("DEBUG incoming profile.links =", profile.links, "links prop =", links);
+  // 🔥 RENDER DEBUG: Check if component actually renders
+  console.log("[PROFILE EDITOR RENDER] ID:", profile.id, "Links count:", links?.length);
+
   const { setPendingEdits, pendingEdits } = useFeedback();
+  const [showRedirect, setShowRedirect] = useState(false);
+
+  // Check for X link verification return
+  useEffect(() => {
+     const pId = localStorage.getItem("verifying_profile_id");
+     const url = localStorage.getItem("verifying_link_url");
+     
+     // 🚀 IMMEDIATE LOG: Prove component mounted and read storage
+     console.log("[VERIFY DEBUG] Component Mounted. Storage:", { pId, url, currentProfileId: profile.id });
+
+    // Helper to update state
+    const applyVerification = async (session) => {
+        console.log("[VERIFY DEBUG] applyVerification started with session:", !!session);
+
+        if (!session) {
+             console.log("[VERIFY DEBUG] No session provided to applyVerification, aborting.");
+             return;
+        }
+
+        // Force convert both to string for comparison
+        if (pId && url && String(pId) === String(profile.id)) {
+            console.log("✅ OAuth verified for:", url);
+
+            const getXHandle = (s) => {
+                const um = s?.user?.user_metadata || {};
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const id0 = ids[0]?.identity_data || {};
+                const candidates = [
+                    um.user_name,
+                    um.preferred_username,
+                    um.username,
+                    um.screen_name,
+                    id0.username,
+                    id0.screen_name
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+
+            const xUsername = getXHandle(session);
+            console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
+            const targetUsername = url.replace(/\/$/, "").split('/').pop();
+            console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
+            if (xUsername && xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
+                console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
+                alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
+                localStorage.removeItem("verifying_profile_id");
+                localStorage.removeItem("verifying_link_url");
+                return;
+            }
+
+            // 2. Update Database
+            try {
+                console.log("[VERIFY DEBUG] Attempting DB update...");
+                const normalizedUrl = url.replace(/\/$/, "");
+                const handle = normalizedUrl.split('/').pop();
+                const hosts = ['x.com', 'twitter.com', 'www.x.com', 'www.twitter.com'];
+                const schemes = ['https://'];
+                const variants = [];
+                for (const h of hosts) {
+                    for (const s of schemes) {
+                        variants.push(`${s}${h}/${handle}`);
+                        variants.push(`${s}${h}/${handle}/`);
+                    }
+                }
+
+                let { data, error } = await supabase
+                    .from('zcasher_links')
+                    .update({ 
+                        is_verified: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('zcasher_id', profile.id)
+                    .in('url', variants)
+                    .select();
+
+                if ((!data || data.length === 0) && !error) {
+                    const patternX = `%://x.com/${handle}%`;
+                    const patternTw = `%://twitter.com/${handle}%`;
+                    const patternWX = `%://www.x.com/${handle}%`;
+                    const patternWT = `%://www.twitter.com/${handle}%`;
+                    const { data: data2, error: error2 } = await supabase
+                        .from('zcasher_links')
+                        .update({ 
+                            is_verified: true,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('zcasher_id', profile.id)
+                        .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT}`)
+                        .select();
+                    data = data2; error = error2;
+                }
+
+                if (error) {
+                    console.error("[VERIFY ERROR] DB Update error:", error);
+                    throw error;
+                }
+                console.log("[VERIFY DEBUG] DB Update success. Rows affected:", data?.length, data);
+                
+                if (!data || data.length === 0) {
+                     console.warn("[VERIFY WARN] No rows updated! Check if zcasher_id and url match exactly in DB.");
+                     // Try to list the user's links to debug
+                     const { data: userLinks } = await supabase.from('zcasher_links').select('*').eq('zcasher_id', profile.id);
+                     console.log("[VERIFY DEBUG] User's actual links in DB:", userLinks);
+                } else {
+                     console.log("✅ Database updated successfully");
+                     // Show success toast/alert only on success
+                     // alert("Verification Successful!"); // Optional: Feedback to user
+                }
+
+            } catch (err) {
+                console.error("Database update failed:", err);
+            }
+
+            // 3. Update Local UI
+            setForm(prev => ({
+                ...prev,
+                links: prev.links.map(l => {
+                    const u1 = (l.url || "").trim().replace(/\/$/, "");
+                    const u2 = (url || "").trim().replace(/\/$/, "");
+                    // Mark verified
+                    return u1 === u2 ? { 
+                        ...l, 
+                        is_verified: true
+                    } : l;
+                })
+            }));
+            
+            // 🔥 FORCE RELOAD to ensure fresh state
+            setTimeout(() => {
+                // Clear storage JUST BEFORE reload
+                localStorage.removeItem("verifying_profile_id");
+                localStorage.removeItem("verifying_link_url");
+                setShowRedirect(false);
+                window.location.reload(); 
+            }, 1000);
+        } else {
+             if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
+             if (!url) console.log("[VERIFY DEBUG] Missing url in localStorage");
+             if (pId && String(pId) !== String(profile.id)) console.log("[VERIFY DEBUG] ID mismatch:", pId, "vs", profile.id);
+        }
+    };
+
+     // 1. Check immediate session (if already hydrated)
+     // Add a small delay to ensure Supabase client is ready
+     setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            console.log("[VERIFY DEBUG] Immediate session check:", !!session);
+            if (session) applyVerification(session);
+        });
+     }, 500);
+
+     // 2. Listen for auth state change (e.g. processing URL fragment)
+     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+         console.log("Auth event:", event);
+         // Handle both SIGNED_IN (redirect) and TOKEN_REFRESHED (possible initial state)
+         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || (event === 'INITIAL_SESSION' && session)) {
+             applyVerification(session);
+         }
+     });
+
+     // 🚀 FORCE CHECK: Check immediately AND with a delay to catch the session
+     const checkSession = () => {
+         supabase.auth.getSession().then(({ data: { session } }) => {
+             console.log("[VERIFY DEBUG] Force session check:", !!session);
+             if (session) applyVerification(session);
+         });
+     };
+     
+     checkSession();
+     setTimeout(checkSession, 1000);
+     setTimeout(checkSession, 3000);
+
+     return () => subscription.unsubscribe();
+  }, [profile.id]);
+
+  const handleXVerify = async (url) => {
+      setShowRedirect(true);
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'twitter',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+
+  
+
 
 
   // Normalize incoming DB links
@@ -412,6 +647,7 @@ if (/^\+[0-9]+:/.test(t)) {
   return (
     
 <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
+<RedirectModal isOpen={showRedirect} />
 <div className="w-full max-w-xl bg-transparent overflow-hidden">
 
   {/* Header */}
@@ -658,8 +894,9 @@ if (/^\+[0-9]+:/.test(t)) {
 
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) || {};
-          const isVerified = !!original?.is_verified;
+          const isVerified = !!row.is_verified;
           const canVerify = !!profile.address_verified;
+          const isX = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(row.url);
 
           const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
           const isPending = token && isPendingToken(token);
@@ -675,7 +912,7 @@ if (/^\+[0-9]+:/.test(t)) {
 
 
               <div className="flex items-center gap-2">
-                {!canVerify ? (
+                {!canVerify && !isX ? (
                   <span className="text-xs text-gray-500 italic">
                     Verify uaddr then URLs
                   </span>
@@ -692,16 +929,23 @@ if (/^\+[0-9]+:/.test(t)) {
                     type="button"
                     onClick={() => {
                       if (!token) return;
+
+                      // X / Twitter verification flow
+                      if (isX) {
+                          handleXVerify(row.url);
+                          return;
+                      }
+
                       if (isPending) removeLinkToken(token);
                       else appendLinkToken(token);
                     }}
                     className={`text-xs px-2 py-1 border rounded ${
-                      isPending
+                      isPending || (showRedirect && isX)
                         ? "text-yellow-700 border-yellow-400 bg-yellow-50"
                         : "text-blue-600 border-blue-400 hover:bg-blue-50"
                     }`}
                   >
-                    {isPending ? "Pending" : "Verify"}
+                    {isPending || (showRedirect && isX) ? "Pending" : "Verify"}
                   </button>
                 )}
 
@@ -725,6 +969,8 @@ if (/^\+[0-9]+:/.test(t)) {
         >
           ＋ Add Link
         </button>
+
+        
 
 
 {/* Footer */}

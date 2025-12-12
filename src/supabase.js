@@ -3,7 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
+// The real client for Auth and Data
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+
 export async function getPendingRefunds() {
   return supabase
     .from("staging_unified")
@@ -14,21 +16,19 @@ export async function getPendingRefunds() {
       zcasher_name,
       zcasher_address,
       outgoing_message,
-      refund_amount,
-      processed
+      refund_status,
+      amount
     `)
-    .not("refund_amount", "is", null)
-    .gt("refund_amount", 0)
-    .or("processed.eq.false,processed.is.null")
-    .order("mined_time", { ascending: true });
+    .eq("refund_status", "pending");
 }
 
-
-export async function markRefundProcessed(txid) {
+export async function processRefund(txid, action) {
+  // action = 'approve' or 'deny'
   return supabase
     .from("staging_unified")
-    .update({ processed: true })
+    .update({ 
+      refund_status: action === "approve" ? "approved" : "denied",
+      processed_at: new Date().toISOString()
+    })
     .eq("txid", txid);
 }
-
-window.supabase = supabase;

@@ -7,34 +7,7 @@ import AdminRefundPage from "./components/AdminRefundPage";
 import TermsOfService from "./components/TermsOfService";
 import PrivacyPolicy from "./components/PrivacyPolicy";
 
-// DEBUG: log all scroll calls
-if (typeof window !== "undefined" && !window.__scrollDebugPatched) {
-  window.__scrollDebugPatched = true;
-
-  const origScrollTo = window.scrollTo.bind(window);
-  window.scrollTo = function (...args) {
-    console.log(
-      "[SCROLL DEBUG] window.scrollTo called with:",
-      args,
-      "\nstack:\n",
-      new Error().stack
-    );
-    return origScrollTo(...args);
-  };
-
-  const origScrollIntoView = Element.prototype.scrollIntoView;
-  Element.prototype.scrollIntoView = function (...args) {
-    console.log(
-      "[SCROLL DEBUG] scrollIntoView on:",
-      this.id || this.className || this.tagName,
-      "args:",
-      args,
-      "\nstack:\n",
-      new Error().stack
-    );
-    return origScrollIntoView.apply(this, args);
-  };
-}
+ 
 
 function App() {
   const [searchQuery, setSearchQuery] = useState("");
