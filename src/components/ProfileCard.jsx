@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+﻿import { useState, useRef, useEffect } from "react";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
 import { useFeedback } from "../store";
@@ -331,13 +331,7 @@ if (isVerified && rankType) {
 </span>
 
 <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-snug mt-0.5">
-  <span>
-    Joined{" "}
-    {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
-      month: "short",
-      year: "numeric",
-    })}
-  </span>
+
 
   {/* Show dot only if there are any referral badges */}
   {((profile.rank_alltime ?? 0) > 0 ||
@@ -624,6 +618,9 @@ if (isVerified && rankType) {
   )}
 </div>
 
+
+
+
 {/* Biography (only if present) */}
 {profile.bio && profile.bio.trim() !== "" && (
   <p className="mt-1 text-sm text-gray-700 text-center max-w-[90%] mx-auto whitespace-pre-line break-words">
@@ -635,44 +632,75 @@ if (isVerified && rankType) {
 
 {/* Dates */}
 <p className="mt-3 text-xs text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5">
+  {profile.nearest_city_name && (
+    <>
+      <span className="whitespace-nowrap">
+        Near {profile.nearest_city_name}
+      </span>
+
+      <span
+        className="opacity-70 transition-opacity duration-300"
+        aria-hidden="true"
+      >
+        •
+      </span>
+    </>
+  )}
+
   <span className="whitespace-nowrap">
     Joined{" "}
-    {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+    {new Date(
+      profile.joined_at || profile.created_at || profile.since
+    ).toLocaleString("default", {
       month: "short",
       year: "numeric",
     })}
   </span>
 
-  <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
-
-  <span className="whitespace-nowrap">
-    Verified{" "}{" "}
-    {profile.last_verified_at || profile.last_verified ? (() => {
-      const ts = new Date(profile.last_verified_at || profile.last_verified).getTime();
-      const weeks = (Date.now() - ts) / (1000 * 60 * 60 * 24 * 7);
-
-      if (weeks < 1) return "<1 week ago";
-      if (weeks < 2) return "<2 week ago";
-      if (weeks < 3) return "<3 weeks ago";
-      if (weeks < 4) return "<4 weeks ago";
-      return "<1 month ago";
-    })() : "N/A"}
+  <span
+    className="opacity-70 transition-opacity duration-300"
+    aria-hidden="true"
+  >
+    •
   </span>
 
+  <span className="whitespace-nowrap">
+    Verified{" "}
+    {profile.last_verified_at || profile.last_verified
+      ? (() => {
+          const ts = new Date(
+            profile.last_verified_at || profile.last_verified
+          ).getTime();
+          const weeks =
+            (Date.now() - ts) / (1000 * 60 * 60 * 24 * 7);
 
-  <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+          if (weeks < 1) return "<1 week ago";
+          if (weeks < 2) return "<2 weeks ago";
+          if (weeks < 3) return "<3 weeks ago";
+          if (weeks < 4) return "<4 weeks ago";
+          return "<1 month ago";
+        })()
+      : "N/A"}
+  </span>
+
+  <span
+    className="opacity-70 transition-opacity duration-300"
+    aria-hidden="true"
+  >
+    •
+  </span>
 
   <span className="whitespace-nowrap">
-  Good thru{" "}
-  {profile.verif_expires_at
-    ? new Date(profile.verif_expires_at).toLocaleString("default", {
-        month: "short",
-        year: "numeric",
-      })
-    : "NULL"}
-</span>
-
+    Good thru{" "}
+    {profile.verif_expires_at
+      ? new Date(profile.verif_expires_at).toLocaleString("default", {
+          month: "short",
+          year: "numeric",
+        })
+      : "NULL"}
+  </span>
 </p>
+
 
 
 {/* Address with integrated copy button and feedback */}
