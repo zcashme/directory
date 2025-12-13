@@ -245,7 +245,7 @@ useEffect(() => {
             {" "}{cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
               "Recipient"}
           </span>
-             {" "} in your wallet before sending it. Use the button, QR or URI.
+             {" "} in your wallet before sending it. Use the button, scan the QR or tap the URI.
           
         </p>
       )}

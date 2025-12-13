@@ -40,8 +40,9 @@ export default function useFeedbackController() {
   }, [mode, verify.zId, pendingEdits, verify.memo, setVerifyMemo]);
 
   const uri = useMemo(() => {
-    const { memo, amount } = draft;
-    return buildZcashUri(selectedAddress, amount, memo);
+const { memo, amount } = draft;
+const finalAmount = amount && amount !== "0" ? amount : "0.0005";
+return buildZcashUri(selectedAddress, finalAmount, memo);
   }, [selectedAddress, draft.memo, draft.amount]);
 
   const verifyUri = useMemo(() => {
@@ -65,7 +66,7 @@ export default function useFeedbackController() {
     uri,
     verifyUri,
     memo: draft.memo,
-    amount: draft.amount,
+    amount: draft.amount && draft.amount !== "0" ? draft.amount : "0.000",
     verifyMemo: verify.memo || "",
     verifyAmount: verify.amount || "0",
     selectedAddress,
