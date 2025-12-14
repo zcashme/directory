@@ -6,6 +6,7 @@ import { FeedbackProvider } from "./store";
 import AdminRefundPage from "./components/AdminRefundPage";
 import TermsOfService from "./components/TermsOfService";
 import PrivacyPolicy from "./components/PrivacyPolicy";
+import ServiceWorkerUpdater from "./components/ServiceWorkerUpdater";
 
 // DEBUG: log all scroll calls
 if (typeof window !== "undefined" && !window.__scrollDebugPatched) {
@@ -49,19 +50,20 @@ function App() {
 
   return (
     <FeedbackProvider>
+      <ServiceWorkerUpdater />
       <Routes>
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route
-        path="/admin/refunds"
-        element={
-          import.meta.env.DEV ? (
-            <AdminRefundPage />
-          ) : (
-            <div className="p-6 text-red-600">Admin page only available in development.</div>
-          )
-        }
-      />
+          path="/admin/refunds"
+          element={
+            import.meta.env.DEV ? (
+              <AdminRefundPage />
+            ) : (
+              <div className="p-6 text-red-600">Admin page only available in development.</div>
+            )
+          }
+        />
 
         {/* Wildcard route: handles / and all slugs */}
         <Route
