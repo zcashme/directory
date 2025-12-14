@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
 import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 import CitySearchDropdown from "./components/CitySearchDropdown"; // add with the imports if missing
+import { useNavigate } from "react-router-dom";
 
 function XIcon(props) {
   return (
@@ -57,6 +58,7 @@ const slide = {
   exit: (dir) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18 } }),
 };
 export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
+  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
@@ -473,15 +475,12 @@ const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
 // 🧹 Clear cached profiles so directory reloads fresh
 window.cachedProfiles = null;
 
-// Optionally, reload or navigate directly
-window.location.reload();
-
 // If you prefer not to reload, you could instead trigger the callback:
 onUserAdded?.(profile);
 onClose?.();
 
 // ✅ Redirect to /name-id (React Router friendly)
-window.location.replace(`/${slug}`);
+navigate(`/${slug}`);
 
 
 
