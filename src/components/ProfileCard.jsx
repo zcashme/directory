@@ -3,6 +3,7 @@ import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
 import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
+import ProfileAvatar from "./ProfileAvatar";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
@@ -330,22 +331,23 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               )}
             </span>
 
-            <div className="text-sm text-gray-500 flex flex-wrap items-center gap-x-2 gap-y-0.5 leading-snug mt-0.5">
-              {/* Location + Separator + Badges Logic */}
+            <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
+              {/* Location */}
               {profile.nearest_city_name && (
                 <span className="truncate max-w-[140px]" title={profile.nearest_city_name}>
                   {profile.nearest_city_name}
                 </span>
               )}
 
-              {profile.nearest_city_name && hasAwards && (
-                <span className="text-gray-400">•</span>
+              {/* Badges */}
+              {(hasAwards) && (
+                <div className="flex flex-wrap justify-start gap-x-2 gap-y-0.5">
+                  {["alltime", "weekly", "monthly", "daily"].map(period => {
+                    const rank = profile[`rank_${period}`];
+                    return rank > 0 && <ReferRankBadgeMulti key={period} rank={rank} period={period.replace("time", "")} />;
+                  })}
+                </div>
               )}
-
-              {["alltime", "weekly", "monthly", "daily"].map(period => {
-                const rank = profile[`rank_${period}`];
-                return rank > 0 && <ReferRankBadgeMulti key={period} rank={rank} period={period.replace("time", "")} />;
-              })}
             </div>
           </div>
         </div>

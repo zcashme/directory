@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useFeedback } from "../store";
 import VerifiedBadge from "./VerifiedBadge";
+import ProfileAvatar from "./ProfileAvatar";
 
 export default function ProfileSearchDropdown({
   value,
@@ -16,8 +17,8 @@ export default function ProfileSearchDropdown({
 
   const filtered = value
     ? profiles.filter((p) =>
-        p.name?.toLowerCase().includes(value.toLowerCase())
-      )
+      p.name?.toLowerCase().includes(value.toLowerCase())
+    )
     : [];
 
   useEffect(() => {
@@ -28,17 +29,16 @@ export default function ProfileSearchDropdown({
     <div className="w-full">
       {/* Input only if NOT list-only */}
       {!listOnly && (
-<input
-  value={value}
-  onChange={(e) => {
-    onChange(e.target.value);
-    setShow(true);
-  }}
-  placeholder={placeholder}
-  autoComplete="off"
-  className="w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400"
-/>
-
+        <input
+          value={value}
+          onChange={(e) => {
+            onChange(e.target.value);
+            setShow(true);
+          }}
+          placeholder={placeholder}
+          autoComplete="off"
+          className="w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400"
+        />
       )}
 
       {/* Dropdown menu */}
@@ -49,29 +49,38 @@ export default function ProfileSearchDropdown({
               <div
                 key={p.id}
                 onClick={() => {
-                  // Send full profile to parent component
                   onChange(p);
-
-                  // Sync feedback panel with new profile EXACTLY like directory does
                   if (p.address) setSelectedAddress(p.address);
-
                   setShow(false);
                 }}
-                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-2 text-white font-semibold hover:bg-[#060b17]/95 transition-colors"
+                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-white font-semibold hover:bg-[#060b17]/95 transition-colors"
               >
-                <span>{p.name}</span>
+                {/* Avatar (fixed priority) */}
+                <ProfileAvatar
+                  profile={p}
+                  size={32}
+                  imageClassName="object-cover"
+                />
 
-{(p.address_verified ||
-  p.zcasher_links?.some((l) => l.is_verified)) && (
-  <VerifiedBadge profile={p} />
-)}
+                {/* Text + metadata (flex priority zone) */}
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  {/* Name (highest priority text) */}
+                  <span className="truncate flex-shrink-0">
+                    {p.name}
+                  </span>
 
-{p.address && (
-  <span className="text-xs opacity-60">
-    {p.address.slice(0, 6)}...{p.address.slice(-6)}
-  </span>
-)}
+                  {(p.address_verified ||
+                    p.zcasher_links?.some((l) => l.is_verified)) && (
+                      <VerifiedBadge profile={p} />
+                    )}
 
+                  {/* Address (lowest priority, truncates first) */}
+                  {p.address && (
+                    <span className="text-xs opacity-60 whitespace-nowrap truncate max-w-[120px] flex-shrink">
+                      {p.address.slice(0, 6)}...{p.address.slice(-6)}
+                    </span>
+                  )}
+                </div>
               </div>
             ))
           ) : (
