@@ -15,9 +15,26 @@ export default function ProfileSearchDropdown({
   // This is the only global sync we need
   const { setSelectedAddress } = useFeedback();
 
-  const filtered = value
+  // -----------------------------
+  // Normalizers
+  // -----------------------------
+  const normalizeSearch = (s = "") =>
+    s
+      .toLowerCase()
+      .replace(/^https?:\/\/(www\.)?[^/]+\/?/, "")
+      .trim();
+
+  const q = normalizeSearch(value);
+  const addr = value?.trim();
+
+  // -----------------------------
+  // Filtering
+  // -----------------------------
+  const filtered = q
     ? profiles.filter((p) =>
-      p.name?.toLowerCase().includes(value.toLowerCase())
+      p.name?.toLowerCase().includes(q) ||
+      p.link_search_text?.includes(q) ||
+      (p.address && addr === p.address)
     )
     : [];
 
@@ -55,16 +72,15 @@ export default function ProfileSearchDropdown({
                 }}
                 className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-white font-semibold hover:bg-[#060b17]/95 transition-colors"
               >
-                {/* Avatar (fixed priority) */}
+                {/* Avatar */}
                 <ProfileAvatar
                   profile={p}
                   size={32}
                   imageClassName="object-cover"
                 />
 
-                {/* Text + metadata (flex priority zone) */}
+                {/* Text + metadata */}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
-                  {/* Name (highest priority text) */}
                   <span className="truncate flex-shrink-0">
                     {p.name}
                   </span>
@@ -74,7 +90,6 @@ export default function ProfileSearchDropdown({
                       <VerifiedBadge profile={p} />
                     )}
 
-                  {/* Address (lowest priority, truncates first) */}
                   {p.address && (
                     <span className="text-xs opacity-60 whitespace-nowrap truncate max-w-[120px] flex-shrink">
                       {p.address.slice(0, 6)}...{p.address.slice(-6)}

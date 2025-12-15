@@ -15,37 +15,37 @@ export default function useProfiles() {
       setLoading(true);
 
       // 🟢 1️⃣ Fetch top 10 from each leaderboard (actual columns only)
-const [{ data: lbAll }, { data: lbWeek }, { data: lbMonth }] = await Promise.all([
-  supabase
-    .from("referrer_ranked_alltime")
-    .select("referred_by_zcasher_id, rank_alltime")
-    .order("rank_alltime", { ascending: true })
-    .limit(10),
-  supabase
-    .from("referrer_ranked_weekly")
-    .select("referred_by_zcasher_id, rank_weekly")
-    .order("rank_weekly", { ascending: true })
-    .limit(10),
-  supabase
-    .from("referrer_ranked_monthly")
-    .select("referred_by_zcasher_id, rank_monthly")
-    .order("rank_monthly", { ascending: true })
-    .limit(10),
-]);
+      const [{ data: lbAll }, { data: lbWeek }, { data: lbMonth }] = await Promise.all([
+        supabase
+          .from("referrer_ranked_alltime")
+          .select("referred_by_zcasher_id, rank_alltime")
+          .order("rank_alltime", { ascending: true })
+          .limit(10),
+        supabase
+          .from("referrer_ranked_weekly")
+          .select("referred_by_zcasher_id, rank_weekly")
+          .order("rank_weekly", { ascending: true })
+          .limit(10),
+        supabase
+          .from("referrer_ranked_monthly")
+          .select("referred_by_zcasher_id, rank_monthly")
+          .order("rank_monthly", { ascending: true })
+          .limit(10),
+      ]);
 
 
       // 🟢 2️⃣ Create lookup maps (string keys to avoid numeric mismatches)
-const toKey = (v) => String(v);
+      const toKey = (v) => String(v);
 
-const rankAll = new Map(
-  (lbAll || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_alltime])
-);
-const rankWeek = new Map(
-  (lbWeek || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_weekly])
-);
-const rankMonth = new Map(
-  (lbMonth || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_monthly])
-);
+      const rankAll = new Map(
+        (lbAll || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_alltime])
+      );
+      const rankWeek = new Map(
+        (lbWeek || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_weekly])
+      );
+      const rankMonth = new Map(
+        (lbMonth || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_monthly])
+      );
 
 
       // 🟢 3️⃣ Load all profiles (paged)
@@ -56,7 +56,7 @@ const rankMonth = new Map(
 
       while (true) {
         const { data, error, count } = await supabase
-          .from("zcasher_with_referral_rank")
+          .from("zcasher_searchable")
           .select("*", { count: "exact" })
           .order("name", { ascending: true })
           .range(from, from + pageSize - 1);
@@ -75,39 +75,39 @@ const rankMonth = new Map(
         from += pageSize;
       }
 
-// 🟢 4️⃣ Normalize + Enrich with rank data + Hydrate verification fields
-const enriched = all.map((p) => {
-  const pid = String(p.id);
+      // 🟢 4️⃣ Normalize + Enrich with rank data + Hydrate verification fields
+      const enriched = all.map((p) => {
+        const pid = String(p.id);
 
-  // Normalize verification sources
-  const addressVerified =
-    p.address_verified ||
-    p.verified ||
-    false;
+        // Normalize verification sources
+        const addressVerified =
+          p.address_verified ||
+          p.verified ||
+          false;
 
-  const linkList =
-    p.links ||
-    p.zcasher_links ||
-    [];
+        const linkList =
+          p.links ||
+          p.zcasher_links ||
+          [];
 
-  const linkVerifiedCount =
-    p.verified_links_count ??
-    linkList.filter((l) => l.is_verified).length;
+        const linkVerifiedCount =
+          p.verified_links_count ??
+          linkList.filter((l) => l.is_verified).length;
 
-  return {
-    ...p,
+        return {
+          ...p,
 
-    // Ranking from leaderboard
-    rank_alltime: rankAll.get(pid) || 0,
-    rank_weekly: rankWeek.get(pid) || 0,
-    rank_monthly: rankMonth.get(pid) || 0,
+          // Ranking from leaderboard
+          rank_alltime: rankAll.get(pid) || 0,
+          rank_weekly: rankWeek.get(pid) || 0,
+          rank_monthly: rankMonth.get(pid) || 0,
 
-    // Normalized fields used everywhere
-    address_verified: addressVerified,
-    links: linkList,
-    verified_links_count: linkVerifiedCount,
-  };
-});
+          // Normalized fields used everywhere
+          address_verified: addressVerified,
+          links: linkList,
+          verified_links_count: linkVerifiedCount,
+        };
+      });
 
       // 🧩 Debug known case
       const test = enriched.find((p) => p.name === "Zechariah");
