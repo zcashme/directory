@@ -53,7 +53,7 @@ function HelpIcon({ text }) {
   );
 }
 
-function RedirectModal({ isOpen }) {
+function RedirectModal({ isOpen, label }) {
   if (!isOpen) return null;
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -64,7 +64,7 @@ function RedirectModal({ isOpen }) {
              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
            </svg>
         </div>
-        <h3 className="text-lg font-bold text-gray-800 mb-2">Redirecting to X.com</h3>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Redirecting to {label}</h3>
         <p className="text-sm text-gray-600">
           Please authorize the app to verify your profile.
         </p>
@@ -80,6 +80,7 @@ export default function ProfileEditor({ profile, links }) {
 
   const { setPendingEdits, pendingEdits } = useFeedback();
   const [showRedirect, setShowRedirect] = useState(false);
+  const [redirectLabel, setRedirectLabel] = useState("X.com");
 
   // Check for X link verification return
   useEffect(() => {
@@ -103,45 +104,100 @@ export default function ProfileEditor({ profile, links }) {
             console.log("✅ OAuth verified for:", url);
 
             const getXHandle = (s) => {
-                const um = s?.user?.user_metadata || {};
                 const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-                const id0 = ids[0]?.identity_data || {};
+                const tw = ids.find((i) => i?.provider === 'twitter')?.identity_data || {};
                 const candidates = [
-                    um.user_name,
-                    um.preferred_username,
-                    um.username,
-                    um.screen_name,
-                    id0.username,
-                    id0.screen_name
+                    tw.username,
+                    tw.screen_name
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+            const getLinkedInHandle = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const li = ids.find((i) => i?.provider === 'linkedin_oidc')?.identity_data || {};
+                const candidates = [
+                    li.vanityName,
+                    li.preferred_username
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+            const getGithubHandle = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const gh = ids.find((i) => i?.provider === 'github')?.identity_data || {};
+                const candidates = [
+                    gh.user_name,
+                    gh.login
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
             };
 
-            const xUsername = getXHandle(session);
-            console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
-            const targetUsername = url.replace(/\/$/, "").split('/').pop();
-            console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
-            if (xUsername && xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
-                console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
-                alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
-                localStorage.removeItem("verifying_profile_id");
-                localStorage.removeItem("verifying_link_url");
-                return;
+            const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
+            const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
+            const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
+            if (isXUrl) {
+                const xUsername = getXHandle(session);
+                console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
+                const targetUsername = url.replace(/\/$/, "").split('/').pop();
+                console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
+                if (xUsername && xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
+                    alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+            if (isLinkedInUrl) {
+                const liHandle = getLinkedInHandle(session);
+                console.log("[VERIFY DEBUG] liHandle from metadata:", liHandle);
+                const targetVanity = url.replace(/\/$/, "").split('/').pop();
+                console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
+                if (liHandle && liHandle.toLowerCase() !== targetVanity.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: ${liHandle} vs ${targetVanity}`);
+                    alert(`Verification Mismatch: Logged in as ${liHandle}, but verifying link for ${targetVanity}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+            if (isGithubUrl) {
+                const ghHandle = getGithubHandle(session);
+                console.log("[VERIFY DEBUG] ghHandle from metadata:", ghHandle);
+                const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
+                const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
+                console.log("[VERIFY DEBUG] targetGithub from url:", targetGh);
+                if (ghHandle && ghHandle.toLowerCase() !== targetGh.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
+                    alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
             }
 
             // 2. Update Database
             try {
                 console.log("[VERIFY DEBUG] Attempting DB update...");
                 const normalizedUrl = url.replace(/\/$/, "");
-                const handle = normalizedUrl.split('/').pop();
-                const hosts = ['x.com', 'twitter.com', 'www.x.com', 'www.twitter.com'];
+                let handle = normalizedUrl.split('/').pop();
+                if (/github\.com\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/github\.com\/([^/?#]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                let hosts = [];
+                if (isXUrl) hosts = ['x.com', 'twitter.com', 'www.x.com', 'www.twitter.com'];
+                if (isLinkedInUrl) hosts = ['linkedin.com', 'www.linkedin.com'];
+                if (isGithubUrl) hosts = ['github.com', 'www.github.com'];
                 const schemes = ['https://'];
                 const variants = [];
                 for (const h of hosts) {
                     for (const s of schemes) {
-                        variants.push(`${s}${h}/${handle}`);
-                        variants.push(`${s}${h}/${handle}/`);
+                        const pathPrefix = isLinkedInUrl ? '/in/' : '/';
+                        variants.push(`${s}${h}${pathPrefix}${handle}`);
+                        variants.push(`${s}${h}${pathPrefix}${handle}/`);
                     }
                 }
 
@@ -160,6 +216,10 @@ export default function ProfileEditor({ profile, links }) {
                     const patternTw = `%://twitter.com/${handle}%`;
                     const patternWX = `%://www.x.com/${handle}%`;
                     const patternWT = `%://www.twitter.com/${handle}%`;
+                    const patternLI = `%://linkedin.com/in/${handle}%`;
+                    const patternWLI = `%://www.linkedin.com/in/${handle}%`;
+                    const patternGH = `%://github.com/${handle}%`;
+                    const patternWGH = `%://www.github.com/${handle}%`;
                     const { data: data2, error: error2 } = await supabase
                         .from('zcasher_links')
                         .update({ 
@@ -167,7 +227,7 @@ export default function ProfileEditor({ profile, links }) {
                             updated_at: new Date().toISOString()
                         })
                         .eq('zcasher_id', profile.id)
-                        .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT}`)
+                        .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT},url.ilike.${patternLI},url.ilike.${patternWLI},url.ilike.${patternGH},url.ilike.${patternWGH}`)
                         .select();
                     data = data2; error = error2;
                 }
@@ -257,8 +317,10 @@ export default function ProfileEditor({ profile, links }) {
 
   const handleXVerify = async (url) => {
       setShowRedirect(true);
+      setRedirectLabel("X.com");
       localStorage.setItem("verifying_profile_id", profile.id);
       localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
       
       const norm = (s = "") =>
         s
@@ -288,7 +350,111 @@ export default function ProfileEditor({ profile, links }) {
           }
       }, 1500);
   };
+  const handleLinkedInVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("LinkedIn");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'linkedin_oidc',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+  const handleGithubVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("GitHub");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'github',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
 
+  async function ensureLinkRow(rawUrl) {
+      try {
+          const normalizedUrl = (rawUrl || "").trim().replace(/\/$/, "");
+          const { data: existing } = await supabase
+              .from("zcasher_links")
+              .select("id,url")
+              .eq("zcasher_id", profile.id)
+              .eq("url", normalizedUrl)
+              .limit(1);
+          if (existing && existing.length > 0) return;
+          const label = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+          const { data: inserted } = await supabase
+              .from("zcasher_links")
+              .insert([
+                  {
+                      zcasher_id: profile.id,
+                      label,
+                      url: normalizedUrl,
+                      is_verified: false,
+                  },
+              ])
+              .select()
+              .limit(1);
+          const newId = inserted && inserted[0]?.id;
+          if (newId) {
+              setForm((prev) => ({
+                  ...prev,
+                  links: prev.links.map((l) =>
+                      (l.url || "").trim().replace(/\/$/, "") === normalizedUrl
+                          ? { ...l, id: newId }
+                          : l
+                  ),
+              }));
+          }
+      } catch (e) {
+          console.error("ensureLinkRow failed", e);
+      }
+  }
   
 
 
@@ -339,19 +505,6 @@ useEffect(() => {
     }),
     [profile]
   );
-
-  // Dedupes while preserving order
-  const uniq = (arr) => {
-    const seen = new Set();
-    const out = [];
-    for (const t of arr) {
-      if (!seen.has(t)) {
-        seen.add(t);
-        out.push(t);
-      }
-    }
-    return out;
-  };
 
   // Append token helper
   const appendLinkToken = (token) => {
@@ -647,7 +800,7 @@ if (/^\+[0-9]+:/.test(t)) {
   return (
     
 <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
-<RedirectModal isOpen={showRedirect} />
+<RedirectModal isOpen={showRedirect} label={redirectLabel} />
 <div className="w-full max-w-xl bg-transparent overflow-hidden">
 
   {/* Header */}
@@ -897,6 +1050,8 @@ if (/^\+[0-9]+:/.test(t)) {
           const isVerified = !!row.is_verified;
           const canVerify = !!profile.address_verified;
           const isX = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(row.url);
+          const isLinkedIn = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(row.url);
+          const isGithub = /^(https?:\/\/)?(www\.)?github\.com\//i.test(row.url);
 
           const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
           const isPending = token && isPendingToken(token);
@@ -927,25 +1082,33 @@ if (/^\+[0-9]+:/.test(t)) {
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!token) return;
+                  onClick={() => {
+                    if (!token) return;
 
-                      // X / Twitter verification flow
-                      if (isX) {
-                          handleXVerify(row.url);
-                          return;
-                      }
+                    // X / Twitter verification flow
+                    if (isX) {
+                        handleXVerify(row.url);
+                        return;
+                    }
+                    if (isLinkedIn) {
+                        handleLinkedInVerify(row.url);
+                        return;
+                    }
+                    if (isGithub) {
+                        handleGithubVerify(row.url);
+                        return;
+                    }
 
-                      if (isPending) removeLinkToken(token);
-                      else appendLinkToken(token);
-                    }}
-                    className={`text-xs px-2 py-1 border rounded ${
-                      isPending || (showRedirect && isX)
+                    if (isPending) removeLinkToken(token);
+                    else appendLinkToken(token);
+                  }}
+                  className={`text-xs px-2 py-1 border rounded ${
+                      isPending || (showRedirect && (isX || isLinkedIn || isGithub))
                         ? "text-yellow-700 border-yellow-400 bg-yellow-50"
                         : "text-blue-600 border-blue-400 hover:bg-blue-50"
                     }`}
                   >
-                    {isPending || (showRedirect && isX) ? "Pending" : "Verify"}
+                    {isPending || (showRedirect && (isX || isLinkedIn || isGithub)) ? "Pending" : "Verify"}
                   </button>
                 )}
 
