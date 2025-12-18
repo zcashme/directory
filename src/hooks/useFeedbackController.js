@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useCallback } from "react";
-import { useFeedback } from "../store";
+import { useFeedback } from "./useFeedback";
 import { buildZcashUri } from "../utils/zcashWalletUtils";
 import { buildZcashEditMemo } from "../utils/zcashMemoUtils";
 
@@ -40,20 +40,22 @@ export default function useFeedbackController() {
   }, [mode, verify.zId, pendingEdits, verify.memo, setVerifyMemo]);
 
   const uri = useMemo(() => {
-const { memo, amount } = draft;
-const finalAmount = amount && amount !== "0" ? amount : "0.0005";
-return buildZcashUri(selectedAddress, finalAmount, memo);
-  }, [selectedAddress, draft.memo, draft.amount]);
+    const { memo, amount } = draft;
+    const finalAmount = amount && amount !== "0" ? amount : "0.0005";
+    return buildZcashUri(selectedAddress, finalAmount, memo);
+  }, [selectedAddress, draft]);
 
   const verifyUri = useMemo(() => {
     const { memo, amount } = verify;
     return buildZcashUri(selectedAddress, amount, memo);
-  }, [selectedAddress, verify.memo, verify.amount]);
+  }, [selectedAddress, verify]);
 
   const copyUri = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(uri);
-    } catch {}
+    } catch {
+      void 0;
+    }
   }, [uri]);
 
   const openWallet = useCallback(() => {

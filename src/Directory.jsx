@@ -20,7 +20,7 @@ import useAlphaVisibility from "./hooks/useAlphaVisibility";
 import useDirectoryVisibility from "./hooks/useDirectoryVisibility";
 
 import computeGoodThru from "./utils/computeGoodThru";
-import { useFeedback } from "./store";
+import { useFeedback } from "./hooks/useFeedback";
 
 import bookOpen from "./assets/book-open.svg";
 import bookClosed from "./assets/book-closed.svg";
@@ -62,7 +62,7 @@ export default function Directory() {
 
 
   // compute referrals (RefRank)
-  const { referralCounts, rankedProfiles } = useMemo(() => {
+  const { rankedProfiles } = useMemo(() => {
     const norm = (s) =>
       (s || "")
         .toString()
@@ -552,7 +552,7 @@ export default function Directory() {
               /* no results rendering unchanged */
               (() => {
                 const activeLabels = Object.entries(filters)
-                  .filter(([_, v]) => v)
+                  .filter(([, v]) => v)
                   .map(([k]) => {
                     if (k === "verified") return "Verified";
                     if (k === "ranked") return "Ranked";

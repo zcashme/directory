@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+const Motion = motion;
 
 export default function VerifiedCardWrapper({
   verifiedCount = 0, // ✅ still accepts prop from ProfileCard (now mapped to verified_links_count)
@@ -32,7 +33,7 @@ export default function VerifiedCardWrapper({
   }
 
   return (
-    <motion.div
+    <Motion.div
       whileHover={{ scale: 1.02 }}
       transition={{ type: "spring", stiffness: 200, damping: 12 }}
       onClick={onClick}
@@ -40,7 +41,7 @@ export default function VerifiedCardWrapper({
     >
       {/* Animated gradient shimmer for top-tier verified */}
       {verifiedCount >= 3 && !featured && (
-        <motion.div
+        <Motion.div
           className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md"
           animate={{
             backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
@@ -59,6 +60,6 @@ export default function VerifiedCardWrapper({
 
       {/* Foreground content */}
       <div className="relative z-10">{children}</div>
-    </motion.div>
+    </Motion.div>
   );
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useFeedback } from "../store";
+import { useFeedback } from "../hooks/useFeedback";
 import VerifiedBadge from "./VerifiedBadge";
 import ProfileAvatar from "./ProfileAvatar";
 

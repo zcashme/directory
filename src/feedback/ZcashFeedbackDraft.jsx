@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { useFeedback } from "../store";
+import { useFeedback } from "../hooks/useFeedback";
 import useFeedbackController from "../hooks/useFeedbackController";
 import AmountAndWallet from "../components/AmountAndWallet.jsx";
 import { cachedProfiles } from "../hooks/useProfiles";
@@ -31,13 +31,6 @@ export default function ZcashFeedbackDraft() {
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef(null);
-  const qrRef = useRef(null);
-
-  const [showQR, setShowQR] = useState(false);
-  const [showFull, setShowFull] = useState(true);
-
-  const [saved, setSaved] = useState(false);
-  const [copied, setCopied] = useState(false);
 
   const [showHelp, setShowHelp] = useState(false); // <-- NEW
 
@@ -65,27 +58,12 @@ export default function ZcashFeedbackDraft() {
   const disabled = selectedAddress?.startsWith("t");
 
 useEffect(() => {
-  // Only run when forceShowQR is truthy (user clicked QR or Verify)
   if (!forceShowQR) return;
-
-  setShowQR(true);
-
   setTimeout(() => {
     const el = document.getElementById("zcash-feedback");
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, 300);
 }, [forceShowQR]);
-
-  useEffect(() => {
-    const hasContent =
-      (amount && amount !== "0") ||
-      (memo && memo.trim() !== "" && memo !== "N/A");
-
-    if (hasContent) {
-      setShowFull(true);
-      setShowQR(true);
-    }
-  }, [amount, memo]);
 
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4">

@@ -1,4 +1,4 @@
-export function buildZcashEditMemo(profile = {}, zId = "?", addr = "") {
+export function buildZcashEditMemo(profile = {}, zId = "?") {
   const fieldMap = {
     name: "n",
     bio: "b",
@@ -7,7 +7,7 @@ export function buildZcashEditMemo(profile = {}, zId = "?", addr = "") {
   };
 
   const clean = Object.fromEntries(
-    Object.entries(profile).filter(([_, v]) => {
+    Object.entries(profile).filter(([, v]) => {
       if (Array.isArray(v)) return v.some((x) => x && x.trim() !== "");
       return v !== "" && v !== null && v !== undefined;
     })

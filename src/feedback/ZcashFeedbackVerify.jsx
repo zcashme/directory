@@ -3,7 +3,7 @@ import QrUriBlock from "../components/QrUriBlock";
 import AmountAndWallet from "../components/AmountAndWallet.jsx";
 
 import useFeedbackController from "../hooks/useFeedbackController";
-import { useFeedback } from "../store";
+import { useFeedback } from "../hooks/useFeedback";
 import SubmitOtp from "../SubmitOtp.jsx";
 import { buildZcashUri } from "../utils/zcashWalletUtils";
 import { cachedProfiles } from "../hooks/useProfiles";
@@ -33,7 +33,7 @@ export default function ZcashFeedbackVerify() {
     }
   }, [amount, setVerifyAmount]);
 
-  const { numericAmount, validAmount, error, verifyUri } = useMemo(() => {
+  const { validAmount, error, verifyUri } = useMemo(() => {
     const cleaned = (amount || "").trim();
     const raw = cleaned.replace(/[^\d.]/g, "");
     const num = parseFloat(raw);
@@ -44,7 +44,6 @@ export default function ZcashFeedbackVerify() {
       memo && memo !== "N/A" ? memo : ""
     );
     return {
-      numericAmount: raw,
       validAmount: validMin,
       error: validMin
         ? ""
@@ -53,21 +52,9 @@ export default function ZcashFeedbackVerify() {
     };
   }, [amount, memo]);
 
-  const [copied, setCopied] = useState(false);
-  const [walletOpened, setWalletOpened] = useState(false);
-
-  const handleCopy = async () => {
-    if (!verifyUri || error) return;
-    await navigator.clipboard.writeText(verifyUri);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1200);
-  };
-
   const handleOpen = () => {
     if (!verifyUri || error) return;
     window.open(verifyUri, "_blank");
-    setWalletOpened(true);
-    setTimeout(() => setWalletOpened(false), 1200);
   };
 
   return (

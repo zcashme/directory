@@ -1,9 +1,8 @@
 import React, { useState } from "react";
 
 export default function ReferRankBadgeMulti({ rank, period = "all", alwaysOpen = false }) {
-  if (!rank || rank > 10) return null; // show only top 10
-
   const [open, setOpen] = useState(false);
+  if (!rank || rank > 10) return null; // show only top 10
 
   const colorSchemes = {
     all: {

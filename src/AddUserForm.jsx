@@ -1,10 +1,9 @@
 import ZcashAddressInput from "./components/ZcashAddressInput";
 import { validateZcashAddress } from "./utils/zcashAddressUtils";
-import useProfiles from "./hooks/useProfiles"; // (add this at top if not imported)
 import { cachedProfiles } from "./hooks/useProfiles"; // if exported (we’ll adjust below)
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
 import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 import CitySearchDropdown from "./components/CitySearchDropdown"; // add with the imports if missing
@@ -73,7 +72,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [nearestCity, setNearestCity] = useState(null);
   const [nearestCityInput, setNearestCityInput] = useState(""); 
 
-  const [showDropdown, setShowDropdown] = useState(false);
   const [links, setLinks] = useState([{ platform: "X", username: "", otherUrl: "", valid: true }]);
   const [profiles, setProfiles] = useState([]);
   const [verifiedNameKeys, setVerifiedNameKeys] = useState(new Set());
@@ -168,7 +166,7 @@ if (matchingProfile) {
   } else {
     setNameConflict({
       type: "info",
-      text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me\ name for yourself.",
+      text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
     });
   }
 } else {
