@@ -136,7 +136,14 @@ export default function ProfileEditor({ profile, links }) {
                 const tw = ids.find((i) => i?.provider === 'twitter')?.identity_data || {};
                 const candidates = [
                     tw.username,
-                    tw.screen_name
+                    tw.screen_name,
+                    tw.preferred_username,
+                    tw.user_name,
+                    tw.name,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.screen_name,
+                    s?.user?.user_metadata?.username,
+                    s?.user?.user_metadata?.name
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
@@ -146,7 +153,9 @@ export default function ProfileEditor({ profile, links }) {
                 const li = ids.find((i) => i?.provider === 'linkedin_oidc')?.identity_data || {};
                 const candidates = [
                     li.vanityName,
-                    li.preferred_username
+                    li.preferred_username,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.vanityName
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
@@ -156,7 +165,11 @@ export default function ProfileEditor({ profile, links }) {
                 const gh = ids.find((i) => i?.provider === 'github')?.identity_data || {};
                 const candidates = [
                     gh.user_name,
-                    gh.login
+                    gh.login,
+                    gh.preferred_username,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.user_name,
+                    s?.user?.user_metadata?.login
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
@@ -179,9 +192,10 @@ export default function ProfileEditor({ profile, links }) {
             if (isXUrl) {
                 const xUsername = getXHandle(session);
                 console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
-                const targetUsername = url.replace(/\/$/, "").split('/').pop();
+                const mx = (url || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+                const targetUsername = mx ? mx[1] : null;
                 console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
-                if (xUsername && xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
+                if (!xUsername || !targetUsername || xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
                     console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
                     alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
                     localStorage.removeItem("verifying_profile_id");
@@ -192,9 +206,10 @@ export default function ProfileEditor({ profile, links }) {
             if (isLinkedInUrl) {
                 const liHandle = getLinkedInHandle(session);
                 console.log("[VERIFY DEBUG] liHandle from metadata:", liHandle);
-                const targetVanity = url.replace(/\/$/, "").split('/').pop();
+                const ml = (url || "").replace(/\/$/, "").match(/linkedin\.com\/in\/([^/?#]+)/i);
+                const targetVanity = ml ? ml[1] : null;
                 console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
-                if (liHandle && liHandle.toLowerCase() !== targetVanity.toLowerCase()) {
+                if (!liHandle || !targetVanity || liHandle.toLowerCase() !== targetVanity.toLowerCase()) {
                     console.warn(`[VERIFY FAIL] Mismatch: ${liHandle} vs ${targetVanity}`);
                     alert(`Verification Mismatch: Logged in as ${liHandle}, but verifying link for ${targetVanity}`);
                     localStorage.removeItem("verifying_profile_id");
@@ -208,7 +223,7 @@ export default function ProfileEditor({ profile, links }) {
                 const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
                 const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
                 console.log("[VERIFY DEBUG] targetGithub from url:", targetGh);
-                if (ghHandle && ghHandle.toLowerCase() !== targetGh.toLowerCase()) {
+                if (!ghHandle || !targetGh || ghHandle.toLowerCase() !== targetGh.toLowerCase()) {
                     console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
                     alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
                     localStorage.removeItem("verifying_profile_id");
@@ -222,7 +237,7 @@ export default function ProfileEditor({ profile, links }) {
                 const m = (url || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([0-9]+)/i);
                 const targetDiscordId = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
                 console.log("[VERIFY DEBUG] targetDiscordId from url:", targetDiscordId);
-                if (discordId && String(discordId) !== String(targetDiscordId)) {
+                if (!discordId || !targetDiscordId || String(discordId) !== String(targetDiscordId)) {
                     console.warn(`[VERIFY FAIL] Mismatch: ${discordId} vs ${targetDiscordId}`);
                     alert(`Verification Mismatch: Logged in as ${discordId}, but verifying link for ${targetDiscordId}`);
                     localStorage.removeItem("verifying_profile_id");
@@ -236,12 +251,20 @@ export default function ProfileEditor({ profile, links }) {
                 console.log("[VERIFY DEBUG] Attempting DB update...");
                 const normalizedUrl = url.replace(/\/$/, "");
                 let handle = normalizedUrl.split('/').pop();
+                if (/(?:x\.com|twitter\.com)\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+                    handle = m ? m[1] : handle;
+                }
                 if (/github\.com\//i.test(normalizedUrl)) {
                     const m = normalizedUrl.match(/github\.com\/([^/?#]+)/i);
                     handle = m ? m[1] : handle;
                 }
                 if (/discord(?:app)?\.com\/users\//i.test(normalizedUrl)) {
                     const m = normalizedUrl.match(/users\/([0-9]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                if (/linkedin\.com\/in\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/linkedin\.com\/in\/([^/?#]+)/i);
                     handle = m ? m[1] : handle;
                 }
                 let hosts = [];
