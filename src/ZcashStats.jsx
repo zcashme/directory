@@ -16,7 +16,6 @@ import {
 export default function ZcashStats() {
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-  const [network, setNetwork] = useState(null);
   const [growthDaily, setGrowthDaily] = useState([]);
   const [growthWeekly, setGrowthWeekly] = useState([]);
   const [growthMonthly, setGrowthMonthly] = useState([]);
@@ -152,9 +151,8 @@ const formatCell = (rowKey, colValues, colIndex = 0, allCols = []) => {
   useEffect(() => {
     async function loadBase() {
       setLoadingBase(true);
-      const [{ data: net }, { data: d }, { data: w }, { data: m }] =
+      const [{ data: d }, { data: w }, { data: m }] =
         await Promise.all([
-          supabase.from("network_summary").select("*").single(),
           supabase
             .from("growth_over_time_daily")
             .select("*")
@@ -168,7 +166,6 @@ const formatCell = (rowKey, colValues, colIndex = 0, allCols = []) => {
             .select("*")
             .order("month_start", { ascending: true }),
         ]);
-      setNetwork(net || {});
       setGrowthDaily(d || []);
       setGrowthWeekly(w || []);
       setGrowthMonthly(m || []);
@@ -220,14 +217,15 @@ async function loadLeaderboard() {
       ? "week_start"
       : null;
 
-  const activeGrowth =
-    activeTab === "daily"
+  const activeGrowth = useMemo(() => {
+    return activeTab === "daily"
       ? growthDaily
       : activeTab === "monthly"
       ? growthMonthly
       : activeTab === "weekly"
       ? growthWeekly
       : [];
+  }, [activeTab, growthDaily, growthMonthly, growthWeekly]);
 
   // ----- compute chartData -----
   const chartData = useMemo(() => {

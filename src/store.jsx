@@ -1,6 +1,6 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import { FeedbackContext } from "./feedback-context";
 
-const FeedbackContext = createContext();
 
 export function FeedbackProvider({ children }) {
   
@@ -72,8 +72,4 @@ export function FeedbackProvider({ children }) {
       {children}
     </FeedbackContext.Provider>
   );
-}
-
-export function useFeedback() {
-  return useContext(FeedbackContext);
 }

@@ -1,6 +1,6 @@
 // ZcashFeedback.jsx with unified visual wrapper
 import React, { useEffect } from "react";
-import { useFeedback } from "./store";
+import { useFeedback } from "./hooks/useFeedback";
 import useFeedbackEvents from "./hooks/useFeedbackEvents";
 import { ZcashFeedbackDraft, ZcashFeedbackVerify } from "./feedback";
 
@@ -17,11 +17,9 @@ export default function ZcashFeedback() {
   const {
   mode,
   setMode,
-  forceShowQR,
   setForceShowQR,
   setVerifyId,
   selectedProfile,
-  profileEditsPending
 } = useFeedback();
   useFeedbackEvents();
 
@@ -36,7 +34,7 @@ export default function ZcashFeedback() {
   };
   window.addEventListener("forceFeedbackNoteMode", handler);
   return () => window.removeEventListener("forceFeedbackNoteMode", handler);
-}, []);
+}, [setMode, setForceShowQR]);
 
 
   return (

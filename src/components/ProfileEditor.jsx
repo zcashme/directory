@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from "react";
-import { useFeedback } from "../store";
+import { useFeedback } from "../hooks/useFeedback";
 import LinkInput from "../components/LinkInput"; 
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { isValidUrl } from "../utils/validateUrl";
 import CitySearchDropdown from "../components/CitySearchDropdown.jsx";
+import { supabase } from "../supabase";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
@@ -23,8 +24,6 @@ const isValidImageUrl = (url) => {
 
   return { valid: true, reason: null };
 };
-
-
 
 // Simple character counter
 function CharCounter({ text }) {
@@ -74,20 +73,506 @@ function HelpIcon({ text }) {
   );
 }
 
+function RedirectModal({ isOpen, label }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
+        <div className="mb-4 text-blue-500">
+           <svg className="w-12 h-12 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
+             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+           </svg>
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Redirecting to {label}</h3>
+        <p className="text-sm text-gray-600">
+          Please authorize the app to verify your profile.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 
 export default function ProfileEditor({ profile, links }) {
-//  console.log("DEBUG incoming profile.links =", profile.links, "links prop =", links);
+  // 🔥 RENDER DEBUG: Check if component actually renders
+  console.log("[PROFILE EDITOR RENDER] ID:", profile.id, "Links count:", links?.length);
+
   const { setPendingEdits, pendingEdits } = useFeedback();
-// stored values (read-only originals)
+  const [showRedirect, setShowRedirect] = useState(false);
+  const [redirectLabel, setRedirectLabel] = useState("X.com");
 
-// stored values
-const origCityId = profile.nearest_city_id || null;
-const origCityName = profile.nearest_city_name || "";
+  // stored values (read-only originals)
+  const origCityId = profile.nearest_city_id || null;
+  const origCityName = profile.nearest_city_name || "";
 
-// editable UI state — SAME AS OTHER FIELDS
-const [nearestCityDisplay, setNearestCityDisplay] = useState(origCityName);
-const [nearestCityId, setNearestCityId] = useState(origCityId);
+  // editable UI state — SAME AS OTHER FIELDS
+  const [nearestCityDisplay, setNearestCityDisplay] = useState(origCityName);
+  const [nearestCityId, setNearestCityId] = useState(origCityId);
 
+  // Check for X link verification return
+  useEffect(() => {
+     const pId = localStorage.getItem("verifying_profile_id");
+     const url = localStorage.getItem("verifying_link_url");
+     
+     // 🚀 IMMEDIATE LOG: Prove component mounted and read storage
+     console.log("[VERIFY DEBUG] Component Mounted. Storage:", { pId, url, currentProfileId: profile.id });
+
+    // Helper to update state
+    const applyVerification = async (session) => {
+        console.log("[VERIFY DEBUG] applyVerification started with session:", !!session);
+
+        if (!session) {
+             console.log("[VERIFY DEBUG] No session provided to applyVerification, aborting.");
+             return;
+        }
+
+        // Force convert both to string for comparison
+        if (pId && url && String(pId) === String(profile.id)) {
+            console.log("✅ OAuth verified for:", url);
+
+            const getXHandle = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const tw = ids.find((i) => i?.provider === 'twitter')?.identity_data || {};
+                const candidates = [
+                    tw.username,
+                    tw.screen_name,
+                    tw.preferred_username,
+                    tw.user_name,
+                    tw.name,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.screen_name,
+                    s?.user?.user_metadata?.username,
+                    s?.user?.user_metadata?.name
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+            const getLinkedInHandle = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const li = ids.find((i) => i?.provider === 'linkedin_oidc')?.identity_data || {};
+                const candidates = [
+                    li.vanityName,
+                    li.preferred_username,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.vanityName
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+            const getGithubHandle = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const gh = ids.find((i) => i?.provider === 'github')?.identity_data || {};
+                const candidates = [
+                    gh.user_name,
+                    gh.login,
+                    gh.preferred_username,
+                    s?.user?.user_metadata?.preferred_username,
+                    s?.user?.user_metadata?.user_name,
+                    s?.user?.user_metadata?.login
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h ? h.replace(/^@/, '') : null;
+            };
+            const getDiscordId = (s) => {
+                const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+                const di = ids.find((i) => i?.provider === 'discord')?.identity_data || {};
+                const candidates = [
+                    di.id,
+                    s?.user?.user_metadata?.sub
+                ].filter(Boolean);
+                const h = candidates.find((v) => typeof v === 'string' && v.trim());
+                return h || null;
+            };
+
+            const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
+            const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
+            const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
+            const isDiscordUrl = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com)\/users\//i.test(url || "");
+            if (isXUrl) {
+                const xUsername = getXHandle(session);
+                console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
+                const mx = (url || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+                const targetUsername = mx ? mx[1] : null;
+                console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
+                if (!xUsername || !targetUsername || xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
+                    alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+            if (isLinkedInUrl) {
+                const liHandle = getLinkedInHandle(session);
+                console.log("[VERIFY DEBUG] liHandle from metadata:", liHandle);
+                const ml = (url || "").replace(/\/$/, "").match(/linkedin\.com\/in\/([^/?#]+)/i);
+                const targetVanity = ml ? ml[1] : null;
+                console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
+                if (!liHandle || !targetVanity || liHandle.toLowerCase() !== targetVanity.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: ${liHandle} vs ${targetVanity}`);
+                    alert(`Verification Mismatch: Logged in as ${liHandle}, but verifying link for ${targetVanity}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+            if (isGithubUrl) {
+                const ghHandle = getGithubHandle(session);
+                console.log("[VERIFY DEBUG] ghHandle from metadata:", ghHandle);
+                const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
+                const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
+                console.log("[VERIFY DEBUG] targetGithub from url:", targetGh);
+                if (!ghHandle || !targetGh || ghHandle.toLowerCase() !== targetGh.toLowerCase()) {
+                    console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
+                    alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+            if (isDiscordUrl) {
+                const discordId = getDiscordId(session);
+                console.log("[VERIFY DEBUG] discordId from metadata:", discordId);
+                const m = (url || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([0-9]+)/i);
+                const targetDiscordId = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
+                console.log("[VERIFY DEBUG] targetDiscordId from url:", targetDiscordId);
+                if (!discordId || !targetDiscordId || String(discordId) !== String(targetDiscordId)) {
+                    console.warn(`[VERIFY FAIL] Mismatch: ${discordId} vs ${targetDiscordId}`);
+                    alert(`Verification Mismatch: Logged in as ${discordId}, but verifying link for ${targetDiscordId}`);
+                    localStorage.removeItem("verifying_profile_id");
+                    localStorage.removeItem("verifying_link_url");
+                    return;
+                }
+            }
+
+            // 2. Update Database
+            try {
+                console.log("[VERIFY DEBUG] Attempting DB update...");
+                const normalizedUrl = url.replace(/\/$/, "");
+                let handle = normalizedUrl.split('/').pop();
+                if (/(?:x\.com|twitter\.com)\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                if (/github\.com\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/github\.com\/([^/?#]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                if (/discord(?:app)?\.com\/users\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/users\/([0-9]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                if (/linkedin\.com\/in\//i.test(normalizedUrl)) {
+                    const m = normalizedUrl.match(/linkedin\.com\/in\/([^/?#]+)/i);
+                    handle = m ? m[1] : handle;
+                }
+                let hosts = [];
+                if (isXUrl) hosts = ['x.com', 'twitter.com', 'www.x.com', 'www.twitter.com'];
+                if (isLinkedInUrl) hosts = ['linkedin.com', 'www.linkedin.com'];
+                if (isGithubUrl) hosts = ['github.com', 'www.github.com'];
+                if (isDiscordUrl) hosts = ['discord.com', 'www.discord.com', 'discordapp.com', 'www.discordapp.com'];
+                const schemes = ['https://'];
+                const variants = [];
+                for (const h of hosts) {
+                    for (const s of schemes) {
+                        const pathPrefix = isLinkedInUrl ? '/in/' : (isDiscordUrl ? '/users/' : '/');
+                        variants.push(`${s}${h}${pathPrefix}${handle}`);
+                        variants.push(`${s}${h}${pathPrefix}${handle}/`);
+                    }
+                }
+
+                let { data, error } = await supabase
+                    .from('zcasher_links')
+                    .update({ 
+                        is_verified: true,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('zcasher_id', profile.id)
+                    .in('url', variants)
+                    .select();
+
+                if ((!data || data.length === 0) && !error) {
+                    const patternX = `%://x.com/${handle}%`;
+                    const patternTw = `%://twitter.com/${handle}%`;
+                    const patternWX = `%://www.x.com/${handle}%`;
+                    const patternWT = `%://www.twitter.com/${handle}%`;
+                    const patternLI = `%://linkedin.com/in/${handle}%`;
+                    const patternWLI = `%://www.linkedin.com/in/${handle}%`;
+                    const patternGH = `%://github.com/${handle}%`;
+                    const patternWGH = `%://www.github.com/${handle}%`;
+                    const patternD1 = `%://discord.com/users/${handle}%`;
+                    const patternD2 = `%://www.discord.com/users/${handle}%`;
+                    const patternDA = `%://discordapp.com/users/${handle}%`;
+                    const patternWDA = `%://www.discordapp.com/users/${handle}%`;
+                    const { data: data2, error: error2 } = await supabase
+                        .from('zcasher_links')
+                        .update({ 
+                            is_verified: true,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('zcasher_id', profile.id)
+                        .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT},url.ilike.${patternLI},url.ilike.${patternWLI},url.ilike.${patternGH},url.ilike.${patternWGH},url.ilike.${patternD1},url.ilike.${patternD2},url.ilike.${patternDA},url.ilike.${patternWDA}`)
+                        .select();
+                    data = data2; error = error2;
+                }
+
+                if (error) {
+                    console.error("[VERIFY ERROR] DB Update error:", error);
+                    throw error;
+                }
+                console.log("[VERIFY DEBUG] DB Update success. Rows affected:", data?.length, data);
+                
+                if (!data || data.length === 0) {
+                     console.warn("[VERIFY WARN] No rows updated! Check if zcasher_id and url match exactly in DB.");
+                     // Try to list the user's links to debug
+                     const { data: userLinks } = await supabase.from('zcasher_links').select('*').eq('zcasher_id', profile.id);
+                     console.log("[VERIFY DEBUG] User's actual links in DB:", userLinks);
+                } else {
+                     console.log("✅ Database updated successfully");
+                     // Show success toast/alert only on success
+                     // alert("Verification Successful!"); // Optional: Feedback to user
+                }
+
+            } catch (err) {
+                console.error("Database update failed:", err);
+            }
+
+            // 3. Update Local UI
+            setForm(prev => ({
+                ...prev,
+                links: prev.links.map(l => {
+                    const u1 = (l.url || "").trim().replace(/\/$/, "");
+                    const u2 = (url || "").trim().replace(/\/$/, "");
+                    // Mark verified
+                    return u1 === u2 ? { 
+                        ...l, 
+                        is_verified: true
+                    } : l;
+                })
+            }));
+            
+            // 🔥 FORCE RELOAD to ensure fresh state
+            setTimeout(() => {
+                // Clear storage JUST BEFORE reload
+                localStorage.removeItem("verifying_profile_id");
+                localStorage.removeItem("verifying_link_url");
+                setShowRedirect(false);
+                window.location.reload(); 
+            }, 1000);
+        } else {
+             if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
+             if (!url) console.log("[VERIFY DEBUG] Missing url in localStorage");
+             if (pId && String(pId) !== String(profile.id)) console.log("[VERIFY DEBUG] ID mismatch:", pId, "vs", profile.id);
+        }
+    };
+
+     // 1. Check immediate session (if already hydrated)
+     // Add a small delay to ensure Supabase client is ready
+     setTimeout(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            console.log("[VERIFY DEBUG] Immediate session check:", !!session);
+            if (session) applyVerification(session);
+        });
+     }, 500);
+
+     // 2. Listen for auth state change (e.g. processing URL fragment)
+     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+         console.log("Auth event:", event);
+         // Handle both SIGNED_IN (redirect) and TOKEN_REFRESHED (possible initial state)
+         if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || (event === 'INITIAL_SESSION' && session)) {
+             applyVerification(session);
+         }
+     });
+
+     // 🚀 FORCE CHECK: Check immediately AND with a delay to catch the session
+     const checkSession = () => {
+         supabase.auth.getSession().then(({ data: { session } }) => {
+             console.log("[VERIFY DEBUG] Force session check:", !!session);
+             if (session) applyVerification(session);
+         });
+     };
+     
+     checkSession();
+     setTimeout(checkSession, 1000);
+     setTimeout(checkSession, 3000);
+
+     return () => subscription.unsubscribe();
+  }, [profile.id]);
+
+  const handleXVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("X.com");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'twitter',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+  const handleLinkedInVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("LinkedIn");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'linkedin_oidc',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+  const handleGithubVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("GitHub");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'github',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+  const handleDiscordVerify = async (url) => {
+      setShowRedirect(true);
+      setRedirectLabel("Discord");
+      localStorage.setItem("verifying_profile_id", profile.id);
+      localStorage.setItem("verifying_link_url", url);
+      await ensureLinkRow(url);
+      const norm = (s = "") =>
+        s
+          .normalize("NFKC")
+          .trim()
+          .toLowerCase()
+          .replace(/\s+/g, "_")
+          .replace(/[^a-z0-9_-]/g, "");
+      const baseSlug = norm(profile.name || "");
+      const uniqueSlug = `${baseSlug}-${profile.id}`;
+      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      setTimeout(async () => {
+          try {
+              const { error } = await supabase.auth.signInWithOAuth({
+                  provider: 'discord',
+                  options: {
+                      redirectTo: returnUrl,
+                      skipBrowserRedirect: false
+                  }
+              });
+              if (error) throw error;
+          } catch (error) {
+              console.error("OAuth error:", error);
+              setShowRedirect(false);
+              alert("Verification failed: " + (error.message || "Unknown error"));
+          }
+      }, 1500);
+  };
+
+  async function ensureLinkRow(rawUrl) {
+      try {
+          const normalizedUrl = (rawUrl || "").trim().replace(/\/$/, "");
+          const { data: existing } = await supabase
+              .from("zcasher_links")
+              .select("id,url")
+              .eq("zcasher_id", profile.id)
+              .eq("url", normalizedUrl)
+              .limit(1);
+          if (existing && existing.length > 0) return;
+          const label = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
+          const { data: inserted } = await supabase
+              .from("zcasher_links")
+              .insert([
+                  {
+                      zcasher_id: profile.id,
+                      label,
+                      url: normalizedUrl,
+                      is_verified: false,
+                  },
+              ])
+              .select()
+              .limit(1);
+          const newId = inserted && inserted[0]?.id;
+          if (newId) {
+              setForm((prev) => ({
+                  ...prev,
+                  links: prev.links.map((l) =>
+                      (l.url || "").trim().replace(/\/$/, "") === normalizedUrl
+                          ? { ...l, id: newId }
+                          : l
+                  ),
+              }));
+          }
+      } catch (e) {
+          console.error("ensureLinkRow failed", e);
+      }
+  }
 
 
   // Normalize incoming DB links
@@ -149,19 +634,6 @@ useEffect(() => {
     [profile]
   );
 
-  // Dedupes while preserving order
-  const uniq = (arr) => {
-    const seen = new Set();
-    const out = [];
-    for (const t of arr) {
-      if (!seen.has(t)) {
-        seen.add(t);
-        out.push(t);
-      }
-    }
-    return out;
-  };
-
   // Append token helper
   const appendLinkToken = (token) => {
     const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
@@ -176,29 +648,29 @@ useEffect(() => {
     setPendingEdits("l", next);
   };
 
-// Profile field diffs including deletions
-useEffect(() => {
+  // Profile field diffs including deletions
+  useEffect(() => {
     const changed = {};
-// nearest city change detection
-// RULE: Only emit c: token when:
-// 1) User actually selected a city OR cleared one
-// 2) Result differs from DB
-let cityToken = undefined;
+    // nearest city change detection
+    // RULE: Only emit c: token when:
+    // 1) User actually selected a city OR cleared one
+    // 2) Result differs from DB
+    let cityToken = undefined;
 
-// Case 1: user selected a city from dropdown
-if (nearestCityId && nearestCityId !== profile.nearest_city_id) {
-  cityToken = String(nearestCityId);
-}
+    // Case 1: user selected a city from dropdown
+    if (nearestCityId && nearestCityId !== profile.nearest_city_id) {
+      cityToken = String(nearestCityId);
+    }
 
-// Case 2: user cleared city
-if (deletedCity && profile.nearest_city_id) {
-  cityToken = "-";
-}
+    // Case 2: user cleared city
+    if (deletedCity && profile.nearest_city_id) {
+      cityToken = "-";
+    }
 
-// Only apply token if a real change happened
-if (cityToken !== undefined) {
-  changed.c = cityToken;
-}
+    // Only apply token if a real change happened
+    if (cityToken !== undefined) {
+      changed.c = cityToken;
+    }
 
 
 
@@ -209,31 +681,31 @@ if (cityToken !== undefined) {
       changed.name = form.name;
     if (!deletedFields.bio && form.bio && form.bio.trim() !== "" && form.bio !== originals.bio)
       changed.bio = form.bio;
-if (
-  !deletedFields.profile_image_url &&
-  imageUrlValid &&
-  form.profile_image_url &&
-  form.profile_image_url.trim() !== "" &&
-  form.profile_image_url !== originals.profile_image_url
-) {
-  changed.profile_image_url = form.profile_image_url;
-}
+    if (
+      !deletedFields.profile_image_url &&
+      imageUrlValid &&
+      form.profile_image_url &&
+      form.profile_image_url.trim() !== "" &&
+      form.profile_image_url !== originals.profile_image_url
+    ) {
+      changed.profile_image_url = form.profile_image_url;
+    }
 
 
     // deletion tokens
-// deleted fields go into d:[]
-const deleted = [];
+    // deleted fields go into d:[]
+    const deleted = [];
 
-if (deletedFields.address) deleted.push("a");
-if (deletedFields.name) deleted.push("n");
-if (deletedFields.bio) deleted.push("b");
-if (deletedFields.profile_image_url) deleted.push("i");
+    if (deletedFields.address) deleted.push("a");
+    if (deletedFields.name) deleted.push("n");
+    if (deletedFields.bio) deleted.push("b");
+    if (deletedFields.profile_image_url) deleted.push("i");
 
-if (deleted.length > 0) {
-  changed.d = deleted;
-} else {
-  delete changed.d;
-}
+    if (deleted.length > 0) {
+      changed.d = deleted;
+    } else {
+      delete changed.d;
+    }
 
 
     const changedStr = JSON.stringify(changed);
@@ -249,6 +721,8 @@ if (deleted.length > 0) {
 
     nearestCityId,            // <<< REQUIRED
     profile.nearest_city_id,  // <<< REQUIRED
+    deletedCity,
+    imageUrlValid,
 
     originals.address,
     originals.name,
@@ -262,129 +736,126 @@ if (deleted.length > 0) {
 
     setPendingEdits
 ]);
-// Compute link tokens
-useEffect(() => {
-  const effectTokens = [];
+  // Compute link tokens
+  useEffect(() => {
+    const effectTokens = [];
 
-  // Index originals by id and remember their urls
-  const originalById = new Map();
-  const originalUrlSet = new Set();
+    // Index originals by id and remember their urls
+    const originalById = new Map();
+    const originalUrlSet = new Set();
 
-  for (const l of originalLinks) {
-    if (!l) continue;
-    const url = (l.url || "").trim();
-    if (l.id) originalById.set(l.id, { ...l, url });
-    if (url) originalUrlSet.add(url);
-  }
+    for (const l of originalLinks) {
+      if (!l) continue;
+      const url = (l.url || "").trim();
+      if (l.id) originalById.set(l.id, { ...l, url });
+      if (url) originalUrlSet.add(url);
+    }
 
-  const currentUrls = new Set(
-    form.links.map((l) => (l.url || "").trim()).filter(Boolean)
-  );
-
-  // Start from existing link tokens
-  let normalizedVerify = Array.isArray(pendingEdits?.l)
-    ? [...pendingEdits.l]
-    : [];
-
-  // Normalize +! tokens when the user edits a pending verified new link
-  for (const token of pendingEdits?.l || []) {
-    if (!token.startsWith("+!")) continue;
-    const oldUrl = token.slice(2);
-    const stillExists = form.links.some(
-      (l) => (l.url || "").trim() === oldUrl.trim()
+    const currentUrls = new Set(
+      form.links.map((l) => (l.url || "").trim()).filter(Boolean)
     );
 
-    if (!stillExists) {
-      // remove old +! token
-      normalizedVerify = normalizedVerify.filter((t) => t !== token);
-      // find a new, non-original url to move the +! onto
-      const newUrl = form.links
-        .map((l) => (l.url || "").trim())
-        .find((u) => u && !originalUrlSet.has(u));
-      if (newUrl) normalizedVerify.push(`+!${newUrl}`);
-    }
-  }
+    // Start from existing link tokens
+    let normalizedVerify = Array.isArray(pendingEdits?.l)
+      ? [...pendingEdits.l]
+      : [];
 
-  // Apply your rules:
-  // - -id only when an existing link is removed or cleared
-  // - +id:newUrl when an existing link is edited
-  // - +url when a brand new link is created
-  for (const row of form.links) {
-    const id = row.id ?? null;
-    const newUrlRaw = (row.url || "").trim();
-const { valid: urlValid } = isValidUrl(newUrlRaw);
-const newUrl = urlValid ? newUrlRaw : "";   // invalid URLs are treated as blank
+    // Normalize +! tokens when the user edits a pending verified new link
+    for (const token of pendingEdits?.l || []) {
+      if (!token.startsWith("+!")) continue;
+      const oldUrl = token.slice(2);
+      const stillExists = form.links.some(
+        (l) => (l.url || "").trim() === oldUrl.trim()
+      );
 
-    if (id) {
-      const original = originalById.get(id);
-      const originalUrl = original ? original.url : "";
-
-      if (newUrl === originalUrl) {
-        // unchanged existing link
-        continue;
-      }
-
-if (!newUrl) {
-    // If invalid, treat it as empty but DO NOT delete verified links
-    effectTokens.push(`-${id}`);
-    continue;
-}
-
-
-      // existing link edited
-      effectTokens.push(`+${id}:${newUrl}`);
-    } else {
-      // new link row
-      if (!newUrl) continue;
-
-      const isNew = !originalUrlSet.has(newUrl);
-      const verifyToken = `+!${newUrl}`;
-      const isExplicitVerify = normalizedVerify.includes(verifyToken);
-
-      if (isNew && !isExplicitVerify) {
-        // new link added
-        effectTokens.push(`+${newUrl}`);
+      if (!stillExists) {
+        // remove old +! token
+        normalizedVerify = normalizedVerify.filter((t) => t !== token);
+        // find a new, non-original url to move the +! onto
+        const newUrl = form.links
+          .map((l) => (l.url || "").trim())
+          .find((u) => u && !originalUrlSet.has(u));
+        if (newUrl) normalizedVerify.push(`+!${newUrl}`);
       }
     }
-  }
 
-  // Preserve all existing tokens EXCEPT ones we explicitly normalize away.
-  // (This keeps -id and +url tokens from being discarded when adding a new blank row.)
+    // Apply your rules:
+    // - -id only when an existing link is removed or cleared
+    // - +id:newUrl when an existing link is edited
+    // - +url when a brand new link is created
+    for (const row of form.links) {
+      const id = row.id ?? null;
+      const newUrlRaw = (row.url || "").trim();
+      const { valid: urlValid } = isValidUrl(newUrlRaw);
+      const newUrl = urlValid ? newUrlRaw : "";   // invalid URLs are treated as blank
+
+      if (id) {
+        const original = originalById.get(id);
+        const originalUrl = original ? original.url : "";
+
+        if (newUrl === originalUrl) {
+          // unchanged existing link
+          continue;
+        }
+
+        if (!newUrl) {
+          // If invalid, treat it as empty but DO NOT delete verified links
+          effectTokens.push(`-${id}`);
+          continue;
+        }
 
 
-const preservedOld = Array.isArray(normalizedVerify)
-  ? normalizedVerify.filter((t) => {
-      // explicit verification tokens
-      if (/^![0-9]+$/.test(t) || /^\+!/.test(t)) return true;
+        // existing link edited
+        effectTokens.push(`+${id}:${newUrl}`);
+      } else {
+        // new link row
+        if (!newUrl) continue;
 
-      // removal tokens
-      if (/^-[0-9]+$/.test(t)) return true;
+        const isNew = !originalUrlSet.has(newUrl);
+        const verifyToken = `+!${newUrl}`;
+        const isExplicitVerify = normalizedVerify.includes(verifyToken);
 
-// existing-link edit tokens — KEEP ONLY the latest edit for this id
-if (/^\+[0-9]+:/.test(t)) {
-  const id = t.slice(1, t.indexOf(":"));
-  // discard old edits if a new +id:newUrl exists in effectTokens
-  const hasNewer = effectTokens.some(et => et.startsWith(`+${id}:`));
-  return !hasNewer;
-}
-
-
-      // new-link tokens: keep ONLY if this URL still exists AND is not explicitly verified
-      if (/^\+[^!]/.test(t) && !t.includes(":")) {
-          const url = t.slice(1).trim();
-          const hasExplicitVerify = normalizedVerify.includes(`+!${url}`);
-          return currentUrls.has(url) && !hasExplicitVerify;
+        if (isNew && !isExplicitVerify) {
+          // new link added
+          effectTokens.push(`+${newUrl}`);
+        }
       }
+    }
 
+    // Preserve all existing tokens EXCEPT ones we explicitly normalize away.
+    // (This keeps -id and +url tokens from being discarded when adding a new blank row.)
 
-      return false;
-    })
-  : [];
+    const preservedOld = Array.isArray(normalizedVerify)
+      ? normalizedVerify.filter((t) => {
+          // explicit verification tokens
+          if (/^![0-9]+$/.test(t) || /^\+!/.test(t)) return true;
 
-  const uniqTokens = (arr) => {
-    const seen = new Set();
-    const out = [];
-    for (const t of arr) {
+          // removal tokens
+          if (/^-[0-9]+$/.test(t)) return true;
+
+          // existing-link edit tokens — KEEP ONLY the latest edit for this id
+          if (/^\+[0-9]+:/.test(t)) {
+            const id = t.slice(1, t.indexOf(":"));
+            // discard old edits if a new +id:newUrl exists in effectTokens
+            const hasNewer = effectTokens.some(et => et.startsWith(`+${id}:`));
+            return !hasNewer;
+          }
+
+          // new-link tokens: keep ONLY if this URL still exists AND is not explicitly verified
+          if (/^\+[^!]/.test(t) && !t.includes(":")) {
+              const url = t.slice(1).trim();
+              const hasExplicitVerify = normalizedVerify.includes(`+!${url}`);
+              return currentUrls.has(url) && !hasExplicitVerify;
+          }
+
+          return false;
+        })
+      : [];
+
+    const uniqTokens = (arr) => {
+      const seen = new Set();
+      const out = [];
+      for (const t of arr) {
       if (!seen.has(t)) {
         seen.add(t);
         out.push(t);
@@ -487,6 +958,7 @@ if (/^\+[0-9]+:/.test(t)) {
   return (
     
 <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
+<RedirectModal isOpen={showRedirect} label={redirectLabel} />
 <div className="w-full max-w-xl bg-transparent overflow-hidden">
 
   {/* Header */}
@@ -798,8 +1270,12 @@ placeholder={
 
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) || {};
-          const isVerified = !!original?.is_verified;
+          const isVerified = !!row.is_verified;
           const canVerify = !!profile.address_verified;
+          const isX = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(row.url);
+          const isLinkedIn = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(row.url);
+          const isGithub = /^(https?:\/\/)?(www\.)?github\.com\//i.test(row.url);
+          const isDiscord = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com)\/users\//i.test(row.url);
 
           const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
           const isPending = token && isPendingToken(token);
@@ -815,7 +1291,7 @@ placeholder={
 
 
               <div className="flex items-center gap-2">
-                {!canVerify ? (
+                {!canVerify && !isX ? (
                   <span className="text-xs text-gray-500 italic">
                     Verify uaddr then URLs
                   </span>
@@ -830,18 +1306,37 @@ placeholder={
                 ) : (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!token) return;
-                      if (isPending) removeLinkToken(token);
-                      else appendLinkToken(token);
-                    }}
-                    className={`text-xs px-2 py-1 border rounded ${
-                      isPending
+                  onClick={() => {
+                    if (!token) return;
+
+                    // X / Twitter verification flow
+                    if (isX) {
+                        handleXVerify(row.url);
+                        return;
+                    }
+                    if (isLinkedIn) {
+                        handleLinkedInVerify(row.url);
+                        return;
+                    }
+                    if (isGithub) {
+                        handleGithubVerify(row.url);
+                        return;
+                    }
+                    if (isDiscord) {
+                        handleDiscordVerify(row.url);
+                        return;
+                    }
+
+                    if (isPending) removeLinkToken(token);
+                    else appendLinkToken(token);
+                  }}
+                  className={`text-xs px-2 py-1 border rounded ${
+                      isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord))
                         ? "text-yellow-700 border-yellow-400 bg-yellow-50"
                         : "text-blue-600 border-blue-400 hover:bg-blue-50"
                     }`}
                   >
-                    {isPending ? "Pending" : "Verify"}
+                    {isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord)) ? "Pending" : "Verify"}
                   </button>
                 )}
 
@@ -865,6 +1360,8 @@ placeholder={
         >
           ＋ Add Link
         </button>
+
+        
 
 
 {/* Footer */}

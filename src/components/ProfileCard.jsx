@@ -1,9 +1,8 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
-import { useFeedback } from "../store";
+import { useFeedback } from "../hooks/useFeedback";
 import VerifiedBadge from "./VerifiedBadge";
-import ProfileAvatar from "./ProfileAvatar";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
@@ -15,6 +14,7 @@ import { KNOWN_DOMAINS, FALLBACK_ICON } from "../utils/domainLabels.js";
 import SubmitOtp from "../SubmitOtp.jsx";
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { motion, AnimatePresence } from "framer-motion";
+const Motion = motion;
 
 
 
@@ -26,7 +26,6 @@ import { motion, AnimatePresence } from "framer-motion";
 const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
-  const [showLinks, setShowLinks] = useState(false);
   const [isOtpOpen, setIsOtpOpen] = useState(false);
 
   // 🔗 Lazy-load links from Supabase when needed
@@ -47,11 +46,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [visible, setVisible] = useState(false);
 
   const rawUrl = profile.profile_image_url || "";
-  const versionSuffix = profile.last_signed_at
-    ? `?v=${encodeURIComponent(profile.last_signed_at)}`
-    : profile.created_at
-      ? `?v=${encodeURIComponent(profile.created_at)}`
-      : "";
   const isTwitter = rawUrl.includes("pbs.twimg.com");
 
   const finalUrl = isTwitter
@@ -63,55 +57,126 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
   useEffect(() => {
+    const profileId = profile?.id || null;
+    const profileAddress = profile?.address || "";
+    const profileName = profile?.name || "";
+    const profileVerified = !!(profile?.address_verified);
+    const profileSince = profile?.joined_at || profile?.created_at || profile?.since || null;
+
     const handleEnterSignIn = (e) => {
       setShowBack(true);
 
       // Forward the event payload when triggered from other sources
-      if (!e?.detail && profile) {
+      if (!e?.detail && profileId && profileAddress) {
         // ✅ Guard: only dispatch if profile data is ready
-        if (!profile?.id || !profile?.address) {
+        if (!profileId || !profileAddress) {
           console.warn("ProfileCard: profile not ready, skipping verify dispatch");
         } else {
           window.dispatchEvent(
             new CustomEvent("enterSignInMode", {
               detail: {
-                zId: profile.id,
-                address: profile.address || "",
-                name: profile.name || "",
-                verified: !!profile.address_verified,
-                since: (profile.joined_at || profile.created_at || profile.since || null),
+                zId: profileId,
+                address: profileAddress,
+                name: profileName,
+                verified: profileVerified,
+                since: profileSince,
               },
             })
           );
 
           // ✅ Cache last known payload in case event fires before listener is attached
           window.lastZcashFlipDetail = {
-            zId: profile.id,
-            address: profile.address || "",
-            name: profile.name || "",
-            verified: !!profile.address_verified,
-            since: (profile.joined_at || profile.created_at || profile.since || null),
+            zId: profileId,
+            address: profileAddress,
+            name: profileName,
+            verified: profileVerified,
+            since: profileSince,
           };
         }
-
-
       }
     };
 
-    const handleEnterDraft = () => {
-      setShowBack(false);
-    };
-    // window.addEventListener("enterSignInMode", e => {
-    //  console.log("ENTER-SIGNIN fired with:", e.detail);
-    // });
+  const handleEnterDraft = () => {
+    setShowBack(false);
+  };
+// window.addEventListener("enterSignInMode", e => {
+//  console.log("ENTER-SIGNIN fired with:", e.detail);
+// });
 
-    window.addEventListener("enterSignInMode", handleEnterSignIn);
-    window.addEventListener("enterDraftMode", handleEnterDraft);
-    return () => {
-      window.removeEventListener("enterSignInMode", handleEnterSignIn);
-      window.removeEventListener("enterDraftMode", handleEnterDraft);
+  window.addEventListener("enterSignInMode", handleEnterSignIn);
+  window.addEventListener("enterDraftMode", handleEnterDraft);
+  return () => {
+    window.removeEventListener("enterSignInMode", handleEnterSignIn);
+    window.removeEventListener("enterDraftMode", handleEnterDraft);
+  };
+}, [profile?.id, profile?.address, profile?.name, profile?.joined_at, profile?.created_at, profile?.since, profile?.address_verified]);
+
+  // Check for auto-flip if returning from X verification
+  useEffect(() => {
+    const checkAutoFlip = () => {
+        // Only run if we are looking at the correct profile
+        const pId = localStorage.getItem("verifying_profile_id");
+        
+        // Add debug log to see if this effect fires
+        
+
+        if (pId && String(pId) === String(profile.id)) {
+          
+          
+          // ✅ Force state to true immediately to ensure Editor mounts
+          setShowBack(true);
+          
+          // Also dispatch event to ensure global state syncs if needed
+          // Use a small timeout to let the initial render settle
+          setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("enterSignInMode"));
+          }, 100);
+        }
     };
-  }, [profile?.id, profile?.address]);
+    
+    checkAutoFlip();
+    const timer = setTimeout(checkAutoFlip, 500);
+    return () => clearTimeout(timer);
+  }, [profile.id]);
+
+  
+
+  useEffect(() => {
+    // Always make visible for fullView or if already cached
+  if (fullView || memoryCache.has(finalUrl)) {
+    setVisible(true);
+    return;
+  }
+
+  // Ensure we have a ref
+  const el = imgRef.current;
+  if (!el || !finalUrl) {
+    setVisible(true); // fallback: always show
+    return;
+  }
+
+  // Fallback if browser doesn't support IntersectionObserver
+  if (typeof IntersectionObserver === "undefined") {
+    setVisible(true);
+    return;
+  }
+
+  // Lazy-load observer
+  const obs = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          memoryCache.set(finalUrl, true);
+          obs.disconnect();
+        }
+      });
+    },
+    { rootMargin: "200px", threshold: 0.05 }
+  );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [finalUrl, fullView]);
 
   useEffect(() => {
     // Always make visible for fullView or if already cached
@@ -119,37 +184,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       setVisible(true);
       return;
     }
-
-    // Ensure we have a ref
-    const el = imgRef.current;
-    if (!el || !finalUrl) {
-      setVisible(true); // fallback: always show
-      return;
-    }
-
-    // Fallback if browser doesn't support IntersectionObserver
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
-
-    // Lazy-load observer
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            memoryCache.set(finalUrl, true);
-            obs.disconnect();
-          }
-        });
-      },
-      { rootMargin: "200px", threshold: 0.05 } // preload earlier
-    );
-
-    obs.observe(el);
-
-    return () => obs.disconnect();
   }, [finalUrl, fullView]);
 
 
@@ -170,10 +204,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const isVerified = hasVerifiedContent;
 
-  const expired =
-    profile.last_verified_at &&
-    new Date(profile.last_verified_at).getTime() <
-    Date.now() - 1000 * 60 * 60 * 24 * 90;
+  
 
   // --- Local favicon + label resolver ---
   function enrichLink(link) {
@@ -220,7 +251,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       }
       if (Array.isArray(data)) setLinksArray(data.map(enrichLink));
     });
-  }, [showLinks, profile?.id]);
+  }, [profile?.id]);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
 
 
@@ -229,7 +260,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     verifiedLinks === 0;
 
 
-  const hasReferrals = (profile.referral_count ?? 0) > 0;
+  // referrals not used in this component
 
 
   let rankType = null;
@@ -562,11 +593,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>
             {showStats && (
-              <motion.div
-                key="awards"
-                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      <Motion.div
+        key="awards"
+        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{
                   type: "spring",
                   stiffness: 220,
@@ -603,7 +634,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                     alwaysOpen
                   />
                 )}
-              </motion.div>
+              </Motion.div>
             )}
           </AnimatePresence>
 

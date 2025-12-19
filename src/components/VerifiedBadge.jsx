@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 
 export default function VerifiedBadge({
   verified = true,
-  compact = false,
 }) {
   // Start expanded on first appearance
 const [open, setOpen] = useState(true);

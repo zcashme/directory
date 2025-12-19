@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useFeedback } from "../store";
+import { useFeedback } from "./useFeedback";
 
 let listenerBound = false;
 
@@ -49,7 +49,7 @@ const handleAddressSelect = (e) => {
   // 🔥 MOST IMPORTANT FIX:
   // Clear all QR-activation state or the QR block reopens on next render
   setForceShowQR(null);
-  setQRShown(false);
+  // setQRShown(false); // REMOVE THIS: it's not defined in this scope
 };
 
     const handlePendingEdits = (e) => {
@@ -67,5 +67,5 @@ const handleAddressSelect = (e) => {
     window.addEventListener("pendingEditsUpdated", handlePendingEdits);
 
     console.log("✅ useFeedbackEvents listeners bound once");
-  }, [setMode, setSelectedAddress, setPendingEdits, setVerifyId, setForceShowQR]);
+  }, [setMode, setSelectedAddress, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setForceShowQR]);
 }
