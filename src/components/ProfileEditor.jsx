@@ -127,6 +127,14 @@ export default function ProfileEditor({ profile, links }) {
              return;
         }
 
+        // Retrieve state from URL params (preferred) or localStorage (fallback)
+        const params = new URLSearchParams(window.location.search);
+        const pIdParam = params.get("verify_pid");
+        const urlParam = params.get("verify_url");
+
+        const pId = pIdParam || localStorage.getItem("verifying_profile_id");
+        const url = urlParam || localStorage.getItem("verifying_link_url");
+
         // Force convert both to string for comparison
         if (pId && url && String(pId) === String(profile.id)) {
             console.log("✅ OAuth verified for:", url);
@@ -139,26 +147,30 @@ export default function ProfileEditor({ profile, links }) {
                     tw.screen_name,
                     tw.preferred_username,
                     tw.user_name,
-                    tw.name,
-                    s?.user?.user_metadata?.preferred_username,
-                    s?.user?.user_metadata?.screen_name,
-                    s?.user?.user_metadata?.username,
-                    s?.user?.user_metadata?.name
+                    tw.name
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
             };
-            const getLinkedInHandle = (s) => {
+            const getLinkedInData = (s) => {
                 const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
                 const li = ids.find((i) => i?.provider === 'linkedin_oidc')?.identity_data || {};
+                
+                // 1. Try to find a handle/vanity name directly
                 const candidates = [
                     li.vanityName,
                     li.preferred_username,
-                    s?.user?.user_metadata?.preferred_username,
-                    s?.user?.user_metadata?.vanityName
                 ].filter(Boolean);
-                const h = candidates.find((v) => typeof v === 'string' && v.trim());
-                return h ? h.replace(/^@/, '') : null;
+                const handle = candidates.find((v) => typeof v === 'string' && v.trim())?.replace(/^@/, '') || null;
+
+                // 2. Return all useful components for fuzzy matching
+                return {
+                    handle,
+                    name: li.name,               // "Xiang Hao"
+                    given_name: li.given_name,   // "Xiang"
+                    family_name: li.family_name, // "Hao"
+                    email: li.email              // "xiang...@..."
+                };
             };
             const getGithubHandle = (s) => {
                 const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
@@ -166,23 +178,25 @@ export default function ProfileEditor({ profile, links }) {
                 const candidates = [
                     gh.user_name,
                     gh.login,
-                    gh.preferred_username,
-                    s?.user?.user_metadata?.preferred_username,
-                    s?.user?.user_metadata?.user_name,
-                    s?.user?.user_metadata?.login
+                    gh.preferred_username
                 ].filter(Boolean);
                 const h = candidates.find((v) => typeof v === 'string' && v.trim());
                 return h ? h.replace(/^@/, '') : null;
             };
             const getDiscordId = (s) => {
                 const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-                const di = ids.find((i) => i?.provider === 'discord')?.identity_data || {};
+                const identity = ids.find((i) => i?.provider === 'discord');
+                
+                // 1. Prefer the top-level 'id' from the identity record (this is the Provider User ID)
+                // 2. Fallback to identity_data fields if available
                 const candidates = [
-                    di.id,
-                    s?.user?.user_metadata?.sub
+                    identity?.id,
+                    identity?.identity_data?.id,
+                    identity?.identity_data?.sub
                 ].filter(Boolean);
-                const h = candidates.find((v) => typeof v === 'string' && v.trim());
-                return h || null;
+                
+                const h = candidates.find((v) => (typeof v === 'string' || typeof v === 'number') && String(v).trim());
+                return h ? String(h).trim() : null;
             };
 
             const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
@@ -204,16 +218,62 @@ export default function ProfileEditor({ profile, links }) {
                 }
             }
             if (isLinkedInUrl) {
-                const liHandle = getLinkedInHandle(session);
-                console.log("[VERIFY DEBUG] liHandle from metadata:", liHandle);
+                const liData = getLinkedInData(session);
+                console.log("[VERIFY DEBUG] liData:", liData);
+                
                 const ml = (url || "").replace(/\/$/, "").match(/linkedin\.com\/in\/([^/?#]+)/i);
                 const targetVanity = ml ? ml[1] : null;
                 console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
-                if (!liHandle || !targetVanity || liHandle.toLowerCase() !== targetVanity.toLowerCase()) {
-                    console.warn(`[VERIFY FAIL] Mismatch: ${liHandle} vs ${targetVanity}`);
-                    alert(`Verification Mismatch: Logged in as ${liHandle}, but verifying link for ${targetVanity}`);
+                
+                let match = false;
+                const t = (targetVanity || "").toLowerCase();
+
+                // Strategy 1: Direct Handle Match
+                if (liData.handle && liData.handle.toLowerCase() === t) {
+                    match = true;
+                    console.log("[VERIFY] Strategy 1 (Handle) matched");
+                }
+                
+                // Strategy 2: Name Component Match (Robust)
+                // e.g. "Xiang Hao" vs "xianghaosuc"
+                // Require BOTH parts of name to be present in the handle
+                if (!match && liData.given_name && liData.family_name) {
+                    const g = liData.given_name.toLowerCase();
+                    const f = liData.family_name.toLowerCase();
+                    // Ensure names are significant (>1 char) to avoid matching "A B"
+                    if (g.length > 1 && f.length > 1 && t.includes(g) && t.includes(f)) {
+                         match = true;
+                         console.log("[VERIFY] Strategy 2 (Name Components) matched");
+                    }
+                }
+
+                // Strategy 3: Email Match
+                // e.g. email "xianghaosuc@gmail.com" matches handle "xianghaosuc"
+                if (!match && liData.email) {
+                    const emailUser = liData.email.split('@')[0].toLowerCase();
+                    if (emailUser === t || emailUser.includes(t) || t.includes(emailUser)) {
+                        match = true;
+                        console.log("[VERIFY] Strategy 3 (Email) matched");
+                    }
+                }
+
+                if (!match) {
+                    console.warn(`[VERIFY FAIL] No match found for ${t}`);
+                    alert(
+                        `Verification Mismatch\n\n` +
+                        `Logged in as: ${liData.name || liData.email || "(unknown)"}\n` +
+                        `Target Profile: ${targetVanity || "(unknown)"}\n\n` +
+                        `Your LinkedIn login Name or Email does not clearly match the profile URL.\n` +
+                        `Please ensure the URL contains your name or matches your email.`
+                    );
                     localStorage.removeItem("verifying_profile_id");
                     localStorage.removeItem("verifying_link_url");
+                    
+                    // Clear URL params to prevent loop
+                    const cleanUrl = new URL(window.location.href);
+                    cleanUrl.searchParams.delete("verify_pid");
+                    cleanUrl.searchParams.delete("verify_url");
+                    window.history.replaceState({}, "", cleanUrl.toString());
                     return;
                 }
             }
@@ -358,7 +418,9 @@ export default function ProfileEditor({ profile, links }) {
                 localStorage.removeItem("verifying_profile_id");
                 localStorage.removeItem("verifying_link_url");
                 setShowRedirect(false);
-                window.location.reload(); 
+                
+                // Navigate to clean URL (remove query params) to finish
+                window.location.href = window.location.pathname;
             }, 1000);
         } else {
              if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
@@ -450,7 +512,13 @@ export default function ProfileEditor({ profile, links }) {
           .replace(/[^a-z0-9_-]/g, "");
       const baseSlug = norm(profile.name || "");
       const uniqueSlug = `${baseSlug}-${profile.id}`;
-      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      
+      // Pass state in URL to survive cross-domain redirects or session clearing
+      const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
+      returnUrlObj.searchParams.set("verify_pid", profile.id);
+      returnUrlObj.searchParams.set("verify_url", url);
+      const returnUrl = returnUrlObj.toString();
+
       setTimeout(async () => {
           try {
               const { error } = await supabase.auth.signInWithOAuth({
@@ -483,7 +551,13 @@ export default function ProfileEditor({ profile, links }) {
           .replace(/[^a-z0-9_-]/g, "");
       const baseSlug = norm(profile.name || "");
       const uniqueSlug = `${baseSlug}-${profile.id}`;
-      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      
+      // Pass state in URL to survive cross-domain redirects or session clearing
+      const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
+      returnUrlObj.searchParams.set("verify_pid", profile.id);
+      returnUrlObj.searchParams.set("verify_url", url);
+      const returnUrl = returnUrlObj.toString();
+
       setTimeout(async () => {
           try {
               const { error } = await supabase.auth.signInWithOAuth({
@@ -516,7 +590,13 @@ export default function ProfileEditor({ profile, links }) {
           .replace(/[^a-z0-9_-]/g, "");
       const baseSlug = norm(profile.name || "");
       const uniqueSlug = `${baseSlug}-${profile.id}`;
-      const returnUrl = `${window.location.origin}/${uniqueSlug}`;
+      
+      // Pass state in URL to survive cross-domain redirects or session clearing
+      const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
+      returnUrlObj.searchParams.set("verify_pid", profile.id);
+      returnUrlObj.searchParams.set("verify_url", url);
+      const returnUrl = returnUrlObj.toString();
+
       setTimeout(async () => {
           try {
               const { error } = await supabase.auth.signInWithOAuth({
