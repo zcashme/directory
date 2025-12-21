@@ -1,9 +1,10 @@
 import ZcashAddressInput from "./components/ZcashAddressInput";
+import { createPortal } from "react-dom";
 import { validateZcashAddress } from "./utils/zcashAddressUtils";
 import { cachedProfiles } from "./hooks/useProfiles"; // if exported (we’ll adjust below)
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
 import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 import CitySearchDropdown from "./components/CitySearchDropdown"; // add with the imports if missing
@@ -70,7 +71,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [referrer, setReferrer] = useState("");
 
   const [nearestCity, setNearestCity] = useState(null);
-  const [nearestCityInput, setNearestCityInput] = useState(""); 
+  const [nearestCityInput, setNearestCityInput] = useState("");
 
   const [links, setLinks] = useState([{ platform: "X", username: "", otherUrl: "", valid: true }]);
   const [profiles, setProfiles] = useState([]);
@@ -78,24 +79,24 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
-  
-  // Prefill referrer when Directory broadcasts an active profile
-useEffect(() => {
-  const handler = (e) => {
-    if (!e.detail) return;
-    const { id, name } = e.detail;
-    if (id && name) {
-      setReferrer({ id, name });
-      window.lastReferrer = { id, name };
-    }
-  };
 
-  window.addEventListener("prefillReferrer", handler);
-  return () => window.removeEventListener("prefillReferrer", handler);
-}, []);
+  // Prefill referrer when Directory broadcasts an active profile
+  useEffect(() => {
+    const handler = (e) => {
+      if (!e.detail) return;
+      const { id, name } = e.detail;
+      if (id && name) {
+        setReferrer({ id, name });
+        window.lastReferrer = { id, name };
+      }
+    };
+
+    window.addEventListener("prefillReferrer", handler);
+    return () => window.removeEventListener("prefillReferrer", handler);
+  }, []);
 
   // --- Effect 1: Reset and load data ---
-  
+
   useEffect(() => {
     if (!isOpen) return;
     (async () => {
@@ -107,132 +108,132 @@ useEffect(() => {
       setAddress("");
       setAddressHelp("");
       // Default reset
-setReferrer("");
+      setReferrer("");
 
-// Auto-prefill from global event (last selected profile)
-const fromEvent = window.lastReferrer;
-if (fromEvent?.id && fromEvent?.name) {
-  setReferrer({
-    id: fromEvent.id,
-    name: fromEvent.name,
-  });
-}
+      // Auto-prefill from global event (last selected profile)
+      const fromEvent = window.lastReferrer;
+      if (fromEvent?.id && fromEvent?.name) {
+        setReferrer({
+          id: fromEvent.id,
+          name: fromEvent.name,
+        });
+      }
 
       setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
       setError("");
       setIsLoading(false);
 
-const profilesData = cachedProfiles || [];
-setProfiles(profilesData);
+      const profilesData = cachedProfiles || [];
+      setProfiles(profilesData);
 
-// Recompute verified-name keys using the same data source
-const verifiedIds = new Set(
-  profilesData
-    .filter((p) => p.address_verified)
-    .map((p) => p.id)
-);
+      // Recompute verified-name keys using the same data source
+      const verifiedIds = new Set(
+        profilesData
+          .filter((p) => p.address_verified)
+          .map((p) => p.id)
+      );
 
-const vNameKeys = new Set(
-  profilesData
-    .filter((p) => verifiedIds.has(p.id))
-    .map((p) => normForConflict(p.name || ""))
-);
+      const vNameKeys = new Set(
+        profilesData
+          .filter((p) => verifiedIds.has(p.id))
+          .map((p) => normForConflict(p.name || ""))
+      );
 
-setVerifiedNameKeys(vNameKeys);
+      setVerifiedNameKeys(vNameKeys);
 
       setTimeout(() => dialogRef.current?.querySelector("#name")?.focus(), 50);
     })();
   }, [isOpen]);
 
   // --- Effect 2: Validate name ---
-useEffect(() => {
-  if (!name) return;
+  useEffect(() => {
+    if (!name) return;
 
-  const key = normForConflict(name);
+    const key = normForConflict(name);
 
-  const matchingProfile = profiles.find(
-    (p) => normForConflict(p.name) === key
-  );
-
-if (matchingProfile) {
-  const isVerified =
-    verifiedNameKeys.has(normForConflict(matchingProfile.name));
-
-  if (isVerified) {
-    setNameConflict({
-      type: "error",
-      text: "That name is already used by a verified profile.",
-    });
-  } else {
-    setNameConflict({
-      type: "info",
-      text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
-    });
-  }
-} else {
-  setNameConflict(null);
-}
-
-  setNameHelp(`Shared as: Zcash.me/${toSlugish(name)}`);
-}, [name, profiles, verifiedNameKeys]);
-
-// --- Effect 3: Validate address (using full spec check) ---
-useEffect(() => {
-  const addrNorm = address.trim().toLowerCase();
-  const res = validateZcashAddress(addrNorm);
-
-  if (!address) {
-    setAddressHelp("Enter your Zcash address (t1…, zs1…, or u1…).");
-    setAddressConflict(null);
-    return;
-  }
-
-  // 🚫 Duplicate address check
-  const duplicateAddr = profiles.some(
-    (p) => (p.address || "").trim().toLowerCase() === addrNorm
-  );
-  if (duplicateAddr) {
-    setAddressConflict({
-      type: "error",
-      text: "That Zcash address is already associated with an existing profile. Generate a new one — it’s free — and try again.",
-    });
-    setAddressHelp("");
-    return;
-  } else {
-    setAddressConflict(null);
-  }
-
-  if (!res.valid) {
-    setAddressHelp(
-      "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
+    const matchingProfile = profiles.find(
+      (p) => normForConflict(p.name) === key
     );
-    setAddressConflict(null);
-    return;
-  }
 
-  if (res.type === "tex") {
-    setAddressHelp(
-      "That’s a TEX (transparent-source-only) address defined in ZIP 320. It can’t receive from shielded senders. Use a z- or u- address instead."
+    if (matchingProfile) {
+      const isVerified =
+        verifiedNameKeys.has(normForConflict(matchingProfile.name));
+
+      if (isVerified) {
+        setNameConflict({
+          type: "error",
+          text: "That name is already used by a verified profile.",
+        });
+      } else {
+        setNameConflict({
+          type: "info",
+          text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
+        });
+      }
+    } else {
+      setNameConflict(null);
+    }
+
+    setNameHelp(`Shared as: Zcash.me/${toSlugish(name)}`);
+  }, [name, profiles, verifiedNameKeys]);
+
+  // --- Effect 3: Validate address (using full spec check) ---
+  useEffect(() => {
+    const addrNorm = address.trim().toLowerCase();
+    const res = validateZcashAddress(addrNorm);
+
+    if (!address) {
+      setAddressHelp("Enter your Zcash address (t1…, zs1…, or u1…).");
+      setAddressConflict(null);
+      return;
+    }
+
+    // 🚫 Duplicate address check
+    const duplicateAddr = profiles.some(
+      (p) => (p.address || "").trim().toLowerCase() === addrNorm
     );
-    setAddressConflict({
-      type: "info",
-      text: "TEX addresses are valid but not supported for shielded transactions.",
-    });
-    return;
-  }
+    if (duplicateAddr) {
+      setAddressConflict({
+        type: "error",
+        text: "That Zcash address is already associated with an existing profile. Generate a new one — it’s free — and try again.",
+      });
+      setAddressHelp("");
+      return;
+    } else {
+      setAddressConflict(null);
+    }
 
-  const label =
-    res.type === "transparent"
-      ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
-      : res.type === "sapling"
-      ? "Sapling address ✓"
-      : res.type === "unified"
-      ? "Looks good — valid Unified address ✓"
-      : "Valid address ✓";
+    if (!res.valid) {
+      setAddressHelp(
+        "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
+      );
+      setAddressConflict(null);
+      return;
+    }
 
-  setAddressHelp(label);
-  setAddressConflict(null);
-}, [address, profiles]);
+    if (res.type === "tex") {
+      setAddressHelp(
+        "That’s a TEX (transparent-source-only) address defined in ZIP 320. It can’t receive from shielded senders. Use a z- or u- address instead."
+      );
+      setAddressConflict({
+        type: "info",
+        text: "TEX addresses are valid but not supported for shielded transactions.",
+      });
+      return;
+    }
+
+    const label =
+      res.type === "transparent"
+        ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
+        : res.type === "sapling"
+          ? "Sapling address ✓"
+          : res.type === "unified"
+            ? "Looks good — valid Unified address ✓"
+            : "Valid address ✓";
+
+    setAddressHelp(label);
+    setAddressConflict(null);
+  }, [address, profiles]);
 
   // ✅ Guard AFTER all hooks, before rendering
   if (!isOpen) return null;
@@ -250,28 +251,28 @@ useEffect(() => {
       }
 
       // Validate: if Other → validate otherUrl as full URL; else require username, ensure final URL is valid-looking
-if (cur.platform === "Other") {
-  if (!cur.otherUrl) {
-    cur.valid = true;
-    cur.reason = null;
-  } else {
-    const res = isValidUrl(cur.otherUrl.trim());
-    cur.valid = res.valid;
-    cur.reason = res.reason;
-  }
-} else {
-  const base = PLATFORMS.find((p) => p.key === cur.platform)?.base || "";
-  const built = base + (cur.username || "");
+      if (cur.platform === "Other") {
+        if (!cur.otherUrl) {
+          cur.valid = true;
+          cur.reason = null;
+        } else {
+          const res = isValidUrl(cur.otherUrl.trim());
+          cur.valid = res.valid;
+          cur.reason = res.reason;
+        }
+      } else {
+        const base = PLATFORMS.find((p) => p.key === cur.platform)?.base || "";
+        const built = base + (cur.username || "");
 
-  if (!cur.username) {
-    cur.valid = true;
-    cur.reason = null;
-  } else {
-    const res = isValidUrl(built);
-    cur.valid = res.valid;
-    cur.reason = res.reason;
-  }
-}
+        if (!cur.username) {
+          cur.valid = true;
+          cur.reason = null;
+        } else {
+          const res = isValidUrl(built);
+          cur.valid = res.valid;
+          cur.reason = res.reason;
+        }
+      }
 
 
       next[index] = cur;
@@ -287,20 +288,20 @@ if (cur.platform === "Other") {
     setLinks(links.filter((_, i) => i !== index));
   }
 
-// Build the final list of fully-formed links (only valid ones kept)
-const builtLinks = links
-  .map((l) => {
-    if (l.platform === "Other") {
-      return l.otherUrl?.trim() || "";
-    }
-    const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-    return l.username ? `${base}${l.username.trim()}` : "";
-  })
-  .filter((url) => {
-    if (!url) return false;
-    const res = isValidUrl(url);
-    return res.valid;
-  });
+  // Build the final list of fully-formed links (only valid ones kept)
+  const builtLinks = links
+    .map((l) => {
+      if (l.platform === "Other") {
+        return l.otherUrl?.trim() || "";
+      }
+      const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
+      return l.username ? `${base}${l.username.trim()}` : "";
+    })
+    .filter((url) => {
+      if (!url) return false;
+      const res = isValidUrl(url);
+      return res.valid;
+    });
 
   // ---------- Step Validation ----------
   const stepIsValid = (() => {
@@ -310,34 +311,34 @@ const builtLinks = links
         return !!name.trim() && (!nameConflict || nameConflict.type !== "error");
 
 
-    case 1: {
-  const res = validateZcashAddress(address.trim());
-  const duplicateAddr = profiles.some(
-    (p) => (p.address || "").trim().toLowerCase() === address.trim().toLowerCase()
-  );
-  if (duplicateAddr) return false;
-  if (res.type === "tex" || res.type === "transparent") return false;
-  return !!address.trim() && res.valid;
-}
+      case 1: {
+        const res = validateZcashAddress(address.trim());
+        const duplicateAddr = profiles.some(
+          (p) => (p.address || "").trim().toLowerCase() === address.trim().toLowerCase()
+        );
+        if (duplicateAddr) return false;
+        if (res.type === "tex" || res.type === "transparent") return false;
+        return !!address.trim() && res.valid;
+      }
 
 
-  case 2:
-    return true; // nearest city optional
-  case 3:
-    return true; // referrer optional
-  case 4:
-    return links.every((l) => l.valid !== false);
-  case 5: {
-    const res = validateZcashAddress(address.trim());
-    return (
-      !!name.trim() &&
-      !!address.trim() &&
-      (!nameConflict || nameConflict.type !== "error") &&
-      res.valid &&
-      res.type !== "tex" &&
-      res.type !== "transparent"
-    );
-  }
+      case 2:
+        return true; // nearest city optional
+      case 3:
+        return true; // referrer optional
+      case 4:
+        return links.every((l) => l.valid !== false);
+      case 5: {
+        const res = validateZcashAddress(address.trim());
+        return (
+          !!name.trim() &&
+          !!address.trim() &&
+          (!nameConflict || nameConflict.type !== "error") &&
+          res.valid &&
+          res.type !== "tex" &&
+          res.type !== "transparent"
+        );
+      }
 
 
 
@@ -347,153 +348,153 @@ const builtLinks = links
   })();
 
 
-// ---------- Submit ----------
-async function handleSubmit(e) {
-  e.preventDefault();
-  setError("");
+  // ---------- Submit ----------
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError("");
 
-  // Ensure links are valid
-  const invalid = links.some((l) => {
-    if (l.platform === "Other") {
-      return l.otherUrl && !isValidUrl(l.otherUrl.trim());
-    } else {
-      if (!l.username) return false; // empty row is okay
-      const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-      const res = isValidUrl(base + l.username.trim());
-return !(base && res.valid);
+    // Ensure links are valid
+    const invalid = links.some((l) => {
+      if (l.platform === "Other") {
+        return l.otherUrl && !isValidUrl(l.otherUrl.trim());
+      } else {
+        if (!l.username) return false; // empty row is okay
+        const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
+        const res = isValidUrl(base + l.username.trim());
+        return !(base && res.valid);
+      }
+    });
+    if (invalid) {
+      setError("One or more links are invalid. Please fix them before continuing.");
+      return;
     }
-  });
-  if (invalid) {
-    setError("One or more links are invalid. Please fix them before continuing.");
-    return;
-  }
 
-  // 🔍 Check for duplicate verified name
-  const proposedKey = normForConflict(name);
-  const verifiedConflict = profiles.some(
-    (p) =>
-      verifiedNameKeys.has(normForConflict(p.name)) &&
-      normForConflict(p.name) === proposedKey
-  );
-  if (verifiedConflict) {
-    setError(
-      'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+    // 🔍 Check for duplicate verified name
+    const proposedKey = normForConflict(name);
+    const verifiedConflict = profiles.some(
+      (p) =>
+        verifiedNameKeys.has(normForConflict(p.name)) &&
+        normForConflict(p.name) === proposedKey
     );
-    return;
-  }
+    if (verifiedConflict) {
+      setError(
+        'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+      );
+      return;
+    }
 
-  // 🚫 NEW: Check for duplicate Zcash address (case-insensitive)
-  const addr = address.trim().toLowerCase();
-  const duplicateAddr = profiles.find(
-    (p) => p.address?.trim().toLowerCase() === addr
-  );
-  if (duplicateAddr) {
-    setError("That address is already associated with an existing profile.");
-    return;
-  }
+    // 🚫 NEW: Check for duplicate Zcash address (case-insensitive)
+    const addr = address.trim().toLowerCase();
+    const duplicateAddr = profiles.find(
+      (p) => p.address?.trim().toLowerCase() === addr
+    );
+    if (duplicateAddr) {
+      setError("That address is already associated with an existing profile.");
+      return;
+    }
 
-  // ✅ Continue if name/address are unique
-const finalLinks = links
-  .map((l) => {
-    if (l.platform === "Other") return l.otherUrl?.trim();
-    if (!l.username) return "";
-    const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-    return base + l.username.trim();
-  })
-  .filter((u) => {
-  const res = isValidUrl(u);
-  return u && res.valid;
-});
+    // ✅ Continue if name/address are unique
+    const finalLinks = links
+      .map((l) => {
+        if (l.platform === "Other") return l.otherUrl?.trim();
+        if (!l.username) return "";
+        const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
+        return base + l.username.trim();
+      })
+      .filter((u) => {
+        const res = isValidUrl(u);
+        return u && res.valid;
+      });
 
-// 🚫 Duplicate address guard (frontend)
-const addrNorm = address.trim().toLowerCase();
-const addrDuplicateLocal = profiles.some(
-  (p) => (p.address || "").trim().toLowerCase() === addrNorm
-);
-if (addrDuplicateLocal) {
-  setError("That Zcash address is already associated with an existing profile.");
-  return;
-}
+    // 🚫 Duplicate address guard (frontend)
+    const addrNorm = address.trim().toLowerCase();
+    const addrDuplicateLocal = profiles.some(
+      (p) => (p.address || "").trim().toLowerCase() === addrNorm
+    );
+    if (addrDuplicateLocal) {
+      setError("That Zcash address is already associated with an existing profile.");
+      return;
+    }
 
-// 🔒 Server-side check (in case local data is stale)
-const { data: addrMatch, error: addrErr } = await supabase
-  .from("zcasher")
-  .select("id")
-  .or(`address.eq.${address.trim()},address.ilike.${address.trim()}`)
-  .limit(1);
-
-if (!addrErr && addrMatch && addrMatch.length) {
-  setError("That Zcash address is already associated with an existing profile.");
-  return;
-}
-
-  setIsLoading(true);
-
-  try {
-    // 1️⃣ Insert new profile
-    const { data: profile, error: profileError } = await supabase
+    // 🔒 Server-side check (in case local data is stale)
+    const { data: addrMatch, error: addrErr } = await supabase
       .from("zcasher")
-      .insert([
-        {
-          name: name.trim(),
-          address: address.trim(),
-          referred_by: referrer?.name || null,
-          referred_by_zcasher_id: referrer?.id || null,
+      .select("id")
+      .or(`address.eq.${address.trim()},address.ilike.${address.trim()}`)
+      .limit(1);
 
-          nearest_city_id: nearestCity?.id || null,
-          nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || null,
-
-          created_at: new Date().toISOString(),
-        },
-      ])
-      .select()
-      .single();
-
-    if (profileError) throw profileError;
-
-    // 2️⃣ Insert profile links
-    for (const url of finalLinks) {
-      await supabase.from("zcasher_links").insert([
-        {
-          zcasher_id: profile.id,
-          label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""),
-          url,
-          is_verified: false,
-        },
-      ]);
+    if (!addrErr && addrMatch && addrMatch.length) {
+      setError("That Zcash address is already associated with an existing profile.");
+      return;
     }
 
-    
+    setIsLoading(true);
+
+    try {
+      // 1️⃣ Insert new profile
+      const { data: profile, error: profileError } = await supabase
+        .from("zcasher")
+        .insert([
+          {
+            name: name.trim(),
+            address: address.trim(),
+            referred_by: referrer?.name || null,
+            referred_by_zcasher_id: referrer?.id || null,
+
+            nearest_city_id: nearestCity?.id || null,
+            nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || null,
+
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .select()
+        .single();
+
+      if (profileError) throw profileError;
+
+      // 2️⃣ Insert profile links
+      for (const url of finalLinks) {
+        await supabase.from("zcasher_links").insert([
+          {
+            zcasher_id: profile.id,
+            label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""),
+            url,
+            is_verified: false,
+          },
+        ]);
+      }
 
 
-// ✅ Generate a router-safe slug
-const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
-const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
-
-// 🧹 Clear cached profiles so directory reloads fresh
-window.cachedProfiles = null;
-
-// If you prefer not to reload, you could instead trigger the callback:
-onUserAdded?.(profile);
-onClose?.();
-
-// ✅ Redirect to /name-id (React Router friendly)
-navigate(`/${slug}`);
 
 
+      // ✅ Generate a router-safe slug
+      const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
+      const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
+
+      // 🧹 Clear cached profiles so directory reloads fresh
+      window.cachedProfiles = null;
+
+      // If you prefer not to reload, you could instead trigger the callback:
+      onUserAdded?.(profile);
+      onClose?.();
+
+      // ✅ Redirect to /name-id (React Router friendly)
+      window.location.assign(`/${slug}`);
 
 
-  } catch (err) {
-    console.error("Add name failed:", err);
-    if (err?.message?.includes("duplicate key value")) {
-      setError("That address or name already exists. Please choose a unique one.");
-    } else {
-      setError(err?.message || "Failed to add name.");
+
+
+    } catch (err) {
+      console.error("Add name failed:", err);
+      if (err?.message?.includes("duplicate key value")) {
+        setError("That address or name already exists. Please choose a unique one.");
+      } else {
+        setError(err?.message || "Failed to add name.");
+      }
+    } finally {
+      setIsLoading(false);
     }
-  } finally {
-    setIsLoading(false);
   }
-}
 
   // ---------- Navigation ----------
   const goNext = () => {
@@ -519,45 +520,43 @@ navigate(`/${slug}`);
         id="name"
         value={name}
         onChange={(e) => {
-  const input = e.target.value;
+          const input = e.target.value;
 
-  // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
-  const filtered = input
-    .normalize("NFKC")
-    .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
+          // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
+          const filtered = input
+            .normalize("NFKC")
+            .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
 
-  setName(filtered);
-}}
+          setName(filtered);
+        }}
         className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
         placeholder="Enter name"
         autoComplete="off"
       />
-<p
-  className={`mt-1 text-xs ${
-    nameConflict?.type === "error"
-      ? "text-red-600"
-      : nameConflict?.type === "info"
-      ? "text-blue-600"
-      : "text-gray-500"
-  }`}
->
-  {nameConflict?.text
-    ? nameConflict.text
-    : nameHelp || "Use only letters, numbers, underscores, or emojis. Spaces become underscores."}
-</p>
-{addressConflict && (
-  <p
-    className={`mt-1 text-xs ${
-      addressConflict?.type === "error"
-        ? "text-red-600"
-        : addressConflict?.type === "info"
-        ? "text-blue-600"
-        : "text-gray-600"
-    }`}
-  >
-    {addressConflict?.text || ""}
-  </p>
-)}
+      <p
+        className={`mt-1 text-xs ${nameConflict?.type === "error"
+          ? "text-red-600"
+          : nameConflict?.type === "info"
+            ? "text-blue-600"
+            : "text-gray-500"
+          }`}
+      >
+        {nameConflict?.text
+          ? nameConflict.text
+          : nameHelp || "Use only letters, numbers, underscores, or emojis. Spaces become underscores."}
+      </p>
+      {addressConflict && (
+        <p
+          className={`mt-1 text-xs ${addressConflict?.type === "error"
+            ? "text-red-600"
+            : addressConflict?.type === "info"
+              ? "text-blue-600"
+              : "text-gray-600"
+            }`}
+        >
+          {addressConflict?.text || ""}
+        </p>
+      )}
 
 
     </motion.div>
@@ -565,76 +564,75 @@ navigate(`/${slug}`);
 
 
 
-const StepAddress = (
-  <motion.div key="step-address" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
-    <ZcashAddressInput value={address} onChange={setAddress} />
-{(addressConflict || addressHelp) && (
-  <p
-    className={`mt-1 text-xs ${
-      addressConflict?.type === "error"
-        ? "text-red-600"
-        : addressConflict?.type === "info"
-        ? "text-blue-600"
-        : "text-gray-600"
-    }`}
-  >
-    {typeof addressConflict === "object"
-      ? addressConflict?.text
-      : typeof addressConflict === "string"
-      ? addressConflict
-      : addressHelp}
-  </p>
-)}
+  const StepAddress = (
+    <motion.div key="step-address" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+      <ZcashAddressInput value={address} onChange={setAddress} />
+      {(addressConflict || addressHelp) && (
+        <p
+          className={`mt-1 text-xs ${addressConflict?.type === "error"
+            ? "text-red-600"
+            : addressConflict?.type === "info"
+              ? "text-blue-600"
+              : "text-gray-600"
+            }`}
+        >
+          {typeof addressConflict === "object"
+            ? addressConflict?.text
+            : typeof addressConflict === "string"
+              ? addressConflict
+              : addressHelp}
+        </p>
+      )}
 
 
-  </motion.div>
-);
+    </motion.div>
+  );
 
-const StepCity = (
-  <motion.div
-    key="step-city"
-    custom={dir}
-    variants={slide}
-    initial="initial"
-    animate="animate"
-    exit="exit"
-  >
-    <label
-      htmlFor="nearest-city"
-      className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
+  const StepCity = (
+    <motion.div
+      key="step-city"
+      custom={dir}
+      variants={slide}
+      initial="initial"
+      animate="animate"
+      exit="exit"
     >
-      Nearest City
-    </label>
+      <label
+        htmlFor="nearest-city"
+        className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
+      >
+        Nearest City
+      </label>
 
-    <div className="relative w-full">
-      <CitySearchDropdown
-        value={nearestCityInput}
-        onChange={(val) => {
-          if (typeof val === "string") {
-            setNearestCityInput(val);
-            setNearestCity(null);
-          } else {
-            setNearestCity(val);
+      <div className="relative w-full">
+        <CitySearchDropdown
+          value={nearestCityInput}
+          onChange={(val) => {
+            if (typeof val === "string") {
+              setNearestCityInput(val);
+              setNearestCity(null);
+            } else {
+              setNearestCity(val);
 
-            const pretty = [
-              val.city_ascii || val.city,
-              val.admin_name,
-              val.country,
-            ].filter(Boolean).join(", ");
+              const pretty = [
+                val.city_ascii || val.city,
+                val.admin_name,
+                val.country,
+              ].filter(Boolean).join(", ");
 
-            setNearestCityInput(pretty);
+              setNearestCityInput(pretty);
 
-          }
-        }}
-        placeholder="Type to search city…"
-      />
-    </div>
+            }
+          }}
+          placeholder="Type to search city…"
+        />
+      </div>
 
-    <p className="mt-1 text-xs text-gray-500">
-      Optional. Helps people understand where you are based.
-    </p>
-  </motion.div>
-);
+      <p className="mt-1 text-xs text-gray-500">
+        Optional. Helps people understand where you are based.
+      </p>
+    </motion.div>
+  );
 
   const StepReferrer = (
     <motion.div key="step-ref" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
@@ -642,14 +640,14 @@ const StepCity = (
         Referred by Zcash.me/
       </label>
 
-<div className="relative w-full">
-  <ProfileSearchDropdown
-    value={referrer?.name || referrer || ""}
-    onChange={(v) => setReferrer(v)}
-    profiles={profiles}
-    placeholder="Type to search (optional)…"
-  />
-</div>
+      <div className="relative w-full">
+        <ProfileSearchDropdown
+          value={referrer?.name || referrer || ""}
+          onChange={(v) => setReferrer(v)}
+          profiles={profiles}
+          placeholder="Type to search (optional)…"
+        />
+      </div>
 
 
       <p className="mt-1 text-xs text-gray-500">Optional. Helps us rank referrals.</p>
@@ -688,34 +686,32 @@ const StepCity = (
                   value={link.otherUrl}
                   onChange={(e) => updateLink(index, { otherUrl: e.target.value })}
                   placeholder="https://example.com/your-page"
-                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
-                    link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
-                  }`}
+                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
+                    }`}
                 />
               ) : (
-<div className="flex-1">
-  <input
-    type="text"
-    value={link.username}
-    onChange={(e) => updateLink(index, { username: e.target.value })}
-    placeholder="your_username"
-    className={`w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
-      link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
-    }`}
-  />
-</div>
+                <div className="flex-1">
+                  <input
+                    type="text"
+                    value={link.username}
+                    onChange={(e) => updateLink(index, { username: e.target.value })}
+                    placeholder="your_username"
+                    className={`w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
+                      }`}
+                  />
+                </div>
 
               )}
 
               {links.length > 1 && (
-<button
-  type="button"
-  onClick={() => removeLinkField(index)}
-  className="text-red-600 hover:text-red-700 text-xs font-medium mt-2 flex items-center gap-1"
-  title="Remove link"
->
-  ⌫ Remove link
-</button>
+                <button
+                  type="button"
+                  onClick={() => removeLinkField(index)}
+                  className="text-red-600 hover:text-red-700 text-xs font-medium mt-2 flex items-center gap-1"
+                  title="Remove link"
+                >
+                  ⌫ Remove link
+                </button>
 
               )}
             </div>
@@ -741,7 +737,7 @@ const StepCity = (
         ＋ Add another link
       </button>
       <p className="mt-2 text-xs text-gray-500">
-        Tip: You can add, remove and verify links from Edit Profile. 
+        Tip: You can add, remove and verify links from Edit Profile.
       </p>
     </motion.div>
   );
@@ -754,13 +750,13 @@ const StepCity = (
           <span className="font-mono">{name || "—"}</span>
         </div>
         <div>
-<span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
-<span className="font-mono break-all">{address || "—"}</span>
-</div>
+          <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
+          <span className="font-mono break-all">{address || "—"}</span>
+        </div>
 
-<div>
-  <span className="font-semibold text-gray-700">Nearest City:</span>{" "}
-  <span>{nearestCity?.city_ascii || nearestCity?.city || "—"}</span>
+        <div>
+          <span className="font-semibold text-gray-700">Nearest City:</span>{" "}
+          <span>{nearestCity?.city_ascii || nearestCity?.city || "—"}</span>
 
         </div>
         <div>
@@ -788,10 +784,10 @@ const StepCity = (
     </motion.div>
   );
 
-  return (
+  return createPortal(
     <div
-  className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto"
->
+      className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -819,18 +815,18 @@ const StepCity = (
 
         {/* Body */}
         <form
-  onSubmit={handleSubmit}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      e.preventDefault(); // stop default submit
-if (step < 5 && stepIsValid) {
-    goNext();
-}
+          onSubmit={handleSubmit}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault(); // stop default submit
+              if (step < 5 && stepIsValid) {
+                goNext();
+              }
 
-    }
-  }}
-  className="px-5 py-4 space-y-4"
->
+            }
+          }}
+          className="px-5 py-4 space-y-4"
+        >
           {error && (
             <div className="rounded-xl border border-red-300 bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>
           )}
@@ -870,16 +866,15 @@ if (step < 5 && stepIsValid) {
           <div className="flex-1">
             {step < 5 ? (
               <button
-  type="button"
-  onClick={goNext}
-  disabled={!stepIsValid}
-  title={!stepIsValid && nameConflict?.type === "error" ? "This name is already used by a verified profile." : ""}
-  className={`w-full py-2.5 rounded-xl border text-sm font-semibold ${
-    stepIsValid
-      ? "border-black/30 text-blue-700 hover:border-blue-600 hover:bg-blue-50"
-      : "border-black/20 text-gray-400 cursor-not-allowed opacity-60"
-  }`}
->
+                type="button"
+                onClick={goNext}
+                disabled={!stepIsValid}
+                title={!stepIsValid && nameConflict?.type === "error" ? "This name is already used by a verified profile." : ""}
+                className={`w-full py-2.5 rounded-xl border text-sm font-semibold ${stepIsValid
+                  ? "border-black/30 text-blue-700 hover:border-blue-600 hover:bg-blue-50"
+                  : "border-black/20 text-gray-400 cursor-not-allowed opacity-60"
+                  }`}
+              >
                 Next →
               </button>
             ) : (
@@ -903,6 +898,7 @@ if (step < 5 && stepIsValid) {
         }
         .animate-fadeIn { animation: fadeIn .25s ease-out; }
       `}</style>
-    </div>
+    </div>,
+    document.body
   );
 }
