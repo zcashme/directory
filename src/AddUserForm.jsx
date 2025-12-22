@@ -1,7 +1,8 @@
 import ZcashAddressInput from "./components/ZcashAddressInput";
 import { createPortal } from "react-dom";
+
 import { validateZcashAddress } from "./utils/zcashAddressUtils";
-import { cachedProfiles } from "./hooks/useProfiles"; // if exported (we’ll adjust below)
+import { cachedProfiles, resetCache } from "./hooks/useProfiles"; // if exported (we’ll adjust below)
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "./supabase";
 import { AnimatePresence, motion } from "framer-motion";
@@ -471,8 +472,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
       const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
 
+
       // 🧹 Clear cached profiles so directory reloads fresh
-      window.cachedProfiles = null;
+      resetCache();
 
       // If you prefer not to reload, you could instead trigger the callback:
       onUserAdded?.(profile);

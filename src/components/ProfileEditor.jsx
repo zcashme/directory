@@ -1042,8 +1042,9 @@ export default function ProfileEditor({ profile, links }) {
 
         {/* Header */}
         <div className="px-1 pb-3 mb-4 border-b border-black/10">
+
           <h2 className="text-base font-semibold text-gray-800 text-center">
-            Edit Profile
+            Edit {profile.name}
           </h2>
         </div>
 
@@ -1089,10 +1090,10 @@ export default function ProfileEditor({ profile, links }) {
                     });
                   }}
                   className={`text-xs underline font-normal ${profile.address_verified
-                      ? deletedFields.address
-                        ? "text-green-700"
-                        : "text-red-600"
-                      : "text-gray-400 cursor-not-allowed"
+                    ? deletedFields.address
+                      ? "text-green-700"
+                      : "text-red-600"
+                    : "text-gray-400 cursor-not-allowed"
                     }`}
                 >
                   {deletedFields.address ? "⌦ Reset" : "⌫ Delete"}
@@ -1300,8 +1301,8 @@ export default function ProfileEditor({ profile, links }) {
             placeholder={originals.profile_image_url}
             onChange={(e) => handleChange("profile_image_url", e.target.value)}
             className={`${FIELD_CLASS} font-mono ${imageUrlValid
-                ? "border-[#0a1126]/60 focus:border-blue-500"
-                : "border-red-400 focus:border-red-500"
+              ? "border-[#0a1126]/60 focus:border-blue-500"
+              : "border-red-400 focus:border-red-500"
               }`}
           />
           {!imageUrlValid && imageUrlReason && (
@@ -1324,9 +1325,9 @@ export default function ProfileEditor({ profile, links }) {
                 type="button"
                 onClick={resetLinks}
                 className={`text-xs font-semibold underline ${JSON.stringify(form.links.map(l => ({ id: l.id, url: l.url }))) !==
-                    JSON.stringify(originalLinks.map(l => ({ id: l.id, url: l.url })))
-                    ? "text-green-700"
-                    : "text-gray-500"
+                  JSON.stringify(originalLinks.map(l => ({ id: l.id, url: l.url })))
+                  ? "text-green-700"
+                  : "text-gray-500"
                   }`}
               >
                 Reset
@@ -1404,8 +1405,8 @@ export default function ProfileEditor({ profile, links }) {
                       else appendLinkToken(token);
                     }}
                     className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord))
-                        ? "text-yellow-700 border-yellow-400 bg-yellow-50"
-                        : "text-blue-600 border-blue-400 hover:bg-blue-50"
+                      ? "text-yellow-700 border-yellow-400 bg-yellow-50"
+                      : "text-blue-600 border-blue-400 hover:bg-blue-50"
                       }`}
                   >
                     {isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord)) ? "Pending" : "Verify"}

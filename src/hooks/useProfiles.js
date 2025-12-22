@@ -175,8 +175,37 @@ export default function useProfiles() {
     };
   }, []);
 
-  return { profiles, loading };
+
+  const addProfile = (newProfile) => {
+    // Enrich with defaults if missing
+    const enriched = {
+      rank_alltime: 0,
+      rank_weekly: 0,
+      rank_monthly: 0,
+      address_verified: false,
+      links: [],
+      verified_links_count: 0,
+      ...newProfile,
+      // Ensure links is an array
+      links: newProfile.links || []
+    };
+
+    setProfiles((prev) => [...prev, enriched]);
+
+    // Also update global cache
+    if (cachedProfiles) {
+      cachedProfiles.push(enriched);
+    }
+  };
+
+  return { profiles, loading, addProfile };
 }
+
+
+export const resetCache = () => {
+  cachedProfiles = null;
+  if (typeof window !== "undefined") window.cachedProfiles = null;
+};
 
 export { cachedProfiles };
 if (typeof window !== "undefined") window.cachedProfiles = cachedProfiles;

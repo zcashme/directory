@@ -28,7 +28,8 @@ import bookClosed from "./assets/book-closed.svg";
 export default function Directory() {
   const navigate = useNavigate();
   const { setSelectedAddress, selectedAddress } = useFeedback();
-  const { profiles, loading } = useProfiles();
+
+  const { profiles, loading, addProfile } = useProfiles();
   const { showDirectory, setShowDirectory } = useDirectoryVisibility();
   const showAlpha = useAlphaVisibility(showDirectory);
   // const { toastMsg, showToast, closeToast } = useToastMessage();
@@ -687,10 +688,12 @@ export default function Directory() {
           />
         )}
 
+
         <AddUserForm
           isOpen={isJoinOpen}
           onClose={() => setIsJoinOpen(false)}
           onUserAdded={(newProfile) => {
+            addProfile(newProfile);
             setIsJoinOpen(false);
           }}
 
