@@ -1,8 +1,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import LinkInput from "../components/LinkInput";
+import SocialLinkInput from "../components/SocialLinkInput";
 import CheckIcon from "../assets/CheckIcon.jsx";
 import { isValidUrl } from "../utils/validateUrl";
+import { normalizeSocialUsername } from "../utils/normalizeSocialLink";
+import { buildSocialUrl } from "../utils/buildSocialUrl";
 import CitySearchDropdown from "../components/CitySearchDropdown.jsx";
 import { supabase } from "../supabase";
 
@@ -24,6 +27,58 @@ const isValidImageUrl = (url) => {
 
   return { valid: true, reason: null };
 };
+
+const SOCIAL_HOSTS = {
+  X: ["x.com", "twitter.com", "www.x.com", "www.twitter.com"],
+  GitHub: ["github.com", "www.github.com"],
+  Instagram: ["instagram.com", "www.instagram.com"],
+  Reddit: ["reddit.com", "www.reddit.com"],
+  LinkedIn: ["linkedin.com", "www.linkedin.com"],
+  Discord: ["discord.gg", "www.discord.gg"],
+  TikTok: ["tiktok.com", "www.tiktok.com"],
+  Mastodon: ["mastodon.social"],
+  Bluesky: ["bsky.app"],
+  Snapchat: ["snapchat.com", "www.snapchat.com"],
+};
+
+function detectPlatformFromUrl(rawUrl) {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return null;
+
+  const normalized = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://${trimmed}`;
+
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    for (const [platform, hosts] of Object.entries(SOCIAL_HOSTS)) {
+      if (hosts.includes(host)) return platform;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function parseSocialUrl(rawUrl) {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) {
+    return { platform: "X", username: "", otherUrl: "" };
+  }
+
+  const platform = detectPlatformFromUrl(trimmed);
+  if (!platform) {
+    return { platform: "Other", username: "", otherUrl: trimmed };
+  }
+
+  return {
+    platform,
+    username: normalizeSocialUsername(trimmed, platform),
+    otherUrl: "",
+  };
+}
 
 // Simple character counter
 function CharCounter({ text }) {
@@ -466,7 +521,6 @@ export default function ProfileEditor({ profile, links }) {
     setRedirectLabel("X.com");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    await ensureLinkRow(url);
 
     const norm = (s = "") =>
       s
@@ -501,7 +555,6 @@ export default function ProfileEditor({ profile, links }) {
     setRedirectLabel("LinkedIn");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    await ensureLinkRow(url);
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -540,7 +593,6 @@ export default function ProfileEditor({ profile, links }) {
     setRedirectLabel("GitHub");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    await ensureLinkRow(url);
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -579,7 +631,6 @@ export default function ProfileEditor({ profile, links }) {
     setRedirectLabel("Discord");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    await ensureLinkRow(url);
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -614,52 +665,15 @@ export default function ProfileEditor({ profile, links }) {
     }, 1500);
   };
 
-  async function ensureLinkRow(rawUrl) {
-    try {
-      const normalizedUrl = (rawUrl || "").trim().replace(/\/$/, "");
-      const { data: existing } = await supabase
-        .from("zcasher_links")
-        .select("id,url")
-        .eq("zcasher_id", profile.id)
-        .eq("url", normalizedUrl)
-        .limit(1);
-      if (existing && existing.length > 0) return;
-      const label = normalizedUrl.replace(/^https?:\/\//, "").replace(/\/$/, "");
-      const { data: inserted } = await supabase
-        .from("zcasher_links")
-        .insert([
-          {
-            zcasher_id: profile.id,
-            label,
-            url: normalizedUrl,
-            is_verified: false,
-          },
-        ])
-        .select()
-        .limit(1);
-      const newId = inserted && inserted[0]?.id;
-      if (newId) {
-        setForm((prev) => ({
-          ...prev,
-          links: prev.links.map((l) =>
-            (l.url || "").trim().replace(/\/$/, "") === normalizedUrl
-              ? { ...l, id: newId }
-              : l
-          ),
-        }));
-      }
-    } catch (e) {
-      console.error("ensureLinkRow failed", e);
-    }
-  }
-
-
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
     const arr = Array.isArray(links) ? links : Array.isArray(profile.links) ? profile.links : [];
     return arr.map((l) => ({
       id: l.id ?? null,
       url: l.url ?? "",
+      ...parseSocialUrl(l.url ?? ""),
+      valid: true,
+      reason: null,
       is_verified: !!l.is_verified,
       verification_expires_at: l.verification_expires_at || null,
       _uid: crypto.randomUUID()
@@ -983,6 +997,20 @@ export default function ProfileEditor({ profile, links }) {
     }));
   };
 
+  const handleSocialLinkChange = (uid, value) => {
+    const nextUrl =
+      value.platform === "Other"
+        ? (value.otherUrl || "").trim()
+        : buildSocialUrl(value.platform, (value.username || "").trim()) || "";
+
+    setForm((prev) => ({
+      ...prev,
+      links: prev.links.map((l) =>
+        l._uid === uid ? { ...l, ...value, url: nextUrl } : l
+      ),
+    }));
+  };
+
   const addLink = () =>
     setForm((prev) => ({
       ...prev,
@@ -991,6 +1019,11 @@ export default function ProfileEditor({ profile, links }) {
         {
           id: null,
           url: "",
+          platform: "X",
+          username: "",
+          otherUrl: "",
+          valid: true,
+          reason: null,
           is_verified: false,
           verification_expires_at: null,
           _uid: crypto.randomUUID(),
@@ -1355,12 +1388,19 @@ export default function ProfileEditor({ profile, links }) {
 
           return (
             <div key={row._uid} className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-              <LinkInput
-                value={row.url}
-                onChange={(v) => handleLinkChange(row._uid, v)}
-                readOnly={isVerified}
-                placeholder={original?.url || "example.com"}
-              />
+              {isVerified ? (
+                <LinkInput
+                  value={row.url}
+                  onChange={(v) => handleLinkChange(row._uid, v)}
+                  readOnly={true}
+                  placeholder={original?.url || "example.com"}
+                />
+              ) : (
+                <SocialLinkInput
+                  value={row}
+                  onChange={(v) => handleSocialLinkChange(row._uid, v)}
+                />
+              )}
 
 
               <div className="flex items-center gap-2">
