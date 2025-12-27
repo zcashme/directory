@@ -6,7 +6,15 @@ const BASE_FIELD_CLASS =
   "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-none text-gray-800 placeholder-gray-400";
 
 
-export default function LinkInput({ value, onChange, readOnly = false, placeholder = "" }) {
+export default function LinkInput({
+  value,
+  onChange,
+  readOnly = false,
+  placeholder = "",
+  showValidation = true,
+  containerClassName = "",
+  inputClassName = "",
+}) {
 const [valid, setValid] = useState(true);
 const [reason, setReason] = useState(null);
 
@@ -23,7 +31,7 @@ useEffect(() => {
 
 
   return (
-    <div className="w-full">
+    <div className={`w-full ${containerClassName}`.trim()}>
       <input
         type="text"
         value={value}
@@ -36,16 +44,16 @@ useEffect(() => {
             : valid
             ? "border-[#0a1126]/60 focus:border-blue-500"
             : "border-red-400 focus:border-red-500"
-        }`}
+        } ${inputClassName}`}
 
       />
 {/* error message */}
-{!valid && reason && (
+{showValidation && !valid && reason && (
   <p className="text-xs text-red-600 mt-1">{reason}</p>
 )}
 
 {/* info-level message (tracking params, normalizable hints) */}
-{valid && reason && (
+{showValidation && valid && reason && (
   <p className="text-xs text-blue-600 mt-1">{reason}</p>
 )}
 

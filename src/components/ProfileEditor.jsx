@@ -11,6 +11,10 @@ import { supabase } from "../supabase";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
+const LINK_FIELD_CLASS =
+  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
+const LINK_CONTAINER_CLASS =
+  "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 
 const isValidImageUrl = (url) => {
   if (!url) return { valid: true, reason: null };
@@ -840,12 +844,17 @@ export default function ProfileEditor({ profile, links }) {
     for (const l of originalLinks) {
       if (!l) continue;
       const url = (l.url || "").trim();
-      if (l.id) originalById.set(l.id, { ...l, url });
+      if (l.id) originalById.set(String(l.id), { ...l, url });
       if (url) originalUrlSet.add(url);
     }
 
     const currentUrls = new Set(
       form.links.map((l) => (l.url || "").trim()).filter(Boolean)
+    );
+    const currentById = new Map(
+      form.links
+        .filter((l) => l.id)
+        .map((l) => [String(l.id), (l.url || "").trim()])
     );
 
     // Start from existing link tokens
@@ -883,7 +892,7 @@ export default function ProfileEditor({ profile, links }) {
       const newUrl = urlValid ? newUrlRaw : "";   // invalid URLs are treated as blank
 
       if (id) {
-        const original = originalById.get(id);
+        const original = originalById.get(String(id));
         const originalUrl = original ? original.url : "";
 
         if (newUrl === originalUrl) {
@@ -929,8 +938,15 @@ export default function ProfileEditor({ profile, links }) {
         // existing-link edit tokens — KEEP ONLY the latest edit for this id
         if (/^\+[0-9]+:/.test(t)) {
           const id = t.slice(1, t.indexOf(":"));
+          const original = originalById.get(id);
+          const currentUrl = currentById.get(id) || "";
+          const { valid: currentValid } = isValidUrl(currentUrl);
+
+          if (!currentUrl || !currentValid) return false;
+          if (original && currentUrl === original.url) return false;
+
           // discard old edits if a new +id:newUrl exists in effectTokens
-          const hasNewer = effectTokens.some(et => et.startsWith(`+${id}:`));
+          const hasNewer = effectTokens.some((et) => et.startsWith(`+${id}:`));
           return !hasNewer;
         }
 
@@ -1366,7 +1382,7 @@ export default function ProfileEditor({ profile, links }) {
                 Reset
               </button>
 
-              <HelpIcon text="Link verification requires OTP. Verified links cannot be changed." />
+              <HelpIcon text="Verified links cannot be changed. Links can be verified only after verifying your address via OTP" />
 
             </div>
           </div>
@@ -1386,28 +1402,12 @@ export default function ProfileEditor({ profile, links }) {
           const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
           const isPending = token && isPendingToken(token);
 
-          return (
-            <div key={row._uid} className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
-              {isVerified ? (
-                <LinkInput
-                  value={row.url}
-                  onChange={(v) => handleLinkChange(row._uid, v)}
-                  readOnly={true}
-                  placeholder={original?.url || "example.com"}
-                />
-              ) : (
-                <SocialLinkInput
-                  value={row}
-                  onChange={(v) => handleSocialLinkChange(row._uid, v)}
-                />
-              )}
-
-
+          const linkActions = (
+            <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {!canVerify ? (
-
                   <span className="text-xs text-gray-500 italic">
-                    Verify uaddr then URLs
+                    Verify uaddr to authenticate links
                   </span>
                 ) : isVerified ? (
                   <button
@@ -1415,7 +1415,7 @@ export default function ProfileEditor({ profile, links }) {
                     disabled
                     className="text-xs px-2 py-1 text-green-700 border border-green-400 rounded opacity-60 cursor-not-allowed"
                   >
-                    Verified
+                    Authenticated
                   </button>
                 ) : (
                   <button
@@ -1449,18 +1449,45 @@ export default function ProfileEditor({ profile, links }) {
                       : "text-blue-600 border-blue-400 hover:bg-blue-50"
                       }`}
                   >
-                    {isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord)) ? "Pending" : "Verify"}
+                    {isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord)) ? "Pending" : "Authenticate"}
                   </button>
                 )}
-
-                <button
-                  type="button"
-                  onClick={() => removeLink(row._uid)}
-                  className="text-xs text-red-600 hover:underline"
-                >
-                  ⌫ Delete
-                </button>
               </div>
+
+              <button
+                type="button"
+                onClick={() => removeLink(row._uid)}
+                className="text-xs text-red-600 hover:underline"
+              >
+                ⌫ Delete
+              </button>
+            </div>
+          );
+
+          return (
+            <div key={row._uid} className="mb-2">
+              {isVerified ? (
+                <div className={LINK_CONTAINER_CLASS}>
+                  <LinkInput
+                    value={row.url}
+                    onChange={(v) => handleLinkChange(row._uid, v)}
+                    readOnly={true}
+                    placeholder={original?.url || "example.com"}
+                    showValidation={false}
+                    inputClassName="border-0 px-0 py-0 bg-transparent"
+                  />
+                  <div className="mt-2">{linkActions}</div>
+                </div>
+              ) : (
+                <SocialLinkInput
+                  value={row}
+                  onChange={(v) => handleSocialLinkChange(row._uid, v)}
+                  footer={linkActions}
+                  containerClassName={LINK_CONTAINER_CLASS}
+                  selectClassName={LINK_FIELD_CLASS}
+                  inputClassName={LINK_FIELD_CLASS}
+                />
+              )}
             </div>
 
           );
@@ -1498,3 +1525,7 @@ export default function ProfileEditor({ profile, links }) {
 
   );
 }
+
+
+
+
