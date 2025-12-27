@@ -39,6 +39,61 @@ const toSlugish = (s = "") =>
     .trim()
     .replace(/\s+/g, "_");
 
+    function normalizeUsername(raw = "", platform) {
+  let v = raw.normalize("NFKC").trim();
+
+  // Strip protocol
+  v = v.replace(/^https?:\/\//i, "");
+
+  // Strip leading @
+  v = v.replace(/^@+/, "");
+
+  // Strip known platform domains
+  const HOSTS = {
+    X: ["x.com", "twitter.com", "www.x.com", "www.twitter.com"],
+    GitHub: ["github.com", "www.github.com"],
+    Instagram: ["instagram.com", "www.instagram.com"],
+    Reddit: ["reddit.com", "www.reddit.com"],
+    LinkedIn: ["linkedin.com", "www.linkedin.com"],
+    TikTok: ["tiktok.com", "www.tiktok.com"],
+    Bluesky: ["bsky.app"],
+    Mastodon: ["mastodon.social"],
+    Snapchat: ["snapchat.com"],
+  };
+
+  const hosts = HOSTS[platform];
+  if (hosts) {
+    for (const h of hosts) {
+      if (v.startsWith(h)) {
+        v = v.slice(h.length);
+      }
+    }
+  }
+
+  // Remove common path prefixes
+  v = v.replace(/^\/+/, "");
+  v = v.replace(/^(user|users|in|profile|add)\//, "");
+
+  // Strip query strings and fragments
+  v = v.split("?")[0].split("#")[0];
+
+  // Remove embedded mobile subdomains pasted into path
+  v = v.replace(/^(mobile\.|m\.)?(x\.com|twitter\.com)\//i, "");
+
+  // Keep only first path segment (no /status/, /reels/, etc)
+  v = v.split("/")[0];
+
+  // Remove trailing slashes
+  v = v.replace(/\/+$/, "");
+
+  // Block spaces and @ entirely
+  v = v.replace(/[@\s]/g, "");
+
+  return v;
+}
+
+
+
 const PLATFORMS = [
   { key: "X", label: "X (Twitter)", base: "https://x.com/" },
   { key: "GitHub", label: "GitHub", base: "https://github.com/" },
@@ -46,9 +101,9 @@ const PLATFORMS = [
   { key: "Reddit", label: "Reddit", base: "https://reddit.com/user/" },
   { key: "LinkedIn", label: "LinkedIn", base: "https://linkedin.com/in/" },
   { key: "Discord", label: "Discord", base: "https://discord.gg/" },
-  { key: "TikTok", label: "TikTok", base: "https://tiktok.com/@" },
+  { key: "TikTok", label: "TikTok", base: "https://tiktok.com/", prefix: "@" },
+  { key: "Mastodon", label: "Mastodon", base: "https://mastodon.social/", prefix: "@" },
   { key: "Bluesky", label: "Bluesky", base: "https://bsky.app/profile/" },
-  { key: "Mastodon", label: "Mastodon", base: "https://mastodon.social/@" },
   { key: "Snapchat", label: "Snapchat", base: "https://snapchat.com/add/" },
   { key: "Other", label: "Other (custom URL)", base: "" },
 ];
@@ -400,7 +455,8 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         if (l.platform === "Other") return l.otherUrl?.trim();
         if (!l.username) return "";
         const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-        return base + l.username.trim();
+        const prefix = PLATFORMS.find((p) => p.key === l.platform)?.prefix || "";
+return base + prefix + l.username.trim();
       })
       .filter((u) => {
         const res = isValidUrl(u);
@@ -662,10 +718,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
       {links.map((link, index) => {
         const platform = PLATFORMS.find((p) => p.key === link.platform) || PLATFORMS[0];
+        const prefix = platform.prefix || "";
         const preview =
           link.platform === "Other"
             ? (link.otherUrl || "").trim()
-            : platform.base + (link.username || "");
+            : platform.base + prefix + (link.username || "");
+
 
         return (
           <div key={index} className="mb-3 rounded-xl border border-black/20 p-3 bg-white/60">
@@ -696,7 +754,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
                   <input
                     type="text"
                     value={link.username}
-                    onChange={(e) => updateLink(index, { username: e.target.value })}
+                    onChange={(e) =>
+                      updateLink(index, {
+                        username: normalizeUsername(e.target.value, link.platform),
+                      })
+                    }
+
                     placeholder="your_username"
                     className={`w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
                       }`}
