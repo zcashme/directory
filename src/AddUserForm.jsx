@@ -21,6 +21,8 @@ function XIcon(props) {
 }
 
 import { isValidUrl } from "./utils/validateUrl";
+import { buildSocialUrl } from "./utils/buildSocialUrl";
+import SocialLinkInput from "./components/SocialLinkInput";
 
 
 // Normalize for identity: spaces → underscores, case-insensitive
@@ -39,74 +41,6 @@ const toSlugish = (s = "") =>
     .trim()
     .replace(/\s+/g, "_");
 
-    function normalizeUsername(raw = "", platform) {
-  let v = raw.normalize("NFKC").trim();
-
-  // Strip protocol
-  v = v.replace(/^https?:\/\//i, "");
-
-  // Strip leading @
-  v = v.replace(/^@+/, "");
-
-  // Strip known platform domains
-  const HOSTS = {
-    X: ["x.com", "twitter.com", "www.x.com", "www.twitter.com"],
-    GitHub: ["github.com", "www.github.com"],
-    Instagram: ["instagram.com", "www.instagram.com"],
-    Reddit: ["reddit.com", "www.reddit.com"],
-    LinkedIn: ["linkedin.com", "www.linkedin.com"],
-    TikTok: ["tiktok.com", "www.tiktok.com"],
-    Bluesky: ["bsky.app"],
-    Mastodon: ["mastodon.social"],
-    Snapchat: ["snapchat.com"],
-  };
-
-  const hosts = HOSTS[platform];
-  if (hosts) {
-    for (const h of hosts) {
-      if (v.startsWith(h)) {
-        v = v.slice(h.length);
-      }
-    }
-  }
-
-  // Remove common path prefixes
-  v = v.replace(/^\/+/, "");
-  v = v.replace(/^(user|users|in|profile|add)\//, "");
-
-  // Strip query strings and fragments
-  v = v.split("?")[0].split("#")[0];
-
-  // Remove embedded mobile subdomains pasted into path
-  v = v.replace(/^(mobile\.|m\.)?(x\.com|twitter\.com)\//i, "");
-
-  // Keep only first path segment (no /status/, /reels/, etc)
-  v = v.split("/")[0];
-
-  // Remove trailing slashes
-  v = v.replace(/\/+$/, "");
-
-  // Block spaces and @ entirely
-  v = v.replace(/[@\s]/g, "");
-
-  return v;
-}
-
-
-
-const PLATFORMS = [
-  { key: "X", label: "X (Twitter)", base: "https://x.com/" },
-  { key: "GitHub", label: "GitHub", base: "https://github.com/" },
-  { key: "Instagram", label: "Instagram", base: "https://instagram.com/" },
-  { key: "Reddit", label: "Reddit", base: "https://reddit.com/user/" },
-  { key: "LinkedIn", label: "LinkedIn", base: "https://linkedin.com/in/" },
-  { key: "Discord", label: "Discord", base: "https://discord.gg/" },
-  { key: "TikTok", label: "TikTok", base: "https://tiktok.com/", prefix: "@" },
-  { key: "Mastodon", label: "Mastodon", base: "https://mastodon.social/", prefix: "@" },
-  { key: "Bluesky", label: "Bluesky", base: "https://bsky.app/profile/" },
-  { key: "Snapchat", label: "Snapchat", base: "https://snapchat.com/add/" },
-  { key: "Other", label: "Other (custom URL)", base: "" },
-];
 
 const slide = {
   initial: (dir) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
@@ -299,39 +233,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   function updateLink(index, patch) {
     setLinks((prev) => {
       const next = [...prev];
-      const cur = { ...next[index], ...patch };
-      // Sanitize username: block http(s) in username field
-      if (cur.username && /https?:\/\//i.test(cur.username)) {
-        cur.username = cur.username.replace(/https?:\/\/+/gi, "");
-        cur.valid = false;
-      }
-
-      // Validate: if Other → validate otherUrl as full URL; else require username, ensure final URL is valid-looking
-      if (cur.platform === "Other") {
-        if (!cur.otherUrl) {
-          cur.valid = true;
-          cur.reason = null;
-        } else {
-          const res = isValidUrl(cur.otherUrl.trim());
-          cur.valid = res.valid;
-          cur.reason = res.reason;
-        }
-      } else {
-        const base = PLATFORMS.find((p) => p.key === cur.platform)?.base || "";
-        const built = base + (cur.username || "");
-
-        if (!cur.username) {
-          cur.valid = true;
-          cur.reason = null;
-        } else {
-          const res = isValidUrl(built);
-          cur.valid = res.valid;
-          cur.reason = res.reason;
-        }
-      }
-
-
-      next[index] = cur;
+      next[index] = { ...next[index], ...patch };
       return next;
     });
   }
@@ -350,8 +252,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       if (l.platform === "Other") {
         return l.otherUrl?.trim() || "";
       }
-      const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-      return l.username ? `${base}${l.username.trim()}` : "";
+      return buildSocialUrl(l.platform, (l.username || "").trim()) || "";
     })
     .filter((url) => {
       if (!url) return false;
@@ -415,9 +316,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         return l.otherUrl && !isValidUrl(l.otherUrl.trim());
       } else {
         if (!l.username) return false; // empty row is okay
-        const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-        const res = isValidUrl(base + l.username.trim());
-        return !(base && res.valid);
+        const built = buildSocialUrl(l.platform, l.username.trim()) || "";
+        const res = isValidUrl(built);
+        return !(built && res.valid);
       }
     });
     if (invalid) {
@@ -454,9 +355,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       .map((l) => {
         if (l.platform === "Other") return l.otherUrl?.trim();
         if (!l.username) return "";
-        const base = PLATFORMS.find((p) => p.key === l.platform)?.base || "";
-        const prefix = PLATFORMS.find((p) => p.key === l.platform)?.prefix || "";
-return base + prefix + l.username.trim();
+        return buildSocialUrl(l.platform, l.username.trim()) || "";
       })
       .filter((u) => {
         const res = isValidUrl(u);
@@ -716,88 +615,15 @@ return base + prefix + l.username.trim();
     <motion.div key="step-links" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
       <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">Profile links</label>
 
-      {links.map((link, index) => {
-        const platform = PLATFORMS.find((p) => p.key === link.platform) || PLATFORMS[0];
-        const prefix = platform.prefix || "";
-        const preview =
-          link.platform === "Other"
-            ? (link.otherUrl || "").trim()
-            : platform.base + prefix + (link.username || "");
-
-
-        return (
-          <div key={index} className="mb-3 rounded-xl border border-black/20 p-3 bg-white/60">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <select
-                value={link.platform}
-                onChange={(e) => updateLink(index, { platform: e.target.value })}
-                className="rounded-xl border border-black/30 px-3 py-2 text-sm bg-white"
-              >
-                {PLATFORMS.map((p) => (
-                  <option key={p.key} value={p.key}>
-                    {p.label}
-                  </option>
-                ))}
-              </select>
-
-              {link.platform === "Other" ? (
-                <input
-                  type="text"
-                  value={link.otherUrl}
-                  onChange={(e) => updateLink(index, { otherUrl: e.target.value })}
-                  placeholder="https://example.com/your-page"
-                  className={`flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
-                    }`}
-                />
-              ) : (
-                <div className="flex-1">
-                  <input
-                    type="text"
-                    value={link.username}
-                    onChange={(e) =>
-                      updateLink(index, {
-                        username: normalizeUsername(e.target.value, link.platform),
-                      })
-                    }
-
-                    placeholder="your_username"
-                    className={`w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${link.valid ? "border-black/30 focus:border-blue-600" : "border-red-400 focus:border-red-500"
-                      }`}
-                  />
-                </div>
-
-              )}
-
-              {links.length > 1 && (
-                <button
-                  type="button"
-                  onClick={() => removeLinkField(index)}
-                  className="text-red-600 hover:text-red-700 text-xs font-medium mt-2 flex items-center gap-1"
-                  title="Remove link"
-                >
-                  ⌫ Remove link
-                </button>
-
-              )}
-            </div>
-
-            {preview && (
-              <div className="mt-2 text-xs text-gray-600">
-                <span className="font-semibold">Preview:</span>{" "}
-                <span className="font-mono break-all">{preview}</span>
-              </div>
-            )}
-
-            {!link.valid && link.reason && (
-              <p className="text-xs text-red-600 mt-1 ml-1">
-                {link.reason}
-              </p>
-            )}
-
-          </div>
-        );
-      })}
-
+      {links.map((link, index) => (
+        <SocialLinkInput
+          key={index}
+          value={link}
+          onChange={(nextValue) => updateLink(index, nextValue)}
+          allowRemove={links.length > 1}
+          onRemove={() => removeLinkField(index)}
+        />
+      ))}
       <button type="button" onClick={addLinkField} className="text-sm font-semibold text-blue-700 hover:underline mt-1">
         ＋ Add another link
       </button>
@@ -967,3 +793,5 @@ return base + prefix + l.username.trim();
     document.body
   );
 }
+
+
