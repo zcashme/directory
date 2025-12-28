@@ -42,6 +42,8 @@ export default function ProfileAvatar({
         }
         : {};
 
+    const outerSize = size + 6;
+
     return (
         <>
             <style>{`
@@ -52,26 +54,29 @@ export default function ProfileAvatar({
             `}</style>
             <div
                 className={`relative rounded-full overflow-hidden flex-shrink-0 ${circleClass} ${className}`}
-                style={{ width: size, height: size, ...gradientStyle }}
+                style={{ width: outerSize, height: outerSize, ...gradientStyle }}
             >
-                {profile.profile_image_url && (
-                    <img
-                        src={profile.profile_image_url}
-                        alt={profile.name || "Profile"}
-                        className={`absolute inset-0 w-full h-full ${imageClassName}`}
-                        loading="lazy"
-                        referrerPolicy="no-referrer"
-                    />
-                )}
-                {!profile.profile_image_url && showFallbackIcon && (
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="w-10 h-10 text-blue-700 opacity-20"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                    />
-                )}
+                <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
+                    {profile.profile_image_url ? (
+                        <img
+                            src={profile.profile_image_url}
+                            alt={profile.name || "Profile"}
+                            className={`w-full h-full ${imageClassName}`}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                        />
+                    ) : (
+                        showFallbackIcon && (
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-10 h-10 text-blue-700 opacity-20"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            />
+                        )
+                    )}
+                </div>
             </div>
         </>
     );
