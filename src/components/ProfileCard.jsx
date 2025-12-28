@@ -6,6 +6,7 @@ import VerifiedBadge from "./VerifiedBadge";
 import VerifiedCardWrapper from "./VerifiedCardWrapper";
 import ReferRankBadgeMulti from "./ReferRankBadgeMulti";
 import ProfileEditor from "./ProfileEditor";
+import ProfileAvatar from "./ProfileAvatar";
 import shareIcon from "../assets/share.svg";
 // --- Domain utils + favicon maps ---
 import { extractDomain, betweenTwoPeriods } from "../utils/domainParsing.js";
@@ -310,38 +311,13 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
-          <div
-            className={`relative flex-shrink-0 rounded-full overflow-hidden shadow-sm ${circleClass}`}
-            style={{
-              width: fullView ? "80px" : "45px",
-              height: fullView ? "80px" : "45px",
-              aspectRatio: "1 / 1",
-            }}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="absolute inset-0 w-full h-full text-blue-700 opacity-20"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            />
-            {/* Optimized lazy-loading profile image */}
-            {profile.profile_image_url && (
-              <img
-                ref={imgRef}
-                src={finalUrl}
-                alt={`${profile.name}'s profile`}
-                className="absolute inset-0 w-full h-full object-contain"
-                draggable="false"
-                loading="lazy"
-                decoding="async"
-                // referrerPolicy="strict-origin-when-cross-origin"
-                referrerPolicy="no-referrer"
-              />
-            )}
-
-
-          </div>
+          <ProfileAvatar
+            profile={profile}
+            size={45}
+            imageClassName="object-contain"
+            className="shadow-sm"
+            showFallbackIcon
+          />
 
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
@@ -562,33 +538,13 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
           {/* Avatar */}
-          <div
-            className={`relative mx-auto w-20 h-20 rounded-full flex items-center justify-center shadow-sm overflow-hidden ${circleClass}`}
-          >
-            {/* Optimized lazy-loading profile image */}
-            {visible && profile.profile_image_url ? (
-              <img
-                ref={imgRef}
-                src={finalUrl}
-                alt={`${profile.name}'s profile`}
-                className="absolute inset-0 w-full h-full object-contain"
-                draggable="false"
-                loading="lazy"
-                decoding="async"
-                // referrerPolicy="strict-origin-when-cross-origin"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="w-10 h-10 text-blue-700 opacity-50"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              />
-            )}
-          </div>
+          <ProfileAvatar
+            profile={profile}
+            size={80}
+            imageClassName="object-contain"
+            className="mx-auto shadow-sm flex items-center justify-center"
+            showFallbackIcon
+          />
 
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>

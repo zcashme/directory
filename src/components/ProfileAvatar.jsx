@@ -2,6 +2,8 @@ export default function ProfileAvatar({
     profile,
     size = 32, // pixels
     imageClassName = "object-cover",
+    className = "",
+    showFallbackIcon = false,
 }) {
     // --- derive state ---
     const isVerified =
@@ -33,20 +35,44 @@ export default function ProfileAvatar({
         }
     }
 
+    const gradientStyle = circleClass.includes("bg-gradient-to-r")
+        ? {
+            backgroundSize: "200% 100%",
+            animation: "avatar-gradient-x 4s ease-in-out infinite alternate",
+        }
+        : {};
+
     return (
-        <div
-            className={`relative rounded-full overflow-hidden flex-shrink-0 ${circleClass}`}
-            style={{ width: size, height: size }}
-        >
-            {profile.profile_image_url && (
-                <img
-                    src={profile.profile_image_url}
-                    alt={profile.name || "Profile"}
-                    className={`absolute inset-0 w-full h-full ${imageClassName}`}
-                    loading="lazy"
-                    referrerPolicy="no-referrer"
-                />
-            )}
-        </div>
+        <>
+            <style>{`
+                @keyframes avatar-gradient-x {
+                    0% { background-position: 0% 50%; }
+                    100% { background-position: 100% 50%; }
+                }
+            `}</style>
+            <div
+                className={`relative rounded-full overflow-hidden flex-shrink-0 ${circleClass} ${className}`}
+                style={{ width: size, height: size, ...gradientStyle }}
+            >
+                {profile.profile_image_url && (
+                    <img
+                        src={profile.profile_image_url}
+                        alt={profile.name || "Profile"}
+                        className={`absolute inset-0 w-full h-full ${imageClassName}`}
+                        loading="lazy"
+                        referrerPolicy="no-referrer"
+                    />
+                )}
+                {!profile.profile_image_url && showFallbackIcon && (
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-10 h-10 text-blue-700 opacity-20"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    />
+                )}
+            </div>
+        </>
     );
 }
