@@ -13,7 +13,6 @@ import { extractDomain, betweenTwoPeriods } from "../utils/domainParsing.js";
 import { KNOWN_DOMAINS, FALLBACK_ICON } from "../utils/domainLabels.js";
 
 import SubmitOtp from "../SubmitOtp.jsx";
-import CheckIcon from "../assets/CheckIcon.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 const Motion = motion;
 
@@ -256,9 +255,145 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
 
 
-  const hasUnverifiedLinks =
-    (profile.total_links ?? linksArray.length ?? 0) > 0 &&
-    verifiedLinks === 0;
+
+  const normalizedName = (value = "") =>
+    value
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .replace(/ /g, "_");
+
+  const cachedProfiles =
+    typeof window !== "undefined" ? window.cachedProfiles : null;
+
+  const duplicateNameCountFromProfile =
+    typeof profile.duplicate_name_count === "number"
+      ? profile.duplicate_name_count
+      : typeof profile.name_duplicate_count === "number"
+        ? profile.name_duplicate_count
+        : typeof profile.duplicate_names_count === "number"
+          ? profile.duplicate_names_count
+          : typeof profile.name_duplicates_count === "number"
+            ? profile.name_duplicates_count
+            : null;
+
+  const computedDuplicateNameCount =
+    Array.isArray(cachedProfiles) && profile?.name
+      ? cachedProfiles.filter(
+        (p) => normalizedName(p?.name) === normalizedName(profile.name)
+      ).length
+      : null;
+
+  const duplicateNameCount =
+    duplicateNameCountFromProfile ?? computedDuplicateNameCount ?? 0;
+
+  const hasDuplicateNames = duplicateNameCount > 1;
+
+  const warningConfig = (() => {
+    if (!warning) return null;
+    const name = profile?.name || "This profile";
+    const nameSearchUrl = profile?.name
+      ? `/directory?search=${encodeURIComponent(profile.name)}`
+      : "/directory";
+    const hasLinks = totalLinks > 0;
+    const hasAuthenticatedLinks = verifiedLinks > 0;
+
+    if (!verifiedAddress) {
+      if (!hasLinks && hasDuplicateNames) {
+        return {
+          tone: "red",
+          summary: `⚠ ${name} may not be who you think.`,
+          toggleLabel: null,
+          details: [
+            <>
+              Multiple profiles use this{" "}
+              <a href={nameSearchUrl} className="text-blue-600 hover:underline">
+                name
+              </a>
+              .
+            </>,
+            "No links are available to verify that this address belongs to the same person.",
+            "Names can be impersonated.",
+          ],
+        };
+      }
+
+      if (!hasLinks) {
+        return {
+          tone: "red",
+          summary: `⚠ ${name} may not be who you think.`,
+          toggleLabel: "Warnings",
+          details: [
+            "No links are available to verify that this address belongs to the same person.",
+            "Names can be impersonated.",
+          ],
+        };
+      }
+
+      if (hasDuplicateNames) {
+        return {
+          tone: "yellow",
+          summary: `⚠ ${name} may not be who you think.`,
+          toggleLabel: "Warnings",
+          details: [
+            <>
+              Multiple profiles use this{" "}
+              <a href={nameSearchUrl} className="text-blue-600 hover:underline">
+                name
+              </a>
+              .
+            </>,
+            "Links are provided, but ownership of those links has not been authenticated.",
+          ],
+        };
+      }
+
+      return {
+        tone: "yellow",
+        summary: `⚠ ${name} may not be who you think.`,
+        toggleLabel: "Warnings",
+        details: [
+          "Links are provided, but ownership of those links has not been authenticated.",
+          "Names can be impersonated.",
+        ],
+      };
+    }
+
+    if (!hasLinks) {
+      return {
+        tone: "yellow",
+        summary: "⚠ This address was recently active.",
+        toggleLabel: "Warnings",
+        details: [
+          "No links are available to verify that this address belongs to the same person.",
+          "Names can be impersonated.",
+        ],
+      };
+    }
+
+    if (hasAuthenticatedLinks) {
+      return {
+        tone: "positive",
+        summary: "This address was recently active.",
+        toggleLabel: "More",
+        details: [
+          "Authenticated links confirm that this address belongs to the same person.",
+          "Names can be impersonated.",
+        ],
+      };
+    }
+
+    return {
+      tone: "neutral",
+      summary: "This address was recently active.",
+      toggleLabel: "Caution",
+      details: [
+        "Links are provided to help verify identity, but ownership has not been authenticated.",
+        "Names can be impersonated.",
+      ],
+    };
+  })();
 
 
   // referrals not used in this component
@@ -808,89 +943,43 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           </div>
 
           {/* Warning */}
-          {warning && (
+          {warningConfig && (
             <div
-              className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${hasVerifiedContent
-                ? "text-green-600 bg-green-50 border-green-200"
-                : hasUnverifiedLinks
-                  ? "text-gray-800 bg-yellow-50 border-yellow-200"
-                  : "text-red-500 bg-red-50 border-red-200"
+              className={`mt-5 text-xs rounded-md px-4 py-2 border text-center mx-auto w-fit transition-colors duration-300 ${warningConfig.tone === "positive"
+                ? "text-green-700 bg-green-50 border-green-200"
+                : warningConfig.tone === "neutral"
+                  ? "text-gray-700 bg-gray-50 border-gray-200"
+                  : warningConfig.tone === "yellow"
+                    ? "text-yellow-900 bg-yellow-50 border-yellow-200"
+                    : "text-red-600 bg-red-50 border-red-200"
                 }`}
             >
-              {hasVerifiedContent ? (
-                <span className="inline-flex items-center gap-1">
-                  <span className="h-4 w-4 inline-flex items-center justify-center text-green-600">
-                    <CheckIcon className="h-4 w-4 text-green-600" />
+              <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
+                <span>{warningConfig.summary}</span>
+                {warningConfig.toggleLabel && (
+                  <button
+                    onClick={() => setShowDetail(!showDetail)}
+                    className={`hover:underline text-xs font-semibold ${warningConfig.tone === "positive"
+                      ? "text-green-700"
+                      : warningConfig.tone === "neutral"
+                        ? "text-gray-700"
+                        : warningConfig.tone === "yellow"
+                          ? "text-yellow-900"
+                          : "text-red-600"
+                      }`}
+                  >
+                    [{showDetail ? "Hide" : warningConfig.toggleLabel}]
+                  </button>
+                )}
+              </span>
 
-                  </span>
-                  <strong>{profile.name}</strong> appears to be authentic.
-                </span>
-              ) : hasUnverifiedLinks ? (
-                <>
-                  ⚠ <strong>{profile.name}</strong> has contributed links, but
-                  none are verified.
-                </>
-              ) : (
-                <>
-                  ⚠ <strong>{profile.name}</strong> may not be who you think.
-                </>
-              )}
-
-              <button
-                onClick={() => setShowDetail(!showDetail)}
-                className={`ml-2 hover:underline text-xs font-semibold ${hasVerifiedContent
-                  ? "text-green-600"
-                  : hasUnverifiedLinks
-                    ? "text-gray-800"
-                    : "text-blue-500"
-                  }`}
-              >
-                {showDetail ? "Hide" : "More"}
-              </button>
-
-              {showDetail && (
+              {(warningConfig.toggleLabel ? showDetail : true) && (
                 <div className="mt-1 text-xs space-y-1">
-                  {hasVerifiedContent ? (
-                    <div className="text-gray-700">
-
-                      <div>{profile.name} verified their address with OTP.</div>
-                      <div>
-                        {profile.name} authenticated{" "}
-                        {verifiedLinks > 0
-                          ? `${verifiedLinks} of ${totalLinks} link${totalLinks !== 1 ? "s" : ""}`
-                          : "links"}{" "}
-                        with OTP.
-                      </div>
-                    </div>
-                  ) : hasUnverifiedLinks ? (
-                    <div className="text-gray-800 space-y-1">
-                      <div>
-                        {profile.name} can verify their address then authenticate links to increase trust and
-                        visibility.
-                      </div>
-                    </div>
-                  ) : (
-                    !profile.address_verified && (
-                      <div className="text-gray-800 space-y-1">
-                        <div> There are other profiles with this name.</div>
-                        <div>
-                          {" "}
-                          {totalLinks > 0
-                            ? `${profile.name} has contributed ${totalLinks} link${totalLinks !== 1 ? "s" : ""
-                            }, but ${verifiedLinks > 0
-                              ? `only ${verifiedLinks} ${verifiedLinks === 1 ? "is" : "are"
-                              } verified.`
-                              : "none are verified."
-                            }`
-                            : `${profile.name} has not contributed any verified links.`}
-                        </div>
-                      </div>
-                    )
-                  )}
+                  {warningConfig.details.map((line, index) => (
+                    <div key={`${warningConfig.tone}-${index}`}>{line}</div>
+                  ))}
                 </div>
               )}
-
-
             </div>
           )}
         </div>
@@ -945,3 +1034,5 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     </VerifiedCardWrapper>
   );
 }
+
+
