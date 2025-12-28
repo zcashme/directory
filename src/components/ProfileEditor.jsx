@@ -131,6 +131,24 @@ function HelpIcon({ text }) {
   );
 }
 
+function DeleteActionButton({ onClick, disabled = false, isDeleted = false }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`text-xs font-normal hover:underline ${disabled
+        ? "text-gray-400 cursor-not-allowed"
+        : isDeleted
+          ? "text-green-700"
+          : "text-red-600"
+        }`}
+    >
+      {isDeleted ? "⌦ Reset" : "⌫ Delete"}
+    </button>
+  );
+}
+
 function RedirectModal({ isOpen, label }) {
   if (!isOpen) return null;
   return (
@@ -1108,8 +1126,9 @@ export default function ProfileEditor({ profile, links }) {
 
             <div className="flex items-center gap-3">
               <div className="relative inline-block">
-                <button
-                  type="button"
+                <DeleteActionButton
+                  disabled={!profile.address_verified}
+                  isDeleted={deletedFields.address}
                   onClick={(e) => {
                     if (!profile.address_verified) {
                       const btn = e.currentTarget;
@@ -1138,15 +1157,7 @@ export default function ProfileEditor({ profile, links }) {
                       return { ...prev, address: next };
                     });
                   }}
-                  className={`text-xs underline font-normal ${profile.address_verified
-                    ? deletedFields.address
-                      ? "text-green-700"
-                      : "text-red-600"
-                    : "text-gray-400 cursor-not-allowed"
-                    }`}
-                >
-                  {deletedFields.address ? "⌦ Reset" : "⌫ Delete"}
-                </button>
+                />
 
                 <div className="absolute fade-popup z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
                   Cannot change unverified address. <br /> Lost access? Create new profile.
@@ -1177,8 +1188,8 @@ export default function ProfileEditor({ profile, links }) {
             </label>
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <DeleteActionButton
+                isDeleted={deletedFields.name}
                 onClick={() =>
                   setDeletedFields((prev) => {
                     const next = !prev.name;
@@ -1190,11 +1201,7 @@ export default function ProfileEditor({ profile, links }) {
                     return { ...prev, name: next };
                   })
                 }
-                className={`text-xs underline font-normal ${deletedFields.name ? "text-green-700" : "text-red-600"
-                  }`}
-              >
-                {deletedFields.name ? "⌦ Reset" : "⌫ Delete"}
-              </button>
+              />
 
               <HelpIcon text="Your public display name for this profile." />
             </div>
@@ -1220,8 +1227,8 @@ export default function ProfileEditor({ profile, links }) {
             </label>
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <DeleteActionButton
+                isDeleted={deletedFields.bio}
                 onClick={() =>
                   setDeletedFields((prev) => {
                     const next = !prev.bio;
@@ -1233,11 +1240,7 @@ export default function ProfileEditor({ profile, links }) {
                     return { ...prev, bio: next };
                   })
                 }
-                className={`text-xs underline ${deletedFields.bio ? "text-green-700" : "text-red-600"
-                  }`}
-              >
-                {deletedFields.bio ? "⌦ Reset" : "⌫ Delete"}
-              </button>
+              />
 
               <HelpIcon text="Your current story arc in 100 characters or less." />
             </div>
@@ -1261,8 +1264,8 @@ export default function ProfileEditor({ profile, links }) {
             <label className="font-semibold text-gray-700">Nearest City</label>
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <DeleteActionButton
+                isDeleted={deletedCity}
                 onClick={() => {
                   const next = !deletedCity;
                   setDeletedCity(next);
@@ -1277,11 +1280,7 @@ export default function ProfileEditor({ profile, links }) {
                     setNearestCityDisplay("");
                   }
                 }}
-                className={`text-xs underline ${deletedCity ? "text-green-700" : "text-red-600"
-                  }`}
-              >
-                {deletedCity ? "⌦ Reset" : "⌫ Delete"}
-              </button>
+              />
 
               <HelpIcon text="Select the city closest to you. This helps with regional discovery and relevance." />
             </div>
@@ -1320,8 +1319,8 @@ export default function ProfileEditor({ profile, links }) {
             </label>
 
             <div className="flex items-center gap-3">
-              <button
-                type="button"
+              <DeleteActionButton
+                isDeleted={deletedFields.profile_image_url}
                 onClick={() =>
                   setDeletedFields((prev) => {
                     const next = !prev.profile_image_url;
@@ -1333,11 +1332,7 @@ export default function ProfileEditor({ profile, links }) {
                     return { ...prev, profile_image_url: next };
                   })
                 }
-                className={`text-xs underline font-normal ${deletedFields.profile_image_url ? "text-green-700" : "text-red-600"
-                  }`}
-              >
-                {deletedFields.profile_image_url ? "⌦ Reset" : "⌫ Delete"}
-              </button>
+              />
 
               <HelpIcon text="Link to PNG or JPG. Search 'free image link host'." />
             </div>
@@ -1382,7 +1377,7 @@ export default function ProfileEditor({ profile, links }) {
                 Reset
               </button>
 
-              <HelpIcon text="Verified links cannot be changed. Links can be verified only after verifying your address via OTP" />
+              <HelpIcon text="Authenticated links cannot be changed. Links can only be authenticated after verifying your address via OTP" />
 
             </div>
           </div>
