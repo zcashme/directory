@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import ZcashGridButton from "./components/ZcashGridButton";
 
 import AddUserForm from "./AddUserForm";
@@ -36,7 +36,38 @@ export default function Directory() {
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const [search, setSearch] = useState("");
+  const location = useLocation();
+  const [search, setSearch] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    const querySearch = params.get("search");
+    if (querySearch) return querySearch;
+    if (location.state?.initialSearch) return location.state.initialSearch;
+    // If accessing a slug directly (e.g. /unknown-user) and it's not the explicit /directory route,
+    // pre-fill search so we show the "Result not found" state instead of the full list.
+    const path = location.pathname.slice(1);
+    if (path && path.toLowerCase() !== "directory") {
+      return decodeURIComponent(path);
+    }
+    return "";
+  });
+
+  // Update search if location state changes (e.g. navigation from Splash Page)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const querySearch = params.get("search");
+    if (querySearch !== null) {
+      setSearch(querySearch);
+      setFilters({ verified: false, referred: false, ranked: false, featured: false });
+      window.history.replaceState({}, document.title);
+      return;
+    }
+    if (location.state?.initialSearch) {
+      setSearch(location.state.initialSearch);
+      // clear state so it doesn't persist on refresh if we don't want it to
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.search, location.state]);
+
   const [activeLetter, setActiveLetter] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
