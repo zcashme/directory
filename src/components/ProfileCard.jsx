@@ -641,17 +641,21 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
           {/* Name */}
 
-          <div className="mt-3 flex items-center justify-center gap-2">
-            <h2 className="text-2xl font-bold text-gray-800">{profile.name}</h2>
-            {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
-              <VerifiedBadge
-                verified={true}
-                verifiedCount={
-                  (profile.verified_links_count ?? 0) +
-                  (profile.address_verified ? 1 : 0)
-                }
-              />
-            )}
+          <div className="mt-3 flex justify-center">
+            <div className="relative inline-flex items-center">
+              <h2 className="text-2xl font-bold text-gray-800">{profile.name}</h2>
+              {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
+                <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2">
+                  <VerifiedBadge
+                    verified={true}
+                    verifiedCount={
+                      (profile.verified_links_count ?? 0) +
+                      (profile.address_verified ? 1 : 0)
+                    }
+                  />
+                </span>
+              )}
+            </div>
           </div>
 
 
