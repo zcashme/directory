@@ -1504,7 +1504,7 @@ export default function ProfileEditor({ profile, links }) {
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
               ⛉
-              <span className="font-semibold">Verify</span> address to approve changes.
+              <span className="font-semibold">Request OTP</span> to verify address and approve any changes.
             </span>
           </p>
         </div>
