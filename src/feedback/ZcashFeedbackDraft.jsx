@@ -56,6 +56,8 @@ export default function ZcashFeedbackDraft() {
   }, [memo]);
 
   const disabled = selectedAddress?.startsWith("t");
+  const recipientName =
+    cachedProfiles.find((p) => p.address === selectedAddress)?.name || "Recipient";
 
 useEffect(() => {
   if (!forceShowQR) return;
@@ -78,8 +80,7 @@ useEffect(() => {
             className="text-blue-600 cursor-pointer"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           >
-            {cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
-              "Recipient"}
+            {recipientName}
           </span>
         </div>
 
@@ -183,8 +184,8 @@ useEffect(() => {
           }}
           placeholder={
             disabled
-              ? "Memos not supported for transparent addresses"
-              : "Write your message here..."
+              ? "Memos are not supported for transparent addresses"
+              : `Write your message to ${recipientName} here...`
           }
           className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 ${
             disabled
