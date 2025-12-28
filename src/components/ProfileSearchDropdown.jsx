@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useFeedback } from "../hooks/useFeedback";
 import VerifiedBadge from "./VerifiedBadge";
 import ProfileAvatar from "./ProfileAvatar";
@@ -11,6 +11,19 @@ export default function ProfileSearchDropdown({
   listOnly = false,
 }) {
   const [show, setShow] = useState(false);
+  const hideTimerRef = useRef(null);
+  const [isHovering, setIsHovering] = useState(false);
+
+  const clearHideTimer = () => {
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+  };
+
+  const startHideTimer = () => {
+    clearHideTimer();
+    hideTimerRef.current = setTimeout(() => {
+      if (!isHovering) setShow(false);
+    }, 4000);
+  };
 
   // This is the only global sync we need
   const { setSelectedAddress } = useFeedback();
@@ -39,8 +52,18 @@ export default function ProfileSearchDropdown({
     : [];
 
   useEffect(() => {
-    if (!value) setShow(false);
-  }, [value]);
+    if (!value) {
+      setShow(false);
+      return;
+    }
+
+    setShow(true);
+    startHideTimer();
+
+    return () => {
+      clearHideTimer();
+    };
+  }, [value, isHovering]);
 
   return (
     <div className="w-full">
@@ -59,8 +82,18 @@ export default function ProfileSearchDropdown({
       )}
 
       {/* Dropdown menu */}
-      {(listOnly || show) && value && (
-        <div className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#0a1126]/80 bg-[#0a1126]/90 backdrop-blur-md shadow-xl w-full">
+      {show && value && (
+        <div
+          onMouseEnter={() => {
+            setIsHovering(true);
+            clearHideTimer();
+          }}
+          onMouseLeave={() => {
+            setIsHovering(false);
+            startHideTimer();
+          }}
+          className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#0a1126]/80 bg-[#0a1126]/90 backdrop-blur-md shadow-xl w-full"
+        >
           {filtered.length > 0 ? (
             filtered.slice(0, 20).map((p) => (
               <div
