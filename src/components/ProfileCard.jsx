@@ -821,7 +821,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                         <span className="font-medium text-gray-800 truncate">
                           {link.label}
                         </span>
-                        <VerifiedBadge verified={link.is_verified} />
+                        <VerifiedBadge
+                          verified={link.is_verified}
+                          verifiedLabel="Authenticated"
+                          unverifiedLabel="Not Authenticated"
+                        />
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
                         <a
@@ -895,7 +899,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
                       <div>{profile.name} verified their address with OTP.</div>
                       <div>
-                        {profile.name} verified{" "}
+                        {profile.name} authenticated{" "}
                         {verifiedLinks > 0
                           ? `${verifiedLinks} of ${totalLinks} link${totalLinks !== 1 ? "s" : ""}`
                           : "links"}{" "}
@@ -905,7 +909,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   ) : hasUnverifiedLinks ? (
                     <div className="text-gray-800 space-y-1">
                       <div>
-                        {profile.name} can verify their address or links to increase trust and
+                        {profile.name} can verify their address then authenticate links to increase trust and
                         visibility.
                       </div>
                     </div>

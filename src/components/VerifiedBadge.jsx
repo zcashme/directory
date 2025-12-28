@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 
 export default function VerifiedBadge({
   verified = true,
+  verifiedLabel = "Verified",
+  unverifiedLabel = "Unverified",
 }) {
   // Start collapsed by default
   const [open, setOpen] = useState(false);
@@ -51,6 +53,19 @@ export default function VerifiedBadge({
     </span>
   );
 
+  const verifiedLabelMax =
+    verifiedLabel.length > 9 ? "max-w-[120px]" : "max-w-[70px]";
+  const verifiedLabelHoverMax =
+    verifiedLabel.length > 9
+      ? "group-hover/badge:max-w-[120px]"
+      : "group-hover/badge:max-w-[70px]";
+  const unverifiedLabelMax =
+    unverifiedLabel.length > 11 ? "max-w-[140px]" : "max-w-[80px]";
+  const unverifiedLabelHoverMax =
+    unverifiedLabel.length > 11
+      ? "group-hover/badge:max-w-[140px]"
+      : "group-hover/badge:max-w-[80px]";
+
   // UNIVERSAL shield renderer
   const renderShield = (color) => (
     <span className="relative flex items-center">
@@ -80,12 +95,12 @@ export default function VerifiedBadge({
     ${
               // if open=true on mount, fake the exact same animation as hover
               open
-                ? "group-hover/badge:max-w-[70px] group-hover/badge:opacity-100 max-w-[70px] opacity-100"
-                : "max-w-0 opacity-0 group-hover/badge:max-w-[70px] group-hover/badge:opacity-100"
+                ? `${verifiedLabelHoverMax} group-hover/badge:opacity-100 ${verifiedLabelMax} opacity-100`
+                : `max-w-0 opacity-0 ${verifiedLabelHoverMax} group-hover/badge:opacity-100`
               }
   `}
           >
-            Verified
+            {verifiedLabel}
           </span>
 
         </div>
@@ -118,12 +133,12 @@ export default function VerifiedBadge({
             overflow-hidden inline-block ease-in-out whitespace-nowrap
             ${hasMounted ? "transition-all duration-300" : ""}
             ${open
-              ? "max-w-[80px] opacity-100"
-              : "max-w-0 opacity-0 group-hover/badge:max-w-[80px] group-hover/badge:opacity-100"
+              ? `${unverifiedLabelMax} opacity-100`
+              : `max-w-0 opacity-0 ${unverifiedLabelHoverMax} group-hover/badge:opacity-100`
             }
           `}
         >
-          Unverified
+          {unverifiedLabel}
         </span>
       </div>
     </span>
