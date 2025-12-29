@@ -25,7 +25,21 @@ const isValidImageUrl = (url) => {
     return { valid: false, reason: "Invalid URL format" };
   }
 
-  if (!/\.(png|jpg)$/i.test(trimmed)) {
+  const hasImageExt = /\.(png|jpg)(\?.*)?$/i.test(trimmed);
+  let isGithubAvatar = false;
+  if (!hasImageExt) {
+    try {
+      const normalized = /^https?:\/\//i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed}`;
+      const url = new URL(normalized);
+      isGithubAvatar = url.hostname.toLowerCase() === "avatars.githubusercontent.com";
+    } catch {
+      isGithubAvatar = false;
+    }
+  }
+
+  if (!hasImageExt && !isGithubAvatar) {
     return { valid: false, reason: "Image URL must end in .png or .jpg" };
   }
 
@@ -169,6 +183,65 @@ function RedirectModal({ isOpen, label }) {
   );
 }
 
+function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Avatar not available</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Please reauthenticate {providerLabel} to fetch your avatar, or do this later.
+        </p>
+        <div className="flex items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={onLater}
+            className="text-xs px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+          >
+            Later
+          </button>
+          <button
+            type="button"
+            onClick={onReauth}
+            className="text-xs px-3 py-2 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+          >
+            Reauthenticate
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AvatarPreviewModal({ isOpen, src, onClose }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-4 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-lg font-bold text-gray-800">Avatar Preview</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-xs px-2 py-1 border border-gray-300 rounded hover:bg-gray-50"
+          >
+            Close
+          </button>
+        </div>
+        {src ? (
+          <img
+            src={src}
+            alt="Avatar preview"
+            className="w-full max-h-[60vh] object-contain rounded"
+          />
+        ) : (
+          <p className="text-sm text-gray-600">No image URL provided.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 export default function ProfileEditor({ profile, links }) {
   // 🔥 RENDER DEBUG: Check if component actually renders
@@ -177,6 +250,217 @@ export default function ProfileEditor({ profile, links }) {
   const { setPendingEdits, pendingEdits } = useFeedback();
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("X.com");
+  const [avatarPrompt, setAvatarPrompt] = useState(null);
+  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+
+  const getDiscordAvatarKey = (id, handle) =>
+    `discord_avatar_url:${id}:${handle}`;
+  const getXAvatarKey = (id, handle) => `x_avatar_url:${id}:${handle}`;
+  const getGithubAvatarKey = (id, handle) =>
+    `github_avatar_url:${id}:${handle}`;
+  const buildDiscordAvatarUrl = (id, avatar) => {
+    if (!id || !avatar) return null;
+    return `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=4096`;
+  };
+  const upgradeXAvatarUrl = (url) => {
+    if (!url || typeof url !== "string") return url;
+    const trimmed = url.trim().replace(/^,+/, "");
+    const withName = trimmed.replace(/([?&])name=normal\b/i, "$1name=original");
+    const replaced = withName.replace(/_(normal|bigger|mini)(\.[a-z0-9]+)(\?.*)?$/i, "$2$3");
+    return replaced;
+  };
+  const normalizeHandleKey = (value) => (value || "").trim().toLowerCase();
+  const parseXHandleFromUrl = (rawUrl) => {
+    const m = (rawUrl || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+    return m ? m[1].trim() : null;
+  };
+  const parseGithubHandleFromUrl = (rawUrl) => {
+    const m = (rawUrl || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
+    return m ? m[1].trim() : null;
+  };
+  const parseDiscordTargetFromUrl = (rawUrl) => {
+    const m = (rawUrl || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([^/?#]+)/i);
+    return m ? decodeURIComponent(m[1]) : null;
+  };
+  const getXHandle = (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const tw = ids.find((i) => i?.provider === "twitter")?.identity_data || {};
+    const candidates = [
+      tw.username,
+      tw.screen_name,
+      tw.preferred_username,
+      tw.user_name,
+      tw.name
+    ].filter(Boolean);
+    const h = candidates.find((v) => typeof v === "string" && v.trim());
+    return h ? h.replace(/^@/, "") : null;
+  };
+  const getGithubHandle = (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const gh = ids.find((i) => i?.provider === "github")?.identity_data || {};
+    const candidates = [
+      gh.user_name,
+      gh.login,
+      gh.preferred_username
+    ].filter(Boolean);
+    const h = candidates.find((v) => typeof v === "string" && v.trim());
+    return h ? h.replace(/^@/, "") : null;
+  };
+  const getDiscordId = (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const identity = ids.find((i) => i?.provider === "discord");
+    const candidates = [
+      identity?.id,
+      identity?.identity_data?.id,
+      identity?.identity_data?.sub
+    ].filter(Boolean);
+    const h = candidates.find((v) => (typeof v === "string" || typeof v === "number") && String(v).trim());
+    return h ? String(h).trim() : null;
+  };
+  const getDiscordUsername = async (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const identity = ids.find((i) => i?.provider === "discord");
+    const data = identity?.identity_data || {};
+    const userMeta = s?.user?.user_metadata || {};
+    const username = data.username || data.preferred_username || data.user_name || data.name
+      || userMeta.username || userMeta.preferred_username || userMeta.user_name || userMeta.name || userMeta.full_name || null;
+    const globalName = data.global_name || userMeta.global_name || null;
+    const discriminator = data.discriminator || userMeta.discriminator || null;
+    const candidates = [];
+    if (username) {
+      candidates.push(username);
+      if (discriminator && String(discriminator) != "0") {
+        candidates.push(`${username}#${discriminator}`);
+      }
+    }
+    if (globalName) candidates.push(globalName);
+    const h = candidates.find((v) => typeof v === "string" && v.trim());
+    if (h) return h.trim();
+
+    const providerToken = s?.provider_token || s?.user?.provider_token || null;
+    if (providerToken) {
+      try {
+        const res = await fetch("https://discord.com/api/users/@me", {
+          headers: {
+            Authorization: `Bearer ${providerToken}`
+          }
+        });
+        if (res.ok) {
+          const me = await res.json();
+          const uname = me?.username || null;
+          const gname = me?.global_name || null;
+          const disc = me?.discriminator || null;
+          if (uname) {
+            if (disc && String(disc) != "0") return `${uname}#${disc}`;
+            return uname;
+          }
+          if (gname) return gname;
+        } else {
+          console.warn("[VERIFY WARN] Discord /users/@me failed:", res.status);
+        }
+      } catch (err) {
+        console.warn("[VERIFY WARN] Discord /users/@me error:", err);
+      }
+    }
+
+    return null;
+  };
+  const normalizeDiscordHandle = (value) =>
+    (value || "")
+      .trim()
+      .replace(/^@/, "")
+      .replace(/#0$/, "")
+      .toLowerCase();
+  const getDiscordAvatarUrl = async (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const identity = ids.find((i) => i?.provider === "discord");
+    const data = identity?.identity_data || {};
+    const userMeta = s?.user?.user_metadata || {};
+    const id = data.id || data.sub || identity?.id || userMeta.id || userMeta.sub || null;
+    const avatar = data.avatar || userMeta.avatar || null;
+    const direct = buildDiscordAvatarUrl(id, avatar);
+    if (direct) return direct;
+
+    const providerToken = s?.provider_token || s?.user?.provider_token || null;
+    if (!providerToken) return null;
+    try {
+      const res = await fetch("https://discord.com/api/users/@me", {
+        headers: {
+          Authorization: `Bearer ${providerToken}`
+        }
+      });
+      if (res.ok) {
+        const me = await res.json();
+        return buildDiscordAvatarUrl(me?.id, me?.avatar);
+      }
+    } catch (err) {
+      console.warn("[VERIFY WARN] Discord /users/@me avatar error:", err);
+    }
+    return null;
+  };
+  const storeDiscordAvatarUrl = (url, handle) => {
+    if (!url || !handle) return;
+    localStorage.setItem(getDiscordAvatarKey(profile.id, handle), url);
+  };
+  const getXAvatarUrl = (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const identity = ids.find((i) => i?.provider === "twitter");
+    const data = identity?.identity_data || {};
+    const userMeta = s?.user?.user_metadata || {};
+    const candidates = [
+      data.profile_image_url_https,
+      data.profile_image_url,
+      data.avatar_url,
+      data.picture,
+      data.image,
+      userMeta.avatar_url,
+      userMeta.picture,
+      userMeta.profile_image_url,
+      userMeta.profile_image_url_https
+    ].filter(Boolean);
+    const h = candidates.find((v) => typeof v === "string" && v.trim());
+    return h ? upgradeXAvatarUrl(h.trim()) : null;
+  };
+  const storeXAvatarUrl = (url, handle) => {
+    if (!url || !handle) return;
+    localStorage.setItem(getXAvatarKey(profile.id, handle), url);
+  };
+  const getGithubAvatarUrl = async (s) => {
+    const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+    const identity = ids.find((i) => i?.provider === "github");
+    const data = identity?.identity_data || {};
+    const userMeta = s?.user?.user_metadata || {};
+    const candidates = [
+      data.avatar_url,
+      data.avatar,
+      data.picture,
+      userMeta.avatar_url,
+      userMeta.picture
+    ].filter(Boolean);
+    const h = candidates.find((v) => typeof v === "string" && v.trim());
+    if (h) return h.trim();
+
+    const providerToken = s?.provider_token || s?.user?.provider_token || null;
+    if (!providerToken) return null;
+    try {
+      const res = await fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${providerToken}`
+        }
+      });
+      if (res.ok) {
+        const me = await res.json();
+        return me?.avatar_url || null;
+      }
+    } catch (err) {
+      console.warn("[VERIFY WARN] GitHub /user avatar error:", err);
+    }
+    return null;
+  };
+  const storeGithubAvatarUrl = (url, handle) => {
+    if (!url || !handle) return;
+    localStorage.setItem(getGithubAvatarKey(profile.id, handle), url);
+  };
 
   // stored values (read-only originals)
   const origCityId = profile.nearest_city_id || null;
@@ -215,19 +499,6 @@ export default function ProfileEditor({ profile, links }) {
       if (pId && url && String(pId) === String(profile.id)) {
         console.log("✅ OAuth verified for:", url);
 
-        const getXHandle = (s) => {
-          const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-          const tw = ids.find((i) => i?.provider === 'twitter')?.identity_data || {};
-          const candidates = [
-            tw.username,
-            tw.screen_name,
-            tw.preferred_username,
-            tw.user_name,
-            tw.name
-          ].filter(Boolean);
-          const h = candidates.find((v) => typeof v === 'string' && v.trim());
-          return h ? h.replace(/^@/, '') : null;
-        };
         const getLinkedInData = (s) => {
           const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
           const li = ids.find((i) => i?.provider === 'linkedin_oidc')?.identity_data || {};
@@ -248,87 +519,6 @@ export default function ProfileEditor({ profile, links }) {
             email: li.email              // "xiang...@..."
           };
         };
-        const getGithubHandle = (s) => {
-          const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-          const gh = ids.find((i) => i?.provider === 'github')?.identity_data || {};
-          const candidates = [
-            gh.user_name,
-            gh.login,
-            gh.preferred_username
-          ].filter(Boolean);
-          const h = candidates.find((v) => typeof v === 'string' && v.trim());
-          return h ? h.replace(/^@/, '') : null;
-        };
-        const getDiscordId = (s) => {
-          const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-          const identity = ids.find((i) => i?.provider === 'discord');
-
-          // 1. Prefer the top-level 'id' from the identity record (this is the Provider User ID)
-          // 2. Fallback to identity_data fields if available
-          const candidates = [
-            identity?.id,
-            identity?.identity_data?.id,
-            identity?.identity_data?.sub
-          ].filter(Boolean);
-
-          const h = candidates.find((v) => (typeof v === 'string' || typeof v === 'number') && String(v).trim());
-          return h ? String(h).trim() : null;
-        };
-        const getDiscordUsername = async (s) => {
-          const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-          const identity = ids.find((i) => i?.provider === 'discord');
-          const data = identity?.identity_data || {};
-          const userMeta = s?.user?.user_metadata || {};
-          const username = data.username || data.preferred_username || data.user_name || data.name
-            || userMeta.username || userMeta.preferred_username || userMeta.user_name || userMeta.name || userMeta.full_name || null;
-          const globalName = data.global_name || userMeta.global_name || null;
-          const discriminator = data.discriminator || userMeta.discriminator || null;
-          const candidates = [];
-          if (username) {
-            candidates.push(username);
-            if (discriminator && String(discriminator) != "0") {
-              candidates.push(`${username}#${discriminator}`);
-            }
-          }
-          if (globalName) candidates.push(globalName);
-          const h = candidates.find((v) => typeof v === "string" && v.trim());
-          if (h) return h.trim();
-
-          const providerToken = s?.provider_token || s?.user?.provider_token || null;
-          if (providerToken) {
-            try {
-              const res = await fetch("https://discord.com/api/users/@me", {
-                headers: {
-                  Authorization: `Bearer ${providerToken}`
-                }
-              });
-              if (res.ok) {
-                const me = await res.json();
-                const uname = me?.username || null;
-                const gname = me?.global_name || null;
-                const disc = me?.discriminator || null;
-                if (uname) {
-                  if (disc && String(disc) != "0") return `${uname}#${disc}`;
-                  return uname;
-                }
-                if (gname) return gname;
-              } else {
-                console.warn("[VERIFY WARN] Discord /users/@me failed:", res.status);
-              }
-            } catch (err) {
-              console.warn("[VERIFY WARN] Discord /users/@me error:", err);
-            }
-          }
-
-          return null;
-        };
-        const normalizeDiscordHandle = (value) =>
-          (value || "")
-            .trim()
-            .replace(/^@/, "")
-            .replace(/#0$/, "")
-            .toLowerCase();
-
         const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
         const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
         const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
@@ -346,6 +536,10 @@ export default function ProfileEditor({ profile, links }) {
             localStorage.removeItem("verifying_link_url");
             return;
           }
+
+          const avatarUrl = getXAvatarUrl(session);
+          const handleKey = normalizeHandleKey(targetUsername);
+          if (avatarUrl && handleKey) storeXAvatarUrl(avatarUrl, handleKey);
         }
         if (isLinkedInUrl) {
           const liData = getLinkedInData(session);
@@ -420,6 +614,10 @@ export default function ProfileEditor({ profile, links }) {
             localStorage.removeItem("verifying_link_url");
             return;
           }
+
+          const avatarUrl = await getGithubAvatarUrl(session);
+          const handleKey = normalizeHandleKey(targetGh);
+          if (avatarUrl && handleKey) storeGithubAvatarUrl(avatarUrl, handleKey);
         }
         if (isDiscordUrl) {
           const discordId = getDiscordId(session);
@@ -453,6 +651,10 @@ export default function ProfileEditor({ profile, links }) {
             localStorage.removeItem("verifying_link_url");
             return;
           }
+
+          const avatarUrl = await getDiscordAvatarUrl(session);
+          const handleKey = normalizeHandleKey(targetNorm);
+          if (avatarUrl && handleKey) storeDiscordAvatarUrl(avatarUrl, handleKey);
         }
 
         // 2. Update Database
@@ -1096,6 +1298,110 @@ export default function ProfileEditor({ profile, links }) {
   // Handlers
   const handleChange = (field, value) =>
     setForm((prev) => ({ ...prev, [field]: value }));
+  const applyDiscordAvatar = async (url) => {
+    const target = parseDiscordTargetFromUrl(url);
+    const targetKey = normalizeHandleKey(normalizeDiscordHandle(target));
+    if (!targetKey) {
+      setAvatarPrompt({ provider: "Discord", url });
+      return;
+    }
+
+    let nextUrl = localStorage.getItem(getDiscordAvatarKey(profile.id, targetKey));
+    if (!nextUrl) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const discordId = getDiscordId(session);
+        const discordUsername = await getDiscordUsername(session);
+        const isNumericTarget = /^[0-9]+$/.test(targetKey);
+        const usernameCandidates = [discordUsername]
+          .filter(Boolean)
+          .flatMap((name) => {
+            const normalized = normalizeDiscordHandle(name);
+            const base = normalized.replace(/#\d+$/, "");
+            return [normalized, base].filter(Boolean);
+          });
+        const match = isNumericTarget
+          ? !!discordId && String(discordId) === String(targetKey)
+          : usernameCandidates.includes(targetKey);
+
+        if (!match) {
+          setAvatarPrompt({ provider: "Discord", url });
+          return;
+        }
+
+        nextUrl = await getDiscordAvatarUrl(session);
+        if (nextUrl) storeDiscordAvatarUrl(nextUrl, targetKey);
+      }
+    }
+
+    if (!nextUrl) {
+      setAvatarPrompt({ provider: "Discord", url });
+      return;
+    }
+
+    setDeletedFields((prev) => ({ ...prev, profile_image_url: false }));
+    handleChange("profile_image_url", nextUrl);
+  };
+  const applyXAvatar = async (url) => {
+    const target = parseXHandleFromUrl(url);
+    const targetKey = normalizeHandleKey(target);
+    if (!targetKey) {
+      setAvatarPrompt({ provider: "X", url });
+      return;
+    }
+
+    let nextUrl = localStorage.getItem(getXAvatarKey(profile.id, targetKey));
+    if (!nextUrl) {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const xHandle = getXHandle(session);
+        if (!xHandle || normalizeHandleKey(xHandle) !== targetKey) {
+          setAvatarPrompt({ provider: "X", url });
+          return;
+        }
+        nextUrl = getXAvatarUrl(session);
+        if (nextUrl) storeXAvatarUrl(nextUrl, targetKey);
+      }
+    }
+
+    if (!nextUrl) {
+      setAvatarPrompt({ provider: "X", url });
+      return;
+    }
+
+    setDeletedFields((prev) => ({ ...prev, profile_image_url: false }));
+    handleChange("profile_image_url", nextUrl);
+  };
+  const applyGithubAvatar = async (url) => {
+    const target = parseGithubHandleFromUrl(url);
+    const targetKey = normalizeHandleKey(target);
+    if (!targetKey) {
+      setAvatarPrompt({ provider: "GitHub", url });
+      return;
+    }
+
+    let nextUrl = localStorage.getItem(getGithubAvatarKey(profile.id, targetKey));
+    if (!nextUrl) {
+      try {
+        const res = await fetch(`https://api.github.com/users/${encodeURIComponent(targetKey)}`);
+        if (res.ok) {
+          const data = await res.json();
+          nextUrl = data?.avatar_url || null;
+          if (nextUrl) storeGithubAvatarUrl(nextUrl, targetKey);
+        }
+      } catch (err) {
+        console.warn("[VERIFY WARN] GitHub avatar fetch error:", err);
+      }
+    }
+
+    if (!nextUrl) {
+      setAvatarPrompt({ provider: "GitHub", url });
+      return;
+    }
+
+    setDeletedFields((prev) => ({ ...prev, profile_image_url: false }));
+    handleChange("profile_image_url", nextUrl);
+  };
 
   const handleLinkChange = (uid, value) => {
     setForm((prev) => ({
@@ -1178,6 +1484,25 @@ export default function ProfileEditor({ profile, links }) {
 
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <RedirectModal isOpen={showRedirect} label={redirectLabel} />
+      <AvatarPreviewModal
+        isOpen={avatarPreviewOpen}
+        src={(form.profile_image_url || originals.profile_image_url || "").trim()}
+        onClose={() => setAvatarPreviewOpen(false)}
+      />
+      <AvatarReauthModal
+        isOpen={!!avatarPrompt}
+        providerLabel={avatarPrompt?.provider || ""}
+        onLater={() => setAvatarPrompt(null)}
+        onReauth={() => {
+          if (!avatarPrompt?.url) return;
+          const provider = avatarPrompt.provider;
+          const url = avatarPrompt.url;
+          setAvatarPrompt(null);
+          if (provider === "Discord") handleDiscordVerify(url);
+          else if (provider === "X") handleXVerify(url);
+          else if (provider === "GitHub") handleGithubVerify(url);
+        }}
+      />
       <div className="w-full max-w-xl bg-transparent overflow-hidden">
 
         {/* Header */}
@@ -1422,6 +1747,15 @@ export default function ProfileEditor({ profile, links }) {
               : "border-red-400 focus:border-red-500"
               }`}
           />
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => setAvatarPreviewOpen(true)}
+              className="text-xs px-2 py-1 border border-blue-400 text-blue-600 rounded hover:bg-blue-50"
+            >
+              Preview Avatar
+            </button>
+          </div>
           {!imageUrlValid && imageUrlReason && (
             <p className="text-xs text-red-600 mt-1">{imageUrlReason}</p>
           )}
@@ -1469,6 +1803,9 @@ export default function ProfileEditor({ profile, links }) {
 
           const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
           const isPending = token && isPendingToken(token);
+          const showDiscordAvatarAction = isVerified && isDiscord;
+          const showXAvatarAction = isVerified && isX;
+          const showGithubAvatarAction = isVerified && isGithub;
 
           const linkActions = (
             <div className="flex items-center justify-between">
@@ -1478,13 +1815,42 @@ export default function ProfileEditor({ profile, links }) {
                     Verify uaddr to authenticate links
                   </span>
                 ) : isVerified ? (
-                  <button
-                    type="button"
-                    disabled
-                    className="text-xs px-2 py-1 text-green-700 border border-green-400 rounded opacity-60 cursor-not-allowed"
-                  >
-                    Authenticated
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled
+                      className="text-xs px-2 py-1 text-green-700 border border-green-400 rounded opacity-60 cursor-not-allowed"
+                    >
+                      Authenticated
+                    </button>
+                    {showDiscordAvatarAction && (
+                      <button
+                        type="button"
+                        onClick={() => applyDiscordAvatar(row.url)}
+                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                      >
+                        Use Discord Avatar
+                      </button>
+                    )}
+                    {showXAvatarAction && (
+                      <button
+                        type="button"
+                        onClick={() => applyXAvatar(row.url)}
+                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                      >
+                        Use X Avatar
+                      </button>
+                    )}
+                    {showGithubAvatarAction && (
+                      <button
+                        type="button"
+                        onClick={() => applyGithubAvatar(row.url)}
+                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                      >
+                        Use Github Avatar
+                      </button>
+                    )}
+                  </div>
                 ) : (
                   <button
                     type="button"
