@@ -38,6 +38,7 @@ export default function ZcashFeedbackVerify() {
     if (hasField("bio", "b")) changedFields.push("bio");
     if (hasField("profile_image_url", "i"))
       changedFields.push("profile image");
+    if (profileEdits?.c) changedFields.push("nearest city");
 
     const hasLinks =
       Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
