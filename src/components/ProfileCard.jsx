@@ -304,7 +304,8 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         return {
           tone: "red",
           summary: `⚠ ${name} may not be who you think.`,
-          toggleLabel: null,
+          toggleLabel: "Warnings",
+          defaultExpanded: false,
           details: [
             <>
               Multiple profiles use this{" "}
@@ -324,7 +325,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               .
             </>,
             "No links are available to verify that this address belongs to the same person.",
-            "Names can be impersonated.",
           ],
         };
       }
@@ -414,6 +414,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       ],
     };
   })();
+
+  useEffect(() => {
+    if (!warningConfig) return;
+    setShowDetail(!!warningConfig.defaultExpanded);
+  }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
 
 
   // referrals not used in this component
@@ -974,26 +979,25 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                     : "text-red-600 bg-red-50 border-red-200"
                 }`}
             >
-              <span className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
+              <div className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
                 <span>{warningConfig.summary}</span>
-                {warningConfig.toggleLabel && (
-                  <button
-                    onClick={() => setShowDetail(!showDetail)}
-                    className={`hover:underline text-xs font-semibold ${warningConfig.tone === "positive"
-                      ? "text-green-700"
-                      : warningConfig.tone === "neutral"
-                        ? "text-gray-700"
-                        : warningConfig.tone === "yellow"
-                          ? "text-yellow-900"
-                          : "text-red-600"
-                      }`}
-                  >
-                    [{showDetail ? "Hide" : warningConfig.toggleLabel}]
-                  </button>
-                )}
-              </span>
+                <button
+                  type="button"
+                  onClick={() => setShowDetail(!showDetail)}
+                  className={`ml-1 whitespace-nowrap hover:underline text-xs font-semibold ${warningConfig.tone === "positive"
+                    ? "text-green-700"
+                    : warningConfig.tone === "neutral"
+                      ? "text-gray-700"
+                      : warningConfig.tone === "yellow"
+                        ? "text-yellow-900"
+                        : "text-red-600"
+                    }`}
+                >
+                  [{showDetail ? "Hide" : (warningConfig.toggleLabel || "Warnings")}]
+                </button>
+              </div>
 
-              {(warningConfig.toggleLabel ? showDetail : true) && (
+              {showDetail && (
                 <div className="mt-1 text-xs space-y-1">
                   {warningConfig.details.map((line, index) => (
                     <div key={`${warningConfig.tone}-${index}`}>{line}</div>
