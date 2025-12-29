@@ -14,6 +14,7 @@ export function buildSocialUrl(platform, username) {
     Mastodon: { base: "https://mastodon.social/", prefix: "@" },
     Bluesky: { base: "https://bsky.app/profile/" },
     Snapchat: { base: "https://snapchat.com/add/" },
+    Telegram: { base: "https://t.me/" },
   };
 
   const config = PLATFORMS[platform];

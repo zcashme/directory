@@ -10,6 +10,7 @@ const HOSTS = {
   Bluesky: ["bsky.app"],
   Mastodon: ["mastodon.social"],
   Snapchat: ["snapchat.com"],
+  Telegram: ["t.me", "www.t.me", "telegram.me", "www.telegram.me"],
 };
 
 export function normalizeSocialUsername(raw = "", platform) {

@@ -13,6 +13,7 @@ const PLATFORM_OPTIONS = [
   { key: "Mastodon", label: "Mastodon" },
   { key: "Bluesky", label: "Bluesky" },
   { key: "Snapchat", label: "Snapchat" },
+  { key: "Telegram", label: "Telegram" },
   { key: "Other", label: "Other (custom URL)" },
 ];
 
