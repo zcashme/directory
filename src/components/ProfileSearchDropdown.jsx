@@ -52,6 +52,33 @@ export default function ProfileSearchDropdown({
     )
     : [];
 
+  const prioritized = q
+    ? filtered
+      .map((p, index) => {
+        const name = p.name?.toLowerCase() || "";
+        const linkSearch = p.link_search_text || "";
+        const nameStarts = name.startsWith(q);
+        const linkStarts = linkSearch.startsWith(q);
+        const nameIncludes = name.includes(q);
+        const linkIncludes = linkSearch.includes(q);
+        const addressExact = p.address && addr === p.address;
+        let score = 4;
+
+        if (nameStarts) score = 0;
+        else if (linkStarts) score = 1;
+        else if (nameIncludes) score = 2;
+        else if (linkIncludes) score = 3;
+        else if (addressExact) score = 4;
+
+        return { p, score, index };
+      })
+      .sort((a, b) => {
+        if (a.score !== b.score) return a.score - b.score;
+        return a.index - b.index;
+      })
+      .map(({ p }) => p)
+    : filtered;
+
   useEffect(() => {
     if (!value) {
       setShow(false);
@@ -109,8 +136,8 @@ export default function ProfileSearchDropdown({
           }}
           className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#0a1126]/80 bg-[#0a1126]/90 backdrop-blur-md shadow-xl w-full"
         >
-          {filtered.length > 0 ? (
-            filtered.slice(0, 20).map((p) => (
+          {prioritized.length > 0 ? (
+            prioritized.slice(0, 20).map((p) => (
               <div
                 key={p.id}
                 onClick={() => {
