@@ -308,7 +308,17 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           details: [
             <>
               Multiple profiles use this{" "}
-              <a href={nameSearchUrl} className="text-blue-600 hover:underline">
+              <a
+                href={nameSearchUrl}
+                className="text-blue-600 hover:underline"
+                onClick={(event) => {
+                  if (event.button !== 0) return;
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("suppressSearchDropdown", "1");
+                  }
+                }}
+              >
                 name
               </a>
               .
@@ -339,7 +349,17 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           details: [
             <>
               Multiple profiles use this{" "}
-              <a href={nameSearchUrl} className="text-blue-600 hover:underline">
+              <a
+                href={nameSearchUrl}
+                className="text-blue-600 hover:underline"
+                onClick={(event) => {
+                  if (event.button !== 0) return;
+                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                  if (typeof window !== "undefined") {
+                    sessionStorage.setItem("suppressSearchDropdown", "1");
+                  }
+                }}
+              >
                 name
               </a>
               .

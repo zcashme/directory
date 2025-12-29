@@ -42,13 +42,11 @@ export default function Directory() {
     const querySearch = params.get("search");
     if (querySearch) return querySearch;
     if (location.state?.initialSearch) return location.state.initialSearch;
-    // If accessing a slug directly (e.g. /unknown-user) and it's not the explicit /directory route,
-    // pre-fill search so we show the "Result not found" state instead of the full list.
-    const path = location.pathname.slice(1);
-    if (path && path.toLowerCase() !== "directory") {
-      return decodeURIComponent(path);
-    }
     return "";
+  });
+  const [suppressDropdown, setSuppressDropdown] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return sessionStorage.getItem("suppressSearchDropdown") === "1";
   });
 
   // Update search if location state changes (e.g. navigation from Splash Page)
@@ -58,6 +56,10 @@ export default function Directory() {
     if (querySearch !== null) {
       setSearch(querySearch);
       setFilters({ verified: false, referred: false, ranked: false, featured: false });
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem("suppressSearchDropdown");
+      }
+      setSuppressDropdown(true);
       window.history.replaceState({}, document.title);
       return;
     }
@@ -459,11 +461,13 @@ export default function Directory() {
                 value={search}
                 onChange={(e) => {
                   setSearch(e.target.value);
+                  setSuppressDropdown(false);
                   setFilters({ verified: false, referred: false, ranked: false, featured: false });
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
                     setShowDirectory(true);
+                    setSuppressDropdown(false);
                     setFilters({ verified: false, referred: false, ranked: false, featured: false });
                   }
                 }}
@@ -493,7 +497,7 @@ export default function Directory() {
               )}
 
               {/* Shared dropdown placed directly below search input */}
-              {search && (
+              {search && !suppressDropdown && (
                 <div
                   ref={dropdownRef}
                   className="absolute left-0 right-0 top-full mt-1 z-[9999]"
