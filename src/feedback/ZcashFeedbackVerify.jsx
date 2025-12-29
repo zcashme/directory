@@ -20,11 +20,46 @@ export default function ZcashFeedbackVerify() {
   const { verifyMemo: memo, verifyAmount: amount, setVerifyAmount } =
     useFeedbackController();
 
-  const { selectedAddress } = useFeedback();
+  const { selectedAddress, pendingEdits } = useFeedback();
   const profile = cachedProfiles.find((p) => p.address === selectedAddress);
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [showFooterHelp, setShowFooterHelp] = useState(false);
+
+  const explainerText = useMemo(() => {
+    const profileEdits = pendingEdits?.profile || {};
+    const deleted = Array.isArray(profileEdits?.d) ? profileEdits.d : [];
+    const changedFields = [];
+
+    const hasField = (key, token) =>
+      Boolean(profileEdits?.[key]) || deleted.includes(token);
+
+    if (hasField("name", "n")) changedFields.push("name");
+    if (hasField("bio", "b")) changedFields.push("bio");
+    if (hasField("profile_image_url", "i"))
+      changedFields.push("profile image");
+
+    const hasLinks =
+      Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
+    if (hasLinks) changedFields.push("links");
+
+    if (hasField("address", "a")) changedFields.push("address");
+
+    if (changedFields.length === 0) {
+      return "Send to verify address. Waiting for edits to encode.";
+    }
+
+    const last = changedFields[changedFields.length - 1];
+    const prefix = changedFields.slice(0, -1);
+    const list =
+      changedFields.length === 1
+        ? last
+        : changedFields.length === 2
+          ? `${prefix[0]} and ${last}`
+          : `${prefix.join(", ")}, and ${last}`;
+
+    return `Encodes requested changes to ${list}.`;
+  }, [pendingEdits]);
 
   useEffect(() => {
     const trimmed = (amount || "").trim();
@@ -83,26 +118,34 @@ export default function ZcashFeedbackVerify() {
 
         {/* Memo Display */}
         <div className="relative group w-full mb-1">
-<pre
-  className="
-    w-full
-    border border-[#000000]/90
-    rounded-xl
-    px-3 py-2
-    text-[14px]
-    bg-transparent
-    text-gray-800
-    font-mono
-    whitespace-pre-wrap break-words text-left
-    cursor-not-allowed select-none
-    transition-shadow duration-200
-  "
-  style={{ minHeight: '6rem', lineHeight: '1.35' }}
->
-
-
+        <pre
+          className="
+            w-full
+            border border-[#000000]/90
+            rounded-xl
+            px-3 py-2
+            text-[14px]
+            bg-transparent
+            text-gray-800
+            font-mono
+            whitespace-pre-wrap break-words text-left
+            cursor-not-allowed select-none
+            transition-shadow duration-200
+          "
+          style={{ minHeight: "6rem", lineHeight: "1.35" }}
+        >
+          <span className="block -mx-3 -mt-2 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
+            <span className="block text-[11px] text-gray-100 uppercase tracking-wide">
+              Do not modify message before sending
+            </span>
+            <span className="block text-[12px] text-gray-200">
+              {explainerText}
+            </span>
+          </span>
+          <span className="block mt-2 text-[14px] text-gray-800">
             {memo || "(waiting for edits)"}
-          </pre>
+          </span>
+        </pre>
         </div>
 
         {/* Amount + Wallet */}
