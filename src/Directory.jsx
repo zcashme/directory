@@ -432,7 +432,7 @@ export default function Directory() {
         {/* Header */}
         <div
           ref={searchBarRef}
-          className="fixed top-0 left-0 right-0 bg-transparent/20 backdrop-blur-md z-[40] flex items-center justify-between px-4 py-2 shadow-sm"
+          className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-sm rounded-full border border-white/40 w-[min(92vw,720px)]"
         >
           <div className="flex items-center gap-2 flex-1">
             <button
@@ -836,3 +836,4 @@ export default function Directory() {
     </>
   );
 }
+
