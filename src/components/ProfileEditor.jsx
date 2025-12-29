@@ -274,6 +274,60 @@ export default function ProfileEditor({ profile, links }) {
           const h = candidates.find((v) => (typeof v === 'string' || typeof v === 'number') && String(v).trim());
           return h ? String(h).trim() : null;
         };
+        const getDiscordUsername = async (s) => {
+          const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
+          const identity = ids.find((i) => i?.provider === 'discord');
+          const data = identity?.identity_data || {};
+          const userMeta = s?.user?.user_metadata || {};
+          const username = data.username || data.preferred_username || data.user_name || data.name
+            || userMeta.username || userMeta.preferred_username || userMeta.user_name || userMeta.name || userMeta.full_name || null;
+          const globalName = data.global_name || userMeta.global_name || null;
+          const discriminator = data.discriminator || userMeta.discriminator || null;
+          const candidates = [];
+          if (username) {
+            candidates.push(username);
+            if (discriminator && String(discriminator) != "0") {
+              candidates.push(`${username}#${discriminator}`);
+            }
+          }
+          if (globalName) candidates.push(globalName);
+          const h = candidates.find((v) => typeof v === "string" && v.trim());
+          if (h) return h.trim();
+
+          const providerToken = s?.provider_token || s?.user?.provider_token || null;
+          if (providerToken) {
+            try {
+              const res = await fetch("https://discord.com/api/users/@me", {
+                headers: {
+                  Authorization: `Bearer ${providerToken}`
+                }
+              });
+              if (res.ok) {
+                const me = await res.json();
+                const uname = me?.username || null;
+                const gname = me?.global_name || null;
+                const disc = me?.discriminator || null;
+                if (uname) {
+                  if (disc && String(disc) != "0") return `${uname}#${disc}`;
+                  return uname;
+                }
+                if (gname) return gname;
+              } else {
+                console.warn("[VERIFY WARN] Discord /users/@me failed:", res.status);
+              }
+            } catch (err) {
+              console.warn("[VERIFY WARN] Discord /users/@me error:", err);
+            }
+          }
+
+          return null;
+        };
+        const normalizeDiscordHandle = (value) =>
+          (value || "")
+            .trim()
+            .replace(/^@/, "")
+            .replace(/#0$/, "")
+            .toLowerCase();
 
         const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
         const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
@@ -369,13 +423,32 @@ export default function ProfileEditor({ profile, links }) {
         }
         if (isDiscordUrl) {
           const discordId = getDiscordId(session);
-          console.log("[VERIFY DEBUG] discordId from metadata:", discordId);
-          const m = (url || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([0-9]+)/i);
-          const targetDiscordId = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
-          console.log("[VERIFY DEBUG] targetDiscordId from url:", targetDiscordId);
-          if (!discordId || !targetDiscordId || String(discordId) !== String(targetDiscordId)) {
-            console.warn(`[VERIFY FAIL] Mismatch: ${discordId} vs ${targetDiscordId}`);
-            alert(`Verification Mismatch: Logged in as ${discordId}, but verifying link for ${targetDiscordId}`);
+          const discordUsername = await getDiscordUsername(session);
+          console.log("[VERIFY DEBUG] discordUsername from metadata:", discordUsername);
+          const m = (url || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([^/?#]+)/i);
+          const targetDiscord = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
+          const targetDecoded = targetDiscord ? decodeURIComponent(targetDiscord) : null;
+          console.log("[VERIFY DEBUG] targetDiscord from url:", targetDecoded);
+          const targetNorm = normalizeDiscordHandle(targetDecoded);
+          const isNumericTarget = /^[0-9]+$/.test(targetNorm);
+          const usernameCandidates = [discordUsername]
+            .filter(Boolean)
+            .flatMap((name) => {
+              const normalized = normalizeDiscordHandle(name);
+              const base = normalized.replace(/#\d+$/, "");
+              return [normalized, base].filter(Boolean);
+            });
+          let match = false;
+
+          if (isNumericTarget) {
+            match = !!discordId && String(discordId) === String(targetNorm);
+          } else {
+            match = !!targetNorm && usernameCandidates.includes(targetNorm);
+          }
+
+          if (!match) {
+            console.warn(`[VERIFY FAIL] Mismatch: ${discordUsername || discordId} vs ${targetDecoded}`);
+            alert(`Verification Mismatch: Logged in as ${discordUsername || discordId || "(unknown)"}, but verifying link for ${targetDecoded || "(unknown)"}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
             return;
@@ -1503,8 +1576,8 @@ export default function ProfileEditor({ profile, links }) {
         <div className="mt-8 pt-4 border-t border-black/10">
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
-              ⛉
-              <span className="font-semibold">Request OTP</span> to verify address and approve any changes.
+              
+              <span className="font-semibold">Request OTP</span> to verify address or approve any changes.
             </span>
           </p>
         </div>
