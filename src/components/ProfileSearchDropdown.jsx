@@ -12,6 +12,7 @@ export default function ProfileSearchDropdown({
 }) {
   const [show, setShow] = useState(false);
   const hideTimerRef = useRef(null);
+  const dropdownRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
 
   const clearHideTimer = () => {
@@ -65,8 +66,22 @@ export default function ProfileSearchDropdown({
     };
   }, [value, isHovering]);
 
+  useEffect(() => {
+    if (!show) return;
+
+    const handleClickOutside = (event) => {
+      if (!dropdownRef.current) return;
+      if (!dropdownRef.current.contains(event.target)) {
+        setShow(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [show]);
+
   return (
-    <div className="w-full">
+    <div ref={dropdownRef} className="w-full">
       {/* Input only if NOT list-only */}
       {!listOnly && (
         <input
