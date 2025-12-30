@@ -28,58 +28,23 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
     if (!svg) return;
 
     const clone = svg.cloneNode(true);
-    const viewBox = clone.getAttribute("viewBox");
-    const widthAttr = clone.getAttribute("width") || "300";
-    const heightAttr = clone.getAttribute("height") || "300";
-    const width = parseInt(widthAttr, 10) || 300;
-    const height = parseInt(heightAttr, 10) || 300;
-
     const svgData = new XMLSerializer().serializeToString(clone);
-    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const img = new Image();
+    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
 
-    img.onload = () => {
-      const canvas = document.createElement("canvas");
-      const canvasWidth = viewBox ? parseInt(viewBox.split(/\s+/)[2], 10) || width : width;
-      const canvasHeight = viewBox ? parseInt(viewBox.split(/\s+/)[3], 10) || height : height;
-      canvas.width = canvasWidth;
-      canvas.height = canvasHeight;
+    const link = document.createElement("a");
+    const safeName = (profileName || "recipient")
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-");
 
-      const ctx = canvas.getContext("2d");
-      if (!ctx) return;
+    link.download = `zcashme-${safeName}-qr.svg`;
+    link.href = url;
+    link.click();
 
-      ctx.fillStyle = "#ffffff";
-      ctx.fillRect(0, 0, canvasWidth, canvasHeight);
-      ctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
-
-      canvas.toBlob((pngBlob) => {
-        if (!pngBlob) return;
-
-        const link = document.createElement("a");
-        const safeName = (profileName || "recipient")
-          .trim()
-          .replace(/[^\w\s-]/g, "")
-          .replace(/\s+/g, "-");
-        const url = URL.createObjectURL(pngBlob);
-
-        link.download = `zcashme-${safeName}-qr.png`;
-        link.href = url;
-        link.click();
-
-        URL.revokeObjectURL(url);
-        setSaved(true);
-        setTimeout(() => setSaved(false), 1500);
-      }, "image/png");
-
-      URL.revokeObjectURL(svgUrl);
-    };
-
-    img.onerror = () => {
-      URL.revokeObjectURL(svgUrl);
-    };
-
-    img.src = svgUrl;
+    URL.revokeObjectURL(url);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
   };
 
   if (!uri) return null;
