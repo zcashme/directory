@@ -47,7 +47,7 @@ export default function ZcashFeedbackVerify() {
     if (hasField("address", "a")) changedFields.push("address");
 
     if (changedFields.length === 0) {
-      return "Send to verify address. Waiting for edits to encode.";
+      return "Waiting for edits, if any.";
     }
 
     const last = changedFields[changedFields.length - 1];

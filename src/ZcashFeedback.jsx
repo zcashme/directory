@@ -58,12 +58,11 @@ export default function ZcashFeedback() {
       style={{ lineHeight: "1.2" }}
     >
       <div className="font-semibold text-[15px] text-gray-800 flex items-center justify-center gap-1">
-        Request One-Time Passcode
-        
+        Request One-Time Passcode (OTP)
       </div>
 
       <div className="text-[13px] text-gray-600 mt-1 font-light">
-        to verify your address or approve changes
+        to verify address or approve changes
       </div>
     </div>
   }
