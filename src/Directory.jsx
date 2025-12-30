@@ -1,6 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import ZcashGridButton from "./components/ZcashGridButton";
 
 import AddUserForm from "./AddUserForm";
 import ZcashFeedback from "./ZcashFeedback";
@@ -564,9 +563,6 @@ export default function Directory() {
           >
             ＋ Join
           </button>
-
-          {/* Zcash App Grid Button (added to the right of Join button) */}
-          <ZcashGridButton className="ml-2 z-[50]" />
 
           <style>{`
   @keyframes joinPulse {
