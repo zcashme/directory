@@ -57,6 +57,7 @@ const SOCIAL_HOSTS = {
   Mastodon: ["mastodon.social"],
   Bluesky: ["bsky.app"],
   Snapchat: ["snapchat.com", "www.snapchat.com"],
+  Telegram: ["t.me", "www.t.me", "telegram.me", "www.telegram.me"],
 };
 
 function detectPlatformFromUrl(rawUrl) {
@@ -519,6 +520,23 @@ export default function ProfileEditor({ profile, links }) {
             email: li.email              // "xiang...@..."
           };
         };
+        const markPendingVerifiedLink = (verifiedUrl) => {
+          const trimmed = (verifiedUrl || "").trim();
+          if (!trimmed) return;
+          const linkId = localStorage.getItem("verifying_link_id");
+          const token = linkId ? `!${linkId}` : `+!${trimmed}`;
+          const live = Array.isArray(window.pendingEdits?.l)
+            ? window.pendingEdits.l
+            : Array.isArray(pendingEdits?.l)
+              ? pendingEdits.l
+              : [];
+          const next = live.includes(token) ? [...live] : [...live, token];
+          const cleaned = token.startsWith("+!")
+            ? next.filter((t) => t !== `+${trimmed}`)
+            : next;
+          setPendingEdits("l", cleaned);
+        };
+
         const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
         const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
         const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
@@ -534,6 +552,7 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
+            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -592,6 +611,7 @@ export default function ProfileEditor({ profile, links }) {
             );
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
+            localStorage.removeItem("verifying_link_id");
 
             // Clear URL params to prevent loop
             const cleanUrl = new URL(window.location.href);
@@ -612,6 +632,7 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
+            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -649,6 +670,7 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as ${discordUsername || discordId || "(unknown)"}, but verifying link for ${targetDecoded || "(unknown)"}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
+            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -750,28 +772,48 @@ export default function ProfileEditor({ profile, links }) {
         }
 
         // 3. Update Local UI
-        setForm(prev => ({
-          ...prev,
-          links: prev.links.map(l => {
-            const u1 = (l.url || "").trim().replace(/\/$/, "");
-            const u2 = (url || "").trim().replace(/\/$/, "");
-            // Mark verified
-            return u1 === u2 ? {
-              ...l,
-              is_verified: true
-            } : l;
-          })
-        }));
+        setForm((prev) => {
+          const u2 = (url || "").trim().replace(/\/$/, "");
+          const hasLink = prev.links.some(
+            (l) => (l.url || "").trim().replace(/\/$/, "") === u2
+          );
+          const nextLinks = hasLink
+            ? prev.links.map((l) => {
+              const u1 = (l.url || "").trim().replace(/\/$/, "");
+              // Mark verified
+              return u1 === u2 ? { ...l, is_verified: true } : l;
+            })
+            : [
+              ...prev.links,
+              {
+                id: null,
+                url: url || "",
+                ...parseSocialUrl(url || ""),
+                valid: true,
+                reason: null,
+                is_verified: true,
+                verification_expires_at: null,
+                _uid: crypto.randomUUID(),
+              },
+            ];
+
+          return { ...prev, links: nextLinks };
+        });
+        markPendingVerifiedLink(url);
 
         // 🔥 FORCE RELOAD to ensure fresh state
         setTimeout(() => {
-          // Clear storage JUST BEFORE reload
+          // Clear storage after verification completes
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
+          localStorage.removeItem("verifying_link_id");
           setShowRedirect(false);
 
-          // Navigate to clean URL (remove query params) to finish
-          window.location.href = window.location.pathname;
+          // Remove query params without reloading
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("verify_pid");
+          cleanUrl.searchParams.delete("verify_url");
+          window.history.replaceState({}, "", cleanUrl.toString());
         }, 1000);
       } else {
         if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
@@ -813,11 +855,13 @@ export default function ProfileEditor({ profile, links }) {
     return () => subscription.unsubscribe();
   }, [profile.id]);
 
-  const handleXVerify = async (url) => {
+  const handleXVerify = async (url, linkId = null) => {
     setShowRedirect(true);
     setRedirectLabel("X.com");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
+    if (linkId) localStorage.setItem("verifying_link_id", linkId);
+    else localStorage.removeItem("verifying_link_id");
 
     const norm = (s = "") =>
       s
@@ -847,11 +891,13 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleLinkedInVerify = async (url) => {
+  const handleLinkedInVerify = async (url, linkId = null) => {
     setShowRedirect(true);
     setRedirectLabel("LinkedIn");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
+    if (linkId) localStorage.setItem("verifying_link_id", linkId);
+    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -885,11 +931,13 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleGithubVerify = async (url) => {
+  const handleGithubVerify = async (url, linkId = null) => {
     setShowRedirect(true);
     setRedirectLabel("GitHub");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
+    if (linkId) localStorage.setItem("verifying_link_id", linkId);
+    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -923,11 +971,13 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleDiscordVerify = async (url) => {
+  const handleDiscordVerify = async (url, linkId = null) => {
     setShowRedirect(true);
     setRedirectLabel("Discord");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
+    if (linkId) localStorage.setItem("verifying_link_id", linkId);
+    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -1859,19 +1909,19 @@ export default function ProfileEditor({ profile, links }) {
 
                       // X / Twitter verification flow
                       if (isX) {
-                        handleXVerify(row.url);
+                        handleXVerify(row.url, row.id);
                         return;
                       }
                       if (isLinkedIn) {
-                        handleLinkedInVerify(row.url);
+                        handleLinkedInVerify(row.url, row.id);
                         return;
                       }
                       if (isGithub) {
-                        handleGithubVerify(row.url);
+                        handleGithubVerify(row.url, row.id);
                         return;
                       }
                       if (isDiscord) {
-                        handleDiscordVerify(row.url);
+                        handleDiscordVerify(row.url, row.id);
                         return;
                       }
 
@@ -1943,8 +1993,8 @@ export default function ProfileEditor({ profile, links }) {
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
               
-              <span className="font-semibold">Request OTP</span> to verify address or approve any changes.
-            </span>
+              <span className="font-semibold">To apply changes, verify address below.
+                </span> </span>
           </p>
         </div>
 
