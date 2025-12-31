@@ -15,6 +15,7 @@ const LINK_FIELD_CLASS =
   "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
+const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
 
 const isValidImageUrl = (url) => {
   if (!url) return { valid: true, reason: null };
@@ -57,7 +58,6 @@ const SOCIAL_HOSTS = {
   Mastodon: ["mastodon.social"],
   Bluesky: ["bsky.app"],
   Snapchat: ["snapchat.com", "www.snapchat.com"],
-  Telegram: ["t.me", "www.t.me", "telegram.me", "www.telegram.me"],
 };
 
 function detectPlatformFromUrl(rawUrl) {
@@ -249,6 +249,14 @@ export default function ProfileEditor({ profile, links }) {
   console.log("[PROFILE EDITOR RENDER] ID:", profile.id, "Links count:", links?.length);
 
   const { setPendingEdits, pendingEdits } = useFeedback();
+  const pendingProfileEdits = pendingEdits?.profile || {};
+  const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
+    ? pendingProfileEdits.d
+    : [];
+  const hasPendingField = (key, token) =>
+    Boolean(pendingProfileEdits?.[key]) || pendingDeleted.includes(token);
+  const hasPendingLinks =
+    Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("X.com");
   const [avatarPrompt, setAvatarPrompt] = useState(null);
@@ -520,23 +528,6 @@ export default function ProfileEditor({ profile, links }) {
             email: li.email              // "xiang...@..."
           };
         };
-        const markPendingVerifiedLink = (verifiedUrl) => {
-          const trimmed = (verifiedUrl || "").trim();
-          if (!trimmed) return;
-          const linkId = localStorage.getItem("verifying_link_id");
-          const token = linkId ? `!${linkId}` : `+!${trimmed}`;
-          const live = Array.isArray(window.pendingEdits?.l)
-            ? window.pendingEdits.l
-            : Array.isArray(pendingEdits?.l)
-              ? pendingEdits.l
-              : [];
-          const next = live.includes(token) ? [...live] : [...live, token];
-          const cleaned = token.startsWith("+!")
-            ? next.filter((t) => t !== `+${trimmed}`)
-            : next;
-          setPendingEdits("l", cleaned);
-        };
-
         const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
         const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
         const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
@@ -552,7 +543,6 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
-            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -611,7 +601,6 @@ export default function ProfileEditor({ profile, links }) {
             );
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
-            localStorage.removeItem("verifying_link_id");
 
             // Clear URL params to prevent loop
             const cleanUrl = new URL(window.location.href);
@@ -632,7 +621,6 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
-            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -670,7 +658,6 @@ export default function ProfileEditor({ profile, links }) {
             alert(`Verification Mismatch: Logged in as ${discordUsername || discordId || "(unknown)"}, but verifying link for ${targetDecoded || "(unknown)"}`);
             localStorage.removeItem("verifying_profile_id");
             localStorage.removeItem("verifying_link_url");
-            localStorage.removeItem("verifying_link_id");
             return;
           }
 
@@ -772,48 +759,28 @@ export default function ProfileEditor({ profile, links }) {
         }
 
         // 3. Update Local UI
-        setForm((prev) => {
-          const u2 = (url || "").trim().replace(/\/$/, "");
-          const hasLink = prev.links.some(
-            (l) => (l.url || "").trim().replace(/\/$/, "") === u2
-          );
-          const nextLinks = hasLink
-            ? prev.links.map((l) => {
-              const u1 = (l.url || "").trim().replace(/\/$/, "");
-              // Mark verified
-              return u1 === u2 ? { ...l, is_verified: true } : l;
-            })
-            : [
-              ...prev.links,
-              {
-                id: null,
-                url: url || "",
-                ...parseSocialUrl(url || ""),
-                valid: true,
-                reason: null,
-                is_verified: true,
-                verification_expires_at: null,
-                _uid: crypto.randomUUID(),
-              },
-            ];
-
-          return { ...prev, links: nextLinks };
-        });
-        markPendingVerifiedLink(url);
+        setForm(prev => ({
+          ...prev,
+          links: prev.links.map(l => {
+            const u1 = (l.url || "").trim().replace(/\/$/, "");
+            const u2 = (url || "").trim().replace(/\/$/, "");
+            // Mark verified
+            return u1 === u2 ? {
+              ...l,
+              is_verified: true
+            } : l;
+          })
+        }));
 
         // 🔥 FORCE RELOAD to ensure fresh state
         setTimeout(() => {
-          // Clear storage after verification completes
+          // Clear storage JUST BEFORE reload
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
-          localStorage.removeItem("verifying_link_id");
           setShowRedirect(false);
 
-          // Remove query params without reloading
-          const cleanUrl = new URL(window.location.href);
-          cleanUrl.searchParams.delete("verify_pid");
-          cleanUrl.searchParams.delete("verify_url");
-          window.history.replaceState({}, "", cleanUrl.toString());
+          // Navigate to clean URL (remove query params) to finish
+          window.location.href = window.location.pathname;
         }, 1000);
       } else {
         if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
@@ -855,13 +822,11 @@ export default function ProfileEditor({ profile, links }) {
     return () => subscription.unsubscribe();
   }, [profile.id]);
 
-  const handleXVerify = async (url, linkId = null) => {
+  const handleXVerify = async (url) => {
     setShowRedirect(true);
     setRedirectLabel("X.com");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    if (linkId) localStorage.setItem("verifying_link_id", linkId);
-    else localStorage.removeItem("verifying_link_id");
 
     const norm = (s = "") =>
       s
@@ -891,13 +856,11 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleLinkedInVerify = async (url, linkId = null) => {
+  const handleLinkedInVerify = async (url) => {
     setShowRedirect(true);
     setRedirectLabel("LinkedIn");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    if (linkId) localStorage.setItem("verifying_link_id", linkId);
-    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -931,13 +894,11 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleGithubVerify = async (url, linkId = null) => {
+  const handleGithubVerify = async (url) => {
     setShowRedirect(true);
     setRedirectLabel("GitHub");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    if (linkId) localStorage.setItem("verifying_link_id", linkId);
-    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -971,13 +932,11 @@ export default function ProfileEditor({ profile, links }) {
       }
     }, 1500);
   };
-  const handleDiscordVerify = async (url, linkId = null) => {
+  const handleDiscordVerify = async (url) => {
     setShowRedirect(true);
     setRedirectLabel("Discord");
     localStorage.setItem("verifying_profile_id", profile.id);
     localStorage.setItem("verifying_link_url", url);
-    if (linkId) localStorage.setItem("verifying_link_id", linkId);
-    else localStorage.removeItem("verifying_link_id");
     const norm = (s = "") =>
       s
         .normalize("NFKC")
@@ -1567,10 +1526,17 @@ export default function ProfileEditor({ profile, links }) {
         {/* ZCASH ADDRESS */}
         <div className="mb-3 text-center">
 
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="addr" className="font-semibold text-gray-700">
-              Zcash Address
-            </label>
+        <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="addr" className="font-semibold text-gray-700">
+                Zcash Address
+              </label>
+              {hasPendingField("address", "a") && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <div className="relative inline-block">
@@ -1630,10 +1596,17 @@ export default function ProfileEditor({ profile, links }) {
         {/* NAME */}
         <div className="mb-3">
 
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="name" className="font-semibold text-gray-700">
-              Name
-            </label>
+        <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="name" className="font-semibold text-gray-700">
+                Name
+              </label>
+              {hasPendingField("name", "n") && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <DeleteActionButton
@@ -1669,10 +1642,17 @@ export default function ProfileEditor({ profile, links }) {
         {/* BIOGRAPHY */}
         <div className="mb-3 relative">
 
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="bio" className="font-semibold text-gray-700">
-              Biography
-            </label>
+        <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="bio" className="font-semibold text-gray-700">
+                Biography
+              </label>
+              {hasPendingField("bio", "b") && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <DeleteActionButton
@@ -1708,8 +1688,15 @@ export default function ProfileEditor({ profile, links }) {
 
         {/* NEAREST CITY */}
         <div className="mb-3">
-          <div className="mb-1 flex items-center justify-between">
-            <label className="font-semibold text-gray-700">Nearest City</label>
+        <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label className="font-semibold text-gray-700">Nearest City</label>
+              {pendingProfileEdits?.c && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <DeleteActionButton
@@ -1761,10 +1748,17 @@ export default function ProfileEditor({ profile, links }) {
         {/* PROFILE IMAGE URL */}
         <div className="mb-3">
 
-          <div className="mb-1 flex items-center justify-between">
-            <label htmlFor="pimg" className="font-semibold text-gray-700">
-              Profile Image URL
-            </label>
+        <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="pimg" className="font-semibold text-gray-700">
+                Profile Image URL
+              </label>
+              {hasPendingField("profile_image_url", "i") && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <DeleteActionButton
@@ -1818,7 +1812,14 @@ export default function ProfileEditor({ profile, links }) {
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
 
-            <label className="block font-semibold text-gray-700">Links</label>
+            <div className="flex items-center gap-2">
+              <label className="block font-semibold text-gray-700">Links</label>
+              {hasPendingLinks && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
 
             <div className="flex items-center gap-2">
 
@@ -1846,6 +1847,13 @@ export default function ProfileEditor({ profile, links }) {
           const original = originalLinks.find((o) => o.id === row.id) || {};
           const isVerified = !!row.is_verified;
           const canVerify = !!profile.address_verified;
+          const isExistingLink = !!row.id;
+          const originalUrl = (original?.url || "").trim();
+          const currentUrl = (row.url || "").trim();
+          const hasLinkInput = currentUrl.length > 0;
+          const isUnchangedLink = !isExistingLink || currentUrl === originalUrl;
+          const canAuthenticate =
+            canVerify && isExistingLink && !isVerified && isUnchangedLink;
           const isX = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(row.url);
           const isLinkedIn = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(row.url);
           const isGithub = /^(https?:\/\/)?(www\.)?github\.com\//i.test(row.url);
@@ -1901,6 +1909,12 @@ export default function ProfileEditor({ profile, links }) {
                       </button>
                     )}
                   </div>
+                ) : !canAuthenticate ? (
+                  hasLinkInput ? (
+                    <span className="text-xs text-gray-500 italic">
+                      Verify to enable authentication
+                    </span>
+                  ) : null
                 ) : (
                   <button
                     type="button"
@@ -1909,19 +1923,19 @@ export default function ProfileEditor({ profile, links }) {
 
                       // X / Twitter verification flow
                       if (isX) {
-                        handleXVerify(row.url, row.id);
+                        handleXVerify(row.url);
                         return;
                       }
                       if (isLinkedIn) {
-                        handleLinkedInVerify(row.url, row.id);
+                        handleLinkedInVerify(row.url);
                         return;
                       }
                       if (isGithub) {
-                        handleGithubVerify(row.url, row.id);
+                        handleGithubVerify(row.url);
                         return;
                       }
                       if (isDiscord) {
-                        handleDiscordVerify(row.url, row.id);
+                        handleDiscordVerify(row.url);
                         return;
                       }
 
@@ -1993,8 +2007,8 @@ export default function ProfileEditor({ profile, links }) {
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
               
-              <span className="font-semibold">To apply changes, verify address below.
-                </span> </span>
+              <span className="font-semibold">Verify address to apply changes</span>
+            </span>
           </p>
         </div>
 
