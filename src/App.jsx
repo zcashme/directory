@@ -2,6 +2,7 @@ import "./index.css";
 import { Routes, Route, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import Directory from "./Directory";
+import DirectoryNS from "./DirectoryNS";
 import { FeedbackProvider } from "./store";
 import AdminRefundPage from "./components/AdminRefundPage";
 import TermsOfService from "./components/TermsOfService";
@@ -37,6 +38,7 @@ function App() {
             )
           }
         />
+        <Route path="/ns" element={<DirectoryNS />} />
 
         {/* Wildcard route: handles / and all slugs */}
         <Route
