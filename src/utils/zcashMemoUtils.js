@@ -1,6 +1,7 @@
 export function buildZcashEditMemo(profile = {}, zId = "?") {
   const fieldMap = {
     name: "n",
+    display_name: "h",
     bio: "b",
     profile_image_url: "i",
     links: "l",

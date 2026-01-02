@@ -990,6 +990,7 @@ export default function ProfileEditor({ profile, links }) {
   const [form, setForm] = useState({
     address: "",
     name: "",
+    display_name: "",
     bio: "",
     profile_image_url: "",
     links: originalLinks.map((l) => ({ ...l })),
@@ -1001,6 +1002,7 @@ export default function ProfileEditor({ profile, links }) {
   const [deletedFields, setDeletedFields] = useState({
     address: false,
     name: false,
+    display_name: false,
     bio: false,
     profile_image_url: false,
   });
@@ -1027,6 +1029,7 @@ export default function ProfileEditor({ profile, links }) {
     () => ({
       address: profile.address || "",
       name: profile.name || "",
+      display_name: profile.display_name || "",
       bio: profile.bio || "",
       profile_image_url: profile.profile_image_url || "",
     }),
@@ -1078,6 +1081,8 @@ export default function ProfileEditor({ profile, links }) {
       changed.address = form.address;
     if (!deletedFields.name && form.name && form.name.trim() !== "" && form.name !== originals.name)
       changed.name = form.name;
+    if (!deletedFields.display_name && form.display_name && form.display_name.trim() !== "" && form.display_name !== originals.display_name)
+      changed.display_name = form.display_name;
     if (!deletedFields.bio && form.bio && form.bio.trim() !== "" && form.bio !== originals.bio)
       changed.bio = form.bio;
     if (
@@ -1097,6 +1102,7 @@ export default function ProfileEditor({ profile, links }) {
 
     if (deletedFields.address) deleted.push("a");
     if (deletedFields.name) deleted.push("n");
+    if (deletedFields.display_name) deleted.push("h");
     if (deletedFields.bio) deleted.push("b");
     if (deletedFields.profile_image_url) deleted.push("i");
 
@@ -1115,6 +1121,7 @@ export default function ProfileEditor({ profile, links }) {
   }, [
     form.address,
     form.name,
+    form.display_name,
     form.bio,
     form.profile_image_url,
 
@@ -1125,11 +1132,13 @@ export default function ProfileEditor({ profile, links }) {
 
     originals.address,
     originals.name,
+    originals.display_name,
     originals.bio,
     originals.profile_image_url,
 
     deletedFields.address,
     deletedFields.name,
+    deletedFields.display_name,
     deletedFields.bio,
     deletedFields.profile_image_url,
 
@@ -1526,7 +1535,7 @@ export default function ProfileEditor({ profile, links }) {
         {/* ZCASH ADDRESS */}
         <div className="mb-3 text-center">
 
-        <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label htmlFor="addr" className="font-semibold text-gray-700">
                 Zcash Address
@@ -1593,13 +1602,13 @@ export default function ProfileEditor({ profile, links }) {
         </div>
 
 
-        {/* NAME */}
+        {/* USERNAME */}
         <div className="mb-3">
 
-        <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label htmlFor="name" className="font-semibold text-gray-700">
-                Name
+                Username
               </label>
               {hasPendingField("name", "n") && (
                 <span className={VERIFY_HINT_CLASS}>
@@ -1624,16 +1633,73 @@ export default function ProfileEditor({ profile, links }) {
                 }
               />
 
-              <HelpIcon text="Your public display name for this profile." />
+              <HelpIcon text="Your unique handle on Zcash.me." />
+            </div>
+          </div>
+
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
+              Zcash.me/
+            </span>
+            <input
+              id="name"
+              type="text"
+              value={form.name}
+              placeholder={originals.name}
+              onChange={(e) => {
+                const val = e.target.value
+                  .normalize("NFKC")
+                  .trim()
+                  .toLowerCase()
+                  .replace(/\s+/g, "_")
+                  .replace(/[^a-z0-9_-]/g, "");
+                handleChange("name", val);
+              }}
+              className={`${FIELD_CLASS} pl-[5.5rem]`}
+            />
+          </div>
+        </div>
+
+        {/* DISPLAY NAME */}
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <label htmlFor="display_name" className="font-semibold text-gray-700">
+                Display Name
+              </label>
+              {hasPendingField("display_name", "h") && (
+                <span className={VERIFY_HINT_CLASS}>
+                  Verify to apply changes
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <DeleteActionButton
+                isDeleted={deletedFields.display_name}
+                onClick={() =>
+                  setDeletedFields((prev) => {
+                    const next = !prev.display_name;
+                    if (next) {
+                      setForm((f) => ({ ...f, display_name: "" }));
+                    } else {
+                      setForm((f) => ({ ...f, display_name: originals.display_name }));
+                    }
+                    return { ...prev, display_name: next };
+                  })
+                }
+              />
+
+              <HelpIcon text="Your public display name." />
             </div>
           </div>
 
           <input
-            id="name"
+            id="display_name"
             type="text"
-            value={form.name}
-            placeholder={originals.name}
-            onChange={(e) => handleChange("name", e.target.value)}
+            value={form.display_name}
+            placeholder={originals.display_name || "Enter display name"}
+            onChange={(e) => handleChange("display_name", e.target.value)}
             className={FIELD_CLASS}
           />
         </div>
@@ -1642,7 +1708,7 @@ export default function ProfileEditor({ profile, links }) {
         {/* BIOGRAPHY */}
         <div className="mb-3 relative">
 
-        <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label htmlFor="bio" className="font-semibold text-gray-700">
                 Biography
@@ -1688,7 +1754,7 @@ export default function ProfileEditor({ profile, links }) {
 
         {/* NEAREST CITY */}
         <div className="mb-3">
-        <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label className="font-semibold text-gray-700">Nearest City</label>
               {pendingProfileEdits?.c && (
@@ -1748,7 +1814,7 @@ export default function ProfileEditor({ profile, links }) {
         {/* PROFILE IMAGE URL */}
         <div className="mb-3">
 
-        <div className="mb-1 flex items-center justify-between">
+          <div className="mb-1 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <label htmlFor="pimg" className="font-semibold text-gray-700">
                 Profile Image URL
@@ -2006,7 +2072,7 @@ export default function ProfileEditor({ profile, links }) {
         <div className="mt-8 pt-4 border-t border-black/10">
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
-              
+
               <span className="font-semibold">Verify address to apply changes</span>
             </span>
           </p>
