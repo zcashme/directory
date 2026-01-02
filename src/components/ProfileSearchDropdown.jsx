@@ -49,6 +49,7 @@ export default function ProfileSearchDropdown({
   // -----------------------------
   const filtered = q
     ? profiles.filter((p) =>
+      p.display_name?.toLowerCase().includes(q) ||
       p.name?.toLowerCase().includes(q) ||
       p.link_search_text?.includes(q) ||
       (p.address && addr === p.address)
@@ -58,20 +59,25 @@ export default function ProfileSearchDropdown({
   const prioritized = q
     ? filtered
       .map((p, index) => {
+        const displayName = p.display_name?.toLowerCase() || "";
         const name = p.name?.toLowerCase() || "";
         const linkSearch = p.link_search_text || "";
+        const displayStarts = displayName.startsWith(q);
         const nameStarts = name.startsWith(q);
         const linkStarts = linkSearch.startsWith(q);
+        const displayIncludes = displayName.includes(q);
         const nameIncludes = name.includes(q);
         const linkIncludes = linkSearch.includes(q);
         const addressExact = p.address && addr === p.address;
         let score = 4;
 
-        if (nameStarts) score = 0;
-        else if (linkStarts) score = 1;
-        else if (nameIncludes) score = 2;
-        else if (linkIncludes) score = 3;
-        else if (addressExact) score = 4;
+        if (displayStarts) score = 0;
+        else if (nameStarts) score = 1;
+        else if (linkStarts) score = 2;
+        else if (displayIncludes) score = 3;
+        else if (nameIncludes) score = 4;
+        else if (linkIncludes) score = 5;
+        else if (addressExact) score = 6;
 
         return { p, score, index };
       })
@@ -163,7 +169,7 @@ export default function ProfileSearchDropdown({
                 {/* Text + metadata */}
                 <div className="flex items-center gap-2 min-w-0 flex-1">
                   <span className="truncate flex-shrink-0">
-                    {p.name}
+                    {p.display_name || p.name}
                   </span>
 
                   {(p.address_verified ||
@@ -171,11 +177,9 @@ export default function ProfileSearchDropdown({
                       <VerifiedBadge profile={p} />
                     )}
 
-                  {p.address && (
-                    <span className="text-xs opacity-60 whitespace-nowrap truncate max-w-[120px] flex-shrink">
-                      {p.address.slice(0, 6)}...{p.address.slice(-6)}
-                    </span>
-                  )}
+                  <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
+                    @{p.name}
+                  </span>
                 </div>
               </div>
             ))

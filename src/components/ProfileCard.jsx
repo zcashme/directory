@@ -96,84 +96,84 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       }
     };
 
-  const handleEnterDraft = () => {
-    setShowBack(false);
-  };
-// window.addEventListener("enterSignInMode", e => {
-//  console.log("ENTER-SIGNIN fired with:", e.detail);
-// });
+    const handleEnterDraft = () => {
+      setShowBack(false);
+    };
+    // window.addEventListener("enterSignInMode", e => {
+    //  console.log("ENTER-SIGNIN fired with:", e.detail);
+    // });
 
-  window.addEventListener("enterSignInMode", handleEnterSignIn);
-  window.addEventListener("enterDraftMode", handleEnterDraft);
-  return () => {
-    window.removeEventListener("enterSignInMode", handleEnterSignIn);
-    window.removeEventListener("enterDraftMode", handleEnterDraft);
-  };
-}, [profile?.id, profile?.address, profile?.name, profile?.joined_at, profile?.created_at, profile?.since, profile?.address_verified]);
+    window.addEventListener("enterSignInMode", handleEnterSignIn);
+    window.addEventListener("enterDraftMode", handleEnterDraft);
+    return () => {
+      window.removeEventListener("enterSignInMode", handleEnterSignIn);
+      window.removeEventListener("enterDraftMode", handleEnterDraft);
+    };
+  }, [profile?.id, profile?.address, profile?.name, profile?.joined_at, profile?.created_at, profile?.since, profile?.address_verified]);
 
   // Check for auto-flip if returning from X verification
   useEffect(() => {
     const checkAutoFlip = () => {
-        // Only run if we are looking at the correct profile
-        const pId = localStorage.getItem("verifying_profile_id");
-        
-        // Add debug log to see if this effect fires
-        
+      // Only run if we are looking at the correct profile
+      const pId = localStorage.getItem("verifying_profile_id");
 
-        if (pId && String(pId) === String(profile.id)) {
-          
-          
-          // ✅ Force state to true immediately to ensure Editor mounts
-          setShowBack(true);
-          
-          // Also dispatch event to ensure global state syncs if needed
-          // Use a small timeout to let the initial render settle
-          setTimeout(() => {
-              window.dispatchEvent(new CustomEvent("enterSignInMode"));
-          }, 100);
-        }
+      // Add debug log to see if this effect fires
+
+
+      if (pId && String(pId) === String(profile.id)) {
+
+
+        // ✅ Force state to true immediately to ensure Editor mounts
+        setShowBack(true);
+
+        // Also dispatch event to ensure global state syncs if needed
+        // Use a small timeout to let the initial render settle
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent("enterSignInMode"));
+        }, 100);
+      }
     };
-    
+
     checkAutoFlip();
     const timer = setTimeout(checkAutoFlip, 500);
     return () => clearTimeout(timer);
   }, [profile.id]);
 
-  
+
 
   useEffect(() => {
     // Always make visible for fullView or if already cached
-  if (fullView || memoryCache.has(finalUrl)) {
-    setVisible(true);
-    return;
-  }
+    if (fullView || memoryCache.has(finalUrl)) {
+      setVisible(true);
+      return;
+    }
 
-  // Ensure we have a ref
-  const el = imgRef.current;
-  if (!el || !finalUrl) {
-    setVisible(true); // fallback: always show
-    return;
-  }
+    // Ensure we have a ref
+    const el = imgRef.current;
+    if (!el || !finalUrl) {
+      setVisible(true); // fallback: always show
+      return;
+    }
 
-  // Fallback if browser doesn't support IntersectionObserver
-  if (typeof IntersectionObserver === "undefined") {
-    setVisible(true);
-    return;
-  }
+    // Fallback if browser doesn't support IntersectionObserver
+    if (typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return;
+    }
 
-  // Lazy-load observer
-  const obs = new IntersectionObserver(
-    (entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          memoryCache.set(finalUrl, true);
-          obs.disconnect();
-        }
-      });
-    },
-    { rootMargin: "200px", threshold: 0.05 }
-  );
+    // Lazy-load observer
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setVisible(true);
+            memoryCache.set(finalUrl, true);
+            obs.disconnect();
+          }
+        });
+      },
+      { rootMargin: "200px", threshold: 0.05 }
+    );
     obs.observe(el);
     return () => obs.disconnect();
   }, [finalUrl, fullView]);
@@ -204,7 +204,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const isVerified = hasVerifiedContent;
 
-  
+
 
   // --- Local favicon + label resolver ---
   function enrichLink(link) {
@@ -292,7 +292,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
   const warningConfig = (() => {
     if (!warning) return null;
-    const name = profile?.name || "This profile";
+    const name = profile?.display_name || profile?.name || "This profile";
     const nameSearchUrl = profile?.name
       ? `/directory?search=${encodeURIComponent(profile.name)}`
       : "/directory";
@@ -364,7 +364,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               </a>
               .
             </>,
-            "Links are provided, but ownership of those links has not been authenticated.",
+            "Links are provided but their ownership has not been authenticated.",
           ],
         };
       }
@@ -374,7 +374,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         summary: `⚠ ${name} may not be who you think.`,
         toggleLabel: "Warnings",
         details: [
-          "Links are provided, but ownership of those links has not been authenticated.",
+          "Links are provided but their ownership has not been authenticated.",
           "Names can be impersonated.",
         ],
       };
@@ -398,7 +398,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         summary: "This address was recently active.",
         toggleLabel: "More",
         details: [
-          "Authenticated links confirm that this address belongs to the same person.",
+          "Authenticated links help confirm address belongs to same person.",
           "Names can be impersonated.",
         ],
       };
@@ -481,7 +481,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
           <div className="flex flex-col flex-grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
-              {profile.name}
+              <span className="truncate">{profile.display_name || profile.name}</span>
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
@@ -492,20 +492,14 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 />
               )}
               {isNewProfile(profile) && (
-                <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm">
+                <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm shrink-0">
                   NEW
                 </span>
               )}
             </span>
+            <span className="text-xs font-medium text-gray-500 leading-tight">@{profile.name}</span>
 
             <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
-              {/* Location */}
-              {profile.nearest_city_name && (
-                <span className="truncate max-w-[140px]" title={profile.nearest_city_name}>
-                  {profile.nearest_city_name}
-                </span>
-              )}
-
               {/* Badges */}
               {(hasAwards) && (
                 <div className="flex flex-wrap justify-start gap-x-2 gap-y-0.5">
@@ -659,7 +653,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             {/* Share button (top-right) */}
             <button
               onClick={() => {
-                const baseSlug = profile.name
+                const baseSlug = (profile.display_name || profile.name)
                   .normalize("NFKC")
                   .trim()
                   .toLowerCase()
@@ -673,7 +667,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 if (navigator.share) {
                   navigator
                     .share({
-                      title: `${profile.name} on Zcash.me`,
+                      title: `${profile.display_name || profile.name} on Zcash.me`,
                       text: "Check out this Zcash profile:",
                       url: shareUrl,
                     })
@@ -684,7 +678,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 }
               }}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-              title={`Share ${profile.name}`}
+              title={`Share ${profile.display_name || profile.name}`}
             >
               <img
                 src={shareIcon}
@@ -709,11 +703,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>
             {showStats && (
-      <Motion.div
-        key="awards"
-        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              <Motion.div
+                key="awards"
+                initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -10, scale: 0.95 }}
                 transition={{
                   type: "spring",
                   stiffness: 220,
@@ -757,20 +751,22 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
           {/* Name */}
 
-          <div className="mt-3 flex justify-center">
-            <div className="relative inline-flex items-center">
-              <h2 className="text-2xl font-bold text-gray-800">{profile.name}</h2>
+          {/* Name & Username Layout */}
+          <div className="mt-3 flex flex-col items-center">
+            <h2 className="text-3xl font-black text-gray-900 leading-tight flex items-center justify-center gap-2">
+              {profile.display_name || profile.name}
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
-                <span className="absolute left-full ml-2 top-1/2 -translate-y-1/2">
-                  <VerifiedBadge
-                    verified={true}
-                    verifiedCount={
-                      (profile.verified_links_count ?? 0) +
-                      (profile.address_verified ? 1 : 0)
-                    }
-                  />
-                </span>
+                <VerifiedBadge
+                  verified={true}
+                  verifiedCount={
+                    (profile.verified_links_count ?? 0) +
+                    (profile.address_verified ? 1 : 0)
+                  }
+                />
               )}
+            </h2>
+            <div className="text-base font-medium text-gray-500 mt-1">
+              @{profile.name}
             </div>
           </div>
 
