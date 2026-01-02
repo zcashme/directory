@@ -106,9 +106,8 @@ const filterContentClass = "flex items-center gap-2";
 
 const getFilterButtonClass = (active, activeClass, hoverClass) => {
   const scopedHoverClass = hoverClass.replace(/hover:/g, "md:hover:");
-  return `${filterBaseClass} md:hover:scale-[1.03] ${
-    active ? activeClass : "bg-white"
-  } ${scopedHoverClass}`;
+  return `${filterBaseClass} md:hover:scale-[1.03] ${active ? activeClass : "bg-white"
+    } ${scopedHoverClass}`;
 };
 
 const getTagLabel = (tag) => (tag.startsWith("NS v") ? "NS v" : tag);
@@ -547,9 +546,8 @@ export default function DirectoryAlt() {
           setTimeout(() => setCopied(false), 2000);
         }}
         title={copied ? "Copied" : "Copy"}
-        className={`flex items-center gap-1 px-1 text-xs transition-colors ${
-          copied ? "text-green-600" : "text-gray-500 hover:text-blue-600"
-        }`}
+        className={`flex items-center gap-1 px-1 text-xs transition-colors ${copied ? "text-green-600" : "text-gray-500 hover:text-blue-600"
+          }`}
       >
         {copied ? (
           <svg
@@ -640,9 +638,8 @@ export default function DirectoryAlt() {
           <button
             type="button"
             onClick={handleSaveQR}
-            className={`text-xs font-semibold uppercase ${
-              saved ? "text-green-600" : "text-blue-600 hover:underline"
-            }`}
+            className={`text-xs font-semibold uppercase ${saved ? "text-green-600" : "text-blue-600 hover:underline"
+              }`}
           >
             {saved ? "Saved" : "Save QR"}
           </button>
@@ -778,22 +775,16 @@ export default function DirectoryAlt() {
                     ) : null}
                   </div>
                   <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                    <button
-                      type="button"
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (!profile?.address) return;
-                        setSelectedAddress(profile.address);
-                        if (selectedAddress !== profile.address) {
-                          setDraftMemo("");
-                        }
-                        setActiveProfile(profile);
-                      }}
+                    <a
+                      href={`https://zcash.me/${normalizeSlug(profile?.name || profile?.display_name || "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(event) => event.stopPropagation()}
                       className="flex max-w-full items-baseline gap-0 text-left hover:underline"
                     >
                       <span>Zcash.me/</span>
                       <span>{profile?.name || profile?.display_name || "Unnamed"}</span>
-                    </button>
+                    </a>
                   </div>
                 </div>
               </div>
@@ -824,11 +815,10 @@ export default function DirectoryAlt() {
                           setActiveProfile(profile);
                           setForceShowQR(Date.now());
                         }}
-                        className={`flex items-center gap-1 px-1 text-xs transition-colors ${
-                          addressValue
+                        className={`flex items-center gap-1 px-1 text-xs transition-colors ${addressValue
                             ? "text-gray-500 hover:text-blue-600"
                             : "cursor-not-allowed text-gray-300"
-                        }`}
+                          }`}
                         title="Show QR"
                       >
                         <svg
@@ -960,9 +950,8 @@ export default function DirectoryAlt() {
       )}
 
       <div
-        className={`fixed left-0 right-0 z-30 border-b border-gray-300 bg-[#f7f7f2]/80 backdrop-blur ${
-          showAnnouncement ? "top-10" : "top-0"
-        }`}
+        className={`fixed left-0 right-0 z-30 border-b border-gray-300 bg-[#f7f7f2]/80 backdrop-blur ${showAnnouncement ? "top-10" : "top-0"
+          }`}
       >
         <div className="mx-auto w-full max-w-6xl px-5">
           <div className="py-3">
@@ -975,18 +964,18 @@ export default function DirectoryAlt() {
                 />
                 <span className="text-base font-black">zcash.me/ns</span>
               </div>
-            <div className="hidden w-full max-w-lg flex-1 items-center gap-2 md:flex">
-              <label className="sr-only" htmlFor="directory-search">
-                Search profiles
-              </label>
-              <input
-                id="directory-search"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search names, links, or locations"
-                className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none transition-transform duration-150 hover:scale-[1.01] rounded-none"
-              />
-            </div>
+              <div className="hidden w-full max-w-lg flex-1 items-center gap-2 md:flex">
+                <label className="sr-only" htmlFor="directory-search">
+                  Search profiles
+                </label>
+                <input
+                  id="directory-search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search names, links, or locations"
+                  className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none transition-transform duration-150 hover:scale-[1.01] rounded-none"
+                />
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -1002,9 +991,8 @@ export default function DirectoryAlt() {
       </div>
 
       <div
-        className={`mx-auto w-full max-w-6xl px-5 pb-16 pt-6 ${
-          showAnnouncement ? "pt-32 sm:pt-36" : "pt-20 sm:pt-24"
-        }`}
+        className={`mx-auto w-full max-w-6xl px-5 pb-16 pt-6 ${showAnnouncement ? "pt-32 sm:pt-36" : "pt-20 sm:pt-24"
+          }`}
       >
         <div className="mt-6 relative">
           <div className="pointer-events-none absolute left-1/2 -top-16 z-0 h-36 w-36 -translate-x-1/2 opacity-70">
@@ -1232,7 +1220,7 @@ export default function DirectoryAlt() {
               <div className="px-4 py-6 text-sm text-gray-600">No profiles found.</div>
             )}
 
-              {!loading && profileRows}
+            {!loading && profileRows}
           </div>
         </div>
 
@@ -1269,9 +1257,8 @@ export default function DirectoryAlt() {
                     setLocationFilter([]);
                     setShowLocationFilter(false);
                   }}
-                  className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm ${
-                    locationFilter.length === 0 ? "bg-gray-100" : "hover:bg-gray-50"
-                  }`}
+                  className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm ${locationFilter.length === 0 ? "bg-gray-100" : "hover:bg-gray-50"
+                    }`}
                 >
                   <span className="h-4 w-4 rounded-full border border-gray-500" />
                   All locations
@@ -1297,9 +1284,8 @@ export default function DirectoryAlt() {
                                 return [...prev, key];
                               });
                             }}
-                            className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm ${
-                              isSelected ? "bg-gray-100" : "hover:bg-gray-50"
-                            }`}
+                            className={`flex w-full items-center gap-3 rounded-md px-2 py-2 text-left text-sm ${isSelected ? "bg-gray-100" : "hover:bg-gray-50"
+                              }`}
                           >
                             <span className="h-4 w-4 rounded-full border border-gray-500" />
                             {city}
@@ -1398,10 +1384,15 @@ export default function DirectoryAlt() {
                         </div>
                       ) : null}
                     </div>
-                    <div className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                    <a
+                      href={`https://zcash.me/${normalizeSlug(activeProfile?.name || activeProfile?.display_name || "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
+                    >
                       <span>Zcash.me/</span>
                       <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
-                    </div>
+                    </a>
                   </div>
                 </div>
                 <button
@@ -1444,9 +1435,8 @@ export default function DirectoryAlt() {
                 <textarea
                   value={localMemo}
                   onChange={(event) => setLocalMemo(event.target.value)}
-                  placeholder={`Write your message to ${
-                    activeProfile.display_name || activeProfile.name || "recipient"
-                  } here...`}
+                  placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"
+                    } here...`}
                   className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-none rounded-none"
                   rows={4}
                   onClick={(event) => event.stopPropagation()}
