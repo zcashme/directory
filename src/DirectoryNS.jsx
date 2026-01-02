@@ -54,11 +54,18 @@ const getLinkLabel = (url = "") => {
   return entry?.label || domain || "Link";
 };
 
+const getSocialHandle = (url = "") => {
+  const cleaned = url.split("#")[0].split("?")[0].replace(/\/+$/, "");
+  const parts = cleaned.split("/");
+  const last = parts[parts.length - 1] || "";
+  return decodeURIComponent(last);
+};
+
 const getLastVerifiedLabel = (profile) => {
   const ts = profile?.last_verified_at || profile?.last_verified;
-  if (!ts) return "-";
+  if (!ts) return "n/a";
   const ms = new Date(ts).getTime();
-  if (Number.isNaN(ms)) return "-";
+  if (Number.isNaN(ms)) return "n/a";
   const weeks = (Date.now() - ms) / (1000 * 60 * 60 * 24 * 7);
   if (weeks < 1) return "<1 week ago";
   if (weeks < 2) return "<2 weeks ago";
@@ -85,9 +92,10 @@ const getCountryName = (profile) => (profile?.country || "").trim();
 
 const getProfileTags = (profile) => {
   const tags = [];
-  if (isTruthyFlag(profile?.is_ns_longterm)) tags.push("Long-term");
   if (isVerifiedProfile(profile)) tags.push("Verified");
+  if (hasRank(profile)) tags.push("Top Rank");
   if (isTruthyFlag(profile?.is_ns_core)) tags.push("Core");
+  if (isTruthyFlag(profile?.is_ns_longterm)) tags.push("Long-term");
   return tags;
 };
 
@@ -96,8 +104,12 @@ const filterBaseClass =
 
 const filterContentClass = "flex items-center gap-2";
 
-const getFilterButtonClass = (active, activeClass, hoverClass) =>
-  `${filterBaseClass} hover:scale-[1.03] ${active ? activeClass : "bg-white"} ${hoverClass}`;
+const getFilterButtonClass = (active, activeClass, hoverClass) => {
+  const scopedHoverClass = hoverClass.replace(/hover:/g, "md:hover:");
+  return `${filterBaseClass} md:hover:scale-[1.03] ${
+    active ? activeClass : "bg-white"
+  } ${scopedHoverClass}`;
+};
 
 const getTagLabel = (tag) => (tag.startsWith("NS v") ? "NS v" : tag);
 
@@ -109,7 +121,7 @@ export default function DirectoryAlt() {
 
   const announcementConfig = {
     enabled: true,
-    message: "Zcash Office Hours at NS coming soon.",
+    message: "Zcash Office Hours",
     actionLabel: "Action",
     dismissLabel: "Dismiss",
   };
@@ -131,6 +143,10 @@ export default function DirectoryAlt() {
   const locationDropdownRef = useRef(null);
   const tagButtonRef = useRef(null);
   const tagDropdownRef = useRef(null);
+  const activeTags = useMemo(
+    () => (activeProfile ? getProfileTags(activeProfile) : []),
+    [activeProfile]
+  );
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -307,6 +323,9 @@ export default function DirectoryAlt() {
     filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     return filtered;
   }, [profiles, search, filters, locationFilter, tagFilter]);
+  const filteredCount = filteredProfiles.length;
+  const isFiltering =
+    anyFilterActive || search.trim().length > 0 || locationFilter.length > 0;
 
   const nsCount = profiles.filter((profile) => isNsProfile(profile)).length;
 
@@ -510,7 +529,6 @@ export default function DirectoryAlt() {
   const showAnnouncement = announcementConfig.enabled && !isBannerDismissed;
 
   const getAddressDisplay = (profile) => {
-    if (profile?.display_name) return profile.display_name;
     const address = profile?.address;
     if (!address) return "-";
     return `${address.slice(0, 6)}...${address.slice(-6)}`;
@@ -684,7 +702,6 @@ export default function DirectoryAlt() {
             key={profile?.id ?? profile?.address}
             className="w-full text-left transition-transform duration-150 hover:scale-[1.01]"
             onClick={(event) => {
-              if (!isCardView) return;
               const interactive = event.target.closest(
                 "a,button,input,textarea,label,svg"
               );
@@ -697,8 +714,8 @@ export default function DirectoryAlt() {
               setActiveProfile(profile);
             }}
           >
-            <div className="mt-3 grid items-center gap-3 border border-gray-900 bg-white px-4 py-3 sm:grid-cols-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] rounded-none">
-              <div className="flex min-w-0 items-center gap-3 overflow-hidden sm:col-start-1 sm:row-start-1 md:col-start-auto">
+            <div className="mt-3 grid items-center md:items-start gap-3 border border-gray-900 bg-white px-4 py-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.8fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.4fr)] rounded-none">
+              <div className="flex min-w-0 items-center gap-3 overflow-hidden md:col-start-1 md:row-start-1">
                 <ProfileAvatar
                   profile={profile}
                   size={36}
@@ -707,32 +724,85 @@ export default function DirectoryAlt() {
                   showFallbackIcon
                 />
                 <div className="min-w-0">
-                  <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
-                    Zcash.me/
+                  <div className="flex items-center gap-2 flex-nowrap">
+                    <div className="min-w-0 text-base font-black tracking-tight text-gray-900">
+                      {profile?.display_name || profile?.name || "Unnamed"}
+                    </div>
+                    {tags.length ? (
+                      <div className="flex items-center gap-1 shrink-0">
+                        {tags.map((tag) => (
+                          <span key={`${profile?.id}-${tag}`} title={tag} className="flex items-center">
+                            {tag === "Verified" && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="48 36 160 200"
+                                className="h-4 w-3 block"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M56 70 C86 78, 108 74, 128 52 C148 74, 170 78, 200 70 V128 C200 172, 164 206, 128 224 C92 206, 56 172, 56 128 Z"
+                                  fill="#2f7d4c"
+                                />
+                                <path
+                                  d="M96 126 L118 148 L162 104"
+                                  fill="none"
+                                  stroke="#ffffff"
+                                  strokeWidth="18"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            )}
+                            {tag === "Top Rank" && (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 256 256"
+                                className="h-4 w-4 block"
+                                aria-hidden="true"
+                              >
+                                <path
+                                  d="M128 28 L156 92 L224 100 L172 146 L186 216 L128 180 L70 216 L84 146 L32 100 L100 92 Z"
+                                  fill="#000000"
+                                />
+                              </svg>
+                            )}
+                            {tag === "Core" && (
+                              <img src={coreIcon} alt="Core" className="h-4 w-auto" />
+                            )}
+                            {tag === "Long-term" && (
+                              <img src={longTermIcon} alt="Long Term" className="h-4 w-auto" />
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      if (!profile?.address) return;
-                      setSelectedAddress(profile.address);
-                      if (selectedAddress !== profile.address) {
-                        setDraftMemo("");
-                      }
-                      setActiveProfile(profile);
-                    }}
-                    className="max-w-full whitespace-normal break-words text-left text-sm font-black uppercase tracking-wide hover:underline"
-                  >
-                    {profile?.name || "Unnamed"}
-                  </button>
+                  <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (!profile?.address) return;
+                        setSelectedAddress(profile.address);
+                        if (selectedAddress !== profile.address) {
+                          setDraftMemo("");
+                        }
+                        setActiveProfile(profile);
+                      }}
+                      className="flex max-w-full items-baseline gap-0 text-left hover:underline"
+                    >
+                      <span>Zcash.me/</span>
+                      <span>{profile?.name || profile?.display_name || "Unnamed"}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
               {bioText ? (
-                <div className="text-sm text-gray-700 break-words md:hidden sm:col-span-2 sm:row-start-2">
+                <div className="text-sm text-gray-700 break-words md:hidden">
                   {bioText}
                 </div>
               ) : null}
-              <div className="min-w-0 text-sm text-gray-700 break-words sm:col-start-1 sm:row-start-3 md:col-start-auto md:row-auto">
+              <div className="min-w-0 text-sm text-gray-700 break-words md:col-start-2 md:row-start-1">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
                   Address
                 </div>
@@ -774,14 +844,19 @@ export default function DirectoryAlt() {
                         </svg>
                         <span>QR</span>
                       </button>
-                      <InlineCopyButton text={addressValue} />
                     </div>
                   </div>
                 ) : (
                   <div className="mt-1 text-xs text-gray-500">-</div>
                 )}
               </div>
-              <div className="min-w-0 text-xs font-semibold tracking-wide text-gray-700 sm:col-start-1 sm:row-start-4 md:col-start-auto md:row-auto">
+              <div className="min-w-0 text-xs font-semibold tracking-wide text-gray-700 break-words md:col-start-3 md:row-start-1 md:justify-self-start md:text-left">
+                <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
+                  Last Verified
+                </div>
+                {lastVerified}
+              </div>
+              <div className="min-w-0 text-xs font-semibold tracking-wide text-gray-700 md:col-start-4 md:row-start-1">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
                   Nearest City
                 </div>
@@ -805,64 +880,12 @@ export default function DirectoryAlt() {
                   </span>
                 )}
               </div>
-              <div className="min-w-0 flex flex-wrap gap-2 sm:col-start-2 sm:row-start-3 md:col-start-auto md:row-auto">
-                <div className="w-full text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
-                  Tags
-                </div>
-                        {tags.length ? (
-                          tags.map((tag) => (
-                            <span
-                              key={`${profile?.id}-${tag}`}
-                              className={`${filterBaseClass} h-7 px-2 py-1 text-[10px] bg-white justify-center whitespace-nowrap`}
-                              title={tag}
-                            >
-                              <span className={`${filterContentClass} leading-none`}>
-                                {tag === "Verified" && (
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="48 36 160 200"
-                                    className="h-4 w-3 block"
-                                    aria-hidden="true"
-                                  >
-                                    <path
-                                      d="M56 70 C86 78, 108 74, 128 52 C148 74, 170 78, 200 70 V128 C200 172, 164 206, 128 224 C92 206, 56 172, 56 128 Z"
-                                      fill="#2f7d4c"
-                                    />
-                                    <path
-                                      d="M96 126 L118 148 L162 104"
-                                      fill="none"
-                                      stroke="#ffffff"
-                                      strokeWidth="18"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
-                                )}
-                                {tag === "Core" && (
-                                  <img src={coreIcon} alt="Core" className="h-4 w-auto" />
-                                )}
-                                {tag === "Long-term" && (
-                                  <img src={longTermIcon} alt="Long Term" className="h-4 w-auto" />
-                                )}
-                              </span>
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-xs text-gray-500">-</span>
-                        )}
-              </div>
-              <div className="min-w-0 text-xs font-semibold tracking-wide text-gray-700 break-words sm:col-start-2 sm:row-start-1 md:col-start-auto md:row-auto">
-                <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
-                  Last Verified
-                </div>
-                {lastVerified}
-              </div>
-              <div className="min-w-0 sm:col-start-2 sm:row-start-4 md:col-start-auto md:row-auto">
+              <div className="min-w-0 md:col-start-5 md:row-start-1 md:self-start md:justify-self-start md:pt-1">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
                   Social
                 </div>
                 {links.length ? (
-                  <div className="mt-1 grid w-fit max-w-full grid-cols-[repeat(6,28px)] md:grid-cols-[repeat(2,28px)] auto-rows-min items-center gap-2 sm:gap-3 justify-items-start">
+                  <div className="flex flex-wrap content-start gap-2 md:mt-1">
                     {links.map((link) => (
                       <a
                         key={link.id || link.url}
@@ -870,7 +893,7 @@ export default function DirectoryAlt() {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(event) => event.stopPropagation()}
-                        className="flex h-7 w-7 items-center justify-center border border-gray-900 bg-white transition-transform duration-150 hover:scale-[1.05] rounded-none"
+                        className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
                         title={getLinkLabel(link.url)}
                       >
                         <img
@@ -878,6 +901,9 @@ export default function DirectoryAlt() {
                           alt={link.label || ""}
                           className="h-4 w-4"
                         />
+                        <span className="max-w-[120px] truncate">
+                          {getSocialHandle(link.url)}
+                        </span>
                       </a>
                     ))}
                   </div>
@@ -1051,8 +1077,11 @@ export default function DirectoryAlt() {
             >
               Network School
             </a>
-            . Now featuring{" "}
-            <span className="font-semibold">{nsCount}</span> names.{" "}
+            . Now features{" "}
+            <span className="font-semibold">
+              {isFiltering ? `${filteredCount} of ${nsCount}` : nsCount}
+            </span>{" "}
+            names.{" "}
             <button
               type="button"
               onClick={() => window.alert("Coming Soon. Not affiliated with ns.com (at least, not yet).")}
@@ -1187,12 +1216,11 @@ export default function DirectoryAlt() {
 
         <div className="mt-6">
           <div>
-            <div className="hidden grid-cols-[minmax(0,1.4fr)_minmax(0,3fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)] items-center gap-4 border border-gray-900 bg-white px-4 py-3 text-xs font-semibold tracking-wide transition-transform duration-150 hover:scale-[1.01] md:grid rounded-none">
-              <div className="flex items-center">Zcash.me/</div>
+            <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1.8fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.4fr)] items-center gap-4 border border-gray-900 bg-white px-4 py-3 text-xs font-semibold tracking-wide transition-transform duration-150 hover:scale-[1.01] md:grid rounded-none">
+              <div className="flex items-center">Name</div>
               <div className="flex items-center">Address</div>
-              <div className="flex items-center">Nearest City</div>
-              <div className="flex items-center">Tags</div>
               <div className="flex items-center">Last Verified</div>
+              <div className="flex items-center">Nearest City</div>
               <div className="flex items-center">Social</div>
             </div>
 
@@ -1317,11 +1345,62 @@ export default function DirectoryAlt() {
                     showFallbackIcon
                   />
                   <div className="min-w-0">
-                    <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                      Zcash.me/
+                    <div className="flex items-center gap-2 flex-nowrap">
+                      <div className="min-w-0 text-base font-black tracking-tight text-gray-900">
+                        {activeProfile?.display_name || activeProfile?.name || "Unnamed"}
+                      </div>
+                      {activeTags.length ? (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {activeTags.map((tag) => (
+                            <span key={`active-${tag}`} title={tag} className="flex items-center">
+                              {tag === "Verified" && (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="48 36 160 200"
+                                  className="h-4 w-3 block"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M56 70 C86 78, 108 74, 128 52 C148 74, 170 78, 200 70 V128 C200 172, 164 206, 128 224 C92 206, 56 172, 56 128 Z"
+                                    fill="#2f7d4c"
+                                  />
+                                  <path
+                                    d="M96 126 L118 148 L162 104"
+                                    fill="none"
+                                    stroke="#ffffff"
+                                    strokeWidth="18"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              )}
+                              {tag === "Top Rank" && (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 256 256"
+                                  className="h-4 w-4 block"
+                                  aria-hidden="true"
+                                >
+                                  <path
+                                    d="M128 28 L156 92 L224 100 L172 146 L186 216 L128 180 L70 216 L84 146 L32 100 L100 92 Z"
+                                    fill="#000000"
+                                  />
+                                </svg>
+                              )}
+                              {tag === "Core" && (
+                                <img src={coreIcon} alt="Core" className="h-4 w-auto" />
+                              )}
+                              {tag === "Long-term" && (
+                                <img src={longTermIcon} alt="Long Term" className="h-4 w-auto" />
+                              )}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
-                    <div className="max-w-full whitespace-normal break-words text-sm font-black uppercase tracking-wide">
-                      {activeProfile?.name || "Unnamed"}
+                    <div className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                      <span>Zcash.me/</span>
+                      <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
                     </div>
                   </div>
                 </div>
