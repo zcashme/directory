@@ -52,6 +52,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [nameHelp, setNameHelp] = useState("");
   const [nameConflict, setNameConflict] = useState(null);
   const [address, setAddress] = useState("");
@@ -93,6 +94,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       setStep(0);
       setDir(1);
       setName("");
+      setDisplayName("");
       setNameHelp("");
       setNameConflict(null);
       setAddress("");
@@ -265,7 +267,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     switch (step) {
       case 0:
         // Allow proceeding if there's no conflict or only an informational (unverified) conflict
-        return !!name.trim() && (!nameConflict || nameConflict.type !== "error");
+        return !!name.trim() && !!displayName.trim() && (!nameConflict || nameConflict.type !== "error");
 
 
       case 1: {
@@ -280,11 +282,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
 
       case 2:
-        return true; // nearest city optional
-      case 3:
-        return true; // referrer optional
-      case 4:
         return links.every((l) => l.valid !== false);
+      case 3:
+        return true; // nearest city optional
+      case 4:
+        return true; // referrer optional
       case 5: {
         const res = validateZcashAddress(address.trim());
         return (
@@ -393,6 +395,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         .insert([
           {
             name: name.trim(),
+            display_name: displayName.trim() || null,
             address: address.trim(),
             referred_by: referrer?.name || null,
             referred_by_zcasher_id: referrer?.id || null,
@@ -471,25 +474,28 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
   const StepName = (
     <motion.div key="step-name" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
       <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
-        Name
+        Username
       </label>
-      <input
-        id="name"
-        value={name}
-        onChange={(e) => {
-          const input = e.target.value;
+      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-blue-600">
+        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+        <input
+          id="name"
+          value={name}
+          onChange={(e) => {
+            const input = e.target.value;
 
-          // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
-          const filtered = input
-            .normalize("NFKC")
-            .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
+            // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
+            const filtered = input
+              .normalize("NFKC")
+              .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
 
-          setName(filtered);
-        }}
-        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
-        placeholder="Enter name"
-        autoComplete="off"
-      />
+            setName(filtered);
+          }}
+          className="flex-1 px-1 py-2 text-sm outline-none bg-transparent"
+          placeholder="username"
+          autoComplete="off"
+        />
+      </div>
       <p
         className={`mt-1 text-xs ${nameConflict?.type === "error"
           ? "text-red-600"
@@ -515,6 +521,19 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         </p>
       )}
 
+      {/* Display Name */}
+      <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
+        Display Name
+      </label>
+      <input
+        id="displayName"
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
+        placeholder="Enter display name"
+        autoComplete="off"
+      />
+      <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
 
     </motion.div>
   );
@@ -542,6 +561,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       )}
 
 
+      <p className="mt-4 text-xs text-gray-500">
+        <span className="font-bold text-gray-700">Did you know?</span> This Zcash address and its activity cannot be found on-chain.
+      </p>
     </motion.div>
   );
 
@@ -586,7 +608,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       </div>
 
       <p className="mt-1 text-xs text-gray-500">
-        Optional. Helps people understand where you are based.
+        Optional. Helps Zcashers find other Zcashers around them.
       </p>
     </motion.div>
   );
@@ -597,23 +619,26 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         Referred by Zcash.me/
       </label>
 
-      <div className="relative w-full">
+      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-blue-600">
+        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
         <ProfileSearchDropdown
           value={referrer?.name || referrer || ""}
           onChange={(v) => setReferrer(v)}
           profiles={profiles}
-          placeholder="Type to search (optional)…"
+          placeholder="username"
+          showByDefault={false}
+          className="flex-1 px-1 py-2 text-sm outline-none bg-transparent"
         />
       </div>
 
 
-      <p className="mt-1 text-xs text-gray-500">Optional. Helps us rank referrals.</p>
+      <p className="mt-1 text-xs text-gray-500">Optional. Helps us reward members who refer new members.</p>
     </motion.div>
   );
 
   const StepLinks = (
     <motion.div key="step-links" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
-      <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">Profile links</label>
+      <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">Add social links to help others identify you</label>
 
       {links.map((link, index) => (
         <SocialLinkInput
@@ -625,10 +650,10 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         />
       ))}
       <button type="button" onClick={addLinkField} className="text-sm font-semibold text-blue-700 hover:underline mt-1">
-        ＋ Add another link
+        ＋ Add more links
       </button>
       <p className="mt-2 text-xs text-gray-500">
-        Tip: You can add, remove and verify links from Edit Profile.
+        Tip: You can authenticate links from Edit Profile after verifying your Zcash address.
       </p>
     </motion.div>
   );
@@ -637,8 +662,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     <motion.div key="step-review" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
       <div className="space-y-2 text-sm">
         <div>
-          <span className="font-semibold text-gray-700">Name:</span>{" "}
+          <span className="font-semibold text-gray-700">Username:</span>{" "}
           <span className="font-mono">{name || "—"}</span>
+        </div>
+        <div>
+          <span className="font-semibold text-gray-700">Display Name:</span>{" "}
+          <span className="font-mono">{displayName || "—"}</span>
         </div>
         <div>
           <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
@@ -693,15 +722,33 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-fadeIn"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
-          <h2 className="text-lg font-semibold text-gray-800">Zcash is better with friends</h2>
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
-            aria-label="Close"
-          >
-            <XIcon className="w-4 h-4 text-gray-600" />
-          </button>
+        <div className="relative border-b border-black/10 overflow-hidden rounded-t-2xl">
+          {/* Progress Bar Background */}
+          <div
+            className="absolute top-0 left-0 bottom-0 transition-all duration-700 ease-in-out opacity-80"
+            style={{
+              width: `${((step + 1) / 6) * 100}%`,
+              backgroundImage: 'linear-gradient(90deg, #fde047, #4ade80, #60a5fa, #fde047)',
+              backgroundSize: '200% 100%',
+              animation: 'slideGradient 15s linear infinite'
+            }}
+          />
+
+          <div className="relative flex items-center justify-between px-5 py-4">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-800 leading-tight">Zcash is better with friends</h2>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-700 mt-0.5">
+                Step {step + 1} of 6
+              </p>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
+              aria-label="Close"
+            >
+              <XIcon className="w-4 h-4 text-gray-600" />
+            </button>
+          </div>
         </div>
 
         {/* Body */}
@@ -725,9 +772,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             {step === 0 && StepName}
             {step === 1 && StepAddress}
-            {step === 2 && StepCity}
-            {step === 3 && StepReferrer}
-            {step === 4 && StepLinks}
+            {step === 2 && StepLinks}
+            {step === 3 && StepCity}
+            {step === 4 && StepReferrer}
             {step === 5 && StepReview}
           </AnimatePresence>
         </form>
@@ -786,6 +833,10 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(.98); }
           to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideGradient {
+          0% { background-position: 0% 0%; }
+          100% { background-position: -200% 0%; }
         }
         .animate-fadeIn { animation: fadeIn .25s ease-out; }
       `}</style>

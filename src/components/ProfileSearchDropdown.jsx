@@ -9,6 +9,9 @@ export default function ProfileSearchDropdown({
   profiles,
   placeholder = "Search",
   listOnly = false,
+  showByDefault = true,
+  className = "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400",
+  ...props
 }) {
   const [show, setShow] = useState(false);
   const hideTimerRef = useRef(null);
@@ -85,7 +88,9 @@ export default function ProfileSearchDropdown({
       return;
     }
 
-    setShow(true);
+    if (showByDefault) {
+      setShow(true);
+    }
     startHideTimer();
 
     return () => {
@@ -119,7 +124,8 @@ export default function ProfileSearchDropdown({
           }}
           placeholder={placeholder}
           autoComplete="off"
-          className="w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400"
+          className={className}
+          {...props}
         />
       )}
 
