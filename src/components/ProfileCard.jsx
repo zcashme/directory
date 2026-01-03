@@ -264,6 +264,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       .replace(/\s+/g, " ")
       .replace(/ /g, "_");
 
+  const formatUsername = (value = "") =>
+    value.trim().replace(/\s+/g, "_");
+
   const cachedProfiles =
     typeof window !== "undefined" ? window.cachedProfiles : null;
 
@@ -497,7 +500,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 </span>
               )}
             </span>
-            <span className="text-xs font-medium text-gray-500 leading-tight">@{profile.name}</span>
+            <span className="text-xs font-medium text-gray-500 leading-tight">
+              @{formatUsername(profile.name)}
+            </span>
 
             <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
               {/* Badges */}
@@ -766,7 +771,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               )}
             </h2>
             <div className="text-base font-medium text-gray-500 mt-1">
-              @{profile.name}
+              @{formatUsername(profile.name)}
             </div>
           </div>
 
