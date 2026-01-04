@@ -2073,7 +2073,7 @@ export default function ProfileEditor({ profile, links }) {
           <p className="text-sm text-gray-400 text-center">
             <span className="inline-flex items-center gap-1">
 
-              <span className="font-semibold">Verify address to apply changes</span>
+              <span className="font-semibold">Verify address to apply edits</span>
             </span>
           </p>
         </div>

@@ -62,7 +62,7 @@ export default function ZcashFeedback() {
       </div>
 
       <div className="text-[13px] text-gray-600 mt-1 font-light">
-        to verify address or apply changes
+        to verify address and apply edits
       </div>
     </div>
   }

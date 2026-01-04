@@ -3,8 +3,8 @@ import { QRCodeSVG } from "qrcode.react";
 
 export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI }) {
   const qrRef = useRef(null);
-  const [showQR, setShowQR] = useState(false);
-  const [showFull, setShowFull] = useState(false);
+  const [showQR, setShowQR] = useState(true);
+  const [showFull, setShowFull] = useState(true);
 
   useEffect(() => {
     if (forceShowQR) setShowQR(true);
@@ -49,53 +49,17 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
 
   if (!uri) return null;
 
+  const actionButtonClasses =
+    "flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap";
+  const hideButtonClasses =
+    "flex items-center gap-1 px-3 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
+
   return (
     <div className="flex flex-col items-center gap-4 mt-6 animate-fadeIn">
 
-      {/* Always-centered toggle row */}
-      <div className="flex gap-6 justify-center w-full">
-
-        {/* QR toggle */}
-        {!showQR && (
-          <button
-            onClick={() => setShowQR(true)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Show QR
-          </button>
-        )}
-        {showQR && (
-          <button
-            onClick={() => setShowQR(false)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Hide QR
-          </button>
-        )}
-
-        {/* URI toggle */}
-        {!showFull && (
-          <button
-            onClick={() => setShowFull(true)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Show URI
-          </button>
-        )}
-        {showFull && (
-          <button
-            onClick={() => setShowFull(false)}
-            className="text-sm text-blue-600 hover:underline"
-          >
-            Hide URI
-          </button>
-        )}
-
-      </div>
-
       {/* QR block */}
-      {showQR && (
-        <div className="flex flex-col items-center gap-2">
+      <div className="flex flex-col items-center gap-2">
+        {showQR && (
           <QRCodeSVG
             ref={qrRef}
             value={uri}
@@ -104,16 +68,59 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
             bgColor="transparent"
             fgColor="#000000"
           />
+        )}
+      </div>
+
+      {/* QR + URI controls row */}
+      <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+        {showQR ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveQR}
+              className={actionButtonClasses}
+            >
+              {saved ? "Saved" : "Save QR"}
+            </button>
+            <button
+              onClick={() => setShowQR(false)}
+              className={hideButtonClasses}
+            >
+              Hide
+            </button>
+          </div>
+        ) : (
           <button
-            onClick={handleSaveQR}
-            className={
-              saved ? "text-sm text-green-600" : "text-sm text-blue-600 hover:underline"
-            }
+            onClick={() => setShowQR(true)}
+            className={actionButtonClasses}
           >
-            {saved ? "Saved" : "Save QR"}
+            Show QR
           </button>
-        </div>
-      )}
+        )}
+
+        {showFull ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleCopy}
+              className={actionButtonClasses}
+            >
+              {copied ? "Copied" : "Copy URI"}
+            </button>
+            <button
+              onClick={() => setShowFull(false)}
+              className={hideButtonClasses}
+            >
+              Hide
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setShowFull(true)}
+            className={actionButtonClasses}
+          >
+            Show URI
+          </button>
+        )}
+      </div>
 
       {/* URI block */}
       {showFull && (
@@ -126,14 +133,6 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
           >
             {uri}
           </a>
-          <button
-            onClick={handleCopy}
-            className={
-              copied ? "text-sm text-green-600" : "text-sm text-blue-600 hover:underline"
-            }
-          >
-            {copied ? "Copied" : "Copy URI"}
-          </button>
         </div>
       )}
 

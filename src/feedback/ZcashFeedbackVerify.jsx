@@ -60,7 +60,7 @@ export default function ZcashFeedbackVerify() {
           ? `${prefix[0]} and ${last}`
           : `${prefix.join(", ")}, and ${last}`;
 
-    return `Encodes requested changes to ${list}.`;
+    return `Contains requested changes to ${list}.`;
   }, [pendingEdits]);
 
   useEffect(() => {
@@ -137,9 +137,6 @@ export default function ZcashFeedbackVerify() {
             style={{ minHeight: "6rem", lineHeight: "1.35" }}
           >
             <span className="block -mx-3 -mt-2 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
-              <span className="block text-[11px] text-gray-100 uppercase tracking-wide">
-                Do not modify message before sending
-              </span>
               <span className="block text-[12px] text-gray-200">
                 {explainerText}
               </span>
@@ -164,16 +161,16 @@ export default function ZcashFeedbackVerify() {
 
         {showFooterHelp && (
           <p className="mx-1 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
-            After sending this message, you will receive your OTP within 24-hours. <br></br>Then,
+            We cannot send this message for you. After sending, expect to receive OTP within 24-hours. Then,
             {" "}
             <button
               type="button"
               onClick={() => setIsOtpOpen(true)}
               className="font-semibold text-blue-600 underline cursor-pointer"
             >
-              submit your OTP
+              enter your OTP
             </button>{" "}
-            to verify changes.
+            to complete verification.
           </p>
         )}
         {/* Requirement line under help, above QR divider */}
