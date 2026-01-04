@@ -211,6 +211,7 @@ useEffect(() => {
         amount={amount}
         setAmount={setDraftAmount}
         openWallet={openWallet}
+        showOpenWallet={false}
       />
 
       {/* HELP MESSAGE (same style as Verify) */}

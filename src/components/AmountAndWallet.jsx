@@ -1,7 +1,12 @@
 // New reusable AmountAndWallet component matching Draft styling
 import React from "react";
 
-export default function AmountAndWallet({ amount, setAmount, openWallet }) {
+export default function AmountAndWallet({
+  amount,
+  setAmount,
+  openWallet,
+  showOpenWallet = true
+}) {
   return (
     <div className="flex items-center gap-3 w-full mb-2">
       <div className="relative flex-1">
@@ -38,12 +43,14 @@ export default function AmountAndWallet({ amount, setAmount, openWallet }) {
 
       </div>
 
-      <button
-        onClick={openWallet}
-        className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
-      >
-        Open in Wallet 
-      </button>
+      {showOpenWallet && (
+        <button
+          onClick={openWallet}
+          className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
+        >
+          Open in Wallet 
+        </button>
+      )}
     </div>
   );
 }
