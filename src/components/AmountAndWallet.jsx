@@ -3,8 +3,8 @@ import React, { useMemo, useState } from "react";
 
 const formatUsd = (value) => {
   const num = parseFloat(value);
-  if (Number.isNaN(num)) return "0.000";
-  return num.toFixed(3);
+  if (Number.isNaN(num)) return "";
+  return num.toFixed(2);
 };
 
 export default function AmountAndWallet({
@@ -16,8 +16,8 @@ export default function AmountAndWallet({
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const usdAmount = useMemo(() => formatUsd(amount || ""), [amount]);
-  const overlayRight = isUsdOpen ? "9rem" : "2.5rem";
-  const overlayWidth = "2.5rem";
+  const overlayRight = isUsdOpen ? "50%" : "2.5rem";
+  const overlayWidth = "2.25rem";
 
   return (
     <div className="flex items-center gap-3 w-full mb-2">
@@ -42,7 +42,11 @@ export default function AmountAndWallet({
             />
           </>
         )}
-        <div className="relative flex-1 min-w-0">
+
+        <div
+          className="relative min-w-0 transition-[flex-basis] duration-200"
+          style={{ flexBasis: isUsdOpen ? "50%" : "auto", flexGrow: 1 }}
+        >
           <input
             type="number"
             step="0.0005"
@@ -53,7 +57,8 @@ export default function AmountAndWallet({
             onChange={(e) => {
               const val = e.target.value;
               if (parseFloat(val) < 0) return;
-              setAmount(val);
+              const match = val.match(/^(\d+)(\.\d{0,8})?/);
+              setAmount(match ? match[0] : val);
             }}
             className="border border-gray-800 px-3 rounded-xl w-full h-11 
                        text-md pr-16 text-gray-700 
@@ -67,25 +72,56 @@ export default function AmountAndWallet({
         </div>
 
         {showUsdPill && (
-          <button
-            type="button"
-            onClick={() => setIsUsdOpen((prev) => !prev)}
-            className={`flex items-center justify-center border border-l-0 border-gray-800 rounded-r-xl text-gray-700 text-md overflow-hidden transition-all duration-200 h-11 ${
-              isUsdOpen ? "px-3 w-36" : "px-3 w-10"
+          <div
+            className={`flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-700 text-md overflow-hidden transition-[flex-basis] duration-200 h-11 ${
+              isUsdOpen ? "px-3" : "px-3 justify-center"
             }`}
+            style={{ flexBasis: isUsdOpen ? "50%" : "2.5rem" }}
             aria-expanded={isUsdOpen}
           >
-            <span className="flex items-center gap-2 whitespace-nowrap">
-              <span className="text-gray-700">$</span>
+            <div
+              className={`flex items-center w-full ${
+                isUsdOpen ? "gap-2" : "justify-center"
+              }`}
+            >
+              <span
+                className="text-gray-700 cursor-pointer flex-none"
+                onClick={() => setIsUsdOpen((prev) => !prev)}
+                role="button"
+                aria-label="Toggle currency details"
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    setIsUsdOpen((prev) => !prev);
+                  }
+                }}
+              >
+                $
+              </span>
               {isUsdOpen && (
                 <>
-                  <span className="tabular-nums">{usdAmount}</span>
-                  <span className="text-gray-500">USD</span>
-                  <span className="text-gray-500">▼</span>
+                  <input
+                    type="number"
+                    step="0.0005"
+                    min="0"
+                    inputMode="decimal"
+                    value={usdAmount}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (parseFloat(val) < 0) return;
+                      setAmount(val);
+                    }}
+                    className="w-20 bg-transparent text-left tabular-nums text-gray-700 focus:outline-none"
+                  />
+                  <div className="ml-auto flex items-center gap-1 text-gray-500">
+                    <span>USD</span>
+                    <span>▼</span>
+                  </div>
                 </>
               )}
-            </span>
-          </button>
+            </div>
+          </div>
         )}
       </div>
 
