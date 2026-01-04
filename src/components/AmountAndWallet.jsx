@@ -16,12 +16,32 @@ export default function AmountAndWallet({
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const usdAmount = useMemo(() => formatUsd(amount || ""), [amount]);
+  const overlayRight = isUsdOpen ? "9rem" : "2.5rem";
+  const overlayWidth = "2.5rem";
 
   return (
     <div className="flex items-center gap-3 w-full mb-2">
       <div className="relative flex flex-1 items-stretch">
-        <div className="pointer-events-none absolute left-1/2 top-0 w-1/2 -translate-x-1/2 border-t border-gray-800" />
-        <div className="pointer-events-none absolute left-1/2 bottom-0 w-1/2 -translate-x-1/2 border-b border-gray-800" />
+        {showUsdPill && (
+          <>
+            <div
+              className="pointer-events-none absolute top-0 border-t border-gray-800"
+              style={{
+                width: overlayWidth,
+                right: overlayRight,
+                transform: "translateX(50%)"
+              }}
+            />
+            <div
+              className="pointer-events-none absolute bottom-0 border-b border-gray-800"
+              style={{
+                width: overlayWidth,
+                right: overlayRight,
+                transform: "translateX(50%)"
+              }}
+            />
+          </>
+        )}
         <div className="relative flex-1 min-w-0">
           <input
             type="number"
