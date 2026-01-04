@@ -212,6 +212,7 @@ useEffect(() => {
         setAmount={setDraftAmount}
         openWallet={openWallet}
         showOpenWallet={false}
+        showUsdPill
       />
 
       {/* HELP MESSAGE (same style as Verify) */}
