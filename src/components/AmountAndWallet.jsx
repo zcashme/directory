@@ -3,36 +3,36 @@ import React, { useEffect, useState } from "react";
 
 const FIAT_TICKERS = [
   "USD",
-  "EUR",
-  "GBP",
-  "JPY",
+  "AED",
   "AUD",
+  "BRL",
   "CAD",
   "CHF",
   "CNY",
-  "HKD",
-  "SGD",
-  "NZD",
-  "SEK",
-  "NOK",
-  "DKK",
-  "PLN",
   "CZK",
+  "DKK",
+  "EUR",
+  "GBP",
+  "HKD",
   "HUF",
-  "TRY",
+  "IDR",
   "ILS",
   "INR",
-  "BRL",
-  "MXN",
-  "IDR",
-  "MYR",
-  "PHP",
-  "THB",
-  "VND",
-  "ZAR",
+  "JPY",
   "KRW",
-  "AED",
-  "SAR"
+  "MXN",
+  "MYR",
+  "NOK",
+  "NZD",
+  "PHP",
+  "PLN",
+  "SAR",
+  "SEK",
+  "SGD",
+  "THB",
+  "TRY",
+  "VND",
+  "ZAR"
 ];
 
 const FIAT_SYMBOLS = {
@@ -395,7 +395,7 @@ export default function AmountAndWallet({
                             {FIAT_SYMBOLS[ticker] || ""}
                           </span>
                           <span className="text-gray-700">{ticker}</span>
-                          <span className="ml-auto text-[11px] text-gray-400">
+                          <span className="ml-auto text-[11px] text-gray-400 text-right">
                             {FIAT_NAMES[ticker] || ""}
                           </span>
                         </span>
