@@ -139,6 +139,7 @@ export default function DirectoryAlt() {
   const [tagSearch, setTagSearch] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [activeProfile, setActiveProfile] = useState(null);
+  const [shareStatus, setShareStatus] = useState("");
   const [isCardView, setIsCardView] = useState(false);
   const locationButtonRef = useRef(null);
   const locationDropdownRef = useRef(null);
@@ -278,11 +279,13 @@ export default function DirectoryAlt() {
     if (query) {
       filtered = filtered.filter((profile) => {
         const name = (profile?.name || "").toLowerCase();
+        const displayName = (profile?.display_name || "").toLowerCase();
         const bio = (profile?.bio || "").toLowerCase();
         const location = (profile?.nearest_city_name || "").toLowerCase();
         const links = (profile?.link_search_text || "").toLowerCase();
         return (
           name.includes(query) ||
+          displayName.includes(query) ||
           bio.includes(query) ||
           location.includes(query) ||
           links.includes(query)
@@ -389,6 +392,10 @@ export default function DirectoryAlt() {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    setShareStatus("");
+  }, [activeProfile]);
 
   const [linksByProfileId, setLinksByProfileId] = useState({});
 
@@ -1313,15 +1320,45 @@ export default function DirectoryAlt() {
                     </a>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setActiveProfile(null);
-                  }}
-                  className="border border-gray-900 bg-gray-900 px-2 py-1 text-xs font-semibold uppercase text-white rounded-none"
-                >
-                  Close
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const slug = normalizeSlug(
+                        activeProfile?.name || activeProfile?.display_name || ""
+                      );
+                      if (!slug) return;
+                      const shareUrl = `https://zcash.me/${slug}`;
+                      if (navigator.share) {
+                        navigator.share({
+                          title: activeProfile?.display_name || activeProfile?.name || "Zcash.me",
+                          url: shareUrl,
+                        });
+                        return;
+                      }
+                      navigator.clipboard.writeText(shareUrl);
+                      setShareStatus("Copied");
+                      setTimeout(() => setShareStatus(""), 1500);
+                    }}
+                    className="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
+                    disabled={
+                      !normalizeSlug(
+                        activeProfile?.name || activeProfile?.display_name || ""
+                      )
+                    }
+                  >
+                    {shareStatus || "Share"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveProfile(null);
+                    }}
+                    className="border border-gray-900 bg-gray-900 px-2 py-1 text-xs font-semibold uppercase text-white rounded-none"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
 
               <div className="mt-4 directoryns-fieldset">
