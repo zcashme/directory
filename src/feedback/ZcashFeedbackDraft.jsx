@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useFeedback } from "../hooks/useFeedback";
 import useFeedbackController from "../hooks/useFeedbackController";
 import AmountAndWallet from "../components/AmountAndWallet.jsx";
+import HelpMessage from "../components/HelpMessage.jsx";
 import { cachedProfiles } from "../hooks/useProfiles";
 import QrUriBlock from "../components/QrUriBlock";
 import ProfileSearchDropdown from "../components/ProfileSearchDropdown";
@@ -31,8 +32,6 @@ export default function ZcashFeedbackDraft() {
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef(null);
-
-  const [showHelp, setShowHelp] = useState(false); // <-- NEW
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -219,36 +218,7 @@ useEffect(() => {
       {/* Divider line like Verify */}
       <div className="border-t border-gray-300 my-4"></div>
 
-      {/* Requirement + Help under help banner, above QR block */}
-      <div className="w-full flex items-center justify-center gap-2 text-center mt-2 mb-0">
-        <p className="text-[12px] text-gray-600 italic m-0">
-          Complete this transaction using your wallet.
-        </p>
-
-        <button
-          type="button"
-          onClick={() => setShowHelp(!showHelp)}
-          className="text-[12px] font-semibold text-blue-600 underline m-0"
-        >
-          {showHelp ? "Hide help" : "Help"}
-        </button>
-      </div>
-      {/* HELP MESSAGE (same style as Rate message) */}
-      <div
-        className={`w-full flex items-center justify-center text-center overflow-hidden transition-all duration-200 ${
-          showHelp
-            ? "max-h-24 opacity-100 mt-1 pointer-events-auto"
-            : "max-h-0 opacity-0 mt-0 pointer-events-none"
-        }`}
-      >
-        <p
-          className={`text-[12px] italic m-0 text-gray-600 transition-all duration-200 ${
-            showHelp ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-1"
-          }`}
-        >
-          Scan the QR code below. Alternatively, copy the URI and paste it into the "To:" address field. Some wallets also allow you to tap the URI link or upload an image of the QR.
-        </p>
-      </div>
+      <HelpMessage />
 
       {/* QR / URI BLOCK */}
       <div className="-mt-4">

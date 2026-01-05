@@ -4,10 +4,11 @@ import { useNavigate } from "react-router-dom";
 import AddUserForm from "./AddUserForm";
 import { useFeedback } from "./hooks/useFeedback";
 import useFeedbackController from "./hooks/useFeedbackController";
-import { buildZcashUri } from "./utils/zcashWalletUtils";
 import ProfileAvatar from "./components/ProfileAvatar";
 import CopyButton from "./components/CopyButton";
-import { QRCodeSVG } from "qrcode.react";
+import AmountAndWallet from "./components/AmountAndWallet";
+import QrUriBlock from "./components/QrUriBlock";
+import HelpMessage from "./components/HelpMessage";
 import znsFlag from "./assets/favicons/zns-flag.png";
 import znsFavicon from "./assets/favicons/zns-favicon.png";
 import discordFavicon from "./assets/favicons/favicon-discord-32.png";
@@ -114,8 +115,9 @@ const getTagLabel = (tag) => (tag.startsWith("NS v") ? "NS v" : tag);
 
 export default function DirectoryAlt() {
   const navigate = useNavigate();
-  const { setSelectedAddress, setForceShowQR } = useFeedback();
-  const { memo, amount, setDraftMemo, selectedAddress } = useFeedbackController();
+  const { setSelectedAddress, setForceShowQR, forceShowQR } = useFeedback();
+  const { memo, amount, setDraftMemo, setDraftAmount, selectedAddress, uri } =
+    useFeedbackController();
   const { profiles, loading, addProfile } = useProfiles();
 
   const announcementConfig = {
@@ -136,7 +138,6 @@ export default function DirectoryAlt() {
   const [tagSearch, setTagSearch] = useState("");
   const [showBackToTop, setShowBackToTop] = useState(false);
   const [activeProfile, setActiveProfile] = useState(null);
-  const [localMemo, setLocalMemo] = useState("");
   const [isCardView, setIsCardView] = useState(false);
   const locationButtonRef = useRef(null);
   const locationDropdownRef = useRef(null);
@@ -388,11 +389,6 @@ export default function DirectoryAlt() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  useEffect(() => {
-    if (!activeProfile) return;
-    setLocalMemo(memo || "");
-  }, [activeProfile, memo]);
-
   const [linksByProfileId, setLinksByProfileId] = useState({});
 
   useEffect(() => {
@@ -590,87 +586,6 @@ export default function DirectoryAlt() {
       </button>
     );
   };
-
-  const QrPanel = ({ profile, uri }) => {
-    const qrRef = useRef(null);
-    const [saved, setSaved] = useState(false);
-    const [showUri, setShowUri] = useState(false);
-    const displayName =
-      profile?.display_name || profile?.name || "recipient";
-
-    if (!uri) return null;
-
-    const handleSaveQR = () => {
-      const svg = qrRef.current;
-      if (!svg) return;
-
-      const clone = svg.cloneNode(true);
-      const svgData = new XMLSerializer().serializeToString(clone);
-      const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-
-      const link = document.createElement("a");
-      const safeName = displayName
-        .trim()
-        .replace(/[^\w\s-]/g, "")
-        .replace(/\s+/g, "-");
-
-      link.download = `zcashme-${safeName}-qr.svg`;
-      link.href = url;
-      link.click();
-
-      URL.revokeObjectURL(url);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
-    };
-
-    return (
-      <div className="mt-4 flex w-full flex-col items-center gap-4">
-        <div className="flex flex-col items-center gap-2">
-          <QRCodeSVG
-            ref={qrRef}
-            value={uri}
-            size={220}
-            includeMargin={true}
-            bgColor="transparent"
-            fgColor="#000000"
-          />
-          <button
-            type="button"
-            onClick={handleSaveQR}
-            className={`text-xs font-semibold uppercase ${saved ? "text-green-600" : "text-blue-600 hover:underline"
-              }`}
-          >
-            {saved ? "Saved" : "Save QR"}
-          </button>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowUri((prev) => !prev)}
-          className="text-xs font-semibold uppercase text-blue-600 hover:underline"
-        >
-          {showUri ? "Hide URI" : "Show URI"}
-        </button>
-        {showUri && (
-          <a
-            href={uri}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold uppercase text-blue-600 underline break-all text-center"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {uri}
-          </a>
-        )}
-      </div>
-    );
-  };
-
-  const activeUri = useMemo(() => {
-    if (!activeProfile?.address) return "";
-    const amt = amount && amount !== "0" ? amount : "0.0005";
-    return buildZcashUri(activeProfile.address, amt, localMemo);
-  }, [activeProfile?.address, amount, localMemo]);
 
   const profileRows = useMemo(
     () =>
@@ -1315,12 +1230,11 @@ export default function DirectoryAlt() {
               type="button"
               className="absolute inset-0"
               onClick={() => {
-                setDraftMemo(localMemo || "");
                 setActiveProfile(null);
               }}
               aria-label="Close"
             />
-            <div className="relative w-full max-w-2xl border border-gray-900 bg-white px-4 py-4 rounded-none">
+            <div className="relative w-full max-w-2xl border border-gray-900 bg-white px-4 py-4 rounded-none directoryns-popup">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex min-w-0 items-center gap-3 overflow-hidden">
                   <ProfileAvatar
@@ -1398,7 +1312,6 @@ export default function DirectoryAlt() {
                 <button
                   type="button"
                   onClick={() => {
-                    setDraftMemo(localMemo || "");
                     setActiveProfile(null);
                   }}
                   className="border border-gray-900 bg-gray-900 px-2 py-1 text-xs font-semibold uppercase text-white rounded-none"
@@ -1407,12 +1320,12 @@ export default function DirectoryAlt() {
                 </button>
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 directoryns-fieldset">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
                   Address
                 </div>
                 {activeProfile?.address ? (
-                  <div className="mt-1 flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-[10px] font-mono text-gray-700 rounded-none">
+                  <div className="mt-1 flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-sm font-mono text-gray-700 rounded-none">
                     <span
                       className="min-w-0 flex-1 break-all"
                       title={activeProfile.address}
@@ -1428,13 +1341,13 @@ export default function DirectoryAlt() {
                 )}
               </div>
 
-              <div className="mt-4">
+              <div className="mt-4 directoryns-fieldset">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
                   Write a message to {activeProfile.display_name || activeProfile.name || "recipient"}
                 </div>
                 <textarea
-                  value={localMemo}
-                  onChange={(event) => setLocalMemo(event.target.value)}
+                  value={memo}
+                  onChange={(event) => setDraftMemo(event.target.value)}
                   placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"
                     } here...`}
                   className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-none rounded-none"
@@ -1443,7 +1356,32 @@ export default function DirectoryAlt() {
                 />
               </div>
 
-              <QrPanel profile={activeProfile} uri={activeUri} />
+              <div className="mt-4 directoryns-amount directoryns-fieldset">
+                <AmountAndWallet
+                  amount={amount}
+                  setAmount={setDraftAmount}
+                  openWallet={() => {}}
+                  showOpenWallet={false}
+                  showUsdPill
+                  showRateMessage
+                />
+              </div>
+
+              <div className="directoryns-help directoryns-fieldset">
+                <HelpMessage />
+              </div>
+
+              <div className="mt-4 directoryns-qr directoryns-fieldset">
+                <QrUriBlock
+                  uri={uri}
+                  profileName={
+                    activeProfile?.display_name || activeProfile?.name || "recipient"
+                  }
+                  forceShowQR={forceShowQR}
+                  defaultShowQR={false}
+                  defaultShowURI={false}
+                />
+              </div>
             </div>
           </div>
         )}
@@ -1482,6 +1420,53 @@ export default function DirectoryAlt() {
           animation-name: flightDash, flightFade;
           animation-timing-function: linear, ease-in-out;
           animation-iteration-count: infinite, infinite;
+        }
+        .directoryns-amount .rounded-xl {
+          border-radius: 0 !important;
+        }
+        .directoryns-amount input,
+        .directoryns-amount button,
+        .directoryns-amount [class*="border-gray"] {
+          border-color: #111 !important;
+        }
+        .directoryns-amount input,
+        .directoryns-amount button {
+          background-color: #fff !important;
+          color: #111 !important;
+        }
+        .directoryns-amount [class*="text-gray"] {
+          color: #111 !important;
+        }
+        .directoryns-qr .rounded-xl {
+          border-radius: 0 !important;
+        }
+        .directoryns-qr button,
+        .directoryns-qr a {
+          color: #111 !important;
+        }
+        .directoryns-qr button,
+        .directoryns-qr [class*="border-gray"] {
+          border-color: #111 !important;
+        }
+        .directoryns-qr button {
+          background-color: #fff !important;
+        }
+        .directoryns-qr [class*="text-gray"],
+        .directoryns-qr [class*="text-blue"] {
+          color: #111 !important;
+        }
+        .directoryns-fieldset,
+        .directoryns-fieldset input,
+        .directoryns-fieldset textarea,
+        .directoryns-fieldset button,
+        .directoryns-fieldset a,
+        .directoryns-fieldset p {
+          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+            "Liberation Mono", "Courier New", monospace !important;
+        }
+        .directoryns-help [class*="text-gray"],
+        .directoryns-help [class*="text-blue"] {
+          color: #111 !important;
         }
       `}</style>
     </div>

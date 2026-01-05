@@ -1,10 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 
-export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI }) {
+export default function QrUriBlock({
+  uri,
+  profileName,
+  forceShowQR,
+  forceShowURI,
+  defaultShowQR = true,
+  defaultShowURI = true,
+}) {
   const qrRef = useRef(null);
-  const [showQR, setShowQR] = useState(true);
-  const [showFull, setShowFull] = useState(true);
+  const [showQR, setShowQR] = useState(defaultShowQR);
+  const [showFull, setShowFull] = useState(defaultShowURI);
 
   useEffect(() => {
     if (forceShowQR) setShowQR(true);
@@ -52,7 +59,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
   const actionButtonClasses =
     "flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap";
   const hideButtonClasses =
-    "flex items-center gap-1 px-3 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
+    "flex items-center gap-1 px-3 pl-0 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
 
   return (
     <div className="flex flex-col items-center gap-4 mt-6 animate-fadeIn">
@@ -74,7 +81,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
       {/* QR + URI controls row */}
       <div className="flex flex-wrap items-center justify-center gap-3 w-full">
         {showQR ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <button
               onClick={handleSaveQR}
               className={actionButtonClasses}
@@ -85,7 +92,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
               onClick={() => setShowQR(false)}
               className={hideButtonClasses}
             >
-              Hide
+              —Hide
             </button>
           </div>
         ) : (
@@ -98,7 +105,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
         )}
 
         {showFull ? (
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-0">
             <button
               onClick={handleCopy}
               className={actionButtonClasses}
@@ -109,7 +116,7 @@ export default function QrUriBlock({ uri, profileName, forceShowQR, forceShowURI
               onClick={() => setShowFull(false)}
               className={hideButtonClasses}
             >
-              Hide
+              —Hide
             </button>
           </div>
         ) : (
