@@ -7,6 +7,8 @@ const formatUsd = (value) => {
   return num.toFixed(2);
 };
 
+const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
+
 export default function AmountAndWallet({
   amount,
   setAmount,
@@ -103,14 +105,21 @@ export default function AmountAndWallet({
                 <>
                   <input
                     type="number"
-                    step="0.0005"
+                    step="0.01"
                     min="0"
+                    max="1000000"
                     inputMode="decimal"
                     value={usdAmount}
                     onChange={(e) => {
                       const val = e.target.value;
-                      if (parseFloat(val) < 0) return;
-                      setAmount(val);
+                      if (val === "") {
+                        setAmount("");
+                        return;
+                      }
+                      const num = parseFloat(val);
+                      if (Number.isNaN(num)) return;
+                      const rounded = Math.round(clamp(num, 0, 1000000) * 100) / 100;
+                      setAmount(rounded.toFixed(2));
                     }}
                     className="w-20 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none"
                   />
