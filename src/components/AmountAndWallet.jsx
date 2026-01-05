@@ -61,19 +61,19 @@ export default function AmountAndWallet({
               setAmount(match ? match[0] : val);
             }}
             className="border border-gray-800 px-3 rounded-xl w-full h-11 
-                       text-md pr-16 text-gray-700 
+                       text-md pr-16 text-gray-900 
                        pl-3"
           />
 
           {/* Right-side selector */}
-          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-400 text-md select-none cursor-not-allowed">
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md select-none cursor-not-allowed">
             ZEC ▼
           </div>
         </div>
 
         {showUsdPill && (
           <div
-            className={`flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-700 text-md overflow-hidden transition-[flex-basis] duration-200 h-11 ${
+            className={`flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md overflow-hidden transition-[flex-basis] duration-200 h-11 ${
               isUsdOpen ? "px-3" : "px-3 justify-center"
             }`}
             style={{ flexBasis: isUsdOpen ? "50%" : "2.5rem" }}
@@ -85,7 +85,7 @@ export default function AmountAndWallet({
               }`}
             >
               <span
-                className="text-gray-700 cursor-pointer flex-none"
+                className="text-gray-500 cursor-pointer flex-none"
                 onClick={() => setIsUsdOpen((prev) => !prev)}
                 role="button"
                 aria-label="Toggle currency details"
@@ -112,7 +112,7 @@ export default function AmountAndWallet({
                       if (parseFloat(val) < 0) return;
                       setAmount(val);
                     }}
-                    className="w-20 bg-transparent text-left tabular-nums text-gray-700 focus:outline-none"
+                    className="w-20 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none"
                   />
                   <div className="ml-auto flex items-center gap-1 text-gray-500">
                     <span>USD</span>
