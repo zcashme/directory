@@ -9,6 +9,7 @@ import CopyButton from "./components/CopyButton";
 import AmountAndWallet from "./components/AmountAndWallet";
 import QrUriBlock from "./components/QrUriBlock";
 import HelpMessage from "./components/HelpMessage";
+import LoadingDots from "./components/LoadingDots";
 import znsFlag from "./assets/favicons/zns-flag.png";
 import znsFavicon from "./assets/favicons/zns-favicon.png";
 import discordFavicon from "./assets/favicons/favicon-discord-32.png";
@@ -1128,7 +1129,10 @@ export default function DirectoryAlt() {
             </div>
 
             {loading && (
-              <div className="px-4 py-6 text-sm text-gray-600">Loading directory...</div>
+              <LoadingDots
+                colors={["#000000", "#000000", "#000000", "#000000"]}
+                className="py-10"
+              />
             )}
 
             {!loading && filteredProfiles.length === 0 && (
@@ -1331,7 +1335,7 @@ export default function DirectoryAlt() {
                       title={activeProfile.address}
                     >
                       {activeProfile.address.length > 24
-                        ? `${activeProfile.address.slice(0, 12)}…${activeProfile.address.slice(-12)}`
+                        ? `${activeProfile.address.slice(0, 8)}…${activeProfile.address.slice(-8)}`
                         : activeProfile.address}
                     </span>
                     <InlineCopyButton text={activeProfile.address} />

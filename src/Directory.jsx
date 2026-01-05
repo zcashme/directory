@@ -12,6 +12,7 @@ import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 
 import LetterGridModal from "./components/LetterGridModal";
 import AlphabetSidebar from "./components/AlphabetSidebar";
+import LoadingDots from "./components/LoadingDots";
 
 import useProfiles from "./hooks/useProfiles";
 import useProfileRouting from "./hooks/useProfileRouting";
@@ -307,26 +308,10 @@ export default function Directory() {
 
   if (loading)
     return (
-      <div className="flex flex-col items-center justify-center mt-20 space-y-4">
-        <div className="flex space-x-2">
-          <span className="w-3 h-3 rounded-full bg-blue-500 animate-twinkle"></span>
-          <span className="w-3 h-3 rounded-full bg-green-500 animate-twinkle delay-150"></span>
-          <span className="w-3 h-3 rounded-full bg-orange-500 animate-twinkle delay-300"></span>
-          <span className="w-3 h-3 rounded-full bg-yellow-400 animate-twinkle delay-500"></span>
-        </div>
-        <p className="text-sm text-gray-500 font-medium tracking-wide">
-          Loading directory…
-        </p>
-        <style>{`
-          @keyframes twinkle {
-            0%, 100% { opacity: 0.2; transform: scale(1); }
-            50% { opacity: 1; transform: scale(1.3); }
-          }
-          .animate-twinkle {
-            animation: twinkle 1.4s ease-in-out infinite;
-          }
-        `}</style>
-      </div>
+      <LoadingDots
+        colors={["#3b82f6", "#22c55e", "#f97316", "#facc15"]}
+        className="mt-20"
+      />
     );
 
   return (
