@@ -1,23 +1,128 @@
 // New reusable AmountAndWallet component matching Draft styling
 import React, { useEffect, useState } from "react";
 
-const RATE_PROVIDERS = [
-  {
-    name: "Coinbase",
-    url: "https://api.coinbase.com/v2/prices/ZEC-USD/spot",
-    parse: (data) => parseFloat(data?.data?.amount)
-  },
-  {
-    name: "CoinGecko",
-    url: "https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=usd",
-    parse: (data) => parseFloat(data?.zcash?.usd)
-  },
-  {
-    name: "CryptoCompare",
-    url: "https://min-api.cryptocompare.com/data/price?fsym=ZEC&tsyms=USD",
-    parse: (data) => parseFloat(data?.USD)
-  }
+const FIAT_TICKERS = [
+  "USD",
+  "EUR",
+  "GBP",
+  "JPY",
+  "AUD",
+  "CAD",
+  "CHF",
+  "CNY",
+  "HKD",
+  "SGD",
+  "NZD",
+  "SEK",
+  "NOK",
+  "DKK",
+  "PLN",
+  "CZK",
+  "HUF",
+  "TRY",
+  "ILS",
+  "INR",
+  "BRL",
+  "MXN",
+  "IDR",
+  "MYR",
+  "PHP",
+  "THB",
+  "VND",
+  "ZAR",
+  "KRW",
+  "AED",
+  "SAR"
 ];
+
+const FIAT_SYMBOLS = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  JPY: "¥",
+  AUD: "A$",
+  CAD: "C$",
+  CHF: "CHF",
+  CNY: "¥",
+  HKD: "HK$",
+  SGD: "S$",
+  NZD: "NZ$",
+  SEK: "kr",
+  NOK: "kr",
+  DKK: "kr",
+  PLN: "zł",
+  CZK: "Kč",
+  HUF: "Ft",
+  TRY: "₺",
+  ILS: "₪",
+  INR: "₹",
+  BRL: "R$",
+  MXN: "MX$",
+  IDR: "Rp",
+  MYR: "RM",
+  PHP: "₱",
+  THB: "฿",
+  VND: "₫",
+  ZAR: "R",
+  KRW: "₩",
+  AED: "AED",
+  SAR: "SAR"
+};
+
+const FIAT_NAMES = {
+  USD: "US Dollar",
+  EUR: "Euro",
+  GBP: "British Pound",
+  JPY: "Japanese Yen",
+  AUD: "Australian Dollar",
+  CAD: "Canadian Dollar",
+  CHF: "Swiss Franc",
+  CNY: "Chinese Yuan",
+  HKD: "Hong Kong Dollar",
+  SGD: "Singapore Dollar",
+  NZD: "New Zealand Dollar",
+  SEK: "Swedish Krona",
+  NOK: "Norwegian Krone",
+  DKK: "Danish Krone",
+  PLN: "Polish Zloty",
+  CZK: "Czech Koruna",
+  HUF: "Hungarian Forint",
+  TRY: "Turkish Lira",
+  ILS: "Israeli Shekel",
+  INR: "Indian Rupee",
+  BRL: "Brazilian Real",
+  MXN: "Mexican Peso",
+  IDR: "Indonesian Rupiah",
+  MYR: "Malaysian Ringgit",
+  PHP: "Philippine Peso",
+  THB: "Thai Baht",
+  VND: "Vietnamese Dong",
+  ZAR: "South African Rand",
+  KRW: "South Korean Won",
+  AED: "UAE Dirham",
+  SAR: "Saudi Riyal"
+};
+
+const getRateProviders = (fiat) => {
+  const fiatLower = fiat.toLowerCase();
+  return [
+    {
+      name: "Coinbase",
+      url: `https://api.coinbase.com/v2/prices/ZEC-${fiat}/spot`,
+      parse: (data) => parseFloat(data?.data?.amount)
+    },
+    {
+      name: "CoinGecko",
+      url: `https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=${fiatLower}`,
+      parse: (data) => parseFloat(data?.zcash?.[fiatLower])
+    },
+    {
+      name: "CryptoCompare",
+      url: `https://min-api.cryptocompare.com/data/price?fsym=ZEC&tsyms=${fiat}`,
+      parse: (data) => parseFloat(data?.[fiat])
+    }
+  ];
+};
 
 const formatUsd = (value) => {
   const num = parseFloat(value);
@@ -42,18 +147,22 @@ export default function AmountAndWallet({
   showRateMessage = false
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
+  const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [fiat, setFiat] = useState("USD");
   const [rate, setRate] = useState(1);
   const [rateSource, setRateSource] = useState("Coinbase");
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
   const [providerIndex, setProviderIndex] = useState(0);
   const [usdInput, setUsdInput] = useState("");
+  const fiatSymbol = FIAT_SYMBOLS[fiat] || "$";
 
   const overlayRight = isUsdOpen ? "50%" : "2.5rem";
   const overlayWidth = "2.25rem";
 
-  const fetchRate = async (index) => {
-    const provider = RATE_PROVIDERS[index];
+  const fetchRate = async (index, nextFiat) => {
+    const providers = getRateProviders(nextFiat);
+    const provider = providers[index];
     if (!provider) return false;
     try {
       const response = await fetch(provider.url);
@@ -76,13 +185,13 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      const nextIndex = (providerIndex + 1) % RATE_PROVIDERS.length;
-      fetchRate(nextIndex).finally(() => {
+      const nextIndex = (providerIndex + 1) % getRateProviders(fiat).length;
+      fetchRate(nextIndex, fiat).finally(() => {
         setProviderIndex(nextIndex);
       });
     }, 60000);
     return () => clearInterval(id);
-  }, [rateRequested, providerIndex]);
+  }, [rateRequested, providerIndex, fiat]);
 
   useEffect(() => {
     if (!rateFetched || !isUsdOpen) return;
@@ -98,12 +207,27 @@ export default function AmountAndWallet({
     setAmount(zecAmount.toFixed(8));
   }, [rate, rateFetched, isUsdOpen]);
 
+  useEffect(() => {
+    if (!isUsdOpen) setIsCurrencyOpen(false);
+  }, [isUsdOpen]);
+
+  useEffect(() => {
+    if (!rateRequested) return;
+    setRateFetched(false);
+    setUsdInput("");
+    fetchRate(providerIndex, fiat);
+  }, [fiat, rateRequested]);
+
   const handleToggleUsd = () => {
     if (!rateRequested) {
       setRateRequested(true);
-      fetchRate(providerIndex);
+      fetchRate(providerIndex, fiat);
     }
     setIsUsdOpen((prev) => !prev);
+  };
+
+  const handleToggleCurrency = () => {
+    setIsCurrencyOpen((prev) => !prev);
   };
 
   return (
@@ -142,19 +266,19 @@ export default function AmountAndWallet({
               inputMode="decimal"
               placeholder="0.0000"
               value={amount === "0" ? "" : amount || ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              if (parseFloat(val) < 0) return;
-              const match = val.match(/^(\d+)(\.\d{0,8})?/);
-              const next = match ? match[0] : val;
-              setAmount(next);
-              if (rateFetched && isUsdOpen) {
-                const num = parseFloat(next || "0");
-                if (!Number.isNaN(num)) {
-                  setUsdInput(formatUsd(num * rate));
+              onChange={(e) => {
+                const val = e.target.value;
+                if (parseFloat(val) < 0) return;
+                const match = val.match(/^(\d+)(\.\d{0,8})?/);
+                const next = match ? match[0] : val;
+                setAmount(next);
+                if (rateFetched && isUsdOpen) {
+                  const num = parseFloat(next || "0");
+                  if (!Number.isNaN(num)) {
+                    setUsdInput(formatUsd(num * rate));
+                  }
                 }
-              }
-            }}
+              }}
               className="border border-gray-800 px-3 rounded-xl w-full h-11 
                          text-md pr-16 text-gray-900 
                          pl-3"
@@ -168,10 +292,14 @@ export default function AmountAndWallet({
 
           {showUsdPill && (
             <div
-              className={`flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md overflow-hidden transition-[flex-basis] duration-200 h-11 ${
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md transition-[flex-basis] duration-200 h-11 overflow-visible min-w-0 ${
                 isUsdOpen ? "px-3" : "px-3 justify-center"
               }`}
-              style={{ flexBasis: isUsdOpen ? "50%" : "2.5rem" }}
+              style={{
+                flexBasis: isUsdOpen ? "50%" : "2.5rem",
+                flexShrink: 0,
+                flexGrow: 0
+              }}
               aria-expanded={isUsdOpen}
             >
               <div
@@ -192,42 +320,90 @@ export default function AmountAndWallet({
                     }
                   }}
                 >
-                  $
+                  {fiatSymbol}
                 </span>
                 {isUsdOpen && (
                   <>
                     <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1000000"
-                    inputMode="decimal"
-                    value={usdInput}
-                    disabled={!rateFetched}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "") {
-                        setAmount("");
-                        setUsdInput("");
-                        return;
-                      }
-                      const num = parseFloat(val);
-                      if (Number.isNaN(num)) return;
-                      setUsdInput(val);
-                      const rounded =
-                        Math.round(clamp(num, 0, 1000000) * 100) / 100;
-                      const zecAmount = rate > 0 ? rounded / rate : rounded;
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="1000000"
+                      inputMode="decimal"
+                      value={usdInput}
+                      disabled={!rateFetched}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "") {
+                          setAmount("");
+                          setUsdInput("");
+                          return;
+                        }
+                        const num = parseFloat(val);
+                        if (Number.isNaN(num)) return;
+                        setUsdInput(val);
+                        const rounded =
+                          Math.round(clamp(num, 0, 1000000) * 100) / 100;
+                        const zecAmount = rate > 0 ? rounded / rate : rounded;
                         setAmount(zecAmount.toFixed(8));
                       }}
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none disabled:opacity-60"
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0">
-                      <span>USD</span>
-                      <span>▼</span>
+                      <span>{fiat}</span>
+                      <span
+                        className="cursor-pointer hover:text-blue-600"
+                        role="button"
+                        aria-label="Choose fiat currency"
+                        tabIndex={0}
+                        onClick={handleToggleCurrency}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleToggleCurrency();
+                          }
+                        }}
+                      >
+                        ▼
+                      </span>
                     </div>
                   </>
                 )}
               </div>
+
+              {isUsdOpen && (
+                <div
+                  className={`absolute left-0 top-full w-[calc(100%-12px)] border border-t-0 border-gray-800 rounded-bl-xl rounded-br-none overflow-hidden transition-all duration-200 bg-[var(--color-background)] z-10 ${
+                    isCurrencyOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  <div className="flex flex-col py-1 max-h-72 overflow-y-auto">
+                    {FIAT_TICKERS.map((ticker) => (
+                      <button
+                        key={ticker}
+                        type="button"
+                        onClick={() => {
+                          setFiat(ticker);
+                          setIsCurrencyOpen(false);
+                        }}
+                        className={`w-full px-3 py-1.5 text-left text-sm text-gray-600 hover:text-blue-600 ${
+                          fiat === ticker ? "font-semibold" : ""
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <span className="w-6 text-gray-500">
+                            {FIAT_SYMBOLS[ticker] || ""}
+                          </span>
+                          <span className="text-gray-700">{ticker}</span>
+                          <span className="ml-auto text-[11px] text-gray-400">
+                            {FIAT_NAMES[ticker] || ""}
+                          </span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -251,7 +427,7 @@ export default function AmountAndWallet({
                 : "opacity-0 -translate-y-1"
             }`}
           >
-            Rate of {formatRate(rate)} USD per ZEC provided by {rateSource}.
+            Rate of {formatRate(rate)} {fiat} per ZEC provided by {rateSource}.
           </p>
         </div>
       )}
