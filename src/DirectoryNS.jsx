@@ -277,20 +277,36 @@ export default function DirectoryAlt() {
     let filtered = list;
 
     if (query) {
-      filtered = filtered.filter((profile) => {
-        const name = (profile?.name || "").toLowerCase();
-        const displayName = (profile?.display_name || "").toLowerCase();
-        const bio = (profile?.bio || "").toLowerCase();
-        const location = (profile?.nearest_city_name || "").toLowerCase();
-        const links = (profile?.link_search_text || "").toLowerCase();
-        return (
-          name.includes(query) ||
-          displayName.includes(query) ||
-          bio.includes(query) ||
-          location.includes(query) ||
-          links.includes(query)
-        );
-      });
+      filtered = filtered
+        .map((profile, index) => {
+          const name = (profile?.name || "").toLowerCase();
+          const displayName = (profile?.display_name || "").toLowerCase();
+          const bio = (profile?.bio || "").toLowerCase();
+          const location = (profile?.nearest_city_name || "").toLowerCase();
+          const links = (profile?.link_search_text || "").toLowerCase();
+          const displayMatch = displayName.includes(query);
+          const nameMatch = name.includes(query);
+          const linkMatch = links.includes(query);
+          const matches =
+            displayMatch ||
+            nameMatch ||
+            linkMatch ||
+            bio.includes(query) ||
+            location.includes(query);
+
+          let score = 99;
+          if (displayMatch) score = 0;
+          else if (nameMatch) score = 1;
+          else if (linkMatch) score = 2;
+
+          return { profile, score, matches, index };
+        })
+        .filter((entry) => entry.matches)
+        .sort((a, b) => {
+          if (a.score !== b.score) return a.score - b.score;
+          return a.index - b.index;
+        })
+        .map((entry) => entry.profile);
     }
 
     if (filters.verified) {
@@ -324,7 +340,9 @@ export default function DirectoryAlt() {
       filtered = filtered.filter((profile) => getProfileTags(profile).includes(tagFilter));
     }
 
-    filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (!query) {
+      filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
     return filtered;
   }, [profiles, search, filters, locationFilter, tagFilter]);
   const filteredCount = filteredProfiles.length;
