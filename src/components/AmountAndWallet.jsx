@@ -87,7 +87,7 @@ export default function AmountAndWallet({
               }`}
             >
               <span
-                className="text-gray-500 cursor-pointer flex-none"
+                className="text-gray-500 cursor-pointer flex-none hover:text-blue-600"
                 onClick={() => setIsUsdOpen((prev) => !prev)}
                 role="button"
                 aria-label="Toggle currency details"
@@ -118,12 +118,13 @@ export default function AmountAndWallet({
                       }
                       const num = parseFloat(val);
                       if (Number.isNaN(num)) return;
-                      const rounded = Math.round(clamp(num, 0, 1000000) * 100) / 100;
+                      const rounded =
+                        Math.round(clamp(num, 0, 1000000) * 100) / 100;
                       setAmount(rounded.toFixed(2));
                     }}
-                    className="w-20 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none"
+                    className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none"
                   />
-                  <div className="ml-auto flex items-center gap-1 text-gray-500">
+                  <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0">
                     <span>USD</span>
                     <span>▼</span>
                   </div>

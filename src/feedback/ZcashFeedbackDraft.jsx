@@ -215,38 +215,29 @@ useEffect(() => {
         showUsdPill
       />
 
+      {/* Divider line like Verify */}
+      <div className="border-t border-gray-300 my-4"></div>
+
+      {/* Requirement + Help under help banner, above QR block */}
+      <div className="w-full flex items-center justify-center gap-2 text-center mt-2 mb-3">
+        <p className="text-[12px] text-gray-600 italic m-0">
+          Complete this transaction using your wallet.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setShowHelp(!showHelp)}
+          className="text-[12px] font-semibold text-blue-600 underline m-0"
+        >
+          {showHelp ? "Hide help" : "Help"}
+        </button>
+      </div>
       {/* HELP MESSAGE (same style as Verify) */}
       {showHelp && (
         <p className="mx-1 mt-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
-          Review your message to
-          <span
-            className="text-blue-600 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            {" "}{cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
-              "Recipient"}
-          </span>
-             {" "} in your wallet before sending it. Use the button, scan the QR or tap the URI.
-          
+          Scan the QR code below. Alternatively, copy the URI and paste it into the "To:" address field. Some wallets also allow you to tap the URI link or upload an image of the QR.
         </p>
       )}
-{/* Requirement + Help under help banner, above QR divider */}
-<div className="w-full flex items-center justify-center gap-2 text-center mt-2 mb-3">
-  <p className="text-[12px] text-gray-600 italic m-0">
-    Approve the transaction in your wallet.
-  </p>
-
-  <button
-    type="button"
-    onClick={() => setShowHelp(!showHelp)}
-    className="text-[12px] font-semibold text-blue-600 underline m-0"
-  >
-    {showHelp ? "Hide help" : "Help"}
-  </button>
-</div>
-
-      {/* Divider line like Verify */}
-      <div className="border-t border-gray-300 my-4"></div>
 
       {/* QR / URI BLOCK */}
       <QrUriBlock
