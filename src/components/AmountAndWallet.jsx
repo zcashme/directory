@@ -7,6 +7,12 @@ const formatUsd = (value) => {
   return num.toFixed(2);
 };
 
+const formatRate = (value) => {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "1.00";
+  return num.toFixed(2);
+};
+
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 export default function AmountAndWallet({
@@ -14,16 +20,45 @@ export default function AmountAndWallet({
   setAmount,
   openWallet,
   showOpenWallet = true,
-  showUsdPill = false
+  showUsdPill = false,
+  showRateMessage = false
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
-  const usdAmount = useMemo(() => formatUsd(amount || ""), [amount]);
+  const [rate, setRate] = useState(1);
+  const [rateSource, setRateSource] = useState("Coinbase");
+  const [rateFetched, setRateFetched] = useState(false);
+  const usdAmount = useMemo(() => {
+    if (!rateFetched) return "";
+    const num = parseFloat(amount || "0");
+    if (Number.isNaN(num)) return "";
+    return formatUsd(num * rate);
+  }, [amount, rate, rateFetched]);
   const overlayRight = isUsdOpen ? "50%" : "2.5rem";
   const overlayWidth = "2.25rem";
 
+  const fetchRateOnce = async () => {
+    if (rateFetched) return;
+    setRateFetched(true);
+    try {
+      const response = await fetch(
+        "https://api.coinbase.com/v2/prices/ZEC-USD/spot"
+      );
+      if (!response.ok) return;
+      const data = await response.json();
+      const price = parseFloat(data?.data?.amount);
+      if (Number.isFinite(price) && price > 0) {
+        setRate(price);
+        setRateSource("Coinbase");
+      }
+    } catch (err) {
+      // keep default rate on failure
+    }
+  };
+
   return (
-    <div className="flex items-center gap-3 w-full mb-2">
-      <div className="relative flex flex-1 items-stretch">
+    <div className="w-full mb-2">
+      <div className="flex items-center gap-3">
+        <div className="relative flex flex-1 items-stretch">
         {showUsdPill && (
           <>
             <div
@@ -88,13 +123,17 @@ export default function AmountAndWallet({
             >
               <span
                 className="text-gray-500 cursor-pointer flex-none hover:text-blue-600"
-                onClick={() => setIsUsdOpen((prev) => !prev)}
+                onClick={() => {
+                  fetchRateOnce();
+                  setIsUsdOpen((prev) => !prev);
+                }}
                 role="button"
                 aria-label="Toggle currency details"
                 tabIndex={0}
                 onKeyDown={(e) => {
                   if (e.key === "Enter" || e.key === " ") {
                     e.preventDefault();
+                    fetchRateOnce();
                     setIsUsdOpen((prev) => !prev);
                   }
                 }}
@@ -120,7 +159,8 @@ export default function AmountAndWallet({
                       if (Number.isNaN(num)) return;
                       const rounded =
                         Math.round(clamp(num, 0, 1000000) * 100) / 100;
-                      setAmount(rounded.toFixed(2));
+                      const zecAmount = rate > 0 ? rounded / rate : rounded;
+                      setAmount(zecAmount.toFixed(8));
                     }}
                     className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none"
                   />
@@ -133,15 +173,30 @@ export default function AmountAndWallet({
             </div>
           </div>
         )}
+        </div>
+
+        {showOpenWallet && (
+          <button
+            onClick={openWallet}
+            className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
+          >
+            Open in Wallet
+          </button>
+        )}
       </div>
 
-      {showOpenWallet && (
-        <button
-          onClick={openWallet}
-          className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
-        >
-          Open in Wallet
-        </button>
+      {showRateMessage && (
+        <div className="w-full flex items-center justify-center gap-2 text-center mt-2 min-h-[18px]">
+          <p
+            className={`text-[12px] italic m-0 text-gray-600 transition-all duration-200 ${
+              rateFetched && isUsdOpen
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-1"
+            }`}
+          >
+            Rate of {formatRate(rate)} USD per ZEC provided by {rateSource}.
+          </p>
+        </div>
       )}
     </div>
   );
