@@ -156,9 +156,13 @@ export default function AmountAndWallet({
   const [providerIndex, setProviderIndex] = useState(0);
   const [usdInput, setUsdInput] = useState("");
   const fiatSymbol = FIAT_SYMBOLS[fiat] || "$";
+  const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
+  const leftPillWidth = `calc(100% - ${rightPillWidth})`;
 
   const overlayRight = isUsdOpen ? "50%" : "2.5rem";
   const overlayWidth = "2.25rem";
+  const overlayHalf = "1.125rem";
+  const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
 
   const fetchRate = async (index, nextFiat) => {
     const providers = getRateProviders(nextFiat);
@@ -195,16 +199,9 @@ export default function AmountAndWallet({
 
   useEffect(() => {
     if (!rateFetched || !isUsdOpen) return;
-    if (usdInput === "") {
-      const num = parseFloat(amount || "0");
-      if (Number.isNaN(num)) return;
-      setUsdInput(formatUsd(num * rate));
-      return;
-    }
-    const usdNum = parseFloat(usdInput);
-    if (Number.isNaN(usdNum) || rate <= 0) return;
-    const zecAmount = usdNum / rate;
-    setAmount(zecAmount.toFixed(8));
+    const num = parseFloat(amount || "0");
+    if (Number.isNaN(num)) return;
+    setUsdInput(formatUsd(num * rate));
   }, [rate, rateFetched, isUsdOpen]);
 
   useEffect(() => {
@@ -233,31 +230,29 @@ export default function AmountAndWallet({
   return (
     <div className="w-full mb-2">
       <div className="flex items-center gap-3">
-        <div className="relative flex flex-1 items-stretch">
+        <div className="relative flex flex-1 items-stretch overflow-x-hidden">
           {showUsdPill && (
             <>
               <div
                 className="pointer-events-none absolute top-0 border-t border-gray-800"
                 style={{
                   width: overlayWidth,
-                  right: overlayRight,
-                  transform: "translateX(50%)"
+                  right: overlayRightOffset
                 }}
               />
               <div
                 className="pointer-events-none absolute bottom-0 border-b border-gray-800"
                 style={{
                   width: overlayWidth,
-                  right: overlayRight,
-                  transform: "translateX(50%)"
+                  right: overlayRightOffset
                 }}
               />
             </>
           )}
 
           <div
-            className="relative min-w-0 transition-[flex-basis] duration-200"
-            style={{ flexBasis: isUsdOpen ? "50%" : "auto", flexGrow: 1 }}
+            className="relative min-w-0 transition-[width] duration-200 box-border"
+            style={showUsdPill ? { width: leftPillWidth } : { width: "100%" }}
           >
             <input
               type="number"
@@ -292,14 +287,10 @@ export default function AmountAndWallet({
 
           {showUsdPill && (
             <div
-              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md transition-[flex-basis] duration-200 h-11 overflow-visible min-w-0 ${
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 transition-[width] duration-200 box-border ${
                 isUsdOpen ? "px-3" : "px-3 justify-center"
               }`}
-              style={{
-                flexBasis: isUsdOpen ? "50%" : "2.5rem",
-                flexShrink: 0,
-                flexGrow: 0
-              }}
+              style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >
               <div
