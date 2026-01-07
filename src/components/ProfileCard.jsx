@@ -703,6 +703,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             imageClassName="object-contain"
             className="mx-auto shadow-sm flex items-center justify-center"
             showFallbackIcon
+            blink
           />
 
           {/* Awards section (animated, appears when Show Awards is active) */}

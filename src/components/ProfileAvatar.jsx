@@ -4,6 +4,7 @@ export default function ProfileAvatar({
     imageClassName = "object-cover",
     className = "",
     showFallbackIcon = false,
+    blink = false,
 }) {
     // --- derive state ---
     const isVerified =
@@ -51,6 +52,17 @@ export default function ProfileAvatar({
                     0% { background-position: 0% 50%; }
                     100% { background-position: 100% 50%; }
                 }
+                @keyframes avatar-blink {
+                    0%, 92%, 100% { transform: scaleY(1); }
+                    94%, 96% { transform: scaleY(0.1); }
+                }
+                .avatar-eyes {
+                    transform-origin: center;
+                    transform-box: fill-box;
+                }
+                .avatar-blink {
+                    animation: avatar-blink 5s infinite;
+                }
             `}</style>
             <div
                 className={`relative rounded-full overflow-hidden flex-shrink-0 ${circleClass} ${className}`}
@@ -66,15 +78,19 @@ export default function ProfileAvatar({
                             referrerPolicy="no-referrer"
                         />
                     ) : (
-                        showFallbackIcon && (
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="w-10 h-10 text-blue-700 opacity-20"
+                        <svg viewBox="0 0 64 64" aria-hidden="true" className="w-full h-full">
+                            <g className={`avatar-eyes ${blink ? "avatar-blink" : ""}`}>
+                                <circle cx="24" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                                <circle cx="40" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                            </g>
+                            <path
+                                d="M24 40c3 4 13 4 16 0"
+                                stroke="rgba(0,0,0,0.65)"
+                                strokeWidth="4"
+                                strokeLinecap="round"
                                 fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
                             />
-                        )
+                        </svg>
                     )}
                 </div>
             </div>
