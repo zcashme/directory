@@ -53,7 +53,14 @@ const SOCIAL_HOSTS = {
   Instagram: ["instagram.com", "www.instagram.com"],
   Reddit: ["reddit.com", "www.reddit.com"],
   LinkedIn: ["linkedin.com", "www.linkedin.com"],
-  Discord: ["discord.gg", "www.discord.gg"],
+  Discord: [
+    "discord.gg",
+    "www.discord.gg",
+    "discord.com",
+    "www.discord.com",
+    "discordapp.com",
+    "www.discordapp.com"
+  ],
   TikTok: ["tiktok.com", "www.tiktok.com"],
   Mastodon: ["mastodon.social"],
   Bluesky: ["bsky.app"],
@@ -528,6 +535,8 @@ export default function ProfileEditor({ profile, links }) {
             email: li.email              // "xiang...@..."
           };
         };
+        let verifiedDiscordId = null;
+        let verifiedDiscordUrl = null;
         const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
         const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
         const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
@@ -664,6 +673,10 @@ export default function ProfileEditor({ profile, links }) {
           const avatarUrl = await getDiscordAvatarUrl(session);
           const handleKey = normalizeHandleKey(targetNorm);
           if (avatarUrl && handleKey) storeDiscordAvatarUrl(avatarUrl, handleKey);
+          if (discordId) {
+            verifiedDiscordId = String(discordId);
+            verifiedDiscordUrl = `https://discord.com/users/${verifiedDiscordId}`;
+          }
         }
 
         // 2. Update Database
@@ -702,12 +715,17 @@ export default function ProfileEditor({ profile, links }) {
             }
           }
 
+          const updatePayload = {
+            is_verified: true,
+            updated_at: new Date().toISOString()
+          };
+          if (isDiscordUrl && verifiedDiscordUrl) {
+            updatePayload.url = verifiedDiscordUrl;
+          }
+
           let { data, error } = await supabase
             .from('zcasher_links')
-            .update({
-              is_verified: true,
-              updated_at: new Date().toISOString()
-            })
+            .update(updatePayload)
             .eq('zcasher_id', profile.id)
             .in('url', variants)
             .select();
@@ -727,10 +745,7 @@ export default function ProfileEditor({ profile, links }) {
             const patternWDA = `%://www.discordapp.com/users/${handle}%`;
             const { data: data2, error: error2 } = await supabase
               .from('zcasher_links')
-              .update({
-                is_verified: true,
-                updated_at: new Date().toISOString()
-              })
+              .update(updatePayload)
               .eq('zcasher_id', profile.id)
               .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT},url.ilike.${patternLI},url.ilike.${patternWLI},url.ilike.${patternGH},url.ilike.${patternWGH},url.ilike.${patternD1},url.ilike.${patternD2},url.ilike.${patternDA},url.ilike.${patternWDA}`)
               .select();
@@ -765,10 +780,12 @@ export default function ProfileEditor({ profile, links }) {
             const u1 = (l.url || "").trim().replace(/\/$/, "");
             const u2 = (url || "").trim().replace(/\/$/, "");
             // Mark verified
-            return u1 === u2 ? {
+            if (u1 !== u2) return l;
+            return {
               ...l,
-              is_verified: true
-            } : l;
+              is_verified: true,
+              url: isDiscordUrl && verifiedDiscordUrl ? verifiedDiscordUrl : l.url
+            };
           })
         }));
 
@@ -974,16 +991,23 @@ export default function ProfileEditor({ profile, links }) {
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
     const arr = Array.isArray(links) ? links : Array.isArray(profile.links) ? profile.links : [];
-    return arr.map((l) => ({
-      id: l.id ?? null,
-      url: l.url ?? "",
-      ...parseSocialUrl(l.url ?? ""),
-      valid: true,
-      reason: null,
-      is_verified: !!l.is_verified,
-      verification_expires_at: l.verification_expires_at || null,
-      _uid: crypto.randomUUID()
-    }));
+    return arr.map((l) => {
+      const parsed = parseSocialUrl(l.url ?? "");
+      const isDiscordProfileUrl = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com)\/users\/[^/?#]+/i.test(l.url || "");
+      const prefersLabel = parsed.platform === "Discord" && isDiscordProfileUrl && l.label;
+      return {
+        id: l.id ?? null,
+        url: l.url ?? "",
+        ...parsed,
+        username: prefersLabel ? l.label : parsed.username,
+        previewUrl: prefersLabel ? (l.url ?? "") : "",
+        valid: true,
+        reason: null,
+        is_verified: !!l.is_verified,
+        verification_expires_at: l.verification_expires_at || null,
+        _uid: crypto.randomUUID()
+      };
+    });
   }, [profile, links]);
 
   // Form state
@@ -1542,7 +1566,7 @@ export default function ProfileEditor({ profile, links }) {
               </label>
               {hasPendingField("address", "a") && (
                 <span className={VERIFY_HINT_CLASS}>
-                  Verify to apply changes
+                  Verify to apply edits
                 </span>
               )}
             </div>
@@ -1978,7 +2002,7 @@ export default function ProfileEditor({ profile, links }) {
                 ) : !canAuthenticate ? (
                   hasLinkInput ? (
                     <span className="text-xs text-gray-500 italic">
-                      Verify to enable authentication
+                      Apply edits to enable authentication
                     </span>
                   ) : null
                 ) : (

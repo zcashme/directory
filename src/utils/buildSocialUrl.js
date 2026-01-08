@@ -9,7 +9,7 @@ export function buildSocialUrl(platform, username) {
     Instagram: { base: "https://instagram.com/" },
     Reddit: { base: "https://reddit.com/user/" },
     LinkedIn: { base: "https://linkedin.com/in/" },
-    Discord: { base: "https://discord.gg/" },
+    Discord: { base: "https://discord.com/users/" },
     TikTok: { base: "https://tiktok.com/", prefix: "@" },
     Mastodon: { base: "https://mastodon.social/", prefix: "@" },
     Bluesky: { base: "https://bsky.app/profile/" },

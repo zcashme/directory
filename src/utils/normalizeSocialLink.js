@@ -6,6 +6,14 @@ const HOSTS = {
   Instagram: ["instagram.com", "www.instagram.com"],
   Reddit: ["reddit.com", "www.reddit.com"],
   LinkedIn: ["linkedin.com", "www.linkedin.com"],
+  Discord: [
+    "discord.com",
+    "www.discord.com",
+    "discordapp.com",
+    "www.discordapp.com",
+    "discord.gg",
+    "www.discord.gg"
+  ],
   TikTok: ["tiktok.com", "www.tiktok.com"],
   Bluesky: ["bsky.app"],
   Mastodon: ["mastodon.social"],

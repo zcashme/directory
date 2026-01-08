@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { normalizeSocialUsername } from "../utils/normalizeSocialLink";
 import { buildSocialUrl } from "../utils/buildSocialUrl";
 import { isValidUrl } from "../utils/validateUrl";
@@ -22,10 +23,16 @@ function deriveState(value) {
   const username = value.username || "";
   const otherUrl = value.otherUrl || "";
   const isOther = platform === "Other";
+  const previewOverride = (value.previewUrl || "").trim();
+  const isDiscord = platform === "Discord";
+  const discordPreview =
+    username && !previewOverride
+      ? `https://discord.com/users/(userID for ${username})`
+      : "";
 
   const preview = isOther
     ? otherUrl.trim()
-    : buildSocialUrl(platform, username) || "";
+    : previewOverride || discordPreview || buildSocialUrl(platform, username) || "";
 
   if (isOther) {
     if (!otherUrl) {
@@ -39,8 +46,44 @@ function deriveState(value) {
     return { preview, valid: true, reason: null };
   }
 
-  const res = isValidUrl(preview || "");
+  if (isDiscord && discordPreview && !previewOverride) {
+    return { preview, valid: true, reason: null };
+  }
+
+  const res = isValidUrl(previewOverride || preview || "");
   return { preview, valid: res.valid, reason: res.reason };
+}
+
+function HelpIcon({ text }) {
+  const [show, setShow] = useState(false);
+  const isTouch = typeof window !== "undefined" && "ontouchstart" in window;
+
+  return (
+    <div
+      className="relative inline-block ml-1"
+      onMouseEnter={(e) => {
+        e.stopPropagation();
+        !isTouch && setShow(true);
+      }}
+      onMouseLeave={(e) => {
+        e.stopPropagation();
+        !isTouch && setShow(false);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        isTouch && setShow((s) => !s);
+      }}
+    >
+      <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] font-bold border border-gray-400 rounded-full text-gray-600 cursor-pointer hover:bg-gray-100 select-none">
+        ?
+      </span>
+      {show && (
+        <div className="absolute z-20 w-48 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg shadow-md p-2 -right-1 top-5">
+          {text}
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function SocialLinkInput({
@@ -68,6 +111,9 @@ export default function SocialLinkInput({
     if (platform !== "Other") {
       next.username = normalizeSocialUsername(next.username || "", platform);
     }
+    if (platform !== "Other" && ("username" in patch || "platform" in patch)) {
+      next.previewUrl = "";
+    }
 
     const { valid, reason } = deriveState(next);
     next.valid = valid;
@@ -78,6 +124,9 @@ export default function SocialLinkInput({
 
   const { preview, valid, reason } = deriveState(current);
   const isOther = current.platform === "Other";
+  const showDiscordHelp = current.platform === "Discord" && !isOther;
+  const discordHelpText =
+    "Your Discord username is used for authentication. After successful authentication, the link updates to your user ID.";
 
   return (
     <div
@@ -121,7 +170,7 @@ export default function SocialLinkInput({
             }
           />
         ) : (
-          <div className="flex-1">
+          <div className="flex-1 flex items-center gap-2">
             <input
               type="text"
               value={current.username || ""}
@@ -137,6 +186,11 @@ export default function SocialLinkInput({
                     }`
               }
             />
+            {showDiscordHelp && (
+              <div className="ml-auto flex items-center">
+                <HelpIcon text={discordHelpText} />
+              </div>
+            )}
           </div>
         )}
 
