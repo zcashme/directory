@@ -1,5 +1,7 @@
 import faviconZcashCommunity from "../assets/favicons/favicon-zcashcommunity-32.png";
 import faviconYouTube from "../assets/favicons/favicon-youtube-32.png";
+import faviconOdysee from "../assets/favicons/favicon-odysee-32.png";
+import faviconSoundCloud from "../assets/favicons/favicon-soundcloud-32.png";
 import faviconX from "../assets/favicons/favicon-x-32.png";
 import faviconWeibo from "../assets/favicons/favicon-weibo-32.png";
 import faviconWeChat from "../assets/favicons/favicon-wechat-32.png";
@@ -33,6 +35,10 @@ export const KNOWN_DOMAINS = {
 
   "youtube.com": { label: "YouTube", icon: faviconYouTube },
   "youtu.be": { label: "YouTube", icon: faviconYouTube },
+
+  "soundcloud.com": { label: "SoundCloud", icon: faviconSoundCloud },
+
+  "odysee.com": { label: "Odysee", icon: faviconOdysee },
 
   "facebook.com": { label: "Facebook", icon: faviconFacebook },
   "fb.com": { label: "Facebook", icon: faviconFacebook },
