@@ -72,6 +72,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showDetail, setShowDetail] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
   // image cache and lazy load setup
   const imgRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -269,9 +270,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     return [];
   });
 
-  // 🔄 whenever "Show Links" is opened, fetch live links from Supabase
+  // dY", whenever "Show Links" is opened, fetch live links from Supabase
   useEffect(() => {
     if (!profile?.id) return;
+    let isMounted = true;
+    setIsLoadingLinks(true);
 
     import("../supabase").then(async ({ supabase }) => {
       const { data, error } = await supabase
@@ -281,11 +284,16 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         .order("id", { ascending: true });
 
       if (error) {
-        console.error("❌ Error fetching links:", error);
+        console.error("�?O Error fetching links:", error);
+        if (isMounted) setIsLoadingLinks(false);
         return;
       }
-      if (Array.isArray(data)) setLinksArray(data.map(enrichLink));
+      if (Array.isArray(data) && isMounted) setLinksArray(data.map(enrichLink));
+      if (isMounted) setIsLoadingLinks(false);
     });
+    return () => {
+      isMounted = false;
+    };
   }, [profile?.id]);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
 
@@ -959,8 +967,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           >
             {/* Links tray only */}
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
-              <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
-                {linksArray.length > 0 ? (
+              <div className={isLoadingLinks ? "px-4 py-3 bg-transparent/70 border-t border-gray-200" : "px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2"}>
+                {isLoadingLinks ? (
+                  <div className="link-tray-shimmer h-10 w-full rounded-md" />
+                ) : linksArray.length > 0 ? (
                   linksArray.map((link) => {
                     const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
                     const canLinkLeft = !(isDiscordLink && !link.is_verified);
@@ -1144,6 +1154,15 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         .transform-style-preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
+@keyframes link-tray-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.link-tray-shimmer {
+  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
+  background-size: 200% 100%;
+  animation: link-tray-shimmer 1.2s ease-in-out infinite;
+}
       `}</style>
 
 
@@ -1157,6 +1176,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     </VerifiedCardWrapper>
   );
 }
+
+
+
+
 
 
 
