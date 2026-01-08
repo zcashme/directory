@@ -230,7 +230,7 @@ export default function AmountAndWallet({
   return (
     <div className="w-full mb-2">
       <div className="flex items-center gap-3">
-        <div className="relative flex flex-1 items-stretch overflow-x-hidden">
+        <div className="relative flex flex-1 items-stretch overflow-visible">
           {showUsdPill && (
             <>
               <div
@@ -364,8 +364,8 @@ export default function AmountAndWallet({
 
               {isUsdOpen && (
                 <div
-                  className={`absolute left-0 top-full w-[calc(100%-12px)] border border-t-0 border-gray-800 rounded-bl-xl rounded-br-none overflow-hidden transition-all duration-200 bg-[var(--color-background)] z-10 ${
-                    isCurrencyOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"
+                  className={`absolute -left-1.75 top-full w-[calc(100%-12px+10px)] border border-t-0 border-gray-800 rounded-bl-xl rounded-br-none overflow-hidden transition-all duration-200 bg-[var(--color-background)] z-50 ${
+                    isCurrencyOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
                   }`}
                 >
                   <div className="flex flex-col py-1 max-h-72 overflow-y-auto">
