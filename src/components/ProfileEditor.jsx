@@ -16,6 +16,7 @@ import {
   removeLinkToken,
   startOAuthVerification,
 } from "../utils/linkAuthFlow";
+import AuthExplainerModal from "./AuthExplainerModal";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
@@ -276,6 +277,8 @@ export default function ProfileEditor({ profile, links }) {
   const [redirectLabel, setRedirectLabel] = useState("X.com");
   const [avatarPrompt, setAvatarPrompt] = useState(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [authInfoOpen, setAuthInfoOpen] = useState(false);
+  const [authInfoLink, setAuthInfoLink] = useState(null);
   const providerKeyByLabel = {
     Discord: "discord",
     X: "twitter",
@@ -861,6 +864,11 @@ export default function ProfileEditor({ profile, links }) {
       setRedirectLabel,
     });
 
+  const authInfoProvider = authInfoLink ? getAuthProviderForUrl(authInfoLink.url) : null;
+  const authInfoToken = authInfoLink ? getLinkAuthToken(authInfoLink) : null;
+  const authInfoPending =
+    authInfoToken && isLinkAuthPending(pendingEdits, authInfoToken);
+
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
     const arr = Array.isArray(links) ? links : Array.isArray(profile.links) ? profile.links : [];
@@ -1384,6 +1392,28 @@ export default function ProfileEditor({ profile, links }) {
 
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <RedirectModal isOpen={showRedirect} label={redirectLabel} />
+      <AuthExplainerModal
+        isOpen={authInfoOpen && !!authInfoLink}
+        canAuthenticate={!!profile.address_verified}
+        authPending={authInfoPending}
+        authRedirectOpen={showRedirect}
+        providerLabel={authInfoProvider?.label}
+        onClose={() => {
+          setAuthInfoOpen(false);
+          setAuthInfoLink(null);
+        }}
+        onAuthenticate={() => {
+          if (!authInfoLink) return;
+          if (!profile.address_verified) return;
+          if (authInfoProvider) {
+            startOAuth(authInfoProvider.key, authInfoLink.url);
+            return;
+          }
+          if (!authInfoToken || authInfoPending) return;
+          appendLinkToken(pendingEdits, setPendingEdits, authInfoToken);
+          setAuthInfoOpen(false);
+        }}
+      />
       <AvatarPreviewModal
         isOpen={avatarPreviewOpen}
         src={(form.profile_image_url || originals.profile_image_url || "").trim()}
@@ -1817,9 +1847,16 @@ export default function ProfileEditor({ profile, links }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {!canVerify ? (
-                  <span className="text-xs text-gray-500 italic">
-                    Verify uaddr to authenticate links
-                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthInfoLink(row);
+                      setAuthInfoOpen(true);
+                    }}
+                    className="text-xs px-2 py-1 border rounded text-blue-600 border-blue-400 hover:bg-blue-50"
+                  >
+                    Authenticate
+                  </button>
                 ) : isVerified ? (
                   <div className="flex items-center gap-2">
                     <button
