@@ -11,11 +11,37 @@ import shareIcon from "../assets/share.svg";
 // --- Domain utils + favicon maps ---
 import { extractDomain, betweenTwoPeriods } from "../utils/domainParsing.js";
 import { KNOWN_DOMAINS, FALLBACK_ICON } from "../utils/domainLabels.js";
+import {
+  getAuthProviderForUrl,
+  getLinkAuthToken,
+  isLinkAuthPending,
+  appendLinkToken,
+  startOAuthVerification,
+} from "../utils/linkAuthFlow";
 
 import SubmitOtp from "../SubmitOtp.jsx";
 import { motion, AnimatePresence } from "framer-motion";
 const Motion = motion;
 
+function RedirectModal({ isOpen, label }) {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
+        <div className="mb-4 text-blue-500">
+          <svg className="w-12 h-12 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        </div>
+        <h3 className="text-lg font-bold text-gray-800 mb-2">Redirecting to {label}</h3>
+        <p className="text-sm text-gray-600">
+          Please authorize the app to verify your profile.
+        </p>
+      </div>
+    </div>
+  );
+}
 
 
 
@@ -27,6 +53,10 @@ const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const [isOtpOpen, setIsOtpOpen] = useState(false);
+  const [authInfoOpen, setAuthInfoOpen] = useState(false);
+  const [authLink, setAuthLink] = useState(null);
+  const [authRedirectOpen, setAuthRedirectOpen] = useState(false);
+  const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
 
   // 🔗 Lazy-load links from Supabase when needed
   // (linksArray state/effect is defined later; duplicate removed)
@@ -111,33 +141,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     };
   }, [profile?.id, profile?.address, profile?.name, profile?.joined_at, profile?.created_at, profile?.since, profile?.address_verified]);
 
-  // Check for auto-flip if returning from X verification
-  useEffect(() => {
-    const checkAutoFlip = () => {
-      // Only run if we are looking at the correct profile
-      const pId = localStorage.getItem("verifying_profile_id");
-
-      // Add debug log to see if this effect fires
-
-
-      if (pId && String(pId) === String(profile.id)) {
-
-
-        // ✅ Force state to true immediately to ensure Editor mounts
-        setShowBack(true);
-
-        // Also dispatch event to ensure global state syncs if needed
-        // Use a small timeout to let the initial render settle
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent("enterSignInMode"));
-        }, 100);
-      }
-    };
-
-    checkAutoFlip();
-    const timer = setTimeout(checkAutoFlip, 500);
-    return () => clearTimeout(timer);
-  }, [profile.id]);
+  // Auto-flip disabled: keep ProfileCard visible after auth return.
 
 
 
@@ -188,7 +192,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
 
-  const { setSelectedAddress, setForceShowQR } = useFeedback();
+  const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
 
   // Derive trust states (consistent with verified badge logic)
   const verifiedAddress = !!profile.address_verified || !!profile.verified;
@@ -203,6 +207,35 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
   const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
   const isVerified = hasVerifiedContent;
+  const canAuthenticateLinks = !!profile.address_verified;
+  const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
+  const authToken = authLink ? getLinkAuthToken(authLink) : null;
+  const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
+
+  const handleAuthBadgeClick = (event, link) => {
+    event.stopPropagation();
+    if (!link || link.is_verified) return;
+    setAuthLink(link);
+    setAuthInfoOpen(true);
+  };
+
+  const handleAuthenticateLink = () => {
+    if (!authLink) return;
+    if (!canAuthenticateLinks) return;
+    if (selectedAuthProvider) {
+      startOAuthVerification({
+        providerKey: selectedAuthProvider.key,
+        profile,
+        url: authLink.url,
+        setShowRedirect: setAuthRedirectOpen,
+        setRedirectLabel: setAuthRedirectLabel,
+      });
+      return;
+    }
+    if (!authToken || authPending) return;
+    appendLinkToken(pendingEdits, setPendingEdits, authToken);
+    setAuthInfoOpen(false);
+  };
 
 
 
@@ -968,6 +1001,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                           verified={link.is_verified}
                           verifiedLabel="Authenticated"
                           unverifiedLabel="Not Authenticated"
+                          onClick={
+                            link.is_verified
+                              ? undefined
+                              : (event) => handleAuthBadgeClick(event, link)
+                          }
                         />
                       </div>
                       <div className="flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1">
@@ -1087,6 +1125,65 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
       </div>
 
+      <RedirectModal isOpen={authRedirectOpen} label={authRedirectLabel} />
+      {authInfoOpen && authLink && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+          onClick={() => {
+            setAuthInfoOpen(false);
+            setAuthLink(null);
+          }}
+        >
+          <div
+            className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-left animate-fadeIn"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-gray-800">Link not authenticated</h3>
+            <p className="text-sm text-gray-600 mt-2">
+              Ownership has not been confirmed for this link. We do not know if the person who added it actually owns it.
+            </p>
+            {canAuthenticateLinks ? (
+              <p className="text-sm text-gray-600 mt-2">
+                If you own this account, authenticate it to prove ownership.
+              </p>
+            ) : (
+              <p className="text-sm text-gray-500 mt-2">
+                Only verified profiles can authenticate links.
+              </p>
+            )}
+            <div className="flex items-center justify-end gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setAuthInfoOpen(false);
+                  setAuthLink(null);
+                }}
+                className="text-xs px-3 py-2 border border-gray-300 rounded hover:bg-gray-50"
+              >
+                Close
+              </button>
+              {canAuthenticateLinks && (
+                <button
+                  type="button"
+                  onClick={handleAuthenticateLink}
+                  disabled={authPending || authRedirectOpen}
+                  className={`text-xs px-2 py-1 border rounded ${authPending || authRedirectOpen
+                    ? "text-yellow-700 border-yellow-400 bg-yellow-50 cursor-not-allowed"
+                    : "text-blue-600 border-blue-400 hover:bg-blue-50"
+                    }`}
+                >
+                  {authPending || authRedirectOpen
+                    ? "Pending"
+                    : selectedAuthProvider
+                      ? `Authenticate with ${selectedAuthProvider.label}`
+                      : "Authenticate"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .transform-style-preserve-3d { transform-style: preserve-3d; }
         .backface-hidden { backface-visibility: hidden; }
@@ -1104,5 +1201,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     </VerifiedCardWrapper>
   );
 }
+
+
 
 

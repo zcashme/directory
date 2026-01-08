@@ -8,6 +8,14 @@ import { normalizeSocialUsername } from "../utils/normalizeSocialLink";
 import { buildSocialUrl } from "../utils/buildSocialUrl";
 import CitySearchDropdown from "../components/CitySearchDropdown.jsx";
 import { supabase } from "../supabase";
+import {
+  getAuthProviderForUrl,
+  getLinkAuthToken,
+  isLinkAuthPending,
+  appendLinkToken,
+  removeLinkToken,
+  startOAuthVerification,
+} from "../utils/linkAuthFlow";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
@@ -268,6 +276,11 @@ export default function ProfileEditor({ profile, links }) {
   const [redirectLabel, setRedirectLabel] = useState("X.com");
   const [avatarPrompt, setAvatarPrompt] = useState(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const providerKeyByLabel = {
+    Discord: "discord",
+    X: "twitter",
+    GitHub: "github",
+  };
 
   const getDiscordAvatarKey = (id, handle) =>
     `discord_avatar_url:${id}:${handle}`;
@@ -789,15 +802,15 @@ export default function ProfileEditor({ profile, links }) {
           })
         }));
 
-        // 🔥 FORCE RELOAD to ensure fresh state
+        // Clear auth context without a full page reload
         setTimeout(() => {
-          // Clear storage JUST BEFORE reload
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
           setShowRedirect(false);
-
-          // Navigate to clean URL (remove query params) to finish
-          window.location.href = window.location.pathname;
+          const cleanUrl = new URL(window.location.href);
+          cleanUrl.searchParams.delete("verify_pid");
+          cleanUrl.searchParams.delete("verify_url");
+          window.history.replaceState({}, "", cleanUrl.toString());
         }, 1000);
       } else {
         if (!pId) console.log("[VERIFY DEBUG] Missing pId in localStorage");
@@ -839,154 +852,14 @@ export default function ProfileEditor({ profile, links }) {
     return () => subscription.unsubscribe();
   }, [profile.id]);
 
-  const handleXVerify = async (url) => {
-    setShowRedirect(true);
-    setRedirectLabel("X.com");
-    localStorage.setItem("verifying_profile_id", profile.id);
-    localStorage.setItem("verifying_link_url", url);
-
-    const norm = (s = "") =>
-      s
-        .normalize("NFKC")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_-]/g, "");
-    const baseSlug = norm(profile.name || "");
-    const uniqueSlug = `${baseSlug}-${profile.id}`;
-    const returnUrl = `${window.location.origin}/${uniqueSlug}`;
-
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'twitter',
-          options: {
-            redirectTo: returnUrl,
-            skipBrowserRedirect: false
-          }
-        });
-        if (error) throw error;
-      } catch (error) {
-        console.error("OAuth error:", error);
-        setShowRedirect(false);
-        alert("Verification failed: " + (error.message || "Unknown error"));
-      }
-    }, 1500);
-  };
-  const handleLinkedInVerify = async (url) => {
-    setShowRedirect(true);
-    setRedirectLabel("LinkedIn");
-    localStorage.setItem("verifying_profile_id", profile.id);
-    localStorage.setItem("verifying_link_url", url);
-    const norm = (s = "") =>
-      s
-        .normalize("NFKC")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_-]/g, "");
-    const baseSlug = norm(profile.name || "");
-    const uniqueSlug = `${baseSlug}-${profile.id}`;
-
-    // Pass state in URL to survive cross-domain redirects or session clearing
-    const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
-    returnUrlObj.searchParams.set("verify_pid", profile.id);
-    returnUrlObj.searchParams.set("verify_url", url);
-    const returnUrl = returnUrlObj.toString();
-
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'linkedin_oidc',
-          options: {
-            redirectTo: returnUrl,
-            skipBrowserRedirect: false
-          }
-        });
-        if (error) throw error;
-      } catch (error) {
-        console.error("OAuth error:", error);
-        setShowRedirect(false);
-        alert("Verification failed: " + (error.message || "Unknown error"));
-      }
-    }, 1500);
-  };
-  const handleGithubVerify = async (url) => {
-    setShowRedirect(true);
-    setRedirectLabel("GitHub");
-    localStorage.setItem("verifying_profile_id", profile.id);
-    localStorage.setItem("verifying_link_url", url);
-    const norm = (s = "") =>
-      s
-        .normalize("NFKC")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_-]/g, "");
-    const baseSlug = norm(profile.name || "");
-    const uniqueSlug = `${baseSlug}-${profile.id}`;
-
-    // Pass state in URL to survive cross-domain redirects or session clearing
-    const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
-    returnUrlObj.searchParams.set("verify_pid", profile.id);
-    returnUrlObj.searchParams.set("verify_url", url);
-    const returnUrl = returnUrlObj.toString();
-
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'github',
-          options: {
-            redirectTo: returnUrl,
-            skipBrowserRedirect: false
-          }
-        });
-        if (error) throw error;
-      } catch (error) {
-        console.error("OAuth error:", error);
-        setShowRedirect(false);
-        alert("Verification failed: " + (error.message || "Unknown error"));
-      }
-    }, 1500);
-  };
-  const handleDiscordVerify = async (url) => {
-    setShowRedirect(true);
-    setRedirectLabel("Discord");
-    localStorage.setItem("verifying_profile_id", profile.id);
-    localStorage.setItem("verifying_link_url", url);
-    const norm = (s = "") =>
-      s
-        .normalize("NFKC")
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "_")
-        .replace(/[^a-z0-9_-]/g, "");
-    const baseSlug = norm(profile.name || "");
-    const uniqueSlug = `${baseSlug}-${profile.id}`;
-
-    // Pass state in URL to survive cross-domain redirects or session clearing
-    const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
-    returnUrlObj.searchParams.set("verify_pid", profile.id);
-    returnUrlObj.searchParams.set("verify_url", url);
-    const returnUrl = returnUrlObj.toString();
-
-    setTimeout(async () => {
-      try {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: 'discord',
-          options: {
-            redirectTo: returnUrl,
-            skipBrowserRedirect: false
-          }
-        });
-        if (error) throw error;
-      } catch (error) {
-        console.error("OAuth error:", error);
-        setShowRedirect(false);
-        alert("Verification failed: " + (error.message || "Unknown error"));
-      }
-    }, 1500);
-  };
+  const startOAuth = (providerKey, url) =>
+    startOAuthVerification({
+      providerKey,
+      profile,
+      url,
+      setShowRedirect,
+      setRedirectLabel,
+    });
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -1060,19 +933,6 @@ export default function ProfileEditor({ profile, links }) {
     [profile]
   );
 
-  // Append token helper
-  const appendLinkToken = (token) => {
-    const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
-    const next = prev.includes(token) ? prev : [...prev, token];
-    setPendingEdits("l", next);
-  };
-
-  // Remove token helper
-  const removeLinkToken = (token) => {
-    const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
-    const next = prev.filter((t) => t !== token);
-    setPendingEdits("l", next);
-  };
 
   // Profile field diffs including deletions
   useEffect(() => {
@@ -1490,7 +1350,7 @@ export default function ProfileEditor({ profile, links }) {
     setForm((prev) => {
       const removed = prev.links.find((l) => l._uid === uid);
       const links = prev.links.filter((l) => l._uid !== uid);
-      if (removed?.id) appendLinkToken(`-${removed.id}`);
+      if (removed?.id) appendLinkToken(pendingEdits, setPendingEdits, `-${removed.id}`);
       return { ...prev, links };
     });
 
@@ -1519,8 +1379,6 @@ export default function ProfileEditor({ profile, links }) {
     setPendingEdits("l", filtered);
   };
 
-  const isPendingToken = (token) =>
-    Array.isArray(pendingEdits?.l) && pendingEdits.l.includes(token);
 
   return (
 
@@ -1540,9 +1398,8 @@ export default function ProfileEditor({ profile, links }) {
           const provider = avatarPrompt.provider;
           const url = avatarPrompt.url;
           setAvatarPrompt(null);
-          if (provider === "Discord") handleDiscordVerify(url);
-          else if (provider === "X") handleXVerify(url);
-          else if (provider === "GitHub") handleGithubVerify(url);
+          const providerKey = providerKeyByLabel[provider];
+          if (providerKey) startOAuth(providerKey, url);
         }}
       />
       <div className="w-full max-w-xl bg-transparent overflow-hidden">
@@ -1944,13 +1801,14 @@ export default function ProfileEditor({ profile, links }) {
           const isUnchangedLink = !isExistingLink || currentUrl === originalUrl;
           const canAuthenticate =
             canVerify && isExistingLink && !isVerified && isUnchangedLink;
-          const isX = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(row.url);
-          const isLinkedIn = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(row.url);
-          const isGithub = /^(https?:\/\/)?(www\.)?github\.com\//i.test(row.url);
-          const isDiscord = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com)\/users\//i.test(row.url);
+          const authProvider = getAuthProviderForUrl(row.url);
+          const isOAuthLink = !!authProvider;
+          const isX = authProvider?.key === "twitter";
+          const isGithub = authProvider?.key === "github";
+          const isDiscord = authProvider?.key === "discord";
 
-          const token = row.id ? `!${row.id}` : row.url.trim() ? `+!${row.url.trim()}` : null;
-          const isPending = token && isPendingToken(token);
+          const token = getLinkAuthToken(row);
+          const isPending = token && isLinkAuthPending(pendingEdits, token);
           const showDiscordAvatarAction = isVerified && isDiscord;
           const showXAvatarAction = isVerified && isX;
           const showGithubAvatarAction = isVerified && isGithub;
@@ -2012,32 +1870,23 @@ export default function ProfileEditor({ profile, links }) {
                       if (!token) return;
 
                       // X / Twitter verification flow
-                      if (isX) {
-                        handleXVerify(row.url);
-                        return;
-                      }
-                      if (isLinkedIn) {
-                        handleLinkedInVerify(row.url);
-                        return;
-                      }
-                      if (isGithub) {
-                        handleGithubVerify(row.url);
-                        return;
-                      }
-                      if (isDiscord) {
-                        handleDiscordVerify(row.url);
+                      if (authProvider) {
+                        startOAuth(authProvider.key, row.url);
                         return;
                       }
 
-                      if (isPending) removeLinkToken(token);
-                      else appendLinkToken(token);
+                      if (isPending) {
+                        removeLinkToken(pendingEdits, setPendingEdits, token);
+                      } else {
+                        appendLinkToken(pendingEdits, setPendingEdits, token);
+                      }
                     }}
-                    className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord))
+                    className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && isOAuthLink)
                       ? "text-yellow-700 border-yellow-400 bg-yellow-50"
                       : "text-blue-600 border-blue-400 hover:bg-blue-50"
                       }`}
                   >
-                    {isPending || (showRedirect && (isX || isLinkedIn || isGithub || isDiscord)) ? "Pending" : "Authenticate"}
+                    {isPending || (showRedirect && isOAuthLink) ? "Pending" : "Authenticate"}
                   </button>
                 )}
               </div>
