@@ -209,18 +209,19 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   // --- Local favicon + label resolver ---
   function enrichLink(link) {
     const domain = extractDomain(link.url);
+    const dbLabel = (link.label || "").trim();
 
     if (KNOWN_DOMAINS[domain]) {
       return {
         ...link,
-        label: KNOWN_DOMAINS[domain].label,
+        label: dbLabel || KNOWN_DOMAINS[domain].label,
         icon: KNOWN_DOMAINS[domain].icon,
       };
     }
 
     return {
       ...link,
-      label: link.label || betweenTwoPeriods(domain) || "Unknown",
+      label: dbLabel || betweenTwoPeriods(domain) || "Unknown",
       icon: FALLBACK_ICON,
     };
   }
@@ -704,6 +705,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             className="mx-auto shadow-sm flex items-center justify-center"
             showFallbackIcon
             blink
+            lookAround
           />
 
           {/* Awards section (animated, appears when Show Awards is active) */}
@@ -928,15 +930,15 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   linksArray.map((link) => (
                     <div
                       key={link.id}
-                      className="flex flex-col sm:flex-row sm:items-center justify-between py-1 border-b border-gray-100 last:border-0"
+                      className="flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                         <img
                           src={link.icon}
                           alt=""
                           className="w-4 h-4 rounded-sm opacity-80"
                         />
-                        <span className="font-medium text-gray-800 truncate">
+                        <span className="font-medium text-gray-800 whitespace-nowrap">
                           {link.label}
                         </span>
                         <VerifiedBadge
@@ -945,16 +947,18 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                           unverifiedLabel="Not Authenticated"
                         />
                       </div>
-                      <div className="flex items-center gap-2 mt-0.5 sm:mt-0 text-sm text-gray-600 truncate max-w-full sm:max-w-[60%]">
+                      <div className="flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1">
                         <a
                           href={link.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="truncate hover:text-blue-600 transition-colors"
+                          className="flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors"
                         >
                           {link.url.replace(/^https?:\/\//, "")}
                         </a>
-                        <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+                        <div className="shrink-0">
+                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+                        </div>
 
 
                       </div>
