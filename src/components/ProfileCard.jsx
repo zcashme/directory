@@ -927,20 +927,43 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
               <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                 {linksArray.length > 0 ? (
-                  linksArray.map((link) => (
+                  linksArray.map((link) => {
+                    const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
+                    const canLinkLeft = !(isDiscordLink && !link.is_verified);
+                    return (
                     <div
                       key={link.id}
                       className="flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0"
                     >
                       <div className="flex items-center gap-2 shrink-0">
-                        <img
-                          src={link.icon}
-                          alt=""
-                          className="w-4 h-4 rounded-sm opacity-80"
-                        />
-                        <span className="font-medium text-gray-800 whitespace-nowrap">
-                          {link.label}
-                        </span>
+                        {canLinkLeft ? (
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 shrink-0 hover:text-blue-600 transition-colors"
+                          >
+                            <img
+                              src={link.icon}
+                              alt=""
+                              className="w-4 h-4 rounded-sm opacity-80"
+                            />
+                            <span className="font-medium text-gray-800 whitespace-nowrap">
+                              {link.label}
+                            </span>
+                          </a>
+                        ) : (
+                          <>
+                            <img
+                              src={link.icon}
+                              alt=""
+                              className="w-4 h-4 rounded-sm opacity-80"
+                            />
+                            <span className="font-medium text-gray-800 whitespace-nowrap">
+                              {link.label}
+                            </span>
+                          </>
+                        )}
                         <VerifiedBadge
                           verified={link.is_verified}
                           verifiedLabel="Authenticated"
@@ -948,22 +971,39 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                         />
                       </div>
                       <div className="flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1">
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors"
-                        >
-                          {link.url.replace(/^https?:\/\//, "")}
-                        </a>
-                        <div className="shrink-0">
-                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
-                        </div>
-
-
+                        {(() => {
+                          if (isDiscordLink && !link.is_verified) {
+                            return (
+                              <>
+                                <span className="flex-1 min-w-0 truncate text-right">
+                                  {link.label}
+                                </span>
+                                <div className="shrink-0">
+                                  <CopyButton text={link.label} label="Copy" copiedLabel="Copied" />
+                                </div>
+                              </>
+                            );
+                          }
+                          return (
+                            <>
+                              <a
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors"
+                              >
+                                {link.url.replace(/^https?:\/\//, "")}
+                              </a>
+                              <div className="shrink-0">
+                                <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
-                  ))
+                  );
+                  })
                 ) : (
                   <p className="italic text-gray-500 text-center">
                     No contributed links yet.

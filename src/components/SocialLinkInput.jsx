@@ -26,7 +26,7 @@ function deriveState(value) {
   const previewOverride = (value.previewUrl || "").trim();
   const isDiscord = platform === "Discord";
   const discordPreview =
-    username && !previewOverride
+    isDiscord && username && !previewOverride
       ? `https://discord.com/users/(userID for ${username})`
       : "";
 

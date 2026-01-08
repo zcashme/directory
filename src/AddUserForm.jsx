@@ -363,6 +363,42 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         const res = isValidUrl(u);
         return u && res.valid;
       });
+    const toPrettyDomain = (rawUrl) => {
+      const trimmed = (rawUrl || "").trim();
+      if (!trimmed) return "";
+      const normalized = /^https?:\/\//i.test(trimmed)
+        ? trimmed
+        : `https://${trimmed}`;
+      try {
+        const host = new URL(normalized).hostname || "";
+        return host.replace(/^www\./i, "") || trimmed;
+      } catch {
+        return trimmed.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+      }
+    };
+
+    const finalLinkEntries = links
+      .map((l) => {
+        if (l.platform === "Other") {
+          const url = l.otherUrl?.trim() || "";
+          const res = isValidUrl(url);
+          if (!url || !res.valid) return null;
+          return {
+            url,
+            label: toPrettyDomain(url)
+          };
+        }
+        if (!l.username) return null;
+        const url = buildSocialUrl(l.platform, l.username.trim()) || "";
+        const res = isValidUrl(url);
+        if (!url || !res.valid) return null;
+        const label =
+          l.platform === "Discord"
+            ? l.username.trim()
+            : url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+        return { url, label };
+      })
+      .filter(Boolean);
 
     // 🚫 Duplicate address guard (frontend)
     const addrNorm = address.trim().toLowerCase();
@@ -412,12 +448,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       if (profileError) throw profileError;
 
       // 2️⃣ Insert profile links
-      for (const url of finalLinks) {
+      for (const entry of finalLinkEntries) {
         await supabase.from("zcasher_links").insert([
           {
             zcasher_id: profile.id,
-            label: url.replace(/^https?:\/\//, "").replace(/\/$/, ""),
-            url,
+            label: entry.label,
+            url: entry.url,
             is_verified: false,
           },
         ]);
