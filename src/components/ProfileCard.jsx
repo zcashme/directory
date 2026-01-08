@@ -1041,7 +1041,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                                 rel="noopener noreferrer"
                                 className="flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors"
                               >
-                                {link.url.replace(/^https?:\/\//, "")}
+                                {extractDomain(link.url)}
                               </a>
                               <div className="shrink-0">
                                 <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
