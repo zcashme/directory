@@ -1,3 +1,5 @@
+﻿"use client";
+
 import { useState, useRef, useEffect } from "react";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
@@ -59,7 +61,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [authRedirectOpen, setAuthRedirectOpen] = useState(false);
   const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
 
-  // 🔗 Lazy-load links from Supabase when needed
+  // ðŸ”— Lazy-load links from Supabase when needed
   // (linksArray state/effect is defined later; duplicate removed)
 
   const [showStats, setShowStats] = useState(false);
@@ -83,7 +85,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const finalUrl = isTwitter
     ? rawUrl                          // do NOT append anything to Twitter
     : rawUrl.includes("?")
-      ? rawUrl                           // already has query params → leave it
+      ? rawUrl                           // already has query params â†’ leave it
       : `${rawUrl}?v=${profile.last_signed_at || profile.created_at}`;
 
 
@@ -100,7 +102,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
       // Forward the event payload when triggered from other sources
       if (!e?.detail && profileId && profileAddress) {
-        // ✅ Guard: only dispatch if profile data is ready
+        // âœ… Guard: only dispatch if profile data is ready
         if (!profileId || !profileAddress) {
           console.warn("ProfileCard: profile not ready, skipping verify dispatch");
         } else {
@@ -116,7 +118,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             })
           );
 
-          // ✅ Cache last known payload in case event fires before listener is attached
+          // âœ… Cache last known payload in case event fires before listener is attached
           window.lastZcashFlipDetail = {
             zId: profileId,
             address: profileAddress,
@@ -262,12 +264,18 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   }
 
   const [linksArray, setLinksArray] = useState(() => {
-    if (Array.isArray(profile.links)) return profile.links;
-    if (typeof profile.links_json === "string") {
-      try { return JSON.parse(profile.links_json); } catch { return []; }
+    let rawLinks = [];
+    if (Array.isArray(profile.links)) rawLinks = profile.links;
+    else if (typeof profile.links_json === "string") {
+      try {
+        rawLinks = JSON.parse(profile.links_json);
+      } catch {
+        rawLinks = [];
+      }
+    } else if (Array.isArray(profile.links_json)) {
+      rawLinks = profile.links_json;
     }
-    if (Array.isArray(profile.links_json)) return profile.links_json;
-    return [];
+    return rawLinks.map(enrichLink);
   });
 
   // dY", whenever "Show Links" is opened, fetch live links from Supabase
@@ -284,7 +292,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         .order("id", { ascending: true });
 
       if (error) {
-        console.error("�?O Error fetching links:", error);
+        console.error("ƒ?O Error fetching links:", error);
         if (isMounted) setIsLoadingLinks(false);
         return;
       }
@@ -340,8 +348,8 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     if (!warning) return null;
     const name = profile?.display_name || profile?.name || "This profile";
     const nameSearchUrl = profile?.name
-      ? `/directory?search=${encodeURIComponent(profile.name)}`
-      : "/directory";
+      ? `/?search=${encodeURIComponent(profile.name)}`
+      : "/";
     const hasLinks = totalLinks > 0;
     const hasAuthenticatedLinks = verifiedLinks > 0;
 
@@ -509,7 +517,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         verifiedCount={profile.verified_links_count ?? 0}
         featured={profile.featured}
         onClick={() => {
-          onSelect(profile.address);
+          onSelect(profile);
           requestAnimationFrame(() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
           );
@@ -654,7 +662,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                       }}
                       className="w-full text-left px-4 py-2 hover:bg-blue-50"
                     >
-                      ⭓ Hide Awards
+                      ⭔ Hide Awards
                     </button>
                   )}
 
@@ -663,7 +671,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                     onClick={() => {
                       setShowBack(true);
                       setMenuOpen(false);
-                      console.log("🪪 Dispatching enterSignInMode with:", profile.id, profile.address);
+                      console.log("ðŸªª Dispatching enterSignInMode with:", profile.id, profile.address);
 
                       window.dispatchEvent(
                         new CustomEvent("enterSignInMode", {
@@ -893,7 +901,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             </span>
             {/*
   <span className="whitespace-nowrap">
-    • Good thru{" "}
+    â€¢ Good thru{" "}
     {profile.verif_expires_at
       ? new Date(profile.verif_expires_at).toLocaleString("default", {
           month: "short",
@@ -915,7 +923,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 <span className="select-all" title={profile.address}>
                   {profile.address
                     ? `${profile.address.slice(0, 6)}...${profile.address.slice(-6)}`
-                    : "—"}
+                    : "â€”"}
                 </span>
 
                 {/* QR + Copy Buttons with animated label expansion */}
@@ -923,7 +931,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   {/* QR Button */}
                   <button
                     onClick={() => {
-                      console.log("QR BUTTON CLICKED — should trigger scroll + QR");
+                      console.log("QR BUTTON CLICKED ▣ should trigger scroll + QR");
                       if (typeof setSelectedAddress === "function") {
                         setSelectedAddress(profile.address);
                       }
@@ -956,7 +964,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               </div>
             </div>
           ) : (
-            <p className="mt-2 text-sm text-gray-500 italic">—</p>
+            <p className="mt-2 text-sm text-gray-500 italic">â€”</p>
           )}
 
 
@@ -988,7 +996,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                             className="flex items-center gap-2 shrink-0 hover:text-blue-600 transition-colors"
                           >
                             <img
-                              src={link.icon}
+                              src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
                               alt=""
                               className="w-4 h-4 rounded-sm opacity-80"
                             />
@@ -999,7 +1007,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                         ) : (
                           <>
                             <img
-                              src={link.icon}
+                              src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
                               alt=""
                               className="w-4 h-4 rounded-sm opacity-80"
                             />
@@ -1123,7 +1131,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               aria-label="Return to front"
               className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
             >
-              <span>↺</span> {/* ⮌ left arrow, opposite of ⮎ */}
+              <span>↺</span> {/* â®Œ left arrow, opposite of â®Ž */}
 
 
             </button>
@@ -1176,6 +1184,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     </VerifiedCardWrapper>
   );
 }
+
+
+
 
 
 

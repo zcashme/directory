@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { supabase } from "./supabase";
@@ -28,6 +30,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }) {
   
 
   if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
   const pname = profile?.name || "Profile";
   const paddr = profile?.address || "(unknown)";
@@ -281,3 +284,4 @@ const { data, error } = await supabase.rpc("confirm_otp_sql", {
     document.body
   );
 }
+

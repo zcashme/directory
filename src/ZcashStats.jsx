@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect, useMemo } from "react";
 import { supabase } from "./supabase";
 import {
@@ -13,13 +15,26 @@ import {
   CartesianGrid,
 } from "recharts";
 
-export default function ZcashStats() {
-  const [loadingBase, setLoadingBase] = useState(true);
-  const [loadingLeaderboard, setLoadingLeaderboard] = useState(true);
-  const [growthDaily, setGrowthDaily] = useState([]);
-  const [growthWeekly, setGrowthWeekly] = useState([]);
-  const [growthMonthly, setGrowthMonthly] = useState([]);
-  const [ranked, setRanked] = useState([]);
+export default function ZcashStats({
+  initialGrowthDaily = [],
+  initialGrowthWeekly = [],
+  initialGrowthMonthly = [],
+  initialRanked = [],
+}) {
+  const hasInitialBase =
+    initialGrowthDaily.length > 0 ||
+    initialGrowthWeekly.length > 0 ||
+    initialGrowthMonthly.length > 0;
+  const hasInitialLeaderboard = initialRanked.length > 0;
+
+  const [loadingBase, setLoadingBase] = useState(!hasInitialBase);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(
+    !hasInitialLeaderboard
+  );
+  const [growthDaily, setGrowthDaily] = useState(initialGrowthDaily);
+  const [growthWeekly, setGrowthWeekly] = useState(initialGrowthWeekly);
+  const [growthMonthly, setGrowthMonthly] = useState(initialGrowthMonthly);
+  const [ranked, setRanked] = useState(initialRanked);
 
   // initial defaults: Weekly tab, percent mode
   const [activeTab, setActiveTab] = useState("weekly");
@@ -150,7 +165,7 @@ const formatCell = (rowKey, colValues, colIndex = 0, allCols = []) => {
 
   useEffect(() => {
     async function loadBase() {
-      setLoadingBase(true);
+      if (!hasInitialBase) setLoadingBase(true);
       const [{ data: d }, { data: w }, { data: m }] =
         await Promise.all([
           supabase
@@ -172,11 +187,14 @@ const formatCell = (rowKey, colValues, colIndex = 0, allCols = []) => {
       setLoadingBase(false);
     }
     loadBase();
-  }, []);
+  }, [hasInitialBase]);
 
   useEffect(() => {
 async function loadLeaderboard() {
-  setLoadingLeaderboard(true);
+  const shouldShowLoading = !(
+    hasInitialLeaderboard && activeTab === "weekly" && leaderboardLimit === 10
+  );
+  if (shouldShowLoading) setLoadingLeaderboard(true);
   let view =
     activeTab === "daily"
       ? "referrer_ranked_daily"
@@ -206,7 +224,7 @@ async function loadLeaderboard() {
   setLoadingLeaderboard(false);
 }
     loadLeaderboard();
-  }, [activeTab, leaderboardLimit]);
+  }, [activeTab, leaderboardLimit, hasInitialLeaderboard]);
 
   const timeKey =
     activeTab === "daily"
@@ -797,3 +815,4 @@ const legendTotals = useMemo(() => {
   // after successful fetch of all three leaderboards:
 
 }
+

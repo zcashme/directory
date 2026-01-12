@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { FeedbackContext } from "./feedback-context";
 
@@ -73,3 +75,6 @@ export function FeedbackProvider({ children }) {
     </FeedbackContext.Provider>
   );
 }
+
+
+

@@ -1,5 +1,7 @@
+"use client";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 import AddUserForm from "./AddUserForm";
 import { useFeedback } from "./hooks/useFeedback";
@@ -63,7 +65,21 @@ const getSocialHandle = (url = "") => {
   return decodeURIComponent(last);
 };
 
+const isDiscordLink = (url = "") =>
+  /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(
+    url || ""
+  );
+
+const getSocialDisplay = (link) => {
+  if (!link) return "";
+  if (isDiscordLink(link.url) && link.is_verified && link.label) {
+    return link.label;
+  }
+  return getSocialHandle(link.url || "");
+};
+
 const getLastVerifiedLabel = (profile) => {
+  if (profile?.last_verified_label) return profile.last_verified_label;
   const ts = profile?.last_verified_at || profile?.last_verified;
   if (!ts) return "n/a";
   const ms = new Date(ts).getTime();
@@ -114,12 +130,12 @@ const getFilterButtonClass = (active, activeClass, hoverClass) => {
 
 const getTagLabel = (tag) => (tag.startsWith("NS v") ? "NS v" : tag);
 
-export default function DirectoryAlt() {
-  const navigate = useNavigate();
+export default function DirectoryAlt({ initialProfiles = null }) {
+  const router = useRouter();
   const { setSelectedAddress, setForceShowQR, forceShowQR } = useFeedback();
   const { memo, amount, setDraftMemo, setDraftAmount, selectedAddress, uri } =
     useFeedbackController();
-  const { profiles, loading, addProfile } = useProfiles();
+  const { profiles, loading, addProfile } = useProfiles(initialProfiles, true);
 
   const announcementConfig = {
     enabled: true,
@@ -141,6 +157,7 @@ export default function DirectoryAlt() {
   const [activeProfile, setActiveProfile] = useState(null);
   const [shareStatus, setShareStatus] = useState("");
   const [isCardView, setIsCardView] = useState(false);
+  const [unverifiedLink, setUnverifiedLink] = useState(null);
   const locationButtonRef = useRef(null);
   const locationDropdownRef = useRef(null);
   const tagButtonRef = useRef(null);
@@ -160,7 +177,7 @@ export default function DirectoryAlt() {
       faviconLink.rel = "icon";
       document.head.appendChild(faviconLink);
     }
-    faviconLink.href = znsFavicon;
+    faviconLink.href = znsFavicon?.src || znsFavicon;
     return () => {
       document.title = previousTitle;
       if (faviconLink && previousHref) {
@@ -436,8 +453,8 @@ export default function DirectoryAlt() {
       const map = {};
       (data || []).forEach((link) => {
         const icon = getLinkIcon(link.url);
-        const label = getLinkLabel(link.url);
-        const entry = { ...link, icon, label };
+        const domainLabel = getLinkLabel(link.url);
+        const entry = { ...link, icon, domainLabel };
         map[link.zcasher_id] = map[link.zcasher_id] || [];
         map[link.zcasher_id].push(entry);
       });
@@ -449,6 +466,10 @@ export default function DirectoryAlt() {
       isActive = false;
     };
   }, [profiles]);
+
+  const activeLinks = activeProfile
+    ? linksByProfileId[activeProfile?.id] || []
+    : [];
 
   const [flightPaths, setFlightPaths] = useState([]);
   const flightTimersRef = useRef([]);
@@ -544,8 +565,8 @@ export default function DirectoryAlt() {
       new CustomEvent("selectAddress", { detail: { address: profile.address } })
     );
     const slug = buildSlug(profile);
-    if (slug) navigate(`/${slug}`);
-  }, [navigate, setSelectedAddress]);
+    if (slug) router.push(`/${slug}`);
+  }, [router, setSelectedAddress]);
 
   const showAnnouncement = announcementConfig.enabled && !isBannerDismissed;
 
@@ -656,7 +677,7 @@ export default function DirectoryAlt() {
               <div className="flex min-w-0 items-center gap-3 overflow-hidden md:col-start-1 md:row-start-1">
                 <ProfileAvatar
                   profile={profile}
-                  size={36}
+                  size={72}
                   imageClassName="object-contain"
                   className="shadow-sm"
                   showFallbackIcon
@@ -705,10 +726,10 @@ export default function DirectoryAlt() {
                               </svg>
                             )}
                             {tag === "Core" && (
-                              <img src={coreIcon} alt="Core" className="h-4 w-auto" />
+                              <img src={coreIcon?.src || coreIcon} alt="Core" className="h-4 w-auto" />
                             )}
                             {tag === "Long-term" && (
-                              <img src={longTermIcon} alt="Long Term" className="h-4 w-auto" />
+                              <img src={longTermIcon?.src || longTermIcon} alt="Long Term" className="h-4 w-auto" />
                             )}
                           </span>
                         ))}
@@ -817,26 +838,72 @@ export default function DirectoryAlt() {
                 </div>
                 {links.length ? (
                   <div className="flex flex-wrap content-start gap-2 md:mt-1">
-                    {links.map((link) => (
-                      <a
-                        key={link.id || link.url}
-                        href={link.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(event) => event.stopPropagation()}
-                        className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
-                        title={getLinkLabel(link.url)}
-                      >
-                        <img
-                          src={link.icon}
-                          alt={link.label || ""}
-                          className="h-4 w-4"
-                        />
-                        <span className="max-w-[120px] truncate">
-                          {getSocialHandle(link.url)}
-                        </span>
-                      </a>
-                    ))}
+                    {links.map((link) => {
+                      const isDiscord = isDiscordLink(link.url);
+                      const isVerified = Boolean(link.is_verified);
+                      const displayHandle = getSocialDisplay(link);
+                      const title = link.domainLabel || getLinkLabel(link.url);
+
+                      if (!isVerified) {
+                        return (
+                          <button
+                            key={link.id || link.url}
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              setUnverifiedLink({
+                                url: link.url,
+                                label: link.label || "",
+                                display: getSocialHandle(link.url),
+                                isDiscord,
+                              });
+                            }}
+                            className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
+                            title={title}
+                          >
+                            <img
+                              src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                              alt={title}
+                              className="h-4 w-4"
+                            />
+                            <span className="max-w-[120px] truncate">
+                              {displayHandle}
+                            </span>
+                          </button>
+                        );
+                      }
+
+                      return (
+                        <a
+                          key={link.id || link.url}
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(event) => event.stopPropagation()}
+                          className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
+                          title={title}
+                        >
+                          <img
+                            src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                            alt={title}
+                            className="h-4 w-4"
+                          />
+                          <span className="flex max-w-[140px] items-end gap-1 truncate">
+                            <span className="truncate">{displayHandle}</span>
+                            <span className="-translate-y-[1px]" aria-label="Verified">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3.5 w-3.5 text-green-600 drop-shadow-sm"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path d="M7.5 13.2L4.8 10.5l-1.4 1.4 4.1 4.1 9.5-9.5-1.4-1.4z" />
+                              </svg>
+                            </span>
+                          </span>
+                        </a>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-xs text-gray-500">-</span>
@@ -862,6 +929,66 @@ export default function DirectoryAlt() {
 
   return (
     <div className="min-h-screen bg-[#f7f7f2] text-gray-900 overflow-x-hidden">
+      {unverifiedLink ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="w-full max-w-md border border-gray-900 bg-white p-4 text-gray-900 rounded-none">
+            <div className="text-xs font-bold uppercase tracking-wide text-gray-700">
+              Be Careful
+            </div>
+            <p className="mt-2 text-sm text-gray-700">
+              {unverifiedLink.isDiscord
+                ? "This username is not authenticated. It may not belong to the person you are expecting."
+                : "This link is not authenticated. It may not belong to the person you are expecting."}
+            </p>
+            {unverifiedLink.isDiscord ? (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="text-base font-black text-gray-900">
+                  {unverifiedLink.display || unverifiedLink.label || "unknown"}
+                </span>
+                <CopyButton
+                  text={unverifiedLink.display || unverifiedLink.label || ""}
+                  label="Copy"
+                  copiedLabel="Copied"
+                />
+              </div>
+            ) : (
+              <p className="mt-2 break-all text-[11px] text-gray-500">
+                {unverifiedLink.url}
+              </p>
+            )}
+            <div className="mt-4 flex items-center justify-end gap-2">
+              {unverifiedLink.isDiscord ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    window.open(
+                      unverifiedLink.url,
+                      "_blank",
+                      "noopener,noreferrer"
+                    );
+                    setUnverifiedLink(null);
+                  }}
+                  className="border border-gray-900 bg-gray-900 px-3 py-1 text-[10px] font-semibold text-white transition-transform duration-150 hover:scale-[1.04] rounded-none"
+                >
+                  Go To
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setUnverifiedLink(null)}
+                className="border border-gray-900 bg-white px-3 py-1 text-[10px] font-semibold transition-transform duration-150 hover:scale-[1.04] rounded-none"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {showAnnouncement && (
         <div className="fixed left-0 right-0 top-0 z-40 border-b border-gray-300 bg-[#f6b223] backdrop-blur">
           <div className="mx-auto w-full max-w-6xl px-5">
@@ -869,13 +996,14 @@ export default function DirectoryAlt() {
               <div className="flex h-full flex-wrap items-center justify-between gap-2 text-xs font-semibold uppercase tracking-wide">
                 <span>{announcementConfig.message}</span>
                 <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => window.alert("Coming Soon")}
+                  <a
+                    href="https://luma.com/f6h0hss9"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="border border-gray-900 bg-white px-3 py-1 text-[10px] font-semibold transition-transform duration-150 hover:scale-[1.04] rounded-none"
                   >
                     {announcementConfig.actionLabel}
-                  </button>
+                  </a>
                   <button
                     type="button"
                     onClick={() => setIsBannerDismissed(true)}
@@ -888,7 +1016,7 @@ export default function DirectoryAlt() {
             </div>
           </div>
         </div>
-      )}
+        )}
 
       <div
         className={`fixed left-0 right-0 z-30 border-b border-gray-300 bg-[#f7f7f2]/80 backdrop-blur ${showAnnouncement ? "top-10" : "top-0"
@@ -899,7 +1027,7 @@ export default function DirectoryAlt() {
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide sm:flex-nowrap">
               <div className="flex items-center gap-2">
                 <img
-                  src={znsFlag}
+                  src={znsFlag?.src || znsFlag}
                   alt="ZNS flag"
                   className="h-5 w-auto"
                 />
@@ -913,7 +1041,11 @@ export default function DirectoryAlt() {
                   id="directory-search"
                   value={search}
                   onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Search names, links, or locations"
+                  placeholder={
+                    loading || nsCount <= 1
+                      ? "Search"
+                      : `Search ${nsCount} names`
+                  }
                   className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none transition-transform duration-150 hover:scale-[1.01] rounded-none"
                 />
               </div>
@@ -992,7 +1124,11 @@ export default function DirectoryAlt() {
               id="directory-search-card"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search names, links, or locations"
+              placeholder={
+                loading || nsCount <= 1
+                  ? "Search"
+                  : `Search ${nsCount} names`
+              }
               className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none rounded-none"
             />
           </div>
@@ -1029,7 +1165,7 @@ export default function DirectoryAlt() {
               className={getFilterButtonClass(!anyFilterActive, "bg-blue-300", "hover:bg-blue-200")}
             >
               <span className={filterContentClass}>
-                <img src={allIcon} alt="All" className="h-4 w-auto" />
+                <img src={allIcon?.src || allIcon} alt="All" className="h-4 w-auto" />
                 All ({nsCount})
               </span>
             </button>
@@ -1067,7 +1203,7 @@ export default function DirectoryAlt() {
               className={getFilterButtonClass(filters.core, "bg-[#f6b223]", "hover:bg-[#f6b223]")}
             >
               <span className={filterContentClass}>
-                <img src={coreIcon} alt="Core" className="h-4 w-auto" />
+                <img src={coreIcon?.src || coreIcon} alt="Core" className="h-4 w-auto" />
                 Core ({coreCount})
               </span>
             </button>
@@ -1077,7 +1213,7 @@ export default function DirectoryAlt() {
               className={getFilterButtonClass(filters.longterm, "bg-[#16b364]", "hover:bg-[#16b364]")}
             >
               <span className={filterContentClass}>
-                <img src={longTermIcon} alt="Long-Term" className="h-4 w-auto" />
+                <img src={longTermIcon?.src || longTermIcon} alt="Long-Term" className="h-4 w-auto" />
                 Long-Term ({longtermCount})
               </span>
             </button>
@@ -1137,7 +1273,7 @@ export default function DirectoryAlt() {
             className="border border-gray-900 px-3 py-2 text-xs font-semibold uppercase transition-transform duration-150 hover:scale-[1.03] rounded-none sm:ml-auto"
           >
             <span className="flex w-full items-center justify-center gap-2 text-center">
-              <img src={discordFavicon} alt="Discord" className="h-4 w-auto" />
+              <img src={discordFavicon?.src || discordFavicon} alt="Discord" className="h-4 w-auto" />
               Join the Discord
             </span>
           </a>
@@ -1263,18 +1399,18 @@ export default function DirectoryAlt() {
               }}
               aria-label="Close"
             />
-            <div className="relative w-full max-w-2xl border border-gray-900 bg-white px-4 py-4 rounded-none directoryns-popup">
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex min-w-0 items-center gap-3 overflow-hidden">
-                  <ProfileAvatar
-                    profile={activeProfile}
-                    size={36}
-                    imageClassName="object-contain"
-                    className="shadow-sm"
-                    showFallbackIcon
-                  />
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-nowrap">
+            <div className="relative w-full max-w-2xl max-h-[85vh] overflow-y-auto border border-gray-900 bg-white px-4 py-4 rounded-none directoryns-popup">
+              <div className="flex items-start gap-3">
+                <ProfileAvatar
+                  profile={activeProfile}
+                  size={72}
+                  imageClassName="object-contain"
+                  className="shadow-sm"
+                  showFallbackIcon
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2 flex-nowrap min-w-0">
                       <div className="min-w-0 text-base font-black tracking-tight text-gray-900">
                         {activeProfile?.display_name || activeProfile?.name || "Unnamed"}
                       </div>
@@ -1317,65 +1453,135 @@ export default function DirectoryAlt() {
                                 </svg>
                               )}
                               {tag === "Core" && (
-                                <img src={coreIcon} alt="Core" className="h-4 w-auto" />
+                                <img src={coreIcon?.src || coreIcon} alt="Core" className="h-4 w-auto" />
                               )}
                               {tag === "Long-term" && (
-                                <img src={longTermIcon} alt="Long Term" className="h-4 w-auto" />
+                                <img src={longTermIcon?.src || longTermIcon} alt="Long Term" className="h-4 w-auto" />
                               )}
                             </span>
                           ))}
                         </div>
                       ) : null}
                     </div>
-                    <a
-                      href={`https://zcash.me/${normalizeSlug(activeProfile?.name || activeProfile?.display_name || "")}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
-                    >
-                      <span>Zcash.me/</span>
-                      <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
-                    </a>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const slug = normalizeSlug(
+                            activeProfile?.name || activeProfile?.display_name || ""
+                          );
+                          if (!slug) return;
+                          const shareUrl = `https://zcash.me/${slug}`;
+                          if (navigator.share) {
+                            navigator.share({
+                              title: activeProfile?.display_name || activeProfile?.name || "Zcash.me",
+                              url: shareUrl,
+                            });
+                            return;
+                          }
+                          navigator.clipboard.writeText(shareUrl);
+                          setShareStatus("Copied");
+                          setTimeout(() => setShareStatus(""), 1500);
+                        }}
+                        className="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
+                        disabled={
+                          !normalizeSlug(
+                            activeProfile?.name || activeProfile?.display_name || ""
+                          )
+                        }
+                      >
+                        {shareStatus || "Share"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveProfile(null);
+                        }}
+                        className="border border-gray-900 bg-gray-900 px-2 py-1 text-xs font-semibold uppercase text-white rounded-none"
+                      >
+                        Close
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const slug = normalizeSlug(
-                        activeProfile?.name || activeProfile?.display_name || ""
-                      );
-                      if (!slug) return;
-                      const shareUrl = `https://zcash.me/${slug}`;
-                      if (navigator.share) {
-                        navigator.share({
-                          title: activeProfile?.display_name || activeProfile?.name || "Zcash.me",
-                          url: shareUrl,
-                        });
-                        return;
-                      }
-                      navigator.clipboard.writeText(shareUrl);
-                      setShareStatus("Copied");
-                      setTimeout(() => setShareStatus(""), 1500);
-                    }}
-                    className="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
-                    disabled={
-                      !normalizeSlug(
-                        activeProfile?.name || activeProfile?.display_name || ""
-                      )
-                    }
+                  <a
+                    href={`https://zcash.me/${normalizeSlug(activeProfile?.name || activeProfile?.display_name || "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
                   >
-                    {shareStatus || "Share"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setActiveProfile(null);
-                    }}
-                    className="border border-gray-900 bg-gray-900 px-2 py-1 text-xs font-semibold uppercase text-white rounded-none"
-                  >
-                    Close
-                  </button>
+                    <span>Zcash.me/</span>
+                    <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
+                  </a>
+                  {activeLinks.length ? (
+                    <div className="mt-2 flex flex-wrap content-start gap-2">
+                      {activeLinks.map((link) => {
+                        const isDiscord = isDiscordLink(link.url);
+                        const isVerified = Boolean(link.is_verified);
+                        const displayHandle = getSocialDisplay(link);
+                        const title = link.domainLabel || getLinkLabel(link.url);
+
+                        if (!isVerified) {
+                          return (
+                            <button
+                              key={link.id || link.url}
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setUnverifiedLink({
+                                  url: link.url,
+                                  label: link.label || "",
+                                  display: getSocialHandle(link.url),
+                                  isDiscord,
+                                });
+                              }}
+                              className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
+                              title={title}
+                            >
+                              <img
+                                src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                                alt={title}
+                                className="h-4 w-4"
+                              />
+                              <span className="max-w-[120px] truncate">
+                                {displayHandle}
+                              </span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <a
+                            key={link.id || link.url}
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(event) => event.stopPropagation()}
+                            className="flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none"
+                            title={title}
+                          >
+                            <img
+                              src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                              alt={title}
+                              className="h-4 w-4"
+                            />
+                            <span className="flex max-w-[140px] items-end gap-1 truncate">
+                              <span className="truncate">{displayHandle}</span>
+                              <span className="-translate-y-[1px]" aria-label="Verified">
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  className="h-3.5 w-3.5 text-green-600 drop-shadow-sm"
+                                  viewBox="0 0 20 20"
+                                  fill="currentColor"
+                                >
+                                  <path d="M7.5 13.2L4.8 10.5l-1.4 1.4 4.1 4.1 9.5-9.5-1.4-1.4z" />
+                                </svg>
+                              </span>
+                            </span>
+                          </a>
+                        );
+                      })}
+                    </div>
+                  ) : null}
                 </div>
               </div>
 
@@ -1390,7 +1596,7 @@ export default function DirectoryAlt() {
                       title={activeProfile.address}
                     >
                       {activeProfile.address.length > 24
-                        ? `${activeProfile.address.slice(0, 8)}…${activeProfile.address.slice(-8)}`
+                        ? `${activeProfile.address.slice(0, 8)}...${activeProfile.address.slice(-8)}`
                         : activeProfile.address}
                     </span>
                     <InlineCopyButton text={activeProfile.address} />
@@ -1407,8 +1613,7 @@ export default function DirectoryAlt() {
                 <textarea
                   value={memo}
                   onChange={(event) => setDraftMemo(event.target.value)}
-                  placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"
-                    } here...`}
+                  placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"} here...`}
                   className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-none rounded-none"
                   rows={4}
                   onClick={(event) => event.stopPropagation()}
@@ -1439,6 +1644,8 @@ export default function DirectoryAlt() {
                   forceShowQR={forceShowQR}
                   defaultShowQR={false}
                   defaultShowURI={false}
+                  actionButtonClassName="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
+                  hideButtonClassName="bg-transparent px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
                 />
               </div>
             </div>
@@ -1464,70 +1671,6 @@ export default function DirectoryAlt() {
           Back to top
         </button>
       )}
-      <style>{`
-        @keyframes flightDash {
-          from { stroke-dashoffset: 1; }
-          to { stroke-dashoffset: 0; }
-        }
-        @keyframes flightFade {
-          0% { opacity: 0; }
-          20% { opacity: 0.9; }
-          80% { opacity: 0.9; }
-          100% { opacity: 0; }
-        }
-        .flight-path {
-          animation-name: flightDash, flightFade;
-          animation-timing-function: linear, ease-in-out;
-          animation-iteration-count: infinite, infinite;
-        }
-        .directoryns-amount .rounded-xl {
-          border-radius: 0 !important;
-        }
-        .directoryns-amount input,
-        .directoryns-amount button,
-        .directoryns-amount [class*="border-gray"] {
-          border-color: #111 !important;
-        }
-        .directoryns-amount input,
-        .directoryns-amount button {
-          background-color: #fff !important;
-          color: #111 !important;
-        }
-        .directoryns-amount [class*="text-gray"] {
-          color: #111 !important;
-        }
-        .directoryns-qr .rounded-xl {
-          border-radius: 0 !important;
-        }
-        .directoryns-qr button,
-        .directoryns-qr a {
-          color: #111 !important;
-        }
-        .directoryns-qr button,
-        .directoryns-qr [class*="border-gray"] {
-          border-color: #111 !important;
-        }
-        .directoryns-qr button {
-          background-color: #fff !important;
-        }
-        .directoryns-qr [class*="text-gray"],
-        .directoryns-qr [class*="text-blue"] {
-          color: #111 !important;
-        }
-        .directoryns-fieldset,
-        .directoryns-fieldset input,
-        .directoryns-fieldset textarea,
-        .directoryns-fieldset button,
-        .directoryns-fieldset a,
-        .directoryns-fieldset p {
-          font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
-            "Liberation Mono", "Courier New", monospace !important;
-        }
-        .directoryns-help [class*="text-gray"],
-        .directoryns-help [class*="text-blue"] {
-          color: #111 !important;
-        }
-      `}</style>
     </div>
   );
 }

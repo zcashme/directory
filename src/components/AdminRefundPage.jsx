@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState } from "react";
 import { supabase } from "../supabase";
 import { QRCodeSVG } from "qrcode.react"; // identical lib used in QrUriBlock
@@ -193,3 +195,4 @@ export default function AdminRefunds() {
     </div>
   );
 }
+

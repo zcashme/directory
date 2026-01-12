@@ -1,6 +1,6 @@
 ﻿import { useEffect, useState } from "react";
-export default function useDirectoryVisibility() {
-  const [showDirectory, setShowDirectory] = useState(true);
+export default function useDirectoryVisibility(initialShowDirectory = true) {
+  const [showDirectory, setShowDirectory] = useState(initialShowDirectory);
   const [showDirLabel, setShowDirLabel] = useState(true);
   useEffect(() => {
     const handleCloseDir = () => setShowDirectory(false);

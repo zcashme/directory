@@ -21,7 +21,8 @@ export default function ZcashFeedbackVerify() {
     useFeedbackController();
 
   const { selectedAddress, pendingEdits } = useFeedback();
-  const profile = cachedProfiles.find((p) => p.address === selectedAddress);
+  const safeProfiles = Array.isArray(cachedProfiles) ? cachedProfiles : [];
+  const profile = safeProfiles.find((p) => p.address === selectedAddress);
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [showFooterHelp, setShowFooterHelp] = useState(false);

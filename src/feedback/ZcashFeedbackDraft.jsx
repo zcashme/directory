@@ -55,8 +55,12 @@ export default function ZcashFeedbackDraft() {
   }, [memo]);
 
   const disabled = selectedAddress?.startsWith("t");
+  const safeProfiles = Array.isArray(cachedProfiles) ? cachedProfiles : [];
+  const recipientProfile = safeProfiles.find(
+    (p) => p.address === selectedAddress
+  );
   const recipientName =
-    cachedProfiles.find((p) => p.address === selectedAddress)?.name || "Recipient";
+    recipientProfile?.display_name || recipientProfile?.name || "Recipient";
 
 useEffect(() => {
   if (!forceShowQR) return;
@@ -225,7 +229,8 @@ useEffect(() => {
         <QrUriBlock
           uri={uri}
           profileName={
-            cachedProfiles.find((p) => p.address === selectedAddress)?.name ||
+            recipientProfile?.display_name ||
+            recipientProfile?.name ||
             "recipient"
           }
           forceShowQR={forceShowQR}

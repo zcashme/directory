@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+
 export default function ProfileAvatar({
     profile,
     size = 32, // pixels
@@ -5,6 +7,7 @@ export default function ProfileAvatar({
     className = "",
     showFallbackIcon = false,
     blink = false,
+    lookAround = false,
 }) {
     // --- derive state ---
     const isVerified =
@@ -45,6 +48,44 @@ export default function ProfileAvatar({
 
     const outerSize = size + 6;
 
+    const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+
+    useEffect(() => {
+        const shouldAnimate = lookAround && !profile.profile_image_url;
+        if (!shouldAnimate) {
+            setEyeOffset({ x: 0, y: 0 });
+            return;
+        }
+
+        const offsets = [
+            { x: -2, y: 0 },
+            { x: 0, y: 0 },
+            { x: 2, y: 0 },
+            { x: -2, y: -2 },
+            { x: 2, y: -2 },
+        ];
+        let timeoutId = null;
+
+        const schedule = () => {
+            const delay = 5000 + Math.floor(Math.random() * 4000);
+            timeoutId = setTimeout(() => {
+                setEyeOffset((prev) => {
+                    let next = prev;
+                    while (next.x === prev.x && next.y === prev.y && offsets.length > 1) {
+                        next = offsets[Math.floor(Math.random() * offsets.length)];
+                    }
+                    return next;
+                });
+                schedule();
+            }, delay);
+        };
+
+        schedule();
+        return () => {
+            if (timeoutId) clearTimeout(timeoutId);
+        };
+    }, [lookAround, profile.profile_image_url]);
+
     return (
         <>
             <style>{`
@@ -79,9 +120,11 @@ export default function ProfileAvatar({
                         />
                     ) : (
                         <svg viewBox="0 0 64 64" aria-hidden="true" className="w-full h-full">
-                            <g className={`avatar-eyes ${blink ? "avatar-blink" : ""}`}>
-                                <circle cx="24" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
-                                <circle cx="40" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                            <g transform={`translate(${eyeOffset.x} ${eyeOffset.y})`}>
+                                <g className={`avatar-eyes ${blink ? "avatar-blink" : ""}`}>
+                                    <circle cx="24" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                                    <circle cx="40" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                                </g>
                             </g>
                             <path
                                 d="M24 40c3 4 13 4 16 0"

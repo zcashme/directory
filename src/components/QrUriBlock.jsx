@@ -8,6 +8,8 @@ export default function QrUriBlock({
   forceShowURI,
   defaultShowQR = true,
   defaultShowURI = true,
+  actionButtonClassName,
+  hideButtonClassName,
 }) {
   const qrRef = useRef(null);
   const [showQR, setShowQR] = useState(defaultShowQR);
@@ -57,8 +59,10 @@ export default function QrUriBlock({
   if (!uri) return null;
 
   const actionButtonClasses =
+    actionButtonClassName ||
     "flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap";
   const hideButtonClasses =
+    hideButtonClassName ||
     "flex items-center gap-1 px-3 pl-0 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
 
   return (

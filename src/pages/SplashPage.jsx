@@ -1,4 +1,6 @@
-import { useNavigate } from "react-router-dom";
+"use client";
+
+import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
 import useProfiles from "../hooks/useProfiles";
 import ProfileAvatar from "../components/ProfileAvatar";
@@ -10,7 +12,7 @@ import zcashMeLogo from "../assets/icons/zcashme-header-left-bw.svg";
 
 
 const FlippingBadge = ({ initialLabel, initialVerified, pool, className, delay = 0 }) => {
-    const navigate = useNavigate();
+    const router = useRouter();
     const [isFront, setIsFront] = useState(true);
     const [frontData, setFrontData] = useState({ label: initialLabel || "zcash.me", verified: initialVerified });
     const [backData, setBackData] = useState({ label: "zcash.me", verified: false });
@@ -80,7 +82,7 @@ const FlippingBadge = ({ initialLabel, initialVerified, pool, className, delay =
             className={`absolute perspective-1000 animate-float transition-all duration-700 ${className}`}
         >
             <div
-                onClick={() => navigate("/" + name)}
+                onClick={() => router.push("/" + name)}
                 className={`relative transition-transform duration-1000 transform-style-3d cursor-pointer hover:scale-105 ${isFront ? "" : "rotate-x-180"
                     }`}
                 onTransitionEnd={(e) => {
@@ -192,7 +194,7 @@ const FeaturedCard = ({ profile, showAvatarInside = true }) => {
 };
 
 const FlippingAvatar = ({ initialProfile, pool, delay = 0, className }) => {
-    const navigate = useNavigate();
+    const router = useRouter();
 
     const [isFront, setIsFront] = useState(true);
     const [frontProfile, setFrontProfile] = useState(initialProfile);
@@ -243,7 +245,7 @@ const FlippingAvatar = ({ initialProfile, pool, delay = 0, className }) => {
             className={`perspective-1000 transition-all duration-1000 ease-out transform scale-100 opacity-100 ${className}`}
             onClick={(e) => {
                 e.preventDefault();
-                if (activeProfile) navigate("/" + activeProfile.name);
+                if (activeProfile) router.push("/" + activeProfile.name);
             }}
         >
             <div
@@ -291,9 +293,9 @@ const FlippingAvatar = ({ initialProfile, pool, delay = 0, className }) => {
 };
 
 
-export default function SplashPage() {
-    const navigate = useNavigate();
-    const { profiles } = useProfiles();
+export default function SplashPage({ initialProfiles = null }) {
+    const router = useRouter();
+    const { profiles } = useProfiles(initialProfiles, true);
     const [search, setSearch] = useState("");
     const [openFaqIndex, setOpenFaqIndex] = useState(0);
     const [featuredProfiles, setFeaturedProfiles] = useState([]);
@@ -307,6 +309,7 @@ export default function SplashPage() {
     const heroSearchRef = useRef(null);
     const [isSearchSticky, setIsSearchSticky] = useState(false);
     const getItemsPerPage = () => {
+        if (typeof window === "undefined") return 2;
         const width = window.innerWidth;
         if (width >= 1280) return 6;
         if (width >= 1024) return 5;
@@ -705,9 +708,9 @@ export default function SplashPage() {
     const handleSearch = (e) => {
         e.preventDefault();
         if (search.trim()) {
-            navigate("/directory", { state: { initialSearch: search } });
+            router.push(`/?search=${encodeURIComponent(search)}`);
         } else {
-            navigate("/directory");
+            router.push("/");
         }
     };
 
@@ -788,7 +791,7 @@ export default function SplashPage() {
                             {/* Claim Row */}
                             {showClaimRow && (
                                 <div
-                                    onClick={() => navigate("/directory", { state: { initialSearch: q, autoOpenAdd: true } })}
+                                    onClick={() => router.push(`/?search=${encodeURIComponent(q)}&autoOpenAdd=1`)}
                                     className="group/item px-6 py-4 flex items-center justify-between hover:bg-pink-50/50 cursor-pointer transition-colors border-b-2 border-pink-100"
                                 >
                                     <div className="flex items-center gap-4">
@@ -812,7 +815,7 @@ export default function SplashPage() {
                                 <div
                                     key={p.id}
                                     onClick={() => {
-                                        navigate("/" + (p.name || p.id));
+                                        router.push("/" + (p.name || p.id));
                                         setShowDropdown(false);
                                     }}
                                     className="group/item px-6 py-4 flex items-center justify-between hover:bg-gray-50/80 cursor-pointer transition-colors"
@@ -965,7 +968,7 @@ export default function SplashPage() {
                             {/* Center Hero - FIXED (NON-RANDOM), appears FIRST */}
                             <div
                                 className="relative z-10 cursor-pointer hover:scale-110 transition-transform"
-                                onClick={() => heroProfile && navigate(`/${heroProfile.name}`)}
+                                onClick={() => heroProfile && router.push(`/${heroProfile.name}`)}
                             >
                                 <div className="rounded-full shadow-xl border-2 border-white bg-white/90 p-1 flex items-center justify-center overflow-hidden" style={{ width: 96 + 8, height: 96 + 8 }}>
                                     {heroProfile ? (
@@ -1071,7 +1074,7 @@ export default function SplashPage() {
                                     <div key={`featured-${p.id}-${i}`} data-card data-clone={isClone ? true : undefined} className="flex-none w-1/2 md:w-1/4 lg:w-1/5 xl:w-1/6 snap-start relative overflow-visible">
                                         {/* External avatar placed on wrapper so it visually straddles the card top like the hero avatar */}
                                         <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999]">
-                                            <div onClick={() => navigate(`/${p.name}`)} className="rounded-full shadow-xl border-2 border-white bg-white/90 p-1 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform overflow-hidden" style={{ width: 64 + 8, height: 64 + 8 }}>
+                                            <div onClick={() => router.push(`/${p.name}`)} className="rounded-full shadow-xl border-2 border-white bg-white/90 p-1 flex items-center justify-center cursor-pointer hover:scale-110 transition-transform overflow-hidden" style={{ width: 64 + 8, height: 64 + 8 }}>
                                                 <ProfileAvatar profile={p} size={64} className="rounded-full" />
                                             </div>
                                         </div>
@@ -1313,5 +1316,9 @@ export default function SplashPage() {
         </div>
     );
 }
+
+
+
+
 
 

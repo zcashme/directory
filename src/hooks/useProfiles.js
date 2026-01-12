@@ -4,15 +4,22 @@ import { supabase } from "../supabase";
 
 let cachedProfiles = null; // memory cache across reloads
 
-export default function useProfiles() {
-  const [profiles, setProfiles] = useState(cachedProfiles || []);
-  const [loading, setLoading] = useState(!cachedProfiles);
+export default function useProfiles(initialProfiles = null, revalidate = true) {
+  const hasInitial = initialProfiles !== null;
+
+  if (!cachedProfiles && Array.isArray(initialProfiles)) {
+    cachedProfiles = initialProfiles;
+  }
+
+  const [profiles, setProfiles] = useState(cachedProfiles || initialProfiles || []);
+  const [loading, setLoading] = useState(!cachedProfiles && !hasInitial);
 
   useEffect(() => {
     let active = true;
 
     async function fetchAllProfiles() {
-      setLoading(true);
+      if (!revalidate) return;
+      if (!hasInitial) setLoading(true);
 
       try {
         const [{ data: lbAll }, { data: lbWeek }, { data: lbMonth }] = await Promise.all([
@@ -33,7 +40,6 @@ export default function useProfiles() {
             .limit(10),
         ]);
 
-
         const toKey = (v) => String(v);
 
         const rankAll = new Map(
@@ -45,7 +51,6 @@ export default function useProfiles() {
         const rankMonth = new Map(
           (lbMonth || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_monthly])
         );
-
 
         const pageSize = 1000;
         let from = 0;
@@ -60,14 +65,14 @@ export default function useProfiles() {
             .range(from, from + pageSize - 1);
 
           if (error) {
-            console.error("❌ Error loading profiles:", error);
+            console.error("Error loading profiles:", error);
             break;
           }
 
           all = all.concat(data || []);
           total = count || total;
 
-          console.log(`📦 fetched ${data?.length || 0} (total so far: ${all.length}/${total})`);
+          console.log(`Fetched ${data?.length || 0} (total so far: ${all.length}/${total})`);
 
           if (!data?.length || all.length >= total) break;
           from += pageSize;
@@ -105,7 +110,7 @@ export default function useProfiles() {
 
         const test = enriched.find((p) => p.name === "Zechariah");
         if (test) {
-          console.log("🧩 Debug Zechariah:", {
+          console.log("Debug Zechariah:", {
             id: test.id,
             rank_alltime: test.rank_alltime,
             rank_weekly: test.rank_weekly,
@@ -113,13 +118,13 @@ export default function useProfiles() {
           });
         }
 
-        if (import.meta.env.DEV && enriched.length === 0) {
+        if (process.env.NODE_ENV === "development" && enriched.length === 0) {
           enriched = [
             {
               id: 999001,
               name: "Local Test",
               slug: "local_test",
-              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
               address_verified: true,
               verified_links_count: 0,
               links: [],
@@ -130,25 +135,25 @@ export default function useProfiles() {
               rank_monthly: 0,
             },
           ];
-          console.warn("⚠️ Supabase unavailable — using offline demo profile");
+          console.warn("Supabase unavailable - using offline demo profile");
         }
 
         if (active) {
           cachedProfiles = enriched;
           if (typeof window !== "undefined") window.cachedProfiles = enriched;
           setProfiles(enriched);
-          setLoading(false);
-          console.log(`✅ Loaded ${enriched.length} profiles`);
+          if (!hasInitial) setLoading(false);
+          console.log(`Loaded ${enriched.length} profiles`);
         }
       } catch (err) {
-        console.error("❌ Profiles fetch failed:", err);
-        if (import.meta.env.DEV && active) {
+        console.error("Profiles fetch failed:", err);
+        if (process.env.NODE_ENV === "development" && active) {
           const fallback = [
             {
               id: 999001,
               name: "Local Test",
               slug: "local_test",
-              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
+              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
               address_verified: true,
               verified_links_count: 0,
               links: [],
@@ -162,8 +167,8 @@ export default function useProfiles() {
           cachedProfiles = fallback;
           if (typeof window !== "undefined") window.cachedProfiles = fallback;
           setProfiles(fallback);
-          setLoading(false);
-          console.warn("⚠️ Using offline demo profile due to fetch error");
+          if (!hasInitial) setLoading(false);
+          console.warn("Using offline demo profile due to fetch error");
         }
       }
     }
@@ -173,8 +178,7 @@ export default function useProfiles() {
     return () => {
       active = false;
     };
-  }, []);
-
+  }, [hasInitial, revalidate]);
 
   const addProfile = (newProfile) => {
     // Enrich with defaults if missing
@@ -200,7 +204,6 @@ export default function useProfiles() {
 
   return { profiles, loading, addProfile };
 }
-
 
 export const resetCache = () => {
   cachedProfiles = null;

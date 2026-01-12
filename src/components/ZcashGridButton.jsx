@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import directoryIcon from '../assets/icons/minimalist/directory.svg';
 import forumIcon from '../assets/icons/minimalist/forum.svg';
@@ -6,7 +8,7 @@ import viewkeyIcon from '../assets/icons/minimalist/viewkey.svg';
 import newsIcon from '../assets/icons/minimalist/news.svg';
 
 const apps = [
-  { name: 'Directory', icon: directoryIcon},
+  { name: 'Directory', icon: directoryIcon, url: '/' },
   { name: 'Forum', icon: forumIcon, url: 'https://forum.zcash.me/' },
   { name: 'Maps', icon: mapsIcon, url: 'https://maps.zcash.me/' }, 
   { name: 'Viewkey', icon: viewkeyIcon, url: 'https://view.zcash.me/' },

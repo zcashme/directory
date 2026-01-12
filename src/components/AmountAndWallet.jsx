@@ -1,3 +1,5 @@
+"use client";
+
 // New reusable AmountAndWallet component matching Draft styling
 import React, { useEffect, useState } from "react";
 
@@ -103,26 +105,6 @@ const FIAT_NAMES = {
   SAR: "Saudi Riyal"
 };
 
-const getRateProviders = (fiat) => {
-  const fiatLower = fiat.toLowerCase();
-  return [
-    {
-      name: "Coinbase",
-      url: `https://api.coinbase.com/v2/prices/ZEC-${fiat}/spot`,
-      parse: (data) => parseFloat(data?.data?.amount)
-    },
-    {
-      name: "CoinGecko",
-      url: `https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=${fiatLower}`,
-      parse: (data) => parseFloat(data?.zcash?.[fiatLower])
-    },
-    {
-      name: "CryptoCompare",
-      url: `https://min-api.cryptocompare.com/data/price?fsym=ZEC&tsyms=${fiat}`,
-      parse: (data) => parseFloat(data?.[fiat])
-    }
-  ];
-};
 
 const formatUsd = (value) => {
   const num = parseFloat(value);
@@ -150,10 +132,9 @@ export default function AmountAndWallet({
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [fiat, setFiat] = useState("USD");
   const [rate, setRate] = useState(1);
-  const [rateSource, setRateSource] = useState("Coinbase");
+  const [rateSource, setRateSource] = useState("API");
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
-  const [providerIndex, setProviderIndex] = useState(0);
   const [usdInput, setUsdInput] = useState("");
   const fiatSymbol = FIAT_SYMBOLS[fiat] || "$";
   const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
@@ -164,18 +145,15 @@ export default function AmountAndWallet({
   const overlayHalf = "1.125rem";
   const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
 
-  const fetchRate = async (index, nextFiat) => {
-    const providers = getRateProviders(nextFiat);
-    const provider = providers[index];
-    if (!provider) return false;
+  const fetchRate = async (nextFiat) => {
     try {
-      const response = await fetch(provider.url);
+      const response = await fetch(`/api/rates?fiat=${nextFiat}`);
       if (!response.ok) return false;
       const data = await response.json();
-      const price = provider.parse(data);
+      const price = Number(data?.rate);
       if (Number.isFinite(price) && price > 0) {
         setRate(price);
-        setRateSource(provider.name);
+        setRateSource(data?.source || "API");
         setRateFetched(true);
         return true;
       }
@@ -189,13 +167,10 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      const nextIndex = (providerIndex + 1) % getRateProviders(fiat).length;
-      fetchRate(nextIndex, fiat).finally(() => {
-        setProviderIndex(nextIndex);
-      });
+      fetchRate(fiat);
     }, 60000);
     return () => clearInterval(id);
-  }, [rateRequested, providerIndex, fiat]);
+  }, [rateRequested, fiat]);
 
   useEffect(() => {
     if (!rateFetched || !isUsdOpen) return;
@@ -212,13 +187,13 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     setRateFetched(false);
     setUsdInput("");
-    fetchRate(providerIndex, fiat);
+    fetchRate(fiat);
   }, [fiat, rateRequested]);
 
   const handleToggleUsd = () => {
     if (!rateRequested) {
       setRateRequested(true);
-      fetchRate(providerIndex, fiat);
+      fetchRate(fiat);
     }
     setIsUsdOpen((prev) => !prev);
   };
@@ -425,3 +400,4 @@ export default function AmountAndWallet({
     </div>
   );
 }
+

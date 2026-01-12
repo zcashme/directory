@@ -1,3 +1,5 @@
+"use client";
+
 import ZcashAddressInput from "./components/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
@@ -9,7 +11,6 @@ import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "./components/VerifiedBadge";
 import ProfileSearchDropdown from "./components/ProfileSearchDropdown";
 import CitySearchDropdown from "./components/CitySearchDropdown"; // add with the imports if missing
-import { useNavigate } from "react-router-dom";
 
 function XIcon(props) {
   return (
@@ -48,7 +49,6 @@ const slide = {
   exit: (dir) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18 } }),
 };
 export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
-  const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
@@ -229,6 +229,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
   // ✅ Guard AFTER all hooks, before rendering
   if (!isOpen) return null;
+  if (typeof document === "undefined") return null;
 
 
   // ---------- Links helpers ----------

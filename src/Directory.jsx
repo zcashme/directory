@@ -1,5 +1,7 @@
+"use client";
+
 import { useMemo, useRef, useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import AddUserForm from "./AddUserForm";
 import ZcashFeedback from "./ZcashFeedback";
@@ -22,53 +24,68 @@ import useDirectoryVisibility from "./hooks/useDirectoryVisibility";
 import computeGoodThru from "./utils/computeGoodThru";
 import { useFeedback } from "./hooks/useFeedback";
 
-import bookOpen from "./assets/book-open.svg";
-import bookClosed from "./assets/book-closed.svg";
 
-export default function Directory() {
-  const navigate = useNavigate();
+export default function Directory({
+  initialProfiles = null,
+  initialSelectedAddress = null,
+  initialShowDirectory = true,
+  initialStats = null,
+}) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const { setSelectedAddress, selectedAddress } = useFeedback();
+  const effectiveSelectedAddress = selectedAddress ?? initialSelectedAddress;
 
-  const { profiles, loading, addProfile } = useProfiles();
-  const { showDirectory, setShowDirectory } = useDirectoryVisibility();
+  useEffect(() => {
+    if (!selectedAddress && initialSelectedAddress) {
+      setSelectedAddress(initialSelectedAddress);
+    }
+  }, [initialSelectedAddress, selectedAddress, setSelectedAddress]);
+
+  const { profiles, loading, addProfile } = useProfiles(initialProfiles, true);
+  const { showDirectory, setShowDirectory } = useDirectoryVisibility(
+    initialShowDirectory
+  );
   const showAlpha = useAlphaVisibility(showDirectory);
   // const { toastMsg, showToast, closeToast } = useToastMessage();
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const location = useLocation();
-  const [search, setSearch] = useState(() => {
-    const params = new URLSearchParams(location.search);
-    const querySearch = params.get("search");
-    if (querySearch) return querySearch;
-    if (location.state?.initialSearch) return location.state.initialSearch;
-    return "";
-  });
+  const [search, setSearch] = useState(() => searchParams.get("search") || "");
   const [suppressDropdown, setSuppressDropdown] = useState(() => {
     if (typeof window === "undefined") return false;
     return sessionStorage.getItem("suppressSearchDropdown") === "1";
   });
 
-  // Update search if location state changes (e.g. navigation from Splash Page)
+  // Update search if query params change (e.g. navigation from Splash Page)
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const querySearch = params.get("search");
+    const querySearch = searchParams.get("search");
+    const autoOpenAdd = searchParams.get("autoOpenAdd");
+    const shouldClearParams = querySearch !== null || autoOpenAdd !== null;
+
     if (querySearch !== null) {
       setSearch(querySearch);
-      setFilters({ verified: false, referred: false, ranked: false, featured: false });
+      setFilters({
+        verified: false,
+        referred: false,
+        ranked: false,
+        featured: false,
+      });
       if (typeof window !== "undefined") {
         sessionStorage.removeItem("suppressSearchDropdown");
       }
       setSuppressDropdown(true);
-      window.history.replaceState({}, document.title);
-      return;
     }
-    if (location.state?.initialSearch) {
-      setSearch(location.state.initialSearch);
-      // clear state so it doesn't persist on refresh if we don't want it to
-      window.history.replaceState({}, document.title);
+
+    if (autoOpenAdd === "1") {
+      setIsJoinOpen(true);
     }
-  }, [location.search, location.state]);
+
+    if (shouldClearParams) {
+      router.replace(pathname, { scroll: false });
+    }
+  }, [searchParams, pathname, router]);
 
   const [activeLetter, setActiveLetter] = useState(null);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
@@ -86,7 +103,7 @@ export default function Directory() {
 
   useProfileRouting(
     profiles,
-    selectedAddress,
+    effectiveSelectedAddress,
     setSelectedAddress,
     showDirectory,
     setShowDirectory
@@ -178,7 +195,7 @@ export default function Directory() {
 
   const selectedProfile = useMemo(() => {
     const match = processedProfiles.find(
-      (p) => p.address === selectedAddress
+      (p) => p.address === effectiveSelectedAddress
     );
     if (!match) return null;
     const joinedAt = match.joined_at || match.created_at || match.since || null;
@@ -193,7 +210,7 @@ export default function Directory() {
       setSelectedAddress(selectedProfile.address);
 
       // 🪪 Dev-only log to confirm the sync link
-      if (import.meta.env.DEV) {
+      if (process.env.NODE_ENV === "development") {
         console.log(
           `🪪 Feedback linked to ${selectedProfile.name || "(unknown)"} (zId: ${selectedProfile.id
           })`
@@ -306,6 +323,22 @@ export default function Directory() {
 
   const anyFilterActive = Object.values(filters).some(Boolean);
 
+  const normalizeSlug = (value = "") =>
+    value
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_-]/g, "");
+
+  const buildSlug = (profile) => {
+    if (!profile?.name) return "";
+    const base = normalizeSlug(profile.name);
+    if (!base) return "";
+    if (profile.slug) return profile.slug;
+    return profile.address_verified ? base : `${base}-${profile.id}`;
+  };
+
   if (loading)
     return (
       <LoadingDots
@@ -400,7 +433,7 @@ export default function Directory() {
 
                 {/* Feedback */}
                 <button
-                  onClick={() => navigate("/Zechariah")}
+                  onClick={() => router.push("/Zechariah")}
                   className="px-2 py-0.5 rounded-full border text-xs font-medium transition-all
              bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
                 >
@@ -411,7 +444,14 @@ export default function Directory() {
           </div>
         )}
 
-        {showStats && showDirectory && <ZcashStats />}
+        {showStats && showDirectory && (
+          <ZcashStats
+            initialGrowthDaily={initialStats?.growthDaily}
+            initialGrowthWeekly={initialStats?.growthWeekly}
+            initialGrowthMonthly={initialStats?.growthMonthly}
+            initialRanked={initialStats?.ranked}
+          />
+        )}
 
         {/* Header */}
         <div
@@ -422,17 +462,7 @@ export default function Directory() {
             <button
               onClick={(e) => {
                 e.preventDefault();
-                // mimic "Expand Directory" button behavior
-                if (showDirectory) {
-                  localStorage.setItem("lastScrollY", window.scrollY);
-                  setShowDirectory(false);
-                } else {
-                  setShowDirectory(true);
-                  setTimeout(() => {
-                    const lastY = parseFloat(localStorage.getItem("lastScrollY")) || 0;
-                    window.scrollTo({ top: lastY, behavior: "instant" });
-                  }, 100);
-                }
+                router.push("/");
               }}
               className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
             >
@@ -456,7 +486,11 @@ export default function Directory() {
                   }
                 }}
 
-                placeholder={`search ${profiles.length} names`}
+                placeholder={
+                  loading || profiles.length <= 1
+                    ? "search"
+                    : `search ${profiles.length} names`
+                }
                 className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
               />
 
@@ -548,19 +582,7 @@ export default function Directory() {
           >
             ＋ Join
           </button>
-
-          <style>{`
-  @keyframes joinPulse {
-    0%, 100% { transform: scale(.9); box-shadow: 0 0 0 0 rgba(34,197,94, 0.6); }
-    50% { transform: scale(1.0); box-shadow: 0 0 0 8px rgba(34,197,94, 0); }
-  }
-  .animate-joinPulse {
-    animation: joinPulse 5.5s ease-in-out infinite;
-  }
-`}</style>
-
-
-        </div>
+</div>
 
         {/* Directory List */}
         {showDirectory && (
@@ -647,19 +669,19 @@ export default function Directory() {
                         key={p.id ?? p.address}
                         profile={p}
                         data-address={p.address}
-                        onSelect={(addr) => {
+                        onSelect={(profile) => {
 
                           // mark that the user intentionally selected a specific profile
                           window.lastSelectionWasExplicit = true;
 
                           // Save the scroll position and selected address
                           localStorage.setItem("lastScrollY", window.scrollY.toString());
-                          localStorage.setItem("lastSelectedAddress", addr);
+                          localStorage.setItem("lastSelectedAddress", profile.address);
 
-                          setSelectedAddress(addr);
+                          setSelectedAddress(profile.address);
 
                           window.dispatchEvent(
-                            new CustomEvent("selectAddress", { detail: { address: addr } })
+                            new CustomEvent("selectAddress", { detail: { address: profile.address } })
                           );
 
                           setShowDirectory(false);
@@ -668,6 +690,9 @@ export default function Directory() {
 
                             window.scrollTo({ top: 0, behavior: "smooth" });
                           });
+
+                          const slug = buildSlug(profile);
+                          if (slug) router.push(`/${slug}`);
                         }}
 
 
@@ -737,84 +762,10 @@ export default function Directory() {
         <div id="zcash-feedback">
           <ZcashFeedback />
         </div>
-
-        <div className="fixed bottom-6 left-6 z-[9999] flex items-center gap-2">
-          <div className="relative">
-            <button
-              onClick={() => {
-                if (showDirectory) {
-                  localStorage.setItem("lastScrollY", window.scrollY);
-                  setShowDirectory(false);
-                } else {
-                  setShowDirectory(true);
-                  setTimeout(() => {
-                    const lastAddr = localStorage.getItem("lastSelectedAddress");
-                    if (lastAddr) {
-                      const el = document.querySelector(`[data-address="${lastAddr}"]`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "instant", block: "center" });
-                        return;
-                      }
-                    }
-                    const lastY = parseFloat(localStorage.getItem("lastScrollY")) || 0;
-                    window.scrollTo({ top: lastY, behavior: "instant" });
-                  }, 100);
-                }
-              }}
-              className={`relative text-white p-3 rounded-full shadow-lg transition-transform hover:scale-110 ${showDirectory
-                ? "bg-yellow-600 hover:bg-yellow-700"
-                : "bg-gray-600 hover:bg-gray-700"
-                }`}
-              title={showDirectory ? "Collapse Directory" : "Expand Directory"}
-            >
-              <img
-                src={showDirectory ? bookOpen : bookClosed}
-                alt="Toggle Directory"
-                className="w-6 h-6"
-              />
-            </button>
-          </div>
-
-          {/* 🩶 Show toast-like prompt when viewing a profile */}
-          {!showDirectory && (
-            <div
-              onClick={() => setShowDirectory(true)}
-              className="cursor-pointer bg-gray-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-md hover:bg-gray-700 transition-all animate-toastSlideLeft"
-            >
-              Reopen Directory
-            </div>
-          )}
-        </div>
-
-        <style>{`
-  /* Unified toast animation — slide in from left, pause, fade & slide out left */
-  @keyframes toastSlideLeft {
-    0% { opacity: 0; transform: translateX(-40px); }
-    10% { opacity: 1; transform: translateX(0); }
-    80% { opacity: 1; transform: translateX(0); }
-    100% { opacity: 0; transform: translateX(-40px); }
-  }
-
-  .animate-toastSlideLeft {
-    animation: toastSlideLeft 5s ease-in-out forwards;
-  }
-     /* mirror animation for right side toast */
-  @keyframes toastSlideRight {
-    0% { opacity: 0; transform: translateX(40px); }
-    10% { opacity: 1; transform: translateX(0); }
-    80% { opacity: 1; transform: translateX(0); }
-    100% { opacity: 0; transform: translateX(40px); }
-  }
-
-  .animate-toastSlideRight {
-    animation: toastSlideRight 5s ease-in-out forwards;
-  }
-`}</style>
       </div>
-
-
-
     </>
   );
 }
+
+
 

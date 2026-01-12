@@ -4,6 +4,7 @@ export default function VerifiedBadge({
   verified = true,
   verifiedLabel = "Verified",
   unverifiedLabel = "Unverified",
+  onClick,
 }) {
   // Start collapsed by default
   const [open, setOpen] = useState(false);
@@ -38,6 +39,14 @@ export default function VerifiedBadge({
 
   const baseClasses =
     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide select-none whitespace-nowrap align-middle";
+  const isClickable = typeof onClick === "function";
+  const handleKeyDown = (event) => {
+    if (!isClickable) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onClick(event);
+    }
+  };
 
   const renderCheckmark = (color) => (
     <span className="relative flex items-center">
@@ -80,8 +89,13 @@ export default function VerifiedBadge({
           e.stopPropagation();
           if (isTouchDevice) setOpen(true);
         }}
+        onClick={isClickable ? onClick : undefined}
+        onKeyDown={isClickable ? handleKeyDown : undefined}
+        role={isClickable ? "button" : undefined}
+        tabIndex={isClickable ? 0 : undefined}
+        aria-label={verifiedLabel}
         className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-        text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+        text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem] ${isClickable ? "cursor-pointer" : ""}`}
         style={{ fontFamily: "inherit" }}
       >
         <div className="flex items-center justify-center gap-0 group-hover/badge:gap-1 transition-[gap] duration-300">
@@ -115,8 +129,13 @@ export default function VerifiedBadge({
         e.stopPropagation();
         if (isTouchDevice) setOpen(true);
       }}
+      onClick={isClickable ? onClick : undefined}
+      onKeyDown={isClickable ? handleKeyDown : undefined}
+      role={isClickable ? "button" : undefined}
+      tabIndex={isClickable ? 0 : undefined}
+      aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-gray-600 bg-gray-100 border-gray-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+      text-gray-600 bg-gray-100 border-gray-300 shadow-sm px-[0.2rem] hover:px-[0.5rem] py-[0.1rem] ${isClickable ? "cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
       <div className="flex items-center justify-center gap-0 group-hover/badge:gap-1 transition-[gap] duration-300">

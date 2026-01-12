@@ -2,8 +2,9 @@
 export default {
   darkMode: 'class', // important: enable class-based dark mode
   content: [
-    "./index.html",
+    "./app/**/*.{js,jsx,ts,tsx}",
     "./src/**/*.{js,jsx,ts,tsx}",
+    "./components/**/*.{js,jsx,ts,tsx}",
   ],
   theme: {
     extend: {},
