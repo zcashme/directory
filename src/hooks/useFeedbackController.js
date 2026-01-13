@@ -41,7 +41,7 @@ export default function useFeedbackController() {
 
   const uri = useMemo(() => {
     const { memo, amount } = draft;
-    const finalAmount = amount && amount !== "0" ? amount : "0.0005";
+    const finalAmount = amount && amount !== "0" ? amount : "0";
     return buildZcashUri(selectedAddress, finalAmount, memo);
   }, [selectedAddress, draft]);
 
