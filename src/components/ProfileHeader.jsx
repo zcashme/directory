@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "./ProfileSearchDropdown";
 import useProfiles from "../hooks/useProfiles";
 import { useFeedback } from "../hooks/useFeedback";
+import AddUserForm from "../AddUserForm";
 
 const normalizeSlug = (value = "") =>
   value
@@ -24,12 +25,16 @@ const buildSlug = (profile) => {
 
 export default function ProfileHeader() {
   const router = useRouter();
-  const { setSelectedAddress } = useFeedback();
+  const { setSelectedAddress, selectedAddress } = useFeedback();
   const { profiles, loading } = useProfiles(null, true);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
+  const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const selectedProfile = profiles.find(
+    (profile) => profile.address === selectedAddress
+  );
 
   return (
     <div
@@ -64,7 +69,7 @@ export default function ProfileHeader() {
             }}
             placeholder={
               loading || profiles.length <= 1
-                ? "search"
+                ? "search names"
                 : `search ${profiles.length} names`
             }
             className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
@@ -115,6 +120,41 @@ export default function ProfileHeader() {
           )}
         </div>
       </div>
+
+      <button
+        onClick={() => {
+          if (selectedProfile) {
+            window.dispatchEvent(
+              new CustomEvent("prefillReferrer", {
+                detail: {
+                  id: selectedProfile.id,
+                  name: selectedProfile.name,
+                  address: selectedProfile.address,
+                },
+              })
+            );
+
+            window.lastReferrer = {
+              id: selectedProfile.id,
+              name: selectedProfile.name,
+              address: selectedProfile.address,
+            };
+          }
+
+          setIsJoinOpen(true);
+        }}
+        className="ml-3 bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold 
+  shadow-md transition-all duration-300 z-[50] animate-joinPulse
+  hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
+      >
+        Join
+      </button>
+
+      <AddUserForm
+        isOpen={isJoinOpen}
+        onClose={() => setIsJoinOpen(false)}
+        onUserAdded={() => setIsJoinOpen(false)}
+      />
     </div>
   );
 }
