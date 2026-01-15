@@ -1096,7 +1096,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                         : "text-red-600"
                     }`}
                 >
-                  [{showDetail ? "Hide" : (warningConfig.toggleLabel || "Warnings")}]
+                  <span className="font-semibold">
+                    {showDetail ? "Hide" : (warningConfig.toggleLabel || "Warnings")}
+                  </span>{" "}
+                  <span aria-hidden="true">{showDetail ? "▲" : "▼"}</span>
                 </button>
               </div>
 
