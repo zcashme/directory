@@ -40,7 +40,7 @@ export default function ProfileHeader() {
     <div
       className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-sm rounded-full border border-white/40 w-[min(92vw,720px)]"
     >
-      <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center gap-1 flex-1 min-w-0">
         <button
           onClick={(e) => {
             e.preventDefault();
@@ -50,7 +50,7 @@ export default function ProfileHeader() {
         >
           Zcash.me/
         </button>
-        <div className="relative flex-1 max-w-sm">
+        <div className="relative flex-1 min-w-0 -mx-1">
           <input
             ref={searchInputRef}
             value={search}
@@ -69,10 +69,10 @@ export default function ProfileHeader() {
             }}
             placeholder={
               loading || profiles.length <= 1
-                ? "search names"
-                : `search ${profiles.length} names`
+                ? "  search names"
+                : `  search ${profiles.length} names`
             }
-            className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
+            className={`w-full pl-0 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
           />
 
           {search && (
@@ -87,7 +87,7 @@ export default function ProfileHeader() {
                   }
                 });
               }}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
+              className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
               aria-label="Clear search"
             >
               ✕

@@ -491,7 +491,7 @@ export default function Directory({
                     ? "search"
                     : `search ${profiles.length} names`
                 }
-                className="w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 pr-8"
+                className={`w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-2"}`}
               />
 
               {search && (
@@ -507,7 +507,7 @@ export default function Directory({
                     });
                   }}
 
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none z-[100]"
                   aria-label="Clear search"
                 >
                   ⛌
