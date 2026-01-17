@@ -13,6 +13,7 @@ import shareIcon from "../assets/share.svg";
 // --- Domain utils + favicon maps ---
 import { extractDomain, betweenTwoPeriods } from "../utils/domainParsing.js";
 import { KNOWN_DOMAINS, FALLBACK_ICON } from "../utils/domainLabels.js";
+import { getSocialHandle } from "../utils/linkUtils";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
@@ -247,18 +248,38 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   function enrichLink(link) {
     const domain = extractDomain(link.url);
     const dbLabel = (link.label || "").trim();
+    const handle = getSocialHandle(link.url || "");
+    const normalizedDomain = (domain || "").toLowerCase();
+    const normalizedHandle = (handle || "").toLowerCase();
+    const normalizedLabel = dbLabel.toLowerCase();
+    const isHandleDomain =
+      normalizedHandle === normalizedDomain ||
+      normalizedHandle === `www.${normalizedDomain}`;
+    const domainLabel = (KNOWN_DOMAINS[domain]?.label || "").toLowerCase();
+    const shouldUseHandle =
+      !!handle &&
+      !isHandleDomain &&
+      (!dbLabel ||
+        normalizedLabel === normalizedDomain ||
+        normalizedLabel === `www.${normalizedDomain}` ||
+        normalizedLabel === domainLabel ||
+        normalizedLabel.startsWith(`${normalizedDomain}/`) ||
+        normalizedLabel.startsWith(`www.${normalizedDomain}/`));
 
     if (KNOWN_DOMAINS[domain]) {
       return {
         ...link,
-        label: dbLabel || KNOWN_DOMAINS[domain].label,
+        label: (shouldUseHandle ? handle : dbLabel) || KNOWN_DOMAINS[domain].label,
         icon: KNOWN_DOMAINS[domain].icon,
       };
     }
 
     return {
       ...link,
-      label: dbLabel || betweenTwoPeriods(domain) || "Unknown",
+      label:
+        (shouldUseHandle ? handle : dbLabel) ||
+        betweenTwoPeriods(domain) ||
+        "Unknown",
       icon: FALLBACK_ICON,
     };
   }

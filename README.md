@@ -62,6 +62,15 @@ zcashme/
 
 ## 🤝 Contributing
 
+## Social Links
+
+Social link handles are normalized consistently across display and verification.
+Known platforms use the same normalization rules as input (`normalizeSocialUsername`),
+which strips quotes/backslashes, trims whitespace, and removes platform URL prefixes.
+Discord remains special-cased (IDs and labels) to preserve verified handle display.
+
+---
+
 Pull requests are welcome!
 For major changes, please open an issue first to discuss what you’d like to change.
 
