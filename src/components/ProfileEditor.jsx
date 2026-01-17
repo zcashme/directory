@@ -585,8 +585,8 @@ export default function ProfileEditor({ profile, links }) {
           console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
           const mx = (url || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
           const targetUsername = mx ? mx[1] : null;
-          const normalizedX = normalizeSocialUsername(xUsername || "", "X");
-          const normalizedTarget = normalizeSocialUsername(targetUsername || "", "X");
+          const normalizedX = normalizeSocialUsername(xUsername || "", "X").toLowerCase();
+          const normalizedTarget = normalizeSocialUsername(targetUsername || "", "X").toLowerCase();
           console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
           if (!normalizedX || !normalizedTarget || normalizedX !== normalizedTarget) {
             console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
@@ -606,12 +606,12 @@ export default function ProfileEditor({ profile, links }) {
 
           const ml = (url || "").replace(/\/$/, "").match(/linkedin\.com\/in\/([^/?#]+)/i);
           const targetVanity = ml ? ml[1] : null;
-          const normalizedTarget = normalizeSocialUsername(targetVanity || "", "LinkedIn");
+          const normalizedTarget = normalizeSocialUsername(targetVanity || "", "LinkedIn").toLowerCase();
           console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
 
           let match = false;
-          const t = (normalizedTarget || "").toLowerCase();
-          const normalizedHandle = normalizeSocialUsername(liData.handle || "", "LinkedIn");
+          const t = normalizedTarget || "";
+          const normalizedHandle = normalizeSocialUsername(liData.handle || "", "LinkedIn").toLowerCase();
 
           // Strategy 1: Direct Handle Match
           if (normalizedHandle && normalizedHandle.toLowerCase() === t) {
@@ -668,8 +668,8 @@ export default function ProfileEditor({ profile, links }) {
           const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
           const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
           console.log("[VERIFY DEBUG] targetGithub from url:", targetGh);
-          const normalizedGh = normalizeSocialUsername(ghHandle || "", "GitHub");
-          const normalizedTarget = normalizeSocialUsername(targetGh || "", "GitHub");
+          const normalizedGh = normalizeSocialUsername(ghHandle || "", "GitHub").toLowerCase();
+          const normalizedTarget = normalizeSocialUsername(targetGh || "", "GitHub").toLowerCase();
           if (!normalizedGh || !normalizedTarget || normalizedGh !== normalizedTarget) {
             console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
             alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
