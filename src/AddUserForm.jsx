@@ -23,6 +23,7 @@ function XIcon(props) {
 
 import { isValidUrl } from "./utils/validateUrl";
 import { buildSocialUrl } from "./utils/buildSocialUrl";
+import { normalizeSocialUsername } from "./utils/normalizeSocialLink";
 import SocialLinkInput from "./components/SocialLinkInput";
 
 
@@ -396,7 +397,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         const label =
           l.platform === "Discord"
             ? l.username.trim()
-            : url.replace(/^https?:\/\//, "").replace(/\/$/, "");
+            : normalizeSocialUsername(l.username.trim(), l.platform);
         return { url, label };
       })
       .filter(Boolean);
