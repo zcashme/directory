@@ -30,6 +30,9 @@ export function normalizeSocialUsername(raw = "", platform) {
   // Strip leading @
   v = v.replace(/^@+/, "");
 
+  // Strip quotes/backslashes that often come from pasted JSON or escaped strings
+  v = v.replace(/["'\\]+/g, "");
+
   // Strip known platform domains
   const hosts = HOSTS[platform];
   if (hosts) {

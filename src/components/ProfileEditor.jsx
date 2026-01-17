@@ -319,7 +319,11 @@ export default function ProfileEditor({ profile, links }) {
     const replaced = withName.replace(/_(normal|bigger|mini)(\.[a-z0-9]+)(\?.*)?$/i, "$2$3");
     return replaced;
   };
-  const normalizeHandleKey = (value) => (value || "").trim().toLowerCase();
+  const normalizeHandleKey = (value) =>
+    (value || "")
+      .trim()
+      .replace(/["'\\]+/g, "")
+      .toLowerCase();
   const parseXHandleFromUrl = (rawUrl) => {
     const m = (rawUrl || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
     return m ? m[1].trim() : null;
@@ -418,6 +422,7 @@ export default function ProfileEditor({ profile, links }) {
   const normalizeDiscordHandle = (value) =>
     (value || "")
       .trim()
+      .replace(/["'\\]+/g, "")
       .replace(/^@/, "")
       .replace(/#0$/, "")
       .toLowerCase();
@@ -580,8 +585,10 @@ export default function ProfileEditor({ profile, links }) {
           console.log("[VERIFY DEBUG] xUsername from metadata:", xUsername);
           const mx = (url || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
           const targetUsername = mx ? mx[1] : null;
+          const normalizedX = normalizeSocialUsername(xUsername || "", "X");
+          const normalizedTarget = normalizeSocialUsername(targetUsername || "", "X");
           console.log("[VERIFY DEBUG] targetUsername from url:", targetUsername);
-          if (!xUsername || !targetUsername || xUsername.toLowerCase() !== targetUsername.toLowerCase()) {
+          if (!normalizedX || !normalizedTarget || normalizedX !== normalizedTarget) {
             console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
             alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
             localStorage.removeItem("verifying_profile_id");
@@ -599,13 +606,15 @@ export default function ProfileEditor({ profile, links }) {
 
           const ml = (url || "").replace(/\/$/, "").match(/linkedin\.com\/in\/([^/?#]+)/i);
           const targetVanity = ml ? ml[1] : null;
+          const normalizedTarget = normalizeSocialUsername(targetVanity || "", "LinkedIn");
           console.log("[VERIFY DEBUG] targetVanity from url:", targetVanity);
 
           let match = false;
-          const t = (targetVanity || "").toLowerCase();
+          const t = (normalizedTarget || "").toLowerCase();
+          const normalizedHandle = normalizeSocialUsername(liData.handle || "", "LinkedIn");
 
           // Strategy 1: Direct Handle Match
-          if (liData.handle && liData.handle.toLowerCase() === t) {
+          if (normalizedHandle && normalizedHandle.toLowerCase() === t) {
             match = true;
             console.log("[VERIFY] Strategy 1 (Handle) matched");
           }
@@ -659,7 +668,9 @@ export default function ProfileEditor({ profile, links }) {
           const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
           const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split('/').pop();
           console.log("[VERIFY DEBUG] targetGithub from url:", targetGh);
-          if (!ghHandle || !targetGh || ghHandle.toLowerCase() !== targetGh.toLowerCase()) {
+          const normalizedGh = normalizeSocialUsername(ghHandle || "", "GitHub");
+          const normalizedTarget = normalizeSocialUsername(targetGh || "", "GitHub");
+          if (!normalizedGh || !normalizedTarget || normalizedGh !== normalizedTarget) {
             console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
             alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
             localStorage.removeItem("verifying_profile_id");
