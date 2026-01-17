@@ -64,10 +64,17 @@ zcashme/
 
 ## Social Links
 
-Social link handles are normalized consistently across display and verification.
-Known platforms use the same normalization rules as input (`normalizeSocialUsername`),
-which strips quotes/backslashes, trims whitespace, and removes platform URL prefixes.
-Discord remains special-cased (IDs and labels) to preserve verified handle display.
+Social links flow through three stages that share the same handle normalization rules.
+Known platforms use `normalizeSocialUsername` (quotes/backslashes stripped, whitespace trimmed,
+platform URL prefixes removed). Discord remains special-cased (IDs/labels).
+
+- AddUserForm: link inserts set `zcasher_links.label` to the normalized handle for known platforms (except Discord).
+- ProfileEditor: edits are staged in `pending_zcasher_edits.links` until OTP confirmation.
+- Supabase OTP: `confirm_otp_sql` applies link edits/inserts and uses `public.extract_label(url)` to set `zcasher_links.label`.
+- ProfileCard display: uses `getSocialHandle` (via `linkUtils`) to render handles from URLs.
+
+To keep labels consistent everywhere, align `public.extract_label` with the same normalization
+rules used in the frontend.
 
 ---
 
