@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useFeedback } from "../hooks/useFeedback";
 import useFeedbackController from "../hooks/useFeedbackController";
@@ -9,6 +10,22 @@ import QrUriBlock from "../components/QrUriBlock";
 import ProfileSearchDropdown from "../components/ProfileSearchDropdown";
 import bookOpen from "../assets/book-open.svg";
 import bookClosed from "../assets/book-closed.svg";
+
+const normalizeSlug = (value = "") =>
+  value
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_-]/g, "");
+
+const buildSlug = (profile) => {
+  if (!profile?.name) return "";
+  const base = normalizeSlug(profile.name);
+  if (!base) return "";
+  if (profile.slug) return profile.slug;
+  return profile.address_verified ? base : `${base}-${profile.id}`;
+};
 
 function MemoCounter({ text }) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
@@ -23,6 +40,7 @@ function MemoCounter({ text }) {
 }
 
 export default function ZcashFeedbackDraft() {
+  const router = useRouter();
   const { selectedAddress, setSelectedAddress, forceShowQR } = useFeedback();
   const { uri, memo, amount, openWallet, setDraftMemo, setDraftAmount } =
     useFeedbackController();
@@ -40,8 +58,15 @@ export default function ZcashFeedbackDraft() {
     );
   }, [search]);
 
-  const handleSelect = (addr) => {
+  const handleSelect = (profile) => {
+    const addr = profile?.address;
+    if (!addr) return;
+    if (typeof window !== "undefined") {
+      window.lastSelectionWasExplicit = true;
+    }
     setSelectedAddress(addr);
+    const slug = buildSlug(profile);
+    if (slug) router.push(`/${slug}`);
     setSearch("");
     setShowList(false);
   };
@@ -151,7 +176,7 @@ useEffect(() => {
                 value={search}
                 onChange={(v) => {
                   if (typeof v === "object") {
-                    handleSelect(v.address);
+                    handleSelect(v);
                   } else {
                     setSearch(v);
                   }
