@@ -9,8 +9,8 @@ import ZcashFeedback from "../ZcashFeedback";
 import computeGoodThru from "../utils/computeGoodThru";
 
 export default function ProfilePageClient({ profile }) {
-  const { setSelectedAddress } = useFeedback();
-  useProfiles(profile ? [profile] : [], false);
+  const { selectedAddress, setSelectedAddress } = useFeedback();
+  const { profiles } = useProfiles(profile ? [profile] : null, true);
 
   useEffect(() => {
     if (profile?.address) {
@@ -74,11 +74,22 @@ export default function ProfilePageClient({ profile }) {
   }, [profile]);
 
   const selectedProfile = useMemo(() => {
-    if (!profile) return null;
-    const joinedAt = profile.joined_at || profile.created_at || profile.since || null;
-    const good_thru = computeGoodThru(joinedAt, profile.last_signed_at);
-    return { ...profile, good_thru };
-  }, [profile]);
+    if (!profile && !profiles?.length) return null;
+
+    const match = selectedAddress
+      ? profiles.find((p) => p.address === selectedAddress)
+      : null;
+    const activeProfile = match || profile;
+    if (!activeProfile) return null;
+
+    const joinedAt =
+      activeProfile.joined_at ||
+      activeProfile.created_at ||
+      activeProfile.since ||
+      null;
+    const good_thru = computeGoodThru(joinedAt, activeProfile.last_signed_at);
+    return { ...activeProfile, good_thru };
+  }, [profile, profiles, selectedAddress]);
 
   if (!selectedProfile) return null;
 
