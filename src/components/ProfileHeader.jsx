@@ -69,10 +69,10 @@ export default function ProfileHeader() {
             }}
             placeholder={
               loading || profiles.length <= 1
-                ? "  search names"
-                : `  search ${profiles.length} names`
+                ? "search names"
+                : `search ${profiles.length} names`
             }
-            className={`w-full pl-0 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
+            className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
           />
 
           {search && (
