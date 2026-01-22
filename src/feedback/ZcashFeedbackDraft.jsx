@@ -51,20 +51,11 @@ export default function ZcashFeedbackDraft() {
 
   const textareaRef = useRef(null);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return (cachedProfiles || []).filter(
-      (p) => p.name?.toLowerCase().includes(q) || p.address?.includes(q)
-    );
-  }, [search]);
-
   const handleSelect = (profile) => {
-    const addr = profile?.address;
-    if (!addr) return;
+    if (!profile) return;
     if (typeof window !== "undefined") {
       window.lastSelectionWasExplicit = true;
     }
-    setSelectedAddress(addr);
     const slug = buildSlug(profile);
     if (slug) router.push(`/${slug}`);
     setSearch("");
@@ -181,7 +172,7 @@ useEffect(() => {
                     setSearch(v);
                   }
                 }}
-                profiles={filtered}
+                profiles={safeProfiles}
                 placeholder="name or addr"
               />
             </div>

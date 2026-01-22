@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "./ProfileSearchDropdown";
 import useProfiles from "../hooks/useProfiles";
@@ -32,9 +32,16 @@ export default function ProfileHeader() {
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [profileCount, setProfileCount] = useState(0);
   const selectedProfile = profiles.find(
     (profile) => profile.address === selectedAddress
   );
+
+  useEffect(() => {
+    if (profiles.length > 0) {
+      setProfileCount(profiles.length);
+    }
+  }, [profiles.length]);
 
   return (
     <div
@@ -68,9 +75,9 @@ export default function ProfileHeader() {
               }
             }}
             placeholder={
-              loading || profiles.length <= 1
-                ? "search names"
-                : `search ${profiles.length} names`
+              profileCount > 1
+                ? `search ${profileCount} names`
+                : "search names"
             }
             className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
           />
@@ -102,11 +109,6 @@ export default function ProfileHeader() {
                 onChange={(v) => {
                   if (typeof v === "object") {
                     window.lastSelectionWasExplicit = true;
-                    const addr = v.address;
-                    setSelectedAddress(addr);
-                    window.dispatchEvent(
-                      new CustomEvent("selectAddress", { detail: { address: addr } })
-                    );
                     const slug = buildSlug(v);
                     if (slug) router.push(`/${slug}`);
                   } else {

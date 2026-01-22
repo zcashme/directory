@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { useFeedback } from "../hooks/useFeedback";
 import VerifiedBadge from "./VerifiedBadge";
 import ProfileAvatar from "./ProfileAvatar";
@@ -10,6 +11,7 @@ export default function ProfileSearchDropdown({
   placeholder = "Search",
   listOnly = false,
   showByDefault = true,
+  autoSelectAddress = true,
   className = "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400",
   ...props
 }) {
@@ -153,8 +155,10 @@ export default function ProfileSearchDropdown({
               <div
                 key={p.id}
                 onClick={() => {
+                  if (autoSelectAddress && p.address) {
+                    flushSync(() => setSelectedAddress(p.address));
+                  }
                   onChange(p);
-                  if (p.address) setSelectedAddress(p.address);
                   setShow(false);
                 }}
                 className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-white font-semibold hover:bg-[#060b17]/95 transition-colors"

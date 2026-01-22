@@ -1,6 +1,7 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import { usePathname } from "next/navigation";
 import isNewProfile from "../utils/isNewProfile";
 import CopyButton from "./CopyButton";
 import { useFeedback } from "../hooks/useFeedback";
@@ -56,6 +57,7 @@ function RedirectModal({ isOpen, label }) {
 const memoryCache = new Map();
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
+  const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
   const [authLink, setAuthLink] = useState(null);
@@ -76,6 +78,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showBack, setShowBack] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [isLoadingLinks, setIsLoadingLinks] = useState(false);
+  const [linksLoaded, setLinksLoaded] = useState(false);
   // image cache and lazy load setup
   const imgRef = useRef(null);
   const [visible, setVisible] = useState(false);
@@ -87,7 +90,32 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     ? rawUrl                          // do NOT append anything to Twitter
     : rawUrl.includes("?")
       ? rawUrl                           // already has query params â†’ leave it
-      : `${rawUrl}?v=${profile.last_signed_at || profile.created_at}`;
+    : `${rawUrl}?v=${profile.last_signed_at || profile.created_at}`;
+
+  const normalizeSlug = (value = "") =>
+    value
+      .normalize("NFKC")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_-]/g, "");
+
+  const buildSlug = (p) => {
+    if (!p?.name) return "";
+    const base = normalizeSlug(p.name);
+    if (!base) return "";
+    if (p.slug) return p.slug;
+    return p.address_verified ? base : `${base}-${p.id}`;
+  };
+
+  const routeMatchesProfile = useMemo(() => {
+    if (!fullView) return true;
+    const expected = buildSlug(profile);
+    if (!expected) return false;
+    const currentRaw = decodeURIComponent((pathname || "/").slice(1));
+    const current = normalizeSlug(currentRaw);
+    return current === normalizeSlug(expected);
+  }, [fullView, profile, pathname]);
 
 
 
@@ -301,9 +329,16 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
   // dY", whenever "Show Links" is opened, fetch live links from Supabase
   useEffect(() => {
+    if (!fullView) return;
+    if (!routeMatchesProfile) {
+      setIsLoadingLinks(true);
+      setLinksLoaded(false);
+      return;
+    }
     if (!profile?.id) return;
     let isMounted = true;
     setIsLoadingLinks(true);
+    setLinksLoaded(false);
 
     import("../supabase").then(async ({ supabase }) => {
       const { data, error } = await supabase
@@ -314,17 +349,25 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
       if (error) {
         console.error("ƒ?O Error fetching links:", error);
-        if (isMounted) setIsLoadingLinks(false);
+        if (isMounted) {
+          setIsLoadingLinks(false);
+          setLinksLoaded(true);
+        }
         return;
       }
       if (Array.isArray(data) && isMounted) setLinksArray(data.map(enrichLink));
-      if (isMounted) setIsLoadingLinks(false);
+      if (isMounted) {
+        setIsLoadingLinks(false);
+        setLinksLoaded(true);
+      }
     });
     return () => {
       isMounted = false;
     };
-  }, [profile?.id]);
+  }, [fullView, routeMatchesProfile, profile?.id]);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
+  const showLinkShimmer =
+    isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
 
 
 
@@ -996,8 +1039,8 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           >
             {/* Links tray only */}
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
-              <div className={isLoadingLinks ? "px-4 py-3 bg-transparent/70 border-t border-gray-200" : "px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2"}>
-                {isLoadingLinks ? (
+              <div className={showLinkShimmer ? "px-4 py-3 bg-transparent/70 border-t border-gray-200" : "px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2"}>
+                {showLinkShimmer ? (
                   <div className="link-tray-shimmer h-10 w-full rounded-md" />
                 ) : linksArray.length > 0 ? (
                   linksArray.map((link) => {
@@ -1082,11 +1125,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                     </div>
                   );
                   })
-                ) : (
+                ) : linksLoaded ? (
                   <p className="italic text-gray-500 text-center">
                     No contributed links yet.
                   </p>
-                )}
+                ) : null}
               </div>
             </div>
           </div>
