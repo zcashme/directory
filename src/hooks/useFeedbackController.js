@@ -15,6 +15,7 @@ export default function useFeedbackController() {
     setVerifyMemo,
     setVerifyAmount,
     setVerifyId,
+    setVerifyRequestId,
   } = useFeedback();
 
   useEffect(() => {
@@ -22,6 +23,7 @@ export default function useFeedbackController() {
 
     const zId = verify.zId || null;
     if (!zId) return;
+    const requestId = verify.requestId || null;
 
     const hasEdits = pendingEdits && Object.keys(pendingEdits).length > 0;
 
@@ -31,13 +33,20 @@ export default function useFeedbackController() {
     };
 
     const nextMemo = hasEdits
-      ? buildZcashEditMemo(profileDiff, zId)
-      : buildZcashEditMemo({}, zId);
+      ? buildZcashEditMemo(profileDiff, zId, requestId)
+      : buildZcashEditMemo({}, zId, requestId);
 
     if (nextMemo !== verify.memo) {
       setVerifyMemo(nextMemo);
     }
-  }, [mode, verify.zId, pendingEdits, verify.memo, setVerifyMemo]);
+  }, [
+    mode,
+    verify.zId,
+    verify.requestId,
+    pendingEdits,
+    verify.memo,
+    setVerifyMemo,
+  ]);
 
   const uri = useMemo(() => {
     const { memo, amount } = draft;
@@ -75,6 +84,7 @@ export default function useFeedbackController() {
     copyUri,
     openWallet,
     setVerifyId,
+    setVerifyRequestId,
     setDraftMemo,
     setDraftAmount,
     setVerifyMemo,

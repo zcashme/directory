@@ -20,7 +20,12 @@ export function FeedbackProvider({ children }) {
   // feedback UI state
   const [mode, setMode] = useState("note"); // "note" or "signin"
   const [draft, setDraft] = useState({ memo: "", amount: "0" });
-  const [verify, setVerify] = useState({ memo: "", amount: "0", zId: null });
+  const [verify, setVerify] = useState({
+    memo: "",
+    amount: "0",
+    zId: null,
+    requestId: null,
+  });
 
   // setters
   const setDraftMemo = (v) => setDraft((p) => ({ ...p, memo: v ?? "" }));
@@ -28,6 +33,8 @@ export function FeedbackProvider({ children }) {
   const setVerifyMemo = (v) => setVerify((p) => ({ ...p, memo: v ?? "" }));
   const setVerifyAmount = (v) => setVerify((p) => ({ ...p, amount: v ?? "0" }));
   const setVerifyId = (zId) => setVerify((p) => ({ ...p, zId }));
+  const setVerifyRequestId = (requestId) =>
+    setVerify((p) => ({ ...p, requestId }));
 
   // external helpers for editor components
   const setPendingEdits = (field, value) => {
@@ -69,6 +76,7 @@ export function FeedbackProvider({ children }) {
         setVerifyMemo,
         setVerifyAmount,
         setVerifyId,
+        setVerifyRequestId,
       }}
     >
       {children}

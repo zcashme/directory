@@ -11,6 +11,7 @@ const {
   setVerifyId,
   setVerifyMemo,
   setVerifyAmount,
+  setVerifyRequestId,
   setForceShowQR,
 } = useFeedback();
 
@@ -29,6 +30,7 @@ const {
         setVerifyMemo(`{z:${zId}}`);
       }
 
+      setVerifyRequestId(null);
       setVerifyAmount("0");
       setMode("signin");
     };
@@ -45,6 +47,7 @@ const handleAddressSelect = (e) => {
   setMode("note");
   setVerifyMemo("");
   setVerifyAmount("0");
+  setVerifyRequestId(null);
 
   // 🔥 MOST IMPORTANT FIX:
   // Clear all QR-activation state or the QR block reopens on next render
@@ -67,5 +70,14 @@ const handleAddressSelect = (e) => {
     window.addEventListener("pendingEditsUpdated", handlePendingEdits);
 
     console.log("✅ useFeedbackEvents listeners bound once");
-  }, [setMode, setSelectedAddress, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setForceShowQR]);
+  }, [
+    setMode,
+    setSelectedAddress,
+    setPendingEdits,
+    setVerifyId,
+    setVerifyMemo,
+    setVerifyAmount,
+    setVerifyRequestId,
+    setForceShowQR,
+  ]);
 }

@@ -1,4 +1,4 @@
-export function buildZcashEditMemo(profile = {}, zId = "?") {
+export function buildZcashEditMemo(profile = {}, zId = "?", requestId = null) {
   const fieldMap = {
     name: "n",
     display_name: "h",
@@ -29,7 +29,9 @@ export function buildZcashEditMemo(profile = {}, zId = "?") {
       return `${shortKey}:"${value}"`;
     });
 
-  return compactPairs.length > 0 || includeAddress
-    ? `{z:${zId}${includeAddress ? `,a:"${clean.address.trim()}"` : ""}${compactPairs.length ? `,${compactPairs.join(",")}` : ""}}`
+  const requestIdPart = requestId ? `,rid:${requestId}` : "";
+
+  return compactPairs.length > 0 || includeAddress || requestId
+    ? `{z:${zId}${requestIdPart}${includeAddress ? `,a:"${clean.address.trim()}"` : ""}${compactPairs.length ? `,${compactPairs.join(",")}` : ""}}`
     : `{z:${zId}}`;
 }
