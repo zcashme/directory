@@ -158,7 +158,7 @@ export default function ZcashFeedbackVerify() {
           setPollOtpStatus(data?.otp_status || null);
           setPollOtpPhase(data?.otp_phase || null);
           setPollOtpPhaseHistory(Array.isArray(data?.otp_phase_history) ? data.otp_phase_history : []);
-          setShowFooterHelp(true);
+          setShowFooterHelp(false);
           const otpPhaseNow = (data?.otp_phase || "").toLowerCase();
           if (otpPhaseNow === "sent" || otpPhaseNow === "failed") {
             if (pollElapsedRef.current) {
@@ -333,7 +333,7 @@ export default function ZcashFeedbackVerify() {
       case 2:
         return "Memo detected. Please wait while we prepare and send your OTP.";
       case 3:
-        return "Open your wallet and enter the one-time passcode.";
+        return "The one-time passcode may take a few minutes to arrive";
       default:
         return "Please wait.";
     }
@@ -414,16 +414,17 @@ export default function ZcashFeedbackVerify() {
 
         {showFooterHelp && (
           <p className="mx-1 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
-            We cannot send this message for you. After sending, expect to receive OTP within 24-hours. Then,
+            You must open and send this message from your wallet. Once received, we will reply with a 6-digit OTP.
             {" "}
             <button
               type="button"
               onClick={() => setIsOtpOpen(true)}
               className="font-semibold text-blue-600 underline cursor-pointer"
             >
-              enter your OTP
-            </button>{" "}
-            to complete verification.
+              Enter the OTP
+            </button>
+            {" "}
+            before it expires to complete verification and apply your edits.
           </p>
         )}
         {/* Requirement line under help, above QR divider */}
@@ -502,7 +503,15 @@ export default function ZcashFeedbackVerify() {
                         }
                       >
                         {step.showGreenCheck && (
-                          <span className="text-green-600 mr-1">✓</span>
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-sm mr-1 align-[-1px]"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                            aria-hidden="true"
+                          >
+                            <path d="M7.5 13.2L4.8 10.5l-1.4 1.4 4.1 4.1 9.5-9.5-1.4-1.4z" />
+                          </svg>
                         )}
                         {!step.showGreenCheck && step.isCurrent && step.failed && (
                           <span className="text-red-600 mr-1">X</span>
