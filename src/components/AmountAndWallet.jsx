@@ -124,6 +124,7 @@ export default function AmountAndWallet({
   amount,
   setAmount,
   openWallet,
+  openWalletLabel = "Open in Wallet",
   showOpenWallet = true,
   showUsdPill = false,
   showRateMessage = false
@@ -379,7 +380,7 @@ export default function AmountAndWallet({
             onClick={openWallet}
             className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
           >
-            Open in Wallet
+            {openWalletLabel}
           </button>
         )}
       </div>
