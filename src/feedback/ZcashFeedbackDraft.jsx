@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useFeedback } from "../hooks/useFeedback";
 import useFeedbackController from "../hooks/useFeedbackController";
+import useEmojiAutocomplete from "../hooks/useEmojiAutocomplete";
 import AmountAndWallet from "../components/AmountAndWallet.jsx";
 import HelpMessage from "../components/HelpMessage.jsx";
 import { cachedProfiles } from "../hooks/useProfiles";
@@ -50,6 +51,7 @@ export default function ZcashFeedbackDraft() {
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef(null);
+  const memoWrapRef = useRef(null);
 
   const handleSelect = (profile) => {
     if (!profile) return;
@@ -85,6 +87,14 @@ useEffect(() => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, 300);
 }, [forceShowQR]);
+
+  const emoji = useEmojiAutocomplete({
+    textareaRef,
+    containerRef: memoWrapRef,
+    value: memo,
+    setValue: setDraftMemo,
+    enabled: !disabled,
+  });
 
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4">
@@ -183,7 +193,7 @@ useEffect(() => {
       </div>
 
       {/* MEMO FIELD */}
-      <div className="relative mb-2">
+      <div ref={memoWrapRef} className="relative mb-2">
         {!disabled && (
           <div className="absolute left-3 top-2 pointer-events-none text-gray-500 text-md">
             ✎
@@ -200,7 +210,12 @@ useEffect(() => {
             setDraftMemo(el.value);
             el.style.height = "auto";
             el.style.height = el.scrollHeight + "px";
+            emoji.handleInput(el.value);
           }}
+          onKeyDown={emoji.handleKeyDown}
+          onKeyUp={() => emoji.handleInput()}
+          onClick={() => emoji.handleClick()}
+          onBlur={emoji.handleBlur}
           placeholder={
             disabled
               ? "Memos are not supported for transparent addresses"
@@ -212,6 +227,60 @@ useEffect(() => {
               : "focus:ring-1 focus:ring-blue-500 pl-8"
           }`}
         />
+
+        {emoji.isOpen && !disabled && (
+          <div
+            className="absolute z-50 w-[360px] max-w-[calc(100%-16px)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+            style={{ left: emoji.position.left, top: emoji.position.top }}
+            role="listbox"
+            aria-label="Emoji suggestions"
+          >
+            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs text-gray-500">
+              <div className="truncate">
+                {emoji.query ? `Searching: :${emoji.query}` : "Type to search..."}
+              </div>
+              <span className="text-[10px] border border-gray-200 px-2 py-0.5 rounded-full">
+                : search
+              </span>
+            </div>
+            <div className="max-h-64 overflow-auto">
+              {emoji.results.map((item, idx) => {
+                const shortcodes = (item.shortcodes || []).slice(0, 3);
+                return (
+                  <div
+                    key={`${item.ch}-${idx}`}
+                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer border-b border-gray-100 last:border-0 ${
+                      idx === emoji.activeIndex
+                        ? "bg-blue-50"
+                        : "hover:bg-gray-50"
+                    }`}
+                    role="option"
+                    aria-selected={idx === emoji.activeIndex}
+                    onMouseEnter={() => emoji.setActiveIndex(idx)}
+                    onMouseDown={(ev) => {
+                      ev.preventDefault();
+                      emoji.insertAtIndex(idx);
+                    }}
+                  >
+                    <div className="text-lg" aria-hidden="true">
+                      {item.ch}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-semibold text-gray-800 truncate">
+                        {item.label}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {(shortcodes.length
+                          ? shortcodes.map((s) => `:${s}:`).join(" ")
+                          : ":emoji:")}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {memo && !disabled && (
           <button
