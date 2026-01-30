@@ -17,6 +17,8 @@ import faviconGitHub from "../assets/favicons/favicon-github-32.png";
 import faviconFacebook from "../assets/favicons/favicon-facebook-32.png";
 import faviconEbay from "../assets/favicons/favicon-ebay-32.png";
 import faviconDiscord from "../assets/favicons/favicon-discord-32.png";
+import faviconReddit from "../assets/favicons/favicon-reddit.png";
+import faviconGoogleCalendar from "../assets/favicons/favicon-google-calendar-425.png";
 import fallbackGlobe from "../assets/favicons/favicon-default-globe.png";
 
 export const FALLBACK_ICON = fallbackGlobe;
@@ -39,6 +41,9 @@ export const KNOWN_DOMAINS = {
   "soundcloud.com": { label: "SoundCloud", icon: faviconSoundCloud },
 
   "odysee.com": { label: "Odysee", icon: faviconOdysee },
+
+  "reddit.com": { label: "Reddit", icon: faviconReddit },
+  "www.reddit.com": { label: "Reddit", icon: faviconReddit },
 
   "facebook.com": { label: "Facebook", icon: faviconFacebook },
   "fb.com": { label: "Facebook", icon: faviconFacebook },
@@ -83,4 +88,6 @@ export const KNOWN_DOMAINS = {
   "quasa0.com": { label: "Quasa0", icon: FALLBACK_ICON },
 
   "gts.zebras.social": { label: "Zebras", icon: FALLBACK_ICON },
+
+  "calendar.app.google": { label: "Google Calendar", icon: faviconGoogleCalendar },
 };

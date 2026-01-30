@@ -75,6 +75,7 @@ const SOCIAL_HOSTS = {
   Mastodon: ["mastodon.social"],
   Bluesky: ["bsky.app"],
   Snapchat: ["snapchat.com", "www.snapchat.com"],
+  Telegram: ["t.me", "www.t.me", "telegram.me", "www.telegram.me"],
 };
 
 function detectPlatformFromUrl(rawUrl) {
