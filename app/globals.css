@@ -231,3 +231,28 @@ body {
 .directoryns-help [class*="text-blue"] {
   color: #111 !important;
 }
+
+/* 3D flip utilities (ProfileCard) */
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+.rotate-y-0 {
+  transform: rotateY(0deg);
+}
+
+/* Link loading shimmer (ProfileCard) */
+@keyframes link-tray-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.link-tray-shimmer {
+  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
+  background-size: 200% 100%;
+  animation: link-tray-shimmer 1.2s ease-in-out infinite;
+}

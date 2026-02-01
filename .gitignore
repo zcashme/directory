@@ -1,62 +1,27 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+# Dependencies
+node_modules/
 
-node_modules
+# Build output
 .next/
-dist
-dist-ssr
-*.local
+dist/
 
-src/feedback/original/*
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-
-
-# Local avatar data
-avatars.json
-avatars_local.txt
-
-# Local scripts
-compress.ps1
-
-# Local debug/reference files
-zcash-devtool-wallet-help.txt
-wallet-tx-sample.txt
-wallet-tx-sample.json
-
-
-# local files and secrets
-__tests__/*
-avatars/**
-docs/**
-supabase/**
+# Environment
+.env
 .env.local
 .env.development
 .env.production
-.env
-compress.ps1
 
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+*.sw?
 
+# Logs
+*.log
 
-# Ignore admin refund tooling
-src/components/AdminRefundPage.jsx
-src/components/AdminRefundPage.*
+# Design references (not part of build)
+profile-card-design_(1)/
 
-# Ignore admin refund page and any variants
-src/components/AdminRefundPage.jsx
-src/supabase.js
+# Vercel
+.vercel/

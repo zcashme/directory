@@ -19,7 +19,7 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain } from "@/lib/domainParsing";
-// import { FALLBACK_ICON } from "@/lib/domainLabels"; // TODO: ensure enrichLink always sets icon so this fallback is unnecessary
+import { FALLBACK_ICON } from "@/lib/domainLabels";
 import useLazyVisible from "@/lib/useLazyVisible";
 import useProfileEvents from "@/lib/useProfileEvents";
 import useProfileLinks from "@/lib/useProfileLinks";
@@ -57,29 +57,20 @@ function RedirectModal({ isOpen, label }) {
 }
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
+  // --- Hooks ---
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
   const [authLink, setAuthLink] = useState(null);
   const [authRedirectOpen, setAuthRedirectOpen] = useState(false);
   const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
-
   const [showStats, setShowStats] = useState(false);
-  const hasAwards =
-    (profile?.rank_alltime ?? 0) > 0 ||
-    (profile?.rank_weekly ?? 0) > 0 ||
-    (profile?.rank_monthly ?? 0) > 0 ||
-    (profile?.rank_daily ?? 0) > 0;
-
   const [showDetail, setShowDetail] = useState(false);
-  const { showBack, setShowBack } = useProfileEvents(profile);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { showBack, setShowBack } = useProfileEvents(profile);
+  const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
   const finalUrl = getProfileImageUrl(profile);
   const { imgRef, visible } = useLazyVisible(finalUrl, fullView);
-
-  const formatUsername = (value = "") =>
-    value.trim().replace(/\s+/g, "_");
-
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
     const expected = buildSlug(profile);
@@ -88,13 +79,36 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     const current = normalizeSlug(currentRaw);
     return current === normalizeSlug(expected);
   }, [fullView, profile, pathname]);
+  const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
 
-  const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
-
+  // --- Derived values ---
   const { verifiedAddress, verifiedLinks, hasVerifiedContent, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
+  const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
+  const showLinkShimmer =
+    isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
+  const cachedProfiles =
+    typeof window !== "undefined" ? window.cachedProfiles : null;
+  const { duplicateNameCount, hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
+  const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const hasAwards =
+    (profile?.rank_alltime ?? 0) > 0 ||
+    (profile?.rank_weekly ?? 0) > 0 ||
+    (profile?.rank_monthly ?? 0) > 0 ||
+    (profile?.rank_daily ?? 0) > 0;
+  const rankType = getRankType(profile);
+  const circleClass = getCircleClass(isVerified, rankType);
+
+  useEffect(() => {
+    if (!warningConfig) return;
+    setShowDetail(!!warningConfig.defaultExpanded);
+  }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
+
+  // --- Helpers & handlers ---
+  const formatUsername = (value = "") =>
+    value.trim().replace(/\s+/g, "_");
 
   const handleAuthBadgeClick = (event, link) => {
     event.stopPropagation();
@@ -120,25 +134,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     appendLinkToken(pendingEdits, setPendingEdits, authToken);
     setAuthInfoOpen(false);
   };
-
-  const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
-  const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
-  const showLinkShimmer =
-    isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
-
-  const cachedProfiles =
-    typeof window !== "undefined" ? window.cachedProfiles : null;
-  const { duplicateNameCount, hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
-
-  const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
-
-  useEffect(() => {
-    if (!warningConfig) return;
-    setShowDetail(!!warningConfig.defaultExpanded);
-  }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
-
-  const rankType = getRankType(profile);
-  const circleClass = getCircleClass(isVerified, rankType);
 
   if (!fullView) {
     // Compact card (unchanged)
@@ -731,21 +726,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         }}
         onAuthenticate={handleAuthenticateLink}
       />
-
-      <style>{`
-        .transform-style-preserve-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-@keyframes link-tray-shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-.link-tray-shimmer {
-  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
-  background-size: 200% 100%;
-  animation: link-tray-shimmer 1.2s ease-in-out infinite;
-}
-      `}</style>
 
       {isOtpOpen && (
         <SubmitOtp
