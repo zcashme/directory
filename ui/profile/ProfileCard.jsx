@@ -8,14 +8,18 @@ import { useFeedback } from "@/lib/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";
-import { normalizeSlug, buildSlug } from "@/lib/normalizeSlugs";
+import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/normalizeSlugs";
+import { getProfileImageUrl } from "@/lib/profileImageUrl";
+import { getProfileTrust } from "@/lib/profileTrust";
+import { enrichLink } from "@/lib/enrichLink";
+import { checkDuplicateNames } from "@/lib/duplicateNameCheck";
+import { getWarningConfig } from "@/lib/profileWarnings";
+import { getRankType, getCircleClass } from "@/lib/rankStyles";
+import { getVerifiedTimeAgo } from "@/lib/timeAgo";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
-// --- Domain utils + favicon maps ---
-import { extractDomain, betweenTwoPeriods } from "@/lib/domainParsing";
-import { KNOWN_DOMAINS, FALLBACK_ICON } from "@/lib/domainLabels";
-import { getSocialHandle } from "@/lib/linkUtils";
+import { extractDomain } from "@/lib/domainParsing";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
@@ -84,14 +88,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const imgRef = useRef(null);
   const [visible, setVisible] = useState(false);
 
-  const rawUrl = profile.profile_image_url || "";
-  const isTwitter = rawUrl.includes("pbs.twimg.com");
+  const finalUrl = getProfileImageUrl(profile);
 
-  const finalUrl = isTwitter
-    ? rawUrl                          // do NOT append anything to Twitter
-    : rawUrl.includes("?")
-      ? rawUrl                           // already has query params â†’ leave it
-    : `${rawUrl}?v=${profile.last_signed_at || profile.created_at}`;
+  const formatUsername = (value = "") =>
+    value.trim().replace(/\s+/g, "_");
 
 
   const routeMatchesProfile = useMemo(() => {
@@ -213,20 +213,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
   const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
 
-  // Derive trust states (consistent with verified badge logic)
-  const verifiedAddress = !!profile.address_verified || !!profile.verified;
-
-  const verifiedLinks =
-    (typeof profile.verified_links === "number"
-      ? profile.verified_links
-      : (typeof profile.verified_links_count === "number"
-        ? profile.verified_links_count
-        : null)) ??
-    (profile.links?.filter((l) => l.is_verified).length || 0);
-
-  const hasVerifiedContent = verifiedAddress || verifiedLinks > 0;
-  const isVerified = hasVerifiedContent;
-  const canAuthenticateLinks = !!profile.address_verified;
+  const { verifiedAddress, verifiedLinks, hasVerifiedContent, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
@@ -257,46 +244,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   };
 
 
-
-  // --- Local favicon + label resolver ---
-  function enrichLink(link) {
-    const domain = extractDomain(link.url);
-    const dbLabel = (link.label || "").trim();
-    const handle = getSocialHandle(link.url || "");
-    const normalizedDomain = (domain || "").toLowerCase();
-    const normalizedHandle = (handle || "").toLowerCase();
-    const normalizedLabel = dbLabel.toLowerCase();
-    const isHandleDomain =
-      normalizedHandle === normalizedDomain ||
-      normalizedHandle === `www.${normalizedDomain}`;
-    const domainLabel = (KNOWN_DOMAINS[domain]?.label || "").toLowerCase();
-    const shouldUseHandle =
-      !!handle &&
-      !isHandleDomain &&
-      (!dbLabel ||
-        normalizedLabel === normalizedDomain ||
-        normalizedLabel === `www.${normalizedDomain}` ||
-        normalizedLabel === domainLabel ||
-        normalizedLabel.startsWith(`${normalizedDomain}/`) ||
-        normalizedLabel.startsWith(`www.${normalizedDomain}/`));
-
-    if (KNOWN_DOMAINS[domain]) {
-      return {
-        ...link,
-        label: (shouldUseHandle ? handle : dbLabel) || KNOWN_DOMAINS[domain].label,
-        icon: KNOWN_DOMAINS[domain].icon,
-      };
-    }
-
-    return {
-      ...link,
-      label:
-        (shouldUseHandle ? handle : dbLabel) ||
-        betweenTwoPeriods(domain) ||
-        "Unknown",
-      icon: FALLBACK_ICON,
-    };
-  }
 
   const [linksArray, setLinksArray] = useState(() => {
     let rawLinks = [];
@@ -357,167 +304,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
 
-  const normalizedName = (value = "") =>
-    value
-      .normalize("NFKC")
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, " ")
-      .replace(/ /g, "_");
-
-  const formatUsername = (value = "") =>
-    value.trim().replace(/\s+/g, "_");
-
   const cachedProfiles =
     typeof window !== "undefined" ? window.cachedProfiles : null;
+  const { duplicateNameCount, hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
 
-  const duplicateNameCountFromProfile =
-    typeof profile.duplicate_name_count === "number"
-      ? profile.duplicate_name_count
-      : typeof profile.name_duplicate_count === "number"
-        ? profile.name_duplicate_count
-        : typeof profile.duplicate_names_count === "number"
-          ? profile.duplicate_names_count
-          : typeof profile.name_duplicates_count === "number"
-            ? profile.name_duplicates_count
-            : null;
-
-  const computedDuplicateNameCount =
-    Array.isArray(cachedProfiles) && profile?.name
-      ? cachedProfiles.filter(
-        (p) => normalizedName(p?.name) === normalizedName(profile.name)
-      ).length
-      : null;
-
-  const duplicateNameCount =
-    duplicateNameCountFromProfile ?? computedDuplicateNameCount ?? 0;
-
-  const hasDuplicateNames = duplicateNameCount > 1;
-
-  const warningConfig = (() => {
-    if (!warning) return null;
-    const name = profile?.display_name || profile?.name || "This profile";
-    const nameSearchUrl = profile?.name
-      ? `/?search=${encodeURIComponent(profile.name)}`
-      : "/";
-    const hasLinks = totalLinks > 0;
-    const hasAuthenticatedLinks = verifiedLinks > 0;
-
-    if (!verifiedAddress) {
-      if (!hasLinks && hasDuplicateNames) {
-        return {
-          tone: "red",
-          summary: `⚠ ${name} may not be who you think.`,
-          toggleLabel: "Warnings",
-          defaultExpanded: false,
-          details: [
-            <>
-              Multiple profiles use this{" "}
-              <a
-                href={nameSearchUrl}
-                className="text-blue-600 hover:underline"
-                onClick={(event) => {
-                  if (event.button !== 0) return;
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  if (typeof window !== "undefined") {
-                    sessionStorage.setItem("suppressSearchDropdown", "1");
-                  }
-                }}
-              >
-                name
-              </a>
-              .
-            </>,
-            "No links are available to verify that this address belongs to the same person.",
-          ],
-        };
-      }
-
-      if (!hasLinks) {
-        return {
-          tone: "red",
-          summary: `⚠ ${name} may not be who you think.`,
-          toggleLabel: "Warnings",
-          details: [
-            "No links are available to verify that this address belongs to the same person.",
-            "Names can be impersonated.",
-          ],
-        };
-      }
-
-      if (hasDuplicateNames) {
-        return {
-          tone: "yellow",
-          summary: `⚠ ${name} may not be who you think.`,
-          toggleLabel: "Warnings",
-          details: [
-            <>
-              Multiple profiles use this{" "}
-              <a
-                href={nameSearchUrl}
-                className="text-blue-600 hover:underline"
-                onClick={(event) => {
-                  if (event.button !== 0) return;
-                  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                  if (typeof window !== "undefined") {
-                    sessionStorage.setItem("suppressSearchDropdown", "1");
-                  }
-                }}
-              >
-                name
-              </a>
-              .
-            </>,
-            "Links are provided but their ownership has not been authenticated.",
-          ],
-        };
-      }
-
-      return {
-        tone: "yellow",
-        summary: `⚠ ${name} may not be who you think.`,
-        toggleLabel: "Warnings",
-        details: [
-          "Links are provided but their ownership has not been authenticated.",
-          "Names can be impersonated.",
-        ],
-      };
-    }
-
-    if (!hasLinks) {
-      return {
-        tone: "yellow",
-        summary: "⚠ This address was recently active.",
-        toggleLabel: "Warnings",
-        details: [
-          "No links are available to verify that this address belongs to the same person.",
-          "Names can be impersonated.",
-        ],
-      };
-    }
-
-    if (hasAuthenticatedLinks) {
-      return {
-        tone: "positive",
-        summary: "This address was recently active.",
-        toggleLabel: "More",
-        details: [
-          "Authenticated links help confirm address belongs to same person.",
-          "Names can be impersonated.",
-        ],
-      };
-    }
-
-    return {
-      tone: "neutral",
-      summary: "This address was recently active.",
-      toggleLabel: "Caution",
-      details: [
-        "Links are provided to help verify identity, but ownership has not been authenticated.",
-        "Names can be impersonated.",
-      ],
-    };
-  })();
+  const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
 
   useEffect(() => {
     if (!warningConfig) return;
@@ -528,32 +319,8 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   // referrals not used in this component
 
 
-  let rankType = null;
-  if (profile.rank_alltime > 0) rankType = "alltime";
-  else if (profile.rank_weekly > 0) rankType = "weekly";
-  else if (profile.rank_monthly > 0) rankType = "monthly";
-  else if (profile.rank_daily > 0) rankType = "daily";
-
-
-  let circleClass = "bg-blue-500"; // default = All
-
-  if (isVerified && rankType) {
-    circleClass = "bg-gradient-to-r from-green-400 to-orange-500";
-  } else if (isVerified) {
-    circleClass = "bg-green-500";
-  } else if (rankType) {
-    if (rankType === "alltime") {
-      circleClass = "bg-gradient-to-r from-blue-500 to-red-500";
-    } else if (rankType === "weekly") {
-      circleClass = "bg-gradient-to-r from-blue-500 to-orange-500";
-    } else if (rankType === "monthly") {
-      circleClass = "bg-gradient-to-r from-blue-500 to-red-500";
-    } else if (rankType === "daily") {
-      circleClass = "bg-gradient-to-r from-blue-500 to-cyan-500";
-    }
-  } else {
-    circleClass = "bg-blue-500";
-  }
+  const rankType = getRankType(profile);
+  const circleClass = getCircleClass(isVerified, rankType);
 
 
 
@@ -757,16 +524,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             {/* Share button (top-right) */}
             <button
               onClick={() => {
-                const baseSlug = (profile.display_name || profile.name)
-                  .normalize("NFKC")
-                  .trim()
-                  .toLowerCase()
-                  .replace(/\s+/g, "_")
-                  .replace(/[^a-z0-9_]/g, "");
-
-                const shareUrl = `${window.location.origin}/${profile.address_verified
-                  ? baseSlug
-                  : `${baseSlug}-${profile.id}`}`;
+                const shareUrl = buildShareUrl(profile);
 
                 if (navigator.share) {
                   navigator
@@ -924,21 +682,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
             <span className="whitespace-nowrap">
               Verified{" "}
-              {profile.last_verified_at || profile.last_verified
-                ? (() => {
-                  const ts = new Date(
-                    profile.last_verified_at || profile.last_verified
-                  ).getTime();
-                  const weeks =
-                    (Date.now() - ts) / (1000 * 60 * 60 * 24 * 7);
-
-                  if (weeks < 1) return "<1 week ago";
-                  if (weeks < 2) return "<2 weeks ago";
-                  if (weeks < 3) return "<3 weeks ago";
-                  if (weeks < 4) return "<4 weeks ago";
-                  return "<1 month ago";
-                })()
-                : "N/A"}
+              {getVerifiedTimeAgo(profile.last_verified_at || profile.last_verified)}
             </span>
 
             <span
@@ -1153,7 +897,27 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               {showDetail && (
                 <div className="mt-1 text-xs space-y-1">
                   {warningConfig.details.map((line, index) => (
-                    <div key={`${warningConfig.tone}-${index}`}>{line}</div>
+                    <div key={`${warningConfig.tone}-${index}`}>
+                      {typeof line === "string" ? line : line.type === "duplicateNameLink" ? (
+                        <>
+                          Multiple profiles use this{" "}
+                          <a
+                            href={line.nameSearchUrl}
+                            className="text-blue-600 hover:underline"
+                            onClick={(event) => {
+                              if (event.button !== 0) return;
+                              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+                              if (typeof window !== "undefined") {
+                                sessionStorage.setItem("suppressSearchDropdown", "1");
+                              }
+                            }}
+                          >
+                            name
+                          </a>
+                          .
+                        </>
+                      ) : line}
+                    </div>
                   ))}
                 </div>
               )}
