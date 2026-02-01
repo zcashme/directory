@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useState, useRef, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import isNewProfile from "@/lib/isNewProfile";
 import CopyButton from "@/ui/CopyButton";
@@ -11,7 +11,6 @@ import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";
 import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/normalizeSlugs";
 import { getProfileImageUrl } from "@/lib/profileImageUrl";
 import { getProfileTrust } from "@/lib/profileTrust";
-import { enrichLink } from "@/lib/enrichLink";
 import { checkDuplicateNames } from "@/lib/duplicateNameCheck";
 import { getWarningConfig } from "@/lib/profileWarnings";
 import { getRankType, getCircleClass } from "@/lib/rankStyles";
@@ -20,6 +19,9 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain } from "@/lib/domainParsing";
+import useLazyVisible from "@/lib/useLazyVisible";
+import useProfileEvents from "@/lib/useProfileEvents";
+import useProfileLinks from "@/lib/useProfileLinks";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
@@ -58,9 +60,6 @@ function RedirectModal({ isOpen, label }) {
 
 
 
-// Caching and CDN settings
-const memoryCache = new Map();
-
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
@@ -70,7 +69,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
 
   // ðŸ”— Lazy-load links from Supabase when needed
-  // (linksArray state/effect is defined later; duplicate removed)
 
   const [showStats, setShowStats] = useState(false);
   const hasAwards =
@@ -80,15 +78,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     (profile?.rank_daily ?? 0) > 0;
 
   const [showDetail, setShowDetail] = useState(false);
-  const [showBack, setShowBack] = useState(false);
+  const { showBack, setShowBack } = useProfileEvents(profile);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [isLoadingLinks, setIsLoadingLinks] = useState(false);
-  const [linksLoaded, setLinksLoaded] = useState(false);
-  // image cache and lazy load setup
-  const imgRef = useRef(null);
-  const [visible, setVisible] = useState(false);
-
   const finalUrl = getProfileImageUrl(profile);
+  const { imgRef, visible } = useLazyVisible(finalUrl, fullView);
 
   const formatUsername = (value = "") =>
     value.trim().replace(/\s+/g, "_");
@@ -105,109 +98,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
 
-  useEffect(() => {
-    const profileId = profile?.id || null;
-    const profileAddress = profile?.address || "";
-    const profileName = profile?.name || "";
-    const profileVerified = !!(profile?.address_verified);
-    const profileSince = profile?.joined_at || profile?.created_at || profile?.since || null;
-
-    const handleEnterSignIn = (e) => {
-      setShowBack(true);
-
-      // Forward the event payload when triggered from other sources
-      if (!e?.detail && profileId && profileAddress) {
-        // âœ… Guard: only dispatch if profile data is ready
-        if (!profileId || !profileAddress) {
-          console.warn("ProfileCard: profile not ready, skipping verify dispatch");
-        } else {
-          window.dispatchEvent(
-            new CustomEvent("enterSignInMode", {
-              detail: {
-                zId: profileId,
-                address: profileAddress,
-                name: profileName,
-                verified: profileVerified,
-                since: profileSince,
-              },
-            })
-          );
-
-          // âœ… Cache last known payload in case event fires before listener is attached
-          window.lastZcashFlipDetail = {
-            zId: profileId,
-            address: profileAddress,
-            name: profileName,
-            verified: profileVerified,
-            since: profileSince,
-          };
-        }
-      }
-    };
-
-    const handleEnterDraft = () => {
-      setShowBack(false);
-    };
-    // window.addEventListener("enterSignInMode", e => {
-    //  console.log("ENTER-SIGNIN fired with:", e.detail);
-    // });
-
-    window.addEventListener("enterSignInMode", handleEnterSignIn);
-    window.addEventListener("enterDraftMode", handleEnterDraft);
-    return () => {
-      window.removeEventListener("enterSignInMode", handleEnterSignIn);
-      window.removeEventListener("enterDraftMode", handleEnterDraft);
-    };
-  }, [profile?.id, profile?.address, profile?.name, profile?.joined_at, profile?.created_at, profile?.since, profile?.address_verified]);
-
   // Auto-flip disabled: keep ProfileCard visible after auth return.
 
 
 
-  useEffect(() => {
-    // Always make visible for fullView or if already cached
-    if (fullView || memoryCache.has(finalUrl)) {
-      setVisible(true);
-      return;
-    }
-
-    // Ensure we have a ref
-    const el = imgRef.current;
-    if (!el || !finalUrl) {
-      setVisible(true); // fallback: always show
-      return;
-    }
-
-    // Fallback if browser doesn't support IntersectionObserver
-    if (typeof IntersectionObserver === "undefined") {
-      setVisible(true);
-      return;
-    }
-
-    // Lazy-load observer
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setVisible(true);
-            memoryCache.set(finalUrl, true);
-            obs.disconnect();
-          }
-        });
-      },
-      { rootMargin: "200px", threshold: 0.05 }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [finalUrl, fullView]);
-
-  useEffect(() => {
-    // Always make visible for fullView or if already cached
-    if (fullView || memoryCache.has(finalUrl)) {
-      setVisible(true);
-      return;
-    }
-  }, [finalUrl, fullView]);
 
 
 
@@ -245,59 +139,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
 
 
-  const [linksArray, setLinksArray] = useState(() => {
-    let rawLinks = [];
-    if (Array.isArray(profile.links)) rawLinks = profile.links;
-    else if (typeof profile.links_json === "string") {
-      try {
-        rawLinks = JSON.parse(profile.links_json);
-      } catch {
-        rawLinks = [];
-      }
-    } else if (Array.isArray(profile.links_json)) {
-      rawLinks = profile.links_json;
-    }
-    return rawLinks.map(enrichLink);
-  });
-
-  // dY", whenever "Show Links" is opened, fetch live links from Supabase
-  useEffect(() => {
-    if (!fullView) return;
-    if (!routeMatchesProfile) {
-      setIsLoadingLinks(true);
-      setLinksLoaded(false);
-      return;
-    }
-    if (!profile?.id) return;
-    let isMounted = true;
-    setIsLoadingLinks(true);
-    setLinksLoaded(false);
-
-    import("@/lib/supabase-client").then(async ({ supabase }) => {
-      const { data, error } = await supabase
-        .from("zcasher_links")
-        .select("id,label,url,is_verified")
-        .eq("zcasher_id", profile.id)
-        .order("id", { ascending: true });
-
-      if (error) {
-        console.error("ƒ?O Error fetching links:", error);
-        if (isMounted) {
-          setIsLoadingLinks(false);
-          setLinksLoaded(true);
-        }
-        return;
-      }
-      if (Array.isArray(data) && isMounted) setLinksArray(data.map(enrichLink));
-      if (isMounted) {
-        setIsLoadingLinks(false);
-        setLinksLoaded(true);
-      }
-    });
-    return () => {
-      isMounted = false;
-    };
-  }, [fullView, routeMatchesProfile, profile?.id]);
+  const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const showLinkShimmer =
     isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
@@ -385,16 +227,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             </div>
           </div>
         </div>
-        {
-          isOtpOpen && (
-            <SubmitOtp
-              isOpen={isOtpOpen}
-              onClose={() => setIsOtpOpen(false)}
-              profile={profile}
-            />
-          )
-        }
-
         {
           isOtpOpen && (
             <SubmitOtp
