@@ -45,7 +45,7 @@ export default function CitySearchDropdown({
         }}
         placeholder={placeholder}
         autoComplete="off"
-        className="w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400"
+        className="w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400"
       />
 
       {show && (

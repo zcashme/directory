@@ -26,20 +26,20 @@ export default function ProfileAvatar({
     let circleClass = "bg-blue-500";
 
     if (isVerified && rankType) {
-        circleClass = "bg-gradient-to-r from-green-400 to-orange-500";
+        circleClass = "bg-linear-to-r from-green-400 to-orange-500";
     } else if (isVerified) {
         circleClass = "bg-green-500";
     } else if (rankType) {
         if (rankType === "weekly") {
-            circleClass = "bg-gradient-to-r from-blue-500 to-orange-500";
+            circleClass = "bg-linear-to-r from-blue-500 to-orange-500";
         } else if (rankType === "daily") {
-            circleClass = "bg-gradient-to-r from-blue-500 to-cyan-500";
+            circleClass = "bg-linear-to-r from-blue-500 to-cyan-500";
         } else {
-            circleClass = "bg-gradient-to-r from-blue-500 to-red-500";
+            circleClass = "bg-linear-to-r from-blue-500 to-red-500";
         }
     }
 
-    const gradientStyle = circleClass.includes("bg-gradient-to-r")
+    const gradientStyle = circleClass.includes("bg-linear-to-r")
         ? {
             backgroundSize: "200% 100%",
             animation: "avatar-gradient-x 4s ease-in-out infinite alternate",
@@ -106,7 +106,7 @@ export default function ProfileAvatar({
                 }
             `}</style>
             <div
-                className={`relative rounded-full overflow-hidden flex-shrink-0 ${circleClass} ${className}`}
+                className={`relative rounded-full overflow-hidden shrink-0 ${circleClass} ${className}`}
                 style={{ width: outerSize, height: outerSize, ...gradientStyle }}
             >
                 <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">

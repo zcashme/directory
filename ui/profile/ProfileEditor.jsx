@@ -20,9 +20,9 @@ import {
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 const FIELD_CLASS =
-  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400";
+  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400";
 const LINK_FIELD_CLASS =
-  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-none focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
+  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
@@ -186,7 +186,7 @@ function RedirectModal({ isOpen, label }) {
   if (!isOpen) return null;
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs">
         <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
           <div className="mb-4 text-blue-500">
             <svg className="w-12 h-12 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
@@ -208,7 +208,7 @@ function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }) {
   if (!isOpen) return null;
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs">
         <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
           <h3 className="text-lg font-bold text-gray-800 mb-2">Avatar not available</h3>
           <p className="text-sm text-gray-600 mb-4">
@@ -240,7 +240,7 @@ function AvatarPreviewModal({ isOpen, src, onClose }) {
   if (!isOpen) return null;
   return (
     <ModalPortal>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs">
         <div className="bg-white rounded-xl p-4 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-lg font-bold text-gray-800">Avatar Preview</h3>

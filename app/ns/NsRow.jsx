@@ -58,7 +58,7 @@ export default function NsRow({
             profile={profile}
             size={72}
             imageClassName="object-contain"
-            className="shadow-sm"
+            className="shadow-xs"
             showFallbackIcon
           />
           <div className="min-w-0">

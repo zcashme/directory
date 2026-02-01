@@ -115,7 +115,7 @@ const { data, error } = await supabase.rpc("confirm_otp_sql", {
                  pt-[10vh] sm:pt-0 overflow-y-auto"
     >
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}
@@ -169,7 +169,7 @@ const { data, error } = await supabase.rpc("confirm_otp_sql", {
                 }}
                 placeholder="Paste your OTP"
                 className="w-full rounded-xl border border-black/30 px-3 py-2 text-sm
-                           outline-none focus:border-blue-600 bg-white"
+                           outline-hidden focus:border-blue-600 bg-white"
               />
             </div>
           </div>

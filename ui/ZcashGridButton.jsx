@@ -35,7 +35,7 @@ export default function ZcashGridButton({ className = "" }) {
       {/* Grid Button (Trigger) - Scaled Down */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="p-1.5 rounded-full hover:bg-black/5 transition-colors duration-200 focus:outline-none"
+        className="p-1.5 rounded-full hover:bg-black/5 transition-colors duration-200 focus:outline-hidden"
         aria-label="Zcash Apps"
         title="Zcash Apps"
       >

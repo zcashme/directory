@@ -196,7 +196,7 @@ export default function DirectoryAlt({ initialProfiles = null }) {
                   ? "Search"
                   : `Search ${nsCount} names`
               }
-              className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none rounded-none"
+              className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-hidden rounded-none"
             />
           </div>
           <p className="mt-2 max-w-2xl text-sm text-gray-700">
@@ -279,7 +279,7 @@ export default function DirectoryAlt({ initialProfiles = null }) {
                   profile={activeProfile}
                   size={72}
                   imageClassName="object-contain"
-                  className="shadow-sm"
+                  className="shadow-xs"
                   showFallbackIcon
                 />
                 <div className="min-w-0 flex-1">
@@ -376,7 +376,7 @@ export default function DirectoryAlt({ initialProfiles = null }) {
                   value={memo}
                   onChange={(event) => setDraftMemo(event.target.value)}
                   placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"} here...`}
-                  className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-none rounded-none"
+                  className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-hidden rounded-none"
                   rows={4}
                   onClick={(event) => event.stopPropagation()}
                 />

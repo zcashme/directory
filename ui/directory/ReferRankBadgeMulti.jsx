@@ -30,7 +30,7 @@ export default function ReferRankBadgeMulti({ rank, period = "all", alwaysOpen =
         e.stopPropagation();
         setOpen((prev) => !prev);
       }}
-      className={`group inline-flex items-center gap-1 rounded-full border text-xs font-medium shadow-sm select-none transition-all duration-300 hover:px-2.5 px-1.5 py-0.5 ${scheme.bg}`}
+      className={`group inline-flex items-center gap-1 rounded-full border text-xs font-medium shadow-xs select-none transition-all duration-300 hover:px-2.5 px-1.5 py-0.5 ${scheme.bg}`}
       title={`Ranked #${rank} on ${period} leaderboard`}
     >
       {scheme.emoji}

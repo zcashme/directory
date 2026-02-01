@@ -69,7 +69,7 @@ export default function SocialLinks({
               <span className="-translate-y-[1px]" aria-label="Verified">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
-                  className="h-3.5 w-3.5 text-green-600 drop-shadow-sm"
+                  className="h-3.5 w-3.5 text-green-600 drop-shadow-xs"
                   viewBox="0 0 20 20"
                   fill="currentColor"
                 >

@@ -338,7 +338,7 @@ const legendTotals = useMemo(() => {
     const totalCount =
       data.only_referred_c + data.only_verified_c + data.both_c + data.other_c;
     return (
-      <div className="bg-white border border-gray-300 p-1.5 rounded shadow-sm">
+      <div className="bg-white border border-gray-300 p-1.5 rounded shadow-xs">
         <p className="text-[11px] mb-1">{label}</p>
         {payload.map((entry, idx) => {
           const val = tooltipFormatter(entry.value, entry.name, entry);
@@ -594,7 +594,7 @@ const legendTotals = useMemo(() => {
               <tr key={r.key} className="border-b border-gray-100">
                 <td className="text-left pr-3">
                   <span
-                    className="inline-block w-3 h-3 rounded-sm mr-2 align-middle"
+                    className="inline-block w-3 h-3 rounded-xs mr-2 align-middle"
                     style={
                       r.key === "both"
                         ? { backgroundImage: "linear-gradient(90deg,#f97316,#16a34a)" }
@@ -687,7 +687,7 @@ const legendTotals = useMemo(() => {
                         <td className="text-left pr-3">
                           {/* colored block matching legend */}
                           <span
-                            className="inline-block w-3 h-3 rounded-sm mr-2 align-middle"
+                            className="inline-block w-3 h-3 rounded-xs mr-2 align-middle"
                             style={
                               r.key === "both"
                                 ? { backgroundImage: "linear-gradient(90deg,#f97316,#16a34a)" }
@@ -730,7 +730,7 @@ const legendTotals = useMemo(() => {
       </div>
 
       {/* --- Leaderboard (collapsed by default; expandable by 10) --- */}
-      <div className="border border-gray-200 rounded-lg p-3 shadow-sm bg-gray-50">
+      <div className="border border-gray-200 rounded-lg p-3 shadow-xs bg-gray-50">
         <div className="flex items-center justify-between">
           <p className="font-semibold text-gray-800 flex items-center gap-2">
             {/* small referral/chain icon */}

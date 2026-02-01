@@ -111,7 +111,7 @@ const FlippingBadge = ({ initialLabel, initialVerified, pool, className, delay =
                 </div>
 
                 {/* Front Face */}
-                <div className={`absolute inset-0 backface-hidden px-3 py-1.5 flex items-center gap-1 backdrop-blur-sm border rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-sm font-medium transition-all duration-700 ${frontData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"
+                <div className={`absolute inset-0 backface-hidden px-3 py-1.5 flex items-center gap-1 backdrop-blur-xs border rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-sm font-medium transition-all duration-700 ${frontData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"
                     }`}>
                     <span className="flex items-center">
                         <span className="whitespace-nowrap">{frontData.label.split("/")[0]}/</span>
@@ -123,7 +123,7 @@ const FlippingBadge = ({ initialLabel, initialVerified, pool, className, delay =
                 </div>
 
                 {/* Back Face */}
-                <div className={`absolute inset-0 backface-hidden rotate-x-180 px-3 py-1.5 flex items-center gap-1 backdrop-blur-sm border rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-sm font-medium transition-all duration-700 ${backData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"
+                <div className={`absolute inset-0 backface-hidden rotate-x-180 px-3 py-1.5 flex items-center gap-1 backdrop-blur-xs border rounded-full shadow-[0_4px_12px_rgba(0,0,0,0.1)] text-sm font-medium transition-all duration-700 ${backData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"
                     }`}>
                     <span className="flex items-center">
                         <span className="whitespace-nowrap">{backData.label.split("/")[0]}/</span>
@@ -150,7 +150,7 @@ const StatItem = ({ count, label }) => (
 const FeaturedCard = ({ profile, showAvatarInside = true }) => {
     if (!profile) return null;
     return (
-        <div className="featured-card relative flex flex-col items-center pt-14 px-4 pb-6 rounded-xl transition-all duration-300 border border-yellow-400/50 bg-white/40 shadow-sm backdrop-blur-md hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+        <div className="featured-card relative flex flex-col items-center pt-14 px-4 pb-6 rounded-xl transition-all duration-300 border border-yellow-400/50 bg-white/40 shadow-xs backdrop-blur-md hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
             {/* Avatar - straddles the top border, matches hero white-circle wrapper and hover scale (optional) */}
             {showAvatarInside && (
                 <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999]">
@@ -175,14 +175,14 @@ const FeaturedCard = ({ profile, showAvatarInside = true }) => {
                 {profile.nearest_city_name && (
                     <div className="flex items-start justify-center gap-2">
                         <span className="flex items-start justify-center gap-1 text-center text-gray-500 max-w-[12rem]">
-                            <svg className="w-4 h-4 flex-shrink-0 self-start mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                            <svg className="w-4 h-4 shrink-0 self-start mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
                             <span className="text-center break-words leading-tight">{profile.nearest_city_name}</span>
                         </span>
                     </div>
                 )}
                 {profile.created_at && (
                     <div className="flex items-start justify-center gap-1.5 text-gray-500">
-                        <svg className="w-4 h-4 flex-shrink-0 self-start mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 shrink-0 self-start mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                         <span className="text-center">Since {new Date(profile.created_at || Date.now()).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}</span>
@@ -268,22 +268,22 @@ const FlippingAvatar = ({ initialProfile, pool, delay = 0, className }) => {
             >
                 {/* Front Face */}
                 <div className="absolute inset-0 backface-hidden flex items-center justify-center">
-                    <div className="rounded-full shadow-sm border border-white bg-white/90 p-0.5 w-full h-full flex items-center justify-center overflow-hidden">
+                    <div className="rounded-full shadow-xs border border-white bg-white/90 p-0.5 w-full h-full flex items-center justify-center overflow-hidden">
                         {frontProfile ? (
                             <ProfileAvatar profile={frontProfile} size={56} className="rounded-full" />
                         ) : (
-                            <div className="w-full h-full rounded-full bg-gradient-to-r from-gray-300 to-gray-400 animate-pulse" />
+                            <div className="w-full h-full rounded-full bg-linear-to-r from-gray-300 to-gray-400 animate-pulse" />
                         )}
                     </div>
                 </div>
 
                 {/* Back Face */}
                 <div className="absolute inset-0 backface-hidden rotate-y-180 flex items-center justify-center">
-                    <div className="rounded-full shadow-sm border border-white bg-white/90 p-0.5 w-full h-full flex items-center justify-center overflow-hidden">
+                    <div className="rounded-full shadow-xs border border-white bg-white/90 p-0.5 w-full h-full flex items-center justify-center overflow-hidden">
                         {backProfile ? (
                             <ProfileAvatar profile={backProfile} size={56} className="rounded-full" />
                         ) : (
-                            <div className="w-full h-full rounded-full bg-gradient-to-r from-gray-300 to-gray-400 animate-pulse" />
+                            <div className="w-full h-full rounded-full bg-linear-to-r from-gray-300 to-gray-400 animate-pulse" />
                         )}
                     </div>
                 </div>
@@ -732,7 +732,7 @@ export default function SplashPage({ initialProfiles = null }) {
     const showClaimRow = q && q.length >= 2 && (!exactMatch || !(exactMatch.address_verified || exactMatch.verified));
 
     const renderSearchBar = (wrapperClassName = "", wrapperRef = null) => (
-        <div ref={wrapperRef} className={`p-1 border border-gray-200/50 rounded-[21px] bg-white/30 backdrop-blur-sm shadow-sm group/search relative ${wrapperClassName}`}>
+        <div ref={wrapperRef} className={`p-1 border border-gray-200/50 rounded-[21px] bg-white/30 backdrop-blur-xs shadow-xs group/search relative ${wrapperClassName}`}>
             <form ref={dropdownRef} onSubmit={handleSearch} className="relative z-[900]">
                 {/* SVG Border Layer */}
                 <svg
@@ -770,7 +770,7 @@ export default function SplashPage({ initialProfiles = null }) {
                 <input
                     type="text"
                     placeholder="Search names"
-                    className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-gray-300 shadow-inner focus:outline-none focus:ring-0 text-gray-700 font-medium placeholder:text-gray-300 text-center transition-all backdrop-blur-sm"
+                    className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-gray-300 shadow-inner focus:outline-hidden focus:ring-0 text-gray-700 font-medium placeholder:text-gray-300 text-center transition-all backdrop-blur-xs"
                     value={search}
                     onChange={(e) => {
                         setSearch(e.target.value);
@@ -944,7 +944,7 @@ export default function SplashPage({ initialProfiles = null }) {
                     {/* Floating Badges (Decorative) */}
 
                     {/* Hero Box Wrapper - Slightly more frosted glass effect */}
-                    <div className="relative group/hero pt-20 pb-10 md:pt-28 md:pb-14 px-8 md:px-12 rounded-2xl transition-all duration-300 border border-yellow-400/50 bg-white/50 shadow-sm backdrop-blur-md hover:bg-white/70 hover:shadow-[0_0_20px_rgba(250,204,21,0.3)] z-[500]">
+                    <div className="relative group/hero pt-20 pb-10 md:pt-28 md:pb-14 px-8 md:px-12 rounded-2xl transition-all duration-300 border border-yellow-400/50 bg-white/50 shadow-xs backdrop-blur-md hover:bg-white/70 hover:shadow-[0_0_20px_rgba(250,204,21,0.3)] z-[500]">
                         {/* Floating Badges (Always rendered, initially show "zcash.me" then expand) */}
                         <>
                             <FlippingBadge pool={profiles.filter(p => p.address_verified || p.verified)} initialLabel={heroBadges.length > 0 ? `zcash.me/${heroBadges[0].name}` : "zcash.me"} initialVerified={heroBadges.length > 0 ? heroBadges[0].address_verified || heroBadges[0].verified : false} className="-top-10 left-[5%] -rotate-6 flex scale-75 sm:scale-100 z-[600]" delay={100} />
@@ -974,7 +974,7 @@ export default function SplashPage({ initialProfiles = null }) {
                                     {heroProfile ? (
                                         <ProfileAvatar profile={heroProfile} size={96} className="rounded-full" />
                                     ) : (
-                                        <div className="w-full h-full rounded-full bg-gradient-to-r from-blue-400 to-blue-500 animate-pulse" />
+                                        <div className="w-full h-full rounded-full bg-linear-to-r from-blue-400 to-blue-500 animate-pulse" />
                                     )}
                                 </div>
                             </div>
@@ -1061,7 +1061,7 @@ export default function SplashPage({ initialProfiles = null }) {
                     <button
                         aria-label="Scroll featured left"
                         onClick={() => { featuredScrollBy(-1); }}
-                        className={`flex items-center justify-center z-20 absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 md:-translate-x-2 h-12 md:h-14 w-8 rounded-md border border-orange-100 bg-white/60 shadow-sm transition-opacity ${showLeftArrow ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                        className={`flex items-center justify-center z-20 absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1 md:-translate-x-2 h-12 md:h-14 w-8 rounded-md border border-orange-100 bg-white/60 shadow-xs transition-opacity ${showLeftArrow ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     >
                         <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
                     </button>
@@ -1090,12 +1090,12 @@ export default function SplashPage({ initialProfiles = null }) {
                                     {/* Placeholder avatar */}
                                     <div className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 z-[9999]">
                                         <div className="rounded-full shadow-xl border-2 border-white bg-white/90 p-1 flex items-center justify-center overflow-hidden" style={{ width: 64 + 8, height: 64 + 8 }}>
-                                            <div className="w-full h-full rounded-full bg-gradient-to-r from-gray-300 to-gray-400 animate-pulse" />
+                                            <div className="w-full h-full rounded-full bg-linear-to-r from-gray-300 to-gray-400 animate-pulse" />
                                         </div>
                                     </div>
 
                                     {/* Placeholder card */}
-                                    <div className="featured-card relative flex flex-col items-center pt-14 px-4 pb-6 rounded-xl transition-all duration-300 border border-yellow-400/50 bg-white/40 shadow-sm backdrop-blur-md">
+                                    <div className="featured-card relative flex flex-col items-center pt-14 px-4 pb-6 rounded-xl transition-all duration-300 border border-yellow-400/50 bg-white/40 shadow-xs backdrop-blur-md">
                                         {/* Placeholder name */}
                                         <div className="h-4 w-24 bg-gray-300 rounded animate-pulse mb-2" />
                                         
@@ -1118,7 +1118,7 @@ export default function SplashPage({ initialProfiles = null }) {
                     <button
                         aria-label="Scroll featured right"
                         onClick={() => { featuredScrollBy(1); }}
-                        className={`flex items-center justify-center z-20 absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 md:translate-x-2 h-12 md:h-14 w-8 rounded-md border border-orange-100 bg-white/60 shadow-sm transition-opacity ${showRightArrow ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                        className={`flex items-center justify-center z-20 absolute right-0 top-1/2 -translate-y-1/2 translate-x-1 md:translate-x-2 h-12 md:h-14 w-8 rounded-md border border-orange-100 bg-white/60 shadow-xs transition-opacity ${showRightArrow ? "opacity-100" : "opacity-0 pointer-events-none"}`}
                     >
                         <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
                     </button>
@@ -1141,7 +1141,7 @@ export default function SplashPage({ initialProfiles = null }) {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-sm transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-xs transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
                             <div className="flex items-start justify-between gap-6">
                                 <div>
                                     <h3 className="text-xl font-semibold text-gray-800 mb-2">Keep it simple, stupid</h3>
@@ -1153,7 +1153,7 @@ export default function SplashPage({ initialProfiles = null }) {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-sm transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-xs transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
                             <div className="flex items-start justify-between gap-6">
                                 <div>
                                     <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4">
@@ -1162,7 +1162,7 @@ export default function SplashPage({ initialProfiles = null }) {
                                     <h3 className="text-xl font-bold text-gray-800 mb-2">Search socials</h3>
                                     <p className="text-sm text-gray-500 mb-6">Know someone from another platform? Search using their handles. Many profiles are verified.</p>
 
-                                    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3 shadow-sm">
+                                    <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3 shadow-xs">
                                         <div className="font-medium text-sm text-gray-400 border-b border-gray-100 pb-2 mb-2">@justsuki</div>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-2">
@@ -1182,7 +1182,7 @@ export default function SplashPage({ initialProfiles = null }) {
                             </div>
                         </div>
 
-                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-sm transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                        <div className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-xs transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
                             <div className="flex items-start justify-between gap-6">
                                 <div>
                                     <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 mb-4">
@@ -1198,7 +1198,7 @@ export default function SplashPage({ initialProfiles = null }) {
                                         </div>
                                         <div className="flex flex-col items-center">
                                             <span className="text-gray-400 text-xs">?+'</span>
-                                            <div className="bg-yellow-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-sm">100 ZEC</div>
+                                            <div className="bg-yellow-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-xs">100 ZEC</div>
                                             <span className="text-gray-400 text-xs">?+'</span>
                                         </div>
                                         <div className="flex flex-col items-center gap-1">
@@ -1229,7 +1229,7 @@ export default function SplashPage({ initialProfiles = null }) {
                         {faqItems.map((item, idx) => {
                             const isOpen = openFaqIndex === idx;
                             return (
-                                <div key={item.question} className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-sm transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
+                                <div key={item.question} className="rounded-2xl bg-white/40 backdrop-blur-md border border-yellow-400/50 p-6 shadow-xs transition-all duration-300 hover:bg-white/60 hover:shadow-[0_0_15px_rgba(250,204,21,0.3)]">
                                     <div className="flex items-start justify-between gap-6">
                                         <div>
                                             <h3 className="text-xl font-semibold text-gray-800 mb-2">{item.question}</h3>

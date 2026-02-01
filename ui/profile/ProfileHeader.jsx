@@ -30,7 +30,7 @@ export default function ProfileHeader() {
 
   return (
     <div
-      className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-sm rounded-full border border-white/40 w-[min(92vw,720px)]"
+      className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-xs rounded-full border border-white/40 w-[min(92vw,720px)]"
     >
       <div className="flex items-center gap-1 flex-1 min-w-0">
         <button
@@ -64,7 +64,7 @@ export default function ProfileHeader() {
                 ? `search ${profileCount} names`
                 : "search names"
             }
-            className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
+            className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
           />
 
           {search && (

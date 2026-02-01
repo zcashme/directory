@@ -10,7 +10,7 @@ export default function VerifiedCardWrapper({
 }) {
   // Base style tiers
   const baseStyle =
-    "rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm";
+    "rounded-2xl p-3 border transition-all cursor-pointer shadow-xs backdrop-blur-xs";
 
   let tierStyle;
 
@@ -20,7 +20,7 @@ export default function VerifiedCardWrapper({
       "border-yellow-400 bg-yellow-50/40 hover:bg-yellow-50/60 hover:shadow-[0_0_10px_rgba(250,204,21,0.4)]";
   } else if (verifiedCount >= 3) {
     tierStyle =
-      "border-green-400 bg-gradient-to-r from-green-50/80 via-emerald-50/80 to-green-100/80 relative overflow-hidden";
+      "border-green-400 bg-linear-to-r from-green-50/80 via-emerald-50/80 to-green-100/80 relative overflow-hidden";
   } else if (verifiedCount === 2) {
     tierStyle =
       "border-green-400 bg-green-50/60 hover:bg-green-50 hover:shadow-[0_0_10px_rgba(34,197,94,0.25)]";
@@ -42,7 +42,7 @@ export default function VerifiedCardWrapper({
       {/* Animated gradient shimmer for top-tier verified */}
       {verifiedCount >= 3 && !featured && (
         <Motion.div
-          className="absolute inset-0 rounded-2xl bg-gradient-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md"
+          className="absolute inset-0 rounded-2xl bg-linear-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md"
           animate={{
             backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
           }}

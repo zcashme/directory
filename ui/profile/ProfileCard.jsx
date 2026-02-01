@@ -39,7 +39,7 @@ const Motion = motion;
 function RedirectModal({ isOpen, label }) {
   if (!isOpen) return null;
   return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-xs">
       <div className="bg-white rounded-xl p-6 shadow-2xl max-w-sm w-full mx-4 text-center animate-fadeIn">
         <div className="mb-4 text-blue-500">
           <svg className="w-12 h-12 mx-auto animate-spin" fill="none" viewBox="0 0 24 24">
@@ -147,18 +147,18 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             window.scrollTo({ top: 0, behavior: "smooth" })
           );
         }}
-        className="rounded-2xl p-3 border transition-all cursor-pointer shadow-sm backdrop-blur-sm border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
+        className="rounded-2xl p-3 border transition-all cursor-pointer shadow-xs backdrop-blur-xs border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
           <ProfileAvatar
             profile={profile}
             size={45}
             imageClassName="object-contain"
-            className="shadow-sm"
+            className="shadow-xs"
             showFallbackIcon
           />
 
-          <div className="flex flex-col flex-grow overflow-hidden min-w-0">
+          <div className="flex flex-col grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
               <span className="truncate">{profile.display_name || profile.name}</span>
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
@@ -171,7 +171,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 />
               )}
               {isNewProfile(profile) && (
-                <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-sm shrink-0">
+                <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-xs shrink-0">
                   NEW
                 </span>
               )}
@@ -242,7 +242,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   e.stopPropagation();
                   setMenuOpen((prev) => !prev);
                 }}
-                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+                className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 title="More options"
               >
                 ☰
@@ -332,7 +332,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   alert("Profile link copied to clipboard!");
                 }
               }}
-              className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+              className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
               title={`Share ${profile.display_name || profile.name}`}
             >
               <img
@@ -348,7 +348,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             profile={profile}
             size={80}
             imageClassName="object-contain"
-            className="mx-auto shadow-sm flex items-center justify-center"
+            className="mx-auto shadow-xs flex items-center justify-center"
             showFallbackIcon
             blink
             lookAround
@@ -472,7 +472,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           {profile.address ? (
             <div className="mt-2 flex items-center justify-center">
               <div
-                className="flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-sm w-fit max-w-[90%] border-gray-300 bg-gray-50"
+                className="flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50"
               >
                 <span className="select-all" title={profile.address}>
                   {profile.address
@@ -520,7 +520,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
           {/* Action tray */}
           <div
-            className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-sm shadow-inner transition-all overflow-hidden mt-5 pb-0"
+            className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-xs shadow-inner transition-all overflow-hidden mt-5 pb-0"
           >
             {/* Links tray only */}
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
@@ -547,7 +547,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                             <img
                               src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
                               alt=""
-                              className="w-4 h-4 rounded-sm opacity-80"
+                              className="w-4 h-4 rounded-xs opacity-80"
                             />
                             <span className="font-medium text-gray-800 whitespace-nowrap">
                               {link.label}
@@ -558,7 +558,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                             <img
                               src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
                               alt=""
-                              className="w-4 h-4 rounded-sm opacity-80"
+                              className="w-4 h-4 rounded-xs opacity-80"
                             />
                             <span className="font-medium text-gray-800 whitespace-nowrap">
                               {link.label}
@@ -686,7 +686,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         {/* BACK SIDE (auto-expand editable) */}
         <div
           className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""
-            } bg-white backdrop-blur-sm rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
+            } bg-white backdrop-blur-xs rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
         >
           <div className="absolute top-4 left-4 z-10">
             <button

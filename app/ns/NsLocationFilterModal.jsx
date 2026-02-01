@@ -35,7 +35,7 @@ export default function NsLocationFilterModal({
             value={locationSearch}
             onChange={(event) => setLocationSearch(event.target.value)}
             placeholder="Location"
-            className="w-full text-sm focus:outline-none"
+            className="w-full text-sm focus:outline-hidden"
           />
         </div>
         <div className="max-h-[50vh] overflow-y-auto px-4 py-2">

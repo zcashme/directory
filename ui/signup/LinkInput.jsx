@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { isValidUrl } from "@/lib/validateUrl";
 
 const BASE_FIELD_CLASS =
-  "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-none text-gray-800 placeholder-gray-400";
+  "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-hidden text-gray-800 placeholder-gray-400";
 
 
 export default function LinkInput({

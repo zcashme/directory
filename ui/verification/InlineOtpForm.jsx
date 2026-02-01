@@ -65,7 +65,7 @@ export default function InlineOtpForm({ profile, onSuccess }) {
               value={otp}
               onChange={(e) => setOtp(e.target.value.replace(/\D+/g, ""))}
               placeholder="Paste your OTP"
-              className="flex-1 rounded-xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-white"
+              className="flex-1 rounded-xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-blue-600 bg-white"
             />
             <button
               type="button"

@@ -262,7 +262,7 @@ export default function ZcashFeedbackVerify() {
                       {idx < progressState.doneCount && (
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
-                          className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-sm mr-1 align-[-1px]"
+                          className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-xs mr-1 align-[-1px]"
                           viewBox="0 0 20 20"
                           fill="currentColor"
                           aria-hidden="true"
@@ -289,7 +289,7 @@ export default function ZcashFeedbackVerify() {
                         {step.showGreenCheck && (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-sm mr-1 align-[-1px]"
+                            className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-xs mr-1 align-[-1px]"
                             viewBox="0 0 20 20"
                             fill="currentColor"
                             aria-hidden="true"

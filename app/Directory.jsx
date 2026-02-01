@@ -335,7 +335,7 @@ export default function Directory({
                 <button
                   onClick={() => toggleFilter("featured")}
                   className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${filters.featured
-                    ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-sm"
+                    ? "bg-yellow-400 text-yellow-900 border-yellow-500 shadow-xs"
                     : "bg-transparent text-yellow-700 border-yellow-400 hover:bg-yellow-50"
                     }`}
                 >
@@ -346,7 +346,7 @@ export default function Directory({
                 <button
                   onClick={() => toggleFilter("ranked")}
                   className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${filters.ranked
-                    ? "bg-orange-500 text-white border-orange-500 shadow-sm"
+                    ? "bg-orange-500 text-white border-orange-500 shadow-xs"
                     : "bg-transparent text-orange-700 border-orange-400 hover:bg-orange-50"
                     }`}
                 >
@@ -366,7 +366,7 @@ export default function Directory({
                 <button
                   onClick={() => toggleFilter("verified")}
                   className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${filters.verified
-                    ? "bg-green-600 text-white border-green-600 shadow-sm"
+                    ? "bg-green-600 text-white border-green-600 shadow-xs"
                     : "bg-transparent text-green-700 border-green-400 hover:bg-green-50"
                     }`}
                 >
@@ -387,7 +387,7 @@ export default function Directory({
                 <button
                   onClick={clearFilters}
                   className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${!anyFilterActive
-                    ? "bg-blue-600 text-white border-blue-600 shadow-sm"
+                    ? "bg-blue-600 text-white border-blue-600 shadow-xs"
                     : "bg-transparent text-blue-700 border-blue-400 hover:bg-blue-50"
                     }`}
                 >
@@ -398,7 +398,7 @@ export default function Directory({
                 <button
                   onClick={() => setShowStats((s) => !s)}
                   className={`px-2 py-0.5 rounded-full border text-xs font-medium transition-all ${showStats
-                    ? "bg-gray-700 text-white border-gray-700 shadow-sm"
+                    ? "bg-gray-700 text-white border-gray-700 shadow-xs"
                     : "bg-transparent text-gray-700 border-gray-400 hover:bg-gray-50"
                     }`}
                 >
@@ -430,7 +430,7 @@ export default function Directory({
         {/* Header */}
         <div
           ref={searchBarRef}
-          className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-sm rounded-full border border-white/40 w-[min(92vw,720px)]"
+          className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-xs rounded-full border border-white/40 w-[min(92vw,720px)]"
         >
           <div className="flex items-center gap-2 flex-1">
             <button
@@ -465,7 +465,7 @@ export default function Directory({
                     ? "search"
                     : `search ${profiles.length} names`
                 }
-                className={`w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-none border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-2"}`}
+                className={`w-full px-3 py-2 text-sm bg-transparent text-gray-800 placeholder-gray-400 outline-hidden border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-2"}`}
               />
 
               {search && (

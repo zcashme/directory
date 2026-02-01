@@ -529,7 +529,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
             setName(filtered);
           }}
-          className="flex-1 px-1 py-2 text-sm outline-none bg-transparent"
+          className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
           placeholder="username"
           autoComplete="off"
         />
@@ -567,7 +567,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         id="displayName"
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
-        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-none focus:border-blue-600 bg-transparent"
+        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-blue-600 bg-transparent"
         placeholder="Enter display name"
         autoComplete="off"
       />
@@ -665,7 +665,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           profiles={profiles}
           placeholder="username"
           showByDefault={false}
-          className="flex-1 px-1 py-2 text-sm outline-none bg-transparent"
+          className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
         />
       </div>
 
@@ -748,7 +748,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={(e) => {
           if (e.target === e.currentTarget) onClose();
         }}

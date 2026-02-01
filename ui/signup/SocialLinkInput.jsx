@@ -162,7 +162,7 @@ export default function SocialLinkInput({
             className={
               inputClassName
                 ? inputClassName
-                : `flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
+                : `flex-1 rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-hidden ${
                     valid
                       ? "border-black/30 focus:border-blue-600"
                       : "border-red-400 focus:border-red-500"
@@ -179,7 +179,7 @@ export default function SocialLinkInput({
               className={
                 inputClassName
                   ? inputClassName
-                  : `w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-none ${
+                  : `w-full rounded-xl border px-3 py-2 text-sm font-mono bg-transparent outline-hidden ${
                       valid
                         ? "border-black/30 focus:border-blue-600"
                         : "border-red-400 focus:border-red-500"

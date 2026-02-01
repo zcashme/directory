@@ -314,7 +314,7 @@ export default function AmountAndWallet({
                         const zecAmount = rate > 0 ? rounded / rate : rounded;
                         setAmount(zecAmount.toFixed(8));
                       }}
-                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-none disabled:opacity-60"
+                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60"
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0">
                       <span>{fiat}</span>

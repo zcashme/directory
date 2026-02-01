@@ -68,7 +68,7 @@ export default function NsHeader({
                   placeholder={
                     loading || nsCount <= 1 ? "Search" : `Search ${nsCount} names`
                   }
-                  className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-none transition-transform duration-150 hover:scale-[1.01] rounded-none"
+                  className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-hidden transition-transform duration-150 hover:scale-[1.01] rounded-none"
                 />
               </div>
               <div className="flex items-center gap-2">
