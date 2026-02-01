@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import ProfilePageClient from "../../src/components/ProfilePageClient";
+import ProfilePageClient from "@/ui/profile/ProfilePageClient";
 import { fetchProfileForSlug } from "../../lib/profile";
 
 export const dynamic = "force-dynamic";

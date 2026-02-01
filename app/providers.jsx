@@ -1,7 +1,17 @@
 "use client";
 
-import { FeedbackProvider } from "../src/store";
+import { SelectionProvider } from "@/lib/selection-provider";
+import { EditsProvider } from "@/lib/edits-provider";
+import { MessagingProvider } from "@/lib/messaging-provider";
 
 export default function Providers({ children }) {
-  return <FeedbackProvider>{children}</FeedbackProvider>;
+  return (
+    <SelectionProvider>
+      <EditsProvider>
+        <MessagingProvider>
+          {children}
+        </MessagingProvider>
+      </EditsProvider>
+    </SelectionProvider>
+  );
 }

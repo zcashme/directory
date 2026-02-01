@@ -1,4 +1,4 @@
-import Directory from "../src/Directory";
+import Directory from "./Directory";
 import { fetchProfilesWithRanks } from "../lib/profiles";
 import { fetchLeaderboard, fetchStatsData } from "../lib/stats";
 

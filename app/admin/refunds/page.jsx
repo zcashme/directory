@@ -1,4 +1,4 @@
-import AdminRefundPage from "../../../src/components/AdminRefundPage";
+import AdminRefundPage from "./AdminRefundPage";
 
 export default function AdminRefundsPage() {
   if (process.env.NODE_ENV !== "development") {

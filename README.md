@@ -1,88 +1,40 @@
-# Zcash Address Directory – Frontend
+<p align="center">
+  <a href="https://zcash.me">
+    <h1 align="center">zcash.me</h1>
+  </a>
+  <p align="center">
+    The open-source Zcash address directory.
+    <br />
+    <a href="https://zcash.me"><strong>Visit zcash.me »</strong></a>
+    <br />
+    <br />
+    <a href="https://zcash.me">Directory</a>
+  </p>
+</p>
 
-A React + Vite web application that serves as the **frontend for the Zcash Address Directory**.  
-This project provides a simple, fast, and modern interface for browsing and interacting with Zcash addresses.
+## About the Project
 
----
+<p align="center">
+  <strong>A public directory for Zcash addresses — find anyone, share your address, get paid.</strong>
+</p>
 
-## 🚀 Tech Stack
+Sending Zcash to someone shouldn't require copying long addresses from chat messages. zcash.me gives every Zcash user a short, shareable profile page with a QR code — like a phone book for shielded payments.
 
-- [React](https://reactjs.org/) – UI library  
-- [Vite](https://vitejs.dev/) – build tool and dev server  
-- [JavaScript / JSX](https://developer.mozilla.org/en-US/docs/Web/JavaScript)  
+Register your address, share `zcash.me/yourname`, and anyone can send you ZEC. No account required. No tracking. Fully open source.
 
----
+### Features
 
-## 📦 Installation
+- Browse and search the full directory of Zcash addresses
+- Shareable profile pages with QR codes (`zcash.me/yourname`)
+- Verify address ownership via one-time passcode (OTP)
+- Edit your profile and add social links after verification
+- Network School directory at [`/ns`](https://zcash.me/ns)
+- Privacy-first — no analytics, no cookies, no tracking
 
-Clone the repository and install dependencies:
+## Contributing
 
-```powershell
-git clone https://github.com/ZcashUsersGroup/zcashme
-cd zcashme
-npm install
-````
+Contributions are welcome. For major changes, please [open an issue](https://github.com/zcashme/directory/issues) first to discuss what you'd like to change.
 
----
-
-## 🛠 Development
-
-Start the local development server:
-
-```powershell
-npm run dev
-```
-
-Then open [http://localhost:5173](http://localhost:5173) in your browser.
-
----
-
-## 📑 Build for Production
-
-```powershell
-npm run build
-```
-
-The compiled output will be in the `dist/` directory.
-
----
-
-## 📂 Project Structure
-
-```
-zcashme/
-├── public/          # Static assets
-├── src/             # React components, pages, and styles
-├── index.html       # Entry point
-├── vite.config.js   # Vite configuration
-├── package.json     # Dependencies and scripts
-```
-
----
-
-## 🤝 Contributing
-
-## Social Links
-
-Social links flow through three stages that share the same handle normalization rules.
-Known platforms use `normalizeSocialUsername` (quotes/backslashes stripped, whitespace trimmed,
-platform URL prefixes removed). Discord remains special-cased (IDs/labels).
-
-- AddUserForm: link inserts set `zcasher_links.label` to the normalized handle for known platforms (except Discord).
-- ProfileEditor: edits are staged in `pending_zcasher_edits.links` until OTP confirmation.
-- Supabase OTP: `confirm_otp_sql` applies link edits/inserts and uses `public.extract_label(url)` to set `zcasher_links.label`.
-- ProfileCard display: uses `getSocialHandle` (via `linkUtils`) to render handles from URLs.
-
-To keep labels consistent everywhere, align `public.extract_label` with the same normalization
-rules used in the frontend.
-
----
-
-Pull requests are welcome!
-For major changes, please open an issue first to discuss what you’d like to change.
-
----
-
-## 📜 License
+## License
 
 MIT License © 2025 Zcash Users Group

@@ -1,4 +1,4 @@
-import DirectoryNS from "../../src/DirectoryNS";
+import DirectoryNS from "./DirectoryNS";
 import { fetchProfilesWithRanks } from "../../lib/profiles";
 
 export const dynamic = "force-dynamic";
