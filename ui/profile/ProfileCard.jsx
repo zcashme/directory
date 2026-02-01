@@ -19,6 +19,7 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain } from "@/lib/domainParsing";
+// import { FALLBACK_ICON } from "@/lib/domainLabels"; // TODO: ensure enrichLink always sets icon so this fallback is unnecessary
 import useLazyVisible from "@/lib/useLazyVisible";
 import useProfileEvents from "@/lib/useProfileEvents";
 import useProfileLinks from "@/lib/useProfileLinks";
@@ -55,11 +56,6 @@ function RedirectModal({ isOpen, label }) {
   );
 }
 
-
-
-
-
-
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
@@ -67,8 +63,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [authLink, setAuthLink] = useState(null);
   const [authRedirectOpen, setAuthRedirectOpen] = useState(false);
   const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
-
-  // ðŸ”— Lazy-load links from Supabase when needed
 
   const [showStats, setShowStats] = useState(false);
   const hasAwards =
@@ -86,7 +80,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const formatUsername = (value = "") =>
     value.trim().replace(/\s+/g, "_");
 
-
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
     const expected = buildSlug(profile);
@@ -95,15 +88,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     const current = normalizeSlug(currentRaw);
     return current === normalizeSlug(expected);
   }, [fullView, profile, pathname]);
-
-
-
-  // Auto-flip disabled: keep ProfileCard visible after auth return.
-
-
-
-
-
 
   const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
 
@@ -137,14 +121,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     setAuthInfoOpen(false);
   };
 
-
-
   const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const showLinkShimmer =
     isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
-
-
 
   const cachedProfiles =
     typeof window !== "undefined" ? window.cachedProfiles : null;
@@ -157,17 +137,8 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     setShowDetail(!!warningConfig.defaultExpanded);
   }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
 
-
-  // referrals not used in this component
-
-
   const rankType = getRankType(profile);
   const circleClass = getCircleClass(isVerified, rankType);
-
-
-
-
-
 
   if (!fullView) {
     // Compact card (unchanged)
@@ -285,9 +256,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               {/* Dropdown Menu */}
               {menuOpen && (
                 <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-                  {/* Determine if profile has any awards */}
-
-
                   {!showStats ? (
                     <button
                       onClick={() => {
@@ -314,7 +282,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                       ⭔ Hide Awards
                     </button>
                   )}
-
 
                   <button
                     onClick={() => {
@@ -346,7 +313,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   >
                     ⛨ Enter Passcode
                   </button>
-
 
                 </div>
               )}
@@ -381,9 +347,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               />
             </button>
           </div>
-
-
-
 
           {/* Avatar */}
           <ProfileAvatar
@@ -444,9 +407,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             )}
           </AnimatePresence>
 
-
-          {/* Name */}
-
           {/* Name & Username Layout */}
           <div className="mt-3 flex flex-col items-center">
             <h2 className="text-3xl font-black text-gray-900 leading-tight flex items-center justify-center gap-2">
@@ -466,17 +426,12 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             </div>
           </div>
 
-
-
-
           {/* Biography (only if present) */}
           {profile.bio && profile.bio.trim() !== "" && (
             <p className="mt-1 text-sm text-gray-700 text-center max-w-[90%] mx-auto whitespace-pre-line break-words">
               {profile.bio}
             </p>
           )}
-
-
 
           {/* Dates */}
           <p className="mt-3 text-xs text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5">
@@ -516,27 +471,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               Verified{" "}
               {getVerifiedTimeAgo(profile.last_verified_at || profile.last_verified)}
             </span>
-
-            <span
-              className="opacity-70 transition-opacity duration-300"
-              aria-hidden="true"
-            >
-
-            </span>
-            {/*
-  <span className="whitespace-nowrap">
-    â€¢ Good thru{" "}
-    {profile.verif_expires_at
-      ? new Date(profile.verif_expires_at).toLocaleString("default", {
-          month: "short",
-          year: "numeric",
-        })
-      : "NULL"}
-  </span>
-*/}
           </p>
-
-
 
           {/* Address with integrated copy button and feedback */}
           {profile.address ? (
@@ -569,8 +504,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                         const el = document.getElementById("zcash-feedback");
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
                       }, 400);
-
-
                     }}
                     className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
                     title="Show QR"
@@ -589,8 +522,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           ) : (
             <p className="mt-2 text-sm text-gray-500 italic">â€”</p>
           )}
-
-
 
           {/* Action tray */}
           <div
@@ -779,14 +710,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             >
               <span>↺</span> {/* â®Œ left arrow, opposite of â®Ž */}
 
-
             </button>
           </div>
 
-
           <ProfileEditor profile={profile} links={linksArray} />
         </div>
-
 
       </div>
 
@@ -819,7 +747,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 }
       `}</style>
 
-
       {isOtpOpen && (
         <SubmitOtp
           isOpen={isOtpOpen}
@@ -830,14 +757,4 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     </VerifiedCardWrapper>
   );
 }
-
-
-
-
-
-
-
-
-
-
 
