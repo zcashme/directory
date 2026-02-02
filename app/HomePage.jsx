@@ -9,7 +9,6 @@ import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 import Image from "next/image";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
-import forestCityBg from "@/ui/assets/backgrounds/forestcity.png";
 
 /* ───────── Debounce hook ───────── */
 function useDebounce(value, delay) {
@@ -148,11 +147,8 @@ export default function HomePage({ featuredProfiles = [] }) {
 
   return (
     <div
-      className="min-h-screen bg-fixed bg-cover bg-center bg-no-repeat selection:bg-orange-200 relative"
-      style={{ backgroundImage: `url(${forestCityBg.src})` }}
+      className="min-h-screen selection:bg-orange-200 relative bg-gray-50"
     >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-white/40 backdrop-blur-[2px] pointer-events-none" />
 
       {/* Nav */}
       <nav className="relative max-w-4xl mx-auto px-6 py-4 flex items-center justify-between z-20">
