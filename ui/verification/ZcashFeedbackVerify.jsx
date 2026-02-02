@@ -6,7 +6,7 @@ import useFeedbackController from "@/lib/useFeedbackController";
 import { useFeedback } from "@/lib/useFeedback";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
-import { buildZcashUri } from "@/lib/zcashWalletUtils";
+import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import { cachedProfiles } from "@/lib/useProfiles";
 import useVerificationPolling from "@/lib/useVerificationPolling";
 

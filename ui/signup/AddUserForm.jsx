@@ -3,7 +3,7 @@
 import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
-import { validateZcashAddress } from "@/lib/zcashAddressUtils";
+import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import { cachedProfiles, resetCache } from "@/lib/useProfiles";
 import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase-client";

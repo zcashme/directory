@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcashAddressUtils";
+import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcash/zcashUtils";
 
 export default function ZcashAddressInput({ value, onChange, label = "Zcash Address", id = "zcash-address" }) {
   const [help, setHelp] = useState(getZcashAddressHint(value));
