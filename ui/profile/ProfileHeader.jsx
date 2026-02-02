@@ -4,13 +4,12 @@ import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import useProfiles from "@/lib/directory/useProfiles";
-import { useFeedback } from "@/lib/messaging/useFeedback";
+
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
 
 export default function ProfileHeader() {
   const router = useRouter();
-  const { setSelectedAddress, selectedAddress } = useFeedback();
   const { profiles, loading } = useProfiles(null, true);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -18,10 +17,6 @@ export default function ProfileHeader() {
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [profileCount, setProfileCount] = useState(0);
-  const selectedProfile = profiles.find(
-    (profile) => profile.address === selectedAddress
-  );
-
   useEffect(() => {
     if (profiles.length > 0) {
       setProfileCount(profiles.length);
@@ -110,24 +105,6 @@ export default function ProfileHeader() {
 
       <button
         onClick={() => {
-          if (selectedProfile) {
-            window.dispatchEvent(
-              new CustomEvent("prefillReferrer", {
-                detail: {
-                  id: selectedProfile.id,
-                  name: selectedProfile.name,
-                  address: selectedProfile.address,
-                },
-              })
-            );
-
-            window.lastReferrer = {
-              id: selectedProfile.id,
-              name: selectedProfile.name,
-              address: selectedProfile.address,
-            };
-          }
-
           setIsJoinOpen(true);
         }}
         className="ml-3 bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold 

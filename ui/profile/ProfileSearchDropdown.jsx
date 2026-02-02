@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { flushSync } from "react-dom";
-import { useFeedback } from "@/lib/messaging/useFeedback";
+
+
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
@@ -30,9 +30,6 @@ export default function ProfileSearchDropdown({
       if (!isHovering) setShow(false);
     }, 4000);
   };
-
-  // This is the only global sync we need
-  const { setSelectedAddress } = useFeedback();
 
   // -----------------------------
   // Normalizers
@@ -155,9 +152,6 @@ export default function ProfileSearchDropdown({
               <div
                 key={p.id}
                 onClick={() => {
-                  if (autoSelectAddress && p.address) {
-                    flushSync(() => setSelectedAddress(p.address));
-                  }
                   onChange(p);
                   setShow(false);
                 }}

@@ -1,22 +1,11 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import useProfiles from "@/lib/directory/useProfiles";
-import { useFeedback } from "@/lib/messaging/useFeedback";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import ZcashFeedback from "@/app/ZcashFeedback";
 import { computeGoodThru } from "@/lib/profile/profileUtils";
 
 export default function ProfilePageClient({ profile }) {
-  const { selectedAddress, setSelectedAddress } = useFeedback();
-  const { profiles } = useProfiles(profile ? [profile] : null, true);
-
-  useEffect(() => {
-    if (profile?.address) {
-      setSelectedAddress(profile.address);
-    }
-  }, [profile?.address, setSelectedAddress]);
-
   // Dynamic tab title and favicon based on profile
   useEffect(() => {
     if (!profile) return;
@@ -72,39 +61,32 @@ export default function ProfilePageClient({ profile }) {
     };
   }, [profile]);
 
-  const selectedProfile = useMemo(() => {
-    if (!profile && !profiles?.length) return null;
-
-    const match = selectedAddress
-      ? profiles.find((p) => p.address === selectedAddress)
-      : null;
-    const activeProfile = match || profile;
-    if (!activeProfile) return null;
-
+  const enrichedProfile = useMemo(() => {
+    if (!profile) return null;
     const joinedAt =
-      activeProfile.joined_at ||
-      activeProfile.created_at ||
-      activeProfile.since ||
+      profile.joined_at ||
+      profile.created_at ||
+      profile.since ||
       null;
-    const good_thru = computeGoodThru(joinedAt, activeProfile.last_signed_at);
-    return { ...activeProfile, good_thru };
-  }, [profile, profiles, selectedAddress]);
+    const good_thru = computeGoodThru(joinedAt, profile.last_signed_at);
+    return { ...profile, good_thru };
+  }, [profile]);
 
-  if (!selectedProfile) return null;
+  if (!enrichedProfile) return null;
 
   return (
     <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
       <ProfileCard
-        key={selectedProfile.address}
-        profile={selectedProfile}
+        key={enrichedProfile.address}
+        profile={enrichedProfile}
         onSelect={() => { }}
         fullView
         warning={{
-          message: `${selectedProfile.name} may not be who you think.`,
+          message: `${enrichedProfile.name} may not be who you think.`,
           link: "#",
         }}
       />
-      <ZcashFeedback />
+      <ZcashFeedback profile={enrichedProfile} />
     </div>
   );
 }

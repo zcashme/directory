@@ -61,7 +61,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { showBack, setShowBack } = useProfileEvents(profile);
-  const { setSelectedAddress, setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
+  const { setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
   const finalUrl = getProfileImageUrl(profile);
   const { imgRef, visible } = useLazyVisible(finalUrl, fullView);
   const routeMatchesProfile = useMemo(() => {
@@ -478,10 +478,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   {/* QR Button */}
                   <button
                     onClick={() => {
-                      if (typeof setSelectedAddress === "function") {
-                        setSelectedAddress(profile.address);
-                      }
-
                       // Explicit QR-open request (ONLY triggered by QR icon click)
                       if (typeof setForceShowQR === "function") {
                         setForceShowQR(Date.now());

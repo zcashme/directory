@@ -4,7 +4,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import ZcashFeedback from "@/app/ZcashFeedback";
+
 import ZcashStats from "@/app/ZcashStats";
 
 import ProfileCard from "@/ui/profile/ProfileCard";
@@ -13,38 +13,24 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import LetterGridModal from "@/ui/directory/LetterGridModal";
 import AlphabetSidebar from "@/ui/directory/AlphabetSidebar";
 import LoadingDots from "@/ui/LoadingDots";
-import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
+import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 import useProfiles from "@/lib/directory/useProfiles";
-import useProfileRouting from "@/lib/profile/useProfileRouting";
-import { useDirectoryVisibility, useAlphaVisibility } from "@/lib/directory/useDirectoryVisibility";
 
-import { computeGoodThru } from "@/lib/profile/profileUtils";
-import { useFeedback } from "@/lib/messaging/useFeedback";
+import { useAlphaVisibility } from "@/lib/directory/useDirectoryVisibility";
 
 
 export default function Directory({
   initialProfiles = null,
-  initialSelectedAddress = null,
   initialShowDirectory = true,
   initialStats = null,
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const pathname = usePathname();
-  const { setSelectedAddress, selectedAddress } = useFeedback();
-  const effectiveSelectedAddress = selectedAddress ?? initialSelectedAddress;
-
-  useEffect(() => {
-    if (!selectedAddress && initialSelectedAddress) {
-      setSelectedAddress(initialSelectedAddress);
-    }
-  }, [initialSelectedAddress, selectedAddress, setSelectedAddress]);
 
   const { profiles, loading, addProfile } = useProfiles(initialProfiles, true);
-  const { showDirectory, setShowDirectory } = useDirectoryVisibility(
-    initialShowDirectory
-  );
+  const showDirectory = true;
   const showAlpha = useAlphaVisibility(showDirectory);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -98,13 +84,6 @@ export default function Directory({
 
   const searchBarRef = useRef(null);
 
-  useProfileRouting(
-    profiles,
-    effectiveSelectedAddress,
-    setSelectedAddress,
-    showDirectory,
-    setShowDirectory
-  );
 
 
 
@@ -190,26 +169,6 @@ export default function Directory({
 
   const processedProfiles = rankedProfiles;
 
-  const selectedProfile = useMemo(() => {
-    const match = processedProfiles.find(
-      (p) => p.address === effectiveSelectedAddress
-    );
-    if (!match) return null;
-    const joinedAt = match.joined_at || match.created_at || match.since || null;
-    const good_thru = computeGoodThru(joinedAt, match.last_signed_at);
-    return { ...match, good_thru };
-  }, [processedProfiles, selectedAddress]);
-
-  // ✅ Keep feedback form in sync with the active profile (for /:username route)
-  // ✅ Keep feedback form in sync with the active profile (for /:username route)
-  useEffect(() => {
-    if (selectedProfile?.address) {
-      setSelectedAddress(selectedProfile.address);
-
-
-
-    }
-  }, [selectedProfile?.address, selectedProfile?.id, selectedProfile?.name, setSelectedAddress]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -453,7 +412,6 @@ export default function Directory({
                 }}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") {
-                    setShowDirectory(true);
                     setSuppressDropdown(false);
                     setFilters({ verified: false, referred: false, ranked: false, featured: false });
                   }
@@ -499,21 +457,8 @@ export default function Directory({
                     value={search}
                     onChange={(v) => {
                       if (typeof v === "object") {
-                        // User selected a profile from the dropdown
-
-                        // ✅ Fix: Tell routing hook this was a deliberate user click
-                        window.lastSelectionWasExplicit = true;
-
-                        const addr = v.address;
-                        setSelectedAddress(addr);
-                        window.dispatchEvent(
-                          new CustomEvent("selectAddress", { detail: { address: addr } })
-                        );
-
-                        setShowDirectory(false);
-                        requestAnimationFrame(() =>
-                          window.scrollTo({ top: 0, behavior: "smooth" })
-                        );
+                        const slug = buildSlug(v);
+                        if (slug) router.push(`/${slug}`);
                       } else {
                         setSearch(v);
                       }
@@ -528,25 +473,6 @@ export default function Directory({
 
           <button
             onClick={() => {
-              // Broadcast the currently active ProfileCard to AddUserForm
-              if (selectedProfile) {
-                window.dispatchEvent(
-                  new CustomEvent("prefillReferrer", {
-                    detail: {
-                      id: selectedProfile.id,
-                      name: selectedProfile.name,
-                      address: selectedProfile.address,
-                    },
-                  })
-                );
-
-                window.lastReferrer = {
-                  id: selectedProfile.id,
-                  name: selectedProfile.name,
-                  address: selectedProfile.address,
-                };
-              }
-
               setIsJoinOpen(true);
             }}
             className="ml-3 bg-green-600 text-white px-3 py-1.5 rounded-full text-sm font-semibold 
@@ -643,27 +569,6 @@ export default function Directory({
                         profile={p}
                         data-address={p.address}
                         onSelect={(profile) => {
-
-                          // mark that the user intentionally selected a specific profile
-                          window.lastSelectionWasExplicit = true;
-
-                          // Save the scroll position and selected address
-                          localStorage.setItem("lastScrollY", window.scrollY.toString());
-                          localStorage.setItem("lastSelectedAddress", profile.address);
-
-                          setSelectedAddress(profile.address);
-
-                          window.dispatchEvent(
-                            new CustomEvent("selectAddress", { detail: { address: profile.address } })
-                          );
-
-                          setShowDirectory(false);
-
-                          requestAnimationFrame(() => {
-
-                            window.scrollTo({ top: 0, behavior: "smooth" });
-                          });
-
                           const slug = buildSlug(profile);
                           if (slug) router.push(`/${slug}`);
                         }}
@@ -714,27 +619,6 @@ export default function Directory({
         />
 
 
-        {!showDirectory && selectedProfile && (
-          <ProfileCard
-            key={selectedProfile.address}
-            profile={selectedProfile}
-            onSelect={() => { }}
-            fullView
-            warning={{
-              message: `${selectedProfile.name} may not be who you think.`,
-              link: "#",
-            }}
-            cacheVersion={
-              selectedProfile.last_signed_at ||
-              selectedProfile.created_at ||
-              0
-            }
-          />
-        )}
-
-        <div id="zcash-feedback">
-          <ZcashFeedback />
-        </div>
       </div>
     </>
   );

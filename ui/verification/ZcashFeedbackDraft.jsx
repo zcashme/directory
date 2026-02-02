@@ -5,7 +5,7 @@ import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback"
 import useEmojiAutocomplete from "@/lib/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
-import { cachedProfiles } from "@/lib/directory/useProfiles";
+
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import bookOpen from "@/ui/assets/book-open.svg";
@@ -24,11 +24,11 @@ function MemoCounter({ text }) {
   );
 }
 
-export default function ZcashFeedbackDraft() {
+export default function ZcashFeedbackDraft({ profile }) {
   const router = useRouter();
-  const { selectedAddress, setSelectedAddress, forceShowQR } = useFeedback();
+  const { forceShowQR } = useFeedback();
   const { uri, memo, amount, openWallet, setDraftMemo, setDraftAmount } =
-    useFeedbackController();
+    useFeedbackController(profile?.address);
 
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
@@ -56,13 +56,9 @@ export default function ZcashFeedbackDraft() {
     }
   }, [memo]);
 
-  const disabled = selectedAddress?.startsWith("t");
-  const safeProfiles = Array.isArray(cachedProfiles) ? cachedProfiles : [];
-  const recipientProfile = safeProfiles.find(
-    (p) => p.address === selectedAddress
-  );
+  const disabled = profile?.address?.startsWith("t");
   const recipientName =
-    recipientProfile?.display_name || recipientProfile?.name || "Recipient";
+    profile?.display_name || profile?.name || "Recipient";
 
 useEffect(() => {
   if (!forceShowQR) return;
@@ -166,7 +162,7 @@ useEffect(() => {
                     setSearch(v);
                   }
                 }}
-                profiles={safeProfiles}
+                profiles={typeof window !== "undefined" && Array.isArray(window.cachedProfiles) ? window.cachedProfiles : []}
                 placeholder="name or addr"
               />
             </div>
@@ -298,8 +294,8 @@ useEffect(() => {
         <QrUriBlock
           uri={uri}
           profileName={
-            recipientProfile?.display_name ||
-            recipientProfile?.name ||
+            profile?.display_name ||
+            profile?.name ||
             "recipient"
           }
           forceShowQR={forceShowQR}

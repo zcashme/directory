@@ -13,7 +13,7 @@ function ZcashCardWrapper({ title, children }) {
   );
 }
 
-export default function ZcashFeedback() {
+export default function ZcashFeedback({ profile }) {
   const {
   mode,
   setMode,
@@ -65,12 +65,12 @@ export default function ZcashFeedback() {
     </div>
   }
 >
-  <ZcashFeedbackVerify />
+  <ZcashFeedbackVerify profile={profile} />
 </ZcashCardWrapper>
 
             ) : (
               <ZcashCardWrapper>
-                <ZcashFeedbackDraft />
+                <ZcashFeedbackDraft profile={profile} />
               </ZcashCardWrapper>
             )}
           </div>
