@@ -1,14 +1,15 @@
-import SplashPage from "./SplashPage";
+import HomePage from "./HomePage";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 
 export const dynamic = "force-dynamic";
 
-export default async function HomePage() {
+export default async function Page() {
   const supabase = await createSupabaseServerClient();
-  const { data: profiles } = await supabase
+  const { data: featuredProfiles } = await supabase
     .from("zcasher_searchable")
     .select("*")
-    .order("created_at", { ascending: false });
+    .eq("featured", true)
+    .limit(8);
 
-  return <SplashPage profiles={profiles || []} />;
+  return <HomePage featuredProfiles={featuredProfiles || []} />;
 }

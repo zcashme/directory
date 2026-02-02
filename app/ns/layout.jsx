@@ -1,5 +1,5 @@
 import Providers from "../providers";
 
-export default function ProfileLayout({ children }) {
+export default function NsLayout({ children }) {
   return <Providers>{children}</Providers>;
 }
