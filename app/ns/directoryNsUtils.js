@@ -54,24 +54,3 @@ export const getProfileTags = (profile) => {
   return tags;
 };
 
-export const getTagLabel = (tag) => (tag.startsWith("NS v") ? "NS v" : tag);
-
-export const normalizeProfile = (profile = {}) => {
-  const displayName = profile?.display_name || profile?.name || "Unnamed";
-  const profileSlug = normalizeSlug(profile?.name || profile?.display_name || "");
-  const address = profile?.address || "";
-  const addressDisplay = address
-    ? address.length > 24
-      ? `${address.slice(0, 8)}...${address.slice(-8)}`
-      : address
-    : "-";
-  const locationDisplay = getProfileLocation(profile);
-
-  return {
-    ...profile,
-    displayName,
-    profileSlug,
-    addressDisplay,
-    locationDisplay,
-  };
-};
