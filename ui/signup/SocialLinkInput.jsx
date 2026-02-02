@@ -1,6 +1,5 @@
 import { useState } from "react";
-import { normalizeSocialUsername } from "@/lib/normalizeSocialLink";
-import { buildSocialUrl } from "@/lib/buildSocialUrl";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernames";
 import { isValidUrl } from "@/lib/validateUrl";
 
 const PLATFORM_OPTIONS = [

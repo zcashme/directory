@@ -5,8 +5,7 @@ import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import CheckIcon from "@/ui/CheckIcon";
 import { isValidUrl } from "@/lib/validateUrl";
-import { normalizeSocialUsername } from "@/lib/normalizeSocialLink";
-import { buildSocialUrl } from "@/lib/buildSocialUrl";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernames";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import { supabase } from "@/lib/supabase-client";
 import {
