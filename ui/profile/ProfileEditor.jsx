@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback } from "@/lib/messaging/useFeedback";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import CheckIcon from "@/ui/CheckIcon";

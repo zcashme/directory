@@ -1,8 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
-import { useFeedback } from "@/lib/useFeedback";
-import useFeedbackController from "@/lib/useFeedbackController";
+import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback";
 import useEmojiAutocomplete from "@/lib/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";

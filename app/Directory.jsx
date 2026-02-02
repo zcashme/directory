@@ -21,7 +21,7 @@ import useAlphaVisibility from "@/lib/useAlphaVisibility";
 import useDirectoryVisibility from "@/lib/useDirectoryVisibility";
 
 import { computeGoodThru } from "@/lib/profile/profileUtils";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback } from "@/lib/messaging/useFeedback";
 
 
 export default function Directory({

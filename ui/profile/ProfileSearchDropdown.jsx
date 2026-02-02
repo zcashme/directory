@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { flushSync } from "react-dom";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback } from "@/lib/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 

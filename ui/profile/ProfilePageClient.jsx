@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from "react";
 import useProfiles from "@/lib/useProfiles";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback } from "@/lib/messaging/useFeedback";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import ZcashFeedback from "@/app/ZcashFeedback";
 import { computeGoodThru } from "@/lib/profile/profileUtils";

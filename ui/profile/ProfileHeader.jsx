@@ -4,7 +4,7 @@ import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import useProfiles from "@/lib/useProfiles";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback } from "@/lib/messaging/useFeedback";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { normalizeSlug, buildSlug } from "@/lib/normalizeSlugs";
 

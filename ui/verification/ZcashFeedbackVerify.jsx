@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
-import useFeedbackController from "@/lib/useFeedbackController";
-import { useFeedback } from "@/lib/useFeedback";
+import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";

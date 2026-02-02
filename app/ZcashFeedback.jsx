@@ -1,7 +1,6 @@
 // ZcashFeedback.jsx with unified visual wrapper
 import React, { useEffect } from "react";
-import { useFeedback } from "@/lib/useFeedback";
-import useFeedbackEvents from "@/lib/useFeedbackEvents";
+import { useFeedback, useFeedbackEvents } from "@/lib/messaging/useFeedback";
 import ZcashFeedbackDraft from "@/ui/verification/ZcashFeedbackDraft";
 import ZcashFeedbackVerify from "@/ui/verification/ZcashFeedbackVerify";
 

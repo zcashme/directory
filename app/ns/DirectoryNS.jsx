@@ -3,8 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { useFeedback } from "@/lib/useFeedback";
-import useFeedbackController from "@/lib/useFeedbackController";
+import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
