@@ -24,7 +24,7 @@ function MemoCounter({ text }) {
   );
 }
 
-export default function ZcashFeedbackDraft({ profile }) {
+export default function MemoComposer({ profile }) {
   const router = useRouter();
   const { forceShowQR } = useFeedback();
   const { uri, memo, amount, openWallet, setDraftMemo, setDraftAmount } =

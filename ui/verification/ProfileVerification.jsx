@@ -18,7 +18,7 @@ const SIGNIN_ADDR_older =
 const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
-export default function ZcashFeedbackVerify({ profile }) {
+export default function ProfileVerification({ profile }) {
   const { verifyMemo: memo, verifyAmount: amount, setVerifyAmount } =
     useFeedbackController(SIGNIN_ADDR);
 

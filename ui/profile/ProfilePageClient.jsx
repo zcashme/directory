@@ -2,10 +2,34 @@
 
 import { useEffect, useMemo } from "react";
 import ProfileCard from "@/ui/profile/ProfileCard";
-import ZcashFeedback from "@/app/ZcashFeedback";
+import MemoComposer from "@/ui/messaging/MemoComposer";
+import ProfileVerification from "@/ui/verification/ProfileVerification";
+import { useFeedback, useFeedbackEvents } from "@/lib/messaging/useFeedback";
 import { computeGoodThru } from "@/lib/profile/profileUtils";
 
+function ZcashCardWrapper({ title, children }) {
+  return (
+    <div className="p-0 mt-4 bg-transparent shadow-none border-none rounded-none">
+      <h3 className="font-semibold text-gray-800 mb-2">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 export default function ProfilePageClient({ profile }) {
+  const { mode, setMode, setForceShowQR } = useFeedback();
+  useFeedbackEvents();
+
+  // Listen for forceFeedbackNoteMode (dispatched by ProfileCard QR button)
+  useEffect(() => {
+    const handler = () => {
+      setMode("note");
+      setForceShowQR(false);
+    };
+    window.addEventListener("forceFeedbackNoteMode", handler);
+    return () => window.removeEventListener("forceFeedbackNoteMode", handler);
+  }, [setMode, setForceShowQR]);
+
   // Dynamic tab title and favicon based on profile
   useEffect(() => {
     if (!profile) return;
@@ -86,7 +110,46 @@ export default function ProfilePageClient({ profile }) {
           link: "#",
         }}
       />
-      <ZcashFeedback profile={enrichedProfile} />
+
+      <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
+        <div className="w-full flex justify-center bg-transparent border-none shadow-none">
+          <div className="w-full max-w-xl mt-[-9px]">
+            {mode === "signin" ? (
+              <ZcashCardWrapper
+                title={
+                  <div
+                    className="
+                      w-full
+                      border
+                      rounded-xl
+                      px-4
+                      py-3
+                      bg-transparent
+                      text-center
+                      border-[#000000]/90
+                    "
+                    style={{ lineHeight: "1.2" }}
+                  >
+                    <div className="font-semibold text-[15px] text-gray-800 flex items-center justify-center gap-1">
+                      Request One-Time Passcode (OTP)
+                    </div>
+
+                    <div className="text-[13px] text-gray-600 mt-1 font-light">
+                      to verify address and apply edits
+                    </div>
+                  </div>
+                }
+              >
+                <ProfileVerification profile={enrichedProfile} />
+              </ZcashCardWrapper>
+            ) : (
+              <ZcashCardWrapper>
+                <MemoComposer profile={enrichedProfile} />
+              </ZcashCardWrapper>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
