@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { confirmOtp } from "@/lib/verification/confirmOtp";
 
 export default function InlineOtpForm({ profile, onSuccess }) {
   const [step, setStep] = useState(0); // 0=enter, 1=checking, 2=result
@@ -14,10 +14,7 @@ export default function InlineOtpForm({ profile, onSuccess }) {
     if (!zid || !otp) return;
     setStep(1);
     try {
-      const { data, error } = await supabase.rpc("confirm_otp_sql", {
-        in_zcasher_id: zid,
-        in_otp: otp,
-      });
+      const { data, error } = await confirmOtp(zid, otp);
       if (error) {
         setResult("fail");
         setMessage("Unexpected server error.");

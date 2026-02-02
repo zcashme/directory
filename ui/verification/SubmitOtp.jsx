@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { confirmOtp } from "@/lib/verification/confirmOtp";
 
 
 function XIcon(props) {
@@ -44,10 +44,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }) {
     try {
       const zid = profile?.id;
 
-const { data, error } = await supabase.rpc("confirm_otp_sql", {
-  in_zcasher_id: zid,
-  in_otp: otp,
-});
+const { data, error } = await confirmOtp(zid, otp);
 
 
       if (error) {

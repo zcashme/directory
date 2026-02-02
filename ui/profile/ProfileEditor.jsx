@@ -7,7 +7,8 @@ import CheckIcon from "@/ui/CheckIcon";
 import { isValidUrl } from "@/lib/validateUrl";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { getSession, onAuthStateChange } from "@/lib/supabase/auth";
+import { updateLinkVerification } from "@/lib/social/verifyLinkDb";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
@@ -745,42 +746,7 @@ export default function ProfileEditor({ profile, links }) {
             updatePayload.url = verifiedDiscordUrl;
           }
 
-          let { data, error } = await supabase
-            .from('zcasher_links')
-            .update(updatePayload)
-            .eq('zcasher_id', profile.id)
-            .in('url', variants)
-            .select();
-
-          if ((!data || data.length === 0) && !error) {
-            const patternX = `%://x.com/${handle}%`;
-            const patternTw = `%://twitter.com/${handle}%`;
-            const patternWX = `%://www.x.com/${handle}%`;
-            const patternWT = `%://www.twitter.com/${handle}%`;
-            const patternLI = `%://linkedin.com/in/${handle}%`;
-            const patternWLI = `%://www.linkedin.com/in/${handle}%`;
-            const patternGH = `%://github.com/${handle}%`;
-            const patternWGH = `%://www.github.com/${handle}%`;
-            const patternD1 = `%://discord.com/users/${handle}%`;
-            const patternD2 = `%://www.discord.com/users/${handle}%`;
-            const patternDA = `%://discordapp.com/users/${handle}%`;
-            const patternWDA = `%://www.discordapp.com/users/${handle}%`;
-            const { data: data2, error: error2 } = await supabase
-              .from('zcasher_links')
-              .update(updatePayload)
-              .eq('zcasher_id', profile.id)
-              .or(`url.ilike.${patternX},url.ilike.${patternTw},url.ilike.${patternWX},url.ilike.${patternWT},url.ilike.${patternLI},url.ilike.${patternWLI},url.ilike.${patternGH},url.ilike.${patternWGH},url.ilike.${patternD1},url.ilike.${patternD2},url.ilike.${patternDA},url.ilike.${patternWDA}`)
-              .select();
-            data = data2; error = error2;
-          }
-
-          if (error) {
-            console.error("[VERIFY ERROR] DB Update error:", error);
-            throw error;
-          }
-          if (!data || data.length === 0) {
-            console.warn("[VERIFY WARN] No rows updated! Check if zcasher_id and url match exactly in DB.");
-          }
+          await updateLinkVerification(profile.id, handle, variants, updatePayload);
 
         } catch (err) {
           console.error("Database update failed:", err);
@@ -818,13 +784,13 @@ export default function ProfileEditor({ profile, links }) {
     // 1. Check immediate session (if already hydrated)
     // Add a small delay to ensure Supabase client is ready
     setTimeout(() => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      getSession().then(({ data: { session } }) => {
         if (session) applyVerification(session);
       });
     }, 500);
 
     // 2. Listen for auth state change (e.g. processing URL fragment)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = onAuthStateChange((event, session) => {
       // Handle both SIGNED_IN (redirect) and TOKEN_REFRESHED (possible initial state)
       if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || (event === 'INITIAL_SESSION' && session)) {
         applyVerification(session);
@@ -832,7 +798,7 @@ export default function ProfileEditor({ profile, links }) {
     });
 
     const checkSession = () => {
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      getSession().then(({ data: { session } }) => {
         if (session) applyVerification(session);
       });
     };
@@ -1207,7 +1173,7 @@ export default function ProfileEditor({ profile, links }) {
 
     let nextUrl = localStorage.getItem(getDiscordAvatarKey(profile.id, targetKey));
     if (!nextUrl) {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSession();
       if (session) {
         const discordId = getDiscordId(session);
         const discordUsername = await getDiscordUsername(session);
@@ -1251,7 +1217,7 @@ export default function ProfileEditor({ profile, links }) {
 
     let nextUrl = localStorage.getItem(getXAvatarKey(profile.id, targetKey));
     if (!nextUrl) {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await getSession();
       if (session) {
         const xHandle = getXHandle(session);
         if (!xHandle || normalizeHandleKey(xHandle) !== targetKey) {

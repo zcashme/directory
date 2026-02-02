@@ -6,7 +6,7 @@ import { createPortal } from "react-dom";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import { cachedProfiles, resetCache } from "@/lib/directory/useProfiles";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
 import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -412,13 +412,8 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     }
 
     // 🔒 Server-side check (in case local data is stale)
-    const { data: addrMatch, error: addrErr } = await supabase
-      .from("zcasher")
-      .select("id")
-      .or(`address.eq.${address.trim()},address.ilike.${address.trim()}`)
-      .limit(1);
-
-    if (!addrErr && addrMatch && addrMatch.length) {
+    const taken = await checkAddressTaken(address);
+    if (taken) {
       setError("That Zcash address is already associated with an existing profile.");
       return;
     }
@@ -427,38 +422,21 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
     try {
       // 1️⃣ Insert new profile
-      const { data: profile, error: profileError } = await supabase
-        .from("zcasher")
-        .insert([
-          {
-            name: name.trim(),
-            display_name: displayName.trim() || null,
-            address: address.trim(),
-            referred_by: referrer?.name || null,
-            referred_by_zcasher_id: referrer?.id || null,
-
-            nearest_city_id: nearestCity?.id || null,
-            nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || null,
-
-            created_at: new Date().toISOString(),
-          },
-        ])
-        .select()
-        .single();
+      const { data: profile, error: profileError } = await createProfile({
+        name: name.trim(),
+        display_name: displayName.trim() || null,
+        address: address.trim(),
+        referred_by: referrer?.name || null,
+        referred_by_zcasher_id: referrer?.id || null,
+        nearest_city_id: nearestCity?.id || null,
+        nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || null,
+        created_at: new Date().toISOString(),
+      });
 
       if (profileError) throw profileError;
 
       // 2️⃣ Insert profile links
-      for (const entry of finalLinkEntries) {
-        await supabase.from("zcasher_links").insert([
-          {
-            zcasher_id: profile.id,
-            label: entry.label,
-            url: entry.url,
-            is_verified: false,
-          },
-        ]);
-      }
+      await insertProfileLinks(profile.id, finalLinkEntries);
 
 
 

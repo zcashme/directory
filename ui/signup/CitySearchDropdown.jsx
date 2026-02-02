@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { searchCities } from "@/lib/directory/searchCities";
 
 export default function CitySearchDropdown({
   value,
@@ -16,13 +16,8 @@ export default function CitySearchDropdown({
         return;
       }
 
-      const { data, error } = await supabase
-        .from("worldcities")
-        .select("id, city_ascii, city, admin_name, country")
-        .ilike("city_ascii", `%${value}%`)
-        .limit(20);
-
-      if (!error) setResults(data || []);
+      const data = await searchCities(value);
+      setResults(data);
     };
 
     fetchCities();
