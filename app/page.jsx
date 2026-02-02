@@ -1,27 +1,14 @@
-import Directory from "./Directory";
-import { fetchProfilesWithRanks } from "@/lib/profile/profiles";
-import { fetchLeaderboard, fetchStatsData } from "../lib/stats";
+import SplashPage from "./SplashPage";
+import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 
 export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
-  const [profiles, statsBase, ranked] = await Promise.all([
-    fetchProfilesWithRanks(),
-    fetchStatsData(),
-    fetchLeaderboard("weekly", 10),
-  ]);
+  const supabase = await createSupabaseServerClient();
+  const { data: profiles } = await supabase
+    .from("zcasher_searchable")
+    .select("*")
+    .order("created_at", { ascending: false });
 
-  const initialStats = {
-    ...statsBase,
-    ranked,
-  };
-
-  return (
-    <Directory
-      initialProfiles={profiles}
-      initialSelectedAddress={null}
-      initialShowDirectory
-      initialStats={initialStats}
-    />
-  );
+  return <SplashPage profiles={profiles || []} />;
 }
