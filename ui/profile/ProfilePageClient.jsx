@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
-import useProfiles from "@/lib/useProfiles";
+import useProfiles from "@/lib/directory/useProfiles";
 import { useFeedback } from "@/lib/messaging/useFeedback";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import ZcashFeedback from "@/app/ZcashFeedback";

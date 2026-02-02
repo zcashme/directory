@@ -1,4 +1,4 @@
-import { lookupSocialAddress } from "../../../../../lib/social-lookup";
+import { lookupSocialAddress } from "@/lib/social/social-lookup";
 
 export async function GET(request, { params }) {
   const platform = params?.platform || "";

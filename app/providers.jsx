@@ -1,8 +1,8 @@
 "use client";
 
-import { SelectionProvider } from "@/lib/selection-provider";
-import { EditsProvider } from "@/lib/edits-provider";
-import { MessagingProvider } from "@/lib/messaging-provider";
+import { SelectionProvider } from "@/lib/profile/selection-provider";
+import { EditsProvider } from "@/lib/profile/edits-provider";
+import { MessagingProvider } from "@/lib/messaging/messaging-provider";
 
 export default function Providers({ children }) {
   return (

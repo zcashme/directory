@@ -6,8 +6,8 @@ import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback"
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { cachedProfiles } from "@/lib/useProfiles";
-import useVerificationPolling from "@/lib/useVerificationPolling";
+import { cachedProfiles } from "@/lib/directory/useProfiles";
+import useVerificationPolling from "@/lib/verification/useVerificationPolling";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 const SIGNIN_ADDR_old =

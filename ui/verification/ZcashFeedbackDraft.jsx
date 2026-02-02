@@ -5,12 +5,12 @@ import { useFeedback, useFeedbackController } from "@/lib/messaging/useFeedback"
 import useEmojiAutocomplete from "@/lib/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
-import { cachedProfiles } from "@/lib/useProfiles";
+import { cachedProfiles } from "@/lib/directory/useProfiles";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import bookOpen from "@/ui/assets/book-open.svg";
 import bookClosed from "@/ui/assets/book-closed.svg";
-import { normalizeSlug, buildSlug } from "@/lib/normalizeSlugs";
+import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
 
 function MemoCounter({ text }) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);

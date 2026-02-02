@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef, useMemo } from "react";
-import useProfiles from "@/lib/useProfiles";
+import useProfiles from "@/lib/directory/useProfiles";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import ZcashGridButton from "@/ui/ZcashGridButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";

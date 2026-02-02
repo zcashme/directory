@@ -3,10 +3,10 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import useProfiles from "@/lib/useProfiles";
+import useProfiles from "@/lib/directory/useProfiles";
 import { useFeedback } from "@/lib/messaging/useFeedback";
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { normalizeSlug, buildSlug } from "@/lib/normalizeSlugs";
+import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
 
 export default function ProfileHeader() {
   const router = useRouter();

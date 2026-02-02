@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { supabase } from "@/lib/supabase/supabase-client";
 
 export default function InlineOtpForm({ profile, onSuccess }) {
   const [step, setStep] = useState(0); // 0=enter, 1=checking, 2=result

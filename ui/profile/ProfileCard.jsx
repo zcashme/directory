@@ -8,21 +8,21 @@ import { useFeedback } from "@/lib/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";
-import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/normalizeSlugs";
+import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/normalizeSlugs";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON } from "@/lib/social/links";
 import useLazyVisible from "@/lib/useLazyVisible";
-import useProfileEvents from "@/lib/useProfileEvents";
-import useProfileLinks from "@/lib/useProfileLinks";
+import useProfileEvents from "@/lib/profile/useProfileEvents";
+import useProfileLinks from "@/lib/profile/useProfileLinks";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
   isLinkAuthPending,
   appendLinkToken,
   startOAuthVerification,
-} from "@/lib/linkAuthFlow";
+} from "@/lib/social/linkAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";

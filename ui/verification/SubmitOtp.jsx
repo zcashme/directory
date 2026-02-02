@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { supabase } from "@/lib/supabase-client";
+import { supabase } from "@/lib/supabase/supabase-client";
 
 
 function XIcon(props) {

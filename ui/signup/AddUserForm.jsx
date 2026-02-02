@@ -4,9 +4,9 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import { cachedProfiles, resetCache } from "@/lib/useProfiles";
+import { cachedProfiles, resetCache } from "@/lib/directory/useProfiles";
 import { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase-client";
+import { supabase } from "@/lib/supabase/supabase-client";
 import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";

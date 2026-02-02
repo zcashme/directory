@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import ProfilePageClient from "@/ui/profile/ProfilePageClient";
-import { fetchProfileForSlug } from "../../lib/profile";
+import { fetchProfileForSlug } from "@/lib/profile/profile";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;

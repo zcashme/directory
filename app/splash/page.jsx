@@ -1,5 +1,5 @@
 import SplashPage from "./SplashPage";
-import { fetchProfilesWithRanks } from "../../lib/profiles";
+import { fetchProfilesWithRanks } from "@/lib/profile/profiles";
 
 export const dynamic = "force-dynamic";
 

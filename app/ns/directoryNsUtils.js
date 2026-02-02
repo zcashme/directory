@@ -1,4 +1,4 @@
-export { normalizeSlug } from "@/lib/normalizeSlugs";
+export { normalizeSlug } from "@/lib/profile/normalizeSlugs";
 
 export const isTruthyFlag = (value) =>
   value === true || value === "true" || value === 1 || value === "1";

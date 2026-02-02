@@ -13,12 +13,11 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import LetterGridModal from "@/ui/directory/LetterGridModal";
 import AlphabetSidebar from "@/ui/directory/AlphabetSidebar";
 import LoadingDots from "@/ui/LoadingDots";
-import { normalizeSlug, buildSlug } from "@/lib/normalizeSlugs";
+import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
 
-import useProfiles from "@/lib/useProfiles";
-import useProfileRouting from "@/lib/useProfileRouting";
-import useAlphaVisibility from "@/lib/useAlphaVisibility";
-import useDirectoryVisibility from "@/lib/useDirectoryVisibility";
+import useProfiles from "@/lib/directory/useProfiles";
+import useProfileRouting from "@/lib/profile/useProfileRouting";
+import { useDirectoryVisibility, useAlphaVisibility } from "@/lib/directory/useDirectoryVisibility";
 
 import { computeGoodThru } from "@/lib/profile/profileUtils";
 import { useFeedback } from "@/lib/messaging/useFeedback";

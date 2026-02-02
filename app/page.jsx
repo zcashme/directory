@@ -1,5 +1,5 @@
 import Directory from "./Directory";
-import { fetchProfilesWithRanks } from "../lib/profiles";
+import { fetchProfilesWithRanks } from "@/lib/profile/profiles";
 import { fetchLeaderboard, fetchStatsData } from "../lib/stats";
 
 export const dynamic = "force-dynamic";
