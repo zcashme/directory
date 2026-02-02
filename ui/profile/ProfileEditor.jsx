@@ -5,7 +5,7 @@ import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import CheckIcon from "@/ui/CheckIcon";
 import { isValidUrl } from "@/lib/validateUrl";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernames";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import { supabase } from "@/lib/supabase/supabase-client";
 import {
@@ -15,7 +15,7 @@ import {
   appendLinkToken,
   removeLinkToken,
   startOAuthVerification,
-} from "@/lib/social/linkAuthFlow";
+} from "@/lib/social/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 const FIELD_CLASS =

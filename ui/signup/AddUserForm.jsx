@@ -22,7 +22,7 @@ function XIcon(props) {
 }
 
 import { isValidUrl } from "@/lib/validateUrl";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernames";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import useProfiles from "@/lib/directory/useProfiles";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { isNsProfile } from "./directoryNsUtils";
-import { getLinkIcon, getLinkLabel } from "@/lib/social/links";
+import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
 
 export default function useNsDirectory(initialProfiles) {
   const { profiles, loading, addProfile } = useProfiles(initialProfiles, true);
