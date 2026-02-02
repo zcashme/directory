@@ -20,7 +20,7 @@ import useProfileRouting from "@/lib/useProfileRouting";
 import useAlphaVisibility from "@/lib/useAlphaVisibility";
 import useDirectoryVisibility from "@/lib/useDirectoryVisibility";
 
-import computeGoodThru from "@/lib/computeGoodThru";
+import { computeGoodThru } from "@/lib/profile/profileUtils";
 import { useFeedback } from "@/lib/useFeedback";
 
 

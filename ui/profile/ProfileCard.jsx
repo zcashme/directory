@@ -2,19 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import isNewProfile from "@/lib/isNewProfile";
+import { isNewProfile, getProfileImageUrl, getProfileTrust, checkDuplicateNames, getWarningConfig, getRankType, getCircleClass, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/CopyButton";
 import { useFeedback } from "@/lib/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";
 import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/normalizeSlugs";
-import { getProfileImageUrl } from "@/lib/profileImageUrl";
-import { getProfileTrust } from "@/lib/profileTrust";
-import { checkDuplicateNames } from "@/lib/duplicateNameCheck";
-import { getWarningConfig } from "@/lib/profileWarnings";
-import { getRankType, getCircleClass } from "@/lib/rankStyles";
-import { getVerifiedTimeAgo } from "@/lib/timeAgo";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";

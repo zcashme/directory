@@ -5,7 +5,7 @@ import useProfiles from "@/lib/useProfiles";
 import { useFeedback } from "@/lib/useFeedback";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import ZcashFeedback from "@/app/ZcashFeedback";
-import computeGoodThru from "@/lib/computeGoodThru";
+import { computeGoodThru } from "@/lib/profile/profileUtils";
 
 export default function ProfilePageClient({ profile }) {
   const { selectedAddress, setSelectedAddress } = useFeedback();
