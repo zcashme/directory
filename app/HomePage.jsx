@@ -6,6 +6,7 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
+import { supabase } from "@/lib/supabase/supabase-client";
 import Image from "next/image";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 
@@ -33,15 +34,18 @@ function SearchBar() {
       return;
     }
     let cancelled = false;
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery.trim())}`)
-      .then((r) => r.json())
-      .then((data) => {
+    const q = debouncedQuery.trim();
+    supabase
+      .from("zcasher_searchable")
+      .select("*")
+      .or(`display_name.ilike.%${q}%,name.ilike.%${q}%,link_search_text.ilike.%${q}%,address.eq.${q}`)
+      .limit(20)
+      .then(({ data }) => {
         if (!cancelled) {
-          setResults(data);
-          setOpen(data.length > 0);
+          setResults(data || []);
+          setOpen((data || []).length > 0);
         }
-      })
-      .catch(() => {});
+      });
     return () => { cancelled = true; };
   }, [debouncedQuery]);
 
@@ -71,7 +75,7 @@ function SearchBar() {
             <div
               key={p.id}
               onClick={() => {
-                router.push(`/${buildSlug(p.name)}`);
+                router.push(`/${buildSlug(p)}`);
                 setOpen(false);
                 setQuery("");
               }}
@@ -126,7 +130,7 @@ export default function HomePage({ featuredProfiles = [] }) {
             {featuredProfiles.map((p) => (
               <button
                 key={p.name}
-                onClick={() => router.push(`/${buildSlug(p.name)}`)}
+                onClick={() => router.push(`/${buildSlug(p)}`)}
                 className="flex flex-col items-center gap-2 hover:opacity-80 transition"
               >
                 <ProfileAvatar profile={p} size={48} />
