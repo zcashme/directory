@@ -20,73 +20,6 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
-/* ───────── Flipping Badge (decorative) ───────── */
-function FlippingBadge({ label, verified, pool, className, delay = 0 }) {
-  const [isFront, setIsFront] = useState(true);
-  const [frontData, setFrontData] = useState({ label, verified });
-  const [backData, setBackData] = useState({ label: "zcash.me", verified: false });
-  const poolRef = useRef(pool);
-  const isFlippingRef = useRef(false);
-
-  useEffect(() => { poolRef.current = pool; }, [pool]);
-
-  useEffect(() => {
-    if (label && label.includes("/")) {
-      setFrontData({ label, verified });
-    }
-  }, [label, verified]);
-
-  const randomFromPool = () => {
-    const p = poolRef.current || [];
-    return p.length ? p[Math.floor(Math.random() * p.length)] : null;
-  };
-
-  // Seed back face
-  useEffect(() => {
-    const r = randomFromPool();
-    if (r) setBackData({ label: `zcash.me/${r.name}`, verified: r.address_verified });
-  }, []);
-
-  // Flip on interval
-  useEffect(() => {
-    const interval = setInterval(() => {
-      isFlippingRef.current = true;
-      setIsFront((p) => !p);
-    }, 6000 + Math.random() * 4000 + delay);
-    return () => clearInterval(interval);
-  }, [delay]);
-
-  const activeData = isFront ? frontData : backData;
-
-  return (
-    <div className={`absolute perspective-1000 animate-float ${className}`}>
-      <div
-        className={`relative transition-transform duration-1000 transform-style-3d cursor-default ${isFront ? "" : "rotate-x-180"}`}
-        onTransitionEnd={(e) => {
-          if (e.propertyName !== "transform" || !isFlippingRef.current) return;
-          isFlippingRef.current = false;
-          const r = randomFromPool();
-          if (!r) return;
-          const next = { label: `zcash.me/${r.name}`, verified: r.address_verified };
-          if (isFront) setBackData(next);
-          else setFrontData(next);
-        }}
-      >
-        {/* Front */}
-        <div className={`px-3 py-1.5 flex items-center gap-1 backdrop-blur-xs border rounded-full shadow-sm text-sm font-medium whitespace-nowrap transition-colors ${frontData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"}`}>
-          <span>{frontData.label}</span>
-          {frontData.verified && <VerifiedBadge verified />}
-        </div>
-        {/* Back */}
-        <div className={`absolute inset-0 backface-hidden rotate-x-180 px-3 py-1.5 flex items-center gap-1 backdrop-blur-xs border rounded-full shadow-sm text-sm font-medium whitespace-nowrap ${backData.verified ? "bg-green-50/90 border-green-400 text-gray-800" : "bg-white/80 border-orange-100 text-gray-600"}`}>
-          <span>{backData.label}</span>
-          {backData.verified && <VerifiedBadge verified />}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 /* ───────── Main Component ───────── */
 export default function HomePage({ featuredProfiles = [] }) {
   const router = useRouter();
@@ -94,19 +27,8 @@ export default function HomePage({ featuredProfiles = [] }) {
   const [results, setResults] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [showJoin, setShowJoin] = useState(false);
-  const [badgePool, setBadgePool] = useState([]);
   const dropdownRef = useRef(null);
   const debouncedSearch = useDebounce(search, 250);
-
-  // Build badge pool from a quick fetch of verified profiles
-  useEffect(() => {
-    supabase
-      .from("zcasher_searchable")
-      .select("name,address_verified")
-      .eq("address_verified", true)
-      .limit(40)
-      .then(({ data }) => setBadgePool(data || []));
-  }, []);
 
   // Search
   useEffect(() => {
@@ -139,19 +61,11 @@ export default function HomePage({ featuredProfiles = [] }) {
   const exactMatch = results.find((p) => p.name?.toLowerCase() === q);
   const showClaimRow = q && q.length >= 2 && !exactMatch;
 
-  // Badge labels from featured profiles
-  const badgeLabels = featuredProfiles.slice(0, 5).map((p) => ({
-    label: `zcash.me/${p.name}`,
-    verified: p.address_verified,
-  }));
-
   return (
-    <div
-      className="min-h-screen selection:bg-orange-200 relative bg-gray-50"
-    >
+    <div className="min-h-screen selection:bg-orange-200 bg-gray-50">
 
       {/* Nav */}
-      <nav className="relative max-w-4xl mx-auto px-6 py-4 flex items-center justify-between z-20">
+      <nav className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
         <Image
           src={zcashMeLogo}
           alt="zcash.me"
@@ -169,18 +83,8 @@ export default function HomePage({ featuredProfiles = [] }) {
       </nav>
 
       {/* Hero */}
-      <section className="relative z-10 pt-16 pb-24 max-w-4xl mx-auto text-center px-4">
-        <div className="relative pt-16 pb-10 px-8 md:px-12 rounded-2xl border border-yellow-400/50 bg-white/50 shadow-sm backdrop-blur-md">
-          {/* Floating badges */}
-          {badgeLabels.length >= 5 && (
-            <>
-              <FlippingBadge pool={badgePool} label={badgeLabels[0].label} verified={badgeLabels[0].verified} className="-top-8 left-[5%] -rotate-6 scale-75 sm:scale-100 z-20" delay={100} />
-              <FlippingBadge pool={badgePool} label={badgeLabels[1].label} verified={badgeLabels[1].verified} className="-top-8 right-[5%] rotate-3 scale-75 sm:scale-100 z-20" delay={800} />
-              <FlippingBadge pool={badgePool} label={badgeLabels[2].label} verified={badgeLabels[2].verified} className="bottom-12 left-[2%] rotate-6 scale-75 sm:scale-100 z-20" delay={1500} />
-              <FlippingBadge pool={badgePool} label={badgeLabels[3].label} verified={badgeLabels[3].verified} className="-bottom-4 left-[15%] -rotate-3 scale-75 sm:scale-100 z-20" delay={2200} />
-              <FlippingBadge pool={badgePool} label={badgeLabels[4].label} verified={badgeLabels[4].verified} className="bottom-24 right-[2%] -rotate-6 scale-75 sm:scale-100 z-20" delay={3000} />
-            </>
-          )}
+      <section className="pt-16 pb-24 max-w-4xl mx-auto text-center px-4">
+        <div className="pt-16 pb-10 px-8 md:px-12 rounded-2xl border border-gray-200 bg-white/60">
 
           <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3 font-serif tracking-tight leading-tight">
             The easiest way
@@ -192,29 +96,23 @@ export default function HomePage({ featuredProfiles = [] }) {
           </p>
 
           {/* Search bar */}
-          <div ref={dropdownRef} className="max-w-lg mx-auto relative z-30">
-            <div className="p-1 border border-gray-200/50 rounded-[21px] bg-white/30 backdrop-blur-xs shadow-sm group/search relative">
-              {/* Animated border */}
-              <svg className="absolute inset-0 w-full h-full pointer-events-none z-10" xmlns="http://www.w3.org/2000/svg">
-                <rect x="0.5" y="0.5" width="calc(100% - 1px)" height="calc(100% - 1px)" rx="16" pathLength="1000" fill="transparent" stroke="#16a34a" strokeWidth="1" strokeDasharray="100 900" className="animate-travel group-hover/search:opacity-0 group-focus-within/search:opacity-0 transition-opacity duration-300" />
-                <rect x="0.5" y="0.5" width="calc(100% - 1px)" height="calc(100% - 1px)" rx="16" fill="transparent" stroke="#16a34a" strokeWidth="1" className="opacity-0 group-hover/search:opacity-100 group-focus-within/search:opacity-100 transition-opacity duration-300" />
-              </svg>
-
+          <div ref={dropdownRef} className="max-w-lg mx-auto relative">
+            <div className="relative">
               <input
                 type="text"
                 placeholder="Search or claim a name"
-                className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-gray-300 shadow-inner focus:outline-none focus:ring-0 text-gray-700 font-medium placeholder:text-gray-300 text-center transition-all"
+                className="w-full pl-6 pr-12 py-4 rounded-2xl bg-white border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500/30 focus:border-green-500 text-gray-700 font-medium placeholder:text-gray-300 text-center transition-colors"
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setShowDropdown(true); }}
                 onFocus={() => { if (search.trim()) setShowDropdown(true); }}
               />
-              <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors z-20">
+              <button type="button" className="absolute right-4 top-1/2 -translate-y-1/2 p-2 text-gray-400 hover:text-gray-600 transition-colors">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
               </button>
 
               {/* Dropdown */}
               {showDropdown && (results.length > 0 || showClaimRow) && (
-                <div className="absolute left-0 right-0 top-full mt-2 z-[1000] overflow-hidden rounded-2xl border border-orange-100 bg-white/95 backdrop-blur-xl shadow-lg">
+                <div className="absolute left-0 right-0 top-full mt-2 z-50 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
                   <div className="divide-y divide-gray-100">
                     {/* Claim row */}
                     {showClaimRow && (
@@ -257,6 +155,7 @@ export default function HomePage({ featuredProfiles = [] }) {
             </div>
           </div>
 
+
           {/* CTA */}
           <button
             onClick={() => setShowJoin(true)}
@@ -269,14 +168,14 @@ export default function HomePage({ featuredProfiles = [] }) {
       </section>
 
       {/* How it works */}
-      <section className="relative z-10 max-w-3xl mx-auto px-6 pb-20">
+      <section className="max-w-3xl mx-auto px-6 pb-20">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
           {[
             { step: "1", title: "Claim a name", desc: "Pick a username — it's free and instant." },
             { step: "2", title: "Add your address", desc: "Link your Zcash unified or shielded address." },
             { step: "3", title: "Share your link", desc: "Send anyone zcash.me/you to get paid." },
           ].map((s) => (
-            <div key={s.step} className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/60 p-6">
+            <div key={s.step} className="bg-white rounded-xl border border-gray-200 p-6">
               <div className="w-8 h-8 rounded-full bg-gray-900 text-white text-sm font-bold flex items-center justify-center mx-auto mb-3">{s.step}</div>
               <h3 className="font-semibold text-gray-900 mb-1">{s.title}</h3>
               <p className="text-sm text-gray-500">{s.desc}</p>
@@ -286,7 +185,7 @@ export default function HomePage({ featuredProfiles = [] }) {
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 text-gray-500 py-6 px-6 border-t border-gray-200/50">
+      <footer className="text-gray-500 py-6 px-6 border-t border-gray-200">
         <div className="max-w-4xl mx-auto flex flex-col items-center gap-4">
           <Image src={zcashMeLogo} alt="zcash.me" className="h-6 w-auto opacity-60" width={80} height={24} />
           <div className="flex items-center gap-5">
@@ -311,21 +210,6 @@ export default function HomePage({ featuredProfiles = [] }) {
       {/* Join modal */}
       {showJoin && <AddUserForm isOpen={showJoin} onClose={() => setShowJoin(false)} />}
 
-      <style>{`
-        @keyframes float {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-10px); }
-        }
-        .animate-float { animation: float 6s ease-in-out infinite; }
-        @keyframes travel {
-          to { stroke-dashoffset: -1000; }
-        }
-        .animate-travel { animation: travel 8s linear infinite; }
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-x-180 { transform: rotateX(180deg); }
-      `}</style>
     </div>
   );
 }
