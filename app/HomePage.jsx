@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import useProfiles from "@/lib/directory/useProfiles";
+import { fetchFeaturedProfiles } from "@/lib/directory/fetchFeaturedProfiles";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 
@@ -499,13 +499,18 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
 
 export default function HomePage() {
   const router = useRouter();
-  const { profiles } = useProfiles(null, true);
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
+  const [featuredProfiles, setFeaturedProfiles] = useState([]);
+
+  // Fetch featured profiles on mount
+  useEffect(() => {
+    fetchFeaturedProfiles(6).then(setFeaturedProfiles);
+  }, []);
 
   // Track scroll position for dynamic spacing
   useEffect(() => {
@@ -524,18 +529,6 @@ export default function HomePage() {
     minSpacing,
     maxSpacing - Math.min(scrollY / scrollThreshold, 1) * (maxSpacing - minSpacing)
   );
-
-  // Get featured profiles (randomly selected)
-  const featuredProfiles = useMemo(() => {
-    const featured = profiles.filter((p) => p.featured);
-    const source = featured.length > 0 ? featured : profiles;
-
-    if (source.length === 0) return [];
-
-    // Create a shuffled copy and take up to 6
-    const shuffled = [...source].sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, Math.min(6, shuffled.length));
-  }, [profiles]);
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -601,35 +594,8 @@ export default function HomePage() {
                     }}
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
-                        const query = search.trim();
-                        if (query) {
-                          // Find exact match or first match
-                          const exactMatch = profiles.find(
-                            (p) => p.name?.toLowerCase() === query.toLowerCase() ||
-                                   p.display_name?.toLowerCase() === query.toLowerCase()
-                          );
-
-                          if (exactMatch) {
-                            const slug = buildSlug(exactMatch);
-                            if (slug) {
-                              window.location.href = `/${slug}`;
-                            }
-                          } else {
-                            // Find first partial match
-                            const firstMatch = profiles.find(
-                              (p) => p.name?.toLowerCase().includes(query.toLowerCase()) ||
-                                     p.display_name?.toLowerCase().includes(query.toLowerCase())
-                            );
-
-                            if (firstMatch) {
-                              const slug = buildSlug(firstMatch);
-                              if (slug) {
-                                window.location.href = `/${slug}`;
-                              }
-                            }
-                          }
-                          setSuppressDropdown(true);
-                        }
+                        // Let the dropdown handle Enter key - it has the search results
+                        setSuppressDropdown(true);
                       }
                     }}
                     placeholder="Search names"
@@ -657,7 +623,6 @@ export default function HomePage() {
                           setSearch(v);
                         }
                       }}
-                      profiles={profiles}
                       placeholder="search"
                     />
                   </div>

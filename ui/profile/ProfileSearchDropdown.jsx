@@ -1,24 +1,34 @@
 import { useState, useEffect, useRef } from "react";
-
-
+import { searchProfiles } from "@/lib/directory/searchProfiles";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+
+function useDebounce(value, delay) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debouncedValue;
+}
 
 export default function ProfileSearchDropdown({
   value,
   onChange,
-  profiles,
   placeholder = "Search",
   listOnly = false,
   showByDefault = true,
-  autoSelectAddress = true,
   className = "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400",
   ...props
 }) {
   const [show, setShow] = useState(false);
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
   const hideTimerRef = useRef(null);
   const dropdownRef = useRef(null);
   const [isHovering, setIsHovering] = useState(false);
+
+  const debouncedQuery = useDebounce(value, 50);
 
   const clearHideTimer = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -31,62 +41,20 @@ export default function ProfileSearchDropdown({
     }, 4000);
   };
 
-  // -----------------------------
-  // Normalizers
-  // -----------------------------
-  const normalizeSearch = (s = "") =>
-    s
-      .toLowerCase()
-      .replace(/^https?:\/\/(www\.)?[^/]+\/?/, "")
-      .trim();
+  // Fetch search results when debounced query changes
+  useEffect(() => {
+    if (!debouncedQuery || debouncedQuery.trim().length < 2) {
+      setResults([]);
+      return;
+    }
 
-  const q = normalizeSearch(value);
-  const addr = value?.trim();
+    setLoading(true);
+    searchProfiles(debouncedQuery, 20)
+      .then(setResults)
+      .finally(() => setLoading(false));
+  }, [debouncedQuery]);
 
-  // -----------------------------
-  // Filtering
-  // -----------------------------
-  const filtered = q
-    ? profiles.filter((p) =>
-      p.display_name?.toLowerCase().includes(q) ||
-      p.name?.toLowerCase().includes(q) ||
-      p.link_search_text?.includes(q) ||
-      (p.address && addr === p.address)
-    )
-    : [];
-
-  const prioritized = q
-    ? filtered
-      .map((p, index) => {
-        const displayName = p.display_name?.toLowerCase() || "";
-        const name = p.name?.toLowerCase() || "";
-        const linkSearch = p.link_search_text || "";
-        const displayStarts = displayName.startsWith(q);
-        const nameStarts = name.startsWith(q);
-        const linkStarts = linkSearch.startsWith(q);
-        const displayIncludes = displayName.includes(q);
-        const nameIncludes = name.includes(q);
-        const linkIncludes = linkSearch.includes(q);
-        const addressExact = p.address && addr === p.address;
-        let score = 4;
-
-        if (displayStarts) score = 0;
-        else if (nameStarts) score = 1;
-        else if (linkStarts) score = 2;
-        else if (displayIncludes) score = 3;
-        else if (nameIncludes) score = 4;
-        else if (linkIncludes) score = 5;
-        else if (addressExact) score = 6;
-
-        return { p, score, index };
-      })
-      .sort((a, b) => {
-        if (a.score !== b.score) return a.score - b.score;
-        return a.index - b.index;
-      })
-      .map(({ p }) => p)
-    : filtered;
-
+  // Show/hide dropdown based on value
   useEffect(() => {
     if (!value) {
       setShow(false);
@@ -101,8 +69,9 @@ export default function ProfileSearchDropdown({
     return () => {
       clearHideTimer();
     };
-  }, [value, isHovering]);
+  }, [value, isHovering, showByDefault]);
 
+  // Handle click outside
   useEffect(() => {
     if (!show) return;
 
@@ -147,8 +116,12 @@ export default function ProfileSearchDropdown({
           }}
           className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#0a1126]/80 bg-[#0a1126]/90 backdrop-blur-md shadow-xl w-full"
         >
-          {prioritized.length > 0 ? (
-            prioritized.slice(0, 20).map((p) => (
+          {loading ? (
+            <div className="px-3 py-2 text-sm text-white/90 font-medium">
+              Searching...
+            </div>
+          ) : results.length > 0 ? (
+            results.map((p) => (
               <div
                 key={p.id}
                 onClick={() => {
@@ -181,6 +154,10 @@ export default function ProfileSearchDropdown({
                 </div>
               </div>
             ))
+          ) : value.length < 2 ? (
+            <div className="px-3 py-2 text-sm text-white/90 font-medium">
+              Type at least 2 characters
+            </div>
           ) : (
             <div className="px-3 py-2 text-sm text-white/90 font-medium">
               No matches
