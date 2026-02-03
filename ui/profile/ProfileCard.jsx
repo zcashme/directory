@@ -136,7 +136,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             window.scrollTo({ top: 0, behavior: "smooth" })
           );
         }}
-        className="rounded-2xl p-3 border transition-all cursor-pointer shadow-xs backdrop-blur-xs border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
+        className="rounded-2xl p-3 border transition-all cursor-pointer shadow-xs border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)] mb-2"
       >
         <div className="flex items-center gap-4 w-full">
           <ProfileAvatar
@@ -216,7 +216,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           height: "auto",
           transformOrigin: "top center",
           willChange: "transform",
-          transform: "translateZ(0)",
         }}
       >
 
@@ -507,7 +506,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
           {/* Action tray */}
           <div
-            className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 backdrop-blur-xs shadow-inner transition-all overflow-hidden mt-5 pb-0"
+            className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
           >
             {/* Links tray only */}
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
@@ -673,7 +672,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         {/* BACK SIDE (auto-expand editable) */}
         <div
           className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""
-            } bg-white backdrop-blur-xs rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
+            } bg-white rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
         >
           <div className="absolute top-4 left-4 z-10">
             <button

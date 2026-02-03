@@ -1,6 +1,3 @@
-import { motion } from "framer-motion";
-const Motion = motion;
-
 export default function VerifiedCardWrapper({
   verifiedCount = 0, // ✅ still accepts prop from ProfileCard (now mapped to verified_links_count)
   featured = false, // 🟡 new flag
@@ -10,7 +7,7 @@ export default function VerifiedCardWrapper({
 }) {
   // Base style tiers
   const baseStyle =
-    "rounded-2xl p-3 border transition-all cursor-pointer shadow-xs backdrop-blur-xs";
+    "rounded-2xl p-3 border transition-all cursor-pointer shadow-xs";
 
   let tierStyle;
 
@@ -33,26 +30,15 @@ export default function VerifiedCardWrapper({
   }
 
   return (
-    <Motion.div
-      whileHover={{ scale: 1.02 }}
-      transition={{ type: "spring", stiffness: 200, damping: 12 }}
+    <div
       onClick={onClick}
-      className={`${baseStyle} ${tierStyle} ${className}`}
+      className={`${baseStyle} ${tierStyle} verified-card-hover ${className}`}
     >
       {/* Animated gradient shimmer for top-tier verified */}
       {verifiedCount >= 3 && !featured && (
-        <Motion.div
-          className="absolute inset-0 rounded-2xl bg-linear-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md"
-          animate={{
-            backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-          }}
-          transition={{
-            duration: 6,
-            repeat: Infinity,
-            ease: "linear",
-          }}
+        <div
+          className="absolute inset-0 rounded-2xl bg-linear-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md verified-card-shimmer"
           style={{
-            backgroundSize: "200% 200%",
             zIndex: 0,
           }}
         />
@@ -60,6 +46,6 @@ export default function VerifiedCardWrapper({
 
       {/* Foreground content */}
       <div className="relative z-10">{children}</div>
-    </Motion.div>
+    </div>
   );
 }
