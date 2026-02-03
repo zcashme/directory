@@ -408,7 +408,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
     if (featuredProfiles.length <= 1 || isInteracting) return;
     const interval = setInterval(() => {
       setActiveCardIndex((prev) => (prev + 1) % featuredProfiles.length);
-    }, 3500);
+    }, 2500);
     return () => clearInterval(interval);
   }, [featuredProfiles.length, isInteracting]);
 
@@ -558,7 +558,7 @@ export default function HomePage({ initialFeaturedProfiles = [] }) {
 
         {/* Featured Profiles Section */}
         {featuredProfiles.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-20 md:mb-32 px-4">
+          <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4">
             <FeaturedCardsSection
               featuredProfiles={featuredProfiles}
               onCardClick={(profile) => {
@@ -626,39 +626,6 @@ export default function HomePage({ initialFeaturedProfiles = [] }) {
                 )}
               </div>
           </motion.div>
-        </div>
-
-        {/* How it Works Section */}
-        <div className="max-w-lg mx-auto mb-20 md:mb-32 px-4">
-          <motion.h2
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center text-3xl font-black text-gray-900 mb-12"
-          >
-            How it works
-          </motion.h2>
-          <div className="flex gap-4 md:gap-6">
-            {[
-              { number: "1", title: "Claim your username", description: "Choose a unique username and create your profile" },
-              { number: "2", title: "Link your address", description: "Connect your Zcash address to receive payments" },
-              { number: "3", title: "Receive payments", description: "Start receiving Zcash payments instantly and securely" },
-            ].map((step, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="text-center flex-1 min-w-0"
-              >
-                <div className="w-12 h-12 md:w-16 md:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 md:mb-4">
-                  <span className="text-xl md:text-2xl font-black text-green-700">{step.number}</span>
-                </div>
-                <h3 className="text-xs md:text-base font-semibold text-gray-900">{step.title}</h3>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </div>
 
