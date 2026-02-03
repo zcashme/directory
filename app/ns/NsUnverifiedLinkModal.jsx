@@ -1,4 +1,4 @@
-import CopyButton from "@/ui/CopyButton";
+import CopyButton from "@/ui/profile/CopyButton";
 
 export default function NsUnverifiedLinkModal({ unverifiedLink, onClose }) {
   if (!unverifiedLink) return null;

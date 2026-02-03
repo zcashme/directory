@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import LoadingDots from "@/ui/LoadingDots";
+import LoadingDots from "./LoadingDots";
 import NsRow from "./NsRow";
 
 export default function NsTable({
