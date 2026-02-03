@@ -317,7 +317,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
 
   return (
     <div className="mb-16" style={{ overflowX: "clip" }}>
-      <h2 className="text-center text-3xl font-black text-gray-900 mb-8 md:mb-12">Featured Profiles</h2>
       <div className="relative flex justify-center items-start h-[340px] md:h-[420px] pt-12 md:pt-16" style={{ overflowX: "clip" }}>
         {featuredProfiles.map((profile, index) => {
           const patternType = patternTypes[index % patternTypes.length];
@@ -407,6 +406,19 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Featured Profiles Section */}
+        {featuredProfiles.length > 0 && (
+          <div className="max-w-7xl mx-auto mb-20 md:mb-32 px-4">
+            <FeaturedCardsSection
+              featuredProfiles={featuredProfiles}
+              onCardClick={(profile) => {
+                const slug = buildSlug(profile);
+                if (slug) router.push(`/${slug}`);
+              }}
+            />
+          </div>
+        )}
+
         {/* Hero Section */}
         <div className="max-w-lg mx-auto px-4 mb-8">
           {/* Hero Card */}
@@ -416,15 +428,8 @@ export default function HomePage() {
             transition={{ duration: 0.6 }}
             className="relative bg-white rounded-2xl shadow-xl border border-green-100 p-6"
           >
-            <div className="text-center">
-              <h1 className="text-3xl font-black text-gray-900 mb-8 leading-tight">
-                The easiest way
-                <br />
-                <span className="text-green-600">to Zcash you</span>
-              </h1>
-
-              {/* Search Bar */}
-              <div className="w-full mx-auto relative">
+            {/* Search Bar */}
+            <div className="w-full mx-auto relative">
                 <div className="relative flex items-center bg-white rounded-full px-4 py-3 border border-gray-200 focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500/10 transition-all shadow-sm">
                   <span className="text-gray-400 font-medium text-sm mr-2">zcash.me/</span>
                   <input
@@ -498,22 +503,8 @@ export default function HomePage() {
                   </div>
                 )}
               </div>
-            </div>
           </motion.div>
         </div>
-
-        {/* Featured Profiles Section */}
-        {featuredProfiles.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-20 md:mb-32 px-4">
-            <FeaturedCardsSection
-              featuredProfiles={featuredProfiles}
-              onCardClick={(profile) => {
-                const slug = buildSlug(profile);
-                if (slug) router.push(`/${slug}`);
-              }}
-            />
-          </div>
-        )}
 
         {/* How it Works Section */}
         <div className="max-w-lg mx-auto mb-20 md:mb-32 px-4">
