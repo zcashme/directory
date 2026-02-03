@@ -491,7 +491,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
       <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
         Username
       </label>
-      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-blue-600">
+      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
         <input
           id="name"
@@ -515,7 +515,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         className={`mt-1 text-xs ${nameConflict?.type === "error"
           ? "text-red-600"
           : nameConflict?.type === "info"
-            ? "text-blue-600"
+            ? "text-green-600"
             : "text-gray-500"
           }`}
       >
@@ -528,7 +528,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           className={`mt-1 text-xs ${addressConflict?.type === "error"
             ? "text-red-600"
             : addressConflict?.type === "info"
-              ? "text-blue-600"
+              ? "text-green-600"
               : "text-gray-600"
             }`}
         >
@@ -544,7 +544,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         id="displayName"
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
-        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-blue-600 bg-transparent"
+        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-green-600 bg-transparent"
         placeholder="Enter display name"
         autoComplete="off"
       />
@@ -563,7 +563,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           className={`mt-1 text-xs ${addressConflict?.type === "error"
             ? "text-red-600"
             : addressConflict?.type === "info"
-              ? "text-blue-600"
+              ? "text-green-600"
               : "text-gray-600"
             }`}
         >
@@ -634,7 +634,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
         Referred by Zcash.me/
       </label>
 
-      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-blue-600">
+      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
         <ProfileSearchDropdown
           value={referrer?.name || referrer || ""}
@@ -664,7 +664,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
           onRemove={() => removeLinkField(index)}
         />
       ))}
-      <button type="button" onClick={addLinkField} className="text-sm font-semibold text-blue-700 hover:underline mt-1">
+      <button type="button" onClick={addLinkField} className="text-sm font-semibold text-green-700 hover:underline mt-1">
         ＋ Add more links
       </button>
       <p className="mt-2 text-xs text-gray-500">
@@ -743,7 +743,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
             className="absolute top-0 left-0 bottom-0 transition-all duration-700 ease-in-out opacity-80"
             style={{
               width: `${((step + 1) / 6) * 100}%`,
-              backgroundImage: 'linear-gradient(90deg, #fde047, #4ade80, #60a5fa, #fde047)',
+              backgroundImage: 'linear-gradient(90deg, #fde047, #4ade80, #22c55e, #fde047)',
               backgroundSize: '200% 100%',
               animation: 'slideGradient 15s linear infinite'
             }}
@@ -824,7 +824,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
                 disabled={!stepIsValid}
                 title={!stepIsValid && nameConflict?.type === "error" ? "This name is already used by a verified profile." : ""}
                 className={`w-full py-2.5 rounded-xl border text-sm font-semibold ${stepIsValid
-                  ? "border-black/30 text-blue-700 hover:border-blue-600 hover:bg-blue-50"
+                  ? "border-black/30 text-green-700 hover:border-green-600 hover:bg-green-50"
                   : "border-black/20 text-gray-400 cursor-not-allowed opacity-60"
                   }`}
               >
@@ -835,7 +835,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading || !stepIsValid}
-                className="w-full py-2.5 rounded-xl border border-black/30 text-sm font-semibold text-blue-700 hover:border-blue-600 hover:bg-blue-50 disabled:opacity-60"
+                className="w-full py-2.5 rounded-xl border border-black/30 text-sm font-semibold text-green-700 hover:border-green-600 hover:bg-green-50 disabled:opacity-60"
               >
                 {isLoading ? "Adding..." : "Add Name"}
               </button>

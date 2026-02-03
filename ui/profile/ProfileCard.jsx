@@ -209,12 +209,14 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
       data-address={profile.address}
     >
       <div
-        className={`relative transition-transform duration-500 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""
+        className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""
           }`}
         style={{
           position: "relative",
           height: "auto",
           transformOrigin: "top center",
+          willChange: "transform",
+          transform: "translateZ(0)",
         }}
       >
 
@@ -223,7 +225,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
         >
           {/* Top buttons row (menu + share) */}
-          <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-500 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
+          <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
             {/* Menu button */}
             <div className="relative">
               <button

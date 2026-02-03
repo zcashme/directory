@@ -8,11 +8,19 @@
   background-size: 240px 240px;
 }
 
-/* Light theme only */
+/* Light theme only - Zcash.me Design System */
 :root {
-  --color-background: #f6efe6;
-  --color-card: #fbf7f1;
-  --color-primary: #203a47;
+  --color-background: #faf6ed;
+  --color-card: #ffffff;
+  --color-primary: #111827;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-accent-green: #16a34a;
+  --color-accent-green-light: #dcfce7;
+  --color-accent-green-dark: #15803d;
+  --color-border: #d1d5db;
+  --color-border-light: #e5e7eb;
 }
 
 html,
@@ -20,30 +28,30 @@ body {
   height: 100%;
   background: var(--color-background);
   color: var(--color-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* --- Zcash.me Mid-Intensity Custom Scrollbar --- */
+/* --- Zcash.me Custom Scrollbar - Green Theme --- */
 ::-webkit-scrollbar {
   width: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06); /* subtle contrast on dark bg */
+  background: rgba(250, 246, 237, 0.5);
   border-radius: 8px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #1a73e8, #174ea6); /* soft blue gradient */
+  background: linear-gradient(180deg, #16a34a, #15803d);
   border-radius: 8px;
-  border: 2px solid rgba(0, 0, 0, 0.25); /* subtle inset */
-  box-shadow: 0 0 6px rgba(26, 115, 232, 0.4); /* soft glow */
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 4px rgba(22, 163, 74, 0.3);
   transition: all 0.2s ease-in-out;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #3b8bff, #1d63c8);
-  box-shadow: 0 0 10px rgba(59, 139, 255, 0.6);
-  border-color: rgba(0, 0, 0, 0.35);
+  background: linear-gradient(180deg, #22c55e, #16a34a);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
 }
 
 @keyframes shake-x {
@@ -255,4 +263,14 @@ body {
   background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
   background-size: 200% 100%;
   animation: link-tray-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

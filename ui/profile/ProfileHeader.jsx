@@ -49,7 +49,31 @@ export default function ProfileHeader() {
               if (e.key === "Enter") {
                 const query = search.trim();
                 if (query) {
-                  router.push(`/?search=${encodeURIComponent(query)}`);
+                  // Find exact match or first match
+                  const exactMatch = profiles.find(
+                    (p) => p.name?.toLowerCase() === query.toLowerCase() ||
+                           p.display_name?.toLowerCase() === query.toLowerCase()
+                  );
+
+                  if (exactMatch) {
+                    const slug = buildSlug(exactMatch);
+                    if (slug) {
+                      router.push(`/${slug}`);
+                    }
+                  } else {
+                    // Find first partial match
+                    const firstMatch = profiles.find(
+                      (p) => p.name?.toLowerCase().includes(query.toLowerCase()) ||
+                             p.display_name?.toLowerCase().includes(query.toLowerCase())
+                    );
+
+                    if (firstMatch) {
+                      const slug = buildSlug(firstMatch);
+                      if (slug) {
+                        router.push(`/${slug}`);
+                      }
+                    }
+                  }
                   setSuppressDropdown(true);
                 }
               }
@@ -59,7 +83,7 @@ export default function ProfileHeader() {
                 ? `search ${profileCount} names`
                 : "search names"
             }
-            className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden border-b border-transparent focus:border-blue-600 ${search ? "pr-10" : "pr-0"}`}
+            className={`w-full pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden border-b border-transparent focus:border-green-600 ${search ? "pr-10" : "pr-0"}`}
           />
 
           {search && (
@@ -107,7 +131,7 @@ export default function ProfileHeader() {
         onClick={() => {
           setIsJoinOpen(true);
         }}
-        className="ml-3 bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold 
+        className="ml-3 bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold
   shadow-md transition-all duration-300 z-[50] animate-joinPulse
   hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
       >

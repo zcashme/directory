@@ -748,99 +748,92 @@ export default function LandingPage({ profiles = [] }) {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] w-full" style={{ fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
-      {/* Brand */}
-      <div className="max-w-4xl mx-auto px-4 md:px-6 pt-8 md:pt-20 pb-6 md:pb-8">
-        <div className="text-center">
-          <h1 className="text-3xl md:text-6xl font-light text-[#faf6ed] tracking-tight mb-1 md:mb-4">
-            Zcash<span className="text-[#f5c542]">.me</span>
-          </h1>
-          <p className="text-sm md:text-lg text-[#faf6ed]/60 font-light max-w-md mx-auto px-4">
-            The simplest way to receive Zcash payments
-          </p>
+      {/* Header */}
+      <div className="max-w-6xl mx-auto px-4 pt-6 pb-4">
+        {/* Hero Section - matching home page aspect ratio */}
+        <div className="mb-12">
+          <div className="bg-gray-50 rounded-2xl border border-green-200 px-8 py-12 md:px-12 md:py-16 max-w-4xl mx-auto">
+            <div className="text-center">
+              {/* Brand */}
+              <h1 className="text-3xl md:text-6xl font-light text-gray-900 tracking-tight mb-1 md:mb-4">
+                Zcash<span className="text-[#f5c542]">.me</span>
+              </h1>
+              <p className="text-sm md:text-lg text-gray-600 font-light max-w-md mx-auto mb-8">
+                The simplest way to receive Zcash payments
+              </p>
+
+              {/* Search bar */}
+              <div className="max-w-2xl mx-auto relative">
+                <div className="relative flex items-center bg-white rounded-full px-4 py-3 border border-gray-200 focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500/20 transition-all">
+                  <span className="text-gray-400 font-medium text-sm mr-2">zcash.me/</span>
+                  <input
+                    ref={searchInputRef}
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setFilters({ verified: false, ranked: false, featured: false });
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && search) {
+                        if (exactMatch) navigateToProfile(exactMatch);
+                        else alert("Claim flow coming soon! Visit the main site to claim your username.");
+                      }
+                    }}
+                    placeholder="search or claim username"
+                    className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-400"
+                  />
+                  {isTaken ? (
+                    <button
+                      onClick={() => navigateToProfile(exactMatch)}
+                      className="ml-2 md:ml-3 p-2 md:px-5 md:py-2 bg-[#22c55e] text-white rounded-full text-xs md:text-sm font-medium hover:bg-[#16a34a] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                      <span className="hidden md:inline">View</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => alert("Claim flow coming soon! Visit the main site to claim your username.")}
+                      className={`ml-2 md:ml-3 p-2 md:px-5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
+                        isAvailable ? "bg-[#22c55e] text-white hover:bg-[#16a34a]" : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                      }`}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      <span className="hidden md:inline">Claim</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Status message */}
+                {search && (
+                  <div className="text-center mt-3">
+                    {isTaken ? (
+                      <p className="text-sm text-gray-600 flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#f97316]" />
+                        <span><strong className="text-[#f5c542]">{exactMatch.display_name || exactMatch.name}</strong> already exists</span>
+                        <span className="text-gray-400">•</span>
+                        <button onClick={() => navigateToProfile(exactMatch)} className="text-[#22c55e] hover:underline font-medium">View profile →</button>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-[#22c55e] flex items-center justify-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
+                        <strong>zcash.me/{search}</strong> is available!
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Sticky trigger */}
       <div ref={stickyTriggerRef} className="h-0 w-full" aria-hidden="true" />
-
-      {/* Search bar */}
-      <div
-        className={`sticky top-0 z-[100] py-3 md:py-4 px-4 md:px-0 transition-all duration-500 ease-out ${
-          isSearchBarFixed
-            ? "bg-[#0d0d0d]/95 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.5)] border-b border-[#faf6ed]/10"
-            : "bg-[#0d0d0d] shadow-none border-b border-transparent"
-        }`}
-      >
-        <div className="w-full max-w-sm md:max-w-lg mx-auto">
-          <div className="relative">
-            <div className="relative flex items-center bg-[#faf6ed] rounded-full px-4 md:px-5 py-2.5 md:py-3">
-              <BorderBeam lightColor={isAvailable ? "#22c55e" : "#f5c542"} duration={6} borderWidth={2} />
-              <span className="text-[#1a1a1a]/40 font-medium text-sm md:text-base shrink-0">zcash.me/</span>
-              <div className="flex-1 min-w-0">
-                <input
-                  ref={searchInputRef}
-                  value={search}
-                  onChange={(e) => {
-                    setSearch(e.target.value);
-                    setFilters({ verified: false, ranked: false, featured: false });
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && search) {
-                      if (exactMatch) navigateToProfile(exactMatch);
-                      else alert("Claim flow coming soon! Visit the main site to claim your username.");
-                    }
-                  }}
-                  placeholder="search or claim username"
-                  className="w-full px-1 py-0.5 text-sm md:text-base bg-transparent text-[#1a1a1a] placeholder-[#1a1a1a]/30 outline-none"
-                />
-              </div>
-              {isTaken ? (
-                <button
-                  onClick={() => navigateToProfile(exactMatch)}
-                  className="ml-2 md:ml-3 p-2 md:px-5 md:py-2 bg-[#22c55e] text-white rounded-full text-xs md:text-sm font-medium hover:bg-[#16a34a] transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <span className="hidden md:inline">View</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => alert("Claim flow coming soon! Visit the main site to claim your username.")}
-                  className={`ml-2 md:ml-3 p-2 md:px-5 md:py-2 rounded-full text-xs md:text-sm font-medium transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 ${
-                    isAvailable ? "bg-[#22c55e] text-white hover:bg-[#16a34a]" : "bg-[#1a1a1a] text-[#faf6ed] hover:bg-[#2a2a2a]"
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                  </svg>
-                  <span className="hidden md:inline">Claim</span>
-                </button>
-              )}
-            </div>
-          </div>
-
-          {/* Status message */}
-          {search && (
-            <div className="text-center mt-3">
-              {isTaken ? (
-                <p className="text-sm text-[#faf6ed]/70 flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#f97316]" />
-                  <span><strong className="text-[#f5c542]">{exactMatch.display_name || exactMatch.name}</strong> already exists</span>
-                  <span className="text-[#faf6ed]/40">•</span>
-                  <button onClick={() => navigateToProfile(exactMatch)} className="text-[#22c55e] hover:underline font-medium">View profile →</button>
-                </p>
-              ) : (
-                <p className="text-sm text-[#22c55e] flex items-center justify-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse" />
-                  <strong>zcash.me/{search}</strong> is available!
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
 
       {/* Divider */}
       <div className="max-w-xs mx-auto border-t border-[#faf6ed]/10 mt-8 mb-8 md:mb-12" />
