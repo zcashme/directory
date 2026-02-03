@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import { fetchFeaturedProfiles } from "@/lib/directory/fetchFeaturedProfiles";
+// fetchFeaturedProfiles moved to server-side in page.jsx
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 
@@ -497,7 +497,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
   );
 }
 
-export default function HomePage() {
+export default function HomePage({ initialFeaturedProfiles = [] }) {
   const router = useRouter();
   const searchInputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -505,12 +505,9 @@ export default function HomePage() {
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
-  const [featuredProfiles, setFeaturedProfiles] = useState([]);
 
-  // Fetch featured profiles on mount
-  useEffect(() => {
-    fetchFeaturedProfiles(6).then(setFeaturedProfiles);
-  }, []);
+  // Featured profiles come from server - no client fetch needed
+  const featuredProfiles = initialFeaturedProfiles;
 
   // Track scroll position for dynamic spacing
   useEffect(() => {
