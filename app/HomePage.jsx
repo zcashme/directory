@@ -368,6 +368,25 @@ export default function HomePage() {
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
+  const [scrollY, setScrollY] = useState(0);
+
+  // Track scroll position for dynamic spacing
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrollY(window.scrollY);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Calculate spacing based on scroll (max spacing at top, closer when scrolled)
+  const maxSpacing = 448; // max-w-md equivalent (28rem = 448px)
+  const minSpacing = 96; // Minimum spacing (6rem = 96px)
+  const scrollThreshold = 300; // Distance to scroll before reaching min spacing
+  const spacing = Math.max(
+    minSpacing,
+    maxSpacing - Math.min(scrollY / scrollThreshold, 1) * (maxSpacing - minSpacing)
+  );
 
   // Get featured profiles (randomly selected)
   const featuredProfiles = useMemo(() => {
@@ -386,19 +405,23 @@ export default function HomePage() {
       {/* Main Content */}
       <div className="flex-1">
         {/* Header */}
-        <div className="max-w-lg mx-auto px-4 pt-6 pb-4">
-          <div className="flex items-center justify-between mb-8">
+        <div className="max-w-6xl mx-auto px-4 pt-6 pb-4">
+          <div className="flex items-center justify-center mb-8">
             <Image
               src={zcashMeLogo}
               alt="Zcash.me"
-              className="h-10 w-auto"
+              className="h-10 w-auto shrink-0"
               width={150}
               height={40}
+            />
+            <div
+              className="transition-all duration-200 ease-out"
+              style={{ width: `${spacing}px` }}
             />
             <button
               onClick={() => setIsJoinOpen(true)}
               className="bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold
-                shadow-md transition-all duration-300 animate-joinPulse
+                shadow-md transition-all duration-300 animate-joinPulse shrink-0
                 hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
             >
               Join
