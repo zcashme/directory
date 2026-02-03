@@ -10,53 +10,6 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import useProfiles from "@/lib/directory/useProfiles";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
-// ── Animated pattern components ──────────────────────────────────────
-
-function AnimatedLines({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <div className="relative w-full h-full flex items-end justify-around px-1">
-        {[...Array(16)].map((_, i) => {
-          const baseHeight = 30 + Math.sin(i * 0.8) * 20;
-          const hoverHeight = 60 + Math.sin(i * 0.5) * 25;
-          return (
-            <div
-              key={i}
-              className="w-1.5 rounded-full bg-gray-400/40"
-              style={{
-                height: isHovering ? `${hoverHeight}%` : `${baseHeight}%`,
-                transition: `height ${0.3 + i * 0.02}s ease-out, opacity 0.3s ease-out`,
-                opacity: isHovering ? 0.6 : 0.4,
-              }}
-            />
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function AnimatedDots({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <div className="relative w-full h-full flex flex-wrap gap-2 p-2">
-        {[...Array(35)].map((_, i) => (
-          <div
-            key={i}
-            className="rounded-full"
-            style={{
-              width: isHovering ? `${6 + (i % 4) * 2}px` : "6px",
-              height: isHovering ? `${6 + (i % 4) * 2}px` : "6px",
-              backgroundColor: `rgba(34,197,94,${isHovering ? 0.4 + (i % 5) * 0.1 : 0.3})`,
-              transition: `all 0.3s ease-out ${i * 0.015}s`,
-              transform: isHovering ? `translateY(${(i % 3 - 1) * 3}px)` : "translateY(0)",
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
 
 // ── FannedCard ───────────────────────────────────────────────────────
 
@@ -67,7 +20,6 @@ function FannedCard({
   verticalOffset = 0,
   zIndex,
   onClick,
-  patternType,
   isMobile,
   isActive,
   stackIndex,
@@ -104,10 +56,11 @@ function FannedCard({
     onInteractionEnd?.();
   };
 
-  const patternActive = isHovering || isActive || isSpotlit;
-  const Pattern = patternType === "dots" ? AnimatedDots : AnimatedLines;
-
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+
+  // Get links count
+  const mobileTotalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
+  const totalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
 
   // ── Mobile stacked layout ──
   if (isMobile) {
@@ -153,7 +106,6 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          <Pattern isHovering={patternActive} />
           <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
             <span className="font-bold text-xs text-gray-900 truncate max-w-[100px]">
               {profile.display_name || profile.name}
@@ -167,6 +119,101 @@ function FannedCard({
             )}
           </div>
           <p className="text-[9px] text-gray-600 mb-1.5 relative z-10">@{profile.name}</p>
+
+          {/* Bio snippet */}
+          <p className="text-[8px] text-gray-700 mb-1.5 line-clamp-2 leading-relaxed px-1 min-h-[24px] relative z-10">
+            {profile.bio || <span className="invisible">Bio placeholder</span>}
+          </p>
+
+          {/* Address pill with icons */}
+          {profile.address && (
+            <div className="flex justify-center mb-1.5 relative z-10">
+              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
+                <span className="font-mono text-[7px] text-gray-700 leading-none">
+                  {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
+                </span>
+                {/* QR Code icon */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); }}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                  title="QR Code"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="3" height="3" />
+                    <rect x="18" y="14" width="3" height="3" />
+                    <rect x="14" y="18" width="3" height="3" />
+                    <rect x="18" y="18" width="3" height="3" />
+                  </svg>
+                </button>
+                {/* Copy icon */}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(profile.address);
+                  }}
+                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                  title="Copy address"
+                >
+                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <rect x="9" y="9" width="13" height="13" rx="2" />
+                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Links section */}
+          {mobileTotalLinks > 0 && (
+            <div className="mt-auto w-full relative z-10">
+              <div className="bg-gray-50/80 rounded border border-gray-200 px-1 py-0.5">
+                <div className="flex flex-col gap-0.5">
+                  {(profile.links || []).slice(0, 2).map((link, i) => {
+                    let faviconUrl = '';
+                    try {
+                      const domain = new URL(link.url || '').hostname;
+                      faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                    } catch { faviconUrl = ''; }
+                    const iconSrc = link.icon?.src || link.icon || faviconUrl;
+                    return (
+                      <div key={i} className="flex items-center gap-1 min-w-0">
+                        {iconSrc && (
+                          <img
+                            src={iconSrc}
+                            alt=""
+                            className="w-2.5 h-2.5 rounded-sm object-contain shrink-0"
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                        )}
+                        <span className="text-[7px] text-gray-700 truncate">
+                          {link.label || link.url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'Link'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {mobileTotalLinks > 2 && (
+                    <span className="text-[6px] text-gray-500 text-center">
+                      +{mobileTotalLinks - 2} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* City/Location if available */}
+          {profile.nearest_city && (
+            <div className="mt-1 flex items-center justify-center gap-0.5 text-[7px] text-gray-500 relative z-10">
+              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+              </svg>
+              <span className="truncate max-w-[80px]">{profile.nearest_city}</span>
+            </div>
+          )}
+
           <div className="mt-auto pt-1 relative z-10">
             <span className="text-[7px] text-green-600 font-medium uppercase tracking-wider">Tap to view →</span>
           </div>
@@ -225,7 +272,6 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        <Pattern isHovering={patternActive} />
         <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
           <span className="font-bold text-sm text-gray-900 truncate max-w-[120px]">
             {profile.display_name || profile.name}
@@ -239,6 +285,101 @@ function FannedCard({
           )}
         </div>
         <p className="text-[10px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
+
+        {/* Bio snippet */}
+        <p className="text-[9px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 min-h-[28px] relative z-10">
+          {profile.bio || <span className="invisible">Bio placeholder</span>}
+        </p>
+
+        {/* Address pill with icons */}
+        {profile.address && (
+          <div className="flex justify-center mb-2 relative z-10">
+            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
+              <span className="font-mono text-[8px] text-gray-700 leading-none">
+                {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
+              </span>
+              {/* QR Code icon */}
+              <button
+                onClick={(e) => { e.stopPropagation(); }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+                title="QR Code"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <rect x="3" y="3" width="7" height="7" rx="1" />
+                  <rect x="14" y="3" width="7" height="7" rx="1" />
+                  <rect x="3" y="14" width="7" height="7" rx="1" />
+                  <rect x="14" y="14" width="3" height="3" />
+                  <rect x="18" y="14" width="3" height="3" />
+                  <rect x="14" y="18" width="3" height="3" />
+                  <rect x="18" y="18" width="3" height="3" />
+                </svg>
+              </button>
+              {/* Copy icon */}
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigator.clipboard.writeText(profile.address);
+                }}
+                className="text-gray-500 hover:text-gray-700 transition-colors"
+                title="Copy address"
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Links section */}
+        {totalLinks > 0 && (
+          <div className="mt-auto w-full relative z-10">
+            <div className="bg-gray-50/80 rounded-lg border border-gray-200 px-1.5 py-1">
+              <div className="flex flex-col gap-0.5">
+                {(profile.links || []).slice(0, 3).map((link, i) => {
+                  let faviconUrl = '';
+                  try {
+                    const domain = new URL(link.url || '').hostname;
+                    faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
+                  } catch { faviconUrl = ''; }
+                  const iconSrc = link.icon?.src || link.icon || faviconUrl;
+                  return (
+                    <div key={i} className="flex items-center gap-1 min-w-0">
+                      {iconSrc && (
+                        <img
+                          src={iconSrc}
+                          alt=""
+                          className="w-3 h-3 rounded-sm object-contain shrink-0"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      )}
+                      <span className="text-[8px] text-gray-700 truncate">
+                        {link.label || link.url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'Link'}
+                      </span>
+                    </div>
+                  );
+                })}
+                {totalLinks > 3 && (
+                  <span className="text-[7px] text-gray-500 text-center">
+                    +{totalLinks - 3} more
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* City/Location if available */}
+        {profile.nearest_city && (
+          <div className="mt-2 flex items-center justify-center gap-1 text-[9px] text-gray-500 relative z-10">
+            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
+            </svg>
+            <span className="truncate max-w-[100px]">{profile.nearest_city}</span>
+          </div>
+        )}
+
         <div className="mt-auto pt-2 relative z-10">
           <span className="text-[8px] text-green-600 font-medium uppercase tracking-wider">View Profile →</span>
         </div>
@@ -290,8 +431,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
     }
   };
 
-  const patternTypes = ["lines", "dots"];
-
   const getDesktopPosition = (index) => {
     const count = featuredProfiles.length;
     const centerIdx = Math.floor(count / 2);
@@ -319,7 +458,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
     <div className="mb-16" style={{ overflowX: "clip" }}>
       <div className="relative flex justify-center items-start h-[340px] md:h-[420px] pt-12 md:pt-16" style={{ overflowX: "clip" }}>
         {featuredProfiles.map((profile, index) => {
-          const patternType = patternTypes[index % patternTypes.length];
           const stackIndex = getStackIndex(index);
           const isActive = isMobile && index === activeCardIndex;
           const isSpotlit = !isMobile && index === activeCardIndex;
@@ -328,7 +466,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
             <FannedCard
               key={profile.id ?? profile.address}
               profile={profile}
-              patternType={patternType}
               rotation={desktopPos.rotation}
               offset={desktopPos.offset}
               verticalOffset={desktopPos.verticalOffset}
