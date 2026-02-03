@@ -36,117 +36,6 @@ function AnimatedLines({ isHovering }) {
   );
 }
 
-function AnimatedGrid({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <div
-        className="grid grid-cols-8 grid-rows-6 gap-1 h-full"
-        style={{
-          transition: "transform 0.5s ease-out",
-          transform: isHovering ? "scale(1.1)" : "scale(1)",
-        }}
-      >
-        {[...Array(48)].map((_, i) => (
-          <div
-            key={i}
-            className="rounded-sm"
-            style={{
-              backgroundColor: `rgba(0,0,0,${isHovering ? 0.1 + Math.random() * 0.3 : 0.1 + (i % 8) * 0.05})`,
-              transition: `background-color ${0.2 + (i % 5) * 0.1}s ease-out`,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AnimatedWaves({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <svg viewBox="0 0 100 80" className="w-full h-full">
-        {[...Array(14)].map((_, i) => (
-          <path
-            key={i}
-            d={
-              isHovering
-                ? `M0 ${5 + i * 6} Q25 ${i % 2 === 0 ? -5 : 15} 50 ${5 + i * 6} T100 ${5 + i * 6}`
-                : `M0 ${5 + i * 6} Q25 ${5 + i * 6} 50 ${5 + i * 6} T100 ${5 + i * 6}`
-            }
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            className="text-gray-400/40"
-            style={{ transition: `d 0.4s ease-out ${i * 0.03}s` }}
-          />
-        ))}
-      </svg>
-    </div>
-  );
-}
-
-function AnimatedBlocks({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <div className="relative w-full h-full">
-        {[...Array(6)].map((_, row) => (
-          <div
-            key={row}
-            className="flex gap-0.5 mb-0.5"
-            style={{
-              transform: isHovering ? `translateX(${row % 2 === 0 ? 4 : -4}px)` : "translateX(0)",
-              transition: `transform 0.4s ease-out ${row * 0.05}s`,
-            }}
-          >
-            {[...Array(16)].map((_, col) => (
-              <div
-                key={col}
-                className="w-2 h-3 rounded-sm"
-                style={{
-                  backgroundColor: isHovering
-                    ? `rgba(34,197,94,${0.3 + Math.random() * 0.4})`
-                    : `rgba(34,197,94,${(col + row) % 3 === 0 ? 0.5 : 0.2})`,
-                  transition: `background-color ${0.2 + Math.random() * 0.3}s ease-out`,
-                }}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function AnimatedCircles({ isHovering }) {
-  return (
-    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
-      <svg viewBox="0 0 100 80" className="w-full h-full">
-        {[...Array(12)].map((_, i) => {
-          const cx = 10 + (i % 4) * 28;
-          const cy = 15 + Math.floor(i / 4) * 25;
-          const baseRadius = 8 + (i % 3) * 2;
-          return (
-            <circle
-              key={i}
-              cx={cx}
-              cy={cy}
-              r={isHovering ? baseRadius + 3 : baseRadius}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              className="text-gray-400/40"
-              style={{
-                transition: `r 0.3s ease-out ${i * 0.04}s, opacity 0.3s ease-out`,
-                opacity: isHovering ? 0.7 : 0.4,
-              }}
-            />
-          );
-        })}
-      </svg>
-    </div>
-  );
-}
-
 function AnimatedDots({ isHovering }) {
   return (
     <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
@@ -165,88 +54,6 @@ function AnimatedDots({ isHovering }) {
           />
         ))}
       </div>
-    </div>
-  );
-}
-
-// ── BorderBeam ───────────────────────────────────────────────────────
-
-function BorderBeam({
-  duration = 6,
-  lightColor = "#16a34a",
-  borderWidth = 2,
-  beamSize = 80,
-}) {
-  const containerRef = useRef(null);
-  const pathRef = useRef(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-  const [pathLength, setPathLength] = useState(0);
-
-  useEffect(() => {
-    const update = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, []);
-
-  useEffect(() => {
-    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
-  }, [dimensions]);
-
-  const { width, height } = dimensions;
-  const radius = height / 2;
-  const pillPath =
-    width && height
-      ? `M ${radius},0 L ${width - radius},0 A ${radius},${radius} 0 0 1 ${width},${radius} A ${radius},${radius} 0 0 1 ${width - radius},${height} L ${radius},${height} A ${radius},${radius} 0 0 1 0,${radius} A ${radius},${radius} 0 0 1 ${radius},0`
-      : "";
-  const dashLength = beamSize;
-  const gapLength = pathLength - dashLength;
-
-  return (
-    <div
-      ref={containerRef}
-      className="absolute inset-0 rounded-[inherit] pointer-events-none"
-      style={{ overflow: "visible" }}
-    >
-      <svg
-        className="absolute w-full h-full"
-        style={{ overflow: "visible", left: 0, top: 0 }}
-        viewBox={width && height ? `0 0 ${width} ${height}` : undefined}
-        preserveAspectRatio="none"
-      >
-        <defs>
-          <filter id="beam-glow" x="-50%" y="-50%" width="200%" height="200%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-        <path d={pillPath} fill="none" stroke={`${lightColor}30`} strokeWidth={borderWidth} />
-        <path ref={pathRef} d={pillPath} fill="none" stroke="transparent" strokeWidth={0} />
-        {pathLength > 0 && (
-          <motion.path
-            d={pillPath}
-            fill="none"
-            stroke={lightColor}
-            strokeWidth={borderWidth + 1}
-            strokeLinecap="round"
-            filter="url(#beam-glow)"
-            strokeDasharray={`${dashLength} ${gapLength}`}
-            initial={{ strokeDashoffset: 0 }}
-            animate={{ strokeDashoffset: -pathLength }}
-            transition={{ duration, repeat: Infinity, ease: "linear" }}
-          />
-        )}
-      </svg>
     </div>
   );
 }
@@ -298,17 +105,7 @@ function FannedCard({
   };
 
   const patternActive = isHovering || isActive || isSpotlit;
-  const renderPattern = () => {
-    switch (patternType) {
-      case "lines": return <AnimatedLines isHovering={patternActive} />;
-      case "grid": return <AnimatedGrid isHovering={patternActive} />;
-      case "waves": return <AnimatedWaves isHovering={patternActive} />;
-      case "blocks": return <AnimatedBlocks isHovering={patternActive} />;
-      case "circles": return <AnimatedCircles isHovering={patternActive} />;
-      case "dots": return <AnimatedDots isHovering={patternActive} />;
-      default: return <AnimatedLines isHovering={patternActive} />;
-    }
-  };
+  const Pattern = patternType === "dots" ? AnimatedDots : AnimatedLines;
 
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
 
@@ -356,7 +153,7 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          {renderPattern()}
+          <Pattern isHovering={patternActive} />
           <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
             <span className="font-bold text-xs text-gray-900 truncate max-w-[100px]">
               {profile.display_name || profile.name}
@@ -428,7 +225,7 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        {renderPattern()}
+        <Pattern isHovering={patternActive} />
         <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
           <span className="font-bold text-sm text-gray-900 truncate max-w-[120px]">
             {profile.display_name || profile.name}
@@ -455,7 +252,6 @@ function FannedCard({
 function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
   const [isMobile, setIsMobile] = useState(false);
   const [isInteracting, setIsInteracting] = useState(false);
-  const interactionTimeout = useRef(null);
 
   const centerIndex = Math.floor(featuredProfiles.length / 2);
   const [activeCardIndex, setActiveCardIndex] = useState(centerIndex);
@@ -468,10 +264,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
   }, []);
 
   useEffect(() => {
-    return () => { if (interactionTimeout.current) clearTimeout(interactionTimeout.current); };
-  }, []);
-
-  useEffect(() => {
     if (featuredProfiles.length <= 1 || isInteracting) return;
     const interval = setInterval(() => {
       setActiveCardIndex((prev) => (prev + 1) % featuredProfiles.length);
@@ -481,11 +273,9 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
 
   const handleHoverStart = () => {
     setIsInteracting(true);
-    if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
   };
   const handleHoverEnd = () => {
-    if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
-    interactionTimeout.current = setTimeout(() => setIsInteracting(false), 3000);
+    setIsInteracting(false);
   };
 
   const handleCardClick = (index, profile) => {
@@ -496,37 +286,25 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
         onCardClick(profile);
       } else {
         setActiveCardIndex(index);
-        setIsInteracting(true);
-        if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
-        interactionTimeout.current = setTimeout(() => setIsInteracting(false), 5000);
       }
     }
   };
 
-  const patternTypes = ["lines", "grid", "waves", "blocks", "circles", "dots"];
-  const shimmerSpeeds = ["", "card-shimmer-fast", "card-shimmer-slow", "", "card-shimmer-fast", "card-shimmer-slow"];
-
-  const getLayoutConfig = (count) => {
-    if (count <= 1) return { rotations: [0], offsets: [0], verticalOffsets: [0], zIndexes: [1] };
-    if (count === 2) return { rotations: [-10, 10], offsets: [-100, 100], verticalOffsets: [20, 20], zIndexes: [1, 2] };
-    if (count === 3) return { rotations: [-12, 0, 12], offsets: [-130, 0, 130], verticalOffsets: [35, 0, 35], zIndexes: [1, 3, 2] };
-    if (count === 4) return { rotations: [-14, -5, 5, 14], offsets: [-150, -50, 50, 150], verticalOffsets: [45, 15, 15, 45], zIndexes: [1, 2, 3, 2] };
-    if (count === 5) return { rotations: [-15, -8, 0, 8, 15], offsets: [-170, -85, 0, 85, 170], verticalOffsets: [55, 25, 0, 25, 55], zIndexes: [1, 2, 3, 3, 2] };
-    return { rotations: [-16, -10, -4, 4, 10, 16], offsets: [-190, -114, -38, 38, 114, 190], verticalOffsets: [65, 35, 10, 10, 35, 65], zIndexes: [1, 2, 3, 4, 3, 2] };
-  };
-
-  const baseLayout = getLayoutConfig(featuredProfiles.length);
+  const patternTypes = ["lines", "dots"];
 
   const getDesktopPosition = (index) => {
     const count = featuredProfiles.length;
-    const cIdx = Math.floor(count / 2);
+    const centerIdx = Math.floor(count / 2);
     const relativePos = index - activeCardIndex;
-    const visualIdx = ((cIdx + relativePos) % count + count) % count;
+    const visualIdx = ((centerIdx + relativePos) % count + count) % count;
+    const distanceFromCenter = Math.abs(visualIdx - centerIdx);
+    const isLeft = visualIdx < centerIdx;
+
     return {
-      rotation: baseLayout.rotations[visualIdx] || 0,
-      offset: baseLayout.offsets[visualIdx] || 0,
-      verticalOffset: baseLayout.verticalOffsets[visualIdx] || 0,
-      zIndex: baseLayout.zIndexes[visualIdx] || 1,
+      rotation: distanceFromCenter === 0 ? 0 : (isLeft ? -12 : 12) + (distanceFromCenter - 1) * -2,
+      offset: distanceFromCenter === 0 ? 0 : (isLeft ? -1 : 1) * (100 + distanceFromCenter * 40),
+      verticalOffset: distanceFromCenter * 15,
+      zIndex: count - distanceFromCenter,
     };
   };
 
@@ -560,7 +338,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
               isActive={isActive}
               stackIndex={stackIndex}
               isSpotlit={isSpotlit}
-              shimmerSpeed={shimmerSpeeds[index % shimmerSpeeds.length]}
+              shimmerSpeed={isSpotlit ? "card-shimmer" : ""}
               onInteractionStart={handleHoverStart}
               onInteractionEnd={handleHoverEnd}
               onClick={() => handleCardClick(index, profile)}
