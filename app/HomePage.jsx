@@ -7,7 +7,8 @@ import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-// fetchFeaturedProfiles moved to server-side in page.jsx
+import VerifiedBadge from "@/ui/profile/VerifiedBadge";
+import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 
@@ -56,11 +57,11 @@ function FannedCard({
     onInteractionEnd?.();
   };
 
+  // Keep computed values for future use (imports preserved)
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-
-  // Get links count
   const mobileTotalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
   const totalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
+  // Note: profile.profile_image_url, profile.display_name, profile.bio, profile.links, profile.nearest_city available but not rendered
 
   // ── Mobile stacked layout ──
   if (isMobile) {
@@ -81,23 +82,26 @@ function FannedCard({
           transformOrigin: "center center",
         }}
       >
+        {/* Profile Avatar */}
         <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20">
           <div
-            className={`w-16 h-16 rounded-full overflow-hidden bg-gray-100 shadow-lg ${isVerified ? "ring-3 ring-green-500" : "ring-3 ring-green-400"}`}
+            className="rounded-full border border-black p-0.5 bg-white"
             style={{ transform: isActive ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
           >
-            {profile.profile_image_url ? (
-              <img src={profile.profile_image_url} alt={profile.name} className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full flex items-center justify-center text-gray-700 text-lg font-medium">
-                {profile.name?.[0]?.toUpperCase() || "?"}
-              </div>
-            )}
+            <div className="[&>div]:!bg-transparent [&>div]:!border-0">
+              <ProfileAvatar
+                profile={profile}
+                size={64}
+                imageClassName="object-cover"
+                className="shadow-lg"
+                showFallbackIcon
+              />
+            </div>
           </div>
         </div>
 
         <div
-          className={`bg-white w-[160px] h-[240px] rounded-2xl border-2 border-green-400 p-3 pt-12 shadow-xl text-center flex flex-col relative ${isActive ? `card-shimmer ${shimmerSpeed}` : ""}`}
+          className={`bg-white w-[160px] h-[240px] rounded-2xl border border-black p-3 pt-12 shadow-xl text-center flex flex-col relative ${isActive ? `card-shimmer ${shimmerSpeed}` : ""}`}
           style={{
             transform: isActive ? "scale(1)" : "scale(0.98)",
             transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -106,28 +110,30 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
-            <span className="font-bold text-xs text-gray-900 truncate max-w-[100px]">
+          {/* Display Name */}
+          <div className="mb-1 relative z-10">
+            <span className="font-bold text-xs text-gray-900 truncate block text-center max-w-full px-6">
               {profile.display_name || profile.name}
             </span>
             {isVerified && (
-              <span className="w-3.5 h-3.5 bg-green-600 rounded-full flex items-center justify-center shrink-0">
-                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
+              <span className="absolute top-0 right-2 scale-[0.5] origin-center">
+                <VerifiedBadge verified={true} />
               </span>
             )}
           </div>
-          <p className="text-[9px] text-gray-600 mb-1.5 relative z-10">@{profile.name}</p>
+          {/* Username */}
+          <p className="text-[9px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
 
-          {/* Bio snippet */}
-          <p className="text-[8px] text-gray-700 mb-1.5 line-clamp-2 leading-relaxed px-1 min-h-[24px] relative z-10">
-            {profile.bio || <span className="invisible">Bio placeholder</span>}
-          </p>
+          {/* Bio */}
+          {profile.bio && profile.bio.trim() !== "" && (
+            <p className="text-[8px] text-gray-700 mb-4 line-clamp-2 leading-relaxed px-1 min-h-[24px] relative z-10 break-words">
+              {profile.bio}
+            </p>
+          )}
 
           {/* Address pill with icons */}
           {profile.address && (
-            <div className="flex justify-center mb-1.5 relative z-10">
+            <div className="flex justify-center mb-4 relative z-10">
               <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
                 <span className="font-mono text-[7px] text-gray-700 leading-none">
                   {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
@@ -165,58 +171,6 @@ function FannedCard({
               </div>
             </div>
           )}
-
-          {/* Links section */}
-          {mobileTotalLinks > 0 && (
-            <div className="mt-auto w-full relative z-10">
-              <div className="bg-gray-50/80 rounded border border-gray-200 px-1 py-0.5">
-                <div className="flex flex-col gap-0.5">
-                  {(profile.links || []).slice(0, 2).map((link, i) => {
-                    let faviconUrl = '';
-                    try {
-                      const domain = new URL(link.url || '').hostname;
-                      faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-                    } catch { faviconUrl = ''; }
-                    const iconSrc = link.icon?.src || link.icon || faviconUrl;
-                    return (
-                      <div key={i} className="flex items-center gap-1 min-w-0">
-                        {iconSrc && (
-                          <img
-                            src={iconSrc}
-                            alt=""
-                            className="w-2.5 h-2.5 rounded-sm object-contain shrink-0"
-                            onError={(e) => { e.target.style.display = 'none'; }}
-                          />
-                        )}
-                        <span className="text-[7px] text-gray-700 truncate">
-                          {link.label || link.url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'Link'}
-                        </span>
-                      </div>
-                    );
-                  })}
-                  {mobileTotalLinks > 2 && (
-                    <span className="text-[6px] text-gray-500 text-center">
-                      +{mobileTotalLinks - 2} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* City/Location if available */}
-          {profile.nearest_city && (
-            <div className="mt-1 flex items-center justify-center gap-0.5 text-[7px] text-gray-500 relative z-10">
-              <svg className="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-              </svg>
-              <span className="truncate max-w-[80px]">{profile.nearest_city}</span>
-            </div>
-          )}
-
-          <div className="mt-auto pt-1 relative z-10">
-            <span className="text-[7px] text-green-600 font-medium uppercase tracking-wider">Tap to view →</span>
-          </div>
         </div>
       </div>
     );
@@ -240,23 +194,26 @@ function FannedCard({
         perspective: "1000px",
       }}
     >
+      {/* Profile Avatar */}
       <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
         <div
-          className={`w-20 h-20 rounded-full overflow-hidden bg-gray-100 shadow-lg ${isVerified ? "ring-4 ring-green-500" : "ring-4 ring-green-400"}`}
+          className="rounded-full border border-black p-0.5 bg-white"
           style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
         >
-          {profile.profile_image_url ? (
-            <img src={profile.profile_image_url} alt={profile.name} className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-700 text-xl font-medium">
-              {profile.name?.[0]?.toUpperCase() || "?"}
-            </div>
-          )}
+          <div className="[&>div]:!bg-transparent [&>div]:!border-0">
+            <ProfileAvatar
+              profile={profile}
+              size={80}
+              imageClassName="object-cover"
+              className="shadow-lg"
+              showFallbackIcon
+            />
+          </div>
         </div>
       </div>
 
       <div
-        className={`bg-white w-[180px] h-[280px] rounded-2xl border-2 border-green-400 p-4 pt-14 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering ? `card-shimmer ${shimmerSpeed}` : ""}`}
+        className={`bg-white w-[180px] h-[280px] rounded-2xl border border-black p-4 pt-14 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering ? `card-shimmer ${shimmerSpeed}` : ""}`}
         style={{
           transform: isHovering
             ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.08)`
@@ -272,28 +229,30 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
-          <span className="font-bold text-sm text-gray-900 truncate max-w-[120px]">
+        {/* Display Name */}
+        <div className="mb-1 relative z-10">
+          <span className="font-bold text-sm text-gray-900 truncate block text-center max-w-full px-8">
             {profile.display_name || profile.name}
           </span>
           {isVerified && (
-            <span className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center shrink-0">
-              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
+            <span className="absolute top-0 right-3 scale-[0.5] origin-center">
+              <VerifiedBadge verified={true} />
             </span>
           )}
         </div>
+        {/* Username */}
         <p className="text-[10px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
 
-        {/* Bio snippet */}
-        <p className="text-[9px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 min-h-[28px] relative z-10">
-          {profile.bio || <span className="invisible">Bio placeholder</span>}
-        </p>
+        {/* Bio */}
+        {profile.bio && profile.bio.trim() !== "" && (
+          <p className="text-[9px] text-gray-700 mb-4 line-clamp-2 leading-relaxed px-1 min-h-[28px] relative z-10 break-words">
+            {profile.bio}
+          </p>
+        )}
 
         {/* Address pill with icons */}
         {profile.address && (
-          <div className="flex justify-center mb-2 relative z-10">
+          <div className="flex justify-center mb-4 relative z-10">
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
               <span className="font-mono text-[8px] text-gray-700 leading-none">
                 {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
@@ -331,58 +290,6 @@ function FannedCard({
             </div>
           </div>
         )}
-
-        {/* Links section */}
-        {totalLinks > 0 && (
-          <div className="mt-auto w-full relative z-10">
-            <div className="bg-gray-50/80 rounded-lg border border-gray-200 px-1.5 py-1">
-              <div className="flex flex-col gap-0.5">
-                {(profile.links || []).slice(0, 3).map((link, i) => {
-                  let faviconUrl = '';
-                  try {
-                    const domain = new URL(link.url || '').hostname;
-                    faviconUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
-                  } catch { faviconUrl = ''; }
-                  const iconSrc = link.icon?.src || link.icon || faviconUrl;
-                  return (
-                    <div key={i} className="flex items-center gap-1 min-w-0">
-                      {iconSrc && (
-                        <img
-                          src={iconSrc}
-                          alt=""
-                          className="w-3 h-3 rounded-sm object-contain shrink-0"
-                          onError={(e) => { e.target.style.display = 'none'; }}
-                        />
-                      )}
-                      <span className="text-[8px] text-gray-700 truncate">
-                        {link.label || link.url?.replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'Link'}
-                      </span>
-                    </div>
-                  );
-                })}
-                {totalLinks > 3 && (
-                  <span className="text-[7px] text-gray-500 text-center">
-                    +{totalLinks - 3} more
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* City/Location if available */}
-        {profile.nearest_city && (
-          <div className="mt-2 flex items-center justify-center gap-1 text-[9px] text-gray-500 relative z-10">
-            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
-            </svg>
-            <span className="truncate max-w-[100px]">{profile.nearest_city}</span>
-          </div>
-        )}
-
-        <div className="mt-auto pt-2 relative z-10">
-          <span className="text-[8px] text-green-600 font-medium uppercase tracking-wider">View Profile →</span>
-        </div>
       </div>
     </div>
   );
