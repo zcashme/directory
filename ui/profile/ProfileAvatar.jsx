@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getProfileTrust, getRankType, getCircleClass } from "@/lib/profile/profileUtils";
 
 export default function ProfileAvatar({
     profile,
@@ -9,35 +10,10 @@ export default function ProfileAvatar({
     blink = false,
     lookAround = false,
 }) {
-    // --- derive state ---
-    const isVerified =
-        profile.address_verified ||
-        profile.verified ||
-        profile.verified_links_count > 0 ||
-        profile.links?.some((l) => l.is_verified);
-
-    let rankType = null;
-    if (profile.rank_alltime > 0) rankType = "alltime";
-    else if (profile.rank_weekly > 0) rankType = "weekly";
-    else if (profile.rank_monthly > 0) rankType = "monthly";
-    else if (profile.rank_daily > 0) rankType = "daily";
-
-    // --- background logic (copied faithfully) ---
-    let circleClass = "bg-blue-500";
-
-    if (isVerified && rankType) {
-        circleClass = "bg-linear-to-r from-green-400 to-orange-500";
-    } else if (isVerified) {
-        circleClass = "bg-green-500";
-    } else if (rankType) {
-        if (rankType === "weekly") {
-            circleClass = "bg-linear-to-r from-blue-500 to-orange-500";
-        } else if (rankType === "daily") {
-            circleClass = "bg-linear-to-r from-blue-500 to-cyan-500";
-        } else {
-            circleClass = "bg-linear-to-r from-blue-500 to-red-500";
-        }
-    }
+    // --- derive state using utility functions ---
+    const { isVerified } = getProfileTrust(profile);
+    const rankType = getRankType(profile);
+    const circleClass = getCircleClass(isVerified, rankType);
 
     const gradientStyle = circleClass.includes("bg-linear-to-r")
         ? {

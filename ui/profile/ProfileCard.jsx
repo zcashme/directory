@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { isNewProfile, getProfileImageUrl, getProfileTrust, checkDuplicateNames, getWarningConfig, getRankType, getCircleClass, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
+import { isNewProfile, getProfileTrust, checkDuplicateNames, getWarningConfig, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import { useFeedback } from "@/lib/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -13,7 +13,6 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON } from "@/lib/social/profileLinks";
-import useLazyVisible from "@/lib/useLazyVisible";
 import useProfileEvents from "@/lib/profile/useProfileEvents";
 import useProfileLinks from "@/lib/profile/useProfileLinks";
 import {
@@ -50,6 +49,7 @@ function RedirectModal({ isOpen, label }) {
 }
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
+  // onSelect is optional - only used in compact mode for navigation
   // --- Hooks ---
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
@@ -62,8 +62,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [menuOpen, setMenuOpen] = useState(false);
   const { showBack, setShowBack } = useProfileEvents(profile);
   const { setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
-  const finalUrl = getProfileImageUrl(profile);
-  const { imgRef, visible } = useLazyVisible(finalUrl, fullView);
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
     const expected = buildSlug(profile);
@@ -75,7 +73,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
 
   // --- Derived values ---
-  const { verifiedAddress, verifiedLinks, hasVerifiedContent, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
+  const { verifiedAddress, verifiedLinks, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
@@ -84,15 +82,13 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
   const cachedProfiles =
     typeof window !== "undefined" ? window.cachedProfiles : null;
-  const { duplicateNameCount, hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
+  const { hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
   const hasAwards =
     (profile?.rank_alltime ?? 0) > 0 ||
     (profile?.rank_weekly ?? 0) > 0 ||
     (profile?.rank_monthly ?? 0) > 0 ||
     (profile?.rank_daily ?? 0) > 0;
-  const rankType = getRankType(profile);
-  const circleClass = getCircleClass(isVerified, rankType);
 
   useEffect(() => {
     if (!warningConfig) return;
@@ -129,13 +125,13 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   };
 
   if (!fullView) {
-    // Compact card (unchanged)
+    // Compact card - uses onSelect callback for navigation (if provided)
     return (
       <VerifiedCardWrapper
         verifiedCount={profile.verified_links_count ?? 0}
         featured={profile.featured}
         onClick={() => {
-          onSelect(profile);
+          onSelect?.(profile);
           requestAnimationFrame(() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
           );

@@ -4,8 +4,8 @@ import { useEffect, useMemo } from "react";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
+import ProfileHeader from "@/ui/profile/ProfileHeader";
 import { useFeedback, useFeedbackEvents } from "@/lib/messaging/useFeedback";
-import { computeGoodThru } from "@/lib/profile/profileUtils";
 
 function ZcashCardWrapper({ title, children }) {
   return (
@@ -87,24 +87,19 @@ export default function ProfilePageClient({ profile }) {
 
   const enrichedProfile = useMemo(() => {
     if (!profile) return null;
-    const joinedAt =
-      profile.joined_at ||
-      profile.created_at ||
-      profile.since ||
-      null;
-    const good_thru = computeGoodThru(joinedAt, profile.last_signed_at);
-    return { ...profile, good_thru };
+    return profile;
   }, [profile]);
 
   if (!enrichedProfile) return null;
 
   return (
-    <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
-      <ProfileCard
-        key={enrichedProfile.address}
-        profile={enrichedProfile}
-        onSelect={() => { }}
-        fullView
+    <>
+      <ProfileHeader />
+      <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20">
+        <ProfileCard
+          key={enrichedProfile.address}
+          profile={enrichedProfile}
+          fullView
         warning={{
           message: `${enrichedProfile.name} may not be who you think.`,
           link: "#",
@@ -151,5 +146,6 @@ export default function ProfilePageClient({ profile }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
