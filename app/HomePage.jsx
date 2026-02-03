@@ -1,15 +1,587 @@
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfiles from "@/lib/directory/useProfiles";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
+
+// ── Animated pattern components ──────────────────────────────────────
+
+function AnimatedLines({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <div className="relative w-full h-full flex items-end justify-around px-1">
+        {[...Array(16)].map((_, i) => {
+          const baseHeight = 30 + Math.sin(i * 0.8) * 20;
+          const hoverHeight = 60 + Math.sin(i * 0.5) * 25;
+          return (
+            <div
+              key={i}
+              className="w-1.5 rounded-full bg-gray-400/40"
+              style={{
+                height: isHovering ? `${hoverHeight}%` : `${baseHeight}%`,
+                transition: `height ${0.3 + i * 0.02}s ease-out, opacity 0.3s ease-out`,
+                opacity: isHovering ? 0.6 : 0.4,
+              }}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedGrid({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <div
+        className="grid grid-cols-8 grid-rows-6 gap-1 h-full"
+        style={{
+          transition: "transform 0.5s ease-out",
+          transform: isHovering ? "scale(1.1)" : "scale(1)",
+        }}
+      >
+        {[...Array(48)].map((_, i) => (
+          <div
+            key={i}
+            className="rounded-sm"
+            style={{
+              backgroundColor: `rgba(0,0,0,${isHovering ? 0.1 + Math.random() * 0.3 : 0.1 + (i % 8) * 0.05})`,
+              transition: `background-color ${0.2 + (i % 5) * 0.1}s ease-out`,
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedWaves({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <svg viewBox="0 0 100 80" className="w-full h-full">
+        {[...Array(14)].map((_, i) => (
+          <path
+            key={i}
+            d={
+              isHovering
+                ? `M0 ${5 + i * 6} Q25 ${i % 2 === 0 ? -5 : 15} 50 ${5 + i * 6} T100 ${5 + i * 6}`
+                : `M0 ${5 + i * 6} Q25 ${5 + i * 6} 50 ${5 + i * 6} T100 ${5 + i * 6}`
+            }
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className="text-gray-400/40"
+            style={{ transition: `d 0.4s ease-out ${i * 0.03}s` }}
+          />
+        ))}
+      </svg>
+    </div>
+  );
+}
+
+function AnimatedBlocks({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <div className="relative w-full h-full">
+        {[...Array(6)].map((_, row) => (
+          <div
+            key={row}
+            className="flex gap-0.5 mb-0.5"
+            style={{
+              transform: isHovering ? `translateX(${row % 2 === 0 ? 4 : -4}px)` : "translateX(0)",
+              transition: `transform 0.4s ease-out ${row * 0.05}s`,
+            }}
+          >
+            {[...Array(16)].map((_, col) => (
+              <div
+                key={col}
+                className="w-2 h-3 rounded-sm"
+                style={{
+                  backgroundColor: isHovering
+                    ? `rgba(34,197,94,${0.3 + Math.random() * 0.4})`
+                    : `rgba(34,197,94,${(col + row) % 3 === 0 ? 0.5 : 0.2})`,
+                  transition: `background-color ${0.2 + Math.random() * 0.3}s ease-out`,
+                }}
+              />
+            ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AnimatedCircles({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <svg viewBox="0 0 100 80" className="w-full h-full">
+        {[...Array(12)].map((_, i) => {
+          const cx = 10 + (i % 4) * 28;
+          const cy = 15 + Math.floor(i / 4) * 25;
+          const baseRadius = 8 + (i % 3) * 2;
+          return (
+            <circle
+              key={i}
+              cx={cx}
+              cy={cy}
+              r={isHovering ? baseRadius + 3 : baseRadius}
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              className="text-gray-400/40"
+              style={{
+                transition: `r 0.3s ease-out ${i * 0.04}s, opacity 0.3s ease-out`,
+                opacity: isHovering ? 0.7 : 0.4,
+              }}
+            />
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function AnimatedDots({ isHovering }) {
+  return (
+    <div className="absolute top-4 left-4 right-4 h-28 overflow-hidden">
+      <div className="relative w-full h-full flex flex-wrap gap-2 p-2">
+        {[...Array(35)].map((_, i) => (
+          <div
+            key={i}
+            className="rounded-full"
+            style={{
+              width: isHovering ? `${6 + (i % 4) * 2}px` : "6px",
+              height: isHovering ? `${6 + (i % 4) * 2}px` : "6px",
+              backgroundColor: `rgba(34,197,94,${isHovering ? 0.4 + (i % 5) * 0.1 : 0.3})`,
+              transition: `all 0.3s ease-out ${i * 0.015}s`,
+              transform: isHovering ? `translateY(${(i % 3 - 1) * 3}px)` : "translateY(0)",
+            }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── BorderBeam ───────────────────────────────────────────────────────
+
+function BorderBeam({
+  duration = 6,
+  lightColor = "#16a34a",
+  borderWidth = 2,
+  beamSize = 80,
+}) {
+  const containerRef = useRef(null);
+  const pathRef = useRef(null);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const [pathLength, setPathLength] = useState(0);
+
+  useEffect(() => {
+    const update = () => {
+      if (containerRef.current) {
+        setDimensions({
+          width: containerRef.current.offsetWidth,
+          height: containerRef.current.offsetHeight,
+        });
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  useEffect(() => {
+    if (pathRef.current) setPathLength(pathRef.current.getTotalLength());
+  }, [dimensions]);
+
+  const { width, height } = dimensions;
+  const radius = height / 2;
+  const pillPath =
+    width && height
+      ? `M ${radius},0 L ${width - radius},0 A ${radius},${radius} 0 0 1 ${width},${radius} A ${radius},${radius} 0 0 1 ${width - radius},${height} L ${radius},${height} A ${radius},${radius} 0 0 1 0,${radius} A ${radius},${radius} 0 0 1 ${radius},0`
+      : "";
+  const dashLength = beamSize;
+  const gapLength = pathLength - dashLength;
+
+  return (
+    <div
+      ref={containerRef}
+      className="absolute inset-0 rounded-[inherit] pointer-events-none"
+      style={{ overflow: "visible" }}
+    >
+      <svg
+        className="absolute w-full h-full"
+        style={{ overflow: "visible", left: 0, top: 0 }}
+        viewBox={width && height ? `0 0 ${width} ${height}` : undefined}
+        preserveAspectRatio="none"
+      >
+        <defs>
+          <filter id="beam-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <path d={pillPath} fill="none" stroke={`${lightColor}30`} strokeWidth={borderWidth} />
+        <path ref={pathRef} d={pillPath} fill="none" stroke="transparent" strokeWidth={0} />
+        {pathLength > 0 && (
+          <motion.path
+            d={pillPath}
+            fill="none"
+            stroke={lightColor}
+            strokeWidth={borderWidth + 1}
+            strokeLinecap="round"
+            filter="url(#beam-glow)"
+            strokeDasharray={`${dashLength} ${gapLength}`}
+            initial={{ strokeDashoffset: 0 }}
+            animate={{ strokeDashoffset: -pathLength }}
+            transition={{ duration, repeat: Infinity, ease: "linear" }}
+          />
+        )}
+      </svg>
+    </div>
+  );
+}
+
+// ── FannedCard ───────────────────────────────────────────────────────
+
+function FannedCard({
+  profile,
+  rotation,
+  offset,
+  verticalOffset = 0,
+  zIndex,
+  onClick,
+  patternType,
+  isMobile,
+  isActive,
+  stackIndex,
+  isSpotlit,
+  onInteractionStart,
+  onInteractionEnd,
+  shimmerSpeed = "",
+}) {
+  const cardRef = useRef(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!cardRef.current || isMobile) return;
+      const rect = cardRef.current.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      setTilt({ x: ((y - centerY) / centerY) * -10, y: ((x - centerX) / centerX) * 10 });
+    },
+    [isMobile]
+  );
+
+  const handleMouseEnter = () => {
+    if (isMobile) return;
+    setIsHovering(true);
+    onInteractionStart?.();
+  };
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+    setTilt({ x: 0, y: 0 });
+    onInteractionEnd?.();
+  };
+
+  const patternActive = isHovering || isActive || isSpotlit;
+  const renderPattern = () => {
+    switch (patternType) {
+      case "lines": return <AnimatedLines isHovering={patternActive} />;
+      case "grid": return <AnimatedGrid isHovering={patternActive} />;
+      case "waves": return <AnimatedWaves isHovering={patternActive} />;
+      case "blocks": return <AnimatedBlocks isHovering={patternActive} />;
+      case "circles": return <AnimatedCircles isHovering={patternActive} />;
+      case "dots": return <AnimatedDots isHovering={patternActive} />;
+      default: return <AnimatedLines isHovering={patternActive} />;
+    }
+  };
+
+  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+
+  // ── Mobile stacked layout ──
+  if (isMobile) {
+    const stackOffset = isActive ? -16 : stackIndex * 8;
+    const stackScale = isActive ? 1.05 : 1 - stackIndex * 0.03;
+    const stackRotation = stackIndex === 0 ? 0 : (stackIndex % 2 === 0 ? 2 : -2) * (stackIndex * 0.5);
+
+    return (
+      <div
+        ref={cardRef}
+        onClick={onClick}
+        className="absolute cursor-pointer left-1/2"
+        style={{
+          transform: `translateX(-50%) translateY(${stackOffset}px) scale(${stackScale}) rotate(${isActive ? 0 : stackRotation}deg)`,
+          zIndex: isActive ? 50 : 20 - stackIndex,
+          transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease, z-index 0s",
+          opacity: isActive ? 1 : Math.max(0.4, 1 - stackIndex * 0.15),
+          transformOrigin: "center center",
+        }}
+      >
+        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20">
+          <div
+            className={`w-16 h-16 rounded-full overflow-hidden bg-gray-100 shadow-lg ${isVerified ? "ring-3 ring-green-500" : "ring-3 ring-green-400"}`}
+            style={{ transform: isActive ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
+          >
+            {profile.profile_image_url ? (
+              <img src={profile.profile_image_url} alt={profile.name} className="w-full h-full object-cover" />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-700 text-lg font-medium">
+                {profile.name?.[0]?.toUpperCase() || "?"}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`bg-white w-[160px] h-[240px] rounded-2xl border-2 border-green-400 p-3 pt-12 shadow-xl text-center flex flex-col relative ${isActive ? `card-shimmer ${shimmerSpeed}` : ""}`}
+          style={{
+            transform: isActive ? "scale(1)" : "scale(0.98)",
+            transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+            boxShadow: isActive
+              ? "0 25px 50px -12px rgba(34, 197, 94, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.2)"
+              : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
+          }}
+        >
+          {renderPattern()}
+          <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
+            <span className="font-bold text-xs text-gray-900 truncate max-w-[100px]">
+              {profile.display_name || profile.name}
+            </span>
+            {isVerified && (
+              <span className="w-3.5 h-3.5 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </span>
+            )}
+          </div>
+          <p className="text-[9px] text-gray-600 mb-1.5 relative z-10">@{profile.name}</p>
+          <div className="mt-auto pt-1 relative z-10">
+            <span className="text-[7px] text-green-600 font-medium uppercase tracking-wider">Tap to view →</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Desktop fanned layout ──
+  const isHighlighted = isHovering || isSpotlit;
+
+  return (
+    <div
+      ref={cardRef}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className="absolute cursor-pointer"
+      style={{
+        transform: `translateX(${offset}px) translateY(${isHighlighted ? verticalOffset - 30 : verticalOffset}px) rotate(${isHighlighted ? 0 : rotation}deg) scale(${isHovering ? 1.05 : isHighlighted ? 1.02 : 1})`,
+        zIndex: isHovering ? 100 : isSpotlit ? 50 : zIndex,
+        transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0s",
+        perspective: "1000px",
+      }}
+    >
+      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
+        <div
+          className={`w-20 h-20 rounded-full overflow-hidden bg-gray-100 shadow-lg ${isVerified ? "ring-4 ring-green-500" : "ring-4 ring-green-400"}`}
+          style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
+        >
+          {profile.profile_image_url ? (
+            <img src={profile.profile_image_url} alt={profile.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-700 text-xl font-medium">
+              {profile.name?.[0]?.toUpperCase() || "?"}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div
+        className={`bg-white w-[180px] h-[280px] rounded-2xl border-2 border-green-400 p-4 pt-14 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering ? `card-shimmer ${shimmerSpeed}` : ""}`}
+        style={{
+          transform: isHovering
+            ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.08)`
+            : isSpotlit
+              ? "rotateX(0) rotateY(0) scale(1.05)"
+              : "rotateX(0) rotateY(0) scale(1)",
+          transformStyle: "preserve-3d",
+          transition: "transform 0.2s ease-out, box-shadow 0.3s ease-out",
+          boxShadow: isHovering
+            ? "0 35px 60px -15px rgba(34, 197, 94, 0.4)"
+            : isSpotlit
+              ? "0 25px 50px -12px rgba(34, 197, 94, 0.3), 0 20px 40px -10px rgba(0, 0, 0, 0.3)"
+              : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
+        }}
+      >
+        {renderPattern()}
+        <div className="flex items-center justify-center gap-1 mb-0.5 relative z-10">
+          <span className="font-bold text-sm text-gray-900 truncate max-w-[120px]">
+            {profile.display_name || profile.name}
+          </span>
+          {isVerified && (
+            <span className="w-4 h-4 bg-green-600 rounded-full flex items-center justify-center shrink-0">
+              <svg className="w-2.5 h-2.5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+              </svg>
+            </span>
+          )}
+        </div>
+        <p className="text-[10px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
+        <div className="mt-auto pt-2 relative z-10">
+          <span className="text-[8px] text-green-600 font-medium uppercase tracking-wider">View Profile →</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── FeaturedCardsSection ─────────────────────────────────────────────
+
+function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isInteracting, setIsInteracting] = useState(false);
+  const interactionTimeout = useRef(null);
+
+  const centerIndex = Math.floor(featuredProfiles.length / 2);
+  const [activeCardIndex, setActiveCardIndex] = useState(centerIndex);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    return () => { if (interactionTimeout.current) clearTimeout(interactionTimeout.current); };
+  }, []);
+
+  useEffect(() => {
+    if (featuredProfiles.length <= 1 || isInteracting) return;
+    const interval = setInterval(() => {
+      setActiveCardIndex((prev) => (prev + 1) % featuredProfiles.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [featuredProfiles.length, isInteracting]);
+
+  const handleHoverStart = () => {
+    setIsInteracting(true);
+    if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
+  };
+  const handleHoverEnd = () => {
+    if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
+    interactionTimeout.current = setTimeout(() => setIsInteracting(false), 3000);
+  };
+
+  const handleCardClick = (index, profile) => {
+    if (isMobile) {
+      setActiveCardIndex(index);
+    } else {
+      if (index === activeCardIndex) {
+        onCardClick(profile);
+      } else {
+        setActiveCardIndex(index);
+        setIsInteracting(true);
+        if (interactionTimeout.current) clearTimeout(interactionTimeout.current);
+        interactionTimeout.current = setTimeout(() => setIsInteracting(false), 5000);
+      }
+    }
+  };
+
+  const patternTypes = ["lines", "grid", "waves", "blocks", "circles", "dots"];
+  const shimmerSpeeds = ["", "card-shimmer-fast", "card-shimmer-slow", "", "card-shimmer-fast", "card-shimmer-slow"];
+
+  const getLayoutConfig = (count) => {
+    if (count <= 1) return { rotations: [0], offsets: [0], verticalOffsets: [0], zIndexes: [1] };
+    if (count === 2) return { rotations: [-10, 10], offsets: [-100, 100], verticalOffsets: [20, 20], zIndexes: [1, 2] };
+    if (count === 3) return { rotations: [-12, 0, 12], offsets: [-130, 0, 130], verticalOffsets: [35, 0, 35], zIndexes: [1, 3, 2] };
+    if (count === 4) return { rotations: [-14, -5, 5, 14], offsets: [-150, -50, 50, 150], verticalOffsets: [45, 15, 15, 45], zIndexes: [1, 2, 3, 2] };
+    if (count === 5) return { rotations: [-15, -8, 0, 8, 15], offsets: [-170, -85, 0, 85, 170], verticalOffsets: [55, 25, 0, 25, 55], zIndexes: [1, 2, 3, 3, 2] };
+    return { rotations: [-16, -10, -4, 4, 10, 16], offsets: [-190, -114, -38, 38, 114, 190], verticalOffsets: [65, 35, 10, 10, 35, 65], zIndexes: [1, 2, 3, 4, 3, 2] };
+  };
+
+  const baseLayout = getLayoutConfig(featuredProfiles.length);
+
+  const getDesktopPosition = (index) => {
+    const count = featuredProfiles.length;
+    const cIdx = Math.floor(count / 2);
+    const relativePos = index - activeCardIndex;
+    const visualIdx = ((cIdx + relativePos) % count + count) % count;
+    return {
+      rotation: baseLayout.rotations[visualIdx] || 0,
+      offset: baseLayout.offsets[visualIdx] || 0,
+      verticalOffset: baseLayout.verticalOffsets[visualIdx] || 0,
+      zIndex: baseLayout.zIndexes[visualIdx] || 1,
+    };
+  };
+
+  const getStackIndex = (index) => {
+    if (!isMobile) return index;
+    return (index - activeCardIndex + featuredProfiles.length) % featuredProfiles.length;
+  };
+
+  if (featuredProfiles.length === 0) return null;
+
+  return (
+    <div className="mb-16" style={{ overflowX: "clip" }}>
+      <h2 className="text-center text-3xl font-black text-gray-900 mb-8 md:mb-12">Featured Profiles</h2>
+      <div className="relative flex justify-center items-start h-[340px] md:h-[420px] pt-12 md:pt-16" style={{ overflowX: "clip" }}>
+        {featuredProfiles.map((profile, index) => {
+          const patternType = patternTypes[index % patternTypes.length];
+          const stackIndex = getStackIndex(index);
+          const isActive = isMobile && index === activeCardIndex;
+          const isSpotlit = !isMobile && index === activeCardIndex;
+          const desktopPos = getDesktopPosition(index);
+          return (
+            <FannedCard
+              key={profile.id ?? profile.address}
+              profile={profile}
+              patternType={patternType}
+              rotation={desktopPos.rotation}
+              offset={desktopPos.offset}
+              verticalOffset={desktopPos.verticalOffset}
+              zIndex={desktopPos.zIndex}
+              isMobile={isMobile}
+              isActive={isActive}
+              stackIndex={stackIndex}
+              isSpotlit={isSpotlit}
+              shimmerSpeed={shimmerSpeeds[index % shimmerSpeeds.length]}
+              onInteractionStart={handleHoverStart}
+              onInteractionEnd={handleHoverEnd}
+              onClick={() => handleCardClick(index, profile)}
+            />
+          );
+        })}
+      </div>
+      {isMobile && featuredProfiles.length > 1 && (
+        <div className="flex justify-center gap-2 mt-4">
+          {featuredProfiles.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => setActiveCardIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -154,51 +726,14 @@ export default function HomePage() {
 
         {/* Featured Profiles Section */}
         {featuredProfiles.length > 0 && (
-          <div className="max-w-lg mx-auto mb-20 md:mb-32 px-4">
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="text-center text-3xl font-black text-gray-900 mb-8"
-            >
-              Featured Profiles
-            </motion.h2>
-            <div className="overflow-x-auto pb-4 -mx-4 px-4 scrollbar-hide">
-              <div className="flex gap-4 min-w-max">
-                {featuredProfiles.map((profile, index) => {
-                  const slug = buildSlug(profile);
-                  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-                  return (
-                    <motion.div
-                      key={profile.id || index}
-                      initial={{ opacity: 0, y: 20 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: index * 0.1 }}
-                      onClick={() => slug && router.push(`/${slug}`)}
-                      className="flex-shrink-0 w-32 cursor-pointer group"
-                    >
-                      <div className="bg-white rounded-2xl p-4 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col items-center text-center border border-gray-200 hover:border-green-300">
-                        <div className="mb-3">
-                          <ProfileAvatar profile={profile} size={56} />
-                        </div>
-                        <div className="flex items-center gap-1 mb-1">
-                          <span className="font-semibold text-gray-900 text-sm truncate max-w-[100px]">
-                            {profile.display_name || profile.name}
-                          </span>
-                          {isVerified && (
-                            <svg className="w-3.5 h-3.5 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className="text-xs text-gray-500">@{profile.name}</span>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
+          <div className="max-w-7xl mx-auto mb-20 md:mb-32 px-4">
+            <FeaturedCardsSection
+              featuredProfiles={featuredProfiles}
+              onCardClick={(profile) => {
+                const slug = buildSlug(profile);
+                if (slug) router.push(`/${slug}`);
+              }}
+            />
           </div>
         )}
 

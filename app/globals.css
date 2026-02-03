@@ -41,6 +41,50 @@ body {
   display: none; /* Chrome, Safari, Opera */
 }
 
+/* Card shimmer effect */
+@keyframes cardShimmer {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+  }
+}
+
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.03) 75%,
+    transparent 100%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  animation: cardShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.card-shimmer-fast::before {
+  animation: cardShimmer 2.5s ease-in-out infinite;
+}
+
+.card-shimmer-slow::before {
+  animation: cardShimmer 6s ease-in-out infinite;
+}
+
 @keyframes shake-x {
   0% {
     transform: translateX(0);
