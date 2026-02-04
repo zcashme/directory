@@ -13,8 +13,8 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON } from "@/lib/social/profileLinks";
-import useProfileEvents from "@/lib/profile/useProfileEvents";
-import useProfileLinks from "@/lib/profile/useProfileLinks";
+import useProfileEvents from "@/ui/profile/useProfileEvents";
+import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
