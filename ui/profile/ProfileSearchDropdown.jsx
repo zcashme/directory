@@ -3,7 +3,7 @@ import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfi
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
-function useKeystrokeDebounce(value, delay) {
+function useDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedValue(value), delay);
@@ -12,14 +12,9 @@ function useKeystrokeDebounce(value, delay) {
   return debouncedValue;
 }
 
-function useSearchDebounce(value, delay) {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
-}
+// Semantic aliases for different debounce contexts
+const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
+const useSearchDebounce = useDebounce;    // API calls (50ms)
 
 export default function ProfileSearchDropdown({
   value,
