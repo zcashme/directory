@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { isNewProfile, getProfileTrust, checkDuplicateNames, getWarningConfig, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
-import { useFeedback } from "@/lib/messaging/useFeedback";
+import { useFeedback } from "@/ui/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";

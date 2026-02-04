@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { useFeedback } from "@/lib/messaging/useFeedback";
+import { useFeedback } from "@/ui/messaging/useFeedback";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { isValidUrl } from "@/lib/validateUrl";

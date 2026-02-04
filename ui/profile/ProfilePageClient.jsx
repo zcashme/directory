@@ -5,7 +5,7 @@ import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
-import { useFeedback, useFeedbackEvents } from "@/lib/messaging/useFeedback";
+import { useFeedback, useFeedbackEvents } from "@/ui/messaging/useFeedback";
 
 function ZcashCardWrapper({ title, children }) {
   return (

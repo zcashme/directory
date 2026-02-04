@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useCallback } from "react";
 import { SelectionContext } from "@/ui/profile/selection-provider";
 import { EditsContext } from "@/ui/profile/edits-provider";
-import { MessagingContext } from "@/lib/messaging/messaging-provider";
+import { MessagingContext } from "@/ui/messaging/messaging-provider";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
 export function useFeedback() {
