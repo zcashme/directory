@@ -229,7 +229,7 @@ export default function ProfileSearchDropdown({
               {usernameAvailable && (
                 <div className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 bg-green-50/50">
                   <span>
-                    <span className="font-semibold text-green-700">@{usernameAvailable}</span> could be yours! Click Claim to register
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> could be yours! Click Claim to register
                   </span>
                 </div>
               )}
@@ -264,7 +264,7 @@ export default function ProfileSearchDropdown({
                       )}
 
                       <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                        @{p.name}
+                        /{p.name}
                       </span>
                     </div>
                   </div>

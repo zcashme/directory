@@ -6,7 +6,7 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import { getProfileCount } from "@/lib/profile/profileQueries";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { buildSlug } from "@/lib/profile/normalizeSlugs";
+import { buildSlug } from "@/lib/profile/profileUtils";
 
 export default function ProfileHeader() {
   const router = useRouter();
@@ -107,7 +107,7 @@ export default function ProfileHeader() {
                   availableUsername ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[20px]"
                 }`}
               >
-                Claim @{availableUsername}
+                Claim /{availableUsername}
               </span>
             </button>
           </div>

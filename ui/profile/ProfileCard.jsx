@@ -109,7 +109,7 @@ export function ProfileCardContent({
       </div>
 
       {/* Username */}
-      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>@{formatUsername(profile.name)}</p>
+      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>/{formatUsername(profile.name)}</p>
 
       {/* Bio */}
       {showBio && profile.bio && profile.bio.trim() !== "" && (
@@ -415,7 +415,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               )}
             </span>
             <span className="text-xs font-medium text-gray-500 leading-tight">
-              @{formatUsername(profile.name)}
+              /{formatUsername(profile.name)}
             </span>
 
             <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
@@ -655,7 +655,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               )}
             </h2>
             <div className="text-base font-medium text-gray-500 mt-1">
-              @{formatUsername(profile.name)}
+              /{formatUsername(profile.name)}
             </div>
           </div>
 
