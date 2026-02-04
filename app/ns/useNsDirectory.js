@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import useProfiles from "@/lib/directory/useProfiles";
+import useProfiles from "@/ui/directory/useProfiles";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { isNsProfile } from "./directoryNsUtils";
 import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
