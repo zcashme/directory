@@ -231,3 +231,321 @@ body {
 .directoryns-help [class*="text-blue"] {
   color: #111 !important;
 }
+
+
+/* app/swap/swap.css */
+/* Scoped styling for /swap only — does not override global theme */
+
+.swap-shell {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 32px 16px 48px;
+}
+
+.swap-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.swap-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  /* match your global colors */
+  color: var(--color-primary);
+  background: rgba(32, 58, 71, 0.08);
+  border: 1px solid rgba(32, 58, 71, 0.18);
+  padding: 6px 10px;
+  border-radius: 999px;
+  margin-bottom: 12px;
+}
+
+.swap-title {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.swap-subtitle {
+  margin-top: 8px;
+  color: rgba(32, 58, 71, 0.8);
+  font-size: 14px;
+  line-height: 1.6;
+  max-width: 62ch;
+}
+
+/* Card look aligned with globals */
+.swap-card {
+  background: var(--color-card);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+}
+
+/* Form grid */
+.swap-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 720px) {
+  .swap-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+}
+
+.swap-span-2 {
+  grid-column: 1 / -1;
+}
+
+.form-group {
+  margin-bottom: 0;
+}
+
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--color-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: rgba(32, 58, 71, 0.75);
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+/* Inputs */
+.input {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1.5px solid rgba(0,0,0,0.14);
+  background: #fff;
+  color: var(--color-primary);
+  font-size: 16px;
+  outline: none;
+}
+
+.input:focus {
+  border-color: rgba(32, 58, 71, 0.45);
+  box-shadow: 0 0 0 3px rgba(32, 58, 71, 0.12);
+}
+
+/* Actions */
+.swap-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+@media (min-width: 640px) {
+  .swap-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+  .swap-actions .btn {
+    min-width: 220px;
+  }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+
+  background: var(--color-primary);
+  color: #fff;
+
+  font-weight: 800;
+  font-size: 14px;
+  padding: 14px 18px;
+  min-height: 48px;
+  border-radius: 12px;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+.btn:active { transform: scale(0.98); }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+.btn.secondary {
+  background: transparent;
+  color: var(--color-primary);
+  border: 1.5px solid rgba(0,0,0,0.14);
+}
+
+/* Divider */
+.divider {
+  height: 1px;
+  background: rgba(0,0,0,0.10);
+  margin: 18px 0;
+}
+
+/* Output */
+.swap-output {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pretty-hint {
+  color: rgba(32, 58, 71, 0.75);
+  font-size: 13px;
+}
+
+/* Quote card */
+.pretty-card {
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255,255,255,0.6);
+}
+
+.pretty-title {
+  font-weight: 900;
+  margin-bottom: 8px;
+  color: var(--color-primary);
+}
+
+.pretty-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px 12px;
+}
+
+@media (min-width: 720px) {
+  .pretty-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.swap-pre {
+  width: 100%;
+  min-height: 160px;
+  max-height: 380px;
+  overflow: auto;
+  border-radius: 16px;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.7);
+  padding: 14px;
+  color: rgba(32, 58, 71, 0.9);
+  line-height: 1.55;
+  font-size: 12px;
+}
+
+/* Notice */
+.alert {
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid rgba(0,0,0,0.10);
+  background: rgba(255,255,255,0.6);
+  color: var(--color-primary);
+}
+
+/* QR payment panel */
+.qr-small {
+  width: 220px;
+  height: 220px;
+  padding: 8px;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 16px;
+  margin: 0 auto;
+  background: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.pay-panel {
+  border: 1px solid rgba(0,0,0,0.10);
+  border-radius: 16px;
+  padding: 18px 14px;
+  background: rgba(255,255,255,0.55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.pay-amount {
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.2px;
+  text-align: center;
+  color: var(--color-primary);
+}
+
+.don-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+.addr-pill {
+  width: min(220px, 100%);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(0,0,0,0.12);
+  background: rgba(255,255,255,0.75);
+  color: var(--color-primary);
+  cursor: pointer;
+}
+
+.addr-pill:hover {
+  background: rgba(255,255,255,0.9);
+}
+
+.addr-short {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.addr-copy {
+  padding-left: 10px;
+  border-left: 1px solid rgba(0,0,0,0.10);
+  opacity: 0.9;
+}
+
+.swap-footnote {
+  font-size: 12px;
+  color: rgba(32, 58, 71, 0.75);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    "Liberation Mono", "Courier New", monospace;
+}
