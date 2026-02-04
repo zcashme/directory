@@ -1,5 +1,5 @@
 import DirectoryNS from "./DirectoryNS";
-import { fetchProfilesWithRanks } from "@/lib/profile/profiles";
+import { fetchProfilesWithRanks } from "./profileRanker";
 
 export const dynamic = "force-dynamic";
 
