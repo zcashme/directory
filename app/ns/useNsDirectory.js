@@ -2,17 +2,17 @@ import { useEffect, useState } from "react";
 
 import useProfiles from "@/ui/directory/useProfiles";
 import { supabase } from "@/lib/supabase/supabase-client";
-import { isNsProfile } from "./directoryNsUtils";
 import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
 
 export default function useNsDirectory(initialProfiles) {
-  const { profiles, loading, addProfile } = useProfiles(initialProfiles, true);
+  const { profiles, loading, addProfile } = useProfiles(initialProfiles, false);
   const [linksByProfileId, setLinksByProfileId] = useState({});
   const [linksError, setLinksError] = useState(null);
 
   useEffect(() => {
     let isActive = true;
-    const ids = profiles.filter((profile) => isNsProfile(profile)).map((profile) => profile.id);
+    // No need to filter - server already returns only NS profiles
+    const ids = profiles.map((profile) => profile.id);
     const idsWithValue = ids.filter((id) => typeof id === "number" || typeof id === "string");
     if (!idsWithValue.length) {
       setLinksByProfileId({});
