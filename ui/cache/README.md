@@ -22,7 +22,7 @@ The application uses several types of caches:
 ### Clear All Application Caches
 
 ```javascript
-import { clearAllCaches } from "@/lib/cache/clearCache";
+import { clearAllCaches } from "@/ui/cache/clearCache";
 
 // Clear all localStorage and memory caches
 const result = clearAllCaches();
@@ -35,7 +35,7 @@ console.log(result);
 import {
   clearLocalStorageCaches,
   clearMemoryCaches
-} from "@/lib/cache/clearCache";
+} from "@/ui/cache/clearCache";
 
 // Clear only localStorage caches
 clearLocalStorageCaches();
@@ -69,7 +69,7 @@ clearLazyVisibleCache();
 ### Get Cache Statistics
 
 ```javascript
-import { getCacheStats } from "@/lib/cache/clearCache";
+import { getCacheStats } from "@/ui/cache/clearCache";
 
 const stats = getCacheStats();
 console.log(stats);

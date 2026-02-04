@@ -72,7 +72,7 @@ function main() {
 
   console.log("\n✨ Cache cleanup complete!");
   console.log("\nNote: To clear application caches (localStorage, memory),");
-  console.log("use the clearAllCaches() function from @/lib/cache/clearCache");
+  console.log("use the clearAllCaches() function from @/ui/cache/clearCache");
 }
 
 if (require.main === module) {
