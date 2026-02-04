@@ -48,7 +48,7 @@ const slide = {
   animate: { x: 0, opacity: 1, transition: { duration: 0.22 } },
   exit: (dir) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18 } }),
 };
-export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
+export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsername = null }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
@@ -93,7 +93,8 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
     (async () => {
       setStep(0);
       setDir(1);
-      setName("");
+      // Prefill username if provided (from claim flow)
+      setName(prefillUsername || "");
       setDisplayName("");
       setNameHelp("");
       setNameConflict(null);
@@ -135,7 +136,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded }) {
 
       setTimeout(() => dialogRef.current?.querySelector("#name")?.focus(), 50);
     })();
-  }, [isOpen]);
+  }, [isOpen, prefillUsername]);
 
   // --- Effect 2: Validate name ---
   useEffect(() => {

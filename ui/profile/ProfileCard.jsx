@@ -28,9 +28,6 @@ import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
 const Motion = motion;
 
-// ── Shared Profile Card Content Component ────────────────────────────────
-// Extracted shared rendering logic for use in both ProfileCard and FannedCard
-
 export function ProfileCardContent({
   profile,
   linksArray = [],
@@ -42,6 +39,7 @@ export function ProfileCardContent({
   showQRButton = false,
   onQRClick,
   linkVariant = "default", // "default" | "simple" - simple doesn't show auth badges
+  hideLinkBadges = false, // Hide verification badges on links (for homepage)
   className = "",
 }) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
@@ -93,14 +91,14 @@ export function ProfileCardContent({
   const s = sizes[variant] || sizes.default;
 
   return (
-    <div className={className}>
+    <div className={`${className} flex flex-col h-full`}>
       {/* Display Name */}
-      <div className="mb-1 relative z-10">
-        <span className={`${s.name} font-bold text-gray-900 truncate block text-center max-w-full ${variant === "mobile" ? "px-6" : variant === "compact" ? "" : "px-8"}`}>
+      <div className={`mb-1 relative z-10 flex items-center justify-center gap-1.5 ${variant === "mobile" ? "px-6" : variant === "compact" ? "" : "px-8"}`}>
+        <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
           {profile.display_name || profile.name}
         </span>
         {isVerified && (
-          <span className={`absolute top-0 ${variant === "mobile" ? "right-2 scale-[0.5]" : variant === "compact" ? "right-3 scale-[0.5]" : "right-3 scale-[0.5]"} origin-center`}>
+          <span className={`flex-shrink-0 ${variant === "mobile" ? "scale-[0.6]" : variant === "compact" ? "scale-[0.6]" : "scale-[0.6]"} origin-center`}>
             <VerifiedBadge verified={true} />
           </span>
         )}
@@ -169,7 +167,7 @@ export function ProfileCardContent({
 
       {/* Links */}
       {showLinks && linksArray && linksArray.length > 0 && (
-        <div className={`${variant === "mobile" ? "mt-3" : "mt-4"} flex-1 min-h-0 w-full relative z-10 flex flex-col`}>
+        <div className={`${variant === "mobile" ? "mt-3" : "mt-4"} flex-1 min-h-0 w-full relative z-10 flex flex-col flex-grow`}>
           <div className="rounded-lg border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
             <div className={`${s.linkPadding} flex flex-col ${s.linkGap} flex-1 min-h-0 overflow-y-auto`}>
               {linksArray.slice(0, 3).map((link, i) => {
@@ -212,11 +210,13 @@ export function ProfileCardContent({
                           </span>
                         </>
                       )}
-                      <VerifiedBadge
-                        verified={link.is_verified}
-                        verifiedLabel={linkVariant === "simple" ? "Auth" : "Authenticated"}
-                        unverifiedLabel={linkVariant === "simple" ? "Not Auth" : "Not Authenticated"}
-                      />
+                      {!hideLinkBadges && (
+                        <VerifiedBadge
+                          verified={link.is_verified}
+                          verifiedLabel={linkVariant === "simple" ? "Auth" : "Authenticated"}
+                          unverifiedLabel={linkVariant === "simple" ? "Not Auth" : "Not Authenticated"}
+                        />
+                      )}
                     </div>
                     <div className={`flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`}>
                       {isDiscordLink && !link.is_verified ? (
@@ -251,6 +251,22 @@ export function ProfileCardContent({
           </div>
         </div>
       )}
+
+      {/* View Profile Footer - Fixed at bottom */}
+      <div className={`mt-auto flex items-center justify-center gap-1 ${variant === "mobile" ? "pt-2 pb-1" : "pt-3 pb-2"}`}>
+        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-gray-500 font-medium`}>
+          View Profile
+        </span>
+        <svg
+          className={`${variant === "mobile" ? "w-2.5 h-2.5" : "w-3 h-3"} text-gray-500`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+      </div>
     </div>
   );
 }

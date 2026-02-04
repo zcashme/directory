@@ -99,7 +99,7 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          <ProfileCardContent profile={profile} linksArray={linksArray} variant="mobile" linkVariant="simple" />
+          <ProfileCardContent profile={profile} linksArray={linksArray} variant="mobile" linkVariant="simple" hideLinkBadges={true} />
         </div>
       </div>
     );
@@ -142,7 +142,7 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        <ProfileCardContent profile={profile} linksArray={linksArray} variant="default" linkVariant="simple" />
+        <ProfileCardContent profile={profile} linksArray={linksArray} variant="default" linkVariant="simple" hideLinkBadges={true} />
       </div>
     </div>
   );
@@ -257,7 +257,7 @@ export default function HomePage({ initialFeaturedProfiles = [] }) {
       <div className="flex-1">
         <ProfileHeader />
         {initialFeaturedProfiles.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-32">
+          <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
             <FeaturedCardsSection
               featuredProfiles={initialFeaturedProfiles}
               onCardClick={(profile) => {
