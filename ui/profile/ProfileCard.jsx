@@ -48,7 +48,7 @@ export function ProfileCardContent({
 
   const sizes = {
     mobile: {
-      name: "text-xs",
+      name: "text-lg",
       username: "text-[9px]",
       bio: "text-[8px]",
       dates: "text-[8px]",
@@ -63,7 +63,7 @@ export function ProfileCardContent({
       linkRowPadding: "py-0.5",
     },
     default: {
-      name: "text-sm",
+      name: "text-xl",
       username: "text-[10px]",
       bio: "text-[9px]",
       dates: "text-[9px]",

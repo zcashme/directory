@@ -34,10 +34,9 @@ export default function ProfileHeader() {
   };
 
   return (
-    <div
-      className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/20 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-xs rounded-full w-[min(92vw,720px)] relative"
-    >
-      <div className="flex items-center gap-1 flex-1 min-w-0 relative">
+    <>
+      {/* Centered search bar with logo */}
+      <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-md rounded-full w-[min(92vw,720px)] relative">
         <button
           onClick={() => router.push("/")}
           className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer z-10"
@@ -144,6 +143,6 @@ export default function ProfileHeader() {
         onClose={closeForm}
         onUserAdded={closeForm}
       />
-    </div>
+    </>
   );
 }
