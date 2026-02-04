@@ -48,11 +48,11 @@ clearMemoryCaches();
 
 ```javascript
 // Clear profiles cache
-import { resetCache } from "@/lib/directory/useProfiles";
+import { resetCache } from "@/ui/directory/useProfiles";
 resetCache();
 
 // Clear emoji cache
-import { clearEmojiCache } from "@/lib/useEmojiAutocomplete";
+import { clearEmojiCache } from "@/ui/messaging/useEmojiAutocomplete";
 clearEmojiCache();
 
 // Clear avatar cache (all or specific provider/profile)
@@ -62,7 +62,7 @@ clearAvatarCache("discord"); // Clear only Discord avatars
 clearAvatarCache("twitter", "profile-id"); // Clear specific profile's Twitter avatars
 
 // Clear lazy visible cache
-import { clearLazyVisibleCache } from "@/lib/useLazyVisible";
+import { clearLazyVisibleCache } from "@/ui/common/useLazyVisible";
 clearLazyVisibleCache();
 ```
 

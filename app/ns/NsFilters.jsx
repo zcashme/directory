@@ -1,7 +1,7 @@
 import allIcon from "./assets/network-state-plus-flag-avatar-logo-black.png";
 import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
 import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
-import discordFavicon from "@/ui/assets/favicons/favicon-discord-32.png";
+import discordFavicon from "@/lib/social/assets/favicons/favicon-discord-32.png";
 import { FILTER_BASE, FILTER_CONTENT } from "./directoryNsStyles";
 
 const getFilterButtonClass = (active, activeClass, hoverClass) => {

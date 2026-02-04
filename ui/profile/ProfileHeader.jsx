@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import useProfiles from "@/lib/directory/useProfiles";
+import useProfiles from "@/ui/directory/useProfiles";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";

@@ -4,7 +4,7 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import { cachedProfiles, resetCache } from "@/lib/directory/useProfiles";
+import { cachedProfiles, resetCache } from "@/ui/directory/useProfiles";
 import { useState, useEffect, useRef } from "react";
 import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
 import { AnimatePresence, motion } from "framer-motion";
