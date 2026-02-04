@@ -49,7 +49,7 @@ export default function ProfileSearchDropdown({
     }
 
     setLoading(true);
-    searchProfiles(debouncedQuery, 20)
+    searchProfiles(debouncedQuery, 3)
       .then(setResults)
       .finally(() => setLoading(false));
   }, [debouncedQuery]);
@@ -114,10 +114,10 @@ export default function ProfileSearchDropdown({
             setIsHovering(false);
             startHideTimer();
           }}
-          className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-[#0a1126]/80 bg-[#0a1126]/90 backdrop-blur-md shadow-xl w-full"
+          className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
         >
           {loading ? (
-            <div className="px-3 py-2 text-sm text-white/90 font-medium">
+            <div className="px-3 py-2 text-sm text-gray-800 font-medium">
               Searching...
             </div>
           ) : results.length > 0 ? (
@@ -128,7 +128,7 @@ export default function ProfileSearchDropdown({
                   onChange(p);
                   setShow(false);
                 }}
-                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-white font-semibold hover:bg-[#060b17]/95 transition-colors"
+                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold hover:bg-gray-100 transition-colors"
               >
                 {/* Avatar */}
                 <ProfileAvatar
@@ -155,11 +155,11 @@ export default function ProfileSearchDropdown({
               </div>
             ))
           ) : value.length < 2 ? (
-            <div className="px-3 py-2 text-sm text-white/90 font-medium">
+            <div className="px-3 py-2 text-sm text-gray-800 font-medium">
               Type at least 2 characters
             </div>
           ) : (
-            <div className="px-3 py-2 text-sm text-white/90 font-medium">
+            <div className="px-3 py-2 text-sm text-gray-800 font-medium">
               No matches
             </div>
           )}
