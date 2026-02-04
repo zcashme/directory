@@ -1,29 +1,33 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import useProfiles from "@/ui/directory/useProfiles";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
+import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 export default function ProfileHeader() {
   const router = useRouter();
-  const { profiles, loading } = useProfiles(null, true);
+  const { profiles } = useProfiles(null, true);
   const searchInputRef = useRef(null);
-  const dropdownRef = useRef(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState(null);
   const [availableUsername, setAvailableUsername] = useState(null);
-  const [profileCount, setProfileCount] = useState(0);
-  useEffect(() => {
-    if (profiles.length > 0) {
-      setProfileCount(profiles.length);
-    }
-  }, [profiles.length]);
+
+  const resetSearch = () => {
+    setSearch("");
+    setAvailableUsername(null);
+  };
+
+  const closeForm = () => {
+    setIsJoinOpen(false);
+    setPrefillUsername(null);
+    resetSearch();
+  };
 
   return (
     <div
@@ -31,10 +35,7 @@ export default function ProfileHeader() {
     >
       <div className="flex items-center gap-1 flex-1 min-w-0 relative">
         <button
-          onClick={(e) => {
-            e.preventDefault();
-            router.push("/");
-          }}
+          onClick={() => router.push("/")}
           className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer z-10"
         >
           Zcash.me/
@@ -46,26 +47,14 @@ export default function ProfileHeader() {
             onChange={(e) => {
               setSearch(e.target.value);
               setSuppressDropdown(false);
-              // Clear available username when search changes
-              if (!e.target.value.trim()) {
-                setAvailableUsername(null);
-              }
+              if (!e.target.value.trim()) setAvailableUsername(null);
             }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
-                const query = search.trim();
-                if (query) {
-                  // Try to find exact match from dropdown results
-                  // If no match, the dropdown will handle showing claim button
-                  setSuppressDropdown(true);
-                }
+              if (e.key === "Enter" && search.trim()) {
+                setSuppressDropdown(true);
               }
             }}
-            placeholder={
-              profileCount > 1
-                ? `search ${profileCount} names`
-                : "search names"
-            }
+            placeholder={profiles.length > 1 ? `search ${profiles.length} names` : "search names"}
             className="flex-1 pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden transition-all pr-2"
             style={{
               paddingRight: availableUsername
@@ -80,15 +69,8 @@ export default function ProfileHeader() {
             {search && (
               <button
                 onClick={() => {
-                  setSearch("");
-                  setAvailableUsername(null);
-                  requestAnimationFrame(() => {
-                    if (searchInputRef.current) {
-                      const el = searchInputRef.current;
-                      el.focus();
-                      el.setSelectionRange(0, 0);
-                    }
-                  });
+                  resetSearch();
+                  searchInputRef.current?.focus();
                 }}
                 className="text-gray-500 hover:text-red-500 text-lg font-semibold leading-none flex-shrink-0"
                 aria-label="Clear search"
@@ -98,9 +80,7 @@ export default function ProfileHeader() {
             )}
             <button
               onClick={() => {
-                if (availableUsername) {
-                  setPrefillUsername(availableUsername);
-                }
+                setPrefillUsername(availableUsername);
                 setIsJoinOpen(true);
               }}
               className="bg-green-600 text-white px-6 py-3.5 rounded-full text-sm font-semibold shadow-md transition-all duration-300 z-[50] whitespace-nowrap overflow-hidden relative animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
@@ -129,15 +109,17 @@ export default function ProfileHeader() {
           </div>
 
           {search && !suppressDropdown && (
-            <div ref={dropdownRef} className="absolute left-0 right-0 top-full mt-1 z-[9999]">
+            <div className="absolute left-0 right-0 top-full mt-1 z-[9999]">
               <ProfileSearchDropdown
                 listOnly
                 value={search}
                 onChange={(v) => {
                   if (typeof v === "object") {
-                    window.lastSelectionWasExplicit = true;
                     const slug = buildSlug(v);
-                    if (slug) router.push(`/${slug}`);
+                    if (slug) {
+                      window.lastSelectionWasExplicit = true;
+                      router.push(`/${slug}`);
+                    }
                   } else {
                     setSearch(v);
                   }
@@ -156,18 +138,8 @@ export default function ProfileHeader() {
       <AddUserForm
         isOpen={isJoinOpen}
         prefillUsername={prefillUsername}
-        onClose={() => {
-          setIsJoinOpen(false);
-          setPrefillUsername(null);
-          setSearch("");
-          setAvailableUsername(null);
-        }}
-        onUserAdded={() => {
-          setIsJoinOpen(false);
-          setPrefillUsername(null);
-          setSearch("");
-          setAvailableUsername(null);
-        }}
+        onClose={closeForm}
+        onUserAdded={closeForm}
       />
     </div>
   );

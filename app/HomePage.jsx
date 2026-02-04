@@ -170,11 +170,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
   }, [featuredProfiles.length, isInteracting]);
 
   const handleCardClick = (index, profile) => {
-    if (isMobile || index !== activeCardIndex) {
-      setActiveCardIndex(index);
-    } else {
-      onCardClick(profile);
-    }
+    onCardClick(profile);
   };
 
   const getDesktopPosition = (index) => {

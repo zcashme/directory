@@ -57,8 +57,10 @@ export function ProfileCardContent({
       linkLabel: "text-[8px]",
       linkDomain: "text-[7px]",
       addressPadding: "px-2 py-1",
-      linkPadding: "px-2.5 pt-2 pb-2",
-      linkGap: "gap-1.5",
+      linkPadding: "px-2 pt-1 pb-1",
+      linkGap: "gap-1",
+      linkRowGap: "gap-2",
+      linkRowPadding: "py-0.5",
     },
     default: {
       name: "text-sm",
@@ -70,8 +72,10 @@ export function ProfileCardContent({
       linkLabel: "text-[9px]",
       linkDomain: "text-[8px]",
       addressPadding: "px-2.5 py-1.5",
-      linkPadding: "px-3 pt-2 pb-2",
-      linkGap: "gap-2",
+      linkPadding: "px-2.5 pt-1.5 pb-1.5",
+      linkGap: "gap-1.5",
+      linkRowGap: "gap-2.5",
+      linkRowPadding: "py-0.5",
     },
     compact: {
       name: "text-xs",
@@ -93,7 +97,7 @@ export function ProfileCardContent({
   return (
     <div className={`${className} flex flex-col h-full`}>
       {/* Display Name */}
-      <div className={`mb-1 relative z-10 flex items-center justify-center gap-1.5 ${variant === "mobile" ? "px-6" : variant === "compact" ? "" : "px-8"}`}>
+      <div className={`relative z-10 flex items-center justify-center gap-1.5`}>
         <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
           {profile.display_name || profile.name}
         </span>
@@ -105,18 +109,18 @@ export function ProfileCardContent({
       </div>
 
       {/* Username */}
-      <p className={`${s.username} text-gray-600 mb-2 relative z-10`}>@{formatUsername(profile.name)}</p>
+      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>@{formatUsername(profile.name)}</p>
 
       {/* Bio */}
       {showBio && profile.bio && profile.bio.trim() !== "" && (
-        <p className={`${s.bio} text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words`}>
+        <p className={`mt-1 ${s.bio} text-gray-700 line-clamp-2 leading-relaxed px-1 relative z-10 break-words`}>
           {profile.bio}
         </p>
       )}
 
       {/* Dates */}
       {showDates && (
-        <p className={`mt-2 ${s.dates} text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10`}>
+        <p className={`mt-3 ${s.dates} text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10`}>
           {profile.nearest_city_name && (
             <>
               <span className="whitespace-nowrap">Near {profile.nearest_city_name}</span>
@@ -167,8 +171,8 @@ export function ProfileCardContent({
 
       {/* Links */}
       {showLinks && linksArray && linksArray.length > 0 && (
-        <div className={`${variant === "mobile" ? "mt-3" : "mt-4"} flex-1 min-h-0 w-full relative z-10 flex flex-col flex-grow`}>
-          <div className="rounded-lg border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
+        <div className={`mt-5 flex-1 min-h-0 w-full relative z-10 flex flex-col flex-grow`}>
+          <div className="rounded-2xl border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
             <div className={`${s.linkPadding} flex flex-col ${s.linkGap} flex-1 min-h-0 overflow-y-auto`}>
               {linksArray.slice(0, 3).map((link, i) => {
                 const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
@@ -176,7 +180,7 @@ export function ProfileCardContent({
                 return (
                   <div
                     key={link.id || i}
-                    className={`flex items-center ${variant === "mobile" ? "gap-2 py-1" : "gap-2.5 py-1"} border-b border-gray-200 last:border-0 min-w-0 flex-shrink-0`}
+                    className={`flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`}
                   >
                     <div className={`flex items-center ${s.linkGap} shrink-0 min-w-0`}>
                       {canLinkLeft ? (
@@ -253,7 +257,7 @@ export function ProfileCardContent({
       )}
 
       {/* View Profile Footer - Fixed at bottom */}
-      <div className={`mt-auto flex items-center justify-center gap-1 ${variant === "mobile" ? "pt-2 pb-1" : "pt-3 pb-2"}`}>
+      <div className={`mt-auto pt-3 pb-2 flex items-center justify-center gap-1`}>
         <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-gray-500 font-medium`}>
           View Profile
         </span>
