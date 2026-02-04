@@ -181,7 +181,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // 🚫 Duplicate address check
+    // Duplicate address check
     const duplicateAddr = profiles.some(
       (p) => (p.address || "").trim().toLowerCase() === addrNorm
     );
@@ -228,7 +228,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setAddressConflict(null);
   }, [address, profiles]);
 
-  // ✅ Guard AFTER all hooks, before rendering
+  // Guard AFTER all hooks, before rendering
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
@@ -330,7 +330,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // 🔍 Check for duplicate verified name
+    // Check for duplicate verified name
     const proposedKey = normForConflict(name);
     const verifiedConflict = profiles.some(
       (p) =>
@@ -344,7 +344,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // 🚫 NEW: Check for duplicate Zcash address (case-insensitive)
+    // NEW: Check for duplicate Zcash address (case-insensitive)
     const addr = address.trim().toLowerCase();
     const duplicateAddr = profiles.find(
       (p) => p.address?.trim().toLowerCase() === addr
@@ -354,7 +354,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // ✅ Continue if name/address are unique
+    // Continue if name/address are unique
     const finalLinks = links
       .map((l) => {
         if (l.platform === "Other") return l.otherUrl?.trim();
@@ -402,7 +402,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       })
       .filter(Boolean);
 
-    // 🚫 Duplicate address guard (frontend)
+    // Duplicate address guard (frontend)
     const addrNorm = address.trim().toLowerCase();
     const addrDuplicateLocal = profiles.some(
       (p) => (p.address || "").trim().toLowerCase() === addrNorm
@@ -412,7 +412,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // 🔒 Server-side check (in case local data is stale)
+    // Server-side check (in case local data is stale)
     const taken = await checkAddressTaken(address);
     if (taken) {
       setError("That Zcash address is already associated with an existing profile.");
@@ -422,7 +422,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setIsLoading(true);
 
     try {
-      // 1️⃣ Insert new profile
+      // Insert new profile
       const { data: profile, error: profileError } = await createProfile({
         name: name.trim(),
         display_name: displayName.trim() || null,
@@ -442,12 +442,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
 
-      // ✅ Generate a router-safe slug
+      // Generate a router-safe slug
       const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
       const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
 
 
-      // 🧹 Clear cached profiles so directory reloads fresh
+      // Clear cached profiles so directory reloads fresh
       resetCache();
 
       // If you prefer not to reload, you could instead trigger the callback:
@@ -482,7 +482,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setDir(-1);
     setStep((s) => Math.max(0, s - 1));
 
-    // 🧹 Clear leftover conflict state when navigating back
+    // Clear leftover conflict state when navigating back
     setAddressConflict(null);
   };
 

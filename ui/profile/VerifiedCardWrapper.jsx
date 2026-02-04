@@ -1,6 +1,6 @@
 export default function VerifiedCardWrapper({
-  verifiedCount = 0, // ✅ still accepts prop from ProfileCard (now mapped to verified_links_count)
-  featured = false, // 🟡 new flag
+  verifiedCount = 0, // still accepts prop from ProfileCard (now mapped to verified_links_count)
+  featured = false, // new flag
   onClick,
   className = "",
   children,
@@ -12,7 +12,7 @@ export default function VerifiedCardWrapper({
   let tierStyle;
 
   if (featured) {
-    // 🌟 Featured glow takes priority
+    // Featured glow takes priority
     tierStyle =
       "border-yellow-400 bg-yellow-50/40 hover:bg-yellow-50/60 hover:shadow-[0_0_10px_rgba(250,204,21,0.4)]";
   } else if (verifiedCount >= 3) {
