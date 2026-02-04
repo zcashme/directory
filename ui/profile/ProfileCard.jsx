@@ -887,27 +887,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               {showDetail && (
                 <div className="mt-1 text-xs space-y-1">
                   {warningConfig.details.map((line, index) => (
-                    <div key={`${warningConfig.tone}-${index}`}>
-                      {typeof line === "string" ? line : line.type === "duplicateNameLink" ? (
-                        <>
-                          Multiple profiles use this{" "}
-                          <a
-                            href={line.nameSearchUrl}
-                            className="text-blue-600 hover:underline"
-                            onClick={(event) => {
-                              if (event.button !== 0) return;
-                              if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-                              if (typeof window !== "undefined") {
-                                sessionStorage.setItem("suppressSearchDropdown", "1");
-                              }
-                            }}
-                          >
-                            name
-                          </a>
-                          .
-                        </>
-                      ) : line}
-                    </div>
+                    <div key={`${warningConfig.tone}-${index}`}>{line}</div>
                   ))}
                 </div>
               )}
