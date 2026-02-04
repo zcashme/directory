@@ -36,7 +36,8 @@ export default function ProfileHeader() {
   return (
     <>
       {/* Centered search bar with logo */}
-      <div className="fixed top-3 left-1/2 -translate-x-1/2 bg-white/80 backdrop-blur-lg z-[40] flex items-center gap-3 px-4 py-2 shadow-md rounded-full w-[min(92vw,720px)] relative">
+      <div className="sticky top-6 z-[50] w-full flex justify-center px-4">
+        <div className="bg-white/95 backdrop-blur-xl flex items-center gap-3 px-4 py-2 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full w-full max-w-[720px] border border-gray-200/50 relative">
         <button
           onClick={() => router.push("/")}
           className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer z-10"
@@ -135,6 +136,7 @@ export default function ProfileHeader() {
             </div>
           )}
         </div>
+      </div>
       </div>
 
       <AddUserForm
