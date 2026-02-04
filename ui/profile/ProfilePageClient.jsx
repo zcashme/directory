@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect } from "react";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
@@ -85,23 +85,18 @@ export default function ProfilePageClient({ profile }) {
     };
   }, [profile]);
 
-  const enrichedProfile = useMemo(() => {
-    if (!profile) return null;
-    return profile;
-  }, [profile]);
-
-  if (!enrichedProfile) return null;
+  if (!profile) return null;
 
   return (
     <>
       <ProfileHeader />
-      <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-20 min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
         <ProfileCard
-          key={enrichedProfile.address}
-          profile={enrichedProfile}
+          key={profile.address}
+          profile={profile}
           fullView
         warning={{
-          message: `${enrichedProfile.name} may not be who you think.`,
+          message: `${profile.name} may not be who you think.`,
           link: "#",
         }}
       />
@@ -135,11 +130,11 @@ export default function ProfilePageClient({ profile }) {
                   </div>
                 }
               >
-                <ProfileVerification profile={enrichedProfile} />
+                <ProfileVerification profile={profile} />
               </ZcashCardWrapper>
             ) : (
               <ZcashCardWrapper>
-                <MemoComposer profile={enrichedProfile} />
+                <MemoComposer profile={profile} />
               </ZcashCardWrapper>
             )}
           </div>
