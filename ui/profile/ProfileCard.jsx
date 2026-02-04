@@ -9,7 +9,7 @@ import { useFeedback } from "@/ui/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
-import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/normalizeSlugs";
+import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/profileUtils";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";

@@ -1,4 +1,4 @@
-export { normalizeSlug } from "@/lib/profile/normalizeSlugs";
+export { normalizeSlug } from "@/lib/profile/profileUtils";
 export { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 
 export const isTruthyFlag = (value) =>
