@@ -1,43 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useDebouncedCallback } from "use-debounce";
+import { useFloating, offset, flip, shift, size } from "@floating-ui/react";
 import { getTextareaCaretCoords } from "@/lib/textareaCaret";
 import data from "@emoji-mart/data";
 import { init, SearchIndex } from "emoji-mart";
 
-// Initialize emoji-mart data once
 init({ data });
 
-function clamp(n, min, max) {
-  return Math.max(min, Math.min(max, n));
-}
-
 async function searchEmoji(query, limit = 14) {
-  if (!query) {
-    // Return some common emojis when no query
-    const defaults = ["thumbsup", "heart", "fire", "smile", "pray", "100", "eyes", "rocket"];
-    const results = [];
-    for (const id of defaults) {
-      const found = await SearchIndex.search(id);
-      if (found?.[0]) results.push(found[0]);
-      if (results.length >= limit) break;
-    }
-    return results.map(formatEmoji);
-  }
-
+  if (!query) return [];
   const results = await SearchIndex.search(query);
-  return (results || []).slice(0, limit).map(formatEmoji);
-}
-
-function formatEmoji(emoji) {
-  return {
+  return (results || []).slice(0, limit).map((emoji) => ({
     ch: emoji.skins?.[0]?.native || "",
     label: emoji.name || "",
     shortcodes: emoji.shortcodes || [emoji.id],
-  };
+  }));
 }
 
 export default function useEmojiAutocomplete({
   textareaRef,
-  containerRef,
   value,
   setValue,
   enabled = true,
@@ -46,15 +27,24 @@ export default function useEmojiAutocomplete({
   const [results, setResults] = useState([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [query, setQuery] = useState("");
-  const [position, setPosition] = useState({ left: 12, top: 12 });
 
   const tokenRef = useRef(null);
-  const debounceRef = useRef(null);
   const valueRef = useRef(value);
 
-  useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
+  const { floatingStyles, refs, update } = useFloating({
+    open: isOpen,
+    placement: "bottom-start",
+    middleware: [
+      offset(8),
+      flip({ fallbackPlacements: ["top-start"] }),
+      shift({ padding: 12 }),
+      size({ padding: 12, apply({ availableWidth, elements }) {
+        Object.assign(elements.floating.style, { maxWidth: `${Math.min(360, availableWidth)}px` });
+      } }),
+    ],
+  });
+
+  useEffect(() => { valueRef.current = value; }, [value]);
 
   const closePopover = useCallback(() => {
     setIsOpen(false);
@@ -64,138 +54,80 @@ export default function useEmojiAutocomplete({
     tokenRef.current = null;
   }, []);
 
-  const updateSuggestions = useCallback(
-    async (nextValue) => {
-      if (!enabled) {
-        closePopover();
-        return;
-      }
-      const el = textareaRef?.current;
-      const containerEl = containerRef?.current || el?.parentElement;
-      if (!el || !containerEl) {
-        closePopover();
-        return;
-      }
+  const updateSuggestions = useDebouncedCallback(async (nextValue) => {
+    if (!enabled) return closePopover();
 
-      if (el.selectionStart == null || el.selectionEnd == null) {
-        closePopover();
-        return;
-      }
+    const el = textareaRef?.current;
+    if (!el || el.selectionStart !== el.selectionEnd) return closePopover();
 
-      if (el.selectionStart !== el.selectionEnd) {
-        closePopover();
-        return;
-      }
+    const caret = el.selectionStart;
+    const text = nextValue ?? valueRef.current ?? "";
+    const textBefore = text.slice(0, caret);
+    const match = textBefore.match(/(^|\s):([a-z0-9_+\-]{0,32})$/i);
+    if (!match) return closePopover();
 
-      const caret = el.selectionStart;
-      const text = (nextValue ?? valueRef.current) || "";
-      const textBefore = text.slice(0, caret);
-      const match = textBefore.match(/(^|\s):([a-z0-9_+\-]{0,32})$/i);
-      if (!match) {
-        closePopover();
-        return;
-      }
+    const rawQuery = match[2] || "";
+    const list = await searchEmoji(rawQuery, 14);
+    if (!list.length) return closePopover();
 
-      const rawQuery = match[2] || "";
-      const tokenStart = textBefore.length - rawQuery.length - 1;
-      const list = await searchEmoji(rawQuery, 14);
-      if (!list.length) {
-        closePopover();
-        return;
-      }
+    // Update virtual element position for floating-ui
+    const caretCoords = getTextareaCaretCoords(el, caret);
+    const textareaRect = el.getBoundingClientRect();
+    refs.setPositionReference({
+      getBoundingClientRect: () => ({
+        x: textareaRect.left + caretCoords.left,
+        y: textareaRect.top + caretCoords.top,
+        width: 0,
+        height: caretCoords.height,
+        top: textareaRect.top + caretCoords.top,
+        left: textareaRect.left + caretCoords.left,
+        right: textareaRect.left + caretCoords.left,
+        bottom: textareaRect.top + caretCoords.top + caretCoords.height,
+      }),
+    });
 
-      tokenRef.current = { start: tokenStart, end: caret, rawQuery };
-      setResults(list);
-      setActiveIndex(0);
-      setQuery(rawQuery);
-      setIsOpen(true);
+    const queryChanged = rawQuery !== tokenRef.current?.rawQuery;
+    tokenRef.current = { start: textBefore.length - rawQuery.length - 1, end: caret, rawQuery };
+    setResults(list);
+    if (queryChanged) setActiveIndex(0);
+    setQuery(rawQuery);
+    setIsOpen(true);
+    requestAnimationFrame(() => update());
+  }, 35);
 
-      const caretCoords = getTextareaCaretCoords(el, caret);
-      const containerRect = containerEl.getBoundingClientRect();
-      const textareaRect = el.getBoundingClientRect();
+  const insertAtIndex = useCallback((index) => {
+    const token = tokenRef.current;
+    const el = textareaRef?.current;
+    const item = results[index];
+    if (!token || !el || !item) return;
 
-      const leftRaw = textareaRect.left - containerRect.left + caretCoords.left;
-      const topRaw =
-        textareaRect.top - containerRect.top + caretCoords.top + caretCoords.height + 8;
+    const text = valueRef.current || "";
+    const before = text.slice(0, token.start);
+    const after = text.slice(token.end);
+    setValue(`${before}${item.ch} ${after}`);
+    closePopover();
 
-      const widthHint = 360;
-      const maxLeft = Math.max(12, containerRect.width - widthHint - 12);
-      const left = clamp(leftRaw, 12, maxLeft);
+    const nextPos = before.length + item.ch.length + 1;
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(nextPos, nextPos);
+    });
+  }, [closePopover, results, setValue, textareaRef]);
 
-      let top = clamp(topRaw, 12, Math.max(12, containerRect.height - 140));
-      if (topRaw + 240 > containerRect.height) {
-        top = clamp(
-          textareaRect.top - containerRect.top + caretCoords.top - 220,
-          12,
-          Math.max(12, containerRect.height - 140)
-        );
-      }
-
-      setPosition({ left, top });
-    },
-    [closePopover, containerRef, enabled, textareaRef]
-  );
-
-  const scheduleUpdate = useCallback(
-    (nextValue) => {
-      if (!enabled) return;
-      clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => updateSuggestions(nextValue), 35);
-    },
-    [enabled, updateSuggestions]
-  );
-
-  const insertAtIndex = useCallback(
-    (index) => {
-      const token = tokenRef.current;
-      const el = textareaRef?.current;
-      if (!token || !el) return;
-
-      const item = results[index];
-      if (!item) return;
-
-      const text = valueRef.current || "";
-      const before = text.slice(0, token.start);
-      const after = text.slice(token.end);
-      const next = `${before}${item.ch} ${after}`;
-
-      setValue(next);
-      closePopover();
-
-      const nextPos = before.length + item.ch.length + 1;
-      requestAnimationFrame(() => {
-        el.focus();
-        el.setSelectionRange(nextPos, nextPos);
-      });
-    },
-    [closePopover, results, setValue, textareaRef]
-  );
-
-  const handleKeyDown = useCallback(
-    (ev) => {
-      if (!isOpen) return;
-      if (ev.key === "ArrowDown") {
-        ev.preventDefault();
-        setActiveIndex((prev) => clamp(prev + 1, 0, results.length - 1));
-        return;
-      }
-      if (ev.key === "ArrowUp") {
-        ev.preventDefault();
-        setActiveIndex((prev) => clamp(prev - 1, 0, results.length - 1));
-        return;
-      }
-      if (ev.key === "Enter" || ev.key === "Tab") {
-        ev.preventDefault();
-        insertAtIndex(activeIndex);
-        return;
-      }
-      if (ev.key === "Escape") {
-        ev.preventDefault();
-        closePopover();
-      }
-    },
-    [activeIndex, closePopover, insertAtIndex, isOpen, results.length]
-  );
+  const handleKeyDown = useCallback((ev) => {
+    if (!isOpen) return;
+    const handlers = {
+      ArrowDown: () => setActiveIndex((i) => Math.min(i + 1, results.length - 1)),
+      ArrowUp: () => setActiveIndex((i) => Math.max(i - 1, 0)),
+      Enter: () => insertAtIndex(activeIndex),
+      Tab: () => insertAtIndex(activeIndex),
+      Escape: closePopover,
+    };
+    if (handlers[ev.key]) {
+      ev.preventDefault();
+      handlers[ev.key]();
+    }
+  }, [activeIndex, closePopover, insertAtIndex, isOpen, results.length]);
 
   const handleBlur = useCallback(() => {
     setTimeout(() => {
@@ -208,12 +140,13 @@ export default function useEmojiAutocomplete({
     results,
     activeIndex,
     query,
-    position,
+    floatingStyles,
+    floatingRef: refs.setFloating,
     setActiveIndex,
     insertAtIndex,
     handleKeyDown,
-    handleInput: scheduleUpdate,
-    handleClick: scheduleUpdate,
+    handleInput: updateSuggestions,
+    handleClick: updateSuggestions,
     handleBlur,
   };
 }

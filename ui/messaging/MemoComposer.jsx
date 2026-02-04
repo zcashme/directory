@@ -10,7 +10,7 @@ import QrUriBlock from "@/ui/verification/QrUriBlock";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import bookOpen from "@/ui/assets/book-open.svg";
 import bookClosed from "@/ui/assets/book-closed.svg";
-import { normalizeSlug, buildSlug } from "@/lib/profile/normalizeSlugs";
+import { normalizeSlug, buildSlug } from "@/lib/profile/profileUtils";
 
 function MemoCounter({ text }) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
@@ -35,7 +35,6 @@ export default function MemoComposer({ profile }) {
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef(null);
-  const memoWrapRef = useRef(null);
 
   const handleSelect = (profile) => {
     if (!profile) return;
@@ -70,7 +69,6 @@ useEffect(() => {
 
   const emoji = useEmojiAutocomplete({
     textareaRef,
-    containerRef: memoWrapRef,
     value: memo,
     setValue: setDraftMemo,
     enabled: !disabled,
@@ -172,7 +170,7 @@ useEffect(() => {
       </div>
 
       {/* MEMO FIELD */}
-      <div ref={memoWrapRef} className="relative mb-2">
+      <div className="relative mb-2">
         {!disabled && (
           <div className="absolute left-3 top-2 pointer-events-none text-gray-500 text-md">
             ✎
@@ -209,8 +207,9 @@ useEffect(() => {
 
         {emoji.isOpen && !disabled && (
           <div
-            className="absolute z-50 w-[360px] max-w-[calc(100%-16px)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
-            style={{ left: emoji.position.left, top: emoji.position.top }}
+            ref={emoji.floatingRef}
+            className="z-50 w-[360px] max-w-[calc(100%-16px)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
+            style={emoji.floatingStyles}
             role="listbox"
             aria-label="Emoji suggestions"
           >
