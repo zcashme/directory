@@ -1,4 +1,4 @@
-// lib/social/useVerificationFlow.js
+// ui/social/useVerificationFlow.js
 // Extracted from ProfileEditor's 280-line verification useEffect
 
 import { useEffect } from "react";

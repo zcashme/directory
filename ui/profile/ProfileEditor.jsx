@@ -18,7 +18,7 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/social/providerAvatars";
-import useVerificationFlow from "@/lib/social/useVerificationFlow";
+import useVerificationFlow from "@/ui/social/useVerificationFlow";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
