@@ -1,205 +1,38 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getTextareaCaretCoords } from "@/lib/textareaCaret";
+import data from "@emoji-mart/data";
+import { init, SearchIndex } from "emoji-mart";
 
-const EMOJIBASE_COMPACT_URL =
-  "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/compact.json";
-
-const DISCORD_ALIASES = {
-  pray: {
-    prefer: ["folded_hands"],
-    extra: ["please", "thanks", "thank you", "namaste", "gratitude"],
-  },
-  laugh: {
-    prefer: ["face_with_tears_of_joy", "rolling_on_the_floor_laughing"],
-    extra: ["lol", "lmao", "funny", "tear", "tears", "laughter"],
-  },
-  heart: {
-    prefer: ["red_heart"],
-    extra: ["love", "like"],
-  },
-};
-
-const FALLBACK_EMOJI = [
-  { emoji: "🙏", annotation: "Folded Hands", shortcodes: ["folded_hands", "pray"] },
-  { emoji: "👍", annotation: "Thumbs Up", shortcodes: ["thumbsup", "+1"] },
-  { emoji: "🔥", annotation: "Fire", shortcodes: ["fire", "lit"] },
-  { emoji: "❤️", annotation: "Red Heart", shortcodes: ["red_heart", "heart"] },
-  { emoji: "😂", annotation: "Face With Tears of Joy", shortcodes: ["joy"] },
-  { emoji: "😄", annotation: "Smiling Face", shortcodes: ["smile"] },
-  { emoji: "🎉", annotation: "Party Popper", shortcodes: ["tada", "party"] },
-  { emoji: "✅", annotation: "Check Mark Button", shortcodes: ["white_check_mark"] },
-];
-
-let EMOJI_INDEX = null;
-let EMOJI_LOAD = null;
-
-function normalize(str) {
-  return (str || "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function slugifyToShortcode(label) {
-  const n = normalize(label)
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-    .slice(0, 64);
-  return n || "emoji";
-}
-
-function pickChar(item) {
-  return item.emoji || item.unicode || item.character || item.symbol || "";
-}
-
-function pickLabel(item) {
-  return item.annotation || item.label || item.name || item.description || "";
-}
-
-function buildIndexFromEmojibase(compactArray) {
-  const out = [];
-
-  function pushEntry(raw) {
-    const ch = pickChar(raw);
-    if (!ch) return;
-
-    const label = pickLabel(raw) || "Emoji";
-    const tags = Array.isArray(raw.tags) ? raw.tags : [];
-    let shortcodes = Array.isArray(raw.shortcodes) ? raw.shortcodes.slice() : [];
-
-    if (shortcodes.length === 0) shortcodes = [slugifyToShortcode(label)];
-
-    const normLabel = normalize(label);
-    const normSc = shortcodes.map(normalize);
-    const normTags = tags.map(normalize);
-    const allText = [normLabel, ...normSc, ...normTags].join(" ");
-
-    out.push({
-      ch,
-      label,
-      shortcodes,
-      tags,
-      _label: normLabel,
-      _sc: normSc,
-      _tags: normTags,
-      _allText: allText,
-    });
-  }
-
-  for (const item of compactArray) {
-    if (!item) continue;
-    pushEntry(item);
-    if (Array.isArray(item.skins)) {
-      for (const skin of item.skins) {
-        if (!skin) continue;
-        pushEntry({
-          ...item,
-          ...skin,
-          annotation: pickLabel(skin) || pickLabel(item),
-          tags: Array.isArray(skin.tags)
-            ? skin.tags
-            : Array.isArray(item.tags)
-              ? item.tags
-              : [],
-          shortcodes: Array.isArray(skin.shortcodes)
-            ? skin.shortcodes
-            : Array.isArray(item.shortcodes)
-              ? item.shortcodes
-              : [],
-        });
-      }
-    }
-  }
-
-  return out;
-}
-
-async function loadEmojiIndex() {
-  if (EMOJI_INDEX) return EMOJI_INDEX;
-  if (EMOJI_LOAD) return EMOJI_LOAD;
-
-  EMOJI_LOAD = (async () => {
-    try {
-      const res = await fetch(EMOJIBASE_COMPACT_URL, { cache: "force-cache" });
-      if (!res.ok) throw new Error("Failed to fetch emoji dataset");
-      const data = await res.json();
-      EMOJI_INDEX = buildIndexFromEmojibase(data);
-      return EMOJI_INDEX;
-    } catch {
-      EMOJI_INDEX = buildIndexFromEmojibase(FALLBACK_EMOJI);
-      return EMOJI_INDEX;
-    }
-  })();
-
-  return EMOJI_LOAD;
-}
-
-function getAliasConfig(q) {
-  const nq = normalize(q);
-  return DISCORD_ALIASES[nq] || null;
-}
-
-function expandedTerms(q) {
-  const nq = normalize(q);
-  const alias = getAliasConfig(nq);
-  const terms = new Set([nq]);
-
-  if (alias?.extra) {
-    for (const t of alias.extra) terms.add(normalize(t));
-  }
-
-  if (nq.includes("_")) terms.add(nq.replaceAll("_", " "));
-  if (nq.includes(" ")) terms.add(nq.replaceAll(" ", "_"));
-
-  return [...terms].filter(Boolean);
-}
-
-function searchEmoji(q, limit = 14) {
-  if (!EMOJI_INDEX || !EMOJI_INDEX.length) return [];
-  const nq = normalize(q);
-  if (!nq) return EMOJI_INDEX.slice(0, limit);
-
-  const alias = getAliasConfig(nq);
-  const terms = expandedTerms(nq);
-  const preferred = new Set((alias?.prefer || []).map(normalize));
-
-  const scored = [];
-  for (const e of EMOJI_INDEX) {
-    let score = 0;
-
-    for (const sc of e._sc) {
-      if (sc.startsWith(nq)) score = Math.max(score, 130 - (sc.length - nq.length));
-      else if (sc.includes(nq)) score = Math.max(score, 95 - (sc.length - nq.length));
-    }
-
-    if (e._label.includes(nq)) score = Math.max(score, 80);
-    for (const t of e._tags) {
-      if (t.startsWith(nq)) score = Math.max(score, 85);
-      else if (t.includes(nq)) score = Math.max(score, 60);
-    }
-
-    for (const term of terms) {
-      if (term === nq) continue;
-      if (e._label.includes(term)) score = Math.max(score, 65);
-      for (const t of e._tags) {
-        if (t.includes(term)) score = Math.max(score, 55);
-      }
-    }
-
-    if (preferred.size) {
-      const hasPreferred = e._sc.some((sc) => preferred.has(sc));
-      if (hasPreferred) score += 500;
-    }
-
-    if (score > 0) scored.push({ e, score });
-  }
-
-  scored.sort((a, b) => b.score - a.score || a.e.label.localeCompare(b.e.label));
-  return scored.slice(0, limit).map((x) => x.e);
-}
+// Initialize emoji-mart data once
+init({ data });
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
+}
+
+async function searchEmoji(query, limit = 14) {
+  if (!query) {
+    // Return some common emojis when no query
+    const defaults = ["thumbsup", "heart", "fire", "smile", "pray", "100", "eyes", "rocket"];
+    const results = [];
+    for (const id of defaults) {
+      const found = await SearchIndex.search(id);
+      if (found?.[0]) results.push(found[0]);
+      if (results.length >= limit) break;
+    }
+    return results.map(formatEmoji);
+  }
+
+  const results = await SearchIndex.search(query);
+  return (results || []).slice(0, limit).map(formatEmoji);
+}
+
+function formatEmoji(emoji) {
+  return {
+    ch: emoji.skins?.[0]?.native || "",
+    label: emoji.name || "",
+    shortcodes: emoji.shortcodes || [emoji.id],
+  };
 }
 
 export default function useEmojiAutocomplete({
@@ -223,19 +56,6 @@ export default function useEmojiAutocomplete({
     valueRef.current = value;
   }, [value]);
 
-  useEffect(() => {
-    if (!enabled) return;
-    let mounted = true;
-    loadEmojiIndex().then(() => {
-      if (mounted) {
-        setResults((prev) => prev);
-      }
-    });
-    return () => {
-      mounted = false;
-    };
-  }, [enabled]);
-
   const closePopover = useCallback(() => {
     setIsOpen(false);
     setResults([]);
@@ -245,7 +65,7 @@ export default function useEmojiAutocomplete({
   }, []);
 
   const updateSuggestions = useCallback(
-    (nextValue) => {
+    async (nextValue) => {
       if (!enabled) {
         closePopover();
         return;
@@ -278,7 +98,7 @@ export default function useEmojiAutocomplete({
 
       const rawQuery = match[2] || "";
       const tokenStart = textBefore.length - rawQuery.length - 1;
-      const list = searchEmoji(rawQuery, 14);
+      const list = await searchEmoji(rawQuery, 14);
       if (!list.length) {
         closePopover();
         return;

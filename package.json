@@ -10,6 +10,8 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@supabase/supabase-js": "^2.56.0",
     "bech32": "^2.0.0",
     "bs58check": "^4.0.0",
