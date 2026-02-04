@@ -41,7 +41,6 @@ export default function useProfileLinks(profile, fullView, routeMatchesProfile) 
         .order("id", { ascending: true });
 
       if (error) {
-        console.error("ƒ?O Error fetching links:", error);
         if (isMounted) {
           setIsLoadingLinks(false);
           setLinksLoaded(true);

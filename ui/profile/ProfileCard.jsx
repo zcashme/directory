@@ -45,7 +45,6 @@ export function ProfileCardContent({
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const formatUsername = (value = "") => value.trim().replace(/\s+/g, "_");
 
-  // Size variants
   const sizes = {
     mobile: {
       name: "text-xs",
@@ -296,8 +295,6 @@ function RedirectModal({ isOpen, label }) {
 }
 
 export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
-  // onSelect is optional - only used in compact mode for navigation
-  // --- Hooks ---
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -319,7 +316,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   }, [fullView, profile, pathname]);
   const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
 
-  // --- Derived values ---
   const { verifiedAddress, verifiedLinks, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
@@ -342,7 +338,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     setShowDetail(!!warningConfig.defaultExpanded);
   }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
 
-  // --- Helpers & handlers ---
   const formatUsername = (value = "") =>
     value.trim().replace(/\s+/g, "_");
 
@@ -372,7 +367,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   };
 
   if (!fullView) {
-    // Compact card - uses onSelect callback for navigation (if provided)
     return (
       <VerifiedCardWrapper
         verifiedCount={profile.verified_links_count ?? 0}
@@ -443,7 +437,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
     );
   }
 
-  // Full card
   return (
     <VerifiedCardWrapper
       verifiedCount={
@@ -722,12 +715,10 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                   {/* QR Button */}
                   <button
                     onClick={() => {
-                      // Explicit QR-open request (ONLY triggered by QR icon click)
                       if (typeof setForceShowQR === "function") {
                         setForceShowQR(Date.now());
                       }
 
-                      // Scroll ONLY because user intentionally pressed QR button
                       setTimeout(() => {
                         const el = document.getElementById("zcash-feedback");
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -924,7 +915,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           <div className="absolute top-4 left-4 z-10">
             <button
               onClick={() => {
-                // tell feedback NOT to auto-scroll
                 window.skipZcashFeedbackScroll = true;
 
                 setShowBack(false);

@@ -3,8 +3,6 @@ import { getTextareaCaretCoords } from "@/lib/textareaCaret";
 
 const EMOJIBASE_COMPACT_URL =
   "https://cdn.jsdelivr.net/npm/emojibase-data@latest/en/compact.json";
-const CACHE_KEY = "emojibase_en_compact_v2";
-const CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 
 const DISCORD_ALIASES = {
   pray: {
@@ -116,53 +114,15 @@ function buildIndexFromEmojibase(compactArray) {
   return out;
 }
 
-function getCachedDataset() {
-  try {
-    const raw = localStorage.getItem(CACHE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.ts || !parsed.data) return null;
-    if (Date.now() - parsed.ts > CACHE_TTL_MS) return null;
-    return parsed.data;
-  } catch {
-    return null;
-  }
-}
-
-function setCachedDataset(data) {
-  try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data }));
-  } catch {}
-}
-
-export function clearEmojiCache() {
-  if (typeof window === "undefined") return;
-  try {
-    localStorage.removeItem(CACHE_KEY);
-    EMOJI_INDEX = null;
-    EMOJI_LOAD = null;
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 async function loadEmojiIndex() {
   if (EMOJI_INDEX) return EMOJI_INDEX;
   if (EMOJI_LOAD) return EMOJI_LOAD;
 
   EMOJI_LOAD = (async () => {
     try {
-      const cached = typeof window !== "undefined" ? getCachedDataset() : null;
-      if (cached) {
-        EMOJI_INDEX = buildIndexFromEmojibase(cached);
-        return EMOJI_INDEX;
-      }
-
       const res = await fetch(EMOJIBASE_COMPACT_URL, { cache: "force-cache" });
       if (!res.ok) throw new Error("Failed to fetch emoji dataset");
       const data = await res.json();
-      if (typeof window !== "undefined") setCachedDataset(data);
       EMOJI_INDEX = buildIndexFromEmojibase(data);
       return EMOJI_INDEX;
     } catch {

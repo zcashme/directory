@@ -6,7 +6,6 @@ export default function AlphabetSidebar({ letters, activeLetter, onSelect, show 
   const containerRef = useRef(null);
   const isDraggingRef = useRef(false);
 
-  // Show briefly on first directory load
   useEffect(() => {
     if (!show) {
       setVisible(false);
@@ -20,7 +19,6 @@ export default function AlphabetSidebar({ letters, activeLetter, onSelect, show 
     }
   }, [show, hasShownOnce]);
 
-  // Show again on scroll
   useEffect(() => {
     if (!show) return;
     let scrollTimeout;
@@ -36,7 +34,6 @@ export default function AlphabetSidebar({ letters, activeLetter, onSelect, show 
     };
   }, [show]);
 
-  // Helper: find letter based on pointer position
   const getLetterFromEvent = (e) => {
     const container = containerRef.current;
     if (!container) return null;

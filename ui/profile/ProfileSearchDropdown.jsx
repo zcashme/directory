@@ -3,7 +3,6 @@ import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfi
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
-// Keystroke debounce - immediate UI feedback
 function useKeystrokeDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -13,7 +12,6 @@ function useKeystrokeDebounce(value, delay) {
   return debouncedValue;
 }
 
-// Search debounce - for actual API calls
 function useSearchDebounce(value, delay) {
   const [debouncedValue, setDebouncedValue] = useState(value);
   useEffect(() => {
@@ -45,7 +43,6 @@ export default function ProfileSearchDropdown({
   const previousResultsRef = useRef([]);
   const usernameAvailableRef = useRef(null);
 
-  // Dual debouncing: keystroke (10ms) for UI responsiveness, search (50ms) for API calls
   const keystrokeDebounced = useKeystrokeDebounce(value, 10);
   const searchDebounced = useSearchDebounce(value, 50);
 
@@ -66,7 +63,6 @@ export default function ProfileSearchDropdown({
     if (!query || !previousQuery || previousResults.length === 0) return false;
     if (previousResults.length > 3) return false; // Only skip if <= 3 results
 
-    // Only reuse results if the query hasn't changed
     if (query.toLowerCase() !== previousQuery.toLowerCase()) return false;
 
     const q = query.trim().toLowerCase();
@@ -78,7 +74,6 @@ export default function ProfileSearchDropdown({
     });
   };
 
-  // Server-side search with character-length-based filtering
   useEffect(() => {
     const query = searchDebounced?.trim();
 
@@ -94,37 +89,25 @@ export default function ProfileSearchDropdown({
       return;
     }
 
-    // If query matches the last query exactly and results still match, we can reuse results
-    // BUT we ALWAYS need to check availability because:
-    // 1. The query might have changed from a different available username
-    // 2. Database state might have changed (someone claimed the username)
     const canReuseResults = resultsStillMatch(query, lastQueryRef.current, previousResultsRef.current);
 
-    // Only skip entirely if query hasn't changed AND we already have the correct availability state
-    // Use ref to avoid dependency issues
     if (canReuseResults &&
         usernameAvailableRef.current &&
         query.toLowerCase() === usernameAvailableRef.current.toLowerCase()) {
-      // Everything matches, no need to re-search or re-check
       return;
     }
 
-    // If query changed from available username, or we don't have availability state,
-    // we need to re-check availability (fall through)
 
     searchActiveRef.current = true;
     setLoading(true);
     const currentQuery = query; // Capture for closure
     lastQueryRef.current = currentQuery;
 
-    // Always check username availability, even if we can reuse search results
-    // This ensures claim button works correctly when query changes
     Promise.all([
       canReuseResults ? Promise.resolve(previousResultsRef.current) : searchProfiles(currentQuery, 3),
       checkUsernameExists(currentQuery) // ALWAYS check availability, even if reusing results
     ])
       .then(([data, exists]) => {
-        // Verify this is still the current query (user might have typed more)
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
           setResults(data);
           if (!canReuseResults) {
@@ -136,9 +119,6 @@ export default function ProfileSearchDropdown({
             (p) => (p.name || "").toLowerCase() === currentQuery.toLowerCase()
           );
 
-          // Show claim option if:
-          // 1. Username doesn't exist in database, AND
-          // 2. No exact match in results (even if there are partial matches)
           if (!exists && !exactMatch) {
             usernameAvailableRef.current = currentQuery;
             setUsernameAvailable(currentQuery);
@@ -154,7 +134,6 @@ export default function ProfileSearchDropdown({
       })
       .catch((err) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          console.error("Search error:", err);
           setLoading(false);
           usernameAvailableRef.current = null;
           setUsernameAvailable(null);
@@ -167,17 +146,14 @@ export default function ProfileSearchDropdown({
     };
   }, [searchDebounced, onUsernameAvailable]);
 
-  // Show/hide dropdown based on value (using keystroke debounce for immediate UI)
   useEffect(() => {
     if (!keystrokeDebounced) {
-      // Only hide if no username is available (keep claim popup visible)
       if (!usernameAvailable) {
         setShow(false);
       }
       return;
     }
 
-    // Always show dropdown if there's a value or available username
     if (showByDefault || usernameAvailable) {
       setShow(true);
     }
@@ -190,14 +166,12 @@ export default function ProfileSearchDropdown({
     }
 
     return () => {
-      // Only clear timer if username is not available
       if (!usernameAvailable) {
         clearHideTimer();
       }
     };
   }, [keystrokeDebounced, isHovering, showByDefault, usernameAvailable]);
 
-  // Handle click outside
   useEffect(() => {
     if (!show) return;
 
@@ -205,7 +179,6 @@ export default function ProfileSearchDropdown({
       if (!dropdownRef.current) return;
       // Check if click is outside the dropdown
       if (!dropdownRef.current.contains(event.target)) {
-        // Also check if click is on the input field (for list-only mode, the input is in parent)
         const inputElement = event.target.closest('input');
         if (!inputElement || inputElement.value !== value) {
           setShow(false);
@@ -240,7 +213,6 @@ export default function ProfileSearchDropdown({
           onMouseEnter={() => {
             setIsHovering(true);
             clearHideTimer();
-            // Ensure dropdown is shown when hovering
             if (!show) setShow(true);
           }}
           onMouseLeave={() => {

@@ -4,12 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { QRCodeSVG } from "qrcode.react"; // identical lib used in QrUriBlock
 
-// ---------------------------------------------------------
-// REBUILD URI EXACTLY LIKE QrUriBlock (fixes truncation)
-// ---------------------------------------------------------
 function rebuildUri(rawUri) {
   try {
-    // Convert "zcash:<addr>?q=..." into a parseable URL
     const url = new URL(rawUri.replace("zcash:", "https://zcash.local/"));
 
     const address = rawUri.split(":")[1].split("?")[0]; // extract address manually
@@ -17,7 +13,6 @@ function rebuildUri(rawUri) {
     const amount = url.searchParams.get("amount") || "";
     let memo = url.searchParams.get("memo") || "";
 
-    // QrUriBlock uses encodeURIComponent on memo
     const memoClean = encodeURIComponent(decodeURIComponent(memo));
 
     const parts = [];
@@ -26,7 +21,6 @@ function rebuildUri(rawUri) {
 
     return `zcash:${address}${parts.length ? "?" + parts.join("&") : ""}`;
   } catch (e) {
-    console.error("Failed to rebuild URI", e);
     return rawUri; // fallback
   }
 }

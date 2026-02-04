@@ -19,7 +19,6 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
   const pollTimerRef = useRef(null);
   const pollElapsedRef = useRef(null);
 
-  // Reset everything when QR is disabled
   useEffect(() => {
     if (verifyQrEnabled) return;
     if (pollTimerRef.current) {
@@ -43,7 +42,6 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     }
   }, [verifyQrEnabled]);
 
-  // Poll for status updates
   useEffect(() => {
     if (!verifyQrEnabled || !pollRequestId) return;
 
@@ -84,7 +82,6 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
           setPollOtpPhaseHistory(Array.isArray(data?.otp_phase_history) ? data.otp_phase_history : []);
         }
       } catch (err) {
-        console.error("verify poll status failed", err);
         const msg = `verify poll status failed: ${err?.message || err}`;
         setPollError("Unable to check verification status yet.");
         setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
@@ -103,7 +100,6 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     };
   }, [pollRequestId, verifyQrEnabled]);
 
-  // Start polling
   const startPolling = async (zid) => {
     setPollStatus("starting");
     setPollError("");
@@ -137,14 +133,12 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
         }
       }
     } catch (err) {
-      console.error("verify poll start failed", err);
       const msg = `verify poll start failed: ${err?.message || err}`;
       setPollError("Failed to start verification polling.");
       setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
     }
   };
 
-  // Progress steps
   const progressSteps = useMemo(() => {
     const otpPhase = (pollOtpPhase || "").toLowerCase();
     return [

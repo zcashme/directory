@@ -26,7 +26,6 @@ export default function useProfileEvents(profile) {
 
       if (!e?.detail && profileId && profileAddress) {
         if (!profileId || !profileAddress) {
-          console.warn("ProfileCard: profile not ready, skipping verify dispatch");
         } else {
           window.dispatchEvent(
             new CustomEvent("enterSignInMode", {

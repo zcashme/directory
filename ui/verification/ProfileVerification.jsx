@@ -329,7 +329,6 @@ export default function ProfileVerification({ profile }) {
                     try {
                       await navigator.clipboard.writeText(pollDebug);
                     } catch (err) {
-                      console.error("copy poll debug failed", err);
                     }
                   }}
                 >

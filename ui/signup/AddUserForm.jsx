@@ -4,7 +4,7 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import { cachedProfiles, resetCache } from "@/ui/directory/useProfiles";
+import { cachedProfiles } from "@/ui/directory/useProfiles";
 import { useState, useEffect, useRef } from "react";
 import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
 import { AnimatePresence, motion } from "framer-motion";
@@ -26,7 +26,6 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNo
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 
 
-// Normalize for identity: spaces → underscores, case-insensitive
 const normForConflict = (s = "") =>
   s
     .normalize("NFKC")
@@ -35,7 +34,6 @@ const normForConflict = (s = "") =>
     .toLowerCase();
 
 
-// Slug-like (for display/helpers): replace spaces with underscores, keep user’s special chars
 const toSlugish = (s = "") =>
   s
     .normalize("NFKC")
@@ -71,7 +69,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
 
-  // Prefill referrer when Directory broadcasts an active profile
   useEffect(() => {
     const handler = (e) => {
       if (!e.detail) return;
@@ -86,24 +83,20 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     return () => window.removeEventListener("prefillReferrer", handler);
   }, []);
 
-  // --- Effect 1: Reset and load data ---
 
   useEffect(() => {
     if (!isOpen) return;
     (async () => {
       setStep(0);
       setDir(1);
-      // Prefill username if provided (from claim flow)
       setName(prefillUsername || "");
       setDisplayName("");
       setNameHelp("");
       setNameConflict(null);
       setAddress("");
       setAddressHelp("");
-      // Default reset
       setReferrer("");
 
-      // Auto-prefill from global event (last selected profile)
       const fromEvent = window.lastReferrer;
       if (fromEvent?.id && fromEvent?.name) {
         setReferrer({
@@ -119,7 +112,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       const profilesData = cachedProfiles || [];
       setProfiles(profilesData);
 
-      // Recompute verified-name keys using the same data source
       const verifiedIds = new Set(
         profilesData
           .filter((p) => p.address_verified)
@@ -138,7 +130,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     })();
   }, [isOpen, prefillUsername]);
 
-  // --- Effect 2: Validate name ---
   useEffect(() => {
     if (!name) return;
 
@@ -170,7 +161,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setNameHelp(`Shared as: Zcash.me/${toSlugish(name)}`);
   }, [name, profiles, verifiedNameKeys]);
 
-  // --- Effect 3: Validate address (using full spec check) ---
   useEffect(() => {
     const addrNorm = address.trim().toLowerCase();
     const res = validateZcashAddress(addrNorm);
@@ -181,7 +171,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // Duplicate address check
     const duplicateAddr = profiles.some(
       (p) => (p.address || "").trim().toLowerCase() === addrNorm
     );
@@ -228,12 +217,10 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setAddressConflict(null);
   }, [address, profiles]);
 
-  // Guard AFTER all hooks, before rendering
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
 
-  // ---------- Links helpers ----------
   function updateLink(index, patch) {
     setLinks((prev) => {
       const next = [...prev];
@@ -250,7 +237,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setLinks(links.filter((_, i) => i !== index));
   }
 
-  // Build the final list of fully-formed links (only valid ones kept)
   const builtLinks = links
     .map((l) => {
       if (l.platform === "Other") {
@@ -264,11 +250,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return res.valid;
     });
 
-  // ---------- Step Validation ----------
   const stepIsValid = (() => {
     switch (step) {
       case 0:
-        // Allow proceeding if there's no conflict or only an informational (unverified) conflict
         return !!name.trim() && !!displayName.trim() && (!nameConflict || nameConflict.type !== "error");
 
 
@@ -309,12 +293,10 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   })();
 
 
-  // ---------- Submit ----------
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
 
-    // Ensure links are valid
     const invalid = links.some((l) => {
       if (l.platform === "Other") {
         return l.otherUrl && !isValidUrl(l.otherUrl.trim());
@@ -330,7 +312,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // Check for duplicate verified name
     const proposedKey = normForConflict(name);
     const verifiedConflict = profiles.some(
       (p) =>
@@ -344,7 +325,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // NEW: Check for duplicate Zcash address (case-insensitive)
     const addr = address.trim().toLowerCase();
     const duplicateAddr = profiles.find(
       (p) => p.address?.trim().toLowerCase() === addr
@@ -354,7 +334,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // Continue if name/address are unique
     const finalLinks = links
       .map((l) => {
         if (l.platform === "Other") return l.otherUrl?.trim();
@@ -402,7 +381,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       })
       .filter(Boolean);
 
-    // Duplicate address guard (frontend)
     const addrNorm = address.trim().toLowerCase();
     const addrDuplicateLocal = profiles.some(
       (p) => (p.address || "").trim().toLowerCase() === addrNorm
@@ -412,7 +390,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    // Server-side check (in case local data is stale)
     const taken = await checkAddressTaken(address);
     if (taken) {
       setError("That Zcash address is already associated with an existing profile.");
@@ -422,7 +399,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setIsLoading(true);
 
     try {
-      // Insert new profile
       const { data: profile, error: profileError } = await createProfile({
         name: name.trim(),
         display_name: displayName.trim() || null,
@@ -436,32 +412,23 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
       if (profileError) throw profileError;
 
-      // 2️⃣ Insert profile links
       await insertProfileLinks(profile.id, finalLinkEntries);
 
 
 
 
-      // Generate a router-safe slug
       const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
       const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
 
-
-      // Clear cached profiles so directory reloads fresh
-      resetCache();
-
-      // If you prefer not to reload, you could instead trigger the callback:
       onUserAdded?.(profile);
       onClose?.();
 
-      // ✅ Redirect to /name-id (React Router friendly)
       window.location.assign(`/${slug}`);
 
 
 
 
     } catch (err) {
-      console.error("Add name failed:", err);
       if (err?.message?.includes("duplicate key value")) {
         setError("That address or name already exists. Please choose a unique one.");
       } else {
@@ -472,7 +439,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     }
   }
 
-  // ---------- Navigation ----------
   const goNext = () => {
     if (!stepIsValid) return;
     setDir(1);
@@ -482,11 +448,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setDir(-1);
     setStep((s) => Math.max(0, s - 1));
 
-    // Clear leftover conflict state when navigating back
     setAddressConflict(null);
   };
 
-  // ---------- UI ----------
   const StepName = (
     <motion.div key="step-name" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
       <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
@@ -500,7 +464,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
           onChange={(e) => {
             const input = e.target.value;
 
-            // Allow letters, numbers, underscores, and emojis — remove other punctuation/symbols
             const filtered = input
               .normalize("NFKC")
               .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");

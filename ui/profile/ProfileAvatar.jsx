@@ -10,7 +10,6 @@ export default function ProfileAvatar({
     blink = false,
     lookAround = false,
 }) {
-    // --- derive state using utility functions ---
     const { isVerified } = getProfileTrust(profile);
     const rankType = getRankType(profile);
     const circleClass = getCircleClass(isVerified, rankType);

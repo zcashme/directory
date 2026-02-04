@@ -1,4 +1,3 @@
-// File: src/components/LinkInput.jsx
 import { useState, useEffect } from "react";
 import { isValidUrl } from "@/lib/validateUrl";
 

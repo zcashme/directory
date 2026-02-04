@@ -14,7 +14,6 @@ function XIcon(props) {
   );
 }
 
-// helper to shorten addresses (first6...last6)
 function shortAddr(a = "") {
   if (a.length < 14) return a;
   return a.slice(0, 6) + "..." + a.slice(-6);
@@ -35,9 +34,6 @@ export default function SubmitOtp({ isOpen, onClose, profile }) {
   const pname = profile?.name || "Profile";
   const paddr = profile?.address || "(unknown)";
 
-  // ─────────────────────────────────────────────
-  // NEW: Call SQL RPC instead of HTTP backend
-  // ─────────────────────────────────────────────
   async function handleSubmit() {
     setStep(1);
 
@@ -48,7 +44,6 @@ const { data, error } = await confirmOtp(zid, otp);
 
 
       if (error) {
-        console.error("RPC error:", error);
         setResult("fail");
         setCustomMessage("Unexpected server error.");
         setStep(2);
@@ -99,7 +94,6 @@ const { data, error } = await confirmOtp(zid, otp);
       setStep(2);
 
     } catch (err) {
-      console.error("OTP request failed:", err);
       setResult("fail");
       setCustomMessage("Unexpected error.");
       setStep(2);

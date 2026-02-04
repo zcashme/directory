@@ -1,5 +1,4 @@
 // ui/social/useVerificationFlow.js
-// Extracted from ProfileEditor's 280-line verification useEffect
 
 import { useEffect } from "react";
 import { normalizeSocialUsername } from "@/lib/social/usernameNormalizer";
@@ -15,7 +14,6 @@ import {
   getDiscordAvatarUrl,
   normalizeHandleKey,
   normalizeDiscordHandle,
-  storeAvatarUrl,
 } from "@/lib/social/providerAvatars";
 
 export default function useVerificationFlow(profileId, setForm, setShowRedirect) {
@@ -60,7 +58,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         const normalizedX = normalizeSocialUsername(xUsername || "", "X").toLowerCase();
         const normalizedTarget = normalizeSocialUsername(targetUsername || "", "X").toLowerCase();
         if (!normalizedX || !normalizedTarget || normalizedX !== normalizedTarget) {
-          console.warn(`[VERIFY FAIL] Mismatch: @${xUsername} vs @${targetUsername}`);
           alert(`Verification Mismatch: Logged in as @${xUsername}, but verifying link for @${targetUsername}`);
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
@@ -68,8 +65,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }
 
         const avatarUrl = getXAvatarUrl(session);
-        const handleKey = normalizeHandleKey(targetUsername);
-        if (avatarUrl && handleKey) storeAvatarUrl("twitter", profileId, handleKey, avatarUrl);
       }
 
       if (isLinkedInUrl) {
@@ -96,7 +91,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }
 
         if (!match) {
-          console.warn(`[VERIFY FAIL] No match found for ${t}`);
           alert(
             `Verification Mismatch\n\n` +
             `Logged in as: ${liData.name || liData.email || "(unknown)"}\n` +
@@ -122,7 +116,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         const normalizedGh = normalizeSocialUsername(ghHandle || "", "GitHub").toLowerCase();
         const normalizedTarget = normalizeSocialUsername(targetGh || "", "GitHub").toLowerCase();
         if (!normalizedGh || !normalizedTarget || normalizedGh !== normalizedTarget) {
-          console.warn(`[VERIFY FAIL] Mismatch: ${ghHandle} vs ${targetGh}`);
           alert(`Verification Mismatch: Logged in as ${ghHandle}, but verifying link for ${targetGh}`);
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
@@ -130,8 +123,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }
 
         const avatarUrl = await getGithubAvatarUrl(session);
-        const handleKey = normalizeHandleKey(targetGh);
-        if (avatarUrl && handleKey) storeAvatarUrl("github", profileId, handleKey, avatarUrl);
       }
 
       if (isDiscordUrl) {
@@ -158,7 +149,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }
 
         if (!match) {
-          console.warn(`[VERIFY FAIL] Mismatch: ${discordUsername || discordId} vs ${targetDecoded}`);
           alert(`Verification Mismatch: Logged in as ${discordUsername || discordId || "(unknown)"}, but verifying link for ${targetDecoded || "(unknown)"}`);
           localStorage.removeItem("verifying_profile_id");
           localStorage.removeItem("verifying_link_url");
@@ -166,15 +156,12 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }
 
         const avatarUrl = await getDiscordAvatarUrl(session);
-        const handleKey = normalizeHandleKey(targetNorm);
-        if (avatarUrl && handleKey) storeAvatarUrl("discord", profileId, handleKey, avatarUrl);
         if (discordId) {
           verifiedDiscordId = String(discordId);
           verifiedDiscordUrl = `https://discord.com/users/${verifiedDiscordId}`;
         }
       }
 
-      // Update Database
       try {
         const normalizedUrl = url.replace(/\/$/, "");
         let handle = normalizedUrl.split("/").pop();
@@ -219,10 +206,8 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
 
         await updateLinkVerification(profileId, handle, variants, updatePayload);
       } catch (err) {
-        console.error("Database update failed:", err);
       }
 
-      // Update Local UI
       setForm((prev) => ({
         ...prev,
         links: prev.links.map((l) => {
@@ -237,7 +222,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         }),
       }));
 
-      // Clear auth context
       setTimeout(() => {
         localStorage.removeItem("verifying_profile_id");
         localStorage.removeItem("verifying_link_url");

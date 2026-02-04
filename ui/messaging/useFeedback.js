@@ -52,7 +52,6 @@ const {
       try {
         setPendingEdits(e.detail);
       } catch (err) {
-        console.error("pendingEdits handler error:", err);
       }
     };
 

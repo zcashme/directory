@@ -15,7 +15,6 @@ export default function VerifiedBadge({
     return () => clearTimeout(timer);
   }, []);
 
-  // NEW: Prevent "start expanded then collapse"
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setHasMounted(true));

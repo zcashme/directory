@@ -1,6 +1,5 @@
 "use client";
 
-// New reusable AmountAndWallet component matching Draft styling
 import React, { useEffect, useState } from "react";
 
 const FIAT_TICKERS = [
@@ -159,7 +158,6 @@ export default function AmountAndWallet({
         return true;
       }
     } catch (err) {
-      // keep current rate on failure
     }
     return false;
   };

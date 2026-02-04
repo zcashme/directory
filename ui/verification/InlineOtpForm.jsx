@@ -38,7 +38,6 @@ export default function InlineOtpForm({ profile, onSuccess }) {
       setMessage(failMsg);
       setStep(2);
     } catch (err) {
-      console.error("Inline OTP request failed:", err);
       setResult("fail");
       setMessage("Unexpected error.");
       setStep(2);

@@ -5,7 +5,6 @@ export default function VerifiedCardWrapper({
   className = "",
   children,
 }) {
-  // Base style tiers
   const baseStyle =
     "rounded-2xl p-3 border transition-all cursor-pointer shadow-xs";
 

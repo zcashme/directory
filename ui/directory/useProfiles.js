@@ -64,10 +64,7 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
             .order("name", { ascending: true })
             .range(from, from + pageSize - 1);
 
-          if (error) {
-            console.error("Error loading profiles:", error);
-            break;
-          }
+          if (error) break;
 
           all = all.concat(data || []);
           total = count || total;
@@ -127,7 +124,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
               rank_monthly: 0,
             },
           ];
-          console.warn("Supabase unavailable - using offline demo profile");
         }
 
         if (active) {
@@ -138,7 +134,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
 
         }
       } catch (err) {
-        console.error("Profiles fetch failed:", err);
         if (process.env.NODE_ENV === "development" && active) {
           const fallback = [
             {
@@ -160,7 +155,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
           if (typeof window !== "undefined") window.cachedProfiles = fallback;
           setProfiles(fallback);
           if (!hasInitial) setLoading(false);
-          console.warn("Using offline demo profile due to fetch error");
         }
       }
     }
@@ -173,7 +167,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
   }, [hasInitial, revalidate]);
 
   const addProfile = (newProfile) => {
-    // Enrich with defaults if missing
     const enriched = {
       rank_alltime: 0,
       rank_weekly: 0,
@@ -182,13 +175,11 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
       links: [],
       verified_links_count: 0,
       ...newProfile,
-      // Ensure links is an array
       links: newProfile.links || []
     };
 
     setProfiles((prev) => [...prev, enriched]);
 
-    // Also update global cache
     if (cachedProfiles) {
       cachedProfiles.push(enriched);
     }
@@ -196,13 +187,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
 
   return { profiles, loading, addProfile };
 }
-
-export const resetCache = () => {
-  cachedProfiles = null;
-  if (typeof window !== "undefined") window.cachedProfiles = null;
-};
-
-export const clearCache = resetCache; // Alias for consistency
 
 export { cachedProfiles };
 if (typeof window !== "undefined") window.cachedProfiles = cachedProfiles;

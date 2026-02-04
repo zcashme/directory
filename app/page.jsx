@@ -4,7 +4,6 @@ import { fetchFeaturedProfilesServer } from "@/lib/directory/fetchFeaturedProfil
 export const dynamic = "force-dynamic";
 
 export default async function Page() {
-  // Fetch featured profiles server-side - data arrives with the HTML
   const featuredProfiles = await fetchFeaturedProfilesServer(5);
 
   return <HomePage initialFeaturedProfiles={featuredProfiles} />;

@@ -44,7 +44,6 @@ export async function GET(request) {
         );
       }
     } catch {
-      // ignore and try next provider
     }
   }
 

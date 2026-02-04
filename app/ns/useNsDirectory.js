@@ -11,7 +11,6 @@ export default function useNsDirectory(initialProfiles) {
 
   useEffect(() => {
     let isActive = true;
-    // No need to filter - server already returns only NS profiles
     const ids = profiles.map((profile) => profile.id);
     const idsWithValue = ids.filter((id) => typeof id === "number" || typeof id === "string");
     if (!idsWithValue.length) {
