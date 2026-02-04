@@ -186,10 +186,11 @@ export default function ProfileSearchDropdown({
   }, [show, value]);
 
   return (
-    <div ref={dropdownRef} className="w-full">
+    <>
       {/* Input only if NOT list-only */}
       {!listOnly && (
         <input
+          ref={dropdownRef}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -198,6 +199,9 @@ export default function ProfileSearchDropdown({
           placeholder={placeholder}
           autoComplete="off"
           className={className}
+          style={{
+            outline: 'none',
+          }}
           {...props}
         />
       )}
@@ -205,6 +209,7 @@ export default function ProfileSearchDropdown({
       {/* Dropdown menu */}
       {(show || usernameAvailable) && keystrokeDebounced && (
         <div
+          ref={listOnly ? dropdownRef : null}
           onMouseEnter={() => {
             setIsHovering(true);
             clearHideTimer();
@@ -246,11 +251,13 @@ export default function ProfileSearchDropdown({
                     className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold hover:bg-gray-100 transition-colors"
                   >
                     {/* Avatar */}
-                    <ProfileAvatar
-                      profile={p}
-                      size={32}
-                      imageClassName="object-cover"
-                    />
+                    <div>
+                      <ProfileAvatar
+                        profile={p}
+                        size={32}
+                        imageClassName="object-cover"
+                      />
+                    </div>
 
                     {/* Text + metadata */}
                     <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -260,7 +267,9 @@ export default function ProfileSearchDropdown({
 
                       {(p.address_verified ||
                         p.zcasher_links?.some((l) => l.is_verified)) && (
-                        <VerifiedBadge profile={p} />
+                        <div>
+                          <VerifiedBadge profile={p} />
+                        </div>
                       )}
 
                       <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
@@ -280,6 +289,6 @@ export default function ProfileSearchDropdown({
           )}
         </div>
       )}
-    </div>
+    </>
   );
 }
