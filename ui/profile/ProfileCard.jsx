@@ -28,6 +28,233 @@ import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
 const Motion = motion;
 
+// ── Shared Profile Card Content Component ────────────────────────────────
+// Extracted shared rendering logic for use in both ProfileCard and FannedCard
+
+export function ProfileCardContent({
+  profile,
+  linksArray = [],
+  variant = "default", // "default" | "mobile" | "compact"
+  showLinks = true,
+  showAddress = true,
+  showBio = true,
+  showDates = true,
+  showQRButton = false,
+  onQRClick,
+  linkVariant = "default", // "default" | "simple" - simple doesn't show auth badges
+  className = "",
+}) {
+  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const formatUsername = (value = "") => value.trim().replace(/\s+/g, "_");
+
+  // Size variants
+  const sizes = {
+    mobile: {
+      name: "text-xs",
+      username: "text-[9px]",
+      bio: "text-[8px]",
+      dates: "text-[8px]",
+      address: "text-[8px]",
+      linkIcon: "w-3 h-3",
+      linkLabel: "text-[8px]",
+      linkDomain: "text-[7px]",
+      addressPadding: "px-2 py-1",
+      linkPadding: "px-2.5 pt-2 pb-2",
+      linkGap: "gap-1.5",
+    },
+    default: {
+      name: "text-sm",
+      username: "text-[10px]",
+      bio: "text-[9px]",
+      dates: "text-[9px]",
+      address: "text-[9px]",
+      linkIcon: "w-3.5 h-3.5",
+      linkLabel: "text-[9px]",
+      linkDomain: "text-[8px]",
+      addressPadding: "px-2.5 py-1.5",
+      linkPadding: "px-3 pt-2 pb-2",
+      linkGap: "gap-2",
+    },
+    compact: {
+      name: "text-xs",
+      username: "text-xs",
+      bio: "text-sm",
+      dates: "text-xs",
+      address: "text-sm",
+      linkIcon: "w-4 h-4",
+      linkLabel: "text-sm",
+      linkDomain: "text-sm",
+      addressPadding: "px-3 py-1.5",
+      linkPadding: "px-4 pt-2 pb-3",
+      linkGap: "gap-2",
+    },
+  };
+
+  const s = sizes[variant] || sizes.default;
+
+  return (
+    <div className={className}>
+      {/* Display Name */}
+      <div className="mb-1 relative z-10">
+        <span className={`${s.name} font-bold text-gray-900 truncate block text-center max-w-full ${variant === "mobile" ? "px-6" : variant === "compact" ? "" : "px-8"}`}>
+          {profile.display_name || profile.name}
+        </span>
+        {isVerified && (
+          <span className={`absolute top-0 ${variant === "mobile" ? "right-2 scale-[0.5]" : variant === "compact" ? "right-3 scale-[0.5]" : "right-3 scale-[0.5]"} origin-center`}>
+            <VerifiedBadge verified={true} />
+          </span>
+        )}
+      </div>
+
+      {/* Username */}
+      <p className={`${s.username} text-gray-600 mb-2 relative z-10`}>@{formatUsername(profile.name)}</p>
+
+      {/* Bio */}
+      {showBio && profile.bio && profile.bio.trim() !== "" && (
+        <p className={`${s.bio} text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words`}>
+          {profile.bio}
+        </p>
+      )}
+
+      {/* Dates */}
+      {showDates && (
+        <p className={`mt-2 ${s.dates} text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10`}>
+          {profile.nearest_city_name && (
+            <>
+              <span className="whitespace-nowrap">Near {profile.nearest_city_name}</span>
+              <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+            </>
+          )}
+          <span className="whitespace-nowrap">
+            Joined{" "}
+            {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+              month: "short",
+              year: "numeric",
+            })}
+          </span>
+          <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+          <span className="whitespace-nowrap">
+            Verified {getVerifiedTimeAgo(profile.last_verified_at || profile.last_verified)}
+          </span>
+        </p>
+      )}
+
+      {/* Address with copy button */}
+      {showAddress && profile.address && (
+        <div className="mt-2 flex items-center justify-center relative z-10">
+          <div className={`flex items-center gap-2 border text-gray-700 font-mono ${s.address} rounded-full ${s.addressPadding} shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50`}>
+            <span className="select-all" title={profile.address}>
+              {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+            </span>
+            {showQRButton && onQRClick ? (
+              <div className="flex items-center gap-1 whitespace-nowrap">
+                <button
+                  onClick={onQRClick}
+                  className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
+                  title="Show QR"
+                >
+                  ▣
+                  <span className="inline-block max-w-0 group-hover:max-w-[60px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">
+                    QR
+                  </span>
+                </button>
+                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
+              </div>
+            ) : (
+              <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Links */}
+      {showLinks && linksArray && linksArray.length > 0 && (
+        <div className={`${variant === "mobile" ? "mt-3" : "mt-4"} flex-1 min-h-0 w-full relative z-10 flex flex-col`}>
+          <div className="rounded-lg border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
+            <div className={`${s.linkPadding} flex flex-col ${s.linkGap} flex-1 min-h-0 overflow-y-auto`}>
+              {linksArray.slice(0, 3).map((link, i) => {
+                const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
+                const canLinkLeft = !(isDiscordLink && !link.is_verified);
+                return (
+                  <div
+                    key={link.id || i}
+                    className={`flex items-center ${variant === "mobile" ? "gap-2 py-1" : "gap-2.5 py-1"} border-b border-gray-200 last:border-0 min-w-0 flex-shrink-0`}
+                  >
+                    <div className={`flex items-center ${s.linkGap} shrink-0 min-w-0`}>
+                      {canLinkLeft ? (
+                        <a
+                          href={link.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className={`flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`}
+                        >
+                          <img
+                            src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                            alt=""
+                            className={`${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                          <span className={`font-medium ${s.linkLabel} text-gray-800 truncate`}>
+                            {link.label}
+                          </span>
+                        </a>
+                      ) : (
+                        <>
+                          <img
+                            src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+                            alt=""
+                            className={`${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`}
+                            onError={(e) => { e.target.style.display = 'none'; }}
+                          />
+                          <span className={`font-medium ${s.linkLabel} text-gray-800 truncate`}>
+                            {link.label}
+                          </span>
+                        </>
+                      )}
+                      <VerifiedBadge
+                        verified={link.is_verified}
+                        verifiedLabel={linkVariant === "simple" ? "Auth" : "Authenticated"}
+                        unverifiedLabel={linkVariant === "simple" ? "Not Auth" : "Not Authenticated"}
+                      />
+                    </div>
+                    <div className={`flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`}>
+                      {isDiscordLink && !link.is_verified ? (
+                        <>
+                          <span className={`flex-1 min-w-0 truncate text-right ${s.linkDomain}`}>{link.label}</span>
+                          <CopyButton text={link.label} label="Copy" copiedLabel="Copied" />
+                        </>
+                      ) : (
+                        <>
+                          <a
+                            href={link.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={(e) => e.stopPropagation()}
+                            className={`flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors ${s.linkDomain}`}
+                          >
+                            {extractDomain(link.url)}
+                          </a>
+                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              {linksArray.length > 3 && (
+                <span className={`${s.linkDomain} text-gray-500 text-center pt-1`}>
+                  +{linksArray.length - 3} more
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RedirectModal({ isOpen, label }) {
   if (!isOpen) return null;
   return (

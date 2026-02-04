@@ -6,10 +6,38 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
-import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import { ProfileCardContent } from "@/ui/profile/ProfileCard";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
+import { parseProfileLinks } from "@/lib/social/profileLinks";
 
+// Constants
+const MOBILE_BREAKPOINT = 768;
+const AUTO_ROTATE_INTERVAL = 2500;
+const MAX_TILT_DEGREES = 10;
+
+// ── Shared Components ────────────────────────────────────────────────
+
+function FannedCardAvatar({ profile, size, isHighlighted }) {
+  return (
+    <div className={`absolute ${size === 80 ? "-top-10" : "-top-12"} left-1/2 -translate-x-1/2 z-20`}>
+      <div
+        className="rounded-full border border-black p-0.5 bg-white"
+        style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
+      >
+        <div className="[&>div]:!bg-transparent [&>div]:!border-0">
+          <ProfileAvatar
+            profile={profile}
+            size={size}
+            imageClassName="object-cover"
+            className="shadow-lg"
+            showFallbackIcon
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── FannedCard ───────────────────────────────────────────────────────
 
@@ -40,7 +68,10 @@ function FannedCard({
       const y = e.clientY - rect.top;
       const centerX = rect.width / 2;
       const centerY = rect.height / 2;
-      setTilt({ x: ((y - centerY) / centerY) * -10, y: ((x - centerX) / centerX) * 10 });
+      setTilt({
+        x: ((y - centerY) / centerY) * -MAX_TILT_DEGREES,
+        y: ((x - centerX) / centerX) * MAX_TILT_DEGREES
+      });
     },
     [isMobile]
   );
@@ -56,11 +87,9 @@ function FannedCard({
     onInteractionEnd?.();
   };
 
-  // Keep computed values for future use (imports preserved)
-  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-  const mobileTotalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
-  const totalLinks = profile.total_links ?? (Array.isArray(profile.links) ? profile.links.length : 0);
-  // Note: profile.profile_image_url, profile.display_name, profile.bio, profile.links, profile.nearest_city available but not rendered
+
+  // Parse and enrich links from profile
+  const { linksArray } = parseProfileLinks(profile);
 
   // ── Mobile stacked layout ──
   if (isMobile) {
@@ -81,27 +110,14 @@ function FannedCard({
           transformOrigin: "center center",
         }}
       >
-        {/* Profile Avatar */}
-        <div className="absolute -top-8 left-1/2 -translate-x-1/2 z-20">
-          <div
-            className="rounded-full border border-black p-0.5 bg-white"
-            style={{ transform: isActive ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
-          >
-            <div className="[&>div]:!bg-transparent [&>div]:!border-0">
-              <ProfileAvatar
-                profile={profile}
-                size={64}
-                imageClassName="object-cover"
-                className="shadow-lg"
-                showFallbackIcon
-              />
-            </div>
-          </div>
-        </div>
+        <FannedCardAvatar profile={profile} size={80} isHighlighted={isActive} />
 
         <div
-          className={`bg-white w-[160px] h-[240px] rounded-2xl border border-black p-3 pt-12 shadow-xl text-center flex flex-col relative ${isActive ? `card-shimmer ${shimmerSpeed}` : ""}`}
+          className={`w-[200px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative ${isActive ? `card-shimmer ${shimmerSpeed}` : ""}`}
           style={{
+            backgroundColor: 'var(--color-background)',
+            minHeight: '380px',
+            maxHeight: '420px',
             transform: isActive ? "scale(1)" : "scale(0.98)",
             transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
             boxShadow: isActive
@@ -109,70 +125,12 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          {/* Display Name */}
-          <div className="mb-1 relative z-10">
-            <span className="font-bold text-xs text-gray-900 truncate block text-center max-w-full px-6">
-              {profile.display_name || profile.name}
-            </span>
-            {isVerified && (
-              <span className="absolute top-0 right-2 scale-[0.5] origin-center">
-                <VerifiedBadge verified={true} />
-              </span>
-            )}
-          </div>
-          {/* Username */}
-          <p className="text-[9px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
-
-          {/* Bio */}
-          {profile.bio && profile.bio.trim() !== "" && (
-            <p className="text-[8px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words">
-              {profile.bio}
-            </p>
-          )}
-
-          {/* Flexible spacer - allows wallet block to move within a constrained range */}
-          <div className="flex-1 min-h-[2px] max-h-[4px]"></div>
-
-          {/* Address pill with icons */}
-          {profile.address && (
-            <div className="flex justify-center relative z-10">
-              <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
-                <span className="font-mono text-[7px] text-gray-700 leading-none">
-                  {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
-                </span>
-                {/* QR Code icon */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); }}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
-                  title="QR Code"
-                >
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <rect x="3" y="3" width="7" height="7" rx="1" />
-                    <rect x="14" y="3" width="7" height="7" rx="1" />
-                    <rect x="3" y="14" width="7" height="7" rx="1" />
-                    <rect x="14" y="14" width="3" height="3" />
-                    <rect x="18" y="14" width="3" height="3" />
-                    <rect x="14" y="18" width="3" height="3" />
-                    <rect x="18" y="18" width="3" height="3" />
-                  </svg>
-                </button>
-                {/* Copy icon */}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigator.clipboard.writeText(profile.address);
-                  }}
-                  className="text-gray-500 hover:text-gray-700 transition-colors"
-                  title="Copy address"
-                >
-                  <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                    <rect x="9" y="9" width="13" height="13" rx="2" />
-                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-          )}
+          <ProfileCardContent
+            profile={profile}
+            linksArray={linksArray}
+            variant="mobile"
+            linkVariant="simple"
+          />
         </div>
       </div>
     );
@@ -196,27 +154,14 @@ function FannedCard({
         perspective: "1000px",
       }}
     >
-      {/* Profile Avatar */}
-      <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-20">
-        <div
-          className="rounded-full border border-black p-0.5 bg-white"
-          style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}
-        >
-          <div className="[&>div]:!bg-transparent [&>div]:!border-0">
-            <ProfileAvatar
-              profile={profile}
-              size={80}
-              imageClassName="object-cover"
-              className="shadow-lg"
-              showFallbackIcon
-            />
-          </div>
-        </div>
-      </div>
+      <FannedCardAvatar profile={profile} size={100} isHighlighted={isHighlighted} />
 
       <div
-        className={`bg-white w-[180px] h-[280px] rounded-2xl border border-black p-4 pt-14 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering ? `card-shimmer ${shimmerSpeed}` : ""}`}
+        className={`w-[220px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering ? `card-shimmer ${shimmerSpeed}` : ""}`}
         style={{
+          backgroundColor: 'var(--color-background)',
+          minHeight: '420px',
+          maxHeight: '480px',
           transform: isHovering
             ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.08)`
             : isSpotlit
@@ -231,70 +176,12 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        {/* Display Name */}
-        <div className="mb-1 relative z-10">
-          <span className="font-bold text-sm text-gray-900 truncate block text-center max-w-full px-8">
-            {profile.display_name || profile.name}
-          </span>
-          {isVerified && (
-            <span className="absolute top-0 right-3 scale-[0.5] origin-center">
-              <VerifiedBadge verified={true} />
-            </span>
-          )}
-        </div>
-        {/* Username */}
-        <p className="text-[10px] text-gray-600 mb-2 relative z-10">@{profile.name}</p>
-
-        {/* Bio */}
-        {profile.bio && profile.bio.trim() !== "" && (
-          <p className="text-[9px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words">
-            {profile.bio}
-          </p>
-        )}
-
-        {/* Flexible spacer - allows wallet block to move within a constrained range */}
-        <div className="flex-1 min-h-[2px] max-h-[6px]"></div>
-
-        {/* Address pill with icons */}
-        {profile.address && (
-          <div className="flex justify-center relative z-10">
-            <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
-              <span className="font-mono text-[8px] text-gray-700 leading-none">
-                {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
-              </span>
-              {/* QR Code icon */}
-              <button
-                onClick={(e) => { e.stopPropagation(); }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-                title="QR Code"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <rect x="3" y="3" width="7" height="7" rx="1" />
-                  <rect x="14" y="3" width="7" height="7" rx="1" />
-                  <rect x="3" y="14" width="7" height="7" rx="1" />
-                  <rect x="14" y="14" width="3" height="3" />
-                  <rect x="18" y="14" width="3" height="3" />
-                  <rect x="14" y="18" width="3" height="3" />
-                  <rect x="18" y="18" width="3" height="3" />
-                </svg>
-              </button>
-              {/* Copy icon */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigator.clipboard.writeText(profile.address);
-                }}
-                className="text-gray-500 hover:text-gray-700 transition-colors"
-                title="Copy address"
-              >
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-                  <rect x="9" y="9" width="13" height="13" rx="2" />
-                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
+        <ProfileCardContent
+          profile={profile}
+          linksArray={linksArray}
+          variant="default"
+          linkVariant="simple"
+        />
       </div>
     </div>
   );
@@ -310,7 +197,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
   const [activeCardIndex, setActiveCardIndex] = useState(centerIndex);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    const checkMobile = () => setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
@@ -320,7 +207,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
     if (featuredProfiles.length <= 1 || isInteracting) return;
     const interval = setInterval(() => {
       setActiveCardIndex((prev) => (prev + 1) % featuredProfiles.length);
-    }, 2500);
+    }, AUTO_ROTATE_INTERVAL);
     return () => clearInterval(interval);
   }, [featuredProfiles.length, isInteracting]);
 
@@ -368,7 +255,7 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
 
   return (
     <div className="mb-16" style={{ overflowX: "clip" }}>
-      <div className="relative flex justify-center items-start h-[340px] md:h-[420px] pt-12 md:pt-16" style={{ overflowX: "clip" }}>
+      <div className="relative flex justify-center items-start h-[420px] md:h-[500px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
         {featuredProfiles.map((profile, index) => {
           const stackIndex = getStackIndex(index);
           const isActive = isMobile && index === activeCardIndex;
