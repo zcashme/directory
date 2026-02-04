@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { isNewProfile, getProfileTrust, getWarningConfig, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
+import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import CopyButton from "@/ui/profile/CopyButton";
 import { useFeedback } from "@/ui/messaging/useFeedback";
@@ -136,7 +136,7 @@ export function ProfileCardContent({
           </span>
           <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
           <span className="whitespace-nowrap">
-            Verified {getVerifiedTimeAgo(profile.last_verified_at || profile.last_verified)}
+            Verified {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}
           </span>
         </p>
       )}
@@ -702,7 +702,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
 
             <span className="whitespace-nowrap">
               Verified{" "}
-              {getVerifiedTimeAgo(profile.last_verified_at || profile.last_verified)}
+              {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}
             </span>
           </p>
 

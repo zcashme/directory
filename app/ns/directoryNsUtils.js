@@ -1,4 +1,5 @@
 export { normalizeSlug } from "@/lib/profile/normalizeSlugs";
+export { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 
 export const isTruthyFlag = (value) =>
   value === true || value === "true" || value === 1 || value === "1";
@@ -14,20 +15,6 @@ export const isVerifiedProfile = (profile) =>
   Boolean(profile?.address_verified) ||
   Number(profile?.verified_links_count || 0) > 0 ||
   Boolean(profile?.links?.some((link) => link.is_verified));
-
-export const getLastVerifiedLabel = (profile) => {
-  if (profile?.last_verified_label) return profile.last_verified_label;
-  const ts = profile?.last_verified_at || profile?.last_verified;
-  if (!ts) return "n/a";
-  const ms = new Date(ts).getTime();
-  if (Number.isNaN(ms)) return "n/a";
-  const weeks = (Date.now() - ms) / (1000 * 60 * 60 * 24 * 7);
-  if (weeks < 1) return "<1 week ago";
-  if (weeks < 2) return "<2 weeks ago";
-  if (weeks < 3) return "<3 weeks ago";
-  if (weeks < 4) return "<4 weeks ago";
-  return "<1 month ago";
-};
 
 export const getProfileLocation = (profile) => profile?.nearest_city_name || "";
 

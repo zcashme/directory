@@ -2,119 +2,44 @@
 
 import React, { useEffect, useState } from "react";
 
-const FIAT_TICKERS = [
-  "USD",
-  "AED",
-  "AUD",
-  "BRL",
-  "CAD",
-  "CHF",
-  "CNY",
-  "CZK",
-  "DKK",
-  "EUR",
-  "GBP",
-  "HKD",
-  "HUF",
-  "IDR",
-  "ILS",
-  "INR",
-  "JPY",
-  "KRW",
-  "MXN",
-  "MYR",
-  "NOK",
-  "NZD",
-  "PHP",
-  "PLN",
-  "SAR",
-  "SEK",
-  "SGD",
-  "THB",
-  "TRY",
-  "VND",
-  "ZAR"
-];
-
-const FIAT_SYMBOLS = {
-  USD: "$",
-  EUR: "€",
-  GBP: "£",
-  JPY: "¥",
-  AUD: "A$",
-  CAD: "C$",
-  CHF: "CHF",
-  CNY: "¥",
-  HKD: "HK$",
-  SGD: "S$",
-  NZD: "NZ$",
-  SEK: "kr",
-  NOK: "kr",
-  DKK: "kr",
-  PLN: "zł",
-  CZK: "Kč",
-  HUF: "Ft",
-  TRY: "₺",
-  ILS: "₪",
-  INR: "₹",
-  BRL: "R$",
-  MXN: "MX$",
-  IDR: "Rp",
-  MYR: "RM",
-  PHP: "₱",
-  THB: "฿",
-  VND: "₫",
-  ZAR: "R",
-  KRW: "₩",
-  AED: "AED",
-  SAR: "SAR"
+const CURRENCIES = {
+  USD: { symbol: "$", name: "US Dollar" },
+  AED: { symbol: "AED", name: "UAE Dirham" },
+  AUD: { symbol: "A$", name: "Australian Dollar" },
+  BRL: { symbol: "R$", name: "Brazilian Real" },
+  CAD: { symbol: "C$", name: "Canadian Dollar" },
+  CHF: { symbol: "CHF", name: "Swiss Franc" },
+  CNY: { symbol: "¥", name: "Chinese Yuan" },
+  CZK: { symbol: "Kč", name: "Czech Koruna" },
+  DKK: { symbol: "kr", name: "Danish Krone" },
+  EUR: { symbol: "€", name: "Euro" },
+  GBP: { symbol: "£", name: "British Pound" },
+  HKD: { symbol: "HK$", name: "Hong Kong Dollar" },
+  HUF: { symbol: "Ft", name: "Hungarian Forint" },
+  IDR: { symbol: "Rp", name: "Indonesian Rupiah" },
+  ILS: { symbol: "₪", name: "Israeli Shekel" },
+  INR: { symbol: "₹", name: "Indian Rupee" },
+  JPY: { symbol: "¥", name: "Japanese Yen" },
+  KRW: { symbol: "₩", name: "South Korean Won" },
+  MXN: { symbol: "MX$", name: "Mexican Peso" },
+  MYR: { symbol: "RM", name: "Malaysian Ringgit" },
+  NOK: { symbol: "kr", name: "Norwegian Krone" },
+  NZD: { symbol: "NZ$", name: "New Zealand Dollar" },
+  PHP: { symbol: "₱", name: "Philippine Peso" },
+  PLN: { symbol: "zł", name: "Polish Zloty" },
+  SAR: { symbol: "SAR", name: "Saudi Riyal" },
+  SEK: { symbol: "kr", name: "Swedish Krona" },
+  SGD: { symbol: "S$", name: "Singapore Dollar" },
+  THB: { symbol: "฿", name: "Thai Baht" },
+  TRY: { symbol: "₺", name: "Turkish Lira" },
+  VND: { symbol: "₫", name: "Vietnamese Dong" },
+  ZAR: { symbol: "R", name: "South African Rand" }
 };
+const FIAT_TICKERS = Object.keys(CURRENCIES);
 
-const FIAT_NAMES = {
-  USD: "US Dollar",
-  EUR: "Euro",
-  GBP: "British Pound",
-  JPY: "Japanese Yen",
-  AUD: "Australian Dollar",
-  CAD: "Canadian Dollar",
-  CHF: "Swiss Franc",
-  CNY: "Chinese Yuan",
-  HKD: "Hong Kong Dollar",
-  SGD: "Singapore Dollar",
-  NZD: "New Zealand Dollar",
-  SEK: "Swedish Krona",
-  NOK: "Norwegian Krone",
-  DKK: "Danish Krone",
-  PLN: "Polish Zloty",
-  CZK: "Czech Koruna",
-  HUF: "Hungarian Forint",
-  TRY: "Turkish Lira",
-  ILS: "Israeli Shekel",
-  INR: "Indian Rupee",
-  BRL: "Brazilian Real",
-  MXN: "Mexican Peso",
-  IDR: "Indonesian Rupiah",
-  MYR: "Malaysian Ringgit",
-  PHP: "Philippine Peso",
-  THB: "Thai Baht",
-  VND: "Vietnamese Dong",
-  ZAR: "South African Rand",
-  KRW: "South Korean Won",
-  AED: "UAE Dirham",
-  SAR: "Saudi Riyal"
-};
-
-
-const formatUsd = (value) => {
-  const num = parseFloat(value);
-  if (Number.isNaN(num)) return "";
-  return num.toFixed(2);
-};
-
-const formatRate = (value) => {
+const formatDecimal = (value, fallback = "") => {
   const num = Number(value);
-  if (!Number.isFinite(num)) return "1.00";
-  return num.toFixed(2);
+  return Number.isFinite(num) ? num.toFixed(2) : fallback;
 };
 
 const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
@@ -136,7 +61,7 @@ export default function AmountAndWallet({
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
-  const fiatSymbol = FIAT_SYMBOLS[fiat] || "$";
+  const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
 
@@ -175,7 +100,7 @@ export default function AmountAndWallet({
     if (!rateFetched || !isUsdOpen) return;
     const num = parseFloat(amount || "0");
     if (Number.isNaN(num)) return;
-    setUsdInput(formatUsd(num * rate));
+    setUsdInput(formatDecimal(num * rate));
   }, [rate, rateFetched, isUsdOpen]);
 
   useEffect(() => {
@@ -244,7 +169,7 @@ export default function AmountAndWallet({
                 if (rateFetched && isUsdOpen) {
                   const num = parseFloat(next || "0");
                   if (!Number.isNaN(num)) {
-                    setUsdInput(formatUsd(num * rate));
+                    setUsdInput(formatDecimal(num * rate));
                   }
                 }
               }}
@@ -357,11 +282,11 @@ export default function AmountAndWallet({
                       >
                         <span className="flex items-center gap-2">
                           <span className="w-6 text-gray-500">
-                            {FIAT_SYMBOLS[ticker] || ""}
+                            {CURRENCIES[ticker]?.symbol || ""}
                           </span>
                           <span className="text-gray-700">{ticker}</span>
                           <span className="ml-auto text-[11px] text-gray-400 text-right">
-                            {FIAT_NAMES[ticker] || ""}
+                            {CURRENCIES[ticker]?.name || ""}
                           </span>
                         </span>
                       </button>
@@ -392,7 +317,7 @@ export default function AmountAndWallet({
                 : "opacity-0 -translate-y-1"
             }`}
           >
-            Rate of {formatRate(rate)} {fiat} per ZEC provided by {rateSource}.
+            Rate of {formatDecimal(rate, "1.00")} {fiat} per ZEC provided by {rateSource}.
           </p>
         </div>
       )}
