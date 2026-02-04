@@ -1,18 +1,11 @@
-// src/hooks/useProfiles.js
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
 
-let cachedProfiles = null; // memory cache across reloads
-
-export default function useProfiles(initialProfiles = null, revalidate = true) {
+export default function useNsProfiles(initialProfiles = null, revalidate = true) {
   const hasInitial = initialProfiles !== null;
 
-  if (!cachedProfiles && Array.isArray(initialProfiles)) {
-    cachedProfiles = initialProfiles;
-  }
-
-  const [profiles, setProfiles] = useState(cachedProfiles || initialProfiles || []);
-  const [loading, setLoading] = useState(!cachedProfiles && !hasInitial);
+  const [profiles, setProfiles] = useState(initialProfiles || []);
+  const [loading, setLoading] = useState(!hasInitial);
 
   useEffect(() => {
     let active = true;
@@ -69,8 +62,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
           all = all.concat(data || []);
           total = count || total;
 
-
-
           if (!data?.length || all.length >= total) break;
           from += pageSize;
         }
@@ -105,8 +96,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
           };
         });
 
-
-
         if (process.env.NODE_ENV === "development" && enriched.length === 0) {
           enriched = [
             {
@@ -127,11 +116,8 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
         }
 
         if (active) {
-          cachedProfiles = enriched;
-          if (typeof window !== "undefined") window.cachedProfiles = enriched;
           setProfiles(enriched);
           if (!hasInitial) setLoading(false);
-
         }
       } catch (err) {
         if (process.env.NODE_ENV === "development" && active) {
@@ -151,8 +137,6 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
               rank_monthly: 0,
             },
           ];
-          cachedProfiles = fallback;
-          if (typeof window !== "undefined") window.cachedProfiles = fallback;
           setProfiles(fallback);
           if (!hasInitial) setLoading(false);
         }
@@ -179,14 +163,7 @@ export default function useProfiles(initialProfiles = null, revalidate = true) {
     };
 
     setProfiles((prev) => [...prev, enriched]);
-
-    if (cachedProfiles) {
-      cachedProfiles.push(enriched);
-    }
   };
 
   return { profiles, loading, addProfile };
 }
-
-export { cachedProfiles };
-if (typeof window !== "undefined") window.cachedProfiles = cachedProfiles;

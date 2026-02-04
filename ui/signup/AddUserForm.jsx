@@ -4,13 +4,14 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import { cachedProfiles } from "@/ui/directory/useProfiles";
 import { useState, useEffect, useRef } from "react";
 import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
+import { checkUsernameExists } from "@/lib/directory/searchProfiles";
+import { checkUsernameIsVerified } from "@/lib/profile/profileQueries";
 import { AnimatePresence, motion } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import CitySearchDropdown from "@/ui/signup/CitySearchDropdown"; // add with the imports if missing
+import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 
 function XIcon(props) {
   return (
@@ -30,7 +31,7 @@ const normForConflict = (s = "") =>
   s
     .normalize("NFKC")
     .trim()
-    .replace(/\s+/g, "_") // treat spaces as underscores
+    .replace(/\s+/g, "_")
     .toLowerCase();
 
 
@@ -63,8 +64,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   const [nearestCityInput, setNearestCityInput] = useState("");
 
   const [links, setLinks] = useState([{ platform: "X", username: "", otherUrl: "", valid: true }]);
-  const [profiles, setProfiles] = useState([]);
-  const [verifiedNameKeys, setVerifiedNameKeys] = useState(new Set());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dialogRef = useRef(null);
@@ -109,57 +108,56 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       setError("");
       setIsLoading(false);
 
-      const profilesData = cachedProfiles || [];
-      setProfiles(profilesData);
-
-      const verifiedIds = new Set(
-        profilesData
-          .filter((p) => p.address_verified)
-          .map((p) => p.id)
-      );
-
-      const vNameKeys = new Set(
-        profilesData
-          .filter((p) => verifiedIds.has(p.id))
-          .map((p) => normForConflict(p.name || ""))
-      );
-
-      setVerifiedNameKeys(vNameKeys);
-
       setTimeout(() => dialogRef.current?.querySelector("#name")?.focus(), 50);
     })();
   }, [isOpen, prefillUsername]);
 
   useEffect(() => {
-    if (!name) return;
-
-    const key = normForConflict(name);
-
-    const matchingProfile = profiles.find(
-      (p) => normForConflict(p.name) === key
-    );
-
-    if (matchingProfile) {
-      const isVerified =
-        verifiedNameKeys.has(normForConflict(matchingProfile.name));
-
-      if (isVerified) {
-        setNameConflict({
-          type: "error",
-          text: "That name is already used by a verified profile.",
-        });
-      } else {
-        setNameConflict({
-          type: "info",
-          text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
-        });
-      }
-    } else {
+    if (!name) {
       setNameConflict(null);
+      setNameHelp("");
+      return;
     }
 
-    setNameHelp(`Shared as: Zcash.me/${toSlugish(name)}`);
-  }, [name, profiles, verifiedNameKeys]);
+    let active = true;
+
+    const checkName = async () => {
+      const trimmedName = name.trim();
+
+      const exists = await checkUsernameExists(trimmedName);
+
+      if (!active) return;
+
+      if (exists) {
+        const isVerified = await checkUsernameIsVerified(trimmedName);
+
+        if (!active) return;
+
+        if (isVerified) {
+          setNameConflict({
+            type: "error",
+            text: "That name is already used by a verified profile.",
+          });
+        } else {
+          setNameConflict({
+            type: "info",
+            text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
+          });
+        }
+      } else {
+        setNameConflict(null);
+      }
+
+      setNameHelp(`Shared as: Zcash.me/${toSlugish(trimmedName)}`);
+    };
+
+    const timer = setTimeout(checkName, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [name]);
 
   useEffect(() => {
     const addrNorm = address.trim().toLowerCase();
@@ -171,51 +169,63 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    const duplicateAddr = profiles.some(
-      (p) => (p.address || "").trim().toLowerCase() === addrNorm
-    );
-    if (duplicateAddr) {
-      setAddressConflict({
-        type: "error",
-        text: "That Zcash address is already associated with an existing profile. Generate a new one — it’s free — and try again.",
-      });
-      setAddressHelp("");
-      return;
-    } else {
+    let active = true;
+
+    const checkAddr = async () => {
+      const duplicateAddr = await checkAddressTaken(address);
+
+      if (!active) return;
+
+      if (duplicateAddr) {
+        setAddressConflict({
+          type: "error",
+          text: "That Zcash address is already associated with an existing profile. Generate a new one — it's free — and try again.",
+        });
+        setAddressHelp("");
+        return;
+      } else {
+        setAddressConflict(null);
+      }
+
+      if (!res.valid) {
+        setAddressHelp(
+          "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
+        );
+        setAddressConflict(null);
+        return;
+      }
+
+      if (res.type === "tex") {
+        setAddressHelp(
+          "That's a TEX (transparent-source-only) address defined in ZIP 320. It can't receive from shielded senders. Use a z- or u- address instead."
+        );
+        setAddressConflict({
+          type: "info",
+          text: "TEX addresses are valid but not supported for shielded transactions.",
+        });
+        return;
+      }
+
+      const label =
+        res.type === "transparent"
+          ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
+          : res.type === "sapling"
+            ? "Sapling address ✓"
+            : res.type === "unified"
+              ? "Looks good — valid Unified address ✓"
+              : "Valid address ✓";
+
+      setAddressHelp(label);
       setAddressConflict(null);
-    }
+    };
 
-    if (!res.valid) {
-      setAddressHelp(
-        "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
-      );
-      setAddressConflict(null);
-      return;
-    }
+    const timer = setTimeout(checkAddr, 300);
 
-    if (res.type === "tex") {
-      setAddressHelp(
-        "That’s a TEX (transparent-source-only) address defined in ZIP 320. It can’t receive from shielded senders. Use a z- or u- address instead."
-      );
-      setAddressConflict({
-        type: "info",
-        text: "TEX addresses are valid but not supported for shielded transactions.",
-      });
-      return;
-    }
-
-    const label =
-      res.type === "transparent"
-        ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
-        : res.type === "sapling"
-          ? "Sapling address ✓"
-          : res.type === "unified"
-            ? "Looks good — valid Unified address ✓"
-            : "Valid address ✓";
-
-    setAddressHelp(label);
-    setAddressConflict(null);
-  }, [address, profiles]);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [address]);
 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
@@ -258,10 +268,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
       case 1: {
         const res = validateZcashAddress(address.trim());
-        const duplicateAddr = profiles.some(
-          (p) => (p.address || "").trim().toLowerCase() === address.trim().toLowerCase()
-        );
-        if (duplicateAddr) return false;
+        if (addressConflict?.type === "error") return false;
         if (res.type === "tex" || res.type === "transparent") return false;
         return !!address.trim() && res.valid;
       }
@@ -270,15 +277,16 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       case 2:
         return links.every((l) => l.valid !== false);
       case 3:
-        return true; // nearest city optional
+        return true;
       case 4:
-        return true; // referrer optional
+        return true;
       case 5: {
         const res = validateZcashAddress(address.trim());
         return (
           !!name.trim() &&
           !!address.trim() &&
           (!nameConflict || nameConflict.type !== "error") &&
+          (!addressConflict || addressConflict.type !== "error") &&
           res.valid &&
           res.type !== "tex" &&
           res.type !== "transparent"
@@ -301,7 +309,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       if (l.platform === "Other") {
         return l.otherUrl && !isValidUrl(l.otherUrl.trim());
       } else {
-        if (!l.username) return false; // empty row is okay
+        if (!l.username) return false;
         const built = buildSocialUrl(l.platform, l.username.trim()) || "";
         const res = isValidUrl(built);
         return !(built && res.valid);
@@ -312,24 +320,24 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    const proposedKey = normForConflict(name);
-    const verifiedConflict = profiles.some(
-      (p) =>
-        verifiedNameKeys.has(normForConflict(p.name)) &&
-        normForConflict(p.name) === proposedKey
-    );
-    if (verifiedConflict) {
-      setError(
-        'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
-      );
-      return;
+    const trimmedName = name.trim();
+    const usernameExists = await checkUsernameExists(trimmedName);
+
+    if (usernameExists) {
+      const isVerified = await checkUsernameIsVerified(trimmedName);
+
+      if (isVerified) {
+        setError(
+          'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+        );
+        return;
+      }
     }
 
     const addr = address.trim().toLowerCase();
-    const duplicateAddr = profiles.find(
-      (p) => p.address?.trim().toLowerCase() === addr
-    );
-    if (duplicateAddr) {
+    const addressTaken = await checkAddressTaken(addr);
+
+    if (addressTaken) {
       setError("That address is already associated with an existing profile.");
       return;
     }
@@ -381,21 +389,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       })
       .filter(Boolean);
 
-    const addrNorm = address.trim().toLowerCase();
-    const addrDuplicateLocal = profiles.some(
-      (p) => (p.address || "").trim().toLowerCase() === addrNorm
-    );
-    if (addrDuplicateLocal) {
-      setError("That Zcash address is already associated with an existing profile.");
-      return;
-    }
-
-    const taken = await checkAddressTaken(address);
-    if (taken) {
-      setError("That Zcash address is already associated with an existing profile.");
-      return;
-    }
-
     setIsLoading(true);
 
     try {
@@ -418,7 +411,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
       const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
-      const slug = `${slugBase}-${profile.id}`; // use dash instead of hash
+      const slug = `${slugBase}-${profile.id}`;
 
       onUserAdded?.(profile);
       onClose?.();
@@ -603,7 +596,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         <ProfileSearchDropdown
           value={referrer?.name || referrer || ""}
           onChange={(v) => setReferrer(v)}
-          profiles={profiles}
           placeholder="username"
           showByDefault={false}
           className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
@@ -735,7 +727,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
           onSubmit={handleSubmit}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
-              e.preventDefault(); // stop default submit
+              e.preventDefault();
               if (step < 5 && stepIsValid) {
                 goNext();
               }

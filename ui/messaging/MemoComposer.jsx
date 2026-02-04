@@ -162,7 +162,6 @@ useEffect(() => {
                     setSearch(v);
                   }
                 }}
-                profiles={typeof window !== "undefined" && Array.isArray(window.cachedProfiles) ? window.cachedProfiles : []}
                 placeholder="name or addr"
               />
             </div>

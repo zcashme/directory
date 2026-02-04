@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 
-import useProfiles from "@/ui/directory/useProfiles";
+import useNsProfiles from "@/ui/ns-directory/useNsProfiles";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
 
 export default function useNsDirectory(initialProfiles) {
-  const { profiles, loading, addProfile } = useProfiles(initialProfiles, false);
+  const { profiles, loading, addProfile } = useNsProfiles(initialProfiles, false);
   const [linksByProfileId, setLinksByProfileId] = useState({});
   const [linksError, setLinksError] = useState(null);
 

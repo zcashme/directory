@@ -1,22 +1,26 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import useProfiles from "@/ui/directory/useProfiles";
+import { getProfileCount } from "@/lib/profile/profileQueries";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
 
 export default function ProfileHeader() {
   const router = useRouter();
-  const { profiles } = useProfiles(null, true);
   const searchInputRef = useRef(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState(null);
   const [availableUsername, setAvailableUsername] = useState(null);
+  const [profileCount, setProfileCount] = useState(0);
+
+  useEffect(() => {
+    getProfileCount().then(setProfileCount);
+  }, []);
 
   const resetSearch = () => {
     setSearch("");
@@ -54,7 +58,7 @@ export default function ProfileHeader() {
                 setSuppressDropdown(true);
               }
             }}
-            placeholder={profiles.length > 1 ? `search ${profiles.length} names` : "search names"}
+            placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
             className="flex-1 pl-3 pt-2 pb-1 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden transition-all pr-2"
             style={{
               paddingRight: availableUsername
@@ -127,7 +131,6 @@ export default function ProfileHeader() {
                 onUsernameAvailable={(username) => {
                   setAvailableUsername(username);
                 }}
-                profiles={profiles}
                 placeholder="search"
               />
             </div>

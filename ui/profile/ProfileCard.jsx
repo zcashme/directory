@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
-import { isNewProfile, getProfileTrust, checkDuplicateNames, getWarningConfig, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
+import { isNewProfile, getProfileTrust, getWarningConfig, getVerifiedTimeAgo } from "@/lib/profile/profileUtils";
+import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import CopyButton from "@/ui/profile/CopyButton";
 import { useFeedback } from "@/ui/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
-import ReferRankBadgeMulti from "@/ui/directory/ReferRankBadgeMulti";
+import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/normalizeSlugs";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -304,6 +305,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [hasDuplicateNames, setHasDuplicateNames] = useState(false);
   const { showBack, setShowBack } = useProfileEvents(profile);
   const { setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
   const routeMatchesProfile = useMemo(() => {
@@ -323,10 +325,16 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const showLinkShimmer =
     isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
-  const cachedProfiles =
-    typeof window !== "undefined" ? window.cachedProfiles : null;
-  const { hasDuplicateNames } = checkDuplicateNames(profile, cachedProfiles);
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+
+  useEffect(() => {
+    if (!profile?.name) return;
+    let active = true;
+    getDuplicateNameCount(profile.name).then((count) => {
+      if (active) setHasDuplicateNames(count > 1);
+    });
+    return () => { active = false; };
+  }, [profile?.name]);
   const hasAwards =
     (profile?.rank_alltime ?? 0) > 0 ||
     (profile?.rank_weekly ?? 0) > 0 ||
