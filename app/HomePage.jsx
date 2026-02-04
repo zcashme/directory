@@ -6,7 +6,6 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import zcashMeLogo from "@/ui/assets/icons/zcashme-header-left-bw.svg";
 import AddUserForm from "@/ui/signup/AddUserForm";
-import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { buildSlug } from "@/lib/profile/normalizeSlugs";
@@ -126,14 +125,17 @@ function FannedCard({
 
           {/* Bio */}
           {profile.bio && profile.bio.trim() !== "" && (
-            <p className="text-[8px] text-gray-700 mb-4 line-clamp-2 leading-relaxed px-1 min-h-[24px] relative z-10 break-words">
+            <p className="text-[8px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words">
               {profile.bio}
             </p>
           )}
 
+          {/* Flexible spacer - allows wallet block to move within a constrained range */}
+          <div className="flex-1 min-h-[2px] max-h-[4px]"></div>
+
           {/* Address pill with icons */}
           {profile.address && (
-            <div className="flex justify-center mb-4 relative z-10">
+            <div className="flex justify-center relative z-10">
               <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 py-1">
                 <span className="font-mono text-[7px] text-gray-700 leading-none">
                   {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
@@ -245,14 +247,17 @@ function FannedCard({
 
         {/* Bio */}
         {profile.bio && profile.bio.trim() !== "" && (
-          <p className="text-[9px] text-gray-700 mb-4 line-clamp-2 leading-relaxed px-1 min-h-[28px] relative z-10 break-words">
+          <p className="text-[9px] text-gray-700 mb-2 line-clamp-2 leading-relaxed px-1 relative z-10 break-words">
             {profile.bio}
           </p>
         )}
 
+        {/* Flexible spacer - allows wallet block to move within a constrained range */}
+        <div className="flex-1 min-h-[2px] max-h-[6px]"></div>
+
         {/* Address pill with icons */}
         {profile.address && (
-          <div className="flex justify-center mb-4 relative z-10">
+          <div className="flex justify-center relative z-10">
             <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-2.5 py-1">
               <span className="font-mono text-[8px] text-gray-700 leading-none">
                 {profile.address.slice(0, 4)}...{profile.address.slice(-4)}
@@ -406,10 +411,6 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }) {
 
 export default function HomePage({ initialFeaturedProfiles = [] }) {
   const router = useRouter();
-  const searchInputRef = useRef(null);
-  const dropdownRef = useRef(null);
-  const [search, setSearch] = useState("");
-  const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [scrollY, setScrollY] = useState(0);
 
@@ -476,64 +477,6 @@ export default function HomePage({ initialFeaturedProfiles = [] }) {
           </div>
         )}
 
-        {/* Hero Section */}
-        <div className="max-w-lg mx-auto px-4 mb-8">
-          {/* Hero Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="relative bg-white rounded-2xl shadow-xl border border-green-100 p-6"
-          >
-            {/* Search Bar */}
-            <div className="w-full mx-auto relative">
-                <div className="relative flex items-center bg-white rounded-full px-4 py-3 border border-gray-200 focus-within:border-green-500 focus-within:ring-2 focus-within:ring-green-500/10 transition-all shadow-sm">
-                  <span className="text-gray-400 font-medium text-sm mr-2">zcash.me/</span>
-                  <input
-                    ref={searchInputRef}
-                    value={search}
-                    onChange={(e) => {
-                      setSearch(e.target.value);
-                      setSuppressDropdown(false);
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        // Let the dropdown handle Enter key - it has the search results
-                        setSuppressDropdown(true);
-                      }
-                    }}
-                    placeholder="Search names"
-                    className="flex-1 bg-transparent outline-none text-gray-900 placeholder-gray-400 text-sm"
-                  />
-                  <svg className="w-4 h-4 text-gray-400 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-
-                {/* Search Dropdown */}
-                {search && !suppressDropdown && (
-                  <div ref={dropdownRef} className="absolute left-0 right-0 top-full mt-2 z-50">
-                    <ProfileSearchDropdown
-                      listOnly
-                      value={search}
-                      onChange={(v) => {
-                        if (typeof v === "object") {
-                          window.lastSelectionWasExplicit = true;
-                          const slug = buildSlug(v);
-                          if (slug) {
-                            window.location.href = `/${slug}`;
-                          }
-                        } else {
-                          setSearch(v);
-                        }
-                      }}
-                      placeholder="search"
-                    />
-                  </div>
-                )}
-              </div>
-          </motion.div>
-        </div>
       </div>
 
       {/* Footer */}
