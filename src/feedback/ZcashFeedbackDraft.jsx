@@ -95,18 +95,59 @@ export default function ZcashFeedbackDraft() {
           j.data?.tokens || j.data?.data || (Array.isArray(j.data) ? j.data : []);
         if (!Array.isArray(list) || list.length === 0) return;
 
-        const opts = list
+        const optsRaw = list
           .map((t) => {
             const id = t.id || t.tokenId || t.assetId || t.asset || t.symbol;
             const symbol = (t.symbol || t.ticker || id || "").toString().toUpperCase();
-            const chain = t.chain || t.network || t.originChain || "?";
-            const label = t.label || t.name || `${symbol} (${chain})`;
+
+            const rawChain = t.chain || t.network || t.originChain || "";
+            const chain = String(rawChain || "").trim();
+
+            const baseLabel = (t.label || t.name || symbol).toString().trim();
+            const label = chain ? `${baseLabel} (${chain})` : baseLabel;
+
             const logo = t.logo || t.icon || t.image || null;
-            return { id, symbol, label: `${label}`, logo };
+
+            return {
+              id,
+              symbol,
+              label,
+              logo,
+              // keep chain for choosing "mainnet"
+              chain: chain.toLowerCase(),
+            };
           })
           .filter((x) => x.id && x.symbol);
 
-        setTokenOptions(opts);
+        // Prefer "mainnet" entries for a symbol (especially ZEC/BTC/etc), otherwise first.
+        const preferMainnet = (arr) => {
+          const score = (t) => {
+            const c = t.chain || "";
+            // highest preference
+            if (c.includes("mainnet")) return 100;
+            if (c === "zcash" || c.includes("zcash")) return 90;
+            if (c === "bitcoin" || c.includes("bitcoin")) return 90;
+            // other hints
+            if (c.includes("l1") || c.includes("layer 1")) return 80;
+            // unknown/empty chain
+            if (!c) return 10;
+            return 50;
+          };
+
+          return [...arr].sort((a, b) => score(b) - score(a))[0];
+        };
+
+        // Dedup by symbol
+        const grouped = optsRaw.reduce((acc, t) => {
+          (acc[t.symbol] ||= []).push(t);
+          return acc;
+        }, {});
+
+        const opts = Object.values(grouped).map(preferMainnet);
+
+        // Strip helper field before storing (optional)
+        setTokenOptions(opts.map(({ chain, ...rest }) => rest));
+
 
         // get ZEC token id
         const z = opts.find((x) => x.symbol === "ZEC");

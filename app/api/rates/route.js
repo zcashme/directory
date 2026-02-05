@@ -81,7 +81,7 @@ export async function GET(request) {
 
   for (const provider of providers) {
     try {
-      const response = await fetch(provider.url, { next: { revalidate: 60 } });
+      const response = await fetch(provider.url, { next: { revalidate: 10 } });
       if (!response.ok) continue;
 
       const data = await response.json();
@@ -93,7 +93,7 @@ export async function GET(request) {
           {
             headers: {
               "Content-Type": "application/json",
-              "Cache-Control": "s-maxage=60",
+              "Cache-Control": "s-maxage=10",
             },
           }
         );
