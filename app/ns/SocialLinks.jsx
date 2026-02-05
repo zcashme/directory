@@ -1,4 +1,4 @@
-import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle, isDiscordLink } from "@/lib/social/profileLinks";
+import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle, isDiscordLink } from "@/lib/profile/profileLinks";
 
 export default function SocialLinks({
   links = [],

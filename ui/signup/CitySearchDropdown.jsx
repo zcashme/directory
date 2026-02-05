@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { searchCitiesAction } from "@/lib/actions/searchCitiesAction";
+import { searchCitiesAction } from "@/lib/directory/searchCitiesAction";
 
 export default function CitySearchDropdown({
   value,

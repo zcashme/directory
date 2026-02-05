@@ -11,7 +11,7 @@ import {
   checkAddressTakenAction,
   checkUsernameExistsForFormAction,
   checkUsernameIsVerifiedAction,
-} from "@/lib/actions/createProfileAction";
+} from "@/lib/signup/createProfileAction";
 import { AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -28,7 +28,7 @@ function XIcon(props) {
 }
 
 import { isValidUrl } from "@/lib/validateUrl";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 
 

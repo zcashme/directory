@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { confirmOtpAction } from "@/lib/actions/confirmOtpAction";
+import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 
 
 function XIcon(props) {

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 
 import useNsProfiles from "@/ui/ns-directory/useNsProfiles";
-import { getProfileLinksBatchAction } from "@/lib/actions/getProfileLinksBatchAction";
-import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
+import { getProfileLinksBatchAction } from "@/lib/profile/getProfileLinksBatchAction";
+import { getLinkIcon, getLinkLabel } from "@/lib/profile/profileLinks";
 
 export default function useNsDirectory(initialProfiles) {
   const { profiles, loading, addProfile } = useNsProfiles(initialProfiles, false);

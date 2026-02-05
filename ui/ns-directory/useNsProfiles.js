@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getNsProfilesAction } from "@/lib/actions/getNsProfilesAction";
+import { getNsProfilesAction } from "@/lib/directory/getNsProfilesAction";
 
 export default function useNsProfiles(initialProfiles = null, revalidate = true) {
   const hasInitial = initialProfiles !== null;

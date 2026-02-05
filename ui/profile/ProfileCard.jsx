@@ -12,7 +12,7 @@ import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/profileUt
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
-import { extractDomain, FALLBACK_ICON } from "@/lib/social/profileLinks";
+import { extractDomain, FALLBACK_ICON } from "@/lib/profile/profileLinks";
 import useProfileEvents from "@/ui/profile/useProfileEvents";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
@@ -21,7 +21,7 @@ import {
   isLinkAuthPending,
   appendLinkToken,
   startOAuthVerification,
-} from "@/lib/social/accountAuthFlow";
+} from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";

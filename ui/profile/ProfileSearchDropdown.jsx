@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { searchProfilesAction, checkUsernameExistsAction } from "@/lib/actions/searchProfilesAction";
+import { searchProfilesAction, checkUsernameExistsAction } from "@/lib/directory/searchProfilesAction";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 

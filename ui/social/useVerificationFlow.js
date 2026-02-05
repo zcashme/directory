@@ -1,9 +1,9 @@
 // ui/social/useVerificationFlow.js
 
 import { useEffect } from "react";
-import { normalizeSocialUsername } from "@/lib/social/usernameNormalizer";
+import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
 import { getSession, onAuthStateChange } from "@/lib/supabase/auth";
-import { updateLinkVerificationAction } from "@/lib/actions/updateLinkVerificationAction";
+import { updateLinkVerificationAction } from "@/lib/verification/updateLinkVerificationAction";
 import {
   getXHandle,
   getGithubHandle,
@@ -14,7 +14,7 @@ import {
   getDiscordAvatarUrl,
   normalizeHandleKey,
   normalizeDiscordHandle,
-} from "@/lib/social/providerAvatars";
+} from "@/lib/profile/providerAvatars";
 
 export default function useVerificationFlow(profileId, setForm, setShowRedirect) {
   useEffect(() => {

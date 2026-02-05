@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { confirmOtpAction } from "@/lib/actions/confirmOtpAction";
+import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 
 export default function InlineOtpForm({ profile, onSuccess }) {
   const [step, setStep] = useState(0); // 0=enter, 1=checking, 2=result

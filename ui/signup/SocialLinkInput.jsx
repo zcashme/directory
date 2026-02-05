@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import { isValidUrl } from "@/lib/validateUrl";
 import HelpIcon from "@/ui/common/HelpIcon";
 

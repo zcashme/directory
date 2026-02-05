@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { enrichLink } from "@/lib/social/profileLinks";
-import { getProfileLinksAction } from "@/lib/actions/getProfileLinksAction";
+import { enrichLink } from "@/lib/profile/profileLinks";
+import { getProfileLinksAction } from "@/lib/profile/getProfileLinksAction";
 
 export default function useProfileLinks(profile, fullView, routeMatchesProfile) {
   const [linksArray, setLinksArray] = useState(() => {

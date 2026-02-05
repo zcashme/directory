@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getRefundDataAction } from "@/lib/actions/getRefundDataAction";
+import { getRefundDataAction } from "@/lib/directory/getRefundDataAction";
 import { QRCodeSVG } from "qrcode.react"; // identical lib used in QrUriBlock
 
 function rebuildUri(rawUri) {

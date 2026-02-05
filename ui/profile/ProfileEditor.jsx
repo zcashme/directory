@@ -3,7 +3,7 @@ import { useFeedback } from "@/ui/messaging/useFeedback";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { isValidUrl } from "@/lib/validateUrl";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/social/usernameNormalizer";
+import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
@@ -12,12 +12,12 @@ import {
   appendLinkToken,
   removeLinkToken,
   startOAuthVerification,
-} from "@/lib/social/accountAuthFlow";
+} from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
-import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/social/providerAvatars";
+import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 
 const FIELD_CLASS =

@@ -8,7 +8,7 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
 import { buildSlug } from "@/lib/profile/profileUtils";
-import { parseProfileLinks } from "@/lib/social/profileLinks";
+import { parseProfileLinks } from "@/lib/profile/profileLinks";
 
 
 function FannedCardAvatar({ profile, size, isHighlighted }) {

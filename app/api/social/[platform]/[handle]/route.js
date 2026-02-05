@@ -1,4 +1,4 @@
-import { lookupSocialAddress } from "@/lib/social/social-lookup";
+import { lookupSocialAddress } from "@/lib/profile/social-lookup";
 
 export async function GET(request, { params }) {
   const platform = params?.platform || "";

@@ -71,6 +71,8 @@ export default function AmountAndWallet({
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
+  const [isTypingCrypto, setIsTypingCrypto] = useState(false);
+  const [isTypingFiat, setIsTypingFiat] = useState(false);
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
@@ -108,11 +110,11 @@ export default function AmountAndWallet({
   }, [rateRequested, fiat, asset]);
 
   useEffect(() => {
-    if (!rateFetched || !isUsdOpen) return;
+    if (!rateFetched || !isUsdOpen || isTypingFiat) return;
     const num = parseFloat(amount || "0");
     if (Number.isNaN(num)) return;
     setUsdInput(formatDecimal(num * rate));
-  }, [rate, rateFetched, isUsdOpen]);
+  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat]);
 
   useEffect(() => {
     if (!isUsdOpen) setIsCurrencyOpen(false);
@@ -178,21 +180,41 @@ export default function AmountAndWallet({
             style={showUsdPill ? { width: leftPillWidth } : { width: "100%" }}
           >
             <input
-              type="number"
-              step="0.0005"
-              min="0"
+              type="text"
               inputMode="decimal"
               placeholder="0.0000"
               value={amount === "0" ? "" : amount || ""}
+              onFocus={() => setIsTypingCrypto(true)}
+              onBlur={() => setIsTypingCrypto(false)}
               onChange={(e) => {
                 const val = e.target.value;
+                
+                // Allow empty string
+                if (val === "") {
+                  setAmount("");
+                  if (rateFetched && isUsdOpen) {
+                    setUsdInput("");
+                  }
+                  return;
+                }
+                
+                // Allow intermediate states while typing: "0.", ".", "10.", etc.
+                // Final validation: optional digits, optional decimal, up to 8 decimal places
+                const regex = /^(\d*\.?\d{0,8})$/;
+                if (!regex.test(val)) return;
+                
+                // Don't allow multiple leading zeros like "00.5"
+                if (/^0\d/.test(val)) return;
+                
+                // Prevent negative values
                 if (parseFloat(val) < 0) return;
-                const match = val.match(/^(\d+)(\.\d{0,8})?/);
-                const next = match ? match[0] : val;
-                setAmount(next);
-                if (rateFetched && isUsdOpen) {
-                  const num = parseFloat(next || "0");
-                  if (!Number.isNaN(num)) {
+                
+                setAmount(val);
+                
+                // Update fiat side only if we have a valid complete number
+                if (rateFetched && isUsdOpen && val && !val.endsWith('.')) {
+                  const num = parseFloat(val);
+                  if (Number.isFinite(num)) {
                     setUsdInput(formatDecimal(num * rate));
                   }
                 }
@@ -312,13 +334,12 @@ export default function AmountAndWallet({
                 {isUsdOpen && (
                   <>
                     <input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      max="1000000"
+                      type="text"
                       inputMode="decimal"
                       value={usdInput}
                       disabled={!rateFetched}
+                      onFocus={() => setIsTypingFiat(true)}
+                      onBlur={() => setIsTypingFiat(false)}
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === "") {
@@ -326,13 +347,26 @@ export default function AmountAndWallet({
                           setUsdInput("");
                           return;
                         }
-                        const num = parseFloat(val);
-                        if (Number.isNaN(num)) return;
+                        
+                        // Allow intermediate states while typing
+                        const regex = /^(\d*\.?\d{0,2})$/;
+                        if (!regex.test(val)) return;
+                        
+                        // Don't allow multiple leading zeros
+                        if (/^0\d/.test(val)) return;
+                        
                         setUsdInput(val);
-                        const rounded =
-                          Math.round(clamp(num, 0, 1000000) * 100) / 100;
-                        const zecAmount = rate > 0 ? rounded / rate : rounded;
-                        setAmount(zecAmount.toFixed(8));
+                        
+                        // Update crypto side only if we have a valid complete number
+                        if (val && !val.endsWith('.')) {
+                          const num = parseFloat(val);
+                          if (Number.isFinite(num)) {
+                            const clamped = clamp(num, 0, 1000000);
+                            const cryptoAmount = rate > 0 ? clamped / rate : clamped;
+                            // Store more precision internally
+                            setAmount(String(cryptoAmount));
+                          }
+                        }
                       }}
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
