@@ -111,71 +111,19 @@ export default function MemoComposer({ profile }) {
     loadTokens();
   }, []);
 
-  // Auto-confirm function
-  const handleAutoConfirm = useCallback(async () => {
-    if (!isSwapMode) return;
-    
-    setIsConfirming(true);
-    setSwapError("");
-    setQuoteStatus("Confirming swap...");
+  // Swap mode detection
+  const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
 
-    try {
-      const response = await fetch("/api/swap/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromToken: originTokenId,
-          toToken: zecTokenId,
-          amountIn: amount,
-          destAddress: profile?.address,
-          refundAddress: refundAddress,
-          slippageTolerance: slippageTolerance,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!result.ok) {
-        throw new Error(result.error || "Failed to confirm swap");
-      }
-
-      // Store deposit URI and status key
-      setDepositUri(result.paymentUri || result.deposit?.address || "");
-      setStatusKey(result.statusKey);
-      setQuoteData(result);
-      setQuoteStatus("Swap confirmed! Waiting for deposit...");
-      setSwapStatus("PENDING");
-
-      // Start polling for status
-      if (result.statusKey) {
-        startStatusPolling(result.statusKey);
-      }
-    } catch (error) {
-      console.error("Error confirming swap:", error);
-      setSwapError(error.message || "Failed to confirm swap");
-      setQuoteStatus("");
-    } finally {
-      setIsConfirming(false);
+  // Stop status polling
+  const stopStatusPolling = useCallback(() => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
     }
-  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance]);
-
-  // Auto-confirm swap on changes (debounced)
-  const [debouncedAmount] = useDebounce(amount, 800);
-  const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
-
-  useEffect(() => {
-    // Only auto-confirm in swap mode with all required fields
-    if (!isSwapMode) return;
-    if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
-    if (!profile?.address) return;
-    if (!debouncedRefundAddress) return;
-    if (!originTokenId || !zecTokenId) return;
-
-    handleAutoConfirm();
-  }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
+  }, []);
 
   // Poll swap status
-  const startStatusPolling = (key) => {
+  const startStatusPolling = useCallback((key) => {
     // Clear any existing polling
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
@@ -229,21 +177,77 @@ export default function MemoComposer({ profile }) {
     // Poll immediately, then every 6 seconds
     pollStatus();
     pollIntervalRef.current = setInterval(pollStatus, 6000);
-  };
+  }, [stopStatusPolling]);
 
-  const stopStatusPolling = () => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
+  // Auto-confirm function
+  const handleAutoConfirm = useCallback(async () => {
+    if (!isSwapMode) return;
+
+    setIsConfirming(true);
+    setSwapError("");
+    setQuoteStatus("Confirming swap...");
+
+    try {
+      const response = await fetch("/api/swap/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromToken: originTokenId,
+          toToken: zecTokenId,
+          amountIn: amount,
+          destAddress: profile?.address,
+          refundAddress: refundAddress,
+          slippageTolerance: slippageTolerance,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to confirm swap");
+      }
+
+      // Store deposit URI and status key
+      setDepositUri(result.paymentUri || result.deposit?.address || "");
+      setStatusKey(result.statusKey);
+      setQuoteData(result);
+      setQuoteStatus("Swap confirmed! Waiting for deposit...");
+      setSwapStatus("PENDING");
+
+      // Start polling for status
+      if (result.statusKey) {
+        startStatusPolling(result.statusKey);
+      }
+    } catch (error) {
+      console.error("Error confirming swap:", error);
+      setSwapError(error.message || "Failed to confirm swap");
+      setQuoteStatus("");
+    } finally {
+      setIsConfirming(false);
     }
-  };
+  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance, startStatusPolling]);
+
+  // Auto-confirm swap on changes (debounced)
+  const [debouncedAmount] = useDebounce(amount, 800);
+  const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
+
+  useEffect(() => {
+    // Only auto-confirm in swap mode with all required fields
+    if (!isSwapMode) return;
+    if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
+    if (!profile?.address) return;
+    if (!debouncedRefundAddress) return;
+    if (!originTokenId || !zecTokenId) return;
+
+    handleAutoConfirm();
+  }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
 
   // Cleanup polling on unmount
   useEffect(() => {
     return () => {
       stopStatusPolling();
     };
-  }, []);
+  }, [stopStatusPolling]);
 
   // Cancel swap mode
   const cancelSwapMode = () => {
@@ -277,9 +281,6 @@ export default function MemoComposer({ profile }) {
       el.style.height = el.scrollHeight + "px";
     }
   }, [memo]);
-
-  // Swap mode detection
-  const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
 
   // Memo disabled: transparent addresses OR swap mode
   const disabled = profile?.address?.startsWith("t") || isSwapMode;
@@ -539,8 +540,8 @@ useEffect(() => {
       {/* Swap Status Display */}
       {isSwapMode && (quoteStatus || swapError) && (
         <div className={`mb-4 p-3 rounded-lg border ${
-          swapError 
-            ? "bg-red-50 border-red-200" 
+          swapError
+            ? "bg-red-50 border-red-200"
             : swapStatus === "SUCCESS"
             ? "bg-green-50 border-green-200"
             : swapStatus === "FAILED" || swapStatus === "REFUNDED"
@@ -548,8 +549,8 @@ useEffect(() => {
             : "bg-blue-50 border-blue-200"
         }`}>
           <div className={`text-sm ${
-            swapError 
-              ? "text-red-700" 
+            swapError
+              ? "text-red-700"
               : swapStatus === "SUCCESS"
               ? "text-green-700"
               : swapStatus === "FAILED" || swapStatus === "REFUNDED"
