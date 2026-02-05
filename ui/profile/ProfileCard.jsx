@@ -256,19 +256,19 @@ export function ProfileCardContent({
       )}
 
       {/* View Profile Footer - Fixed at bottom */}
-      <div className={`mt-auto pt-3 pb-2 flex items-center justify-center gap-1`}>
-        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded-full px-2 py-0.5 font-semibold shadow-xs`}>
+      <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
+        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1`}>
           View Profile
+          <svg
+            className={`${variant === "mobile" ? "w-2 h-2" : "w-2.5 h-2.5"} text-green-600`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
         </span>
-        <svg
-          className={`${variant === "mobile" ? "w-2.5 h-2.5" : "w-3 h-3"} text-green-600`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-          aria-hidden="true"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
       </div>
     </div>
   );
