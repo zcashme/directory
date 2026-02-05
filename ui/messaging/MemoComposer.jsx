@@ -34,6 +34,13 @@ export default function MemoComposer({ profile }) {
   const [showList, setShowList] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
+  // Token selection state (for swap mode)
+  const [tokenOptions, setTokenOptions] = useState([]);
+  const [originTokenId, setOriginTokenId] = useState(null);
+  const [zecTokenId, setZecTokenId] = useState(null);
+  const [originSymbol, setOriginSymbol] = useState("ZEC");
+  const [refundAddress, setRefundAddress] = useState("");
+
   const textareaRef = useRef(null);
 
   const handleSelect = (profile) => {
@@ -55,7 +62,12 @@ export default function MemoComposer({ profile }) {
     }
   }, [memo]);
 
-  const disabled = profile?.address?.startsWith("t");
+  // Swap mode detection
+  const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
+  
+  // Memo disabled: transparent addresses OR swap mode
+  const disabled = profile?.address?.startsWith("t") || isSwapMode;
+  
   const recipientName =
     profile?.display_name || profile?.name || "Recipient";
 
@@ -195,7 +207,9 @@ useEffect(() => {
           onBlur={emoji.handleBlur}
           placeholder={
             disabled
-              ? "Memos are not supported for transparent addresses"
+              ? isSwapMode
+                ? "Memos are not supported for cross-chain swaps"
+                : "Memos are not supported for transparent addresses"
               : `Write your message to ${recipientName} here...`
           }
           className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 ${
