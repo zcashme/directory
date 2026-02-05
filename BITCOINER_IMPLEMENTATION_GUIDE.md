@@ -126,8 +126,8 @@ Instead of requiring users to manually swap tokens before sending, the system ha
   - `originSymbol`: Display symbol for source token
 
 - **Swap mode detection**
-  - `isZecMode`: When source token = ZEC (direct payment, no swap)
-  - `isSwapMode`: When source token ≠ ZEC (requires swap)
+  - `isSwapMode`: Computed boolean - `originTokenId !== zecTokenId` (false = ZEC mode, true = swap mode)
+  - Use `!isSwapMode` wherever we need to check for ZEC mode
 
 - **Swap workflow state**
   - `refundAddress`: User's refund address for failed swaps
@@ -404,8 +404,9 @@ Swap complete, ZEC delivered to recipient
 - Status polling: `swapStatus`, polling interval (6s)
 
 **Mode Detection:**
-- `isZecMode`: Direct ZEC payment (no swap, memos enabled)
-- `isSwapMode`: Cross-chain swap (memos disabled, refund required)
+- `isSwapMode`: Computed boolean - `originTokenId !== zecTokenId` (false = ZEC mode, true = swap mode)
+- ZEC mode: Direct ZEC payment (no swap, memos enabled) - use `!isSwapMode`
+- Swap mode: Cross-chain swap (memos disabled, refund required) - use `isSwapMode`
 
 ### Error Handling
 
@@ -580,8 +581,8 @@ Swap complete, ZEC delivered to recipient
 - [ ] Add `isConfirming` state (loading flag)
 
 **Add Mode Detection:**
-- [ ] Add `isZecMode` computed: `originTokenId === zecTokenId`
-- [ ] Add `isSwapMode` computed: `originTokenId !== zecTokenId`
+- [ ] Add `isSwapMode` computed: `originTokenId !== zecTokenId` (false = ZEC mode, true = swap mode)
+- [ ] Use `!isSwapMode` wherever we need to check for ZEC mode
 
 **Add Functions:**
 - [ ] Implement `loadTokens()` - Fetch from `/api/swap/tokens`
