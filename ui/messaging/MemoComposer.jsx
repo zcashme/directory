@@ -1,11 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { QRCodeSVG } from "qrcode.react";
 import { useFeedback, useFeedbackController } from "@/ui/messaging/useFeedback";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
-import { useDebounce } from "use-debounce";
+import { useSwapContext } from "@/ui/swap/useSwapContext";
 
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -32,356 +31,70 @@ export default function MemoComposer({ profile }) {
   const { uri, memo, amount, openWallet, setDraftMemo, setDraftAmount } =
     useFeedbackController(profile?.address);
 
+  // Swap context
+  const {
+    tokenOptions,
+    originTokenId,
+    zecTokenId,
+    originSymbol,
+    refundAddress,
+    slippageTolerance,
+    quoteData,
+    quotePreview,
+    quoteStatus,
+    depositUri,
+    swapStatus,
+    isConfirming,
+    isGettingQuote,
+    swapError,
+    isSwapMode,
+    setToken,
+    setRefundAddress,
+    setSlippageTolerance,
+    getQuote,
+    confirmSwap,
+    cancelSwapMode,
+  } = useSwapContext();
+
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  // Token selection state (for swap mode)
-  const [tokenOptions, setTokenOptions] = useState([]);
-  const [originTokenId, setOriginTokenId] = useState(null);
-  const [zecTokenId, setZecTokenId] = useState(null);
-  const [originSymbol, setOriginSymbol] = useState("ZEC");
-  const [refundAddress, setRefundAddress] = useState("");
-  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
-
-  // Swap workflow state
-  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
-  const [quoteData, setQuoteData] = useState(null);
-  const [quoteStatus, setQuoteStatus] = useState("");
-  const [depositUri, setDepositUri] = useState("");
-  const [statusKey, setStatusKey] = useState(null);
-  const [swapStatus, setSwapStatus] = useState("");
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [swapError, setSwapError] = useState("");
-  const [isGettingQuote, setIsGettingQuote] = useState(false);
-  const [quotePreview, setQuotePreview] = useState(null);
-
   const textareaRef = useRef(null);
-  const pollIntervalRef = useRef(null);
 
-  // Load tokens from API
-  const loadTokens = useCallback(async () => {
-    setIsLoadingTokens(true);
-    try {
-      const response = await fetch("/api/swap/tokens");
-      if (!response.ok) {
-        throw new Error("Failed to load tokens");
-      }
-      const result = await response.json();
-      if (!result.ok) {
-        throw new Error(result.error || "Failed to load tokens");
-      }
-
-      // Extract tokens list from response
-      const tokens = result.data?.tokens || result.data || [];
-
-      // Filter to mainnet only (API uses 'blockchain' property, not 'chain')
-      const mainnetTokens = tokens.filter(
-        (token) =>
-          token.blockchain &&
-          !token.blockchain.toLowerCase().includes("testnet") &&
-          !token.blockchain.toLowerCase().includes("test")
-      );
-
-      // Find ZEC token
-      const zecToken = mainnetTokens.find(
-        (token) =>
-          (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
-          (token.blockchain || "").toLowerCase().includes("zec")
-      );
-
-      setTokenOptions(mainnetTokens);
-
-      if (zecToken) {
-        const zecId = zecToken.id || zecToken.assetId;
-        setZecTokenId(zecId);
-        // Set initial token to ZEC
-        if (!originTokenId) {
-          setOriginTokenId(zecId);
-          setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
-        }
-      }
-    } catch (error) {
-      console.error("Error loading tokens:", error);
-      // On error, keep default ZEC mode
-    } finally {
-      setIsLoadingTokens(false);
-    }
-  }, [originTokenId]);
-
-  // Load tokens on mount
-  useEffect(() => {
-    loadTokens();
-  }, [loadTokens]);
-
-  // Set token handler
-  const setToken = useCallback((tokenId) => {
-    const token = tokenOptions.find((t) => {
-      const tId = t.id || t.assetId || t.tokenId || t.asset;
-      return tId === tokenId;
-    });
-    if (token) {
-      const finalTokenId = token.id || token.assetId || token.tokenId || token.asset || tokenId;
-      setOriginTokenId(finalTokenId);
-      setOriginSymbol(token.symbol || token.ticker || "ZEC");
-    }
-  }, [tokenOptions]);
-
-  // Swap mode detection
-  const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
-
-  // Stop status polling
-  const stopStatusPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-  }, []);
-
-  // Poll swap status
-  const startStatusPolling = useCallback((key) => {
-    // Clear any existing polling
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-    }
-
-    const pollStatus = async () => {
-      if (!key?.depositAddress) return;
-
-      try {
-        const params = new URLSearchParams({
-          depositAddress: key.depositAddress,
-        });
-        if (key.depositMemo) {
-          params.append("depositMemo", key.depositMemo);
-        }
-
-        const response = await fetch(`/api/swap/status?${params}`);
-        const result = await response.json();
-
-        if (result.ok && result.status) {
-          // Handle different response structures:
-          // - result.status.status (nested)
-          // - result.status (direct status string)
-          // - result.status.status field from API response
-          const status = result.status?.status || result.status || null;
-          
-          if (status) {
-            setSwapStatus(status);
-
-            // Update status message
-            switch (status.toUpperCase()) {
-              case "PENDING":
-                setQuoteStatus("Waiting for deposit...");
-                break;
-              case "SUCCESS":
-                setQuoteStatus("Swap completed! ZEC delivered to recipient.");
-                stopStatusPolling();
-                break;
-              case "FAILED":
-                setQuoteStatus("Swap failed. Please contact support.");
-                setSwapError("Swap failed");
-                stopStatusPolling();
-                break;
-              case "REFUNDED":
-                setQuoteStatus("Swap refunded to your address.");
-                stopStatusPolling();
-                break;
-              default:
-                setQuoteStatus(`Status: ${status}`);
-            }
-          }
-        } else if (result.ok === false && result.error) {
-          // Handle API errors gracefully
-          console.error("Swap status error:", result.error);
-          // Don't stop polling on retryable errors
-          if (!result.retryable) {
-            setSwapError(result.error);
-            stopStatusPolling();
-          }
-        }
-      } catch (error) {
-        console.error("Error polling swap status:", error);
-      }
-    };
-
-    // Poll immediately, then every 6 seconds
-    pollStatus();
-    pollIntervalRef.current = setInterval(pollStatus, 6000);
-  }, [stopStatusPolling]);
-
-  // Get quote function
+  // Get quote handler
   const handleGetQuote = useCallback(async () => {
     if (!isSwapMode) return;
-
-    setIsGettingQuote(true);
-    setSwapError("");
-    setQuoteStatus("Getting quote...");
-
     try {
-      const response = await fetch("/api/swap/quote", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromToken: originTokenId,
-          toToken: zecTokenId,
-          amountIn: amount,
-          destAddress: profile?.address,
-          refundAddress: refundAddress,
-          slippageTolerance: slippageTolerance,
-        }),
+      await getQuote({
+        amount,
+        destAddress: profile?.address,
+        fromToken: originTokenId,
+        toToken: zecTokenId,
+        refund: refundAddress,
+        slippage: slippageTolerance,
       });
-
-      const result = await response.json();
-
-      if (!result.ok) {
-        throw new Error(result.error || "Failed to get quote");
-      }
-
-      setQuotePreview(result.display);
-      setQuoteData(result);
-      setQuoteStatus("Quote ready");
     } catch (error) {
-      console.error("Error getting quote:", error);
-      setSwapError(error.message || "Failed to get quote");
-      setQuoteStatus("");
-    } finally {
-      setIsGettingQuote(false);
+      // Error already handled in getQuote
     }
-  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance]);
+  }, [isSwapMode, amount, profile?.address, originTokenId, zecTokenId, refundAddress, slippageTolerance, getQuote]);
 
-  // Confirm quote function
+  // Confirm quote handler
   const handleConfirmQuote = useCallback(async () => {
     if (!isSwapMode || !quotePreview) return;
-
-    setIsConfirming(true);
-    setSwapError("");
-    setQuoteStatus("Confirming swap...");
-
     try {
-      const response = await fetch("/api/swap/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromToken: originTokenId,
-          toToken: zecTokenId,
-          amountIn: amount,
-          destAddress: profile?.address,
-          refundAddress: refundAddress,
-          slippageTolerance: slippageTolerance,
-        }),
+      await confirmSwap({
+        amount,
+        destAddress: profile?.address,
+        fromToken: originTokenId,
+        toToken: zecTokenId,
+        refund: refundAddress,
+        slippage: slippageTolerance,
       });
-
-      const result = await response.json();
-
-      if (!result.ok) {
-        throw new Error(result.error || "Failed to confirm swap");
-      }
-
-      // Store deposit URI and status key
-      setDepositUri(result.paymentUri || result.deposit?.address || "");
-      setStatusKey(result.statusKey);
-      setQuoteData(result);
-      setQuoteStatus("Swap confirmed! Waiting for deposit...");
-      setSwapStatus("PENDING");
-
-      // Start polling for status
-      if (result.statusKey) {
-        startStatusPolling(result.statusKey);
-      }
     } catch (error) {
-      console.error("Error confirming swap:", error);
-      setSwapError(error.message || "Failed to confirm swap");
-      setQuoteStatus("");
-    } finally {
-      setIsConfirming(false);
+      // Error already handled in confirmSwap
     }
-  }, [isSwapMode, quotePreview, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance, startStatusPolling]);
-
-  // Auto-confirm function (kept for backward compatibility, but disabled in favor of manual flow)
-  const handleAutoConfirm = useCallback(async () => {
-    if (!isSwapMode) return;
-
-    setIsConfirming(true);
-    setSwapError("");
-    setQuoteStatus("Confirming swap...");
-
-    try {
-      const response = await fetch("/api/swap/confirm", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fromToken: originTokenId,
-          toToken: zecTokenId,
-          amountIn: amount,
-          destAddress: profile?.address,
-          refundAddress: refundAddress,
-          slippageTolerance: slippageTolerance,
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!result.ok) {
-        throw new Error(result.error || "Failed to confirm swap");
-      }
-
-      // Store deposit URI and status key
-      setDepositUri(result.paymentUri || result.deposit?.address || "");
-      setStatusKey(result.statusKey);
-      setQuoteData(result);
-      setQuoteStatus("Swap confirmed! Waiting for deposit...");
-      setSwapStatus("PENDING");
-
-      // Start polling for status
-      if (result.statusKey) {
-        startStatusPolling(result.statusKey);
-      }
-    } catch (error) {
-      console.error("Error confirming swap:", error);
-      setSwapError(error.message || "Failed to confirm swap");
-      setQuoteStatus("");
-    } finally {
-      setIsConfirming(false);
-    }
-  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance, startStatusPolling]);
-
-  // Disable auto-confirm - using manual "Get quote" / "Confirm quote" flow instead
-  // const [debouncedAmount] = useDebounce(amount, 800);
-  // const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
-
-  // useEffect(() => {
-  //   // Only auto-confirm in swap mode with all required fields
-  //   if (!isSwapMode) return;
-  //   if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
-  //   if (!profile?.address) return;
-  //   if (!debouncedRefundAddress) return;
-  //   if (!originTokenId || !zecTokenId) return;
-
-  //   handleAutoConfirm();
-  // }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      stopStatusPolling();
-    };
-  }, [stopStatusPolling]);
-
-  // Cancel swap mode
-  const cancelSwapMode = () => {
-    setOriginTokenId(zecTokenId);
-    setOriginSymbol("ZEC");
-    setRefundAddress("");
-    setQuoteData(null);
-    setQuotePreview(null);
-    setQuoteStatus("");
-    setDepositUri("");
-    setStatusKey(null);
-    setSwapStatus("");
-    setSwapError("");
-    stopStatusPolling();
-  };
+  }, [isSwapMode, quotePreview, amount, profile?.address, originTokenId, zecTokenId, refundAddress, slippageTolerance, confirmSwap]);
 
   const handleSelect = (profile) => {
     if (!profile) return;
@@ -424,7 +137,7 @@ useEffect(() => {
   });
 
   return (
-    <div className="bg-transparent border-none shadow-none p-0 -mt-4">
+    <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
 
       {/* HEADER ROW: Recipient + Search + Help */}
       <div className="flex justify-between items-start relative mb-3">
@@ -640,7 +353,7 @@ useEffect(() => {
           chain: token.blockchain || "",
           decimals: token.decimals || 8,
         }))}
-        setAsset={setToken}
+        setAsset={(tokenId) => setToken(tokenId)}
         showRefund={isSwapMode}
         refundAddress={refundAddress}
         setRefundAddress={setRefundAddress}

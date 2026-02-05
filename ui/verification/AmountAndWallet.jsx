@@ -199,13 +199,13 @@ export default function AmountAndWallet({
               }}
               className="border border-gray-800 px-3 rounded-xl w-full h-11
                          text-md pr-16 text-gray-900
-                         pl-3"
+                         pl-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
 
             {/* Right-side token selector */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
               {setAsset && assetOptions.length > 0 ? (
-                <div className="relative">
+                <div className="relative pointer-events-auto">
                   <button
                     type="button"
                     onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
@@ -215,7 +215,7 @@ export default function AmountAndWallet({
                     <span>▼</span>
                   </button>
                   {isTokenDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50">
+                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto">
                       <div className="p-2 border-b border-gray-200">
                         <input
                           type="text"
@@ -334,7 +334,7 @@ export default function AmountAndWallet({
                         const zecAmount = rate > 0 ? rounded / rate : rounded;
                         setAmount(zecAmount.toFixed(8));
                       }}
-                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60"
+                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0">
                       <span>{fiat}</span>

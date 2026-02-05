@@ -257,11 +257,11 @@ export function ProfileCardContent({
 
       {/* View Profile Footer - Fixed at bottom */}
       <div className={`mt-auto pt-3 pb-2 flex items-center justify-center gap-1`}>
-        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-gray-500 font-medium`}>
+        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded-full px-2 py-0.5 font-semibold shadow-xs`}>
           View Profile
         </span>
         <svg
-          className={`${variant === "mobile" ? "w-2.5 h-2.5" : "w-3 h-3"} text-gray-500`}
+          className={`${variant === "mobile" ? "w-2.5 h-2.5" : "w-3 h-3"} text-green-600`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -455,12 +455,14 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
           height: "auto",
           transformOrigin: "top center",
           willChange: "transform",
+          pointerEvents: "auto",
         }}
       >
 
         {/* FRONT SIDE */}
         <div
           className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
+          style={{ pointerEvents: "auto" }}
         >
           {/* Top buttons row (menu + share) */}
           <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
@@ -890,6 +892,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
         <div
           className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""
             } bg-white rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
+          style={{ pointerEvents: showBack ? "auto" : "none" }}
         >
           <div className="absolute top-4 left-4 z-10">
             <button
