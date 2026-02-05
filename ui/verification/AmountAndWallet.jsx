@@ -51,10 +51,20 @@ export default function AmountAndWallet({
   openWalletLabel = "Open in Wallet",
   showOpenWallet = true,
   showUsdPill = false,
-  showRateMessage = false
+  showRateMessage = false,
+  // Token selector props (optional)
+  asset = "ZEC",
+  assetOptions = [],
+  setAsset,
+  // Refund address props (optional)
+  showRefund = false,
+  refundAddress = "",
+  setRefundAddress
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
+  const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
+  const [tokenSearch, setTokenSearch] = useState("");
   const [fiat, setFiat] = useState("USD");
   const [rate, setRate] = useState(1);
   const [rateSource, setRateSource] = useState("API");
@@ -70,9 +80,10 @@ export default function AmountAndWallet({
   const overlayHalf = "1.125rem";
   const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
 
-  const fetchRate = async (nextFiat) => {
+  const fetchRate = async (nextFiat, nextAsset) => {
     try {
-      const response = await fetch(`/api/rates?fiat=${nextFiat}`);
+      const assetParam = nextAsset && nextAsset !== "ZEC" ? `&asset=${nextAsset}` : "";
+      const response = await fetch(`/api/rates?fiat=${nextFiat}${assetParam}`);
       if (!response.ok) return false;
       const data = await response.json();
       const price = Number(data?.rate);
@@ -91,10 +102,10 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      fetchRate(fiat);
+      fetchRate(fiat, asset);
     }, 60000);
     return () => clearInterval(id);
-  }, [rateRequested, fiat]);
+  }, [rateRequested, fiat, asset]);
 
   useEffect(() => {
     if (!rateFetched || !isUsdOpen) return;
@@ -107,17 +118,30 @@ export default function AmountAndWallet({
     if (!isUsdOpen) setIsCurrencyOpen(false);
   }, [isUsdOpen]);
 
+  // Close token dropdown when clicking outside
+  useEffect(() => {
+    if (!isTokenDropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".token-selector")) {
+        setIsTokenDropdownOpen(false);
+        setTokenSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isTokenDropdownOpen]);
+
   useEffect(() => {
     if (!rateRequested) return;
     setRateFetched(false);
     setUsdInput("");
-    fetchRate(fiat);
-  }, [fiat, rateRequested]);
+    fetchRate(fiat, asset);
+  }, [fiat, asset, rateRequested]);
 
   const handleToggleUsd = () => {
     if (!rateRequested) {
       setRateRequested(true);
-      fetchRate(fiat);
+      fetchRate(fiat, asset);
     }
     setIsUsdOpen((prev) => !prev);
   };
@@ -173,14 +197,87 @@ export default function AmountAndWallet({
                   }
                 }
               }}
-              className="border border-gray-800 px-3 rounded-xl w-full h-11 
-                         text-md pr-16 text-gray-900 
+              className="border border-gray-800 px-3 rounded-xl w-full h-11
+                         text-md pr-16 text-gray-900
                          pl-3"
             />
 
-            {/* Right-side selector */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md select-none cursor-not-allowed">
-              ZEC ▼
+            {/* Right-side token selector */}
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector">
+              {setAsset && assetOptions.length > 0 ? (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
+                    className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+                  >
+                    <span>{asset}</span>
+                    <span>▼</span>
+                  </button>
+                  {isTokenDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50">
+                      <div className="p-2 border-b border-gray-200">
+                        <input
+                          type="text"
+                          value={tokenSearch}
+                          onChange={(e) => setTokenSearch(e.target.value)}
+                          placeholder="Search tokens..."
+                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          autoFocus
+                        />
+                      </div>
+                      <div className="py-1">
+                        {assetOptions
+                          .filter((token) =>
+                            !tokenSearch ||
+                            token.symbol?.toLowerCase().includes(tokenSearch.toLowerCase()) ||
+                            token.label?.toLowerCase().includes(tokenSearch.toLowerCase())
+                          )
+                          .map((token) => (
+                            <button
+                              key={token.id}
+                              type="button"
+                              onClick={() => {
+                                setAsset(token.id);
+                                setIsTokenDropdownOpen(false);
+                                setTokenSearch("");
+                              }}
+                              className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-50 ${
+                                asset === (token.symbol || token.ticker) ? "bg-blue-50 font-semibold" : ""
+                              }`}
+                            >
+                              {token.logo && (
+                                <img
+                                  src={token.logo}
+                                  alt={token.symbol}
+                                  className="w-5 h-5 rounded-full"
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              )}
+                              <span className="flex-1">
+                                <div className="font-medium text-gray-800">{token.symbol}</div>
+                                <div className="text-xs text-gray-500">{token.chain}</div>
+                              </span>
+                            </button>
+                          ))}
+                        {assetOptions.filter((token) =>
+                          !tokenSearch ||
+                          token.symbol?.toLowerCase().includes(tokenSearch.toLowerCase()) ||
+                          token.label?.toLowerCase().includes(tokenSearch.toLowerCase())
+                        ).length === 0 && (
+                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                            No tokens found
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="select-none cursor-not-allowed">{asset} ▼</div>
+              )}
             </div>
           </div>
 
@@ -317,8 +414,23 @@ export default function AmountAndWallet({
                 : "opacity-0 -translate-y-1"
             }`}
           >
-            Rate of {formatDecimal(rate, "1.00")} {fiat} per ZEC provided by {rateSource}.
+            Rate of {formatDecimal(rate, "1.00")} {fiat} per {asset} provided by {rateSource}.
           </p>
+        </div>
+      )}
+
+      {showRefund && (
+        <div className="w-full mt-3">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            {asset} Refund Address
+          </label>
+          <input
+            type="text"
+            value={refundAddress}
+            onChange={(e) => setRefundAddress?.(e.target.value)}
+            placeholder={`Enter your ${asset} address for refunds`}
+            className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500"
+          />
         </div>
       )}
     </div>

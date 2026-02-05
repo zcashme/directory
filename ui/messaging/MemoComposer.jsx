@@ -1,13 +1,15 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useFeedback, useFeedbackController } from "@/ui/messaging/useFeedback";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
+import { useDebounce } from "use-debounce";
 
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
+import CopyButton from "@/ui/profile/CopyButton";
 import bookOpen from "@/ui/assets/book-open.svg";
 import bookClosed from "@/ui/assets/book-closed.svg";
 import { normalizeSlug, buildSlug } from "@/lib/profile/profileUtils";
@@ -40,8 +42,222 @@ export default function MemoComposer({ profile }) {
   const [zecTokenId, setZecTokenId] = useState(null);
   const [originSymbol, setOriginSymbol] = useState("ZEC");
   const [refundAddress, setRefundAddress] = useState("");
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
+
+  // Swap workflow state
+  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
+  const [quoteData, setQuoteData] = useState(null);
+  const [quoteStatus, setQuoteStatus] = useState("");
+  const [depositUri, setDepositUri] = useState("");
+  const [statusKey, setStatusKey] = useState(null);
+  const [swapStatus, setSwapStatus] = useState("");
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [swapError, setSwapError] = useState("");
 
   const textareaRef = useRef(null);
+  const pollIntervalRef = useRef(null);
+
+  // Load tokens from API
+  const loadTokens = async () => {
+    setIsLoadingTokens(true);
+    try {
+      const response = await fetch("/api/swap/tokens");
+      if (!response.ok) {
+        throw new Error("Failed to load tokens");
+      }
+      const result = await response.json();
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to load tokens");
+      }
+
+      // Extract tokens list from response
+      const tokens = result.data?.tokens || result.data || [];
+
+      // Filter to mainnet only (per Trello discussion)
+      const mainnetTokens = tokens.filter(
+        (token) =>
+          !token.chain?.includes("testnet") &&
+          !token.chain?.includes("test") &&
+          token.chain?.includes("mainnet")
+      );
+
+      // Find ZEC token
+      const zecToken = mainnetTokens.find(
+        (token) =>
+          (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
+          (token.chain || "").toLowerCase().includes("zcash")
+      );
+
+      setTokenOptions(mainnetTokens);
+
+      if (zecToken) {
+        setZecTokenId(zecToken.id);
+        // Set initial token to ZEC
+        if (!originTokenId) {
+          setOriginTokenId(zecToken.id);
+          setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
+        }
+      }
+    } catch (error) {
+      console.error("Error loading tokens:", error);
+      // On error, keep default ZEC mode
+    } finally {
+      setIsLoadingTokens(false);
+    }
+  };
+
+  // Load tokens on mount
+  useEffect(() => {
+    loadTokens();
+  }, []);
+
+  // Auto-confirm function
+  const handleAutoConfirm = useCallback(async () => {
+    if (!isSwapMode) return;
+    
+    setIsConfirming(true);
+    setSwapError("");
+    setQuoteStatus("Confirming swap...");
+
+    try {
+      const response = await fetch("/api/swap/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromToken: originTokenId,
+          toToken: zecTokenId,
+          amountIn: amount,
+          destAddress: profile?.address,
+          refundAddress: refundAddress,
+          slippageTolerance: slippageTolerance,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to confirm swap");
+      }
+
+      // Store deposit URI and status key
+      setDepositUri(result.paymentUri || result.deposit?.address || "");
+      setStatusKey(result.statusKey);
+      setQuoteData(result);
+      setQuoteStatus("Swap confirmed! Waiting for deposit...");
+      setSwapStatus("PENDING");
+
+      // Start polling for status
+      if (result.statusKey) {
+        startStatusPolling(result.statusKey);
+      }
+    } catch (error) {
+      console.error("Error confirming swap:", error);
+      setSwapError(error.message || "Failed to confirm swap");
+      setQuoteStatus("");
+    } finally {
+      setIsConfirming(false);
+    }
+  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance]);
+
+  // Auto-confirm swap on changes (debounced)
+  const [debouncedAmount] = useDebounce(amount, 800);
+  const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
+
+  useEffect(() => {
+    // Only auto-confirm in swap mode with all required fields
+    if (!isSwapMode) return;
+    if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
+    if (!profile?.address) return;
+    if (!debouncedRefundAddress) return;
+    if (!originTokenId || !zecTokenId) return;
+
+    handleAutoConfirm();
+  }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
+
+  // Poll swap status
+  const startStatusPolling = (key) => {
+    // Clear any existing polling
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+    }
+
+    const pollStatus = async () => {
+      if (!key?.depositAddress) return;
+
+      try {
+        const params = new URLSearchParams({
+          depositAddress: key.depositAddress,
+        });
+        if (key.depositMemo) {
+          params.append("depositMemo", key.depositMemo);
+        }
+
+        const response = await fetch(`/api/swap/status?${params}`);
+        const result = await response.json();
+
+        if (result.ok && result.status) {
+          const status = result.status.status;
+          setSwapStatus(status);
+
+          // Update status message
+          switch (status) {
+            case "PENDING":
+              setQuoteStatus("Waiting for deposit...");
+              break;
+            case "SUCCESS":
+              setQuoteStatus("Swap completed! ZEC delivered to recipient.");
+              stopStatusPolling();
+              break;
+            case "FAILED":
+              setQuoteStatus("Swap failed. Please contact support.");
+              setSwapError("Swap failed");
+              stopStatusPolling();
+              break;
+            case "REFUNDED":
+              setQuoteStatus("Swap refunded to your address.");
+              stopStatusPolling();
+              break;
+            default:
+              setQuoteStatus(`Status: ${status}`);
+          }
+        }
+      } catch (error) {
+        console.error("Error polling swap status:", error);
+      }
+    };
+
+    // Poll immediately, then every 6 seconds
+    pollStatus();
+    pollIntervalRef.current = setInterval(pollStatus, 6000);
+  };
+
+  const stopStatusPolling = () => {
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current);
+      pollIntervalRef.current = null;
+    }
+  };
+
+  // Cleanup polling on unmount
+  useEffect(() => {
+    return () => {
+      stopStatusPolling();
+    };
+  }, []);
+
+  // Cancel swap mode
+  const cancelSwapMode = () => {
+    setOriginTokenId(zecTokenId);
+    setOriginSymbol("ZEC");
+    setRefundAddress("");
+    setQuoteData(null);
+    setQuoteStatus("");
+    setDepositUri("");
+    setStatusKey(null);
+    setSwapStatus("");
+    setSwapError("");
+    stopStatusPolling();
+  };
 
   const handleSelect = (profile) => {
     if (!profile) return;
@@ -64,10 +280,10 @@ export default function MemoComposer({ profile }) {
 
   // Swap mode detection
   const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
-  
+
   // Memo disabled: transparent addresses OR swap mode
   const disabled = profile?.address?.startsWith("t") || isSwapMode;
-  
+
   const recipientName =
     profile?.display_name || profile?.name || "Recipient";
 
@@ -294,6 +510,25 @@ useEffect(() => {
         showOpenWallet={false}
         showUsdPill
         showRateMessage
+        asset={originSymbol}
+        assetOptions={tokenOptions.map((token) => ({
+          id: token.id,
+          symbol: token.symbol || token.ticker || "",
+          label: `${token.symbol || token.ticker || ""} - ${token.chain || ""}`,
+          logo: token.logo || null,
+          chain: token.chain || "",
+          decimals: token.decimals || 8,
+        }))}
+        setAsset={(tokenId) => {
+          const token = tokenOptions.find((t) => t.id === tokenId);
+          if (token) {
+            setOriginTokenId(tokenId);
+            setOriginSymbol(token.symbol || token.ticker || "ZEC");
+          }
+        }}
+        showRefund={isSwapMode}
+        refundAddress={refundAddress}
+        setRefundAddress={setRefundAddress}
       />
 
       {/* Divider line like Verify */}
@@ -301,10 +536,48 @@ useEffect(() => {
 
       <HelpMessage />
 
+      {/* Swap Status Display */}
+      {isSwapMode && (quoteStatus || swapError) && (
+        <div className={`mb-4 p-3 rounded-lg border ${
+          swapError 
+            ? "bg-red-50 border-red-200" 
+            : swapStatus === "SUCCESS"
+            ? "bg-green-50 border-green-200"
+            : swapStatus === "FAILED" || swapStatus === "REFUNDED"
+            ? "bg-yellow-50 border-yellow-200"
+            : "bg-blue-50 border-blue-200"
+        }`}>
+          <div className={`text-sm ${
+            swapError 
+              ? "text-red-700" 
+              : swapStatus === "SUCCESS"
+              ? "text-green-700"
+              : swapStatus === "FAILED" || swapStatus === "REFUNDED"
+              ? "text-yellow-700"
+              : "text-blue-700"
+          }`}>
+            {swapError || quoteStatus}
+            {isConfirming && (
+              <span className="ml-2 inline-block animate-spin">⏳</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel Swap Button */}
+      {isSwapMode && !isConfirming && (
+        <button
+          onClick={cancelSwapMode}
+          className="mb-3 text-sm text-blue-600 hover:text-blue-800 underline"
+        >
+          ← Back to ZEC payment
+        </button>
+      )}
+
       {/* QR / URI BLOCK */}
       <div className="-mt-4">
         <QrUriBlock
-          uri={uri}
+          uri={isSwapMode && depositUri ? depositUri : uri}
           profileName={
             profile?.display_name ||
             profile?.name ||
@@ -312,6 +585,24 @@ useEffect(() => {
           }
           forceShowQR={forceShowQR}
         />
+
+        {/* Recipient ZEC Address Display (Swap Mode) */}
+        {isSwapMode && depositUri && profile?.address && (
+          <div className="mt-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+            <div className="text-xs text-gray-600 mb-2 font-medium">
+              Recipient will receive ZEC at:
+            </div>
+            <div className="flex items-center gap-2">
+              <code className="text-xs font-mono flex-1 break-all text-gray-800">
+                {profile.address}
+              </code>
+              <CopyButton text={profile.address} />
+            </div>
+            <div className="text-xs text-gray-500 mt-2 italic">
+              After you send {originSymbol} to the address above, it will be automatically swapped to ZEC and delivered to this address.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

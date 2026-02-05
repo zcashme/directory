@@ -11,7 +11,8 @@ export default function CopyButton({
 }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
+  const handleCopy = (e) => {
+    e.stopPropagation();
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), timeout);
