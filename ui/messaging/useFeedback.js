@@ -96,16 +96,20 @@ export function useFeedbackController(address) {
     if (!zId) return;
     const requestId = verify.requestId || null;
 
-    const hasEdits = pendingEdits && Object.keys(pendingEdits).length > 0;
+    // Check if there are any pending edits
+    const hasEdits = pendingEdits && (
+      (pendingEdits.profile && Object.keys(pendingEdits.profile).length > 0) ||
+      (Array.isArray(pendingEdits.l) && pendingEdits.l.length > 0)
+    );
 
     const profileDiff = {
       ...(pendingEdits?.profile || {}),
       l: pendingEdits?.l || [],
     };
 
-    const nextMemo = hasEdits
-      ? buildZcashEditMemo(profileDiff, zId, requestId)
-      : buildZcashEditMemo({}, zId, requestId);
+    // Always build memo with current edits and requestId
+    // This ensures the memo is updated whenever edits or requestId changes
+    const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
 
     if (nextMemo !== verify.memo) {
       setVerifyMemo(nextMemo);

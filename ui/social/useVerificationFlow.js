@@ -261,5 +261,5 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
     setTimeout(checkSession, 3000);
 
     return () => subscription.unsubscribe();
-  }, [profileId]);
+  }, [profileId, setForm, setShowRedirect]);
 }
