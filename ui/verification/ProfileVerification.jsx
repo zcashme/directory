@@ -8,6 +8,7 @@ import InlineOtpForm from "@/ui/verification/InlineOtpForm";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
+import ProgressStep from "@/ui/verification/ProgressStep";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 const SIGNIN_ADDR_old =
@@ -247,60 +248,33 @@ export default function ProfileVerification({ profile }) {
               </div>
               <div className="mt-2 text-xs text-gray-600 text-center">
                 {progressSteps.map((step, idx) => (
-                  <span key={step.key}>
-                    <span
-                      className={
-                        progressState.currentIndex === idx
-                          ? "font-bold text-blue-700"
-                          : ""
-                      }
-                    >
-                      {idx < progressState.doneCount && (
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-xs mr-1 align-[-1px]"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          aria-hidden="true"
-                        >
-                          <path d="M7.5 13.2L4.8 10.5l-1.4 1.4 4.1 4.1 9.5-9.5-1.4-1.4z" />
-                        </svg>
-                      )}
-                      {progressState.currentIndex === idx ? "Now: " : ""}
-                      {step.label}
-                    </span>
-                    {idx < progressSteps.length - 1 ? " > " : ""}
-                  </span>
+                  <ProgressStep
+                    key={step.key}
+                    step={step}
+                    index={idx}
+                    isLast={idx === progressSteps.length - 1}
+                    isCurrent={progressState.currentIndex === idx}
+                    isDone={idx < progressState.doneCount}
+                    showCheckmark={idx < progressState.doneCount}
+                    label={step.label}
+                    className={progressState.currentIndex === idx ? "font-bold text-blue-700" : ""}
+                  />
                 ))}
               </div>
               {showOtpPhaseLine && (
                 <div className="mt-1 text-xs text-gray-500 text-center">
                   {otpPhaseSteps.map((step, idx) => (
-                    <span key={step.phase}>
-                      <span
-                        className={
-                          step.isCurrent ? "font-bold text-blue-700" : ""
-                        }
-                      >
-                        {step.showGreenCheck && (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="inline-block h-3.5 w-3.5 text-green-600 drop-shadow-xs mr-1 align-[-1px]"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                            aria-hidden="true"
-                          >
-                            <path d="M7.5 13.2L4.8 10.5l-1.4 1.4 4.1 4.1 9.5-9.5-1.4-1.4z" />
-                          </svg>
-                        )}
-                        {!step.showGreenCheck && step.isCurrent && step.failed && (
-                          <span className="text-red-600 mr-1">X</span>
-                        )}
-                        {step.isCurrent ? "Now: " : ""}
-                        {step.phase}
-                      </span>
-                      {idx < otpPhaseSteps.length - 1 ? " > " : ""}
-                    </span>
+                    <ProgressStep
+                      key={step.phase}
+                      step={step}
+                      index={idx}
+                      isLast={idx === otpPhaseSteps.length - 1}
+                      isCurrent={step.isCurrent}
+                      showCheckmark={step.showGreenCheck}
+                      showFailed={!step.showGreenCheck && step.isCurrent && step.failed}
+                      label={step.phase}
+                      className={step.isCurrent ? "font-bold text-blue-700" : ""}
+                    />
                   ))}
                 </div>
               )}

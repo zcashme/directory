@@ -8,10 +8,11 @@ import { useState, useEffect, useRef } from "react";
 import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
 import { checkUsernameExists } from "@/lib/directory/searchProfiles";
 import { checkUsernameIsVerified } from "@/lib/profile/profileQueries";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
+import StepContainer from "@/ui/signup/StepContainer";
 
 function XIcon(props) {
   return (
@@ -42,11 +43,6 @@ const toSlugish = (s = "") =>
     .replace(/\s+/g, "_");
 
 
-const slide = {
-  initial: (dir) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),
-  animate: { x: 0, opacity: 1, transition: { duration: 0.22 } },
-  exit: (dir) => ({ x: dir > 0 ? -40 : 40, opacity: 0, transition: { duration: 0.18 } }),
-};
 export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsername = null }) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
@@ -445,7 +441,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   };
 
   const StepName = (
-    <motion.div key="step-name" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+    <StepContainer stepKey="step-name" dir={dir}>
       <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
         Username
       </label>
@@ -507,13 +503,13 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       />
       <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
 
-    </motion.div>
+    </StepContainer>
   );
 
 
 
   const StepAddress = (
-    <motion.div key="step-address" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+    <StepContainer stepKey="step-address" dir={dir}>
       <ZcashAddressInput value={address} onChange={setAddress} />
       {(addressConflict || addressHelp) && (
         <p
@@ -536,18 +532,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       <p className="mt-4 text-xs text-gray-500">
         <span className="font-bold text-gray-700">Did you know?</span> This Zcash address and its activity cannot be found on-chain.
       </p>
-    </motion.div>
+    </StepContainer>
   );
 
   const StepCity = (
-    <motion.div
-      key="step-city"
-      custom={dir}
-      variants={slide}
-      initial="initial"
-      animate="animate"
-      exit="exit"
-    >
+    <StepContainer stepKey="step-city" dir={dir}>
       <label
         htmlFor="nearest-city"
         className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
@@ -582,11 +571,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       <p className="mt-1 text-xs text-gray-500">
         Optional. Helps Zcashers find other Zcashers around them.
       </p>
-    </motion.div>
+    </StepContainer>
   );
 
   const StepReferrer = (
-    <motion.div key="step-ref" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+    <StepContainer stepKey="step-ref" dir={dir}>
       <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
         Referred by Zcash.me/
       </label>
@@ -604,11 +593,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
       <p className="mt-1 text-xs text-gray-500">Optional. Helps us reward members who refer new members.</p>
-    </motion.div>
+    </StepContainer>
   );
 
   const StepLinks = (
-    <motion.div key="step-links" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+    <StepContainer stepKey="step-links" dir={dir}>
       <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">Add social links to help others identify you</label>
 
       {links.map((link, index) => (
@@ -626,11 +615,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       <p className="mt-2 text-xs text-gray-500">
         Tip: You can authenticate links from Edit Profile after verifying your Zcash address.
       </p>
-    </motion.div>
+    </StepContainer>
   );
 
   const StepReview = (
-    <motion.div key="step-review" custom={dir} variants={slide} initial="initial" animate="animate" exit="exit">
+    <StepContainer stepKey="step-review" dir={dir}>
       <div className="space-y-2 text-sm">
         <div>
           <span className="font-semibold text-gray-700">Username:</span>{" "}
@@ -672,7 +661,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       <p className="mt-3 text-xs text-gray-500">
         By submitting, you agree that these items will be listed publicly. You can add and remove items later.
       </p>
-    </motion.div>
+    </StepContainer>
   );
 
   return createPortal(
