@@ -53,12 +53,14 @@ export default function MemoComposer({ profile }) {
   const [swapStatus, setSwapStatus] = useState("");
   const [isConfirming, setIsConfirming] = useState(false);
   const [swapError, setSwapError] = useState("");
+  const [isGettingQuote, setIsGettingQuote] = useState(false);
+  const [quotePreview, setQuotePreview] = useState(null);
 
   const textareaRef = useRef(null);
   const pollIntervalRef = useRef(null);
 
   // Load tokens from API
-  const loadTokens = async () => {
+  const loadTokens = useCallback(async () => {
     setIsLoadingTokens(true);
     try {
       const response = await fetch("/api/swap/tokens");
@@ -73,28 +75,29 @@ export default function MemoComposer({ profile }) {
       // Extract tokens list from response
       const tokens = result.data?.tokens || result.data || [];
 
-      // Filter to mainnet only (per Trello discussion)
+      // Filter to mainnet only (API uses 'blockchain' property, not 'chain')
       const mainnetTokens = tokens.filter(
         (token) =>
-          !token.chain?.includes("testnet") &&
-          !token.chain?.includes("test") &&
-          token.chain?.includes("mainnet")
+          token.blockchain &&
+          !token.blockchain.toLowerCase().includes("testnet") &&
+          !token.blockchain.toLowerCase().includes("test")
       );
 
       // Find ZEC token
       const zecToken = mainnetTokens.find(
         (token) =>
           (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
-          (token.chain || "").toLowerCase().includes("zcash")
+          (token.blockchain || "").toLowerCase().includes("zec")
       );
 
       setTokenOptions(mainnetTokens);
 
       if (zecToken) {
-        setZecTokenId(zecToken.id);
+        const zecId = zecToken.id || zecToken.assetId;
+        setZecTokenId(zecId);
         // Set initial token to ZEC
         if (!originTokenId) {
-          setOriginTokenId(zecToken.id);
+          setOriginTokenId(zecId);
           setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
         }
       }
@@ -104,12 +107,25 @@ export default function MemoComposer({ profile }) {
     } finally {
       setIsLoadingTokens(false);
     }
-  };
+  }, [originTokenId]);
 
   // Load tokens on mount
   useEffect(() => {
     loadTokens();
-  }, []);
+  }, [loadTokens]);
+
+  // Set token handler
+  const setToken = useCallback((tokenId) => {
+    const token = tokenOptions.find((t) => {
+      const tId = t.id || t.assetId || t.tokenId || t.asset;
+      return tId === tokenId;
+    });
+    if (token) {
+      const finalTokenId = token.id || token.assetId || token.tokenId || token.asset || tokenId;
+      setOriginTokenId(finalTokenId);
+      setOriginSymbol(token.symbol || token.ticker || "ZEC");
+    }
+  }, [tokenOptions]);
 
   // Swap mode detection
   const isSwapMode = originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId;
@@ -144,29 +160,44 @@ export default function MemoComposer({ profile }) {
         const result = await response.json();
 
         if (result.ok && result.status) {
-          const status = result.status.status;
-          setSwapStatus(status);
+          // Handle different response structures:
+          // - result.status.status (nested)
+          // - result.status (direct status string)
+          // - result.status.status field from API response
+          const status = result.status?.status || result.status || null;
+          
+          if (status) {
+            setSwapStatus(status);
 
-          // Update status message
-          switch (status) {
-            case "PENDING":
-              setQuoteStatus("Waiting for deposit...");
-              break;
-            case "SUCCESS":
-              setQuoteStatus("Swap completed! ZEC delivered to recipient.");
-              stopStatusPolling();
-              break;
-            case "FAILED":
-              setQuoteStatus("Swap failed. Please contact support.");
-              setSwapError("Swap failed");
-              stopStatusPolling();
-              break;
-            case "REFUNDED":
-              setQuoteStatus("Swap refunded to your address.");
-              stopStatusPolling();
-              break;
-            default:
-              setQuoteStatus(`Status: ${status}`);
+            // Update status message
+            switch (status.toUpperCase()) {
+              case "PENDING":
+                setQuoteStatus("Waiting for deposit...");
+                break;
+              case "SUCCESS":
+                setQuoteStatus("Swap completed! ZEC delivered to recipient.");
+                stopStatusPolling();
+                break;
+              case "FAILED":
+                setQuoteStatus("Swap failed. Please contact support.");
+                setSwapError("Swap failed");
+                stopStatusPolling();
+                break;
+              case "REFUNDED":
+                setQuoteStatus("Swap refunded to your address.");
+                stopStatusPolling();
+                break;
+              default:
+                setQuoteStatus(`Status: ${status}`);
+            }
+          }
+        } else if (result.ok === false && result.error) {
+          // Handle API errors gracefully
+          console.error("Swap status error:", result.error);
+          // Don't stop polling on retryable errors
+          if (!result.retryable) {
+            setSwapError(result.error);
+            stopStatusPolling();
           }
         }
       } catch (error) {
@@ -179,7 +210,95 @@ export default function MemoComposer({ profile }) {
     pollIntervalRef.current = setInterval(pollStatus, 6000);
   }, [stopStatusPolling]);
 
-  // Auto-confirm function
+  // Get quote function
+  const handleGetQuote = useCallback(async () => {
+    if (!isSwapMode) return;
+
+    setIsGettingQuote(true);
+    setSwapError("");
+    setQuoteStatus("Getting quote...");
+
+    try {
+      const response = await fetch("/api/swap/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromToken: originTokenId,
+          toToken: zecTokenId,
+          amountIn: amount,
+          destAddress: profile?.address,
+          refundAddress: refundAddress,
+          slippageTolerance: slippageTolerance,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to get quote");
+      }
+
+      setQuotePreview(result.display);
+      setQuoteData(result);
+      setQuoteStatus("Quote ready");
+    } catch (error) {
+      console.error("Error getting quote:", error);
+      setSwapError(error.message || "Failed to get quote");
+      setQuoteStatus("");
+    } finally {
+      setIsGettingQuote(false);
+    }
+  }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance]);
+
+  // Confirm quote function
+  const handleConfirmQuote = useCallback(async () => {
+    if (!isSwapMode || !quotePreview) return;
+
+    setIsConfirming(true);
+    setSwapError("");
+    setQuoteStatus("Confirming swap...");
+
+    try {
+      const response = await fetch("/api/swap/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fromToken: originTokenId,
+          toToken: zecTokenId,
+          amountIn: amount,
+          destAddress: profile?.address,
+          refundAddress: refundAddress,
+          slippageTolerance: slippageTolerance,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!result.ok) {
+        throw new Error(result.error || "Failed to confirm swap");
+      }
+
+      // Store deposit URI and status key
+      setDepositUri(result.paymentUri || result.deposit?.address || "");
+      setStatusKey(result.statusKey);
+      setQuoteData(result);
+      setQuoteStatus("Swap confirmed! Waiting for deposit...");
+      setSwapStatus("PENDING");
+
+      // Start polling for status
+      if (result.statusKey) {
+        startStatusPolling(result.statusKey);
+      }
+    } catch (error) {
+      console.error("Error confirming swap:", error);
+      setSwapError(error.message || "Failed to confirm swap");
+      setQuoteStatus("");
+    } finally {
+      setIsConfirming(false);
+    }
+  }, [isSwapMode, quotePreview, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance, startStatusPolling]);
+
+  // Auto-confirm function (kept for backward compatibility, but disabled in favor of manual flow)
   const handleAutoConfirm = useCallback(async () => {
     if (!isSwapMode) return;
 
@@ -227,20 +346,20 @@ export default function MemoComposer({ profile }) {
     }
   }, [isSwapMode, amount, profile?.address, refundAddress, originTokenId, zecTokenId, slippageTolerance, startStatusPolling]);
 
-  // Auto-confirm swap on changes (debounced)
-  const [debouncedAmount] = useDebounce(amount, 800);
-  const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
+  // Disable auto-confirm - using manual "Get quote" / "Confirm quote" flow instead
+  // const [debouncedAmount] = useDebounce(amount, 800);
+  // const [debouncedRefundAddress] = useDebounce(refundAddress, 800);
 
-  useEffect(() => {
-    // Only auto-confirm in swap mode with all required fields
-    if (!isSwapMode) return;
-    if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
-    if (!profile?.address) return;
-    if (!debouncedRefundAddress) return;
-    if (!originTokenId || !zecTokenId) return;
+  // useEffect(() => {
+  //   // Only auto-confirm in swap mode with all required fields
+  //   if (!isSwapMode) return;
+  //   if (!debouncedAmount || parseFloat(debouncedAmount) <= 0) return;
+  //   if (!profile?.address) return;
+  //   if (!debouncedRefundAddress) return;
+  //   if (!originTokenId || !zecTokenId) return;
 
-    handleAutoConfirm();
-  }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
+  //   handleAutoConfirm();
+  // }, [debouncedAmount, originTokenId, profile?.address, debouncedRefundAddress, isSwapMode, handleAutoConfirm]);
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -255,6 +374,7 @@ export default function MemoComposer({ profile }) {
     setOriginSymbol("ZEC");
     setRefundAddress("");
     setQuoteData(null);
+    setQuotePreview(null);
     setQuoteStatus("");
     setDepositUri("");
     setStatusKey(null);
@@ -425,7 +545,7 @@ useEffect(() => {
           placeholder={
             disabled
               ? isSwapMode
-                ? "Memos are not supported for cross-chain swaps"
+                ? "Messaging is available only while sending ZEC"
                 : "Memos are not supported for transparent addresses"
               : `Write your message to ${recipientName} here...`
           }
@@ -513,24 +633,93 @@ useEffect(() => {
         showRateMessage
         asset={originSymbol}
         assetOptions={tokenOptions.map((token) => ({
-          id: token.id,
+          id: token.id || token.assetId || token.tokenId || token.asset,
           symbol: token.symbol || token.ticker || "",
-          label: `${token.symbol || token.ticker || ""} - ${token.chain || ""}`,
+          label: `${token.symbol || token.ticker || ""} - ${token.blockchain || ""}`,
           logo: token.logo || null,
-          chain: token.chain || "",
+          chain: token.blockchain || "",
           decimals: token.decimals || 8,
         }))}
-        setAsset={(tokenId) => {
-          const token = tokenOptions.find((t) => t.id === tokenId);
-          if (token) {
-            setOriginTokenId(tokenId);
-            setOriginSymbol(token.symbol || token.ticker || "ZEC");
-          }
-        }}
+        setAsset={setToken}
         showRefund={isSwapMode}
         refundAddress={refundAddress}
         setRefundAddress={setRefundAddress}
       />
+
+      {/* Swap Settings (Swap Mode Only) */}
+      {isSwapMode && (
+        <div className="mb-4 p-3 rounded-lg border border-black" style={{ backgroundColor: 'var(--color-background)' }}>
+          {/* Slippage Tolerance */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Slippage (%)
+            </label>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {["0.1", "0.5", "1", "2", "5"].map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSlippageTolerance(value)}
+                    className={`px-3 py-1 text-sm border border-black rounded-lg transition-colors ${
+                      slippageTolerance === value
+                        ? "bg-blue-50 text-blue-700 font-semibold"
+                        : "bg-white text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    {value}%
+                  </button>
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="100"
+                  value={slippageTolerance}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
+                      setSlippageTolerance(val);
+                    }
+                  }}
+                  className="w-20 border border-black px-3 py-1 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                />
+                <span className="text-sm text-gray-600">%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Get Quote / Confirm Quote Buttons */}
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={handleGetQuote}
+              disabled={isGettingQuote || !amount || !refundAddress || parseFloat(amount) <= 0}
+              className={`flex-1 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
+                isGettingQuote || !amount || !refundAddress || parseFloat(amount) <= 0
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              {isGettingQuote ? "Getting quote..." : "Get quote"}
+            </button>
+            <button
+              type="button"
+              onClick={handleConfirmQuote}
+              disabled={!quotePreview || isConfirming}
+              className={`flex-1 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
+                !quotePreview || isConfirming
+                  ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                  : "bg-white text-gray-800 hover:bg-gray-50"
+              }`}
+            >
+              {isConfirming ? "Confirming..." : "Confirm quote"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Divider line like Verify */}
       <div className="border-t border-gray-300 my-4"></div>

@@ -422,13 +422,13 @@ export default function AmountAndWallet({
       {showRefund && (
         <div className="w-full mt-3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            {asset} Refund Address
+            Your {asset} refund address (in case swap fails)
           </label>
           <input
             type="text"
             value={refundAddress}
             onChange={(e) => setRefundAddress?.(e.target.value)}
-            placeholder={`Enter your ${asset} address for refunds`}
+            placeholder={`Paste your ${asset} address`}
             className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500"
           />
         </div>
