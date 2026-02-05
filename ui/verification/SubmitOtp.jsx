@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
-import { confirmOtp } from "@/lib/verification/confirmOtp";
+import { confirmOtpAction } from "@/lib/actions/confirmOtpAction";
 
 
 function XIcon(props) {
@@ -39,19 +39,17 @@ export default function SubmitOtp({ isOpen, onClose, profile }) {
 
     try {
       const zid = profile?.id;
+      const result = await confirmOtpAction(zid, otp);
 
-const { data, error } = await confirmOtp(zid, otp);
-
-
-      if (error) {
+      if (!result.ok) {
         setResult("fail");
-        setCustomMessage("Unexpected server error.");
+        setCustomMessage(result.error || "Unexpected server error.");
         setStep(2);
         return;
       }
 
       let message = "";
-      const status = data?.status;
+      const status = result.data?.status;
 
       switch (status) {
         case "verified":

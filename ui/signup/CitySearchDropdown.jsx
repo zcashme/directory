@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { searchCities } from "@/lib/directory/searchCities";
+import { searchCitiesAction } from "@/lib/actions/searchCitiesAction";
 
 export default function CitySearchDropdown({
   value,
@@ -16,8 +16,12 @@ export default function CitySearchDropdown({
         return;
       }
 
-      const data = await searchCities(value);
-      setResults(data);
+      const result = await searchCitiesAction(value);
+      if (result.ok) {
+        setResults(result.data || []);
+      } else {
+        setResults([]);
+      }
     };
 
     fetchCities();

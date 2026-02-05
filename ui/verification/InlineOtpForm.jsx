@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { confirmOtp } from "@/lib/verification/confirmOtp";
+import { confirmOtpAction } from "@/lib/actions/confirmOtpAction";
 
 export default function InlineOtpForm({ profile, onSuccess }) {
   const [step, setStep] = useState(0); // 0=enter, 1=checking, 2=result
@@ -14,14 +14,14 @@ export default function InlineOtpForm({ profile, onSuccess }) {
     if (!zid || !otp) return;
     setStep(1);
     try {
-      const { data, error } = await confirmOtp(zid, otp);
-      if (error) {
+      const result = await confirmOtpAction(zid, otp);
+      if (!result.ok) {
         setResult("fail");
-        setMessage("Unexpected server error.");
+        setMessage(result.error || "Unexpected server error.");
         setStep(2);
         return;
       }
-      const status = data?.status;
+      const status = result.data?.status;
       if (status === "verified" || status === "verified_and_no_pending_edits") {
         setResult("ok");
         setMessage("OTP accepted. Page will refresh shortly.");

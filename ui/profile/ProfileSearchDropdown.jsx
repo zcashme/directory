@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfiles";
+import { searchProfilesAction, checkUsernameExistsAction } from "@/lib/actions/searchProfilesAction";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
@@ -99,11 +99,14 @@ export default function ProfileSearchDropdown({
     lastQueryRef.current = currentQuery;
 
     Promise.all([
-      canReuseResults ? Promise.resolve(previousResultsRef.current) : searchProfiles(currentQuery, 3),
-      checkUsernameExists(currentQuery) // ALWAYS check availability, even if reusing results
+      canReuseResults ? Promise.resolve({ ok: true, data: previousResultsRef.current }) : searchProfilesAction(currentQuery, 3),
+      checkUsernameExistsAction(currentQuery) // ALWAYS check availability, even if reusing results
     ])
-      .then(([data, exists]) => {
+      .then(([searchResult, checkResult]) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
+          const data = searchResult.ok ? (searchResult.data || []) : [];
+          const exists = checkResult.ok ? checkResult.exists : false;
+
           setResults(data);
           if (!canReuseResults) {
             previousResultsRef.current = data;

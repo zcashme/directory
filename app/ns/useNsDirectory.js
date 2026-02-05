@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import useNsProfiles from "@/ui/ns-directory/useNsProfiles";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { getProfileLinksBatchAction } from "@/lib/actions/getProfileLinksBatchAction";
 import { getLinkIcon, getLinkLabel } from "@/lib/social/profileLinks";
 
 export default function useNsDirectory(initialProfiles) {
@@ -19,22 +19,22 @@ export default function useNsDirectory(initialProfiles) {
     }
 
     const fetchLinks = async () => {
-      const { data, error } = await supabase
-        .from("zcasher_links")
-        .select("id,label,url,is_verified,zcasher_id")
-        .in("zcasher_id", idsWithValue);
+      const result = await getProfileLinksBatchAction(idsWithValue);
 
-      if (error || !isActive) {
-        if (error && isActive) setLinksError(error);
+      if (!isActive) return;
+
+      if (!result.ok) {
+        setLinksError(result.error || "Failed to fetch links");
         return;
       }
+
       const map = {};
-      (data || []).forEach((link) => {
-        const icon = getLinkIcon(link.url);
-        const domainLabel = getLinkLabel(link.url);
-        const entry = { ...link, icon, domainLabel };
-        map[link.zcasher_id] = map[link.zcasher_id] || [];
-        map[link.zcasher_id].push(entry);
+      Object.entries(result.data || {}).forEach(([zcasherId, links]) => {
+        map[zcasherId] = links.map((link) => {
+          const icon = getLinkIcon(link.url);
+          const domainLabel = getLinkLabel(link.url);
+          return { ...link, icon, domainLabel };
+        });
       });
       setLinksByProfileId(map);
     };

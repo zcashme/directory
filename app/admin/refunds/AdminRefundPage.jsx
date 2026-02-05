@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { getRefundDataAction } from "@/lib/actions/getRefundDataAction";
 import { QRCodeSVG } from "qrcode.react"; // identical lib used in QrUriBlock
 
 function rebuildUri(rawUri) {
@@ -31,24 +31,14 @@ export default function AdminRefunds() {
   const [showQR, setShowQR] = useState({}); // per-row toggle
 
   async function load() {
-    const { data, error } = await supabase
-      .from("staging_unified")
-      .select(`
-        txid,
-        outgoing_message,
-        zip321_uri,
-        twitter_url
-      `)
-      .not("zip321_uri", "is", null)
-      .order("mined_time", { ascending: true });
+    const result = await getRefundDataAction();
 
-    if (error) {
-      setError(error.message);
+    if (!result.ok) {
+      setError(result.error || "Failed to load refund data");
       return;
     }
 
-    const filtered = (data || []).filter((r) => r.zip321_uri);
-    setRows(filtered);
+    setRows(result.data || []);
   }
 
   useEffect(() => {

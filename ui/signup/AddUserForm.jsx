@@ -5,9 +5,13 @@ import { createPortal } from "react-dom";
 
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import { useState, useEffect, useRef } from "react";
-import { checkAddressTaken, createProfile, insertProfileLinks } from "@/lib/signup/createProfile";
-import { checkUsernameExists } from "@/lib/directory/searchProfiles";
-import { checkUsernameIsVerified } from "@/lib/profile/profileQueries";
+import {
+  createProfileAction,
+  insertProfileLinksAction,
+  checkAddressTakenAction,
+  checkUsernameExistsForFormAction,
+  checkUsernameIsVerifiedAction,
+} from "@/lib/actions/createProfileAction";
 import { AnimatePresence } from "framer-motion";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -120,16 +124,16 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     const checkName = async () => {
       const trimmedName = name.trim();
 
-      const exists = await checkUsernameExists(trimmedName);
+      const existsResult = await checkUsernameExistsForFormAction(trimmedName);
 
       if (!active) return;
 
-      if (exists) {
-        const isVerified = await checkUsernameIsVerified(trimmedName);
+      if (existsResult.ok && existsResult.exists) {
+        const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
 
         if (!active) return;
 
-        if (isVerified) {
+        if (verifiedResult.ok && verifiedResult.verified) {
           setNameConflict({
             type: "error",
             text: "That name is already used by a verified profile.",
@@ -168,11 +172,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     let active = true;
 
     const checkAddr = async () => {
-      const duplicateAddr = await checkAddressTaken(address);
+      const result = await checkAddressTakenAction(address);
 
       if (!active) return;
 
-      if (duplicateAddr) {
+      if (result.ok && result.taken) {
         setAddressConflict({
           type: "error",
           text: "That Zcash address is already associated with an existing profile. Generate a new one — it's free — and try again.",
@@ -317,12 +321,12 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     }
 
     const trimmedName = name.trim();
-    const usernameExists = await checkUsernameExists(trimmedName);
+    const usernameExistsResult = await checkUsernameExistsForFormAction(trimmedName);
 
-    if (usernameExists) {
-      const isVerified = await checkUsernameIsVerified(trimmedName);
+    if (usernameExistsResult.ok && usernameExistsResult.exists) {
+      const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
 
-      if (isVerified) {
+      if (verifiedResult.ok && verifiedResult.verified) {
         setError(
           'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
         );
@@ -331,9 +335,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     }
 
     const addr = address.trim().toLowerCase();
-    const addressTaken = await checkAddressTaken(addr);
+    const addressTakenResult = await checkAddressTakenAction(addr);
 
-    if (addressTaken) {
+    if (addressTakenResult.ok && addressTakenResult.taken) {
       setError("That address is already associated with an existing profile.");
       return;
     }
@@ -388,7 +392,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     setIsLoading(true);
 
     try {
-      const { data: profile, error: profileError } = await createProfile({
+      const profileResult = await createProfileAction({
         name: name.trim(),
         display_name: displayName.trim() || null,
         address: address.trim(),
@@ -399,9 +403,17 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         created_at: new Date().toISOString(),
       });
 
-      if (profileError) throw profileError;
+      if (!profileResult.ok || !profileResult.data) {
+        throw new Error(profileResult.error || "Failed to create profile");
+      }
 
-      await insertProfileLinks(profile.id, finalLinkEntries);
+      const profile = profileResult.data;
+
+      const linksResult = await insertProfileLinksAction(profile.id, finalLinkEntries);
+      if (!linksResult.ok) {
+        console.error("Failed to insert profile links:", linksResult.error);
+        // Continue anyway - profile is created
+      }
 
 
 
@@ -418,10 +430,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
     } catch (err) {
-      if (err?.message?.includes("duplicate key value")) {
+      const errorMessage = err?.message || String(err);
+      if (errorMessage.includes("duplicate key value") || errorMessage.includes("already exists")) {
         setError("That address or name already exists. Please choose a unique one.");
       } else {
-        setError(err?.message || "Failed to add name.");
+        setError(errorMessage || "Failed to add name.");
       }
     } finally {
       setIsLoading(false);

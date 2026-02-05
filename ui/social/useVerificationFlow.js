@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { normalizeSocialUsername } from "@/lib/social/usernameNormalizer";
 import { getSession, onAuthStateChange } from "@/lib/supabase/auth";
-import { updateLinkVerification } from "@/lib/social/verifyLinkDb";
+import { updateLinkVerificationAction } from "@/lib/actions/updateLinkVerificationAction";
 import {
   getXHandle,
   getGithubHandle,
@@ -204,7 +204,10 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           updatePayload.url = verifiedDiscordUrl;
         }
 
-        await updateLinkVerification(profileId, handle, variants, updatePayload);
+        const result = await updateLinkVerificationAction(profileId, handle, variants, updatePayload);
+        if (!result.ok) {
+          console.error("Failed to update link verification:", result.error);
+        }
       } catch (err) {
       }
 

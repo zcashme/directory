@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { enrichLink } from "@/lib/social/profileLinks";
-import { supabase } from "@/lib/supabase/supabase-client";
+import { getProfileLinksAction } from "@/lib/actions/getProfileLinksAction";
 
 export default function useProfileLinks(profile, fullView, routeMatchesProfile) {
   const [linksArray, setLinksArray] = useState(() => {
@@ -34,24 +34,16 @@ export default function useProfileLinks(profile, fullView, routeMatchesProfile) 
     setLinksLoaded(false);
 
     (async () => {
-      const { data, error } = await supabase
-        .from("zcasher_links")
-        .select("id,label,url,is_verified")
-        .eq("zcasher_id", profile.id)
-        .order("id", { ascending: true });
+      const result = await getProfileLinksAction(profile.id);
 
-      if (error) {
-        if (isMounted) {
-          setIsLoadingLinks(false);
-          setLinksLoaded(true);
-        }
-        return;
+      if (!isMounted) return;
+
+      if (result.ok && Array.isArray(result.data)) {
+        setLinksArray(result.data.map(enrichLink));
       }
-      if (Array.isArray(data) && isMounted) setLinksArray(data.map(enrichLink));
-      if (isMounted) {
-        setIsLoadingLinks(false);
-        setLinksLoaded(true);
-      }
+
+      setIsLoadingLinks(false);
+      setLinksLoaded(true);
     })();
 
     return () => {

@@ -7,7 +7,8 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function ProfilePage({ params }) {
-  const profile = await fetchProfileForSlug(params.slug);
+  const { slug } = await params;
+  const profile = await fetchProfileForSlug(slug);
 
   if (!profile) {
     notFound();
