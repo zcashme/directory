@@ -16,7 +16,7 @@ function ZcashCardWrapper({ title, children }) {
   );
 }
 
-export default function ProfilePageClient({ profile }) {
+export default function ProfilePageClient({ profile, profileCount = 0, duplicateNameCount = 0 }) {
   const { mode, setMode, setForceShowQR } = useFeedback();
   useFeedbackEvents();
 
@@ -89,12 +89,13 @@ export default function ProfilePageClient({ profile }) {
 
   return (
     <>
-      <ProfileHeader />
+      <ProfileHeader profileCount={profileCount} />
       <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
         <ProfileCard
           key={profile.address}
           profile={profile}
           fullView
+          duplicateNameCount={duplicateNameCount}
         warning={{
           message: `${profile.name} may not be who you think.`,
           link: "#",

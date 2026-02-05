@@ -245,13 +245,13 @@ const SOCIAL_LINKS = [
   { href: "https://github.com/zcashme", label: "GitHub", path: "M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.464-1.178-1.132-1.49-1.132-1.49-.927-.634.07-.622.07-.622 1.025.072 1.564 1.032 1.564 1.032.91 1.56 2.384 1.088 2.96.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z", evenodd: true },
 ];
 
-export default function HomePage({ initialFeaturedProfiles = [] }) {
+export default function HomePage({ initialFeaturedProfiles = [], profileCount = 0 }) {
   const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="flex-1">
-        <ProfileHeader />
+        <ProfileHeader profileCount={profileCount} />
         {initialFeaturedProfiles.length > 0 && (
           <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
             <FeaturedCardsSection

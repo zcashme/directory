@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
-import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import CopyButton from "@/ui/profile/CopyButton";
 import { useFeedback } from "@/ui/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -295,7 +294,7 @@ function RedirectModal({ isOpen, label }) {
   );
 }
 
-export default function ProfileCard({ profile, onSelect, warning, fullView = false }) {
+export default function ProfileCard({ profile, onSelect, warning, fullView = false, duplicateNameCount = 0 }) {
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -305,7 +304,6 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [hasDuplicateNames, setHasDuplicateNames] = useState(false);
   const { showBack, setShowBack } = useProfileEvents(profile);
   const { setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
   const routeMatchesProfile = useMemo(() => {
@@ -325,16 +323,9 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const showLinkShimmer =
     isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
+  const hasDuplicateNames = duplicateNameCount > 1;
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
 
-  useEffect(() => {
-    if (!profile?.name) return;
-    let active = true;
-    getDuplicateNameCount(profile.name).then((count) => {
-      if (active) setHasDuplicateNames(count > 1);
-    });
-    return () => { active = false; };
-  }, [profile?.name]);
   const hasAwards =
     (profile?.rank_alltime ?? 0) > 0 ||
     (profile?.rank_weekly ?? 0) > 0 ||

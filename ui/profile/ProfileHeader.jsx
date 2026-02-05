@@ -1,14 +1,13 @@
 "use client";
 
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import { getProfileCount } from "@/lib/profile/profileQueries";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/profileUtils";
 
-export default function ProfileHeader() {
+export default function ProfileHeader({ profileCount = 0 }) {
   const router = useRouter();
   const searchInputRef = useRef(null);
   const [search, setSearch] = useState("");
@@ -16,11 +15,6 @@ export default function ProfileHeader() {
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState(null);
   const [availableUsername, setAvailableUsername] = useState(null);
-  const [profileCount, setProfileCount] = useState(0);
-
-  useEffect(() => {
-    getProfileCount().then(setProfileCount);
-  }, []);
 
   const resetSearch = () => {
     setSearch("");
