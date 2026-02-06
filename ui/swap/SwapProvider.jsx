@@ -1,16 +1,13 @@
 "use client";
 import { createContext, useState, useRef, useEffect, useCallback } from "react";
+import { getSwapTokens } from "@/lib/swap/tokensAction";
+import { getSwapQuote } from "@/lib/swap/quoteAction";
+import { confirmSwapAction } from "@/lib/swap/confirmAction";
+import { getSwapStatus } from "@/lib/swap/statusAction";
 
 export const SwapContext = createContext();
 
-export function SwapProvider({
-  children,
-  // Data fetching functions passed from app layer
-  getSwapTokens,
-  getSwapQuote,
-  confirmSwapAction,
-  getSwapStatus,
-}) {
+export function SwapProvider({ children }) {
   // ===== STATE =====
   // Token selection
   const [tokenOptions, setTokenOptions] = useState([]);
@@ -82,7 +79,7 @@ export function SwapProvider({
     } finally {
       setIsLoadingTokens(false);
     }
-  }, [originTokenId]);
+  }, [originTokenId, getSwapTokens]);
 
   // Stop status polling
   const stopStatusPolling = useCallback(() => {
@@ -156,7 +153,7 @@ export function SwapProvider({
     // Poll immediately, then every 6 seconds
     pollStatus();
     pollIntervalRef.current = setInterval(pollStatus, 6000);
-  }, [stopStatusPolling]);
+  }, [stopStatusPolling, getSwapStatus]);
 
   // Get quote using Server Action
   const getQuote = useCallback(async (params) => {
@@ -200,6 +197,7 @@ export function SwapProvider({
     zecTokenId,
     refundAddress,
     slippageTolerance,
+    getSwapQuote,
   ]);
 
   // Confirm swap using Server Action
@@ -253,7 +251,8 @@ export function SwapProvider({
     zecTokenId,
     refundAddress,
     slippageTolerance,
-    startStatusPolling
+    startStatusPolling,
+    confirmSwapAction,
   ]);
 
   // Cancel swap mode

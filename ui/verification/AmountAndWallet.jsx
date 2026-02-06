@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getRateAction } from "@/lib/rates/getRateAction";
 
 const CURRENCIES = {
   USD: { symbol: "$", name: "US Dollar" },
@@ -85,18 +86,15 @@ export default function AmountAndWallet({
 
   const fetchRate = async (nextFiat, nextAsset) => {
     try {
-      const assetParam = nextAsset && nextAsset !== "ZEC" ? `&asset=${nextAsset}` : "";
-      const response = await fetch(`/api/rates?fiat=${nextFiat}${assetParam}`);
-      if (!response.ok) return false;
-      const data = await response.json();
-      const price = Number(data?.rate);
-      if (Number.isFinite(price) && price > 0) {
-        setRate(price);
-        setRateSource(data?.source || "API");
+      const result = await getRateAction(nextFiat || "USD", nextAsset || "ZEC");
+      if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
+        setRate(result.rate);
+        setRateSource(result.source || "API");
         setRateFetched(true);
         return true;
       }
     } catch (err) {
+      console.error("Error fetching rate:", err);
     }
     return false;
   };
