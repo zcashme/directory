@@ -21,49 +21,11 @@ export default function useNsProfiles(initialProfiles = null, revalidate = true)
 
         if (result.ok && Array.isArray(result.data)) {
           setProfiles(result.data);
-        } else if (process.env.NODE_ENV === "development") {
-          // Fallback for development
-          const fallback = [
-            {
-              id: 999001,
-              name: "Local Test",
-              slug: "local_test",
-              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
-              address_verified: true,
-              verified_links_count: 0,
-              links: [],
-              bio: "Offline demo profile for local development",
-              featured: false,
-              rank_alltime: 0,
-              rank_weekly: 0,
-              rank_monthly: 0,
-            },
-          ];
-          setProfiles(fallback);
         }
 
         if (!hasInitial) setLoading(false);
       } catch (err) {
-        if (process.env.NODE_ENV === "development" && active) {
-          const fallback = [
-            {
-              id: 999001,
-              name: "Local Test",
-              slug: "local_test",
-              address: "u1qtestzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz",
-              address_verified: true,
-              verified_links_count: 0,
-              links: [],
-              bio: "Offline demo profile for local development",
-              featured: false,
-              rank_alltime: 0,
-              rank_weekly: 0,
-              rank_monthly: 0,
-            },
-          ];
-          setProfiles(fallback);
-          if (!hasInitial) setLoading(false);
-        }
+        if (!hasInitial) setLoading(false);
       }
     }
 

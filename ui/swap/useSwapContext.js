@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { SwapContext } from "@/ui/swap/SwapProvider";
+import { SwapContext } from "@/app/[slug]/providers/swap-provider";
 
 export function useSwapContext() {
   const context = useContext(SwapContext);

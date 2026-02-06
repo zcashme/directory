@@ -1,9 +1,9 @@
 "use client";
 
-import { SelectionProvider } from "@/ui/profile/selection-provider";
-import { EditsProvider } from "@/ui/profile/edits-provider";
-import { MessagingProvider } from "@/ui/messaging/messaging-provider";
-import { SwapProvider } from "@/ui/swap/SwapProvider";
+import { SelectionProvider } from "./providers/selection-provider";
+import { EditsProvider } from "./providers/edits-provider";
+import { MessagingProvider } from "./providers/messaging-provider";
+import { SwapProvider } from "./providers/swap-provider";
 
 export default function Providers({ children }) {
   return (

@@ -4,17 +4,7 @@ import { getProfileLinksAction } from "@/lib/profile/getProfileLinksAction";
 
 export default function useProfileLinks(profile, fullView, routeMatchesProfile) {
   const [linksArray, setLinksArray] = useState(() => {
-    let rawLinks = [];
-    if (Array.isArray(profile.links)) rawLinks = profile.links;
-    else if (typeof profile.links_json === "string") {
-      try {
-        rawLinks = JSON.parse(profile.links_json);
-      } catch {
-        rawLinks = [];
-      }
-    } else if (Array.isArray(profile.links_json)) {
-      rawLinks = profile.links_json;
-    }
+    const rawLinks = Array.isArray(profile.links) ? profile.links : [];
     return rawLinks.map(enrichLink);
   });
 

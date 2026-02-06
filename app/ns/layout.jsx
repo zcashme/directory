@@ -1,5 +1,5 @@
-import Providers from "../providers";
+import NsProviders from "./ns-providers.jsx";
 
 export default function NsLayout({ children }) {
-  return <Providers>{children}</Providers>;
+  return <NsProviders>{children}</NsProviders>;
 }

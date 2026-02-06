@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useState, useRef, useEffect, useCallback } from "react";
-import { getSwapTokens } from "@/lib/swap/tokensAction";
+import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
 import { getSwapStatus } from "@/lib/swap/statusAction";

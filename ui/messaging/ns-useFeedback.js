@@ -1,79 +1,22 @@
 import { useContext, useEffect, useMemo, useCallback } from "react";
-import { SelectionContext } from "@/app/[slug]/providers/selection-provider";
+import { NsSelectionContext } from "@/app/ns/ns-selection-provider";
 import { EditsContext } from "@/app/[slug]/providers/edits-provider";
 import { MessagingContext } from "@/app/[slug]/providers/messaging-provider";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
-export function useFeedback() {
+export function nsUseFeedback() {
   return {
-    ...useContext(SelectionContext),
+    ...useContext(NsSelectionContext),
     ...useContext(EditsContext),
     ...useContext(MessagingContext),
   };
 }
 
-export default useFeedback;
+export default nsUseFeedback;
 
-let listenerBound = false;
-
-export function useFeedbackEvents() {
-const {
-  setMode,
-  setPendingEdits,
-  setVerifyId,
-  setVerifyMemo,
-  setVerifyAmount,
-  setVerifyRequestId,
-  setForceShowQR,
-} = useFeedback();
-
-
-  useEffect(() => {
-    if (listenerBound) return;
-    listenerBound = true;
-
-    const handleSignIn = (e) => {
-      const { zId } = e.detail || {};
-
-      if (zId) {
-        setVerifyId(zId);
-        setVerifyMemo(`{z:${zId}}`);
-      }
-
-      setVerifyRequestId(null);
-      setVerifyAmount("0");
-      setMode("signin");
-    };
-
-    const handleDraft = () => setMode("note");
-
-    const handlePendingEdits = (e) => {
-      if (!e.detail) return;
-      try {
-        setPendingEdits(e.detail);
-      } catch (err) {
-      }
-    };
-
-    window.addEventListener("enterSignInMode", handleSignIn);
-    window.addEventListener("enterDraftMode", handleDraft);
-    window.addEventListener("pendingEditsUpdated", handlePendingEdits);
-
-
-  }, [
-    setMode,
-    setPendingEdits,
-    setVerifyId,
-    setVerifyMemo,
-    setVerifyAmount,
-    setVerifyRequestId,
-    setForceShowQR,
-  ]);
-}
-
-export function useFeedbackController(address) {
+export function nsUseFeedbackController(address) {
   const {
-    mode,
+    selectedAddress,
     draft,
     verify = {},
     pendingEdits,
@@ -83,7 +26,11 @@ export function useFeedbackController(address) {
     setVerifyAmount,
     setVerifyId,
     setVerifyRequestId,
-  } = useFeedback();
+    setMode,
+    mode,
+  } = nsUseFeedback();
+
+  const effectiveAddress = address ?? selectedAddress;
 
   useEffect(() => {
     if (mode !== "signin") return;
@@ -92,7 +39,6 @@ export function useFeedbackController(address) {
     if (!zId) return;
     const requestId = verify.requestId || null;
 
-    // Check if there are any pending edits
     const hasEdits = pendingEdits && (
       (pendingEdits.profile && Object.keys(pendingEdits.profile).length > 0) ||
       (Array.isArray(pendingEdits.l) && pendingEdits.l.length > 0)
@@ -103,8 +49,6 @@ export function useFeedbackController(address) {
       l: pendingEdits?.l || [],
     };
 
-    // Always build memo with current edits and requestId
-    // This ensures the memo is updated whenever edits or requestId changes
     const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
 
     if (nextMemo !== verify.memo) {
@@ -122,13 +66,13 @@ export function useFeedbackController(address) {
   const uri = useMemo(() => {
     const { memo, amount } = draft;
     const finalAmount = amount && amount !== "0" ? amount : "0";
-    return buildZcashUri(address, finalAmount, memo);
-  }, [address, draft]);
+    return buildZcashUri(effectiveAddress, finalAmount, memo);
+  }, [effectiveAddress, draft]);
 
   const verifyUri = useMemo(() => {
     const { memo, amount } = verify;
-    return buildZcashUri(address, amount, memo);
-  }, [address, verify]);
+    return buildZcashUri(effectiveAddress, amount, memo);
+  }, [effectiveAddress, verify]);
 
   const copyUri = useCallback(async () => {
     try {
@@ -151,7 +95,7 @@ export function useFeedbackController(address) {
     amount: draft.amount && draft.amount !== "0" ? draft.amount : "0.000",
     verifyMemo: verify.memo || "",
     verifyAmount: verify.amount || "0",
-    selectedAddress: address,
+    selectedAddress: effectiveAddress,
     copyUri,
     openWallet,
     setVerifyId,
@@ -160,5 +104,6 @@ export function useFeedbackController(address) {
     setDraftAmount,
     setVerifyMemo,
     setVerifyAmount,
+    setMode,
   };
 }
