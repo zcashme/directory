@@ -50,6 +50,7 @@ supabase/**
 .env.production
 .env
 compress.ps1
+zcash-verification-service/
 
 
 
@@ -60,3 +61,7 @@ src/components/AdminRefundPage.*
 # Ignore admin refund page and any variants
 src/components/AdminRefundPage.jsx
 src/supabase.js
+# Local/untracked bundles
+zns-pos/
+zvs.tar.gz
+_archive/
