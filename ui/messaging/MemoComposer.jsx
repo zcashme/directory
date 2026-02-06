@@ -363,54 +363,52 @@ useEffect(() => {
       {isSwapMode && (
         <div className="mb-4 p-3 rounded-lg border-2 border-red-500 overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
           {/* Slippage Tolerance */}
-          <div className="mb-4 border-2 border-blue-500 w-full">
-            <label className="block text-sm font-medium text-gray-700 mb-2 border-2 border-green-500 w-full">
-              Slippage (%)
-            </label>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-2 border-purple-500 w-full">
-              <div className="flex items-center gap-2 flex-wrap border-2 border-orange-500 w-full sm:w-auto">
-                {["0.1", "0.5", "1", "2"].map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => setSlippageTolerance(value)}
-                    className={`px-3 py-1 text-sm border-2 border-yellow-500 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
-                      slippageTolerance === value
-                        ? "bg-blue-50 text-blue-700 font-semibold"
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    {value}%
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-2 flex-shrink-0 border-2 border-pink-500 w-full sm:w-auto">
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0"
-                  max="100"
-                  value={slippageTolerance}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
-                      setSlippageTolerance(val);
-                    }
-                  }}
-                  className="w-20 border-2 border-cyan-500 px-3 py-1 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none flex-shrink-0"
-                />
-                <span className="text-sm text-gray-600 border-2 border-indigo-500 flex-shrink-0">%</span>
-              </div>
+          <label className="block text-sm font-medium text-gray-700 mb-2 border-2 border-green-500">
+            Slippage (%)
+          </label>
+          <div className="flex items-center justify-between gap-2 flex-wrap mb-4 border-2 border-purple-500">
+            <div className="flex items-center gap-2 flex-wrap">
+              {["0.1", "0.5", "1", "2"].map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setSlippageTolerance(value)}
+                  className={`px-3 py-1 text-sm border-2 border-yellow-500 rounded-lg transition-colors whitespace-nowrap ${
+                    slippageTolerance === value
+                      ? "bg-blue-50 text-blue-700 font-semibold"
+                      : "bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  {value}%
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <input
+                type="number"
+                step="0.1"
+                min="0"
+                max="100"
+                value={slippageTolerance}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (parseFloat(val) >= 0 && parseFloat(val) <= 100)) {
+                    setSlippageTolerance(val);
+                  }
+                }}
+                className="w-20 border-2 border-cyan-500 px-3 py-1 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              />
+              <span className="text-sm text-gray-600 border-2 border-indigo-500">%</span>
             </div>
           </div>
 
           {/* Get Quote / Confirm Quote Buttons */}
-          <div className="flex gap-3">
+          <div className="flex flex-col min-[480px]:flex-row gap-3">
             <button
               type="button"
               onClick={handleGetQuote}
               disabled={isGettingQuote || !amount || !refundAddress || parseFloat(amount) <= 0}
-              className={`flex-1 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
+              className={`w-full min-[480px]:w-1/2 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
                 isGettingQuote || !amount || !refundAddress || parseFloat(amount) <= 0
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-white text-gray-800 hover:bg-gray-50"
@@ -422,7 +420,7 @@ useEffect(() => {
               type="button"
               onClick={handleConfirmQuote}
               disabled={!quotePreview || isConfirming}
-              className={`flex-1 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
+              className={`w-full min-[480px]:w-1/2 px-4 py-2 text-sm font-medium border border-black rounded-lg transition-colors ${
                 !quotePreview || isConfirming
                   ? "bg-gray-100 text-gray-400 cursor-not-allowed"
                   : "bg-white text-gray-800 hover:bg-gray-50"
