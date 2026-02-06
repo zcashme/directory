@@ -404,14 +404,15 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       });
 
       if (!profileResult.ok || !profileResult.data) {
-        throw new Error(profileResult.error || "Failed to create profile");
+        setError(profileResult.error || "Failed to create profile");
+        setIsLoading(false);
+        return;
       }
 
       const profile = profileResult.data;
 
       const linksResult = await insertProfileLinksAction(profile.id, finalLinkEntries);
       if (!linksResult.ok) {
-        console.error("Failed to insert profile links:", linksResult.error);
         // Continue anyway - profile is created
       }
 
