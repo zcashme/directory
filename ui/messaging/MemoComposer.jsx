@@ -249,12 +249,9 @@ useEffect(() => {
             setDraftMemo(el.value);
             el.style.height = "auto";
             el.style.height = el.scrollHeight + "px";
-            emoji.handleInput(el.value);
+            emoji.update();
           }}
-          onKeyDown={emoji.handleKeyDown}
-          onKeyUp={() => emoji.handleInput()}
-          onClick={() => emoji.handleClick()}
-          onBlur={emoji.handleBlur}
+          onBlur={emoji.close}
           placeholder={
             disabled
               ? isSwapMode
@@ -269,58 +266,14 @@ useEffect(() => {
           }`}
         />
 
-        {emoji.isOpen && !disabled && (
-          <div
-            ref={emoji.floatingRef}
-            className="z-50 w-[360px] max-w-[calc(100%-16px)] rounded-xl border border-gray-200 bg-white shadow-lg overflow-hidden"
-            style={emoji.floatingStyles}
-            role="listbox"
-            aria-label="Emoji suggestions"
-          >
-            <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50 text-xs text-gray-500">
-              <div className="truncate">
-                {emoji.query ? `Searching: :${emoji.query}` : "Type to search..."}
+        {emoji.results.length > 0 && !disabled && (
+          <div className="absolute top-full left-0 mt-1 z-50 w-[240px] rounded-lg border border-gray-200 bg-white shadow-lg max-h-48 overflow-auto">
+            {emoji.results.map((item, idx) => (
+              <div key={idx} className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50" onMouseDown={(e) => { e.preventDefault(); emoji.insert(item); }}>
+                <span className="text-lg">{item.ch}</span>
+                <span className="text-sm text-gray-700">{item.label}</span>
               </div>
-              <span className="text-[10px] border border-gray-200 px-2 py-0.5 rounded-full">
-                : search
-              </span>
-            </div>
-            <div className="max-h-64 overflow-auto">
-              {emoji.results.map((item, idx) => {
-                const shortcodes = (item.shortcodes || []).slice(0, 3);
-                return (
-                  <div
-                    key={`${item.ch}-${idx}`}
-                    className={`flex items-center gap-2 px-3 py-2 cursor-pointer border-b border-gray-100 last:border-0 ${
-                      idx === emoji.activeIndex
-                        ? "bg-blue-50"
-                        : "hover:bg-gray-50"
-                    }`}
-                    role="option"
-                    aria-selected={idx === emoji.activeIndex}
-                    onMouseEnter={() => emoji.setActiveIndex(idx)}
-                    onMouseDown={(ev) => {
-                      ev.preventDefault();
-                      emoji.insertAtIndex(idx);
-                    }}
-                  >
-                    <div className="text-lg" aria-hidden="true">
-                      {item.ch}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-sm font-semibold text-gray-800 truncate">
-                        {item.label}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate">
-                        {(shortcodes.length
-                          ? shortcodes.map((s) => `:${s}:`).join(" ")
-                          : ":emoji:")}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            ))}
           </div>
         )}
 
