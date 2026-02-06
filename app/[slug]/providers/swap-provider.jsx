@@ -47,9 +47,9 @@ export function SwapProvider({ children }) {
         throw new Error(result.error || "Failed to load tokens");
       }
 
-      const tokens = result.data?.tokens || result.data || [];
+      const tokens = Array.isArray(result.data) ? result.data : [];
 
-      // Filter out testnet tokens (API uses 'blockchain' property, not 'chain')
+      // Filter out testnet tokens
       const mainnetTokens = tokens.filter(
         (token) =>
           token.blockchain &&
