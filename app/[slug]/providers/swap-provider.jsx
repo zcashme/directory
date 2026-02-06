@@ -4,6 +4,7 @@ import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
 import { getSwapStatus } from "@/lib/swap/statusAction";
+import { getTokenId } from "@/lib/swap/swapPayload";
 
 export const SwapContext = createContext();
 
@@ -33,10 +34,7 @@ export function SwapProvider({ children }) {
   const pollIntervalRef = useRef(null);
 
   // ===== COMPUTED VALUES =====
-  const selectedOriginToken = tokenOptions.find((t) => {
-    const tId = t.id || t.assetId || t.tokenId || t.asset;
-    return tId === originTokenId;
-  });
+  const selectedOriginToken = tokenOptions.find((t) => getTokenId(t) === originTokenId);
 
   const isSwapMode = originTokenId !== null &&
                      zecTokenId !== null &&
@@ -74,10 +72,11 @@ export function SwapProvider({ children }) {
       setTokenOptions(mainnetTokens);
 
       if (zecToken) {
-        setZecTokenId(zecToken.id || zecToken.assetId);
+        const zecId = getTokenId(zecToken);
+        setZecTokenId(zecId);
         // Set initial token to ZEC if not already set
         if (!originTokenId) {
-          setOriginTokenId(zecToken.id || zecToken.assetId);
+          setOriginTokenId(zecId);
           setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
         }
       }
@@ -282,13 +281,9 @@ export function SwapProvider({ children }) {
 
   // Set token
   const setToken = useCallback((tokenId) => {
-    const token = tokenOptions.find((t) => {
-      const tId = t.id || t.assetId || t.tokenId || t.asset;
-      return tId === tokenId;
-    });
+    const token = tokenOptions.find((t) => getTokenId(t) === tokenId);
     if (token) {
-      const finalTokenId = token.id || token.assetId || token.tokenId || token.asset || tokenId;
-      setOriginTokenId(finalTokenId);
+      setOriginTokenId(getTokenId(token));
       setOriginSymbol(token.symbol || token.ticker || "ZEC");
     }
   }, [tokenOptions]);

@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from "react";
-import { useFeedback } from "@/ui/messaging/useFeedback";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { isValidUrl } from "@/utils/validateUrl";
@@ -53,8 +52,8 @@ function createDeleteToggle(field, originals, setDeletedFields, setForm, handleC
     });
 }
 
-export default function ProfileEditor({ profile, links }) {
-  const { setPendingEdits, pendingEdits } = useFeedback();
+export default function ProfileEditor({ profile, links, feedbackProps = {} }) {
+  const { setPendingEdits, pendingEdits } = feedbackProps;
   const pendingProfileEdits = pendingEdits?.profile || {};
   const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
     ? pendingProfileEdits.d

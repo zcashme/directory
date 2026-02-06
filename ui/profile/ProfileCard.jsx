@@ -4,7 +4,6 @@ import { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
-import { useFeedback } from "@/ui/messaging/useFeedback";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
@@ -294,7 +293,7 @@ function RedirectModal({ isOpen, label }) {
   );
 }
 
-export default function ProfileCard({ profile, onSelect, warning, fullView = false, duplicateNameCount = 0 }) {
+export default function ProfileCard({ profile, onSelect, warning, fullView = false, duplicateNameCount = 0, feedbackProps = {} }) {
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -305,7 +304,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { showBack, setShowBack } = useProfileEvents(profile);
-  const { setForceShowQR, pendingEdits, setPendingEdits } = useFeedback();
+  const { setForceShowQR, pendingEdits, setPendingEdits } = feedbackProps;
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
     const expected = buildSlug(profile);
@@ -913,7 +912,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
             </button>
           </div>
 
-          <ProfileEditor profile={profile} links={linksArray} />
+          <ProfileEditor profile={profile} links={linksArray} feedbackProps={feedbackProps} />
         </div>
 
       </div>

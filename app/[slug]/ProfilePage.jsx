@@ -1,12 +1,21 @@
 "use client";
 
 // React & Next.js
-import { useEffect, useState, useContext, useCallback } from "react";
+import { useEffect, useState, useContext, useCallback, useMemo } from "react";
 import { notFound } from "next/navigation";
 
 // Data fetching utilities
 import { fetchProfileForSlug } from "@/lib/profile/profileFetcher";
 import { getProfileCount, getDuplicateNameCount } from "@/lib/profile/profileQueries";
+
+// Contexts
+import { SelectionContext } from "@/app/[slug]/providers/selection-provider";
+import { EditsContext } from "@/app/[slug]/providers/edits-provider";
+import { MessagingContext } from "@/app/[slug]/providers/messaging-provider";
+import { SwapContext } from "@/app/[slug]/providers/swap-provider";
+
+// Zcash utilities
+import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
 // UI Components - Profile
 import ProfileCard from "@/ui/profile/ProfileCard";
@@ -20,10 +29,6 @@ import ProfileVerification from "@/ui/verification/ProfileVerification";
 
 // UI Components - Swap
 import { SwapSettings, SwapStatusDisplay, SwapRecipientInfo, SwapTokenSelector, SwapRefundAddress } from "@/ui/swap/SwapComposer";
-import { SwapContext } from "@/app/[slug]/providers/swap-provider";
-
-// Hooks
-import { useFeedback, useFeedbackEvents } from "@/ui/messaging/useFeedback";
 
 // Helper Components
 function ZcashCardWrapper({ title, children }) {
@@ -44,14 +49,111 @@ export default function ProfilePage({ params }) {
   const [loading, setLoading] = useState(true);
   const [notFoundState, setNotFoundState] = useState(false);
 
-  // Hooks
-  const { mode, setMode, setForceShowQR } = useFeedback();
-  useFeedbackEvents();
-
-  // Swap context
+  // Contexts - used directly instead of useFeedback hook
+  const selectionCtx = useContext(SelectionContext) || {};
+  const editsCtx = useContext(EditsContext) || {};
+  const messagingCtx = useContext(MessagingContext) || {};
   const swapContext = useContext(SwapContext) || {};
 
-  // Swap callbacks - ProfilePage orchestrates with context data
+  // Destructure context values
+  const { forceShowQR, setForceShowQR } = selectionCtx;
+  const { pendingEdits, setPendingEdits } = editsCtx;
+  const {
+    mode, setMode,
+    draft, verify,
+    setDraftMemo, setDraftAmount,
+    setVerifyMemo, setVerifyAmount,
+    setVerifyId, setVerifyRequestId,
+  } = messagingCtx;
+
+  // Feedback events effect (formerly useFeedbackEvents)
+  useEffect(() => {
+    let listenerBound = false;
+    if (listenerBound) return;
+    listenerBound = true;
+
+    const handleSignIn = (e) => {
+      const { zId } = e.detail || {};
+      if (zId) {
+        setVerifyId?.(zId);
+        setVerifyMemo?.(`{z:${zId}}`);
+      }
+      setVerifyRequestId?.(null);
+      setVerifyAmount?.("0");
+      setMode?.("signin");
+    };
+
+    const handleDraft = () => setMode?.("note");
+
+    const handlePendingEdits = (e) => {
+      if (!e.detail) return;
+      try {
+        setPendingEdits?.(e.detail);
+      } catch (err) {}
+    };
+
+    window.addEventListener("enterSignInMode", handleSignIn);
+    window.addEventListener("enterDraftMode", handleDraft);
+    window.addEventListener("pendingEditsUpdated", handlePendingEdits);
+
+    return () => {
+      window.removeEventListener("enterSignInMode", handleSignIn);
+      window.removeEventListener("enterDraftMode", handleDraft);
+      window.removeEventListener("pendingEditsUpdated", handlePendingEdits);
+    };
+  }, [setMode, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setVerifyRequestId]);
+
+  // Memo controller logic (formerly useFeedbackController)
+  const address = profile?.address;
+
+  // Update verify memo when in signin mode with pending edits
+  useEffect(() => {
+    if (mode !== "signin") return;
+    const zId = verify?.zId || null;
+    if (!zId) return;
+    const requestId = verify?.requestId || null;
+
+    const hasEdits = pendingEdits && (
+      (pendingEdits.profile && Object.keys(pendingEdits.profile).length > 0) ||
+      (Array.isArray(pendingEdits.l) && pendingEdits.l.length > 0)
+    );
+
+    const profileDiff = {
+      ...(pendingEdits?.profile || {}),
+      l: pendingEdits?.l || [],
+    };
+
+    const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
+    if (nextMemo !== verify?.memo) {
+      setVerifyMemo?.(nextMemo);
+    }
+  }, [mode, verify?.zId, verify?.requestId, pendingEdits, verify?.memo, setVerifyMemo]);
+
+  // Computed URIs
+  const uri = useMemo(() => {
+    const memo = draft?.memo || "";
+    const amount = draft?.amount || "0";
+    return buildZcashUri(address, amount, memo);
+  }, [address, draft]);
+
+  const verifyUri = useMemo(() => {
+    const memo = verify?.memo || "";
+    const amount = verify?.amount || "0";
+    return buildZcashUri(address, amount, memo);
+  }, [address, verify]);
+
+  const copyUri = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(uri);
+    } catch { void 0; }
+  }, [uri]);
+
+  const openWallet = useCallback(() => {
+    if (!uri) return;
+    window.open(uri, "_blank");
+  }, [uri]);
+
+  // Swap callbacks
   const handleGetQuote = useCallback(async () => {
     if (!swapContext.getQuote || !profile?.address) return;
     await swapContext.getQuote({
@@ -109,8 +211,8 @@ export default function ProfilePage({ params }) {
   // Effects - Event Listeners
   useEffect(() => {
     const handler = () => {
-      setMode("note");
-      setForceShowQR(false);
+      setMode?.("note");
+      setForceShowQR?.(false);
     };
     window.addEventListener("forceFeedbackNoteMode", handler);
     return () => window.removeEventListener("forceFeedbackNoteMode", handler);
@@ -120,36 +222,28 @@ export default function ProfilePage({ params }) {
   useEffect(() => {
     if (!profile) return;
 
-    // Store original values
     const originalTitle = document.title;
     const originalFavicon = document.querySelector("link[rel='icon']")?.href || "/favicon.ico";
 
-    // Update title to profile display name or username
     const displayName = profile.display_name || profile.name || "Profile";
     document.title = `${displayName} | Zcash.me`;
 
-    // Update favicon if profile has an avatar (circular)
     if (profile.profile_image_url) {
       const img = new Image();
       img.crossOrigin = "anonymous";
       img.onload = () => {
-        // Create a circular favicon using canvas
-        const size = 64; // favicon size
+        const size = 64;
         const canvas = document.createElement("canvas");
         canvas.width = size;
         canvas.height = size;
         const ctx = canvas.getContext("2d");
 
-        // Draw circular clipping mask
         ctx.beginPath();
         ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
         ctx.closePath();
         ctx.clip();
-
-        // Draw the image
         ctx.drawImage(img, 0, 0, size, size);
 
-        // Set the favicon
         let faviconLink = document.querySelector("link[rel='icon']");
         if (!faviconLink) {
           faviconLink = document.createElement("link");
@@ -161,7 +255,6 @@ export default function ProfilePage({ params }) {
       img.src = profile.profile_image_url;
     }
 
-    // Cleanup: restore original title and favicon when leaving the page
     return () => {
       document.title = originalTitle;
       const faviconLink = document.querySelector("link[rel='icon']");
@@ -184,6 +277,38 @@ export default function ProfilePage({ params }) {
     );
   }
 
+  // Props bundles for UI components
+  const feedbackProps = {
+    forceShowQR,
+    setForceShowQR,
+    pendingEdits,
+    setPendingEdits,
+    mode,
+    setMode,
+    verify,
+    setVerifyId,
+    setVerifyRequestId,
+    setVerifyMemo,
+    setVerifyAmount,
+  };
+
+  const memoComposerProps = {
+    forceShowQR,
+    uri,
+    memo: draft?.memo || "",
+    amount: draft?.amount || "",
+    openWallet,
+    setDraftMemo,
+    setDraftAmount,
+  };
+
+  const verificationProps = {
+    pendingEdits,
+    verify,
+    setVerifyRequestId,
+    setVerifyAmount,
+  };
+
   return (
     <>
       <ProfileHeader profileCount={profileCount} />
@@ -197,6 +322,7 @@ export default function ProfilePage({ params }) {
             message: `${profile.name} may not be who you think.`,
             link: "#",
           }}
+          feedbackProps={feedbackProps}
         />
 
         <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
@@ -228,7 +354,7 @@ export default function ProfilePage({ params }) {
                     </div>
                   }
                 >
-                  <ProfileVerification profile={profile} />
+                  <ProfileVerification profile={profile} {...verificationProps} />
                 </ZcashCardWrapper>
               ) : (
                 <ZcashCardWrapper>
@@ -278,7 +404,7 @@ export default function ProfilePage({ params }) {
                       )}
                     </>
                   ) : (
-                    <MemoComposer profile={profile} />
+                    <MemoComposer profile={profile} {...memoComposerProps} />
                   )}
                 </ZcashCardWrapper>
               )}

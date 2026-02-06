@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from "react";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
-import { useFeedback, useFeedbackController } from "@/ui/messaging/useFeedback";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
@@ -11,20 +10,20 @@ import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
-const SIGNIN_ADDR_old =
-  "u12p8lslmrnrfyjtx83lu5mllghvsyt8d7cnajrj7nls05rlk9dendhrznz7wzsulth2zktfy7ynpguj53gehdgakmj0sjayud3kzl58wjx7lakm29r3t4a3qgq6elplxm5llxkdaws9t4uslvz42dycvg34n423k3s74dh0eeqx0825nzprrtrl6eaj3pmshtuj96wcq9cycy5x2ywq9";
-const SIGNIN_ADDR_older =
-  "u1qzt502u9fwh67s7an0e202c35mm0h534jaa648t4p2r6mhf30guxjjqwlkmvthahnz5myz2ev7neff5pmveh54xszv9njcmu5g2eent82ucpd3lwyzkmyrn6rytwsqefk475hl5tl4tu8yehc0z8w9fcf4zg6r03sq7lldx0uxph7c0lclnlc4qjwhu2v52dkvuntxr8tmpug3jntvm";
 
 const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
-export default function ProfileVerification({ profile }) {
-  const { verifyMemo: memo, verifyAmount: amount, setVerifyAmount } =
-    useFeedbackController(SIGNIN_ADDR);
-
-  const { pendingEdits, verify, setVerifyRequestId } =
-    useFeedback();
+export default function ProfileVerification({
+  profile,
+  pendingEdits,
+  verify,
+  setVerifyRequestId,
+  setVerifyAmount,
+}) {
+  // Use verify context values for memo/amount
+  const memo = verify?.memo || "";
+  const amount = verify?.amount || DEFAULT_SIGNIN_AMOUNT;
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [verifyQrEnabled, setVerifyQrEnabled] = useState(false);

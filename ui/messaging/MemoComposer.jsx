@@ -1,6 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { useFeedback, useFeedbackController } from "@/ui/messaging/useFeedback";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
@@ -23,11 +22,17 @@ function MemoCounter({ text }) {
   );
 }
 
-export default function MemoComposer({ profile }) {
+export default function MemoComposer({
+  profile,
+  forceShowQR,
+  uri,
+  memo,
+  amount,
+  openWallet,
+  setDraftMemo,
+  setDraftAmount,
+}) {
   const router = useRouter();
-  const { forceShowQR } = useFeedback();
-  const { uri, memo, amount, openWallet, setDraftMemo, setDraftAmount } =
-    useFeedbackController(profile?.address);
 
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);

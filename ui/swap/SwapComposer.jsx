@@ -1,6 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import CopyButton from "@/ui/profile/CopyButton";
+import { getTokenId } from "@/lib/swap/swapPayload";
 
 export function SwapSettings({
   amount,
@@ -144,7 +145,7 @@ export function SwapTokenSelector({
   onSetToken,
 }) {
   const selectedToken = useMemo(() => {
-    return tokenOptions.find((t) => (t.id || t.assetId) === originTokenId);
+    return tokenOptions.find((t) => getTokenId(t) === originTokenId);
   }, [tokenOptions, originTokenId]);
 
   return (
@@ -158,11 +159,14 @@ export function SwapTokenSelector({
         className="w-full border border-gray-800 px-3 py-2 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white"
       >
         <option value="">Select a token to swap from</option>
-        {tokenOptions.map((token) => (
-          <option key={token.id || token.assetId} value={token.id || token.assetId}>
-            {token.symbol || token.ticker || ""} - {token.blockchain || ""}
-          </option>
-        ))}
+        {tokenOptions.map((token) => {
+          const tokenId = getTokenId(token);
+          return (
+            <option key={tokenId} value={tokenId}>
+              {token.symbol || token.ticker || ""} - {token.blockchain || ""}
+            </option>
+          );
+        })}
       </select>
       {selectedToken && (
         <div className="mt-2 text-xs text-gray-600">
