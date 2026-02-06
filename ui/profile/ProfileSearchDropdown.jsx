@@ -271,8 +271,7 @@ export default function ProfileSearchDropdown({
                         {p.display_name || p.name}
                       </span>
 
-                      {(p.address_verified ||
-                        p.zcasher_links?.some((l) => l.is_verified)) && (
+                      {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
                         <div>
                           <VerifiedBadge profile={p} />
                         </div>

@@ -59,17 +59,16 @@ export async function fetchProfilesWithRanks() {
 
     const enriched = all.map((p) => {
       const pid = String(p.id);
-      const addressVerified = p.address_verified || p.verified || false;
-      const linkList = p.links || p.zcasher_links || [];
-      const linkVerifiedCount =
-        p.verified_links_count ?? linkList.filter((l) => l.is_verified).length;
+      const linkList = Array.isArray(p.links) ? p.links : [];
+      const linkVerifiedCount = typeof p.verified_links_count === "number"
+        ? p.verified_links_count
+        : linkList.filter((l) => l.is_verified).length;
 
       return {
         ...p,
         rank_alltime: rankAll.get(pid) || 0,
         rank_weekly: rankWeek.get(pid) || 0,
         rank_monthly: rankMonth.get(pid) || 0,
-        address_verified: addressVerified,
         links: linkList,
         verified_links_count: linkVerifiedCount,
         last_verified_label: getLastVerifiedLabel(p),

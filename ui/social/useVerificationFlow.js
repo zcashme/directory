@@ -31,10 +31,9 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
       if (!pId || !url || String(pId) !== String(profileId)) return;
 
       const getLinkedInData = (s) => {
-        const ids = Array.isArray(s?.user?.identities) ? s.user.identities : [];
-        const li = ids.find((i) => i?.provider === "linkedin_oidc")?.identity_data || {};
-        const candidates = [li.vanityName, li.preferred_username].filter(Boolean);
-        const handle = candidates.find((v) => typeof v === "string" && v.trim())?.replace(/^@/, "") || null;
+        const identity = s?.user?.identities?.find?.((i) => i?.provider === "linkedin_oidc");
+        const li = identity?.identity_data || {};
+        const handle = li.vanityName || li.preferred_username || null;
         return {
           handle,
           name: li.name,
