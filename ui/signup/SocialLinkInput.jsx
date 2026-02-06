@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/utils/validateUrl";
+import { isValidUrl } from "@/lib/profile/validateUrl";
 import HelpIcon from "@/ui/common/HelpIcon";
 
 const PLATFORM_OPTIONS = [

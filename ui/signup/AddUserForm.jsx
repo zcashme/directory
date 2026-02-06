@@ -27,7 +27,7 @@ function XIcon(props) {
   );
 }
 
-import { isValidUrl } from "@/utils/validateUrl";
+import { isValidUrl } from "@/lib/profile/validateUrl";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 

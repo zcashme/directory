@@ -137,14 +137,11 @@ export default function SwapComposer({
 
       {/* REFUND ADDRESS */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-600 mb-2 text-center">
-          Your {originSymbol || selectedToken?.symbol || "ETH"} refund address (in case swap fails)
-        </label>
         <input
           type="text"
           value={refundAddress}
           onChange={(e) => onSetRefundAddress(e.target.value)}
-          placeholder={`Paste your ${originSymbol || selectedToken?.symbol || "ETH"} address`}
+          placeholder={`Paste your ${originSymbol || selectedToken?.symbol || "ETH"} refund address (in case swap fails)`}
           className="w-full border border-gray-800 px-3 py-3 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white placeholder:text-gray-400"
         />
       </div>

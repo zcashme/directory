@@ -66,7 +66,7 @@ export default function ProfilePage({ params }) {
     setVerifyId, setVerifyRequestId,
   } = messagingCtx;
 
-  // Feedback events effect (formerly useFeedbackEvents)
+  // Feedback events effect
   useEffect(() => {
     let listenerBound = false;
     if (listenerBound) return;
@@ -103,7 +103,7 @@ export default function ProfilePage({ params }) {
     };
   }, [setMode, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setVerifyRequestId]);
 
-  // Memo controller logic (formerly useFeedbackController)
+  // Memo controller logic
   const address = profile?.address;
 
   // Update verify memo when in signin mode with pending edits
