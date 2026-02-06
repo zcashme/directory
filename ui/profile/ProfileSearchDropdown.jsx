@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import { searchProfilesAction, checkUsernameExistsAction } from "@/lib/directory/searchProfilesAction";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
@@ -14,7 +13,7 @@ function useDebounce(value, delay) {
 
 // Semantic aliases for different debounce contexts
 const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
-const useSearchDebounce = useDebounce;    // API calls (50ms)
+const useSearchDebounce = useDebounce;    // API calls (150ms)
 
 export default function ProfileSearchDropdown({
   value,
@@ -39,7 +38,7 @@ export default function ProfileSearchDropdown({
   const usernameAvailableRef = useRef(null);
 
   const keystrokeDebounced = useKeystrokeDebounce(value, 10);
-  const searchDebounced = useSearchDebounce(value, 50);
+  const searchDebounced = useSearchDebounce(value, 150);
 
   const clearHideTimer = () => {
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
@@ -92,20 +91,23 @@ export default function ProfileSearchDropdown({
       return;
     }
 
-
     searchActiveRef.current = true;
     setLoading(true);
     const currentQuery = query; // Capture for closure
     lastQueryRef.current = currentQuery;
 
-    Promise.all([
-      canReuseResults ? Promise.resolve({ ok: true, data: previousResultsRef.current }) : searchProfilesAction(currentQuery, 3),
-      checkUsernameExistsAction(currentQuery) // ALWAYS check availability, even if reusing results
-    ])
-      .then(([searchResult, checkResult]) => {
+    // Use API route instead of Server Action to prevent router cache invalidation
+    const searchPromise = canReuseResults 
+      ? Promise.resolve({ profiles: previousResultsRef.current, exists: false })
+      : fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&limit=3`)
+          .then(res => res.ok ? res.json() : { profiles: [], exists: false })
+          .catch(() => ({ profiles: [], exists: false }));
+
+    searchPromise
+      .then((result) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          const data = searchResult.ok ? (searchResult.data || []) : [];
-          const exists = checkResult.ok ? checkResult.exists : false;
+          const data = result.profiles || [];
+          const exists = result.exists || false;
 
           setResults(data);
           if (!canReuseResults) {
@@ -132,6 +134,7 @@ export default function ProfileSearchDropdown({
       })
       .catch((err) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
+          console.error("Search error:", err);
           setLoading(false);
           usernameAvailableRef.current = null;
           setUsernameAvailable(null);
