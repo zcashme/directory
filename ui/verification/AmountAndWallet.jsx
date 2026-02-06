@@ -60,7 +60,8 @@ export default function AmountAndWallet({
   // Refund address props (optional)
   showRefund = false,
   refundAddress = "",
-  setRefundAddress
+  setRefundAddress,
+  tokenBlockchain = ""
 }) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
@@ -216,7 +217,7 @@ export default function AmountAndWallet({
               onBlur={() => setIsTypingCrypto(false)}
               onChange={(e) => {
                 const val = e.target.value;
-                
+
                 // Allow empty string
                 if (val === "") {
                   setAmount("");
@@ -225,20 +226,27 @@ export default function AmountAndWallet({
                   }
                   return;
                 }
-                
+
                 // Allow intermediate states while typing: "0.", ".", "10.", etc.
                 // Final validation: optional digits, optional decimal, up to 8 decimal places
                 const regex = /^(\d*\.?\d{0,8})$/;
                 if (!regex.test(val)) return;
-                
+
                 // Don't allow multiple leading zeros like "00.5"
                 if (/^0\d/.test(val)) return;
-                
+
                 // Prevent negative values
                 if (parseFloat(val) < 0) return;
-                
+
                 setAmount(val);
-                
+
+                // Auto-open USD pill when typing a number if it's available
+                if (showUsdPill && !isUsdOpen && val && !rateRequested) {
+                  setRateRequested(true);
+                  fetchRate(fiat, asset);
+                  setIsUsdOpen(true);
+                }
+
                 // Update fiat side only if we have a valid complete number
                 if (rateFetched && isUsdOpen && val && !val.endsWith('.')) {
                   const num = parseFloat(val);
@@ -373,20 +381,19 @@ export default function AmountAndWallet({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === "") {
-                          setAmount("");
                           setUsdInput("");
                           return;
                         }
-                        
+
                         // Allow intermediate states while typing
                         const regex = /^(\d*\.?\d{0,2})$/;
                         if (!regex.test(val)) return;
-                        
+
                         // Don't allow multiple leading zeros
                         if (/^0\d/.test(val)) return;
-                        
+
                         setUsdInput(val);
-                        
+
                         // Update crypto side only if we have a valid complete number
                         if (val && !val.endsWith('.')) {
                           const num = parseFloat(val);
@@ -398,7 +405,7 @@ export default function AmountAndWallet({
                           }
                         }
                       }}
-                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-900 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector relative">
                       <span>{fiat}</span>
@@ -493,7 +500,7 @@ export default function AmountAndWallet({
       {showRefund && (
         <div className="w-full mt-3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your {asset} refund address (in case swap fails)
+            Your {asset} {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund address
           </label>
           <input
             type="text"
