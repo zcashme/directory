@@ -28,7 +28,7 @@ import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 
 // UI Components - Swap
-import { SwapSettings, SwapStatusDisplay, SwapRecipientInfo, SwapTokenSelector, SwapRefundAddress } from "@/ui/swap/SwapComposer";
+import SwapComposer from "@/ui/swap/SwapComposer";
 
 // Helper Components
 function ZcashCardWrapper({ title, children }) {
@@ -369,50 +369,26 @@ export default function ProfilePage({ params }) {
               ) : (
                 <ZcashCardWrapper>
                   {swapContext.isSwapMode ? (
-                    <>
-                      <SwapTokenSelector
-                        tokenOptions={swapContext.tokenOptions || []}
-                        originTokenId={swapContext.originTokenId}
-                        originSymbol={swapContext.originSymbol || ""}
-                        onSetToken={swapContext.setToken}
-                      />
-                      <SwapRefundAddress
-                        refundAddress={swapContext.refundAddress || ""}
-                        onSetRefundAddress={swapContext.setRefundAddress}
-                        tokenBlockchain={swapContext.originBlockchain || ""}
-                      />
-                      <SwapSettings
-                        amount={swapContext.swapAmount || ""}
-                        onSetAmount={swapContext.setSwapAmount}
-                        slippageTolerance={swapContext.slippageTolerance || "0.5"}
-                        onSetSlippageTolerance={swapContext.setSlippageTolerance}
-                        onGetQuote={handleGetQuote}
-                        onConfirmQuote={handleConfirmQuote}
-                        isGettingQuote={swapContext.isGettingQuote || false}
-                        isConfirming={swapContext.isConfirming || false}
-                        refundAddress={swapContext.refundAddress || ""}
-                        quotePreview={swapContext.quotePreview}
-                      />
-                      <SwapStatusDisplay
-                        quoteStatus={swapContext.quoteStatus || ""}
-                        swapError={swapContext.swapError || ""}
-                        swapStatus={swapContext.swapStatus || ""}
-                        isConfirming={swapContext.isConfirming || false}
-                      />
-                      <SwapRecipientInfo
-                        profile={profile}
-                        originSymbol={swapContext.originSymbol || ""}
-                        depositUri={swapContext.depositUri || ""}
-                      />
-                      {!swapContext.isConfirming && (
-                        <button
-                          onClick={swapContext.cancelSwapMode}
-                          className="mb-3 text-sm text-blue-600 hover:text-blue-800 underline"
-                        >
-                          ← Back to ZEC payment
-                        </button>
-                      )}
-                    </>
+                    <SwapComposer
+                      profile={profile}
+                      tokenOptions={swapContext.tokenOptions || []}
+                      originTokenId={swapContext.originTokenId}
+                      originSymbol={swapContext.originSymbol || ""}
+                      originBlockchain={swapContext.originBlockchain || ""}
+                      onSetToken={swapContext.setToken}
+                      swapAmount={swapContext.swapAmount || ""}
+                      onSetSwapAmount={swapContext.setSwapAmount}
+                      refundAddress={swapContext.refundAddress || ""}
+                      onSetRefundAddress={swapContext.setRefundAddress}
+                      slippageTolerance={swapContext.slippageTolerance || "0.5"}
+                      onSetSlippageTolerance={swapContext.setSlippageTolerance}
+                      onGetQuote={handleGetQuote}
+                      onConfirmQuote={handleConfirmQuote}
+                      isGettingQuote={swapContext.isGettingQuote || false}
+                      isConfirming={swapContext.isConfirming || false}
+                      quotePreview={swapContext.quotePreview}
+                      onCancelSwapMode={swapContext.cancelSwapMode}
+                    />
                   ) : (
                     <MemoComposer profile={profile} {...memoComposerProps} />
                   )}
