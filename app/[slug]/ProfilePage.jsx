@@ -55,6 +55,7 @@ export default function ProfilePage({ params }) {
   const handleGetQuote = useCallback(async () => {
     if (!swapContext.getQuote || !profile?.address) return;
     await swapContext.getQuote({
+      amountIn: swapContext.swapAmount,
       destAddress: profile.address,
       fromToken: swapContext.originTokenId,
       toToken: swapContext.zecTokenId,
@@ -66,6 +67,7 @@ export default function ProfilePage({ params }) {
   const handleConfirmQuote = useCallback(async () => {
     if (!swapContext.confirmSwap || !profile?.address || !swapContext.quotePreview) return;
     await swapContext.confirmSwap({
+      amountIn: swapContext.swapAmount,
       destAddress: profile.address,
       fromToken: swapContext.originTokenId,
       toToken: swapContext.zecTokenId,
@@ -236,21 +238,22 @@ export default function ProfilePage({ params }) {
                         tokenOptions={swapContext.tokenOptions || []}
                         originTokenId={swapContext.originTokenId}
                         originSymbol={swapContext.originSymbol || ""}
-                        onSetToken={swapContext.setOriginTokenId || (() => {})}
+                        onSetToken={swapContext.setToken}
                       />
                       <SwapRefundAddress
                         refundAddress={swapContext.refundAddress || ""}
-                        onSetRefundAddress={swapContext.setRefundAddress || (() => {})}
+                        onSetRefundAddress={swapContext.setRefundAddress}
                         tokenBlockchain={swapContext.originBlockchain || ""}
                       />
                       <SwapSettings
+                        amount={swapContext.swapAmount || ""}
+                        onSetAmount={swapContext.setSwapAmount}
                         slippageTolerance={swapContext.slippageTolerance || "0.5"}
-                        onSetSlippageTolerance={swapContext.setSlippageTolerance || (() => {})}
+                        onSetSlippageTolerance={swapContext.setSlippageTolerance}
                         onGetQuote={handleGetQuote}
                         onConfirmQuote={handleConfirmQuote}
                         isGettingQuote={swapContext.isGettingQuote || false}
                         isConfirming={swapContext.isConfirming || false}
-                        amount={swapContext.swapAmount || ""}
                         refundAddress={swapContext.refundAddress || ""}
                         quotePreview={swapContext.quotePreview}
                       />
@@ -267,7 +270,7 @@ export default function ProfilePage({ params }) {
                       />
                       {!swapContext.isConfirming && (
                         <button
-                          onClick={swapContext.cancelSwapMode || (() => {})}
+                          onClick={swapContext.cancelSwapMode}
                           className="mb-3 text-sm text-blue-600 hover:text-blue-800 underline"
                         >
                           ← Back to ZEC payment

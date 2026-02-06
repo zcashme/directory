@@ -18,6 +18,7 @@ export function SwapProvider({ children }) {
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
 
   // Swap workflow
+  const [swapAmount, setSwapAmount] = useState("");
   const [slippageTolerance, setSlippageTolerance] = useState("0.5");
   const [quoteData, setQuoteData] = useState(null);
   const [quotePreview, setQuotePreview] = useState(null);
@@ -32,6 +33,11 @@ export function SwapProvider({ children }) {
   const pollIntervalRef = useRef(null);
 
   // ===== COMPUTED VALUES =====
+  const selectedOriginToken = tokenOptions.find((t) => {
+    const tId = t.id || t.assetId || t.tokenId || t.asset;
+    return tId === originTokenId;
+  });
+
   const isSwapMode = originTokenId !== null &&
                      zecTokenId !== null &&
                      originTokenId !== zecTokenId;
@@ -44,7 +50,8 @@ export function SwapProvider({ children }) {
     try {
       const result = await getSwapTokens();
       if (!result.ok) {
-        throw new Error(result.error || "Failed to load tokens");
+        setSwapError(result.error || "Failed to load tokens");
+        return;
       }
 
       const tokens = Array.isArray(result.data) ? result.data : [];
@@ -76,10 +83,11 @@ export function SwapProvider({ children }) {
       }
     } catch (error) {
       console.error("Error loading tokens:", error);
+      setSwapError(error.message || "Failed to load tokens");
     } finally {
       setIsLoadingTokens(false);
     }
-  }, [originTokenId, getSwapTokens]);
+  }, []);
 
   // Stop status polling
   const stopStatusPolling = useCallback(() => {
@@ -138,7 +146,6 @@ export function SwapProvider({ children }) {
           }
         } else if (result.ok === false && result.error) {
           // Handle API errors gracefully
-          console.error("Swap status error:", result.error);
           // Don't stop polling on retryable errors
           if (!result.retryable) {
             setSwapError(result.error);
@@ -157,7 +164,7 @@ export function SwapProvider({ children }) {
 
   // Get quote using Server Action
   const getQuote = useCallback(async (params) => {
-    const { amount, destAddress, fromToken, toToken, refund, slippage } = params;
+    const { amountIn, destAddress, fromToken, toToken, refund, slippage } = params;
 
     if (!isSwapMode) return;
 
@@ -169,14 +176,16 @@ export function SwapProvider({ children }) {
       const result = await getSwapQuote({
         fromToken: fromToken || originTokenId,
         toToken: toToken || zecTokenId,
-        amountIn: amount,
+        amountIn: amountIn,
         destAddress: destAddress,
         refundAddress: refund || refundAddress,
         slippageTolerance: slippage || slippageTolerance,
       });
 
       if (!result.ok) {
-        throw new Error(result.error || "Failed to get quote");
+        setSwapError(result.error || "Failed to get quote");
+        setQuoteStatus("");
+        return null;
       }
 
       setQuotePreview(result.display);
@@ -184,10 +193,9 @@ export function SwapProvider({ children }) {
       setQuoteStatus("Quote ready");
       return result;
     } catch (error) {
-      console.error("Error getting quote:", error);
       setSwapError(error.message || "Failed to get quote");
       setQuoteStatus("");
-      throw error;
+      return null;
     } finally {
       setIsGettingQuote(false);
     }
@@ -202,7 +210,7 @@ export function SwapProvider({ children }) {
 
   // Confirm swap using Server Action
   const confirmSwap = useCallback(async (params) => {
-    const { amount, destAddress, fromToken, toToken, refund, slippage } = params;
+    const { amountIn, destAddress, fromToken, toToken, refund, slippage } = params;
 
     if (!isSwapMode) return;
 
@@ -214,14 +222,16 @@ export function SwapProvider({ children }) {
       const result = await confirmSwapAction({
         fromToken: fromToken || originTokenId,
         toToken: toToken || zecTokenId,
-        amountIn: amount,
+        amountIn: amountIn,
         destAddress: destAddress,
         refundAddress: refund || refundAddress,
         slippageTolerance: slippage || slippageTolerance,
       });
 
       if (!result.ok) {
-        throw new Error(result.error || "Failed to confirm swap");
+        setSwapError(result.error || "Failed to confirm swap");
+        setQuoteStatus("");
+        return null;
       }
 
       // Store deposit URI and status key
@@ -238,10 +248,9 @@ export function SwapProvider({ children }) {
 
       return result;
     } catch (error) {
-      console.error("Error confirming swap:", error);
       setSwapError(error.message || "Failed to confirm swap");
       setQuoteStatus("");
-      throw error;
+      return null;
     } finally {
       setIsConfirming(false);
     }
@@ -259,6 +268,7 @@ export function SwapProvider({ children }) {
   const cancelSwapMode = useCallback(() => {
     setOriginTokenId(zecTokenId);
     setOriginSymbol("ZEC");
+    setSwapAmount("");
     setRefundAddress("");
     setQuoteData(null);
     setQuotePreview(null);
@@ -302,11 +312,13 @@ export function SwapProvider({ children }) {
     // Token state
     tokenOptions,
     originTokenId,
+    originBlockchain: selectedOriginToken?.blockchain || "",
     zecTokenId,
     originSymbol,
     isLoadingTokens,
 
     // Swap state
+    swapAmount,
     refundAddress,
     slippageTolerance,
     quoteData,
@@ -324,6 +336,7 @@ export function SwapProvider({ children }) {
 
     // Actions
     setToken,
+    setSwapAmount,
     setRefundAddress,
     setSlippageTolerance,
     getQuote,
