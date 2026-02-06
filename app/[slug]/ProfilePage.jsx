@@ -1,7 +1,7 @@
 "use client";
 
 // React & Next.js
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext, useCallback } from "react";
 import { notFound } from "next/navigation";
 
 // Data fetching utilities
@@ -17,6 +17,10 @@ import MemoComposer from "@/ui/messaging/MemoComposer";
 
 // UI Components - Verification
 import ProfileVerification from "@/ui/verification/ProfileVerification";
+
+// UI Components - Swap
+import { SwapSettings, SwapStatusDisplay, SwapRecipientInfo, SwapTokenSelector, SwapRefundAddress } from "@/ui/swap/SwapComposer";
+import { SwapContext } from "@/app/[slug]/providers/swap-provider";
 
 // Hooks
 import { useFeedback, useFeedbackEvents } from "@/ui/messaging/useFeedback";
@@ -43,6 +47,32 @@ export default function ProfilePage({ params }) {
   // Hooks
   const { mode, setMode, setForceShowQR } = useFeedback();
   useFeedbackEvents();
+
+  // Swap context
+  const swapContext = useContext(SwapContext) || {};
+
+  // Swap callbacks - ProfilePage orchestrates with context data
+  const handleGetQuote = useCallback(async () => {
+    if (!swapContext.getQuote || !profile?.address) return;
+    await swapContext.getQuote({
+      destAddress: profile.address,
+      fromToken: swapContext.originTokenId,
+      toToken: swapContext.zecTokenId,
+      refund: swapContext.refundAddress,
+      slippage: swapContext.slippageTolerance,
+    });
+  }, [swapContext, profile]);
+
+  const handleConfirmQuote = useCallback(async () => {
+    if (!swapContext.confirmSwap || !profile?.address || !swapContext.quotePreview) return;
+    await swapContext.confirmSwap({
+      destAddress: profile.address,
+      fromToken: swapContext.originTokenId,
+      toToken: swapContext.zecTokenId,
+      refund: swapContext.refundAddress,
+      slippage: swapContext.slippageTolerance,
+    });
+  }, [swapContext, profile]);
 
   // Effects - Data Fetching
   useEffect(() => {
@@ -200,7 +230,53 @@ export default function ProfilePage({ params }) {
                 </ZcashCardWrapper>
               ) : (
                 <ZcashCardWrapper>
-                  <MemoComposer profile={profile} />
+                  {swapContext.isSwapMode ? (
+                    <>
+                      <SwapTokenSelector
+                        tokenOptions={swapContext.tokenOptions || []}
+                        originTokenId={swapContext.originTokenId}
+                        originSymbol={swapContext.originSymbol || ""}
+                        onSetToken={swapContext.setOriginTokenId || (() => {})}
+                      />
+                      <SwapRefundAddress
+                        refundAddress={swapContext.refundAddress || ""}
+                        onSetRefundAddress={swapContext.setRefundAddress || (() => {})}
+                        tokenBlockchain={swapContext.originBlockchain || ""}
+                      />
+                      <SwapSettings
+                        slippageTolerance={swapContext.slippageTolerance || "0.5"}
+                        onSetSlippageTolerance={swapContext.setSlippageTolerance || (() => {})}
+                        onGetQuote={handleGetQuote}
+                        onConfirmQuote={handleConfirmQuote}
+                        isGettingQuote={swapContext.isGettingQuote || false}
+                        isConfirming={swapContext.isConfirming || false}
+                        amount={swapContext.swapAmount || ""}
+                        refundAddress={swapContext.refundAddress || ""}
+                        quotePreview={swapContext.quotePreview}
+                      />
+                      <SwapStatusDisplay
+                        quoteStatus={swapContext.quoteStatus || ""}
+                        swapError={swapContext.swapError || ""}
+                        swapStatus={swapContext.swapStatus || ""}
+                        isConfirming={swapContext.isConfirming || false}
+                      />
+                      <SwapRecipientInfo
+                        profile={profile}
+                        originSymbol={swapContext.originSymbol || ""}
+                        depositUri={swapContext.depositUri || ""}
+                      />
+                      {!swapContext.isConfirming && (
+                        <button
+                          onClick={swapContext.cancelSwapMode || (() => {})}
+                          className="mb-3 text-sm text-blue-600 hover:text-blue-800 underline"
+                        >
+                          ← Back to ZEC payment
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <MemoComposer profile={profile} />
+                  )}
                 </ZcashCardWrapper>
               )}
             </div>
