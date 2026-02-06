@@ -80,6 +80,188 @@ rules used in the frontend.
 
 ## API
 
+All API endpoints require an `X-API-Key` header that matches the server's `API_KEY`
+environment variable.
+
+For wallet integration details, see `WALLET_API_README.md`.
+
+### GET /api/resolve/:username
+
+Lookup a directory username and return the profile's address, verification status,
+last verification timestamp, and link lists split by verification.
+
+Source of truth: This documentation is derived from the implementation in
+`app/api/resolve/[username]/route.js`. If anything here conflicts with the code, the code wins.
+
+#### Quickstart
+
+Local dev:
+- `http://localhost:3000/api/resolve/cobra`
+
+Production:
+- Use your deployed domain and the same path.
+
+#### Inputs and normalization
+
+- `:username` is matched against `public.zcasher.name` (case-insensitive).
+- The value is URL-decoded and trimmed; no other normalization is applied.
+
+#### Status codes and errors
+
+- 200: profile found
+- 400: invalid or missing username
+- 404: profile not found
+- 500: server-side lookup failures
+
+Success response (200):
+
+```
+{
+  "username": "cobra",
+  "display_name": "Cobra",
+  "address": "u1...",
+  "address_verified": true,
+  "verified_at": "2025-10-23T10:58:54.721199+00:00",
+  "authenticated_links": [
+    { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+  ],
+  "unauthenticated_links": [
+    { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+  ]
+}
+```
+
+Error responses:
+
+```
+{ "error": "invalid_username", "username": null }
+{ "error": "not_found", "username": "cobra" }
+{ "error": "profile_lookup_failed", "username": "cobra" }
+{ "error": "links_lookup_failed", "username": "cobra" }
+```
+
+#### Auth and rate limits
+
+The endpoint requires `X-API-Key` and is rate limited (60 requests per minute per IP).
+Responses are cached with `Cache-Control: s-maxage=60`.
+
+### GET /api/directory
+
+Search the directory by username or linked handles/domains and return matching profiles
+with address and link metadata.
+
+Source of truth: This documentation is derived from the implementation in
+`app/api/directory/route.js`. If anything here conflicts with the code, the code wins.
+
+#### Query parameters
+
+- `q` (optional): search term. Matches `public.zcasher.name` (case-insensitive),
+  `zcasher_links.label` (handles), and non-social link domains from `zcasher_links.url`.
+- `limit` (optional): number of results to return. Default `25`, max `100`.
+- `cursor` (optional): opaque pagination cursor returned by the API.
+- `verified_only` (optional): when `true`, only returns profiles with
+  `address_verified = true` **or** at least one verified link.
+
+#### Quickstart
+
+Local dev:
+- `http://localhost:3000/api/directory?q=cobra`
+- `http://localhost:3000/api/directory?q=cobracrypto`
+- `http://localhost:3000/api/directory?q=jamespersonal`
+- `http://localhost:3000/api/directory?verified_only=true`
+
+#### Status codes and errors
+
+- 200: results returned (possibly empty)
+- 400: invalid parameters
+- 500: server-side lookup failures
+
+Success response (200):
+
+```
+{
+  "results": [
+    {
+      "username": "cobra",
+      "display_name": "Cobra",
+      "address": "u1...",
+      "address_verified": true,
+      "verified_at": "2025-10-23T10:58:54.721199+00:00",
+      "authenticated_links": [
+        { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+      ],
+      "unauthenticated_links": [
+        { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+      ]
+    }
+  ],
+  "next_cursor": "eyJuYW1lIjoiY29icmEiLCJpZCI6MX0"
+}
+```
+
+Error responses:
+
+```
+{ "error": "profile_lookup_failed" }
+{ "error": "links_lookup_failed" }
+{ "error": "search_failed" }
+```
+
+#### Pagination
+
+Use the `next_cursor` value from the previous response to fetch the next page:
+
+```
+GET /api/directory?q=cobra&limit=25&cursor=eyJuYW1lIjoiY29icmEiLCJpZCI6MX0
+```
+
+#### Wallet integration (example)
+
+All wallet requests must include `X-API-Key`. Treat `next_cursor` as an opaque token.
+
+JavaScript (fetch):
+```
+const API_KEY = "YOUR_KEY";
+const BASE = "https://your-domain.com";
+
+async function searchDirectory(q, cursor = null) {
+  const params = new URLSearchParams({ q, limit: "25" });
+  if (cursor) params.set("cursor", cursor);
+
+  const res = await fetch(`${BASE}/api/directory?${params.toString()}`, {
+    headers: { "X-API-Key": API_KEY },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // { results, next_cursor }
+}
+
+async function resolveUsername(username) {
+  const res = await fetch(`${BASE}/api/resolve/${encodeURIComponent(username)}`, {
+    headers: { "X-API-Key": API_KEY },
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json(); // { username, display_name, address, ... }
+}
+```
+
+#### Ranking behavior
+
+Results are prioritized to mimic the directory search UI:
+
+1) Usernames that **start with** the query
+2) Link handles or non-social domains that **start with** the query
+3) Usernames that **include** the query
+4) Link handles or non-social domains that **include** the query
+
+The query is normalized by stripping any leading scheme/host (e.g., `https://x.com/`).
+Social link handles are extracted by domain and path (e.g., `linkedin.com/in/{handle}`).
+Non-social links are matched by domain (e.g., `www.example.com` matches `example.com`).
+
+#### Auth and rate limits
+
+The endpoint requires `X-API-Key` and is rate limited (60 requests per minute per IP).
+Responses are cached with `Cache-Control: s-maxage=30`.
+
 ### GET /api/social/:platform/:handle
 
 Lookup a social handle (e.g., X/Twitter) and return the associated Zcash address **only if** the
@@ -167,8 +349,8 @@ curl "http://localhost:3000/api/social/x/doesnotexist"
 
 #### Auth and rate limits
 
-The endpoint is public in this repo. No API key is required. If you add auth or rate limits
-at the deployment layer, document them here.
+The endpoint requires `X-API-Key` and is rate limited (60 requests per minute per IP).
+Responses are cached with `Cache-Control: s-maxage=300`.
 
 ---
 
