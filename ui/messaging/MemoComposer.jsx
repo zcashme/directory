@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useRef, useEffect, useCallback } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useFeedback, useFeedbackController } from "@/ui/messaging/useFeedback";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";

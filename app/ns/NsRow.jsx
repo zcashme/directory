@@ -3,7 +3,6 @@ import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
 import {
   getCountryFlag,
-  getCountryName,
   getLastVerifiedLabel,
   getProfileLocation,
   getProfileTags,
