@@ -7,6 +7,11 @@ import { getSwapStatus } from "@/lib/swap/statusAction";
 
 export const SwapContext = createContext();
 
+// Helper to consistently extract token ID from token object
+function getTokenId(token) {
+  return token.id || token.assetId || token.tokenId || token.asset;
+}
+
 export function SwapProvider({ children }) {
   // ===== STATE =====
   // Token selection
@@ -34,8 +39,7 @@ export function SwapProvider({ children }) {
 
   // ===== COMPUTED VALUES =====
   const selectedOriginToken = tokenOptions.find((t) => {
-    const tId = t.id || t.assetId || t.tokenId || t.asset;
-    return tId === originTokenId;
+    return getTokenId(t) === originTokenId;
   });
 
   const isSwapMode = originTokenId !== null &&
@@ -49,6 +53,7 @@ export function SwapProvider({ children }) {
     setIsLoadingTokens(true);
     try {
       const result = await getSwapTokens();
+
       if (!result.ok) {
         setSwapError(result.error || "Failed to load tokens");
         return;
@@ -74,12 +79,11 @@ export function SwapProvider({ children }) {
       setTokenOptions(mainnetTokens);
 
       if (zecToken) {
-        setZecTokenId(zecToken.id || zecToken.assetId);
+        const zecTokenId = getTokenId(zecToken);
+        setZecTokenId(zecTokenId);
         // Set initial token to ZEC if not already set
-        if (!originTokenId) {
-          setOriginTokenId(zecToken.id || zecToken.assetId);
-          setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
-        }
+        setOriginTokenId((prev) => prev || zecTokenId);
+        setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
       }
     } catch (error) {
       console.error("Error loading tokens:", error);
@@ -283,12 +287,10 @@ export function SwapProvider({ children }) {
   // Set token
   const setToken = useCallback((tokenId) => {
     const token = tokenOptions.find((t) => {
-      const tId = t.id || t.assetId || t.tokenId || t.asset;
-      return tId === tokenId;
+      return getTokenId(t) === tokenId;
     });
     if (token) {
-      const finalTokenId = token.id || token.assetId || token.tokenId || token.asset || tokenId;
-      setOriginTokenId(finalTokenId);
+      setOriginTokenId(getTokenId(token) || tokenId);
       setOriginSymbol(token.symbol || token.ticker || "ZEC");
     }
   }, [tokenOptions]);

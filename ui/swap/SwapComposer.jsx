@@ -2,6 +2,11 @@
 import { useMemo } from "react";
 import CopyButton from "@/ui/profile/CopyButton";
 
+// Helper to consistently extract token ID from token object
+function getTokenId(token) {
+  return token.id || token.assetId || token.tokenId || token.asset;
+}
+
 export function SwapSettings({
   amount,
   onSetAmount,
@@ -144,7 +149,7 @@ export function SwapTokenSelector({
   onSetToken,
 }) {
   const selectedToken = useMemo(() => {
-    return tokenOptions.find((t) => (t.id || t.assetId) === originTokenId);
+    return tokenOptions.find((t) => getTokenId(t) === originTokenId);
   }, [tokenOptions, originTokenId]);
 
   return (
@@ -159,7 +164,7 @@ export function SwapTokenSelector({
       >
         <option value="">Select a token to swap from</option>
         {tokenOptions.map((token) => (
-          <option key={token.id || token.assetId} value={token.id || token.assetId}>
+          <option key={getTokenId(token)} value={getTokenId(token)}>
             {token.symbol || token.ticker || ""} - {token.blockchain || ""}
           </option>
         ))}
