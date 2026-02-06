@@ -31,6 +31,9 @@ export default function MemoComposer({
   openWallet,
   setDraftMemo,
   setDraftAmount,
+  asset = "ZEC",
+  assetOptions = [],
+  onSetAsset,
 }) {
   const router = useRouter();
 
@@ -240,7 +243,9 @@ useEffect(() => {
         showOpenWallet={false}
         showUsdPill
         showRateMessage
-        asset="ZEC"
+        asset={asset}
+        assetOptions={assetOptions}
+        setAsset={onSetAsset}
       />
 
       {/* Divider line like Verify */}

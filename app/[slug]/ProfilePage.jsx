@@ -300,6 +300,16 @@ export default function ProfilePage({ params }) {
     openWallet,
     setDraftMemo,
     setDraftAmount,
+    asset: swapContext.originSymbol || "ZEC",
+    assetOptions: (swapContext.tokenOptions || []).map((token) => ({
+      id: token.id || token.assetId || token.tokenId || token.asset,
+      symbol: token.symbol || token.ticker || "",
+      label: `${token.symbol || token.ticker || ""} - ${token.blockchain || ""}`,
+      logo: token.logo || null,
+      chain: token.blockchain || "",
+      decimals: token.decimals || 8,
+    })),
+    onSetAsset: swapContext.setToken,
   };
 
   const verificationProps = {
