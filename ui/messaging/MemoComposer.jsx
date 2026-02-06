@@ -361,20 +361,20 @@ useEffect(() => {
 
       {/* Swap Settings (Swap Mode Only) */}
       {isSwapMode && (
-        <div className="mb-4 p-3 rounded-lg border border-black" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="mb-4 p-3 rounded-lg border-2 border-red-500 overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
           {/* Slippage Tolerance */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+          <div className="mb-4 border-2 border-blue-500 w-full">
+            <label className="block text-sm font-medium text-gray-700 mb-2 border-2 border-green-500 w-full">
               Slippage (%)
             </label>
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                {["0.1", "0.5", "1", "2", "5"].map((value) => (
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-2 border-purple-500 w-full">
+              <div className="flex items-center gap-2 flex-wrap border-2 border-orange-500 w-full sm:w-auto">
+                {["0.1", "0.5", "1", "2"].map((value) => (
                   <button
                     key={value}
                     type="button"
                     onClick={() => setSlippageTolerance(value)}
-                    className={`px-3 py-1 text-sm border border-black rounded-lg transition-colors ${
+                    className={`px-3 py-1 text-sm border-2 border-yellow-500 rounded-lg transition-colors whitespace-nowrap flex-shrink-0 ${
                       slippageTolerance === value
                         ? "bg-blue-50 text-blue-700 font-semibold"
                         : "bg-white text-gray-700 hover:bg-gray-50"
@@ -384,7 +384,7 @@ useEffect(() => {
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0 border-2 border-pink-500 w-full sm:w-auto">
                 <input
                   type="number"
                   step="0.1"
@@ -397,9 +397,9 @@ useEffect(() => {
                       setSlippageTolerance(val);
                     }
                   }}
-                  className="w-20 border border-black px-3 py-1 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  className="w-20 border-2 border-cyan-500 px-3 py-1 rounded-lg text-sm text-gray-900 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none flex-shrink-0"
                 />
-                <span className="text-sm text-gray-600">%</span>
+                <span className="text-sm text-gray-600 border-2 border-indigo-500 flex-shrink-0">%</span>
               </div>
             </div>
           </div>

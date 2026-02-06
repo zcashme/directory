@@ -65,6 +65,7 @@ export default function AmountAndWallet({
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
+  const [fiatSearch, setFiatSearch] = useState("");
   const [fiat, setFiat] = useState("USD");
   const [rate, setRate] = useState(1);
   const [rateSource, setRateSource] = useState("API");
@@ -117,7 +118,10 @@ export default function AmountAndWallet({
   }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat]);
 
   useEffect(() => {
-    if (!isUsdOpen) setIsCurrencyOpen(false);
+    if (!isUsdOpen) {
+      setIsCurrencyOpen(false);
+      setFiatSearch("");
+    }
   }, [isUsdOpen]);
 
   // Close token dropdown when clicking outside
@@ -132,6 +136,19 @@ export default function AmountAndWallet({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isTokenDropdownOpen]);
+
+  // Close fiat dropdown when clicking outside
+  useEffect(() => {
+    if (!isCurrencyOpen) return;
+    const handleClickOutside = (e) => {
+      if (!e.target.closest(".fiat-selector")) {
+        setIsCurrencyOpen(false);
+        setFiatSearch("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isCurrencyOpen]);
 
   useEffect(() => {
     if (!rateRequested) return;
@@ -154,6 +171,19 @@ export default function AmountAndWallet({
 
   return (
     <div className="w-full mb-2">
+      {showRateMessage && (
+        <div className="w-full flex items-center justify-center gap-2 text-center mb-2 min-h-[18px]">
+          <p
+            className={`text-[12px] italic m-0 text-gray-600 transition-all duration-200 ${
+              rateFetched && isUsdOpen
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 -translate-y-1"
+            }`}
+          >
+            Rate of {formatDecimal(rate, "1.00")} {fiat} per {asset} provided by {rateSource}.
+          </p>
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <div className="relative flex flex-1 items-stretch overflow-visible">
           {showUsdPill && (
@@ -238,13 +268,13 @@ export default function AmountAndWallet({
                   </button>
                   {isTokenDropdownOpen && (
                     <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto">
-                      <div className="p-2 border-b border-gray-200">
+                      <div className="p-2 border-b border-gray-800">
                         <input
                           type="text"
                           value={tokenSearch}
                           onChange={(e) => setTokenSearch(e.target.value)}
                           placeholder="Search tokens..."
-                          className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+                          className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                           autoFocus
                         />
                       </div>
@@ -264,23 +294,25 @@ export default function AmountAndWallet({
                                 setIsTokenDropdownOpen(false);
                                 setTokenSearch("");
                               }}
-                              className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-50 ${
-                                asset === (token.symbol || token.ticker) ? "bg-blue-50 font-semibold" : ""
+                              className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                asset === (token.symbol || token.ticker) 
+                                  ? "bg-blue-50 font-semibold text-gray-900" 
+                                  : "text-gray-700 hover:bg-gray-50"
                               }`}
                             >
                               {token.logo && (
                                 <img
                                   src={token.logo}
                                   alt={token.symbol}
-                                  className="w-5 h-5 rounded-full"
+                                  className="w-5 h-5 rounded-full flex-shrink-0"
                                   onError={(e) => {
                                     e.target.style.display = "none";
                                   }}
                                 />
                               )}
-                              <span className="flex-1">
-                                <div className="font-medium text-gray-800">{token.symbol}</div>
-                                <div className="text-xs text-gray-500">{token.chain}</div>
+                              <span className="flex-1 min-w-0">
+                                <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
+                                <div className="text-xs text-gray-500 truncate">{token.chain}</div>
                               </span>
                             </button>
                           ))}
@@ -370,7 +402,7 @@ export default function AmountAndWallet({
                       }}
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-500 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
-                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0">
+                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector relative">
                       <span>{fiat}</span>
                       <span
                         className="cursor-pointer hover:text-blue-600"
@@ -387,44 +419,65 @@ export default function AmountAndWallet({
                       >
                         ▼
                       </span>
+                      {isCurrencyOpen && (
+                        <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50">
+                          <div className="p-2 border-b border-gray-800">
+                            <input
+                              type="text"
+                              value={fiatSearch}
+                              onChange={(e) => setFiatSearch(e.target.value)}
+                              placeholder="Search currencies..."
+                              className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              autoFocus
+                            />
+                          </div>
+                          <div className="py-1 max-h-60 overflow-y-auto">
+                            {FIAT_TICKERS.filter((ticker) =>
+                              !fiatSearch ||
+                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                            ).map((ticker) => (
+                              <button
+                                key={ticker}
+                                type="button"
+                                onClick={() => {
+                                  setFiat(ticker);
+                                  setIsCurrencyOpen(false);
+                                  setFiatSearch("");
+                                }}
+                                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                  fiat === ticker 
+                                    ? "bg-blue-50 font-semibold text-gray-900" 
+                                    : "text-gray-700 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span className="w-6 text-gray-600 flex-shrink-0">
+                                  {CURRENCIES[ticker]?.symbol || ""}
+                                </span>
+                                <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
+                                <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
+                                  {CURRENCIES[ticker]?.name || ""}
+                                </span>
+                              </button>
+                            ))}
+                            {FIAT_TICKERS.filter((ticker) =>
+                              !fiatSearch ||
+                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                            ).length === 0 && (
+                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                No currencies found
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
               </div>
-
-              {isUsdOpen && (
-                <div
-                  className={`absolute -left-1.75 top-full w-[calc(100%-12px+10px)] border border-t-0 border-gray-800 rounded-bl-xl rounded-br-none overflow-hidden transition-all duration-200 bg-[var(--color-background)] z-50 ${
-                    isCurrencyOpen ? "max-h-60 opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  <div className="flex flex-col py-1 max-h-72 overflow-y-auto">
-                    {FIAT_TICKERS.map((ticker) => (
-                      <button
-                        key={ticker}
-                        type="button"
-                        onClick={() => {
-                          setFiat(ticker);
-                          setIsCurrencyOpen(false);
-                        }}
-                        className={`w-full px-3 py-1.5 text-left text-sm text-gray-600 hover:text-blue-600 ${
-                          fiat === ticker ? "font-semibold" : ""
-                        }`}
-                      >
-                        <span className="flex items-center gap-2">
-                          <span className="w-6 text-gray-500">
-                            {CURRENCIES[ticker]?.symbol || ""}
-                          </span>
-                          <span className="text-gray-700">{ticker}</span>
-                          <span className="ml-auto text-[11px] text-gray-400 text-right">
-                            {CURRENCIES[ticker]?.name || ""}
-                          </span>
-                        </span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -438,20 +491,6 @@ export default function AmountAndWallet({
           </button>
         )}
       </div>
-
-      {showRateMessage && (
-        <div className="w-full flex items-center justify-center gap-2 text-center mt-2 min-h-[18px]">
-          <p
-            className={`text-[12px] italic m-0 text-gray-600 transition-all duration-200 ${
-              rateFetched && isUsdOpen
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-1"
-            }`}
-          >
-            Rate of {formatDecimal(rate, "1.00")} {fiat} per {asset} provided by {rateSource}.
-          </p>
-        </div>
-      )}
 
       {showRefund && (
         <div className="w-full mt-3">
