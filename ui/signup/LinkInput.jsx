@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { isValidUrl } from "@/lib/validateUrl";
+import { isValidUrl } from "@/utils/validateUrl";
 
 const BASE_FIELD_CLASS =
   "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-hidden text-gray-800 placeholder-gray-400";
@@ -32,7 +32,7 @@ useEffect(() => {
   return (
     <div className={`w-full ${containerClassName}`.trim()}>
       <input
-        type="text"
+        type="url"
         value={value}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
@@ -44,7 +44,6 @@ useEffect(() => {
             ? "border-[#0a1126]/60 focus:border-blue-500"
             : "border-red-400 focus:border-red-500"
         } ${inputClassName}`}
-
       />
 {/* error message */}
 {showValidation && !valid && reason && (

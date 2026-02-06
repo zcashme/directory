@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useFeedback } from "@/ui/messaging/useFeedback";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { isValidUrl } from "@/lib/validateUrl";
+import { isValidUrl } from "@/utils/validateUrl";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
@@ -616,7 +616,7 @@ export default function ProfileEditor({ profile, links }) {
         >
           <input
             id="pimg"
-            type="text"
+            type="url"
             value={form.profile_image_url}
             placeholder={originals.profile_image_url}
             onChange={(e) => handleChange("profile_image_url", e.target.value)}

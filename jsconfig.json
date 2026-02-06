@@ -5,6 +5,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["app/**/*", "lib/**/*", "ui/**/*"],
+  "include": ["app/**/*", "lib/**/*", "ui/**/*", "utils/**/*"],
   "exclude": ["node_modules"]
 }

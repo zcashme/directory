@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/lib/validateUrl";
+import { isValidUrl } from "@/utils/validateUrl";
 import HelpIcon from "@/ui/common/HelpIcon";
 
 const PLATFORM_OPTIONS = [
@@ -123,7 +123,7 @@ export default function SocialLinkInput({
 
         {isOther ? (
           <input
-            type="text"
+            type="url"
             value={current.otherUrl || ""}
             onChange={(e) => emitChange({ otherUrl: e.target.value })}
             placeholder="https://example.com/your-page"
