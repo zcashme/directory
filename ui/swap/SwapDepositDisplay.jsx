@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
+import { submitDepositTxHash } from "@/lib/swap/depositAction";
 
 // Helper to encode status key to query param
 function encodeStatusKey(key) {
@@ -10,19 +10,21 @@ function encodeStatusKey(key) {
 export default function SwapDepositDisplay({
   depositUri,
   depositAddress,
-  depositMemo,
   amountDecimal,
   originSymbol,
   swapStatus,
   recipientName,
 }) {
-  const router = useRouter();
   const qrRef = useRef(null);
   const [showQR, setShowQR] = useState(true);
   const [showFullAddress, setShowFullAddress] = useState(false);
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [showTxHashModal, setShowTxHashModal] = useState(false);
+  const [txHash, setTxHash] = useState("");
+  const [isSubmittingTxHash, setIsSubmittingTxHash] = useState(false);
+  const [txHashError, setTxHashError] = useState("");
 
   // Don't render if no deposit address
   if (!depositAddress) return null;
@@ -30,11 +32,6 @@ export default function SwapDepositDisplay({
   // Only show for active swap statuses
   const activeStatuses = ['PENDING_DEPOSIT', 'PROCESSING', 'INCOMPLETE_DEPOSIT'];
   if (!swapStatus || !activeStatuses.includes(swapStatus)) return null;
-
-  // Detect if this chain needs a memo/tag
-  const memoChains = ['XRP', 'XLM', 'EOS', 'BNB'];
-  const needsMemo = depositMemo && memoChains.includes(originSymbol?.toUpperCase());
-  const memoLabel = originSymbol?.toUpperCase() === 'XRP' ? 'tag' : 'memo';
 
   // Detect payment URI (BTC) vs address-only
   const hasPaymentUri = depositUri?.includes(':');
@@ -54,7 +51,6 @@ export default function SwapDepositDisplay({
   const handleCopyStatusLink = () => {
     const statusKey = {
       depositAddress,
-      ...(depositMemo && { depositMemo }),
     };
     const encoded = encodeStatusKey(statusKey);
     const statusUrl = `${window.location.origin}/swap?txId=${encoded}`;
@@ -63,13 +59,40 @@ export default function SwapDepositDisplay({
     setTimeout(() => setLinkCopied(false), 1500);
   };
 
-  const handleFundsSent = () => {
-    const statusKey = {
-      depositAddress,
-      ...(depositMemo && { depositMemo }),
-    };
-    const encoded = encodeStatusKey(statusKey);
-    router.push(`/swap?txId=${encoded}`);
+  const handleOpenTxHashModal = () => {
+    setTxHash("");
+    setTxHashError("");
+    setShowTxHashModal(true);
+  };
+
+  const handleSubmitTxHash = async () => {
+    if (!txHash.trim()) {
+      setTxHashError("Please enter a transaction hash");
+      return;
+    }
+
+    setIsSubmittingTxHash(true);
+    setTxHashError("");
+
+    try {
+      const result = await submitDepositTxHash({
+        txHash: txHash.trim(),
+        depositAddress,
+      });
+
+      if (!result.ok) {
+        setTxHashError(result.error || "Failed to submit transaction hash");
+        return;
+      }
+
+      // Success - close modal and keep polling
+      setShowTxHashModal(false);
+      setTxHash("");
+    } catch (error) {
+      setTxHashError(error.message || "An error occurred");
+    } finally {
+      setIsSubmittingTxHash(false);
+    }
   };
 
   const handleSaveQR = () => {
@@ -106,26 +129,6 @@ export default function SwapDepositDisplay({
       <h3 className="text-md font-semibold text-gray-900 mb-3">
         Deposit {originSymbol} to Complete Swap
       </h3>
-
-      {/* Memo/tag warning banner */}
-      {needsMemo && (
-        <div className="mb-4 bg-amber-100 border border-amber-500 p-3 rounded-lg">
-          <div className="flex items-start gap-2">
-            <span className="text-lg">⚠️</span>
-            <div className="flex-1">
-              <p className="font-semibold text-amber-900 mb-1">
-                IMPORTANT: Include destination {memoLabel}
-              </p>
-              <p className="text-sm text-amber-800">
-                {memoLabel.charAt(0).toUpperCase() + memoLabel.slice(1)}: <span className="font-mono font-semibold">{depositMemo}</span>
-              </p>
-              <p className="text-xs text-amber-700 mt-1">
-                Your swap will fail if you don't include the {memoLabel}.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Amount to send */}
       <div className="mb-4 p-3 bg-white rounded-lg border border-blue-200">
@@ -164,7 +167,7 @@ export default function SwapDepositDisplay({
       {/* Primary action: I've Sent Funds */}
       <div className="mb-4">
         <button
-          onClick={handleFundsSent}
+          onClick={handleOpenTxHashModal}
           className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-md transition-colors"
         >
           I've Sent Funds
@@ -233,6 +236,49 @@ export default function SwapDepositDisplay({
           {linkCopied ? "Link Copied" : "Share Status"}
         </button>
       </div>
+
+      {/* Transaction Hash Modal */}
+      {showTxHashModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Confirm Transaction</h2>
+            <p className="text-sm text-gray-600 mb-4">
+              Paste your transaction hash to speed up processing (optional)
+            </p>
+
+            <input
+              type="text"
+              placeholder="0x..."
+              value={txHash}
+              onChange={(e) => {
+                setTxHash(e.target.value);
+                setTxHashError("");
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+
+            {txHashError && (
+              <p className="text-sm text-red-600 mb-4">{txHashError}</p>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowTxHashModal(false)}
+                className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Skip
+              </button>
+              <button
+                onClick={handleSubmitTxHash}
+                disabled={!txHash.trim() || isSubmittingTxHash}
+                className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+              >
+                {isSubmittingTxHash ? "Submitting..." : "I've Sent Funds"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -9,20 +9,17 @@ import { getTokenId } from "@/lib/swap/swapPayload";
 export const SwapContext = createContext();
 
 // ===== POLLING CONFIGURATION =====
-// Optimized for speed: aggressive initial polling, then backoff
+// Linear polling every 5 seconds continuously
 const POLLING_CONFIG = {
-  INITIAL_INTERVAL_MS: 1000,      // 1 second for first phase (6x faster than before)
-  MAX_INITIAL_POLLS: 5,           // Do 5 aggressive polls (5 seconds total)
-  BACKOFF_INTERVAL_MS: 5000,      // Then switch to 5 seconds
+  INTERVAL_MS: 5000,              // Poll every 5 seconds
   MAX_RETRIES: 3,                 // Retry failed polls 3 times
-  TIMEOUT_MS: 300000,             // Give up after 5 minutes
+  TIMEOUT_MS: 300000,             // Give up after 5 minutes (no timeout, infinite polling)
 };
 
 // Polling state machine states
 const POLLING_STATES = {
   IDLE: "idle",                   // Not polling
-  INITIAL: "initial",             // First 5 polls at 1s interval
-  BACKOFF: "backoff",             // Then poll at 5s interval
+  POLLING: "polling",             // Actively polling
   COMPLETE: "complete",           // Swap finished (SUCCESS/REFUNDED)
   ERROR: "error",                 // Polling failed permanently
 };
@@ -153,7 +150,6 @@ export function SwapProvider({ children }) {
     lastPollRef.current = true;
     try {
       const statusParams = { depositAddress: key.depositAddress };
-      if (key.depositMemo) statusParams.depositMemo = key.depositMemo;
 
       const result = await oneclickStatus(statusParams);
 
@@ -232,7 +228,7 @@ export function SwapProvider({ children }) {
     }
   }, [stopPolling]);
 
-  // Start polling with adaptive intervals
+  // Start polling with linear 5-second intervals
   const startPolling = useCallback((key) => {
     // Clear existing polling
     stopPolling();
@@ -243,35 +239,18 @@ export function SwapProvider({ children }) {
     startTimeRef.current = Date.now();
     pollCountRef.current = 0;
     pollRetriesRef.current = 0;
-    setPollingState(POLLING_STATES.INITIAL);
+    setPollingState(POLLING_STATES.POLLING);
     setQuoteStatus("Swap confirmed! Waiting for deposit...");
 
     // Perform first poll immediately
     performPoll(key);
     pollCountRef.current += 1;
 
-    // Setup interval - start aggressive, then backoff
-    const setupInterval = () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-
-      const isInitialPhase = pollCountRef.current < POLLING_CONFIG.MAX_INITIAL_POLLS;
-      const interval = isInitialPhase
-        ? POLLING_CONFIG.INITIAL_INTERVAL_MS
-        : POLLING_CONFIG.BACKOFF_INTERVAL_MS;
-
-      if (isInitialPhase && pollCountRef.current === POLLING_CONFIG.MAX_INITIAL_POLLS - 1) {
-        setPollingState(POLLING_STATES.BACKOFF);
-      }
-
-      pollIntervalRef.current = setInterval(() => {
-        pollCountRef.current += 1;
-        performPoll(key);
-      }, interval);
-    };
-
-    setupInterval();
+    // Setup interval for continuous 5-second polling
+    pollIntervalRef.current = setInterval(() => {
+      pollCountRef.current += 1;
+      performPoll(key);
+    }, POLLING_CONFIG.INTERVAL_MS);
   }, [performPoll, stopPolling]);
 
   // ===== QUOTE ACTIONS =====
