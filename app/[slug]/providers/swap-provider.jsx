@@ -12,8 +12,6 @@ export const SwapContext = createContext();
 // Linear polling every 5 seconds continuously
 const POLLING_CONFIG = {
   INTERVAL_MS: 5000,              // Poll every 5 seconds
-  MAX_RETRIES: 3,                 // Retry failed polls 3 times
-  TIMEOUT_MS: 300000,             // Give up after 5 minutes (no timeout, infinite polling)
 };
 
 // Polling state machine states
@@ -53,11 +51,9 @@ export function SwapProvider({ children }) {
 
   // ===== POLLING STATE (Internal) =====
   const [pollingState, setPollingState] = useState(POLLING_STATES.IDLE);
-  const pollCountRef = useRef(0);                      // Track poll count for backoff
+  const pollCountRef = useRef(0);                      // Track poll count
   const pollIntervalRef = useRef(null);                // Current interval handle
-  const startTimeRef = useRef(null);                   // Track polling start time
   const lastPollRef = useRef(null);                    // Deduplicate simultaneous polls
-  const pollRetriesRef = useRef(0);                    // Track retries for current poll
 
   // ===== COMPUTED VALUES =====
   const selectedOriginToken = useMemo(
@@ -120,8 +116,6 @@ export function SwapProvider({ children }) {
       pollIntervalRef.current = null;
     }
     pollCountRef.current = 0;
-    pollRetriesRef.current = 0;
-    startTimeRef.current = null;
     lastPollRef.current = null;
     setPollingState(POLLING_STATES.IDLE);
   }, []);
@@ -136,37 +130,17 @@ export function SwapProvider({ children }) {
       return;
     }
 
-    // Check timeout
-    if (startTimeRef.current) {
-      const elapsed = Date.now() - startTimeRef.current;
-      if (elapsed > POLLING_CONFIG.TIMEOUT_MS) {
-        setSwapError("Swap taking too long. Please check status manually or contact support.");
-        setPollingState(POLLING_STATES.ERROR);
-        stopPolling();
-        return;
-      }
-    }
-
     lastPollRef.current = true;
     try {
       const statusParams = { depositAddress: key.depositAddress };
 
       const result = await oneclickStatus(statusParams);
 
-      // Handle API error - retry
+      // Handle API error - continue polling
       if (result.error) {
-        pollRetriesRef.current += 1;
-        if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
-          console.error("Max retries exceeded:", result.error);
-          setPollingState(POLLING_STATES.ERROR);
-          stopPolling();
-        }
-        // Otherwise continue polling (will retry next interval)
+        console.warn("Poll error:", result.error);
         return;
       }
-
-      // Reset retries on successful poll
-      pollRetriesRef.current = 0;
 
       if (!result.status) {
         console.warn("No status in response", result);
@@ -217,12 +191,7 @@ export function SwapProvider({ children }) {
       }
     } catch (error) {
       console.error("Poll error:", error);
-      pollRetriesRef.current += 1;
-      if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
-        setSwapError("Connection error. Please refresh and check status.");
-        setPollingState(POLLING_STATES.ERROR);
-        stopPolling();
-      }
+      // Continue polling on error
     } finally {
       lastPollRef.current = null;
     }
@@ -236,9 +205,7 @@ export function SwapProvider({ children }) {
     if (!key?.depositAddress) return;
 
     // Initialize polling state
-    startTimeRef.current = Date.now();
     pollCountRef.current = 0;
-    pollRetriesRef.current = 0;
     setPollingState(POLLING_STATES.POLLING);
     setQuoteStatus("Swap confirmed! Waiting for deposit...");
 
