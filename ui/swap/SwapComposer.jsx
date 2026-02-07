@@ -3,6 +3,7 @@ import { useContext } from "react";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { SwapContext } from "@/app/[slug]/providers/swap-provider";
 import { getTokenId } from "@/lib/swap/swapPayload";
+import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 
 export default function SwapComposer({ profile }) {
   const {
@@ -19,9 +20,11 @@ export default function SwapComposer({ profile }) {
 
     // Quote output state
     quotePreview,
+    quoteData,
 
     // Swap output state
     depositUri,
+    statusKey,
     swapStatus,
 
     // UI state
@@ -233,6 +236,17 @@ export default function SwapComposer({ profile }) {
           </div>
         </div>
       )}
+
+      {/* SWAP DEPOSIT DISPLAY */}
+      <SwapDepositDisplay
+        depositUri={depositUri}
+        depositAddress={statusKey?.depositAddress}
+        depositMemo={statusKey?.depositMemo}
+        amountDecimal={quoteData?.deposit?.amountDecimal}
+        originSymbol={originSymbol}
+        swapStatus={swapStatus}
+        recipientName={recipientName}
+      />
 
       {/* STATUS MESSAGE (Before quote/polling) */}
       {quoteStatus && !quotePreview && !swapStatus && (
