@@ -153,30 +153,6 @@ export default function ProfilePage({ params }) {
     window.open(uri, "_blank");
   }, [uri]);
 
-  // Swap callbacks
-  const handleGetQuote = useCallback(async () => {
-    if (!swapContext.getQuote || !profile?.address) return;
-    await swapContext.getQuote({
-      amountIn: swapContext.swapAmount,
-      destAddress: profile.address,
-      fromToken: swapContext.originTokenId,
-      toToken: swapContext.zecTokenId,
-      refund: swapContext.refundAddress,
-      slippage: swapContext.slippageTolerance,
-    });
-  }, [swapContext, profile]);
-
-  const handleConfirmQuote = useCallback(async () => {
-    if (!swapContext.confirmSwap || !profile?.address || !swapContext.quotePreview) return;
-    await swapContext.confirmSwap({
-      amountIn: swapContext.swapAmount,
-      destAddress: profile.address,
-      fromToken: swapContext.originTokenId,
-      toToken: swapContext.zecTokenId,
-      refund: swapContext.refundAddress,
-      slippage: swapContext.slippageTolerance,
-    });
-  }, [swapContext, profile]);
 
   // Effects - Data Fetching
   useEffect(() => {
@@ -369,26 +345,7 @@ export default function ProfilePage({ params }) {
               ) : (
                 <ZcashCardWrapper>
                   {swapContext.isSwapMode ? (
-                    <SwapComposer
-                      profile={profile}
-                      tokenOptions={swapContext.tokenOptions || []}
-                      originTokenId={swapContext.originTokenId}
-                      originSymbol={swapContext.originSymbol || ""}
-                      onSetToken={swapContext.setToken}
-                      swapAmount={swapContext.swapAmount || ""}
-                      onSetSwapAmount={swapContext.setSwapAmount}
-                      refundAddress={swapContext.refundAddress || ""}
-                      onSetRefundAddress={swapContext.setRefundAddress}
-                      slippageTolerance={swapContext.slippageTolerance || "0.5"}
-                      onSetSlippageTolerance={swapContext.setSlippageTolerance}
-                      onGetQuote={handleGetQuote}
-                      onConfirmQuote={handleConfirmQuote}
-                      isGettingQuote={swapContext.isGettingQuote || false}
-                      isConfirming={swapContext.isConfirming || false}
-                      quotePreview={swapContext.quotePreview}
-                      quoteStatus={swapContext.quoteStatus || ""}
-                      onCancelSwapMode={swapContext.cancelSwapMode}
-                    />
+                    <SwapComposer profile={profile} />
                   ) : (
                     <MemoComposer profile={profile} {...memoComposerProps} />
                   )}

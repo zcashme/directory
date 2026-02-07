@@ -1,5 +1,5 @@
 "use client";
-import { createContext, useState, useRef, useEffect, useCallback } from "react";
+import { createContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
@@ -8,41 +8,77 @@ import { getTokenId } from "@/lib/swap/swapPayload";
 
 export const SwapContext = createContext();
 
+// ===== POLLING CONFIGURATION =====
+// Optimized for speed: aggressive initial polling, then backoff
+const POLLING_CONFIG = {
+  INITIAL_INTERVAL_MS: 1000,      // 1 second for first phase (6x faster than before)
+  MAX_INITIAL_POLLS: 5,           // Do 5 aggressive polls (5 seconds total)
+  BACKOFF_INTERVAL_MS: 5000,      // Then switch to 5 seconds
+  MAX_RETRIES: 3,                 // Retry failed polls 3 times
+  TIMEOUT_MS: 300000,             // Give up after 5 minutes
+};
+
+// Polling state machine states
+const POLLING_STATES = {
+  IDLE: "idle",                   // Not polling
+  INITIAL: "initial",             // First 5 polls at 1s interval
+  BACKOFF: "backoff",             // Then poll at 5s interval
+  COMPLETE: "complete",           // Swap finished (SUCCESS/REFUNDED)
+  ERROR: "error",                 // Polling failed permanently
+};
+
 export function SwapProvider({ children }) {
-  // ===== STATE =====
-  // Token selection
-  const [tokenOptions, setTokenOptions] = useState([]);
-  const [originTokenId, setOriginTokenId] = useState(null);
-  const [zecTokenId, setZecTokenId] = useState(null);
-  const [originSymbol, setOriginSymbol] = useState("ZEC");
+  // ===== INPUT STATE (User controls these) =====
+  const [originTokenId, setOriginTokenIdState] = useState(null);
+  const [swapAmount, setSwapAmount] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
+  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
+
+  // ===== TOKEN STATE (Loaded once) =====
+  const [tokenOptions, setTokenOptions] = useState([]);
+  const [zecTokenId, setZecTokenId] = useState(null);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
 
-  // Swap workflow
-  const [swapAmount, setSwapAmount] = useState("");
-  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
+  // ===== QUOTE STATE (Output from "Get quote") =====
   const [quoteData, setQuoteData] = useState(null);
   const [quotePreview, setQuotePreview] = useState(null);
-  const [quoteStatus, setQuoteStatus] = useState("");
+
+  // ===== SWAP STATE (Output from "Confirm quote") =====
   const [depositUri, setDepositUri] = useState("");
   const [statusKey, setStatusKey] = useState(null);
   const [swapStatus, setSwapStatus] = useState("");
-  const [isConfirming, setIsConfirming] = useState(false);
+
+  // ===== UI STATE (What's visible) =====
   const [isGettingQuote, setIsGettingQuote] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [quoteStatus, setQuoteStatus] = useState("");
   const [swapError, setSwapError] = useState("");
 
-  const pollIntervalRef = useRef(null);
+  // ===== POLLING STATE (Internal) =====
+  const [pollingState, setPollingState] = useState(POLLING_STATES.IDLE);
+  const pollCountRef = useRef(0);                      // Track poll count for backoff
+  const pollIntervalRef = useRef(null);                // Current interval handle
+  const startTimeRef = useRef(null);                   // Track polling start time
+  const lastPollRef = useRef(null);                    // Deduplicate simultaneous polls
+  const pollRetriesRef = useRef(0);                    // Track retries for current poll
 
   // ===== COMPUTED VALUES =====
-  const selectedOriginToken = tokenOptions.find((t) => getTokenId(t) === originTokenId);
+  const selectedOriginToken = useMemo(
+    () => tokenOptions.find((t) => getTokenId(t) === originTokenId),
+    [tokenOptions, originTokenId]
+  );
 
-  const isSwapMode = originTokenId !== null &&
-                     zecTokenId !== null &&
-                     originTokenId !== zecTokenId;
+  const originSymbol = useMemo(
+    () => selectedOriginToken?.symbol || selectedOriginToken?.ticker || "ZEC",
+    [selectedOriginToken]
+  );
 
-  // ===== FUNCTIONS =====
+  const isSwapMode = useMemo(
+    () => originTokenId !== null && zecTokenId !== null && originTokenId !== zecTokenId,
+    [originTokenId, zecTokenId]
+  );
 
-  // Load tokens using Server Action
+  // ===== TOKEN LOADING =====
   const loadTokens = useCallback(async () => {
     setIsLoadingTokens(true);
     try {
@@ -54,7 +90,7 @@ export function SwapProvider({ children }) {
 
       const tokens = Array.isArray(result.data) ? result.data : [];
 
-      // Filter out testnet tokens
+      // Filter mainnet only
       const mainnetTokens = tokens.filter(
         (token) =>
           token.blockchain &&
@@ -62,7 +98,7 @@ export function SwapProvider({ children }) {
           !token.blockchain.toLowerCase().includes("test")
       );
 
-      // Find ZEC token
+      // Find ZEC
       const zecToken = mainnetTokens.find(
         (token) =>
           (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
@@ -74,10 +110,8 @@ export function SwapProvider({ children }) {
       if (zecToken) {
         const zecId = getTokenId(zecToken);
         setZecTokenId(zecId);
-        // Set initial token to ZEC if not already set
         if (!originTokenId) {
-          setOriginTokenId(zecId);
-          setOriginSymbol(zecToken.symbol || zecToken.ticker || "ZEC");
+          setOriginTokenIdState(zecId);
         }
       }
     } catch (error) {
@@ -86,96 +120,194 @@ export function SwapProvider({ children }) {
     } finally {
       setIsLoadingTokens(false);
     }
-  }, []);
+  }, [originTokenId]);
 
-  // Stop status polling
-  const stopStatusPolling = useCallback(() => {
+  // ===== POLLING LOGIC (OPTIMIZED) =====
+
+  // Stop polling immediately
+  const stopPolling = useCallback(() => {
     if (pollIntervalRef.current) {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+    pollCountRef.current = 0;
+    pollRetriesRef.current = 0;
+    startTimeRef.current = null;
+    lastPollRef.current = null;
+    setPollingState(POLLING_STATES.IDLE);
   }, []);
 
-  // Poll swap status
-  const startStatusPolling = useCallback((key) => {
-    // Clear any existing polling
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
+  // Single poll operation
+  const performPoll = useCallback(async (key) => {
+    // Deduplicate: don't make two requests at once
+    if (lastPollRef.current) return;
+
+    if (!key?.depositAddress) {
+      stopPolling();
+      return;
     }
 
-    const pollStatus = async () => {
-      if (!key?.depositAddress) return;
-
-      try {
-        const statusParams = { depositAddress: key.depositAddress };
-        if (key.depositMemo) statusParams.depositMemo = key.depositMemo;
-
-        const result = await oneclickStatus(statusParams);
-
-        // Handle error response
-        if (result.error) {
-          // Don't stop polling on retryable errors
-          return;
-        }
-
-        if (result.status) {
-          // Handle different response structures:
-          // - result.status (nested)
-          // - result (direct status string at top level)
-          const status = result.status || null;
-
-          if (status) {
-            setSwapStatus(status);
-
-            // Update status message
-            switch (status.toUpperCase()) {
-              case "PENDING":
-                setQuoteStatus("Waiting for deposit...");
-                break;
-              case "SUCCESS":
-                setQuoteStatus("Swap completed! ZEC delivered to recipient.");
-                stopStatusPolling();
-                break;
-              case "FAILED":
-                setQuoteStatus("Swap failed. Please contact support.");
-                setSwapError("Swap failed");
-                stopStatusPolling();
-                break;
-              case "REFUNDED":
-                setQuoteStatus("Swap refunded to your address.");
-                stopStatusPolling();
-                break;
-              default:
-                setQuoteStatus(`Status: ${status}`);
-            }
-          }
-        }
-      } catch (error) {
-        console.error("Error polling swap status:", error);
+    // Check timeout
+    if (startTimeRef.current) {
+      const elapsed = Date.now() - startTimeRef.current;
+      if (elapsed > POLLING_CONFIG.TIMEOUT_MS) {
+        setSwapError("Swap taking too long. Please check status manually or contact support.");
+        setPollingState(POLLING_STATES.ERROR);
+        stopPolling();
+        return;
       }
+    }
+
+    lastPollRef.current = true;
+    try {
+      const statusParams = { depositAddress: key.depositAddress };
+      if (key.depositMemo) statusParams.depositMemo = key.depositMemo;
+
+      const result = await oneclickStatus(statusParams);
+
+      // Handle API error - retry
+      if (result.error) {
+        pollRetriesRef.current += 1;
+        if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
+          console.error("Max retries exceeded:", result.error);
+          setPollingState(POLLING_STATES.ERROR);
+          stopPolling();
+        }
+        // Otherwise continue polling (will retry next interval)
+        return;
+      }
+
+      // Reset retries on successful poll
+      pollRetriesRef.current = 0;
+
+      if (!result.status) {
+        console.warn("No status in response", result);
+        return;
+      }
+
+      const status = result.status.toUpperCase();
+      setSwapStatus(status);
+
+      // Update message and check for completion
+      switch (status) {
+        case "PENDING_DEPOSIT":
+          setQuoteStatus("Waiting for deposit...");
+          // Keep polling
+          break;
+
+        case "PROCESSING":
+          setQuoteStatus("Processing swap...");
+          // Keep polling
+          break;
+
+        case "SUCCESS":
+          setQuoteStatus("Swap completed! ZEC delivered to recipient.");
+          setPollingState(POLLING_STATES.COMPLETE);
+          stopPolling();
+          break;
+
+        case "FAILED":
+          setQuoteStatus("Swap failed. Please contact support.");
+          setSwapError("Swap failed");
+          setPollingState(POLLING_STATES.ERROR);
+          stopPolling();
+          break;
+
+        case "REFUNDED":
+          setQuoteStatus("Swap refunded to your address.");
+          setPollingState(POLLING_STATES.COMPLETE);
+          stopPolling();
+          break;
+
+        case "INCOMPLETE_DEPOSIT":
+          setQuoteStatus("Deposit incomplete. Waiting for full amount...");
+          // Keep polling
+          break;
+
+        default:
+          setQuoteStatus(`Status: ${status}`);
+      }
+    } catch (error) {
+      console.error("Poll error:", error);
+      pollRetriesRef.current += 1;
+      if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
+        setSwapError("Connection error. Please refresh and check status.");
+        setPollingState(POLLING_STATES.ERROR);
+        stopPolling();
+      }
+    } finally {
+      lastPollRef.current = null;
+    }
+  }, [stopPolling]);
+
+  // Start polling with adaptive intervals
+  const startPolling = useCallback((key) => {
+    // Clear existing polling
+    stopPolling();
+
+    if (!key?.depositAddress) return;
+
+    // Initialize polling state
+    startTimeRef.current = Date.now();
+    pollCountRef.current = 0;
+    pollRetriesRef.current = 0;
+    setPollingState(POLLING_STATES.INITIAL);
+    setQuoteStatus("Swap confirmed! Waiting for deposit...");
+
+    // Perform first poll immediately
+    performPoll(key);
+    pollCountRef.current += 1;
+
+    // Setup interval - start aggressive, then backoff
+    const setupInterval = () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+
+      const isInitialPhase = pollCountRef.current < POLLING_CONFIG.MAX_INITIAL_POLLS;
+      const interval = isInitialPhase
+        ? POLLING_CONFIG.INITIAL_INTERVAL_MS
+        : POLLING_CONFIG.BACKOFF_INTERVAL_MS;
+
+      if (isInitialPhase && pollCountRef.current === POLLING_CONFIG.MAX_INITIAL_POLLS - 1) {
+        setPollingState(POLLING_STATES.BACKOFF);
+      }
+
+      pollIntervalRef.current = setInterval(() => {
+        pollCountRef.current += 1;
+        performPoll(key);
+      }, interval);
     };
 
-    // Poll immediately, then every 6 seconds
-    pollStatus();
-    pollIntervalRef.current = setInterval(pollStatus, 6000);
-  }, [stopStatusPolling]);
+    setupInterval();
+  }, [performPoll, stopPolling]);
 
-  // Get quote using Server Action
+  // ===== QUOTE ACTIONS =====
+
   const getQuote = useCallback(async (params) => {
-    const { amountIn, destAddress, fromToken, toToken, refund, slippage } = params;
+    const {
+      amountIn,
+      destAddress,
+      fromToken,
+      toToken,
+      refund,
+      slippage,
+    } = params;
 
     if (!isSwapMode) return;
 
     setIsGettingQuote(true);
     setSwapError("");
     setQuoteStatus("Getting quote...");
+    setQuoteData(null);
+    setQuotePreview(null);
 
     try {
       const result = await getSwapQuote({
         fromToken: fromToken || originTokenId,
         toToken: toToken || zecTokenId,
-        amountIn: amountIn,
-        destAddress: destAddress,
+        amountIn,
+        destAddress,
         refundAddress: refund || refundAddress,
         slippageTolerance: slippage || slippageTolerance,
       });
@@ -197,18 +329,17 @@ export function SwapProvider({ children }) {
     } finally {
       setIsGettingQuote(false);
     }
-  }, [
-    isSwapMode,
-    originTokenId,
-    zecTokenId,
-    refundAddress,
-    slippageTolerance,
-    getSwapQuote,
-  ]);
+  }, [isSwapMode, originTokenId, zecTokenId, refundAddress, slippageTolerance]);
 
-  // Confirm swap using Server Action
   const confirmSwap = useCallback(async (params) => {
-    const { amountIn, destAddress, fromToken, toToken, refund, slippage } = params;
+    const {
+      amountIn,
+      destAddress,
+      fromToken,
+      toToken,
+      refund,
+      slippage,
+    } = params;
 
     if (!isSwapMode) return;
 
@@ -220,8 +351,8 @@ export function SwapProvider({ children }) {
       const result = await confirmSwapAction({
         fromToken: fromToken || originTokenId,
         toToken: toToken || zecTokenId,
-        amountIn: amountIn,
-        destAddress: destAddress,
+        amountIn,
+        destAddress,
         refundAddress: refund || refundAddress,
         slippageTolerance: slippage || slippageTolerance,
       });
@@ -232,16 +363,15 @@ export function SwapProvider({ children }) {
         return null;
       }
 
-      // Store deposit URI and status key
+      // Store deposit and status
       setDepositUri(result.paymentUri || result.deposit?.address || "");
       setStatusKey(result.statusKey);
       setQuoteData(result);
-      setQuoteStatus("Swap confirmed! Waiting for deposit...");
-      setSwapStatus("PENDING");
+      setSwapStatus("PENDING_DEPOSIT");
 
-      // Start polling for status
+      // Start polling immediately
       if (result.statusKey) {
-        startStatusPolling(result.statusKey);
+        startPolling(result.statusKey);
       }
 
       return result;
@@ -252,22 +382,35 @@ export function SwapProvider({ children }) {
     } finally {
       setIsConfirming(false);
     }
-  }, [
-    isSwapMode,
-    originTokenId,
-    zecTokenId,
-    refundAddress,
-    slippageTolerance,
-    startStatusPolling,
-    confirmSwapAction,
-  ]);
+  }, [isSwapMode, originTokenId, zecTokenId, refundAddress, slippageTolerance, startPolling]);
 
-  // Cancel swap mode
-  const cancelSwapMode = useCallback(() => {
-    setOriginTokenId(zecTokenId);
-    setOriginSymbol("ZEC");
+  // ===== SWAP MODE MANAGEMENT =====
+
+  const setToken = useCallback((tokenId) => {
+    // If selecting ZEC, exit swap mode
+    if (tokenId === zecTokenId) {
+      setOriginTokenIdState(zecTokenId);
+      resetSwapState();
+      return;
+    }
+
+    // Enter swap mode with selected token
+    const token = tokenOptions.find((t) => getTokenId(t) === tokenId);
+    if (token) {
+      setOriginTokenIdState(getTokenId(token));
+      // Clear quote but keep other state
+      setQuoteData(null);
+      setQuotePreview(null);
+      setQuoteStatus("");
+      setSwapError("");
+    }
+  }, [tokenOptions, zecTokenId]);
+
+  const resetSwapState = useCallback(() => {
+    setOriginTokenIdState(zecTokenId);
     setSwapAmount("");
     setRefundAddress("");
+    setSlippageTolerance("0.5");
     setQuoteData(null);
     setQuotePreview(null);
     setQuoteStatus("");
@@ -275,58 +418,52 @@ export function SwapProvider({ children }) {
     setStatusKey(null);
     setSwapStatus("");
     setSwapError("");
-    stopStatusPolling();
-  }, [zecTokenId, stopStatusPolling]);
+    stopPolling();
+  }, [zecTokenId, stopPolling]);
 
-  // Set token - entering/exiting swap mode based on token selection
-  const setToken = useCallback((tokenId) => {
-    // If selecting ZEC, exit swap mode by clearing all swap state
-    if (tokenId === zecTokenId) {
-      setOriginTokenId(zecTokenId);
-      setOriginSymbol("ZEC");
-      setSwapAmount("");
-      setRefundAddress("");
-      setQuoteData(null);
-      setQuotePreview(null);
-      setQuoteStatus("");
-      setDepositUri("");
-      setStatusKey(null);
-      setSwapStatus("");
-      setSwapError("");
-      stopStatusPolling();
-      return;
-    }
+  // ===== QUOTE CLEARING ON INPUT CHANGE =====
 
-    // Otherwise enter swap mode with the selected token
-    const token = tokenOptions.find((t) => getTokenId(t) === tokenId);
-    if (token) {
-      setOriginTokenId(getTokenId(token));
-      setOriginSymbol(token.symbol || token.ticker || "?");
-    }
-  }, [tokenOptions, zecTokenId, stopStatusPolling]);
+  const setSwapAmountWithClear = useCallback((amount) => {
+    setSwapAmount(amount);
+    setQuoteData(null);
+    setQuotePreview(null);
+    setQuoteStatus("");
+  }, []);
+
+  const setRefundAddressWithClear = useCallback((address) => {
+    setRefundAddress(address);
+    setQuoteData(null);
+    setQuotePreview(null);
+    setQuoteStatus("");
+  }, []);
+
+  const setSlippageToleranceWithClear = useCallback((slippage) => {
+    setSlippageTolerance(slippage);
+    setQuoteData(null);
+    setQuotePreview(null);
+    setQuoteStatus("");
+  }, []);
 
   // ===== EFFECTS =====
 
-  // Load tokens on mount
   useEffect(() => {
     loadTokens();
   }, [loadTokens]);
 
-  // Cleanup polling on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopStatusPolling();
+      stopPolling();
     };
-  }, [stopStatusPolling]);
+  }, [stopPolling]);
 
   // ===== CONTEXT VALUE =====
   const value = {
     // Token state
     tokenOptions,
     originTokenId,
-    originBlockchain: selectedOriginToken?.blockchain || "",
-    zecTokenId,
     originSymbol,
+    zecTokenId,
     isLoadingTokens,
 
     // Swap state
@@ -335,28 +472,29 @@ export function SwapProvider({ children }) {
     slippageTolerance,
     quoteData,
     quotePreview,
-    quoteStatus,
     depositUri,
     statusKey,
     swapStatus,
-    isConfirming,
+
+    // UI state
     isGettingQuote,
+    isConfirming,
+    quoteStatus,
     swapError,
+    pollingState,
 
     // Computed
     isSwapMode,
 
     // Actions
     setToken,
-    setSwapAmount,
-    setRefundAddress,
-    setSlippageTolerance,
+    setSwapAmount: setSwapAmountWithClear,
+    setRefundAddress: setRefundAddressWithClear,
+    setSlippageTolerance: setSlippageToleranceWithClear,
     getQuote,
     confirmSwap,
-    cancelSwapMode,
+    resetSwapState,
     loadTokens,
-    startStatusPolling,
-    stopStatusPolling,
   };
 
   return (
