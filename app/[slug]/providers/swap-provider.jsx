@@ -279,14 +279,32 @@ export function SwapProvider({ children }) {
     stopStatusPolling();
   }, [zecTokenId, stopStatusPolling]);
 
-  // Set token
+  // Set token - entering/exiting swap mode based on token selection
   const setToken = useCallback((tokenId) => {
+    // If selecting ZEC, exit swap mode by clearing all swap state
+    if (tokenId === zecTokenId) {
+      setOriginTokenId(zecTokenId);
+      setOriginSymbol("ZEC");
+      setSwapAmount("");
+      setRefundAddress("");
+      setQuoteData(null);
+      setQuotePreview(null);
+      setQuoteStatus("");
+      setDepositUri("");
+      setStatusKey(null);
+      setSwapStatus("");
+      setSwapError("");
+      stopStatusPolling();
+      return;
+    }
+
+    // Otherwise enter swap mode with the selected token
     const token = tokenOptions.find((t) => getTokenId(t) === tokenId);
     if (token) {
       setOriginTokenId(getTokenId(token));
-      setOriginSymbol(token.symbol || token.ticker || "ZEC");
+      setOriginSymbol(token.symbol || token.ticker || "?");
     }
-  }, [tokenOptions]);
+  }, [tokenOptions, zecTokenId, stopStatusPolling]);
 
   // ===== EFFECTS =====
 

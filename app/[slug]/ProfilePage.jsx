@@ -374,19 +374,17 @@ export default function ProfilePage({ params }) {
                       tokenOptions={swapContext.tokenOptions || []}
                       originTokenId={swapContext.originTokenId}
                       originSymbol={swapContext.originSymbol || ""}
-                      originBlockchain={swapContext.originBlockchain || ""}
                       onSetToken={swapContext.setToken}
                       swapAmount={swapContext.swapAmount || ""}
                       onSetSwapAmount={swapContext.setSwapAmount}
                       refundAddress={swapContext.refundAddress || ""}
                       onSetRefundAddress={swapContext.setRefundAddress}
-                      slippageTolerance={swapContext.slippageTolerance || "0.5"}
-                      onSetSlippageTolerance={swapContext.setSlippageTolerance}
                       onGetQuote={handleGetQuote}
                       onConfirmQuote={handleConfirmQuote}
                       isGettingQuote={swapContext.isGettingQuote || false}
                       isConfirming={swapContext.isConfirming || false}
                       quotePreview={swapContext.quotePreview}
+                      quoteStatus={swapContext.quoteStatus || ""}
                       onCancelSwapMode={swapContext.cancelSwapMode}
                     />
                   ) : (
