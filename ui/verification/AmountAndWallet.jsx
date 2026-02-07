@@ -212,7 +212,7 @@ export default function AmountAndWallet({
               type="text"
               inputMode="decimal"
               placeholder="0.0000"
-              value={amount === "0" ? "" : amount || ""}
+              value={amount || ""}
               onFocus={() => setIsTypingCrypto(true)}
               onBlur={() => setIsTypingCrypto(false)}
               onChange={(e) => {
@@ -227,16 +227,15 @@ export default function AmountAndWallet({
                   return;
                 }
 
-                // Allow intermediate states while typing: "0.", ".", "10.", etc.
-                // Final validation: optional digits, optional decimal, up to 8 decimal places
-                const regex = /^(\d*\.?\d{0,8})$/;
-                if (!regex.test(val)) return;
+                // Only allow digits and a single decimal point
+                if (!/^[0-9]*\.?[0-9]*$/.test(val)) return;
 
-                // Don't allow multiple leading zeros like "00.5"
-                if (/^0\d/.test(val)) return;
+                // Reject multiple leading zeros (00, 001, etc.) but allow "0" and "0."
+                if (/^0\d+/.test(val)) return;
 
-                // Prevent negative values
-                if (parseFloat(val) < 0) return;
+                // Cap decimal places at 8
+                const parts = val.split('.');
+                if (parts[1] && parts[1].length > 8) return;
 
                 setAmount(val);
 
@@ -250,7 +249,7 @@ export default function AmountAndWallet({
                 // Update fiat side only if we have a valid complete number
                 if (rateFetched && isUsdOpen && val && !val.endsWith('.')) {
                   const num = parseFloat(val);
-                  if (Number.isFinite(num)) {
+                  if (Number.isFinite(num) && num > 0) {
                     setUsdInput(formatDecimal(num * rate));
                   }
                 }
@@ -385,12 +384,18 @@ export default function AmountAndWallet({
                           return;
                         }
 
-                        // Allow intermediate states while typing
-                        const regex = /^(\d*\.?\d{0,2})$/;
-                        if (!regex.test(val)) return;
+                        // Only allow digits and a single decimal point
+                        if (!/^[0-9]*\.?[0-9]*$/.test(val)) return;
 
-                        // Don't allow multiple leading zeros
-                        if (/^0\d/.test(val)) return;
+                        // Reject multiple decimal points
+                        if ((val.match(/\./g) || []).length > 1) return;
+
+                        // Reject multiple leading zeros like "00" or "001"
+                        if (/^0{2,}/.test(val)) return;
+
+                        // Cap decimal places at 2 for fiat
+                        const parts = val.split('.');
+                        if (parts[1] && parts[1].length > 2) return;
 
                         setUsdInput(val);
 
@@ -400,8 +405,9 @@ export default function AmountAndWallet({
                           if (Number.isFinite(num)) {
                             const clamped = clamp(num, 0, 1000000);
                             const cryptoAmount = rate > 0 ? clamped / rate : clamped;
-                            // Store more precision internally
-                            setAmount(String(cryptoAmount));
+                            // Format to reasonable precision while preserving trailing zeros intent
+                            const formatted = cryptoAmount.toFixed(8).replace(/\.?0+$/, "");
+                            setAmount(formatted);
                           }
                         }
                       }}
