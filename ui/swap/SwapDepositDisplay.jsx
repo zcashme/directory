@@ -25,6 +25,7 @@ export default function SwapDepositDisplay({
   const [txHash, setTxHash] = useState("");
   const [isSubmittingTxHash, setIsSubmittingTxHash] = useState(false);
   const [txHashError, setTxHashError] = useState("");
+  const [txHashSuccess, setTxHashSuccess] = useState(false);
 
   // Don't render if no deposit address
   if (!depositAddress) return null;
@@ -85,9 +86,14 @@ export default function SwapDepositDisplay({
         return;
       }
 
-      // Success - close modal and keep polling
-      setShowTxHashModal(false);
+      // Success - show message and close modal after delay
+      setTxHashSuccess(true);
       setTxHash("");
+
+      setTimeout(() => {
+        setShowTxHashModal(false);
+        setTxHashSuccess(false);
+      }, 2000);
     } catch (error) {
       setTxHashError(error.message || "An error occurred");
     } finally {
@@ -241,41 +247,57 @@ export default function SwapDepositDisplay({
       {showTxHashModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-xl shadow-lg max-w-md w-full p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-2">Confirm Transaction</h2>
-            <p className="text-sm text-gray-600 mb-4">
-              Paste your transaction hash to speed up processing (optional)
-            </p>
+            {txHashSuccess ? (
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Transaction Received</h2>
+                <p className="text-sm text-gray-600">
+                  Your transaction hash has been submitted. Swap processing will be accelerated.
+                </p>
+              </div>
+            ) : (
+              <>
+                <h2 className="text-lg font-semibold text-gray-900 mb-2">Confirm Transaction</h2>
+                <p className="text-sm text-gray-600 mb-4">
+                  Paste your transaction hash to speed up processing (optional)
+                </p>
 
-            <input
-              type="text"
-              placeholder="0x..."
-              value={txHash}
-              onChange={(e) => {
-                setTxHash(e.target.value);
-                setTxHashError("");
-              }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+                <input
+                  type="text"
+                  placeholder="0x..."
+                  value={txHash}
+                  onChange={(e) => {
+                    setTxHash(e.target.value);
+                    setTxHashError("");
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm font-mono mb-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
 
-            {txHashError && (
-              <p className="text-sm text-red-600 mb-4">{txHashError}</p>
+                {txHashError && (
+                  <p className="text-sm text-red-600 mb-4">{txHashError}</p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowTxHashModal(false)}
+                    className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Skip
+                  </button>
+                  <button
+                    onClick={handleSubmitTxHash}
+                    disabled={!txHash.trim() || isSubmittingTxHash}
+                    className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
+                  >
+                    {isSubmittingTxHash ? "Submitting..." : "I've Sent Funds"}
+                  </button>
+                </div>
+              </>
             )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowTxHashModal(false)}
-                className="flex-1 px-3 py-2 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Skip
-              </button>
-              <button
-                onClick={handleSubmitTxHash}
-                disabled={!txHash.trim() || isSubmittingTxHash}
-                className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold rounded-lg transition-colors"
-              >
-                {isSubmittingTxHash ? "Submitting..." : "I've Sent Funds"}
-              </button>
-            </div>
           </div>
         </div>
       )}
