@@ -90,22 +90,14 @@ export function SwapProvider({ children }) {
 
       const tokens = Array.isArray(result.data) ? result.data : [];
 
-      // Filter mainnet only
-      const mainnetTokens = tokens.filter(
-        (token) =>
-          token.blockchain &&
-          !token.blockchain.toLowerCase().includes("testnet") &&
-          !token.blockchain.toLowerCase().includes("test")
-      );
-
       // Find ZEC
-      const zecToken = mainnetTokens.find(
+      const zecToken = tokens.find(
         (token) =>
           (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
           (token.blockchain || "").toLowerCase().includes("zec")
       );
 
-      setTokenOptions(mainnetTokens);
+      setTokenOptions(tokens);
 
       if (zecToken) {
         const zecId = getTokenId(zecToken);
