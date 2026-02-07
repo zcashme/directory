@@ -198,7 +198,7 @@ export async function GET(request) {
   const supabase = createSupabaseServerClient();
 
   const profileFields =
-    "id,name,display_name,address,address_verified,last_verified_at";
+    "id,name,display_name,profile_image_url,bio,nearest_city_name,address,address_verified,last_verified_at";
 
   // If no query is provided, use direct pagination on zcasher.
   if (!q) {
@@ -249,6 +249,9 @@ export async function GET(request) {
         id: profile.id,
         username: profile.name,
         display_name: profile.display_name,
+        profile_image_url: profile.profile_image_url,
+        bio: profile.bio,
+        nearest_city_name: profile.nearest_city_name,
         address: profile.address,
         address_verified: !!profile.address_verified,
         verified_at: profile.last_verified_at,
@@ -370,6 +373,9 @@ export async function GET(request) {
         id: profile.id,
         username: profile.name,
         display_name: profile.display_name,
+        profile_image_url: profile.profile_image_url,
+        bio: profile.bio,
+        nearest_city_name: profile.nearest_city_name,
         address: profile.address,
         address_verified: !!profile.address_verified,
         verified_at: profile.last_verified_at,

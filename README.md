@@ -119,6 +119,9 @@ Success response (200):
 {
   "username": "cobra",
   "display_name": "Cobra",
+  "profile_image_url": "https://example.com/avatar.jpg",
+  "bio": "Zcash enthusiast and builder.",
+  "nearest_city_name": "Denver",
   "address": "u1...",
   "address_verified": true,
   "verified_at": "2025-10-23T10:58:54.721199+00:00",
@@ -184,6 +187,9 @@ Success response (200):
     {
       "username": "cobra",
       "display_name": "Cobra",
+      "profile_image_url": "https://example.com/avatar.jpg",
+      "bio": "Zcash enthusiast and builder.",
+      "nearest_city_name": "Denver",
       "address": "u1...",
       "address_verified": true,
       "verified_at": "2025-10-23T10:58:54.721199+00:00",

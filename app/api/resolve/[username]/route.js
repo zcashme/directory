@@ -21,7 +21,9 @@ export async function GET(request, { params }) {
 
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
-    .select("id,name,display_name,address,address_verified,last_verified_at")
+    .select(
+      "id,name,display_name,profile_image_url,bio,nearest_city_name,address,address_verified,last_verified_at"
+    )
     .ilike("name", username)
     .limit(1)
     .maybeSingle();
@@ -51,6 +53,9 @@ export async function GET(request, { params }) {
     {
       username: profile.name,
       display_name: profile.display_name,
+      profile_image_url: profile.profile_image_url,
+      bio: profile.bio,
+      nearest_city_name: profile.nearest_city_name,
       address: profile.address,
       address_verified: !!profile.address_verified,
       verified_at: profile.last_verified_at,

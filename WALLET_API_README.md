@@ -46,11 +46,34 @@ Example:
 GET /api/resolve/cobra
 ```
 
+Example response:
+```
+{
+  "username": "cobra",
+  "display_name": "Cobra",
+  "profile_image_url": "https://example.com/avatar.jpg",
+  "bio": "Zcash enthusiast and builder.",
+  "nearest_city_name": "Denver",
+  "address": "u1...",
+  "address_verified": true,
+  "verified_at": "2025-10-23T10:58:54.721199+00:00",
+  "authenticated_links": [
+    { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+  ],
+  "unauthenticated_links": [
+    { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+  ]
+}
+```
+
 Response fields:
 ```
 {
   "username": "cobra",
   "display_name": "Cobra",
+  "profile_image_url": "https://example.com/avatar.jpg",
+  "bio": "Zcash enthusiast and builder.",
+  "nearest_city_name": "Denver",
   "address": "u1...",
   "address_verified": true,
   "verified_at": "2025-10-23T10:58:54.721199+00:00",
@@ -85,10 +108,27 @@ Example:
 GET /api/directory?q=c&limit=25
 ```
 
-Response:
+Example response:
 ```
 {
-  "results": [ /* same fields as /api/resolve */ ],
+  "results": [
+    {
+      "username": "cobra",
+      "display_name": "Cobra",
+      "profile_image_url": "https://example.com/avatar.jpg",
+      "bio": "Zcash enthusiast and builder.",
+      "nearest_city_name": "Denver",
+      "address": "u1...",
+      "address_verified": true,
+      "verified_at": "2025-10-23T10:58:54.721199+00:00",
+      "authenticated_links": [
+        { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+      ],
+      "unauthenticated_links": [
+        { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+      ]
+    }
+  ],
   "next_cursor": "eyJuYW1lIjoiY29icmEiLCJpZCI6MX0"
 }
 ```
@@ -102,6 +142,21 @@ Use this if the wallet wants to resolve a social handle directly.
 Example:
 ```
 GET /api/social/x/thefrankbraun
+```
+
+Example response:
+```
+{
+  "link": {
+    "platform": "x",
+    "handle": "thefrankbraun",
+    "url": "https://x.com/thefrankbraun",
+    "is_verified": true
+  },
+  "address": "u1...",
+  "profile_name": "Example Name",
+  "address_verified": true
+}
 ```
 
 Response:
@@ -184,3 +239,52 @@ Rate limited:
 2) Show results (username + display name + verified badge)
 3) On selection, call `/api/resolve/:username` to get the address
 4) Optionally, allow direct social lookup with `/api/social/:platform/:handle`
+
+## Technical Implementation 1: Slash shorthand resolution
+
+Goal: Let users enter `/username` instead of `zcash.me/username`.
+
+### Trigger
+
+- If the Send/Address input starts with `/`, treat it as a Zcash.me username.
+- Extract the username with `^/([A-Za-z0-9_-]+)$`.
+
+### Lookup
+
+```
+GET /api/resolve/:username
+X-API-Key: YOUR_KEY
+```
+
+### Example response
+
+```
+{
+  "username": "cobra",
+  "display_name": "Cobra",
+  "profile_image_url": "https://example.com/avatar.jpg",
+  "bio": "Zcash enthusiast and builder.",
+  "nearest_city_name": "Denver",
+  "address": "u1...",
+  "address_verified": true,
+  "verified_at": "2025-10-23T10:58:54.721199+00:00",
+  "authenticated_links": [
+    { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+  ],
+  "unauthenticated_links": [
+    { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+  ]
+}
+```
+
+### UX behavior
+
+- On success, replace the input with the resolved `address`.
+- Show a confirmation card with `display_name`, `username`, `profile_image_url`, and verification status.
+
+### Error handling
+
+- `404 not_found`: show "User not found"
+- `401 unauthorized`: show "API key missing or invalid"
+- `429 rate_limited`: show "Please try again"
+- `500`: show "Temporary error, retry"
