@@ -128,7 +128,7 @@ export default function SwapComposer({
 
       {/* QUOTE PREVIEW DISPLAY (After "Get quote" succeeds) */}
       {quotePreview && !swapStatus && (
-        <div className="mt-3 p-4 bg-white rounded-xl border border-gray-800">
+        <div className="mt-3 p-4 rounded-xl border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">You send</span>

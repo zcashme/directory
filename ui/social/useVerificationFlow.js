@@ -205,7 +205,6 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
 
         const result = await updateLinkVerificationAction(profileId, handle, variants, updatePayload);
         if (!result.ok) {
-          console.error("Failed to update link verification:", result.error);
         }
       } catch (err) {
       }

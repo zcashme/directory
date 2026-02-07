@@ -95,7 +95,6 @@ export default function AmountAndWallet({
         return true;
       }
     } catch (err) {
-      console.error("Error fetching rate:", err);
     }
     return false;
   };

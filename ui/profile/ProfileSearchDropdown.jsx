@@ -134,7 +134,6 @@ export default function ProfileSearchDropdown({
       })
       .catch((err) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          console.error("Search error:", err);
           setLoading(false);
           usernameAvailableRef.current = null;
           setUsernameAvailable(null);

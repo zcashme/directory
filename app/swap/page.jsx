@@ -150,21 +150,16 @@ function SwapStatusDisplay({ statusKey, onReset }) {
   // Perform a single poll
   const performPoll = useCallback(async () => {
     if (lastPollRef.current) {
-      console.log("[Swap Status] Skipping duplicate poll");
       return;
     }
 
     if (!statusKey?.depositAddress) {
-      console.log("[Swap Status] Invalid status key");
       setError("Invalid swap identifier");
       setIsPolling(false);
       return;
     }
 
     lastPollRef.current = true;
-    console.log(
-      `[Swap Status] Performing poll #${pollCountRef.current + 1} for address: ${statusKey.depositAddress.slice(0, 10)}...`
-    );
 
     try {
       const params = new URLSearchParams({
@@ -173,11 +168,9 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
       const response = await fetch(`/api/swap/status?${params.toString()}`);
       const result = await response.json();
-      console.log("[Swap Status] Poll result:", result);
 
       // Handle API error
       if (result.error) {
-        console.log(`[Swap Status] Poll error:`, result.error);
         setError("Unable to fetch swap status. Retrying...");
         return;
       }
@@ -186,12 +179,10 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       setError("");
 
       if (!result.status) {
-        console.log("[Swap Status] No status in response");
         return;
       }
 
       const status = result.status.toUpperCase();
-      console.log(`[Swap Status] Status updated to: ${status}`);
       setApiStatus(status);
 
       // Extract and flatten relevant data
@@ -217,13 +208,11 @@ function SwapStatusDisplay({ statusKey, onReset }) {
           setFailureReason(null);
           break;
         case "SWAP_SUCCESS":
-          console.log("[Swap Status] Swap succeeded - stopping polling");
           setStatusMessage("Swap completed successfully!");
           setFailureReason(null);
           setIsPolling(false);
           break;
         case "SWAP_FAILED":
-          console.log("[Swap Status] Swap failed - stopping polling");
           setStatusMessage("Swap failed.");
           setFailureReason(getFailureReason(status));
           setIsPolling(false);
@@ -233,7 +222,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
           setFailureReason(null);
       }
     } catch (err) {
-      console.error("[Swap Status] Unexpected poll error:", err);
       setError("Connection error. Retrying...");
     } finally {
       lastPollRef.current = null;
@@ -243,12 +231,10 @@ function SwapStatusDisplay({ statusKey, onReset }) {
   // Start polling on mount
   useEffect(() => {
     if (!statusKey?.depositAddress) {
-      console.log("[Swap Status] Invalid swap identifier on mount");
       setError("Invalid swap identifier");
       return;
     }
 
-    console.log("[Swap Status] Starting polling");
     pollCountRef.current = 0;
 
     // Perform first poll immediately
@@ -256,8 +242,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
     pollCountRef.current += 1;
 
     // Setup interval - poll every 5 seconds
-    console.log(`[Swap Status] Setting up interval: ${POLLING_CONFIG.INTERVAL_MS}ms`);
-
     pollIntervalRef.current = setInterval(() => {
       if (isPolling) {
         pollCountRef.current += 1;
@@ -266,7 +250,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
     }, POLLING_CONFIG.INTERVAL_MS);
 
     return () => {
-      console.log("[Swap Status] Cleaning up polling");
       if (pollIntervalRef.current) {
         clearInterval(pollIntervalRef.current);
       }
@@ -340,9 +323,31 @@ function SwapStatusDisplay({ statusKey, onReset }) {
             {/* Status */}
             <div className="flex justify-between items-center">
               <span className="text-sm text-gray-600">Status</span>
-              <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>
-                {getStatusLabel(uiStatus)}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>
+                  {getStatusLabel(uiStatus)}
+                </span>
+                {/* Polling indicator */}
+                {isPolling && (
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex gap-0.5">
+                      <div
+                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                        style={{ animationDelay: "0s" }}
+                      ></div>
+                      <div
+                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.1s" }}
+                      ></div>
+                      <div
+                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                    </div>
+                    <span className="text-xs text-gray-600">Polling...</span>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Failure Reason */}
@@ -393,27 +398,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
         </div>
       )}
 
-      {/* Polling indicator */}
-      {isPolling && (
-        <div className="flex items-center justify-center gap-2 text-sm text-gray-600 py-3">
-          <div className="flex gap-1">
-            <div
-              className="w-2 h-2 bg-gray-800 rounded-full animate-bounce"
-              style={{ animationDelay: "0s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-gray-800 rounded-full animate-bounce"
-              style={{ animationDelay: "0.1s" }}
-            ></div>
-            <div
-              className="w-2 h-2 bg-gray-800 rounded-full animate-bounce"
-              style={{ animationDelay: "0.2s" }}
-            ></div>
-          </div>
-          <span>Polling for updates...</span>
-        </div>
-      )}
-
       {/* Action buttons */}
       <div className="flex gap-2 pt-2">
         <button
@@ -447,20 +431,17 @@ function SwapPageContent() {
     const depositAddress = searchParams.get("depositAddress");
 
     if (depositAddress) {
-      console.log("[Swap Status] Found deposit address in URL:", depositAddress);
       setStatusKey({ depositAddress });
       setIsLoading(false);
     }
   }, [searchParams]);
 
   const handleFormSubmit = (key) => {
-    console.log("[Swap Status] Form submitted with address:", key.depositAddress);
     setIsLoading(true);
     router.push(`/swap?depositAddress=${encodeURIComponent(key.depositAddress)}`);
   };
 
   const handleReset = () => {
-    console.log("[Swap Status] Resetting to form");
     setStatusKey(null);
     router.push("/swap");
   };

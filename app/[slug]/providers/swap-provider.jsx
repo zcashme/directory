@@ -79,7 +79,6 @@ export function SwapProvider({ children }) {
         }
       }
     } catch (error) {
-      console.error("Error loading tokens:", error);
       setSwapError(error.message || "Failed to load tokens");
     } finally {
       setIsLoadingTokens(false);

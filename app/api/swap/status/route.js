@@ -12,18 +12,12 @@ export async function GET(request) {
       );
     }
 
-    console.log(
-      `[API] Checking swap status for: ${depositAddress.slice(0, 10)}...`
-    );
-
     const params = { depositAddress };
 
     const result = await oneclickStatus(params);
-    console.log(`[API] Status result:`, result);
 
     return Response.json(result);
   } catch (error) {
-    console.error("[API] Swap status error:", error);
     return Response.json(
       { error: "Failed to check swap status" },
       { status: 500 }

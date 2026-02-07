@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import CopyButton from "@/ui/profile/CopyButton";
 
 
 export default function SwapDepositDisplay({
@@ -35,7 +36,7 @@ export default function SwapDepositDisplay({
       </h3>
 
       {/* Amount to send */}
-      <div className="mb-4 p-3 bg-white rounded-lg border border-gray-800">
+      <div className="mb-4 p-3 rounded-lg border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Send exactly:</span>
           <span className="text-lg font-bold text-gray-900">
@@ -51,7 +52,7 @@ export default function SwapDepositDisplay({
             value={qrValue}
             size={250}
             includeMargin={true}
-            bgColor="#ffffff"
+            bgColor="#faf6ed"
             fgColor="#000000"
           />
         </div>
@@ -60,10 +61,11 @@ export default function SwapDepositDisplay({
       {/* Address display */}
       <div className="mb-4">
         <label className="block text-sm text-gray-600 mb-2">Deposit address:</label>
-        <div className="p-3 bg-white rounded-lg border border-gray-800">
-          <p className="text-sm font-mono text-gray-900 break-all">
+        <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: '#faf6ed' }}>
+          <p className="text-sm font-mono text-gray-900 break-all flex-1">
             {depositAddress}
           </p>
+          <CopyButton text={depositAddress} label="Copy" copiedLabel="Copied" />
         </div>
       </div>
 

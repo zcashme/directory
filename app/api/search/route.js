@@ -29,7 +29,6 @@ export async function GET(request) {
       exists
     });
   } catch (error) {
-    console.error("Search API error:", error);
     return NextResponse.json(
       { error: "Search failed", profiles: [], exists: false },
       { status: 500 }
