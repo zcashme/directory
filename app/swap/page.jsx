@@ -188,14 +188,20 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       // Extract and flatten relevant data
       const swapDetails = result.swapDetails || {};
       const quoteRequest = result.quoteResponse?.quoteRequest || {};
+      const quote = result.quoteResponse?.quote || {};
 
       setSwapData({
         amountInFormatted: swapDetails.amountInFormatted,
         amountInUsd: swapDetails.amountInUsd,
         amountOutFormatted: swapDetails.amountOutFormatted,
         amountOutUsd: swapDetails.amountOutUsd,
+        minAmountOutFormatted: quote.amountOutFormatted,
         originAsset: quoteRequest.originAsset,
         destinationAsset: quoteRequest.destinationAsset,
+        depositAddress: quote.depositAddress,
+        timeEstimate: quote.timeEstimate,
+        deadline: quote.deadline,
+        refundTo: quoteRequest.refundTo,
         timestamp: result.updatedAt,
       });
 
@@ -273,6 +279,36 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
   return (
     <div className="space-y-6">
+      {/* Status */}
+      <div className="flex items-center gap-2">
+        <h1 className="text-md font-semibold text-gray-800">
+          Swap Status
+        </h1>
+        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>
+          {getStatusLabel(uiStatus)}
+        </span>
+        {/* Polling indicator */}
+        {isPolling && (
+          <div className="flex items-center gap-1.5">
+            <div className="flex gap-0.5">
+              <div
+                className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                style={{ animationDelay: "0s" }}
+              ></div>
+              <div
+                className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                style={{ animationDelay: "0.1s" }}
+              ></div>
+              <div
+                className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                style={{ animationDelay: "0.2s" }}
+              ></div>
+            </div>
+            <span className="text-xs text-gray-600">Polling...</span>
+          </div>
+        )}
+      </div>
+
       {/* Exchange boxes */}
       <div className="grid grid-cols-2 gap-3">
         {/* Input */}
@@ -320,36 +356,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
         {/* Details */}
         {detailsOpen && (
           <div className="border-t border-gray-800 px-4 py-3 space-y-3">
-            {/* Status */}
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Status</span>
-              <div className="flex items-center gap-2">
-                <span className={`text-xs font-semibold px-3 py-1 rounded-full ${statusColor}`}>
-                  {getStatusLabel(uiStatus)}
-                </span>
-                {/* Polling indicator */}
-                {isPolling && (
-                  <div className="flex items-center gap-1.5">
-                    <div className="flex gap-0.5">
-                      <div
-                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
-                        style={{ animationDelay: "0s" }}
-                      ></div>
-                      <div
-                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.1s" }}
-                      ></div>
-                      <div
-                        className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
-                        style={{ animationDelay: "0.2s" }}
-                      ></div>
-                    </div>
-                    <span className="text-xs text-gray-600">Polling...</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Failure Reason */}
             {failureReason && (
               <div className="flex justify-between items-start gap-2">
@@ -360,6 +366,22 @@ function SwapStatusDisplay({ statusKey, onReset }) {
               </div>
             )}
 
+            {/* Origin Asset */}
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-sm text-gray-600">Origin Asset</span>
+              <code className="text-xs font-mono text-gray-700 text-right">
+                {parseTokenSymbol(swapData?.originAsset)} ({swapData?.originAsset})
+              </code>
+            </div>
+
+            {/* Destination Asset */}
+            <div className="flex justify-between items-start gap-2">
+              <span className="text-sm text-gray-600">Destination Asset</span>
+              <code className="text-xs font-mono text-gray-700 text-right">
+                {parseTokenSymbol(swapData?.destinationAsset)} ({swapData?.destinationAsset})
+              </code>
+            </div>
+
             {/* Deposit Address */}
             <div className="flex justify-between items-start gap-2">
               <span className="text-sm text-gray-600">Deposit Address</span>
@@ -368,10 +390,50 @@ function SwapStatusDisplay({ statusKey, onReset }) {
               </code>
             </div>
 
+            {/* Min Amount Out */}
+            {swapData?.minAmountOutFormatted && (
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-sm text-gray-600">Min Amount Out</span>
+                <span className="text-xs text-gray-700 text-right">
+                  {swapData.minAmountOutFormatted} {parseTokenSymbol(swapData?.destinationAsset)}
+                </span>
+              </div>
+            )}
+
+            {/* Time Estimate */}
+            {swapData?.timeEstimate && (
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-sm text-gray-600">Time Estimate</span>
+                <span className="text-xs text-gray-700 text-right">
+                  {swapData.timeEstimate} seconds
+                </span>
+              </div>
+            )}
+
+            {/* Deadline */}
+            {swapData?.deadline && (
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-sm text-gray-600">Deadline</span>
+                <span className="text-xs text-gray-700 text-right">
+                  {new Date(swapData.deadline).toLocaleString()}
+                </span>
+              </div>
+            )}
+
+            {/* Refund To */}
+            {swapData?.refundTo && (
+              <div className="flex justify-between items-start gap-2">
+                <span className="text-sm text-gray-600">Refund To</span>
+                <code className="text-xs font-mono text-gray-700 text-right break-all max-w-xs">
+                  {swapData.refundTo}
+                </code>
+              </div>
+            )}
+
             {/* Timestamp */}
             {swapData?.timestamp && (
               <div className="flex justify-between items-start">
-                <span className="text-sm text-gray-600">Timestamp</span>
+                <span className="text-sm text-gray-600">Updated At</span>
                 <span className="text-xs text-gray-700">
                   {new Date(swapData.timestamp).toLocaleString()}
                 </span>
@@ -454,24 +516,27 @@ function SwapPageContent() {
         style={{ backgroundColor: "var(--color-background)" }}
       >
         <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-md font-semibold text-gray-800">
-            Swap Status
-          </h1>
-        </div>
-
-        {/* Main content */}
-        <div className="bg-transparent border-none shadow-none p-0">
-          {statusKey ? (
+        {statusKey ? (
+          <div className="mb-6">
             <SwapStatusDisplay statusKey={statusKey} onReset={handleReset} />
-          ) : (
-            <SwapStatusForm
-              onSubmit={handleFormSubmit}
-              isLoading={isLoading}
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="mb-6">
+              <h1 className="text-md font-semibold text-gray-800">
+                Swap Status
+              </h1>
+            </div>
+            {/* Main content */}
+            <div className="bg-transparent border-none shadow-none p-0">
+              <SwapStatusForm
+                onSubmit={handleFormSubmit}
+                isLoading={isLoading}
+              />
+            </div>
+          </>
+        )}
       </div>
       </div>
     </>
