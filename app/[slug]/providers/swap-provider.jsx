@@ -1,26 +1,11 @@
 "use client";
-import { createContext, useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo } from "react";
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
-import { oneclickStatus } from "@/lib/swap/oneClick";
 import { getTokenId } from "@/lib/swap/swapPayload";
 
 export const SwapContext = createContext();
-
-// ===== POLLING CONFIGURATION =====
-// Linear polling every 5 seconds continuously
-const POLLING_CONFIG = {
-  INTERVAL_MS: 5000,              // Poll every 5 seconds
-};
-
-// Polling state machine states
-const POLLING_STATES = {
-  IDLE: "idle",                   // Not polling
-  POLLING: "polling",             // Actively polling
-  COMPLETE: "complete",           // Swap finished (SUCCESS/REFUNDED)
-  ERROR: "error",                 // Polling failed permanently
-};
 
 export function SwapProvider({ children }) {
   // ===== INPUT STATE (User controls these) =====
@@ -48,12 +33,6 @@ export function SwapProvider({ children }) {
   const [isConfirming, setIsConfirming] = useState(false);
   const [quoteStatus, setQuoteStatus] = useState("");
   const [swapError, setSwapError] = useState("");
-
-  // ===== POLLING STATE (Internal) =====
-  const [pollingState, setPollingState] = useState(POLLING_STATES.IDLE);
-  const pollCountRef = useRef(0);                      // Track poll count
-  const pollIntervalRef = useRef(null);                // Current interval handle
-  const lastPollRef = useRef(null);                    // Deduplicate simultaneous polls
 
   // ===== COMPUTED VALUES =====
   const selectedOriginToken = useMemo(
@@ -106,119 +85,6 @@ export function SwapProvider({ children }) {
       setIsLoadingTokens(false);
     }
   }, [originTokenId]);
-
-  // ===== POLLING LOGIC (OPTIMIZED) =====
-
-  // Stop polling immediately
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
-    }
-    pollCountRef.current = 0;
-    lastPollRef.current = null;
-    setPollingState(POLLING_STATES.IDLE);
-  }, []);
-
-  // Single poll operation
-  const performPoll = useCallback(async (key) => {
-    // Deduplicate: don't make two requests at once
-    if (lastPollRef.current) return;
-
-    if (!key?.depositAddress) {
-      stopPolling();
-      return;
-    }
-
-    lastPollRef.current = true;
-    try {
-      const statusParams = { depositAddress: key.depositAddress };
-
-      const result = await oneclickStatus(statusParams);
-
-      // Handle API error - continue polling
-      if (result.error) {
-        console.warn("Poll error:", result.error);
-        return;
-      }
-
-      if (!result.status) {
-        console.warn("No status in response", result);
-        return;
-      }
-
-      const status = result.status.toUpperCase();
-      setSwapStatus(status);
-
-      // Update message and check for completion
-      switch (status) {
-        case "PENDING_DEPOSIT":
-          setQuoteStatus("Waiting for deposit...");
-          // Keep polling
-          break;
-
-        case "PROCESSING":
-          setQuoteStatus("Processing swap...");
-          // Keep polling
-          break;
-
-        case "SUCCESS":
-          setQuoteStatus("Swap completed! ZEC delivered to recipient.");
-          setPollingState(POLLING_STATES.COMPLETE);
-          stopPolling();
-          break;
-
-        case "FAILED":
-          setQuoteStatus("Swap failed. Please contact support.");
-          setSwapError("Swap failed");
-          setPollingState(POLLING_STATES.ERROR);
-          stopPolling();
-          break;
-
-        case "REFUNDED":
-          setQuoteStatus("Swap refunded to your address.");
-          setPollingState(POLLING_STATES.COMPLETE);
-          stopPolling();
-          break;
-
-        case "INCOMPLETE_DEPOSIT":
-          setQuoteStatus("Deposit incomplete. Waiting for full amount...");
-          // Keep polling
-          break;
-
-        default:
-          setQuoteStatus(`Status: ${status}`);
-      }
-    } catch (error) {
-      console.error("Poll error:", error);
-      // Continue polling on error
-    } finally {
-      lastPollRef.current = null;
-    }
-  }, [stopPolling]);
-
-  // Start polling with linear 5-second intervals
-  const startPolling = useCallback((key) => {
-    // Clear existing polling
-    stopPolling();
-
-    if (!key?.depositAddress) return;
-
-    // Initialize polling state
-    pollCountRef.current = 0;
-    setPollingState(POLLING_STATES.POLLING);
-    setQuoteStatus("Swap confirmed! Waiting for deposit...");
-
-    // Perform first poll immediately
-    performPoll(key);
-    pollCountRef.current += 1;
-
-    // Setup interval for continuous 5-second polling
-    pollIntervalRef.current = setInterval(() => {
-      pollCountRef.current += 1;
-      performPoll(key);
-    }, POLLING_CONFIG.INTERVAL_MS);
-  }, [performPoll, stopPolling]);
 
   // ===== QUOTE ACTIONS =====
 
@@ -306,11 +172,7 @@ export function SwapProvider({ children }) {
       setStatusKey(result.statusKey);
       setQuoteData(result);
       setSwapStatus("PENDING_DEPOSIT");
-
-      // Start polling immediately
-      if (result.statusKey) {
-        startPolling(result.statusKey);
-      }
+      setQuoteStatus("Swap confirmed!");
 
       return result;
     } catch (error) {
@@ -320,7 +182,7 @@ export function SwapProvider({ children }) {
     } finally {
       setIsConfirming(false);
     }
-  }, [isSwapMode, originTokenId, zecTokenId, refundAddress, slippageTolerance, startPolling]);
+  }, [isSwapMode, originTokenId, zecTokenId, refundAddress, slippageTolerance]);
 
   // ===== SWAP MODE MANAGEMENT =====
 
@@ -356,8 +218,7 @@ export function SwapProvider({ children }) {
     setStatusKey(null);
     setSwapStatus("");
     setSwapError("");
-    stopPolling();
-  }, [zecTokenId, stopPolling]);
+  }, [zecTokenId]);
 
   // ===== QUOTE CLEARING ON INPUT CHANGE =====
 
@@ -388,13 +249,6 @@ export function SwapProvider({ children }) {
     loadTokens();
   }, [loadTokens]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      stopPolling();
-    };
-  }, [stopPolling]);
-
   // ===== CONTEXT VALUE =====
   const value = {
     // Token state
@@ -419,7 +273,6 @@ export function SwapProvider({ children }) {
     isConfirming,
     quoteStatus,
     swapError,
-    pollingState,
 
     // Computed
     isSwapMode,

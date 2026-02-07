@@ -1,7 +1,7 @@
 "use client";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
-import { getTokenId } from "@/lib/swap/swapPayload";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
+import { getTokenId } from "@/lib/swap/swapPayload";
 
 export default function SwapComposer({
   profile,
@@ -26,7 +26,6 @@ export default function SwapComposer({
   isConfirming,
   quoteStatus,
   swapError,
-  pollingState,
   // Computed
   isSwapMode,
   // Actions
@@ -169,66 +168,6 @@ export default function SwapComposer({
         </div>
       )}
 
-      {/* STATUS DISPLAY (Polling in progress) */}
-      {swapStatus && (
-        <div className="mt-3 p-4 bg-white rounded-xl border border-gray-800">
-          <div className="space-y-3">
-            {/* Status badge */}
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full ${
-                  swapStatus === "SUCCESS" ? "bg-green-500" :
-                  swapStatus === "FAILED" ? "bg-red-500" :
-                  swapStatus === "REFUNDED" ? "bg-amber-500" :
-                  "bg-blue-500 animate-pulse"
-                }`}
-              />
-              <span className="text-sm font-medium text-gray-700">
-                {swapStatus === "SUCCESS" && "✓ Swap Complete"}
-                {swapStatus === "FAILED" && "✗ Swap Failed"}
-                {swapStatus === "REFUNDED" && "↺ Refunded"}
-                {swapStatus === "PENDING_DEPOSIT" && "Waiting for deposit"}
-                {swapStatus === "PROCESSING" && "⚙ Processing"}
-                {swapStatus === "INCOMPLETE_DEPOSIT" && "Incomplete deposit"}
-                {!["SUCCESS", "FAILED", "REFUNDED", "PENDING_DEPOSIT", "PROCESSING", "INCOMPLETE_DEPOSIT"].includes(swapStatus) && swapStatus}
-              </span>
-            </div>
-
-            {/* Status message */}
-            {quoteStatus && (
-              <p className="text-sm text-gray-600">{quoteStatus}</p>
-            )}
-
-            {/* Polling phase indicator */}
-            {(pollingState === "initial" || pollingState === "backoff") && (
-              <p className="text-xs text-gray-500">
-                {pollingState === "initial" ? "Fast checking... (1s intervals)" : "Checking... (5s intervals)"}
-              </p>
-            )}
-
-            {/* Quote preview still visible during polling */}
-            {quotePreview && (
-              <div className="pt-2 border-t border-gray-200 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">Amount</span>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {quotePreview.amountOutFormatted} {quotePreview.toSymbol}
-                  </span>
-                </div>
-                {quotePreview.amountOutUsd && (
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">Value</span>
-                    <span className="text-xs text-gray-600">
-                      ≈ ${parseFloat(quotePreview.amountOutUsd).toFixed(2)} USD
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
       {/* SWAP DEPOSIT DISPLAY */}
       <SwapDepositDisplay
         depositUri={depositUri}
@@ -255,12 +194,11 @@ export default function SwapComposer({
 
       {/* SWAP SETTINGS (Hidden during polling) */}
       {!swapStatus && (
-        <div className="mt-4 p-4 bg-white rounded-xl border border-gray-800">
-          <h3 className="text-md font-semibold text-gray-900 mb-4">Swap settings</h3>
+        <div className="mt-4 p-4 bg-transparent rounded-xl border border-gray-800">
+          <h3 className="text-sm font-semibold text-gray-800 mb-4">Slippage Tolerance (%)</h3>
 
           {/* Slippage Controls */}
           <div className="mb-4">
-            <label className="block text-sm text-gray-700 mb-2">Slippage tolerance (%)</label>
             <div className="flex items-center gap-2 flex-wrap">
               {slippageOptions.map((option) => (
                 <button

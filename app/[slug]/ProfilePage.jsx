@@ -310,7 +310,6 @@ export default function ProfilePage({ params }) {
     isConfirming: swapContext.isConfirming,
     quoteStatus: swapContext.quoteStatus,
     swapError: swapContext.swapError,
-    pollingState: swapContext.pollingState,
     // Computed
     isSwapMode: swapContext.isSwapMode,
     // Actions

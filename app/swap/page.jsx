@@ -6,7 +6,7 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 
 // Polling configuration
 const POLLING_CONFIG = {
-  INTERVAL_MS: 60000, // Poll every minute
+  INTERVAL_MS: 5000, // Poll every 5 seconds
 };
 
 // Status colors for badges
@@ -93,12 +93,18 @@ function TokenIcon({ symbol, logo, size = 48 }) {
 }
 
 // Status display with new layout
-function SwapStatusDisplay({ statusKey, onReset }) {
-  const [swapStatus, setSwapStatus] = useState("PENDING_DEPOSIT");
+function SwapStatusDisplay({ statusKey, onReset, isDemo = false }) {
+  const [swapStatus, setSwapStatus] = useState(isDemo ? "PROCESSING" : "PENDING_DEPOSIT");
   const [error, setError] = useState("");
-  const [isPolling, setIsPolling] = useState(true);
-  const [statusMessage, setStatusMessage] = useState("Checking swap status...");
-  const [swapData, setSwapData] = useState(null);
+  const [isPolling, setIsPolling] = useState(!isDemo);
+  const [statusMessage, setStatusMessage] = useState(isDemo ? "Your swap is being processed. This usually takes a few minutes." : "Checking swap status...");
+  const [swapData, setSwapData] = useState(isDemo ? {
+    amountInFormatted: "0.005",
+    amountInUsd: "250.00",
+    amountOutFormatted: "12.45",
+    amountOutUsd: "2,872.50",
+    timestamp: new Date().toISOString(),
+  } : null);
   const [detailsOpen, setDetailsOpen] = useState(true);
 
   const pollCountRef = useRef(0);
@@ -107,6 +113,11 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
   // Perform a single poll
   const performPoll = useCallback(async () => {
+    if (isDemo) {
+      console.log("[Swap Status] Demo mode - skipping poll");
+      return;
+    }
+
     if (lastPollRef.current) {
       console.log("[Swap Status] Skipping duplicate poll");
       return;
@@ -192,6 +203,11 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
   // Start polling on mount
   useEffect(() => {
+    if (isDemo) {
+      console.log("[Swap Status] Demo mode enabled - skipping polling setup");
+      return;
+    }
+
     if (!statusKey?.depositAddress) {
       console.log("[Swap Status] Invalid swap identifier on mount");
       setError("Invalid swap identifier");
@@ -205,7 +221,7 @@ function SwapStatusDisplay({ statusKey, onReset }) {
     performPoll();
     pollCountRef.current += 1;
 
-    // Setup interval - poll every minute
+    // Setup interval - poll every 5 seconds
     console.log(`[Swap Status] Setting up interval: ${POLLING_CONFIG.INTERVAL_MS}ms`);
 
     pollIntervalRef.current = setInterval(() => {
@@ -221,7 +237,7 @@ function SwapStatusDisplay({ statusKey, onReset }) {
         clearInterval(pollIntervalRef.current);
       }
     };
-  }, [statusKey, isPolling, performPoll]);
+  }, [statusKey, isPolling, performPoll, isDemo]);
 
   const statusColor = STATUS_COLORS[swapStatus] || STATUS_COLORS.PENDING_DEPOSIT;
 
@@ -231,9 +247,9 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       <div className="flex flex-col items-center gap-4">
         {/* Token icons */}
         <div className="flex items-center gap-4">
+          <TokenIcon symbol="?" size={56} />
+          <div className="text-2xl text-gray-800">→</div>
           <TokenIcon symbol="ZEC" size={56} />
-          <div className="text-2xl text-gray-800">↑</div>
-          <TokenIcon symbol="BTC" size={56} />
         </div>
 
         {/* Label */}
@@ -383,11 +399,19 @@ export default function SwapPage() {
   const router = useRouter();
   const [statusKey, setStatusKey] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDemo, setIsDemo] = useState(false);
 
-  // Check for depositAddress in query params on mount
+  // Check for depositAddress or demo mode in query params on mount
   useEffect(() => {
     const depositAddress = searchParams.get("depositAddress");
-    if (depositAddress) {
+    const demoMode = searchParams.get("demo") === "true";
+
+    if (demoMode) {
+      console.log("[Swap Status] Demo mode enabled");
+      setIsDemo(true);
+      setStatusKey({ depositAddress: "demo_address_123456" });
+      setIsLoading(false);
+    } else if (depositAddress) {
       console.log("[Swap Status] Found deposit address in URL:", depositAddress);
       setStatusKey({ depositAddress });
       setIsLoading(false);
@@ -424,7 +448,7 @@ export default function SwapPage() {
         {/* Main content */}
         <div className="bg-transparent border-none shadow-none p-0">
           {statusKey ? (
-            <SwapStatusDisplay statusKey={statusKey} onReset={handleReset} />
+            <SwapStatusDisplay statusKey={statusKey} onReset={handleReset} isDemo={isDemo} />
           ) : (
             <SwapStatusForm
               onSubmit={handleFormSubmit}
