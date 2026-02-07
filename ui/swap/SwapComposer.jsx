@@ -89,14 +89,7 @@ export default function SwapComposer({
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
       {/* HEADER: Back + Recipient */}
       <div className="flex justify-between items-start relative mb-3">
-        <button
-          type="button"
-          onClick={resetSwapState}
-          className="text-gray-600 hover:text-gray-800 text-xl pt-1 flex-shrink-0"
-          aria-label="Go back to ZEC payment"
-        >
-          ←
-        </button>
+        <div className="w-6 flex-shrink-0" />
 
         <div className="text-md font-semibold text-gray-800 whitespace-normal pt-2 flex-1 text-center px-3">
           Send to{" "}
@@ -108,7 +101,14 @@ export default function SwapComposer({
           </span>
         </div>
 
-        <div className="w-6 flex-shrink-0" />
+        <button
+          type="button"
+          onClick={resetSwapState}
+          className="text-gray-600 hover:text-gray-800 text-xl pt-1 flex-shrink-0"
+          aria-label="Go back to ZEC payment"
+        >
+          ←
+        </button>
       </div>
 
       {/* AMOUNT INPUT + TOKEN SELECTOR + USD DISPLAY */}
@@ -241,14 +241,14 @@ export default function SwapComposer({
 
       {/* STATUS MESSAGE (Before quote/polling) */}
       {quoteStatus && !quotePreview && !swapStatus && (
-        <div className="mt-3 p-3 rounded-xl border border-blue-300 bg-blue-50 text-sm text-blue-700">
+        <div className="mt-3 p-3 rounded-xl border border-gray-800 bg-white text-sm text-gray-700">
           {quoteStatus}
         </div>
       )}
 
       {/* ERROR MESSAGE */}
       {swapError && (
-        <div className="mt-3 p-3 rounded-xl border border-red-300 bg-red-50 text-sm text-red-700">
+        <div className="mt-3 p-3 rounded-xl border border-gray-800 bg-white text-sm text-gray-700">
           {swapError}
         </div>
       )}
