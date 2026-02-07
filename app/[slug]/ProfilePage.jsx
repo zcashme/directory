@@ -288,6 +288,41 @@ export default function ProfilePage({ params }) {
     onSetAsset: swapContext.setToken,
   };
 
+  const swapComposerProps = {
+    // Token state
+    tokenOptions: swapContext.tokenOptions || [],
+    originTokenId: swapContext.originTokenId,
+    originSymbol: swapContext.originSymbol,
+    zecTokenId: swapContext.zecTokenId,
+    // Swap input state
+    swapAmount: swapContext.swapAmount,
+    refundAddress: swapContext.refundAddress,
+    slippageTolerance: swapContext.slippageTolerance,
+    // Quote output state
+    quotePreview: swapContext.quotePreview,
+    quoteData: swapContext.quoteData,
+    // Swap output state
+    depositUri: swapContext.depositUri,
+    statusKey: swapContext.statusKey,
+    swapStatus: swapContext.swapStatus,
+    // UI state
+    isGettingQuote: swapContext.isGettingQuote,
+    isConfirming: swapContext.isConfirming,
+    quoteStatus: swapContext.quoteStatus,
+    swapError: swapContext.swapError,
+    pollingState: swapContext.pollingState,
+    // Computed
+    isSwapMode: swapContext.isSwapMode,
+    // Actions
+    setToken: swapContext.setToken,
+    setSwapAmount: swapContext.setSwapAmount,
+    setRefundAddress: swapContext.setRefundAddress,
+    setSlippageTolerance: swapContext.setSlippageTolerance,
+    getQuote: swapContext.getQuote,
+    confirmSwap: swapContext.confirmSwap,
+    resetSwapState: swapContext.resetSwapState,
+  };
+
   const verificationProps = {
     pendingEdits,
     verify,
@@ -345,7 +380,7 @@ export default function ProfilePage({ params }) {
               ) : (
                 <ZcashCardWrapper>
                   {swapContext.isSwapMode ? (
-                    <SwapComposer profile={profile} />
+                    <SwapComposer profile={profile} {...swapComposerProps} />
                   ) : (
                     <MemoComposer profile={profile} {...memoComposerProps} />
                   )}

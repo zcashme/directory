@@ -1,51 +1,43 @@
 "use client";
-import { useContext } from "react";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
-import { SwapContext } from "@/app/[slug]/providers/swap-provider";
 import { getTokenId } from "@/lib/swap/swapPayload";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 
-export default function SwapComposer({ profile }) {
-  const {
-    // Token state
-    tokenOptions,
-    originTokenId,
-    originSymbol,
-    zecTokenId,
-
-    // Swap input state
-    swapAmount,
-    refundAddress,
-    slippageTolerance,
-
-    // Quote output state
-    quotePreview,
-    quoteData,
-
-    // Swap output state
-    depositUri,
-    statusKey,
-    swapStatus,
-
-    // UI state
-    isGettingQuote,
-    isConfirming,
-    quoteStatus,
-    swapError,
-    pollingState,
-
-    // Computed
-    isSwapMode,
-
-    // Actions
-    setToken,
-    setSwapAmount,
-    setRefundAddress,
-    setSlippageTolerance,
-    getQuote,
-    confirmSwap,
-    resetSwapState,
-  } = useContext(SwapContext);
+export default function SwapComposer({
+  profile,
+  // Token state
+  tokenOptions,
+  originTokenId,
+  originSymbol,
+  zecTokenId,
+  // Swap input state
+  swapAmount,
+  refundAddress,
+  slippageTolerance,
+  // Quote output state
+  quotePreview,
+  quoteData,
+  // Swap output state
+  depositUri,
+  statusKey,
+  swapStatus,
+  // UI state
+  isGettingQuote,
+  isConfirming,
+  quoteStatus,
+  swapError,
+  pollingState,
+  // Computed
+  isSwapMode,
+  // Actions
+  setToken,
+  setSwapAmount,
+  setRefundAddress,
+  setSlippageTolerance,
+  getQuote,
+  confirmSwap,
+  resetSwapState,
+}) {
 
   const recipientName = profile?.display_name || profile?.name || "Recipient";
 
@@ -195,9 +187,9 @@ export default function SwapComposer({ profile }) {
                 {swapStatus === "SUCCESS" && "✓ Swap Complete"}
                 {swapStatus === "FAILED" && "✗ Swap Failed"}
                 {swapStatus === "REFUNDED" && "↺ Refunded"}
-                {swapStatus === "PENDING_DEPOSIT" && "⏳ Waiting for deposit"}
+                {swapStatus === "PENDING_DEPOSIT" && "Waiting for deposit"}
                 {swapStatus === "PROCESSING" && "⚙ Processing"}
-                {swapStatus === "INCOMPLETE_DEPOSIT" && "⚠ Incomplete deposit"}
+                {swapStatus === "INCOMPLETE_DEPOSIT" && "Incomplete deposit"}
                 {!["SUCCESS", "FAILED", "REFUNDED", "PENDING_DEPOSIT", "PROCESSING", "INCOMPLETE_DEPOSIT"].includes(swapStatus) && swapStatus}
               </span>
             </div>
