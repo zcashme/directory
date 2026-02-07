@@ -4,7 +4,6 @@ export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
     const depositAddress = searchParams.get("depositAddress");
-    const depositMemo = searchParams.get("depositMemo");
 
     if (!depositAddress) {
       return Response.json(
@@ -18,9 +17,6 @@ export async function GET(request) {
     );
 
     const params = { depositAddress };
-    if (depositMemo) {
-      params.depositMemo = depositMemo;
-    }
 
     const result = await oneclickStatus(params);
     console.log(`[API] Status result:`, result);

@@ -241,7 +241,6 @@ export default function SwapComposer({ profile }) {
       <SwapDepositDisplay
         depositUri={depositUri}
         depositAddress={statusKey?.depositAddress}
-        depositMemo={statusKey?.depositMemo}
         amountDecimal={quoteData?.deposit?.amountDecimal}
         originSymbol={originSymbol}
         swapStatus={swapStatus}

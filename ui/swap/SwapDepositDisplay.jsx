@@ -2,10 +2,6 @@ import { useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { submitDepositTxHash } from "@/lib/swap/depositAction";
 
-// Helper to encode status key to query param
-function encodeStatusKey(key) {
-  return btoa(JSON.stringify(key));
-}
 
 export default function SwapDepositDisplay({
   depositUri,
@@ -50,11 +46,7 @@ export default function SwapDepositDisplay({
   };
 
   const handleCopyStatusLink = () => {
-    const statusKey = {
-      depositAddress,
-    };
-    const encoded = encodeStatusKey(statusKey);
-    const statusUrl = `${window.location.origin}/swap?txId=${encoded}`;
+    const statusUrl = `${window.location.origin}/swap?depositAddress=${encodeURIComponent(depositAddress)}`;
     navigator.clipboard.writeText(statusUrl);
     setLinkCopied(true);
     setTimeout(() => setLinkCopied(false), 1500);

@@ -6,11 +6,7 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 
 // Polling configuration
 const POLLING_CONFIG = {
-  INITIAL_INTERVAL_MS: 1000,
-  MAX_INITIAL_POLLS: 5,
-  BACKOFF_INTERVAL_MS: 5000,
-  MAX_RETRIES: 3,
-  TIMEOUT_MS: 300000,
+  INTERVAL_MS: 60000, // Poll every minute
 };
 
 // Status colors for badges
@@ -23,23 +19,10 @@ const STATUS_COLORS = {
   INCOMPLETE_DEPOSIT: "bg-yellow-100 text-yellow-700",
 };
 
-// Helper functions
-function encodeStatusKey(key) {
-  return btoa(JSON.stringify(key));
-}
-
-function decodeStatusKey(encoded) {
-  try {
-    return JSON.parse(atob(encoded));
-  } catch {
-    return null;
-  }
-}
 
 // Input form component
 function SwapStatusForm({ onSubmit, isLoading }) {
   const [depositAddress, setDepositAddress] = useState("");
-  const [depositMemo, setDepositMemo] = useState("");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
@@ -53,7 +36,6 @@ function SwapStatusForm({ onSubmit, isLoading }) {
 
     onSubmit({
       depositAddress: depositAddress.trim(),
-      depositMemo: depositMemo.trim() || undefined,
     });
   };
 
@@ -65,17 +47,6 @@ function SwapStatusForm({ onSubmit, isLoading }) {
           value={depositAddress}
           onChange={(e) => setDepositAddress(e.target.value)}
           placeholder="Deposit address"
-          className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-700 focus:ring-1 focus:ring-blue-500"
-          disabled={isLoading}
-        />
-      </div>
-
-      <div>
-        <input
-          type="text"
-          value={depositMemo}
-          onChange={(e) => setDepositMemo(e.target.value)}
-          placeholder="Memo (optional)"
           className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-700 focus:ring-1 focus:ring-blue-500"
           disabled={isLoading}
         />
@@ -132,9 +103,7 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
   const pollCountRef = useRef(0);
   const pollIntervalRef = useRef(null);
-  const startTimeRef = useRef(null);
   const lastPollRef = useRef(null);
-  const pollRetriesRef = useRef(0);
 
   // Perform a single poll
   const performPoll = useCallback(async () => {
@@ -150,18 +119,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       return;
     }
 
-    // Check timeout
-    if (startTimeRef.current) {
-      const elapsed = Date.now() - startTimeRef.current;
-      console.log(`[Swap Status] Elapsed time: ${elapsed}ms`);
-      if (elapsed > POLLING_CONFIG.TIMEOUT_MS) {
-        console.log("[Swap Status] Timeout reached");
-        setError("Swap status check timed out. Please contact support.");
-        setIsPolling(false);
-        return;
-      }
-    }
-
     lastPollRef.current = true;
     console.log(
       `[Swap Status] Performing poll #${pollCountRef.current + 1} for address: ${statusKey.depositAddress.slice(0, 10)}...`
@@ -171,9 +128,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       const params = new URLSearchParams({
         depositAddress: statusKey.depositAddress,
       });
-      if (statusKey.depositMemo) {
-        params.append("depositMemo", statusKey.depositMemo);
-      }
 
       const response = await fetch(`/api/swap/status?${params.toString()}`);
       const result = await response.json();
@@ -181,22 +135,13 @@ function SwapStatusDisplay({ statusKey, onReset }) {
 
       // Handle API error
       if (result.error) {
-        pollRetriesRef.current += 1;
-        console.log(
-          `[Swap Status] Poll error (retry ${pollRetriesRef.current}/${POLLING_CONFIG.MAX_RETRIES}):`,
-          result.error
-        );
-        if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
-          setError(
-            "Unable to fetch swap status. Please check your address and try again."
-          );
-          setIsPolling(false);
-        }
+        console.log(`[Swap Status] Poll error:`, result.error);
+        setError("Unable to fetch swap status. Retrying...");
         return;
       }
 
-      // Reset retries on successful poll
-      pollRetriesRef.current = 0;
+      // Clear error on successful poll
+      setError("");
 
       if (!result.status) {
         console.log("[Swap Status] No status in response");
@@ -239,11 +184,7 @@ function SwapStatusDisplay({ statusKey, onReset }) {
       }
     } catch (err) {
       console.error("[Swap Status] Unexpected poll error:", err);
-      pollRetriesRef.current += 1;
-      if (pollRetriesRef.current > POLLING_CONFIG.MAX_RETRIES) {
-        setError("Connection error. Please refresh and try again.");
-        setIsPolling(false);
-      }
+      setError("Connection error. Retrying...");
     } finally {
       lastPollRef.current = null;
     }
@@ -258,39 +199,21 @@ function SwapStatusDisplay({ statusKey, onReset }) {
     }
 
     console.log("[Swap Status] Starting polling");
-    startTimeRef.current = Date.now();
     pollCountRef.current = 0;
-    pollRetriesRef.current = 0;
 
     // Perform first poll immediately
     performPoll();
     pollCountRef.current += 1;
 
-    // Setup interval
-    const setupInterval = () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
+    // Setup interval - poll every minute
+    console.log(`[Swap Status] Setting up interval: ${POLLING_CONFIG.INTERVAL_MS}ms`);
+
+    pollIntervalRef.current = setInterval(() => {
+      if (isPolling) {
+        pollCountRef.current += 1;
+        performPoll();
       }
-
-      const isInitialPhase =
-        pollCountRef.current < POLLING_CONFIG.MAX_INITIAL_POLLS;
-      const interval = isInitialPhase
-        ? POLLING_CONFIG.INITIAL_INTERVAL_MS
-        : POLLING_CONFIG.BACKOFF_INTERVAL_MS;
-
-      console.log(
-        `[Swap Status] Setting up interval: ${interval}ms (initial: ${isInitialPhase})`
-      );
-
-      pollIntervalRef.current = setInterval(() => {
-        if (isPolling) {
-          pollCountRef.current += 1;
-          performPoll();
-        }
-      }, interval);
-    };
-
-    setupInterval();
+    }, POLLING_CONFIG.INTERVAL_MS);
 
     return () => {
       console.log("[Swap Status] Cleaning up polling");
@@ -382,16 +305,6 @@ function SwapStatusDisplay({ statusKey, onReset }) {
               </code>
             </div>
 
-            {/* Memo */}
-            {statusKey.depositMemo && (
-              <div className="flex justify-between items-start">
-                <span className="text-sm text-gray-600">Memo</span>
-                <code className="text-xs font-mono text-gray-700">
-                  {statusKey.depositMemo}
-                </code>
-              </div>
-            )}
-
             {/* Timestamp */}
             {swapData?.timestamp && (
               <div className="flex justify-between items-start">
@@ -449,7 +362,7 @@ function SwapStatusDisplay({ statusKey, onReset }) {
           onClick={onReset}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold text-gray-800 hover:bg-gray-50 text-md"
         >
-          Another Swap
+          Check Another Swap
         </button>
         <button
           onClick={() =>
@@ -471,24 +384,20 @@ export default function SwapPage() {
   const [statusKey, setStatusKey] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check for txId in query params on mount
+  // Check for depositAddress in query params on mount
   useEffect(() => {
-    const txId = searchParams.get("txId");
-    if (txId) {
-      const decoded = decodeStatusKey(txId);
-      if (decoded?.depositAddress) {
-        console.log("[Swap Status] Decoded status key from URL:", decoded);
-        setStatusKey(decoded);
-        setIsLoading(false);
-      }
+    const depositAddress = searchParams.get("depositAddress");
+    if (depositAddress) {
+      console.log("[Swap Status] Found deposit address in URL:", depositAddress);
+      setStatusKey({ depositAddress });
+      setIsLoading(false);
     }
   }, [searchParams]);
 
   const handleFormSubmit = (key) => {
-    console.log("[Swap Status] Form submitted with key:", key);
+    console.log("[Swap Status] Form submitted with address:", key.depositAddress);
     setIsLoading(true);
-    const encoded = encodeStatusKey(key);
-    router.push(`/swap?txId=${encoded}`);
+    router.push(`/swap?depositAddress=${encodeURIComponent(key.depositAddress)}`);
   };
 
   const handleReset = () => {
