@@ -324,3 +324,16 @@ body {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Force black text on 404 page */
+.next-error-h1,
+.next-error-h1 + div h2 {
+  color: #000 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .next-error-h1,
+  .next-error-h1 + div h2 {
+    color: #000 !important;
+  }
+}

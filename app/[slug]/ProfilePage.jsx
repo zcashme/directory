@@ -2,11 +2,6 @@
 
 // React & Next.js
 import { useEffect, useState, useContext, useCallback, useMemo } from "react";
-import { notFound } from "next/navigation";
-
-// Data fetching utilities
-import { fetchProfileForSlug } from "@/lib/profile/profileFetcher";
-import { getProfileCount, getDuplicateNameCount } from "@/lib/profile/profileQueries";
 
 // Contexts
 import { SelectionContext } from "@/app/[slug]/providers/selection-provider";
@@ -41,13 +36,10 @@ function ZcashCardWrapper({ title, children }) {
 }
 
 // Main Component
-export default function ProfilePage({ params }) {
+export default function ProfilePage({ initialProfile, profileCount, duplicateNameCount }) {
   // State
-  const [profile, setProfile] = useState(null);
-  const [profileCount, setProfileCount] = useState(0);
-  const [duplicateNameCount, setDuplicateNameCount] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [notFoundState, setNotFoundState] = useState(false);
+  const [profile, setProfile] = useState(initialProfile);
+  const [loading, setLoading] = useState(false);
 
   // Contexts - used directly instead of useFeedback hook
   const selectionCtx = useContext(SelectionContext) || {};
@@ -152,34 +144,6 @@ export default function ProfilePage({ params }) {
   }, [uri]);
 
 
-  // Effects - Data Fetching
-  useEffect(() => {
-    async function loadProfile() {
-      try {
-        const { slug } = await params;
-        const fetchedProfile = await fetchProfileForSlug(slug);
-
-        if (!fetchedProfile) {
-          setNotFoundState(true);
-          return;
-        }
-
-        const [count, dupCount] = await Promise.all([
-          getProfileCount(),
-          fetchedProfile.name ? getDuplicateNameCount(fetchedProfile.name) : 0,
-        ]);
-
-        setProfile(fetchedProfile);
-        setProfileCount(count);
-        setDuplicateNameCount(dupCount);
-      } catch (error) {
-        setNotFoundState(true);
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadProfile();
-  }, [params]);
 
   // Effects - Event Listeners
   useEffect(() => {
@@ -238,10 +202,6 @@ export default function ProfilePage({ params }) {
   }, [profile]);
 
   // Early Returns
-  if (notFoundState) {
-    notFound();
-  }
-
   if (loading || !profile) {
     return (
       <div className="flex items-center justify-center min-h-screen">
