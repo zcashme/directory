@@ -550,13 +550,11 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
                 const shareUrl = buildShareUrl(profile);
 
                 if (navigator.share) {
-                  navigator
-                    .share({
-                      title: `${profile.display_name || profile.name} on Zcash.me`,
-                      text: "Check out this Zcash profile:",
-                      url: shareUrl,
-                    })
-                    .catch(() => { });
+                  navigator.share({
+                    title: `${profile.display_name || profile.name} on Zcash.me`,
+                    text: "Check out this Zcash profile:",
+                    url: shareUrl,
+                  });
                 } else {
                   navigator.clipboard.writeText(shareUrl);
                   alert("Profile link copied to clipboard!");

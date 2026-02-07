@@ -87,9 +87,7 @@ export default function ProfilePage({ params }) {
 
     const handlePendingEdits = (e) => {
       if (!e.detail) return;
-      try {
-        setPendingEdits?.(e.detail);
-      } catch (err) {}
+      setPendingEdits?.(e.detail);
     };
 
     window.addEventListener("enterSignInMode", handleSignIn);
@@ -175,7 +173,6 @@ export default function ProfilePage({ params }) {
         setProfileCount(count);
         setDuplicateNameCount(dupCount);
       } catch (error) {
-        console.error("Error loading profile:", error);
         setNotFoundState(true);
       } finally {
         setLoading(false);
