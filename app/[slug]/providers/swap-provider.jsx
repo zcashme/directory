@@ -3,7 +3,7 @@ import { createContext, useState, useRef, useEffect, useCallback } from "react";
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
-import { getSwapStatus } from "@/lib/swap/statusAction";
+import { oneclickStatus } from "@/lib/swap/oneClick";
 import { getTokenId } from "@/lib/swap/swapPayload";
 
 export const SwapContext = createContext();
@@ -107,16 +107,22 @@ export function SwapProvider({ children }) {
       if (!key?.depositAddress) return;
 
       try {
-        const result = await getSwapStatus({
-          depositAddress: key.depositAddress,
-          depositMemo: key.depositMemo,
-        });
+        const statusParams = { depositAddress: key.depositAddress };
+        if (key.depositMemo) statusParams.depositMemo = key.depositMemo;
 
-        if (result.ok && result.status) {
+        const result = await oneclickStatus(statusParams);
+
+        // Handle error response
+        if (result.error) {
+          // Don't stop polling on retryable errors
+          return;
+        }
+
+        if (result.status) {
           // Handle different response structures:
-          // - result.status.status (nested)
-          // - result.status (direct status string)
-          const status = result.status?.status || result.status || null;
+          // - result.status (nested)
+          // - result (direct status string at top level)
+          const status = result.status || null;
 
           if (status) {
             setSwapStatus(status);
@@ -143,13 +149,6 @@ export function SwapProvider({ children }) {
                 setQuoteStatus(`Status: ${status}`);
             }
           }
-        } else if (result.ok === false && result.error) {
-          // Handle API errors gracefully
-          // Don't stop polling on retryable errors
-          if (!result.retryable) {
-            setSwapError(result.error);
-            stopStatusPolling();
-          }
         }
       } catch (error) {
         console.error("Error polling swap status:", error);
@@ -159,7 +158,7 @@ export function SwapProvider({ children }) {
     // Poll immediately, then every 6 seconds
     pollStatus();
     pollIntervalRef.current = setInterval(pollStatus, 6000);
-  }, [stopStatusPolling, getSwapStatus]);
+  }, [stopStatusPolling]);
 
   // Get quote using Server Action
   const getQuote = useCallback(async (params) => {

@@ -379,6 +379,8 @@ export default function ProfilePage({ params }) {
                       onSetSwapAmount={swapContext.setSwapAmount}
                       refundAddress={swapContext.refundAddress || ""}
                       onSetRefundAddress={swapContext.setRefundAddress}
+                      slippageTolerance={swapContext.slippageTolerance || "0.5"}
+                      onSetSlippageTolerance={swapContext.setSlippageTolerance}
                       onGetQuote={handleGetQuote}
                       onConfirmQuote={handleConfirmQuote}
                       isGettingQuote={swapContext.isGettingQuote || false}
