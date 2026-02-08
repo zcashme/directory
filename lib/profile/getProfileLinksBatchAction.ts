@@ -1,18 +1,24 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
+import type { GetProfileLinksBatchResponse } from "@/types/api";
+import type { ProfileLink } from "@/types";
 
 /**
  * Server Action for fetching profile links for multiple profiles
  * Used by useNsDirectory hook
  */
-export async function getProfileLinksBatchAction(zcasherIds) {
+export async function getProfileLinksBatchAction(zcasherIds: number[]): Promise<GetProfileLinksBatchResponse> {
   try {
     if (!Array.isArray(zcasherIds) || zcasherIds.length === 0) {
       return { ok: true, data: {} };
     }
 
     const supabase = createSupabaseServerClient();
+    if (!supabase) {
+      return { ok: false, error: "Database connection error", data: {} };
+    }
+
     const { data, error } = await supabase
       .from("zcasher_links")
       .select("id,label,url,is_verified,zcasher_id")
@@ -27,7 +33,7 @@ export async function getProfileLinksBatchAction(zcasherIds) {
     }
 
     // Group links by zcasher_id
-    const linksByProfileId = {};
+    const linksByProfileId: Record<string, ProfileLink[]> = {};
     (data || []).forEach((link) => {
       if (!linksByProfileId[link.zcasher_id]) {
         linksByProfileId[link.zcasher_id] = [];
@@ -42,7 +48,7 @@ export async function getProfileLinksBatchAction(zcasherIds) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       data: {},
     };
   }

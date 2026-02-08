@@ -1,12 +1,19 @@
 "use server";
 
 import { updateLinkVerification } from "@/lib/profile/verifyLinkDb";
+import type { VoidActionResult } from "@/types/actions";
+import type { LinkVerificationPayload } from "@/types";
 
 /**
  * Server Action for updating link verification status
  * Used by useVerificationFlow hook
  */
-export async function updateLinkVerificationAction(profileId, handle, variants, updatePayload) {
+export async function updateLinkVerificationAction(
+  profileId: number,
+  handle: string,
+  variants: string[],
+  updatePayload: LinkVerificationPayload
+): Promise<VoidActionResult> {
   try {
     if (!profileId || !handle || !Array.isArray(variants) || !updatePayload) {
       return {
@@ -20,7 +27,7 @@ export async function updateLinkVerificationAction(profileId, handle, variants, 
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
     };
   }
 }

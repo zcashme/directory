@@ -1,7 +1,15 @@
 import { supabase } from "@/lib/supabase/supabase-client";
 import { normalizeSlug } from "@/lib/profile/profileUtils";
+import type { Profile, ProfileLink } from "@/types";
 
-const AUTH_PROVIDERS = [
+interface AuthProvider {
+  key: "twitter" | "linkedin_oidc" | "github" | "discord";
+  label: string;
+  match: RegExp;
+  includeStateParams: boolean;
+}
+
+const AUTH_PROVIDERS: AuthProvider[] = [
   {
     key: "twitter",
     label: "X.com",
@@ -28,51 +36,76 @@ const AUTH_PROVIDERS = [
   },
 ];
 
-const buildReturnUrl = (profile, url, includeStateParams) => {
+const buildReturnUrl = (profile: Partial<Profile> | undefined, url: string, includeStateParams: boolean): string => {
   if (typeof window === "undefined") return "";
   const baseSlug = normalizeSlug(profile?.name || "");
   const uniqueSlug = `${baseSlug}-${profile?.id}`;
   const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
   if (includeStateParams) {
-    returnUrlObj.searchParams.set("verify_pid", profile?.id);
+    returnUrlObj.searchParams.set("verify_pid", String(profile?.id ?? ""));
     returnUrlObj.searchParams.set("verify_url", url);
   }
   return returnUrlObj.toString();
 };
 
-const storeVerificationContext = (profileId, url) => {
+const storeVerificationContext = (profileId: number | string | undefined, url: string): void => {
   if (typeof localStorage === "undefined") return;
-  localStorage.setItem("verifying_profile_id", profileId);
+  localStorage.setItem("verifying_profile_id", String(profileId ?? ""));
   localStorage.setItem("verifying_link_url", url);
 };
 
-export const getAuthProviderForUrl = (url) => {
+export const getAuthProviderForUrl = (url: string | undefined): AuthProvider | null => {
   const trimmed = (url || "").trim();
   if (!trimmed) return null;
   return AUTH_PROVIDERS.find((provider) => provider.match.test(trimmed)) || null;
 };
 
-export const getLinkAuthToken = (link) => {
+export const getLinkAuthToken = (link: Partial<ProfileLink> | null | undefined): string | null => {
   if (!link) return null;
   if (link.id) return `!${link.id}`;
   const trimmed = (link.url || "").trim();
   return trimmed ? `+!${trimmed}` : null;
 };
 
-export const isLinkAuthPending = (pendingEdits, token) =>
-  Array.isArray(pendingEdits?.l) && pendingEdits.l.includes(token);
+interface PendingEdits {
+  l?: string[];
+  [key: string]: unknown;
+}
 
-export const appendLinkToken = (pendingEdits, setPendingEdits, token) => {
+export const isLinkAuthPending = (pendingEdits: PendingEdits | null | undefined, token: string | null): boolean =>
+  Array.isArray(pendingEdits?.l) && !!token && pendingEdits.l.includes(token);
+
+export const appendLinkToken = (
+  pendingEdits: PendingEdits | null | undefined,
+  setPendingEdits: (key: string, value: string[]) => void,
+  token: string
+): void => {
   const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
   const next = prev.includes(token) ? prev : [...prev, token];
   setPendingEdits("l", next);
 };
 
-export const removeLinkToken = (pendingEdits, setPendingEdits, token) => {
+export const removeLinkToken = (
+  pendingEdits: PendingEdits | null | undefined,
+  setPendingEdits: (key: string, value: string[]) => void,
+  token: string
+): void => {
   const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
   const next = prev.filter((t) => t !== token);
   setPendingEdits("l", next);
 };
+
+interface StartOAuthParams {
+  providerKey: string;
+  profile: Partial<Profile> | undefined;
+  url: string;
+  setShowRedirect?: (show: boolean) => void;
+  setRedirectLabel?: (label: string) => void;
+}
+
+interface OAuthResult {
+  status: "unknown_provider" | "missing_return" | "redirect" | "error";
+}
 
 export const startOAuthVerification = async ({
   providerKey,
@@ -80,7 +113,7 @@ export const startOAuthVerification = async ({
   url,
   setShowRedirect,
   setRedirectLabel,
-}) => {
+}: StartOAuthParams): Promise<OAuthResult> => {
   const provider = AUTH_PROVIDERS.find((p) => p.key === providerKey);
   if (!provider) return { status: "unknown_provider" };
 
@@ -98,7 +131,7 @@ export const startOAuthVerification = async ({
 
   try {
     const { error } = await supabase.auth.signInWithOAuth({
-      provider: provider.key,
+      provider: provider.key as any,
       options: {
         redirectTo: returnUrl,
         skipBrowserRedirect: false,
@@ -108,8 +141,7 @@ export const startOAuthVerification = async ({
     return { status: "redirect" };
   } catch (error) {
     if (typeof setShowRedirect === "function") setShowRedirect(false);
-    alert("Verification failed: " + (error.message || "Unknown error"));
+    alert("Verification failed: " + ((error as Error).message || "Unknown error"));
     return { status: "error" };
   }
 };
-

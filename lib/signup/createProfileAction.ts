@@ -3,32 +3,38 @@
 import { createProfile, insertProfileLinks, checkAddressTaken } from "@/lib/signup/createProfile";
 import { checkUsernameExists } from "@/lib/directory/searchProfiles";
 import { checkUsernameIsVerified } from "@/lib/profile/profileQueries";
+import type {
+  CreateProfileResponse,
+  CheckAddressTakenResponse,
+  CheckUsernameResponse,
+  CreateProfilePayload,
+  ProfileLinkInput,
+} from "@/types/api";
+import type { VoidActionResult } from "@/types/actions";
 
 /**
  * Server Action for creating a new profile
  * Used by AddUserForm component
  */
-export async function createProfileAction(profileData) {
+export async function createProfileAction(profileData: CreateProfilePayload): Promise<CreateProfileResponse> {
   try {
     const { data, error } = await createProfile(profileData);
-    
+
     if (error) {
       return {
         ok: false,
         error: error.message || "Failed to create profile",
-        data: null,
       };
     }
 
     return {
       ok: true,
-      data,
+      data: data!,
     };
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
-      data: null,
+      error: String((error as Error)?.message || error),
     };
   }
 }
@@ -37,14 +43,14 @@ export async function createProfileAction(profileData) {
  * Server Action for inserting profile links
  * Used by AddUserForm component
  */
-export async function insertProfileLinksAction(zcasherId, links) {
+export async function insertProfileLinksAction(zcasherId: number, links: ProfileLinkInput[]): Promise<VoidActionResult> {
   try {
     await insertProfileLinks(zcasherId, links);
     return { ok: true };
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
     };
   }
 }
@@ -53,7 +59,7 @@ export async function insertProfileLinksAction(zcasherId, links) {
  * Server Action for checking if address is taken
  * Used by AddUserForm component for real-time validation
  */
-export async function checkAddressTakenAction(address) {
+export async function checkAddressTakenAction(address: string): Promise<CheckAddressTakenResponse> {
   try {
     if (!address || typeof address !== "string" || !address.trim()) {
       return { ok: true, taken: false };
@@ -64,7 +70,7 @@ export async function checkAddressTakenAction(address) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       taken: false,
     };
   }
@@ -74,7 +80,7 @@ export async function checkAddressTakenAction(address) {
  * Server Action for checking if username exists
  * Used by AddUserForm component for real-time validation
  */
-export async function checkUsernameExistsForFormAction(username) {
+export async function checkUsernameExistsForFormAction(username: string): Promise<CheckUsernameResponse> {
   try {
     if (!username || typeof username !== "string" || !username.trim()) {
       return { ok: true, exists: false };
@@ -85,7 +91,7 @@ export async function checkUsernameExistsForFormAction(username) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       exists: false,
     };
   }
@@ -95,7 +101,7 @@ export async function checkUsernameExistsForFormAction(username) {
  * Server Action for checking if username is verified
  * Used by AddUserForm component for real-time validation
  */
-export async function checkUsernameIsVerifiedAction(username) {
+export async function checkUsernameIsVerifiedAction(username: string): Promise<CheckUsernameResponse> {
   try {
     if (!username || typeof username !== "string" || !username.trim()) {
       return { ok: true, verified: false };
@@ -106,7 +112,7 @@ export async function checkUsernameIsVerifiedAction(username) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       verified: false,
     };
   }

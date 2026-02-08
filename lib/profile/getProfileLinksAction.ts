@@ -1,18 +1,23 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
+import type { GetProfileLinksResponse } from "@/types/api";
 
 /**
  * Server Action for fetching profile links
  * Used by useProfileLinks hook
  */
-export async function getProfileLinksAction(zcasherId) {
+export async function getProfileLinksAction(zcasherId: number | string | null | undefined): Promise<GetProfileLinksResponse> {
   try {
     if (!zcasherId) {
       return { ok: true, data: [] };
     }
 
     const supabase = createSupabaseServerClient();
+    if (!supabase) {
+      return { ok: false, error: "Database connection error", data: [] };
+    }
+
     const { data, error } = await supabase
       .from("zcasher_links")
       .select("id,label,url,is_verified")
@@ -34,7 +39,7 @@ export async function getProfileLinksAction(zcasherId) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       data: [],
     };
   }
