@@ -2,8 +2,8 @@
 
 import { unstable_cache } from "next/cache";
 import { oneclickTokens } from "./oneClick";
-import type { Token } from "@/types";
-import type { APIResponse } from "@/types/api";
+import type { Token } from "@/lib/swap/types";
+import type { APIResponse } from "@/lib/api/types";
 
 const CACHE_KEY = "oneclick-tokens";
 const CACHE_REVALIDATE = 300; // 5 minutes in seconds

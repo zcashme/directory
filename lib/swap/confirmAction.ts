@@ -10,7 +10,7 @@ import {
 } from "@/lib/swap/swapPayload";
 import { getCachedTokens } from "./fetchTokens";
 import { validateAddressForBlockchain } from "./addressValidation";
-import type { SwapQuoteRequest, SwapConfirmResponse } from "@/types/swap";
+import type { SwapQuoteRequest, SwapConfirmResponse } from "@/lib/swap/types";
 
 function getUserFriendlyErrorMessage(apiErrorMessage: string | undefined): string {
   const errorMap: Record<string, string> = {

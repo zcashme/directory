@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
 import AddUserForm from "@/ui/signup/AddUserForm";

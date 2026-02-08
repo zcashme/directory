@@ -1,4 +1,4 @@
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 
@@ -88,7 +88,7 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
     });
 
     return enriched;
-  } catch (err) {
+  } catch (_err) {
     return [];
   }
 }

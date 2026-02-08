@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface AlphabetSidebarProps {
   letters: string[];
@@ -29,7 +29,7 @@ export default function AlphabetSidebar({ letters, activeLetter, onSelect, show 
 
   useEffect(() => {
     if (!show) return;
-    let scrollTimeout: NodeJS.Timeout;
+    let scrollTimeout: ReturnType<typeof setTimeout>;
     const handleScroll = () => {
       setVisible(true);
       clearTimeout(scrollTimeout);

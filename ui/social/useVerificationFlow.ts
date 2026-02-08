@@ -1,6 +1,5 @@
-// ui/social/useVerificationFlow.js
-
 import { useEffect } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
 import { getSession, onAuthStateChange } from "@/lib/supabase/auth";
 import { updateLinkVerificationAction } from "@/lib/verification/updateLinkVerificationAction";
@@ -12,13 +11,35 @@ import {
   getXAvatarUrl,
   getGithubAvatarUrl,
   getDiscordAvatarUrl,
-  normalizeHandleKey,
   normalizeDiscordHandle,
 } from "@/lib/profile/providerAvatars";
 
-export default function useVerificationFlow(profileId, setForm, setShowRedirect) {
+interface ProfileLink {
+  url: string;
+  is_verified: boolean;
+  [key: string]: unknown;
+}
+
+interface ProfileForm {
+  links: ProfileLink[];
+  [key: string]: unknown;
+}
+
+interface LinkedInData {
+  handle: string | null;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+  email?: string;
+}
+
+export default function useVerificationFlow(
+  profileId: number,
+  setForm: Dispatch<SetStateAction<ProfileForm>>,
+  setShowRedirect: Dispatch<SetStateAction<boolean>>
+): void {
   useEffect(() => {
-    const applyVerification = async (session) => {
+    const applyVerification = async (session: unknown) => {
       if (!session) return;
 
       const params = new URLSearchParams(window.location.search);
@@ -30,8 +51,8 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
 
       if (!pId || !url || String(pId) !== String(profileId)) return;
 
-      const getLinkedInData = (s) => {
-        const identity = s?.user?.identities?.find?.((i) => i?.provider === "linkedin_oidc");
+      const getLinkedInData = (s: any): LinkedInData => {
+        const identity = s?.user?.identities?.find?.((i: any) => i?.provider === "linkedin_oidc");
         const li = identity?.identity_data || {};
         const handle = li.vanityName || li.preferred_username || null;
         return {
@@ -43,8 +64,8 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
         };
       };
 
-      let verifiedDiscordId = null;
-      let verifiedDiscordUrl = null;
+      let verifiedDiscordId: string | null = null;
+      let verifiedDiscordUrl: string | null = null;
       const isXUrl = /^(https?:\/\/)?(www\.)?(x\.com|twitter\.com)\//i.test(url || "");
       const isLinkedInUrl = /^(https?:\/\/)?(www\.)?linkedin\.com\/in\//i.test(url || "");
       const isGithubUrl = /^(https?:\/\/)?(www\.)?github\.com\//i.test(url || "");
@@ -63,7 +84,7 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           return;
         }
 
-        const avatarUrl = getXAvatarUrl(session);
+        const _avatarUrl = getXAvatarUrl(session);
       }
 
       if (isLinkedInUrl) {
@@ -121,7 +142,7 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           return;
         }
 
-        const avatarUrl = await getGithubAvatarUrl(session);
+        const _avatarUrl = await getGithubAvatarUrl(session);
       }
 
       if (isDiscordUrl) {
@@ -154,7 +175,7 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           return;
         }
 
-        const avatarUrl = await getDiscordAvatarUrl(session);
+        const _avatarUrl = await getDiscordAvatarUrl(session);
         if (discordId) {
           verifiedDiscordId = String(discordId);
           verifiedDiscordUrl = `https://discord.com/users/${verifiedDiscordId}`;
@@ -163,7 +184,7 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
 
       try {
         const normalizedUrl = url.replace(/\/$/, "");
-        let handle = normalizedUrl.split("/").pop();
+        let handle = normalizedUrl.split("/").pop() || "";
         if (/(?:x\.com|twitter\.com)\//i.test(normalizedUrl)) {
           const m = normalizedUrl.match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
           handle = m ? m[1] : handle;
@@ -180,13 +201,13 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           const m = normalizedUrl.match(/linkedin\.com\/in\/([^/?#]+)/i);
           handle = m ? m[1] : handle;
         }
-        let hosts = [];
+        let hosts: string[] = [];
         if (isXUrl) hosts = ["x.com", "twitter.com", "www.x.com", "www.twitter.com"];
         if (isLinkedInUrl) hosts = ["linkedin.com", "www.linkedin.com"];
         if (isGithubUrl) hosts = ["github.com", "www.github.com"];
         if (isDiscordUrl) hosts = ["discord.com", "www.discord.com", "discordapp.com", "www.discordapp.com"];
         const schemes = ["https://"];
-        const variants = [];
+        const variants: string[] = [];
         for (const h of hosts) {
           for (const s of schemes) {
             const pathPrefix = isLinkedInUrl ? "/in/" : isDiscordUrl ? "/users/" : "/";
@@ -195,7 +216,7 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
           }
         }
 
-        const updatePayload = {
+        const updatePayload: Record<string, unknown> = {
           is_verified: true,
           updated_at: new Date().toISOString(),
         };
@@ -205,8 +226,10 @@ export default function useVerificationFlow(profileId, setForm, setShowRedirect)
 
         const result = await updateLinkVerificationAction(profileId, handle, variants, updatePayload);
         if (!result.ok) {
+          // Silent failure
         }
-      } catch (err) {
+      } catch (_err) {
+        // Silent failure
       }
 
       setForm((prev) => ({

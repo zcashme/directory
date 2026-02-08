@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
@@ -40,11 +40,11 @@ interface MemoComposerProps {
   memo: string;
   amount: string;
   openWallet: (() => void) | null;
-  setDraftMemo: (memo: string) => void;
-  setDraftAmount: (amount: string) => void;
+  setDraftMemo: (_memo: string) => void;
+  setDraftAmount: (_amount: string) => void;
   asset?: string;
   assetOptions?: AssetOption[];
-  onSetAsset?: (asset: string) => void;
+  onSetAsset?: (_asset: string) => void;
 }
 
 export default function MemoComposer({
@@ -108,7 +108,7 @@ useEffect(() => {
     setValue: setDraftMemo,
   }) as {
     results: Array<{ ch: string; label: string }>;
-    insert: (item: { ch: string; label: string }) => void;
+    insert: (_item: { ch: string; label: string }) => void;
     update: () => void;
     close: () => void;
   };

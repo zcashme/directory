@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { StaticImageData } from "next/image";
 
-import type { Profile, ProfileLink } from "@/types/index";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 import useNsProfiles from "@/ui/ns-directory/useNsProfiles";
 import { getProfileLinksBatchAction } from "@/lib/profile/getProfileLinksBatchAction";
 import { getLinkIcon, getLinkLabel } from "@/lib/profile/profileLinks";
@@ -18,7 +18,7 @@ interface LinksByProfileId {
 interface UseNsDirectoryReturn {
   profiles: Profile[];
   loading: boolean;
-  addProfile: (profile: Profile) => void;
+  addProfile: (_profile: Profile) => void;
   linksByProfileId: LinksByProfileId;
   linksError: string | null;
 }
@@ -28,7 +28,7 @@ export default function useNsDirectory(initialProfiles: Profile[] | null): UseNs
   const { profiles, loading, addProfile } = useNsProfiles(initialProfiles as any, false) as {
     profiles: Profile[];
     loading: boolean;
-    addProfile: (profile: Profile) => void;
+    addProfile: (_profile: Profile) => void;
   };
   const [linksByProfileId, setLinksByProfileId] = useState<LinksByProfileId>({});
   const [linksError, setLinksError] = useState<string | null>(null);

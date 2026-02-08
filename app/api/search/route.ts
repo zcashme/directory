@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfiles";
-import type { SearchProfilesResponse } from "@/types/api";
+import type { SearchProfilesResponse } from "@/lib/api/types";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchProf
       profiles,
       exists
     });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: "Search failed", profiles: [], exists: false },
       { status: 500 }

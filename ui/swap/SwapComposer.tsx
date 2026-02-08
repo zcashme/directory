@@ -1,6 +1,6 @@
 "use client";
-import type { Profile, Token } from "@/types/index";
-import type { SwapQuoteDisplay } from "@/types/swap";
+import type { Profile, Token } from "@/lib/profile/types";
+import type { SwapQuoteDisplay } from "@/lib/swap/types";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import { getTokenId } from "@/lib/swap/swapPayload";
@@ -31,11 +31,11 @@ interface SwapComposerProps {
   // Computed
   isSwapMode: boolean;
   // Actions
-  setToken: (tokenId: string) => void;
-  setSwapAmount: (amount: string) => void;
-  setRefundAddress: (address: string) => void;
-  setSlippageTolerance: (slippage: string) => void;
-  getQuote: (params: {
+  setToken: (_tokenId: string) => void;
+  setSwapAmount: (_amount: string) => void;
+  setRefundAddress: (_address: string) => void;
+  setSlippageTolerance: (_slippage: string) => void;
+  getQuote: (_params: {
     amountIn: string;
     destAddress: string;
     fromToken?: string;
@@ -43,7 +43,7 @@ interface SwapComposerProps {
     refund?: string;
     slippage?: string;
   }) => Promise<unknown | null>;
-  confirmSwap: (params: {
+  confirmSwap: (_params: {
     amountIn: string;
     destAddress: string;
     fromToken?: string;

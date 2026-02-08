@@ -2,7 +2,6 @@
 
 /**
  * Generic server action result (discriminated union)
- * Use this for all server actions to ensure consistent error handling
  */
 export type ServerActionResult<T> =
   | { ok: true; data: T; error?: undefined }

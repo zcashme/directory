@@ -4,7 +4,7 @@ import { EditsContext } from "@/app/[slug]/providers/edits-provider";
 import { MessagingContext } from "@/app/[slug]/providers/messaging-provider";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
-export function nsUseFeedback() {
+export function useNsFeedback() {
   return {
     ...useContext(NsSelectionContext),
     ...useContext(EditsContext),
@@ -12,9 +12,9 @@ export function nsUseFeedback() {
   };
 }
 
-export default nsUseFeedback;
+export default useNsFeedback;
 
-export function nsUseFeedbackController(address) {
+export function useNsFeedbackController(address) {
   const {
     selectedAddress,
     draft,
@@ -28,7 +28,7 @@ export function nsUseFeedbackController(address) {
     setVerifyRequestId,
     setMode,
     mode,
-  } = nsUseFeedback();
+  } = useNsFeedback();
 
   const effectiveAddress = address ?? selectedAddress;
 

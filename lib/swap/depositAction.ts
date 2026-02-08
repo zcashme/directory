@@ -1,7 +1,7 @@
 "use server";
 
 import { oneclickDepositSubmit } from "./oneClick";
-import type { ServerActionResult } from "@/types/actions";
+import type { ServerActionResult } from "@/lib/actions/types";
 
 interface DepositTxHashParams {
   txHash: string;

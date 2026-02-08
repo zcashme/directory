@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { nsUseFeedback, nsUseFeedbackController } from "@/ui/messaging/ns-useFeedback";
+import { useNsFeedback, useNsFeedbackController } from "@/ui/messaging/ns-useFeedback";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
@@ -25,9 +25,9 @@ import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
-  const { setSelectedAddress, setForceShowQR, forceShowQR } = nsUseFeedback();
+  const { setSelectedAddress, setForceShowQR, forceShowQR } = useNsFeedback();
   const { memo, amount, setDraftMemo, setDraftAmount, selectedAddress, uri } =
-    nsUseFeedbackController();
+    useNsFeedbackController();
   const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
     initialProfiles
   );

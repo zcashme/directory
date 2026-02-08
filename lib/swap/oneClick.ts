@@ -1,6 +1,6 @@
-import type { Token } from "@/types";
-import type { QuotePayload, QuoteResponse, SwapStatusData } from "@/types/swap";
-import type { FetchResult } from "@/types/api";
+import type { Token } from "@/lib/swap/types";
+import type { QuotePayload, QuoteResponse, SwapStatusData } from "@/lib/swap/types";
+import type { FetchResult } from "@/lib/api/types";
 
 const BASE_URL = "https://1click.chaindefuser.com".replace(/\/$/, "");
 const API_KEY = process.env.ONECLICK_API_KEY;

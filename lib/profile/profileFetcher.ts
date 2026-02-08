@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { Profile } from "@/types";
+import type { Profile } from "@/lib/profile/types";
 
 const normalize = (value: string = ""): string =>
   value

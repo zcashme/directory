@@ -80,7 +80,7 @@ interface SwapData {
 
 // Input form component
 interface SwapStatusFormProps {
-  onSubmit: (key: StatusKey) => void;
+  onSubmit: (_key: StatusKey) => void;
   isLoading: boolean;
 }
 
@@ -180,7 +180,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
   const uiStatus = mapToUIState(apiStatus);
 
   const pollCountRef = useRef<number>(0);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPollRef = useRef<boolean | null>(null);
 
   // Perform a single poll
@@ -263,7 +263,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
           setStatusMessage("Checking swap status...");
           setFailureReason(null);
       }
-    } catch (err) {
+    } catch (_err) {
       setError("Connection error. Retrying...");
     } finally {
       lastPollRef.current = null;

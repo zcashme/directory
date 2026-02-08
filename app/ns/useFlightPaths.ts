@@ -15,7 +15,7 @@ interface FlightPath {
 
 export default function useFlightPaths(): FlightPath[] {
   const [flightPaths, setFlightPaths] = useState<FlightPath[]>([]);
-  const flightTimersRef = useRef<NodeJS.Timeout[]>([]);
+  const flightTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   useEffect(() => {
     const buildPath = (): string => {

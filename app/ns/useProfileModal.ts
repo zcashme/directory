@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
-import type { Profile, ProfileLink } from "@/types/index";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 
 interface UseProfileModalReturn {
   activeProfile: Profile | null;
-  setActiveProfile: (profile: Profile | null) => void;
+  setActiveProfile: (_profile: Profile | null) => void;
   shareStatus: string;
-  setShareStatus: (status: string) => void;
+  setShareStatus: (_status: string) => void;
   unverifiedLink: ProfileLink | null;
-  setUnverifiedLink: (link: ProfileLink | null) => void;
+  setUnverifiedLink: (_link: ProfileLink | null) => void;
 }
 
 export default function useProfileModal(): UseProfileModalReturn {

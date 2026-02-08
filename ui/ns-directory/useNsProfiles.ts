@@ -1,10 +1,20 @@
 import { useEffect, useState } from "react";
+import type { Profile } from "@/lib/profile/types";
 import { getNsProfilesAction } from "@/lib/directory/getNsProfilesAction";
 
-export default function useNsProfiles(initialProfiles = null, revalidate = true) {
+interface UseNsProfilesReturn {
+  profiles: Profile[];
+  loading: boolean;
+  addProfile: (newProfile: Partial<Profile>) => void;
+}
+
+export default function useNsProfiles(
+  initialProfiles: Profile[] | null = null,
+  revalidate = true
+): UseNsProfilesReturn {
   const hasInitial = initialProfiles !== null;
 
-  const [profiles, setProfiles] = useState(initialProfiles || []);
+  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles || []);
   const [loading, setLoading] = useState(!hasInitial);
 
   useEffect(() => {
@@ -24,7 +34,7 @@ export default function useNsProfiles(initialProfiles = null, revalidate = true)
         }
 
         if (!hasInitial) setLoading(false);
-      } catch (err) {
+      } catch (_err) {
         if (!hasInitial) setLoading(false);
       }
     }
@@ -36,8 +46,8 @@ export default function useNsProfiles(initialProfiles = null, revalidate = true)
     };
   }, [hasInitial, revalidate]);
 
-  const addProfile = (newProfile) => {
-    const enriched = {
+  const addProfile = (newProfile: Partial<Profile>) => {
+    const enriched: Profile = {
       rank_alltime: 0,
       rank_weekly: 0,
       rank_monthly: 0,
@@ -45,7 +55,10 @@ export default function useNsProfiles(initialProfiles = null, revalidate = true)
       links: [],
       verified_links_count: 0,
       ...newProfile,
-      links: newProfile.links || []
+      id: newProfile.id || 0,
+      name: newProfile.name || "",
+      address: newProfile.address || "",
+      links: newProfile.links || [],
     };
 
     setProfiles((prev) => [...prev, enriched]);

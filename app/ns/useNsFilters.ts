@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 
 import {
   getCountryFlag,
@@ -29,19 +29,19 @@ interface LocationOption {
 
 interface UseNsFiltersReturn {
   search: string;
-  setSearch: (value: string) => void;
+  setSearch: (_value: string) => void;
   filters: FilterState;
-  toggleFilter: (key: FilterKey) => void;
+  toggleFilter: (_key: FilterKey) => void;
   clearFilters: () => void;
   anyFilterActive: boolean;
   locationFilter: string[];
-  setLocationFilter: (value: string[]) => void;
+  setLocationFilter: (_value: string[]) => void;
   tagFilter: string;
-  setTagFilter: (value: string) => void;
+  setTagFilter: (_value: string) => void;
   locationSearch: string;
-  setLocationSearch: (value: string) => void;
+  setLocationSearch: (_value: string) => void;
   tagSearch: string;
-  setTagSearch: (value: string) => void;
+  setTagSearch: (_value: string) => void;
   locationOptions: LocationOption[];
   tagOptions: string[];
   filteredLocationOptions: LocationOption[];

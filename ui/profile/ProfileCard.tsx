@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
@@ -25,7 +25,7 @@ import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Profile, EnrichedProfileLink, ProfileTrustWarning } from "@/types";
+import type { Profile, EnrichedProfileLink, ProfileTrustWarning } from "@/lib/profile/types";
 
 const Motion = motion;
 
@@ -322,26 +322,26 @@ function RedirectModal({ isOpen, label }: RedirectModalProps) {
 
 interface FeedbackProps {
   forceShowQR?: boolean | number;
-  setForceShowQR?: (value: boolean | number) => void;
+  setForceShowQR?: (_value: boolean | number) => void;
   pendingEdits?: Record<string, unknown>;
-  setPendingEdits?: (field: string, value: unknown) => void;
+  setPendingEdits?: (_field: string, _value: unknown) => void;
   mode?: string;
-  setMode?: (mode: string) => void;
+  setMode?: (_mode: string) => void;
   verify?: {
     memo: string;
     amount: string;
     zId: number | null;
     requestId: string | null;
   };
-  setVerifyId?: (zId: number | null) => void;
-  setVerifyRequestId?: (requestId: string | null) => void;
-  setVerifyMemo?: (memo: string | null) => void;
-  setVerifyAmount?: (amount: string | null) => void;
+  setVerifyId?: (_zId: number | null) => void;
+  setVerifyRequestId?: (_requestId: string | null) => void;
+  setVerifyMemo?: (_memo: string | null) => void;
+  setVerifyAmount?: (_amount: string | null) => void;
 }
 
 interface ProfileCardProps {
   profile: Profile;
-  onSelect?: (profile: Profile) => void;
+  onSelect?: (_profile: Profile) => void;
   warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;

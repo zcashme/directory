@@ -1,7 +1,7 @@
 "use server";
 
 import { searchCities } from "@/lib/directory/searchCities";
-import type { SearchCitiesResponse } from "@/types/api";
+import type { SearchCitiesResponse } from "@/lib/api/types";
 
 /**
  * Server Action for searching cities

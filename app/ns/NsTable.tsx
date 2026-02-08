@@ -1,6 +1,6 @@
 "use client";
 import { useMemo } from "react";
-import type { Profile, ProfileLink } from "@/types/index";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 
 import LoadingDots from "./LoadingDots";
 import NsRow from "./NsRow";
@@ -14,11 +14,11 @@ interface NsTableProps {
   filteredProfiles: Profile[];
   linksByProfileId: LinksByProfileId;
   selectedAddress: string | null;
-  setSelectedAddress: (address: string | null) => void;
-  setDraftMemo: (memo: string) => void;
-  setActiveProfile: (profile: Profile | null) => void;
-  setForceShowQR: (show: boolean) => void;
-  setUnverifiedLink: (link: ProfileLink | null) => void;
+  setSelectedAddress: (_address: string | null) => void;
+  setDraftMemo: (_memo: string) => void;
+  setActiveProfile: (_profile: Profile | null) => void;
+  setForceShowQR: (_show: boolean) => void;
+  setUnverifiedLink: (_link: ProfileLink | null) => void;
 }
 
 export default function NsTable({

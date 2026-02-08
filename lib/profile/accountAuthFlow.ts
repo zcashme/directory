@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase/supabase-client";
 import { normalizeSlug } from "@/lib/profile/profileUtils";
-import type { Profile, ProfileLink } from "@/types";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 
 interface AuthProvider {
   key: "twitter" | "linkedin_oidc" | "github" | "discord";

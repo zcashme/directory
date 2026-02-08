@@ -1,37 +1,48 @@
-// Swap and quote-related type definitions
-
-import type { Token } from "./index";
+/**
+ * Token entity for cryptocurrency swaps
+ */
+export interface Token {
+  id?: string;
+  assetId?: string;
+  tokenId?: string;
+  asset?: string;
+  symbol: string;
+  ticker?: string;
+  decimals: number;
+  blockchain: string;
+  [key: string]: unknown;
+}
 
 /**
  * Quote request payload (user input)
  */
 export interface SwapQuoteRequest {
-  fromToken: string; // Token ID/asset string
-  toToken: string; // Token ID/asset string
-  amountIn: string; // Decimal amount as string
-  destAddress: string; // Destination address
-  refundAddress: string; // Refund address on origin chain
-  slippageTolerance?: number | string; // Percentage (e.g., 0.5 for 0.5%)
+  fromToken: string;
+  toToken: string;
+  amountIn: string;
+  destAddress: string;
+  refundAddress: string;
+  slippageTolerance?: number | string;
 }
 
 /**
  * Internal quote payload (sent to 1Click API)
  */
 export interface QuotePayload {
-  dry: boolean; // true = quote only, false = confirm swap
+  dry: boolean;
   swapType: "EXACT_INPUT";
-  slippageTolerance: number; // Basis points (0-10000)
-  originAsset: string; // Asset ID
-  destinationAsset: string; // Asset ID
-  amount: string; // Base units as string/bigint
+  slippageTolerance: number;
+  originAsset: string;
+  destinationAsset: string;
+  amount: string;
   depositType: "ORIGIN_CHAIN";
-  refundTo: string; // Refund address
+  refundTo: string;
   refundType: "ORIGIN_CHAIN";
-  recipient: string; // Destination address
+  recipient: string;
   recipientType: "DESTINATION_CHAIN";
-  deadline: string; // ISO date string
-  quoteWaitingTimeMs: number; // Polling timeout (3000ms)
-  error?: string; // Error message if payload invalid
+  deadline: string;
+  quoteWaitingTimeMs: number;
+  error?: string;
 }
 
 /**
@@ -39,42 +50,42 @@ export interface QuotePayload {
  */
 export interface QuoteResponse {
   id?: string;
-  quoteId?: string; // Quote identifier
-  amountInFormatted?: string; // Formatted input amount
-  amountOutFormatted?: string; // Formatted output amount
+  quoteId?: string;
+  amountInFormatted?: string;
+  amountOutFormatted?: string;
   amountInUsd?: number;
-  amountInUSD?: number; // Alternative field name
-  amountInFiat?: number; // Alternative field name
+  amountInUSD?: number;
+  amountInFiat?: number;
   amountOutUsd?: number;
-  amountOutUSD?: number; // Alternative field name
-  amountOutFiat?: number; // Alternative field name
-  timeEstimate?: number; // Seconds
-  timeEstimateSec?: number; // Alternative field name
-  estimatedTimeSeconds?: number; // Alternative field name
+  amountOutUSD?: number;
+  amountOutFiat?: number;
+  timeEstimate?: number;
+  timeEstimateSec?: number;
+  estimatedTimeSeconds?: number;
   minAmountOut?: string;
-  minimumAmountOut?: string; // Alternative field name
-  depositAddress?: string; // Where to send funds
-  depositMode?: string; // Deposit mechanism
-  depositMemo?: string; // Optional memo
-  amountToDeposit?: string; // Base units
-  requiredDepositAmount?: string; // Base units
-  depositAmount?: string; // Base units
-  amountIn?: string; // Base units fallback
-  error?: string; // Error message from API
-  [key: string]: unknown; // Other API-specific fields
+  minimumAmountOut?: string;
+  depositAddress?: string;
+  depositMode?: string;
+  depositMemo?: string;
+  amountToDeposit?: string;
+  requiredDepositAmount?: string;
+  depositAmount?: string;
+  amountIn?: string;
+  error?: string;
+  [key: string]: unknown;
 }
 
 /**
  * Frontend quote display structure
  */
 export interface SwapQuoteDisplay {
-  fromSymbol: string; // Token symbol
-  toSymbol: string; // Token symbol
-  amountInFormatted: string; // Display amount
-  amountOutFormatted: string; // Display amount
+  fromSymbol: string;
+  toSymbol: string;
+  amountInFormatted: string;
+  amountOutFormatted: string;
   amountInUsd?: number;
   amountOutUsd?: number;
-  timeEstimate: string; // Formatted (e.g., "~5 minutes")
+  timeEstimate: string;
   minAmountOut?: string;
 }
 
@@ -113,11 +124,11 @@ export type SwapQuoteResponse = SwapQuoteSuccess | SwapQuoteError;
  * Confirmed swap deposit structure
  */
 export interface SwapDeposit {
-  address: string; // Deposit address
-  mode?: string; // Deposit mode
-  amountBaseUnits: string; // Amount in base units
-  amountDecimal: string; // Amount in decimal format
-  originAsset: string; // Asset ID
+  address: string;
+  mode?: string;
+  amountBaseUnits: string;
+  amountDecimal: string;
+  originAsset: string;
   decimals: number;
 }
 
@@ -127,9 +138,9 @@ export interface SwapDeposit {
 export interface SwapConfirmSuccess {
   ok: true;
   deposit: SwapDeposit;
-  paymentUri: string; // Payment URI (bitcoin:, ethereum:, solana:, or address)
+  paymentUri: string;
   statusKey: {
-    depositAddress: string; // For tracking swap status
+    depositAddress: string;
   };
   display: {
     amountInFormatted: string;
@@ -156,7 +167,7 @@ export type SwapConfirmResponse = SwapConfirmSuccess | SwapConfirmError;
  * Swap status polling response from API
  */
 export interface SwapStatusData {
-  status: string; // "PENDING_DEPOSIT" | "PROCESSING" | "SUCCESS" | "INCOMPLETE_DEPOSIT" | "REFUNDED" | "FAILED"
+  status: string;
   swapDetails?: {
     amountInFormatted?: string;
     amountInUsd?: number;
@@ -171,7 +182,7 @@ export interface SwapStatusData {
     };
     quote?: QuoteResponse;
   };
-  updatedAt?: string; // ISO timestamp
+  updatedAt?: string;
   error?: string;
   [key: string]: unknown;
 }

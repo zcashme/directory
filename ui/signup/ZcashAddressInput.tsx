@@ -3,7 +3,7 @@ import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcash/zcashUtil
 
 interface ZcashAddressInputProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
   label?: string;
   id?: string;
 }

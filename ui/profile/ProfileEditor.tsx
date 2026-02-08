@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { isValidUrl } from "@/lib/profile/validateUrl";
@@ -18,7 +18,7 @@ import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
-import type { Profile, EnrichedProfileLink } from "@/types";
+import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
@@ -54,8 +54,7 @@ function createDeleteToggle(
     bio: boolean;
     profile_image_url: boolean;
   }>>,
-  setForm: React.Dispatch<React.SetStateAction<any>>,
-  handleChange: (field: string, value: string) => void
+  setForm: React.Dispatch<React.SetStateAction<any>>
 ) {
   return () =>
     setDeletedFields((prev) => {
@@ -70,7 +69,7 @@ function createDeleteToggle(
 }
 
 interface FeedbackProps {
-  setPendingEdits?: (field: string, value: unknown) => void;
+  setPendingEdits?: (_field: string, _value: unknown) => void;
   pendingEdits?: Record<string, any>;
 }
 
@@ -483,7 +482,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
       (popup as any)._timer = setTimeout(() => { popup.classList.remove("show"); }, 3000);
       return;
     }
-    createDeleteToggle("address", originals, setDeletedFields, setForm, handleChange)();
+    createDeleteToggle("address", originals, setDeletedFields, setForm)();
   };
 
   return (
@@ -566,7 +565,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
           isDeleted={deletedFields.name}
-          onDelete={createDeleteToggle("name", originals, setDeletedFields, setForm, handleChange)}
+          onDelete={createDeleteToggle("name", originals, setDeletedFields, setForm)}
         >
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
@@ -598,7 +597,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
           helpText="Your public display name."
           hasPending={hasPendingField("display_name", "h")}
           isDeleted={deletedFields.display_name}
-          onDelete={createDeleteToggle("display_name", originals, setDeletedFields, setForm, handleChange)}
+          onDelete={createDeleteToggle("display_name", originals, setDeletedFields, setForm)}
         >
           <input
             id="display_name"
@@ -617,7 +616,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
           helpText="Your current story arc in 100 characters or less."
           hasPending={hasPendingField("bio", "b")}
           isDeleted={deletedFields.bio}
-          onDelete={createDeleteToggle("bio", originals, setDeletedFields, setForm, handleChange)}
+          onDelete={createDeleteToggle("bio", originals, setDeletedFields, setForm)}
         >
           <div className="relative">
             <textarea
@@ -677,7 +676,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
           helpText="Link to PNG or JPG. Search 'free image link host'."
           hasPending={hasPendingField("profile_image_url", "i")}
           isDeleted={deletedFields.profile_image_url}
-          onDelete={createDeleteToggle("profile_image_url", originals, setDeletedFields, setForm, handleChange)}
+          onDelete={createDeleteToggle("profile_image_url", originals, setDeletedFields, setForm)}
         >
           <input
             id="pimg"

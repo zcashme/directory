@@ -1,7 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { GetProfileLinksResponse } from "@/types/api";
+import type { GetProfileLinksResponse } from "@/lib/api/types";
 
 /**
  * Server Action for fetching profile links

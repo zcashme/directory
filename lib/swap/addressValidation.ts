@@ -1,4 +1,4 @@
-import type { BlockchainValidation } from "@/types/api";
+import type { BlockchainValidation } from "@/lib/api/types";
 
 /**
  * Validates addresses based on blockchain type

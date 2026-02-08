@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useState, useEffect, useContext } from "react";
 import type { ReactNode } from "react";
-import type { EditsContextType } from "@/types/contexts";
+import type { EditsContextType } from "./types";
 
 const EditsContext = createContext<EditsContextType | undefined>(undefined);
 

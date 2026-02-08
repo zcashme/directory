@@ -1,8 +1,8 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { GetNsProfilesResponse } from "@/types/api";
-import type { Profile } from "@/types";
+import type { GetNsProfilesResponse } from "@/lib/api/types";
+import type { Profile } from "@/lib/profile/types";
 
 interface RankRow {
   referred_by_zcasher_id: number;

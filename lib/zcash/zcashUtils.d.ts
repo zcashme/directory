@@ -6,11 +6,11 @@ export interface ZcashAddressValidationResult {
   reason?: string;
 }
 
-export function validateZcashAddress(address?: string): ZcashAddressValidationResult;
+export function validateZcashAddress(_address?: string): ZcashAddressValidationResult;
 
-export function getZcashAddressHint(address?: string): string;
+export function getZcashAddressHint(_address?: string): string;
 
-export function buildZcashUri(params: {
+export function buildZcashUri(_params: {
   address: string;
   amount?: string | number;
   memo?: string;
@@ -18,4 +18,4 @@ export function buildZcashUri(params: {
   message?: string;
 }): string;
 
-export function encodeMemo(text: string): string;
+export function encodeMemo(_text: string): string;

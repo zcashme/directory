@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { oneclickStatus } from "@/lib/swap/oneClick";
-import type { SwapStatusData } from "@/types/swap";
+import type { SwapStatusData } from "@/lib/swap/types";
 
 interface SwapStatusErrorResponse {
   error: string;
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SwapStatus
     const result = await oneclickStatus(params);
 
     return NextResponse.json(result);
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: "Failed to check swap status" },
       { status: 500 }

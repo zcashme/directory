@@ -1,9 +1,8 @@
 "use client";
 import { createContext, useState, useEffect, useCallback, useMemo, useContext } from "react";
 import type { ReactNode } from "react";
-import type { SwapContextType } from "@/types/contexts";
-import type { Token } from "@/types/index";
-import type { SwapQuoteDisplay } from "@/types/swap";
+import type { SwapContextType } from "./types";
+import type { Token, SwapQuoteDisplay } from "@/lib/swap/types";
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";

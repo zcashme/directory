@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { City } from "@/types";
+import type { City } from "@/lib/directory/types";
 
 export async function searchCities(query: string): Promise<City[]> {
   const supabase = createSupabaseServerClient();

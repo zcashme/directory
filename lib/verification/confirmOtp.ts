@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { OTPConfirmResponse } from "@/types/api";
+import type { OTPConfirmResponse } from "@/lib/api/types";
 
 interface SupabaseRpcResult {
   data: OTPConfirmResponse | null;

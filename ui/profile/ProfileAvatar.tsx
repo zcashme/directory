@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProfileTrust, getRankType, getCircleClass } from "@/lib/profile/profileUtils";
-import type { Profile } from "@/types";
+import type { Profile } from "@/lib/profile/types";
 
 interface ProfileAvatarProps {
   profile: Partial<Profile>;
@@ -48,7 +48,7 @@ export default function ProfileAvatar({
       { x: -2, y: -2 },
       { x: 2, y: -2 },
     ];
-    let timeoutId: NodeJS.Timeout | null = null;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
     const schedule = () => {
       const delay = 5000 + Math.floor(Math.random() * 4000);

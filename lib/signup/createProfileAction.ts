@@ -9,8 +9,8 @@ import type {
   CheckUsernameResponse,
   CreateProfilePayload,
   ProfileLinkInput,
-} from "@/types/api";
-import type { VoidActionResult } from "@/types/actions";
+} from "@/lib/api/types";
+import type { VoidActionResult } from "@/lib/actions/types";
 
 /**
  * Server Action for creating a new profile

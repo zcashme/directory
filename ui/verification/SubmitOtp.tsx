@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
-import type { Profile } from "@/types";
+import type { Profile } from "@/lib/profile/types";
 
 interface XIconProps {
   className?: string;
@@ -107,7 +107,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
       setCustomMessage(message);
       setStep(2);
 
-    } catch (err) {
+    } catch (_err) {
       setResult("fail");
       setCustomMessage("Unexpected error.");
       setStep(2);

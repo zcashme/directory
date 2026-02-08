@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 
 import {
   hasRank,

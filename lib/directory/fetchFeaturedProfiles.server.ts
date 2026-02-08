@@ -1,6 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enrichLink } from "@/lib/profile/profileLinks";
-import type { Profile, EnrichedProfileLink } from "@/types";
+import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
 export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Profile[]> {
   const supabase = createSupabaseServerClient();
@@ -23,7 +23,7 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
   if (!profiles || profiles.length === 0) return [];
 
   // Get all profile IDs
-  const profileIds = profiles.map((p) => p.id).filter((id): id is number => id != null);
+  const profileIds = profiles.map((p) => p.id).filter((id): id is number => id !== null);
 
   // Fetch all links for these profiles
   const linksByProfileId: Record<number, EnrichedProfileLink[]> = {};

@@ -6,7 +6,7 @@ const BASE_FIELD_CLASS =
 
 interface LinkInputProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
   readOnly?: boolean;
   placeholder?: string;
   showValidation?: boolean;

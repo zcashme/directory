@@ -9,7 +9,7 @@ export default function useEmojiAutocomplete({ textareaRef, value, setValue }) {
     const el = textareaRef?.current;
     if (!el) return setResults([]);
     const caret = el.selectionStart;
-    const match = value.slice(0, caret).match(/(^|\s):([a-z0-9_+\-]+)$/i);
+    const match = value.slice(0, caret).match(/(^|\s):([a-z0-9_+-]+)$/i);
     if (!match) return setResults([]);
 
     const searchTerm = match[2].toLowerCase();

@@ -1,5 +1,5 @@
 // Type definitions for searchCitiesAction
-import type { City } from "@/types";
+import type { City } from "@/lib/directory/types";
 
 export interface SearchCitiesResult {
   ok: boolean;
@@ -7,4 +7,4 @@ export interface SearchCitiesResult {
   error?: string;
 }
 
-export function searchCitiesAction(query: string): Promise<SearchCitiesResult>;
+export function searchCitiesAction(_query: string): Promise<SearchCitiesResult>;

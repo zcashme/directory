@@ -1,4 +1,4 @@
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 
 export { normalizeSlug } from "@/lib/profile/profileUtils";
 export { getLastVerifiedLabel } from "@/lib/profile/profileUtils";

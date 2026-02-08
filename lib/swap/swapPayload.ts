@@ -1,6 +1,6 @@
-import type { Token } from "@/types";
-import type { TokensPayload } from "@/types/api";
-import type { QuotePayload, QuoteResponse } from "@/types/swap";
+import type { Token } from "@/lib/swap/types";
+import type { TokensPayload } from "@/lib/api/types";
+import type { QuotePayload, QuoteResponse } from "@/lib/swap/types";
 
 function extractTokensList(tokensPayload: TokensPayload): Token[] {
   return Array.isArray(tokensPayload) ? tokensPayload : [];

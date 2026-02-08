@@ -36,7 +36,7 @@ export default function VerifiedBadge({
   }, []);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (isTouchDevice && open) {
       timer = setTimeout(() => setOpen(false), 2000);
     }

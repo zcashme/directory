@@ -1,9 +1,9 @@
 "use server";
 
 import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfiles";
-import type { ServerActionResult } from "@/types/actions";
-import type { Profile } from "@/types";
-import type { CheckUsernameResponse } from "@/types/api";
+import type { ServerActionResult } from "@/lib/actions/types";
+import type { Profile } from "@/lib/profile/types";
+import type { CheckUsernameResponse } from "@/lib/api/types";
 
 /**
  * Server Action for searching profiles

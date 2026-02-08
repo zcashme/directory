@@ -72,7 +72,7 @@ function deriveState(value: SocialLinkValue): DerivedState {
 
 interface SocialLinkInputProps {
   value?: SocialLinkValue;
-  onChange?: (value: SocialLinkValue) => void;
+  onChange?: (_value: SocialLinkValue) => void;
   allowRemove?: boolean;
   onRemove?: () => void;
   footer?: ReactNode;

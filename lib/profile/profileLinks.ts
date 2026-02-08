@@ -21,7 +21,7 @@ import faviconReddit from "@/lib/profile/assets/favicons/favicon-reddit.png";
 import faviconGoogleCalendar from "@/lib/profile/assets/favicons/favicon-google-calendar-425.png";
 import fallbackGlobe from "@/lib/profile/assets/favicons/favicon-default-globe.png";
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
-import type { Profile, ProfileLink, EnrichedProfileLink, ProfileLinks } from "@/types";
+import type { Profile, ProfileLink, EnrichedProfileLink, ProfileLinks } from "@/lib/profile/types";
 import type { StaticImageData } from "next/image";
 
 export const FALLBACK_ICON = fallbackGlobe;

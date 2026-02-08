@@ -1,5 +1,6 @@
 "use client";
-import type { Profile, ProfileLink } from "@/types/index";
+import React from "react";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
@@ -20,11 +21,11 @@ interface NsRowProps {
   profile: Profile;
   links: EnrichedLink[];
   selectedAddress: string | null;
-  onSelectAddress: (address: string | null) => void;
-  onSetDraftMemo: (memo: string) => void;
-  onOpenProfile: (profile: Profile) => void;
-  onForceShowQR: (timestamp: number | boolean) => void;
-  onUnverifiedLink: (link: ProfileLink | null) => void;
+  onSelectAddress: (_address: string | null) => void;
+  onSetDraftMemo: (_memo: string) => void;
+  onOpenProfile: (_profile: Profile) => void;
+  onForceShowQR: (_timestamp: number | boolean) => void;
+  onUnverifiedLink: (_link: ProfileLink | null) => void;
 }
 
 export default function NsRow({

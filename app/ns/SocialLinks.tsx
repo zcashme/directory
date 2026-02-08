@@ -1,6 +1,7 @@
 "use client";
+import React from "react";
 import type { StaticImageData } from "next/image";
-import type { ProfileLink } from "@/types/index";
+import type { ProfileLink } from "@/lib/profile/types";
 import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle, isDiscordLink } from "@/lib/profile/profileLinks";
 
 interface EnrichedLink extends ProfileLink {
@@ -17,7 +18,7 @@ interface UnverifiedLinkData {
 
 interface SocialLinksProps {
   links?: EnrichedLink[];
-  onUnverifiedClick?: (data: UnverifiedLinkData) => void;
+  onUnverifiedClick?: (_data: UnverifiedLinkData) => void;
   stopPropagation?: boolean;
   className?: string;
   linkClassName?: string;

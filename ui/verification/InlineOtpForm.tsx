@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
-import type { Profile } from "@/types";
+import type { Profile } from "@/lib/profile/types";
 
 interface SuccessData {
   status: string;
@@ -48,7 +48,7 @@ export default function InlineOtpForm({ profile, onSuccess }: InlineOtpFormProps
       setResult("fail");
       setMessage(failMsg);
       setStep(2);
-    } catch (err) {
+    } catch (_err) {
       setResult("fail");
       setMessage("Unexpected error.");
       setStep(2);

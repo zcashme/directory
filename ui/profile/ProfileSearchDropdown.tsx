@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
@@ -23,11 +23,11 @@ interface SearchResult {
 
 interface ProfileSearchDropdownProps {
   value: string;
-  onChange: (value: string | Profile) => void;
+  onChange: (_value: string | Profile) => void;
   placeholder?: string;
   listOnly?: boolean;
   showByDefault?: boolean;
-  onUsernameAvailable?: (username: string | null) => void;
+  onUsernameAvailable?: (_username: string | null) => void;
   className?: string;
   [key: string]: unknown;
 }
@@ -46,7 +46,7 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const [isHovering, setIsHovering] = useState(false);
   const searchActiveRef = useRef(false);

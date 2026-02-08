@@ -1,7 +1,7 @@
 "use server";
 
 import { confirmOtp } from "@/lib/verification/confirmOtp";
-import type { ConfirmOtpResponse } from "@/types/api";
+import type { ConfirmOtpResponse } from "@/lib/api/types";
 
 /**
  * Server Action for confirming OTP

@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { ProfileLink, LinkVerificationPayload } from "@/types";
+import type { ProfileLink, LinkVerificationPayload } from "@/lib/profile/types";
 
 interface UpdateLinkVerificationResult {
   data: ProfileLink[] | null;

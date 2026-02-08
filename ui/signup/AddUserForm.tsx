@@ -3,9 +3,9 @@
 import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
-import type { Profile, City } from "@/types/index";
+import type { Profile, City } from "@/lib/profile/types";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   createProfileAction,
   insertProfileLinksAction,
@@ -59,7 +59,7 @@ interface ConflictInfo {
 interface AddUserFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onUserAdded?: (profile: Profile) => void;
+  onUserAdded?: (_profile: Profile) => void;
   prefillUsername?: string | null;
 }
 
@@ -95,8 +95,8 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       }
     };
 
-    window.addEventListener("prefillReferrer", handler as EventListener);
-    return () => window.removeEventListener("prefillReferrer", handler as EventListener);
+    window.addEventListener("prefillReferrer", handler as unknown as EventListener);
+    return () => window.removeEventListener("prefillReferrer", handler as unknown as EventListener);
   }, []);
 
 

@@ -1,6 +1,6 @@
 "use server";
 
-import type { ExchangeRate } from "@/types/api";
+import type { ExchangeRate } from "@/lib/api/types";
 
 interface AssetMapping {
   coinbase: string;
@@ -31,7 +31,7 @@ const ASSET_MAPPING: Record<string, AssetMapping> = {
 interface Provider {
   name: string;
   url: string;
-  parse: (data: unknown) => number;
+  parse: (_data: unknown) => number;
 }
 
 const providersForFiat = (fiat: string, asset: string = "ZEC"): Provider[] => {

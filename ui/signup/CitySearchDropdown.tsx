@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { searchCitiesAction } from "@/lib/directory/searchCitiesAction";
-import type { City } from "@/types";
+import type { City } from "@/lib/directory/types";
 
 type CityWithFullLabel = City & { fullLabel?: string };
 
 interface CitySearchDropdownProps {
   value: string;
-  onChange: (value: string | CityWithFullLabel) => void;
+  onChange: (_value: string | CityWithFullLabel) => void;
   placeholder?: string;
 }
 

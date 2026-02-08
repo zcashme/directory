@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
@@ -323,7 +323,8 @@ export default function ProfileVerification({
                   onClick={async () => {
                     try {
                       await navigator.clipboard.writeText(pollDebug);
-                    } catch (err) {
+                    } catch (_err) {
+                      // Ignore clipboard errors
                     }
                   }}
                 >

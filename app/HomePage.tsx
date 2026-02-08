@@ -5,7 +5,7 @@ import type { MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
@@ -173,7 +173,7 @@ function FannedCard({
 
 interface FeaturedCardsSectionProps {
   featuredProfiles: Profile[];
-  onCardClick: (profile: Profile) => void;
+  onCardClick: (_profile: Profile) => void;
 }
 
 function FeaturedCardsSection({ featuredProfiles, onCardClick }: FeaturedCardsSectionProps) {

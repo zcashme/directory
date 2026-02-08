@@ -1,8 +1,8 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { GetProfileLinksBatchResponse } from "@/types/api";
-import type { ProfileLink } from "@/types";
+import type { GetProfileLinksBatchResponse } from "@/lib/api/types";
+import type { ProfileLink } from "@/lib/profile/types";
 
 /**
  * Server Action for fetching profile links for multiple profiles

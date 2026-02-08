@@ -11,4 +11,4 @@ export interface ConfirmOtpResult {
   error?: string;
 }
 
-export function confirmOtpAction(zcasherId: number | undefined, otp: string): Promise<ConfirmOtpResult>;
+export function confirmOtpAction(_zcasherId: number | undefined, _otp: string): Promise<ConfirmOtpResult>;

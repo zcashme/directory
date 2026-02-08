@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useState, useContext } from "react";
 import type { ReactNode } from "react";
-import type { SelectionContextType } from "@/types/contexts";
+import type { SelectionContextType } from "./types";
 
 const SelectionContext = createContext<SelectionContextType | undefined>(undefined);
 

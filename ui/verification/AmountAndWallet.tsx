@@ -62,7 +62,7 @@ interface TokenOption {
 interface AmountAndWalletProps {
   // Required props
   amount: string;
-  setAmount: (amount: string) => void;
+  setAmount: (_amount: string) => void;
   openWallet?: () => void;
 
   // Optional props with defaults
@@ -74,12 +74,12 @@ interface AmountAndWalletProps {
   // Token selector props (optional)
   asset?: string;
   assetOptions?: TokenOption[];
-  setAsset?: (asset: string) => void;
+  setAsset?: (_asset: string) => void;
 
   // Refund address props (optional)
   showRefund?: boolean;
   refundAddress?: string;
-  setRefundAddress?: (address: string) => void;
+  setRefundAddress?: (_address: string) => void;
   tokenBlockchain?: string;
 }
 
@@ -131,7 +131,7 @@ export default function AmountAndWallet({
         setRateFetched(true);
         return true;
       }
-    } catch (err) {
+    } catch (_err) {
       // Silent error handling
     }
     return false;

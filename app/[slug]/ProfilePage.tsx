@@ -90,14 +90,14 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
       setPendingEdits(e.detail.field, e.detail.value);
     };
 
-    window.addEventListener("enterSignInMode", handleSignIn as EventListener);
-    window.addEventListener("enterDraftMode", handleDraft as EventListener);
-    window.addEventListener("pendingEditsUpdated", handlePendingEdits as EventListener);
+    window.addEventListener("enterSignInMode", handleSignIn as unknown as EventListener);
+    window.addEventListener("enterDraftMode", handleDraft as unknown as EventListener);
+    window.addEventListener("pendingEditsUpdated", handlePendingEdits as unknown as EventListener);
 
     return () => {
-      window.removeEventListener("enterSignInMode", handleSignIn as EventListener);
-      window.removeEventListener("enterDraftMode", handleDraft as EventListener);
-      window.removeEventListener("pendingEditsUpdated", handlePendingEdits as EventListener);
+      window.removeEventListener("enterSignInMode", handleSignIn as unknown as EventListener);
+      window.removeEventListener("enterDraftMode", handleDraft as unknown as EventListener);
+      window.removeEventListener("pendingEditsUpdated", handlePendingEdits as unknown as EventListener);
     };
   }, [setMode, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setVerifyRequestId]);
 

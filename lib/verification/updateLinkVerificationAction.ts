@@ -1,8 +1,8 @@
 "use server";
 
 import { updateLinkVerification } from "@/lib/profile/verifyLinkDb";
-import type { VoidActionResult } from "@/types/actions";
-import type { LinkVerificationPayload } from "@/types";
+import type { VoidActionResult } from "@/lib/actions/types";
+import type { LinkVerificationPayload } from "@/lib/profile/types";
 
 /**
  * Server Action for updating link verification status

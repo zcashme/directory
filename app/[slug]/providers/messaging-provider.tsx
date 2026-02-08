@@ -1,7 +1,7 @@
 "use client";
 import { createContext, useState, useContext } from "react";
 import type { ReactNode } from "react";
-import type { MessagingContextType } from "@/types/contexts";
+import type { MessagingContextType } from "./types";
 
 const MessagingContext = createContext<MessagingContextType | undefined>(undefined);
 

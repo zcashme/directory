@@ -4,7 +4,7 @@ import { oneclickQuote } from "@/lib/swap/oneClick";
 import { buildQuotePayload, quoteObj, findToken } from "@/lib/swap/swapPayload";
 import { getCachedTokens } from "./fetchTokens";
 import { validateAddressForBlockchain } from "./addressValidation";
-import type { SwapQuoteRequest, SwapQuoteResponse } from "@/types/swap";
+import type { SwapQuoteRequest, SwapQuoteResponse } from "@/lib/swap/types";
 
 function formatTimeEstimate(seconds: number | undefined): string {
   if (!seconds || typeof seconds !== "number") return "";

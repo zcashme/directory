@@ -1,4 +1,4 @@
-import type { Profile, ProfileTrust, ProfileTrustWarning, RankType } from "@/types";
+import type { Profile, ProfileTrust, ProfileTrustWarning, RankType } from "@/lib/profile/types";
 
 /**
  * Derives trust-state booleans from a profile object.
