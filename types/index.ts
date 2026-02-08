@@ -61,11 +61,13 @@ export interface ProfileLink {
   zcasher_id?: number; // Profile ID (when used in batch results)
 }
 
+import type { StaticImageData } from "next/image";
+
 /**
  * Enriched profile link with computed metadata
  */
 export interface EnrichedProfileLink extends ProfileLink {
-  icon: string; // Image/icon path
+  icon: StaticImageData | string; // Image/icon path or StaticImageData from next/image
   label: string; // Computed display label (non-optional)
   domain?: string; // Extracted domain
   handle?: string; // Extracted username from URL

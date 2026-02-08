@@ -1,8 +1,12 @@
+import type { Token } from "@/types";
+import type { QuotePayload, QuoteResponse, SwapStatusData } from "@/types/swap";
+import type { FetchResult } from "@/types/api";
+
 const BASE_URL = "https://1click.chaindefuser.com".replace(/\/$/, "");
 const API_KEY = process.env.ONECLICK_API_KEY;
 const TIMEOUT_MS = 45 * 1000; // 45 seconds
 
-function headers() {
+function headers(): HeadersInit {
   return {
     Authorization: `Bearer ${API_KEY}`,
     "Content-Type": "application/json",
@@ -10,7 +14,7 @@ function headers() {
   };
 }
 
-async function fetchWithTimeout(url, options = {}) {
+async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -21,7 +25,7 @@ async function fetchWithTimeout(url, options = {}) {
   }
 }
 
-export async function oneclickTokens() {
+export async function oneclickTokens(): Promise<FetchResult<Token[]>> {
   if (!API_KEY) {
     return { error: "1Click API key not configured. Please contact support." };
   }
@@ -31,7 +35,7 @@ export async function oneclickTokens() {
   if (!r.ok) {
     // Try to extract the error message from the response
     try {
-      const errorData = JSON.parse(text);
+      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
       const serverError = errorData?.error || errorData?.message || errorData?.detail;
       if (serverError) {
         return { error: serverError };
@@ -43,7 +47,7 @@ export async function oneclickTokens() {
   }
 
   try {
-    const allTokens = JSON.parse(text);
+    const allTokens = JSON.parse(text) as Token[];
     // Keep ZEC plus BTC, ETH, USDC, USDT, SOL across all blockchain variants
     const allowedSymbols = new Set(["ZEC", "BTC", "ETH", "USDC", "USDT", "SOL"]);
     const filtered = allTokens.filter((t) => allowedSymbols.has(t.symbol));
@@ -80,7 +84,7 @@ export async function oneclickTokens() {
   }
 }
 
-export async function oneclickQuote(payload) {
+export async function oneclickQuote(payload: QuotePayload): Promise<FetchResult<QuoteResponse>> {
   if (!API_KEY) {
     return { error: "1Click API key not configured. Please contact support." };
   }
@@ -95,7 +99,7 @@ export async function oneclickQuote(payload) {
   if (!r.ok) {
     // Try to extract the error message from the response
     try {
-      const errorData = JSON.parse(text);
+      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
       const serverError = errorData?.error || errorData?.message || errorData?.detail;
       if (serverError) {
         return { error: serverError };
@@ -107,13 +111,13 @@ export async function oneclickQuote(payload) {
   }
 
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as QuoteResponse;
   } catch {
     return { error: "Invalid response from quote API" };
   }
 }
 
-export async function oneclickStatus(params) {
+export async function oneclickStatus(params: Record<string, string>): Promise<FetchResult<SwapStatusData>> {
   if (!API_KEY) {
     return { error: "1Click API key not configured. Please contact support." };
   }
@@ -125,7 +129,7 @@ export async function oneclickStatus(params) {
   if (!r.ok) {
     // Try to extract the error message from the response
     try {
-      const errorData = JSON.parse(text);
+      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
       const serverError = errorData?.error || errorData?.message || errorData?.detail;
       if (serverError) {
         return { error: serverError };
@@ -137,13 +141,18 @@ export async function oneclickStatus(params) {
   }
 
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as SwapStatusData;
   } catch {
     return { error: "Invalid response from status API" };
   }
 }
 
-export async function oneclickDepositSubmit({ txHash, depositAddress }) {
+interface DepositSubmitParams {
+  txHash: string;
+  depositAddress: string;
+}
+
+export async function oneclickDepositSubmit({ txHash, depositAddress }: DepositSubmitParams): Promise<FetchResult<unknown>> {
   if (!API_KEY) {
     return { error: "1Click API key not configured. Please contact support." };
   }
@@ -163,7 +172,7 @@ export async function oneclickDepositSubmit({ txHash, depositAddress }) {
   if (!r.ok) {
     // Try to extract the error message from the response
     try {
-      const errorData = JSON.parse(text);
+      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
       const serverError = errorData?.error || errorData?.message || errorData?.detail;
       if (serverError) {
         return { error: serverError };
@@ -175,7 +184,7 @@ export async function oneclickDepositSubmit({ txHash, depositAddress }) {
   }
 
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as unknown;
   } catch {
     return { error: "Invalid response from deposit submit API" };
   }

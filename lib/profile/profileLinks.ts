@@ -1,4 +1,3 @@
-
 import faviconZcashCommunity from "@/lib/profile/assets/favicons/favicon-zcashcommunity-32.png";
 import faviconYouTube from "@/lib/profile/assets/favicons/favicon-youtube-32.png";
 import faviconOdysee from "@/lib/profile/assets/favicons/favicon-odysee-32.png";
@@ -22,10 +21,17 @@ import faviconReddit from "@/lib/profile/assets/favicons/favicon-reddit.png";
 import faviconGoogleCalendar from "@/lib/profile/assets/favicons/favicon-google-calendar-425.png";
 import fallbackGlobe from "@/lib/profile/assets/favicons/favicon-default-globe.png";
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
+import type { Profile, ProfileLink, EnrichedProfileLink, ProfileLinks } from "@/types";
+import type { StaticImageData } from "next/image";
 
 export const FALLBACK_ICON = fallbackGlobe;
 
-export const KNOWN_DOMAINS = {
+interface DomainConfig {
+  label: string;
+  icon: StaticImageData;
+}
+
+export const KNOWN_DOMAINS: Record<string, DomainConfig> = {
   "x.com": { label: "X", icon: faviconX },
   "twitter.com": { label: "Twitter", icon: faviconX },
 
@@ -92,10 +98,10 @@ export const KNOWN_DOMAINS = {
   "gts.zebras.social": { label: "Zebras", icon: FALLBACK_ICON },
 
   "calendar.app.google": { label: "Google Calendar", icon: faviconGoogleCalendar },
-};
+} as const;
 
 
-export function extractDomain(url) {
+export function extractDomain(url: string): string {
   try {
     const u = new URL(url);
     return u.hostname.toLowerCase().replace(/^www\./, "");
@@ -105,19 +111,21 @@ export function extractDomain(url) {
   }
 }
 
-export const getLinkIcon = (url = "") => {
+export const getLinkIcon = (url: string = ""): StaticImageData => {
   const domain = extractDomain(url || "");
   const entry = KNOWN_DOMAINS[domain];
   return entry?.icon || FALLBACK_ICON;
 };
 
-export const getLinkLabel = (url = "") => {
+export const getLinkLabel = (url: string = ""): string => {
   const domain = extractDomain(url || "");
   const entry = KNOWN_DOMAINS[domain];
   return entry?.label || domain || "Link";
 };
 
-const PLATFORM_BY_DOMAIN = {
+type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram";
+
+const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "x.com": "X",
   "twitter.com": "X",
   "github.com": "GitHub",
@@ -133,9 +141,9 @@ const PLATFORM_BY_DOMAIN = {
   "snapchat.com": "Snapchat",
   "t.me": "Telegram",
   "telegram.me": "Telegram",
-};
+} as const;
 
-export const getSocialHandle = (url = "") => {
+export const getSocialHandle = (url: string = ""): string => {
   const trimmed = (url || "").trim();
   if (!trimmed) return "";
 
@@ -151,12 +159,12 @@ export const getSocialHandle = (url = "") => {
   return decodeURIComponent(last);
 };
 
-export const isDiscordLink = (url = "") =>
+export const isDiscordLink = (url: string = ""): boolean =>
   /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(
     url || ""
   );
 
-export const getSocialDisplay = (link) => {
+export const getSocialDisplay = (link: ProfileLink): string => {
   if (!link) return "";
   if (isDiscordLink(link.url) && link.is_verified && link.label) {
     return link.label;
@@ -168,7 +176,7 @@ export const getSocialDisplay = (link) => {
 /**
  * Enriches a raw link object with a resolved label and favicon icon.
  */
-export function enrichLink(link) {
+export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   const domain = extractDomain(link.url);
   const dbLabel = (link.label || "").trim();
   const handle = getSocialHandle(link.url || "");
@@ -194,6 +202,8 @@ export function enrichLink(link) {
       ...link,
       label: (shouldUseHandle ? handle : dbLabel) || KNOWN_DOMAINS[domain].label,
       icon: KNOWN_DOMAINS[domain].icon,
+      domain,
+      handle,
     };
   }
 
@@ -204,13 +214,15 @@ export function enrichLink(link) {
       domain ||
       "Unknown",
     icon: FALLBACK_ICON,
+    domain,
+    handle,
   };
 }
 
 /**
  * Parses and enriches links from a profile object.
  */
-export function parseProfileLinks(profile) {
+export function parseProfileLinks(profile: Profile): ProfileLinks {
   const rawLinks = Array.isArray(profile.links) ? profile.links : [];
 
   const linksArray = rawLinks

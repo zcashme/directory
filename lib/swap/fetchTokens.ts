@@ -2,6 +2,8 @@
 
 import { unstable_cache } from "next/cache";
 import { oneclickTokens } from "./oneClick";
+import type { Token } from "@/types";
+import type { APIResponse } from "@/types/api";
 
 const CACHE_KEY = "oneclick-tokens";
 const CACHE_REVALIDATE = 300; // 5 minutes in seconds
@@ -23,10 +25,10 @@ export const getCachedTokens = unstable_cache(
  * Used by SwapProvider to load available tokens
  */
 
-export async function getSwapTokens() {
+export async function getSwapTokens(): Promise<APIResponse<Token[]>> {
   const result = await getCachedTokens();
-  if (result.error) {
+  if ("error" in result && result.error) {
     return { ok: false, error: result.error, retryable: true };
   }
-  return { ok: true, data: result };
+  return { ok: true, data: result as Token[] };
 }

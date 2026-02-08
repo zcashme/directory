@@ -1,7 +1,15 @@
 "use server";
 
+import type { ExchangeRate } from "@/types/api";
+
+interface AssetMapping {
+  coinbase: string;
+  coingecko: string;
+  cryptocompare: string;
+}
+
 // Map asset symbols to API identifiers
-const ASSET_MAPPING = {
+const ASSET_MAPPING: Record<string, AssetMapping> = {
   ZEC: {
     coinbase: "ZEC",
     coingecko: "zcash",
@@ -20,11 +28,17 @@ const ASSET_MAPPING = {
   // Add more mappings as needed
 };
 
-const providersForFiat = (fiat, asset = "ZEC") => {
+interface Provider {
+  name: string;
+  url: string;
+  parse: (data: unknown) => number;
+}
+
+const providersForFiat = (fiat: string, asset: string = "ZEC"): Provider[] => {
   const fiatUpper = fiat.toUpperCase();
   const fiatLower = fiat.toLowerCase();
   const assetUpper = asset.toUpperCase();
-  
+
   // Get asset identifiers or default to the asset symbol itself
   const mapping = ASSET_MAPPING[assetUpper] || {
     coinbase: assetUpper,
@@ -36,17 +50,17 @@ const providersForFiat = (fiat, asset = "ZEC") => {
     {
       name: "Coinbase",
       url: `https://api.coinbase.com/v2/prices/${mapping.coinbase}-${fiatUpper}/spot`,
-      parse: (data) => parseFloat(data?.data?.amount),
+      parse: (data: unknown) => parseFloat((data as { data?: { amount?: string } })?.data?.amount || ""),
     },
     {
       name: "CoinGecko",
       url: `https://api.coingecko.com/api/v3/simple/price?ids=${mapping.coingecko}&vs_currencies=${fiatLower}`,
-      parse: (data) => parseFloat(data?.[mapping.coingecko]?.[fiatLower]),
+      parse: (data: unknown) => parseFloat((data as Record<string, Record<string, string>>)?.[mapping.coingecko]?.[fiatLower] || ""),
     },
     {
       name: "CryptoCompare",
       url: `https://min-api.cryptocompare.com/data/price?fsym=${mapping.cryptocompare}&tsyms=${fiatUpper}`,
-      parse: (data) => parseFloat(data?.[fiatUpper]),
+      parse: (data: unknown) => parseFloat((data as Record<string, string>)?.[fiatUpper] || ""),
     },
   ];
 };
@@ -54,24 +68,24 @@ const providersForFiat = (fiat, asset = "ZEC") => {
 /**
  * Fetch exchange rate for a given asset and fiat currency
  * Uses Next.js unstable_cache for 10-second caching
- * 
- * @param {string} fiat - Fiat currency code (default: "USD")
- * @param {string} asset - Asset symbol (default: "ZEC")
- * @returns {Promise<{ok: boolean, rate?: number, source?: string, fiat?: string, asset?: string, error?: string}>}
+ *
+ * @param fiat - Fiat currency code (default: "USD")
+ * @param asset - Asset symbol (default: "ZEC")
+ * @returns Promise with exchange rate data
  */
-async function fetchRateFromProvider(fiat, asset) {
+async function fetchRateFromProvider(fiat: string, asset: string): Promise<ExchangeRate> {
   const fiatUpper = (fiat || "USD").toUpperCase();
   const assetUpper = (asset || "ZEC").toUpperCase();
-  
+
   const providers = providersForFiat(fiatUpper, assetUpper);
 
   for (const provider of providers) {
     try {
-      const response = await fetch(provider.url, { 
-        next: { revalidate: 10 } 
+      const response = await fetch(provider.url, {
+        next: { revalidate: 10 }
       });
       if (!response.ok) continue;
-      const data = await response.json();
+      const data: unknown = await response.json();
       const rate = provider.parse(data);
       if (Number.isFinite(rate) && rate > 0) {
         return {
@@ -89,8 +103,8 @@ async function fetchRateFromProvider(fiat, asset) {
 
   return {
     ok: false,
-    rate: null,
-    source: null,
+    rate: undefined,
+    source: undefined,
     fiat: fiatUpper,
     asset: assetUpper,
     error: "Failed to fetch rate from all providers",
@@ -100,30 +114,30 @@ async function fetchRateFromProvider(fiat, asset) {
 /**
  * Server Action for fetching exchange rates
  * Used by AmountAndWallet component for currency conversion
- * 
+ *
  * Note: Caching is handled at the fetch level using `next: { revalidate: 10 }`
  * which provides 10-second caching per currency pair automatically.
- * 
- * @param {string} fiat - Fiat currency code (default: "USD")
- * @param {string} asset - Asset symbol (default: "ZEC")
- * @returns {Promise<{ok: boolean, rate?: number, source?: string, fiat?: string, asset?: string, error?: string}>}
+ *
+ * @param fiat - Fiat currency code (default: "USD")
+ * @param asset - Asset symbol (default: "ZEC")
+ * @returns Promise with exchange rate data
  */
-export async function getRateAction(fiat = "USD", asset = "ZEC") {
+export async function getRateAction(fiat: string = "USD", asset: string = "ZEC"): Promise<ExchangeRate> {
   try {
     const fiatUpper = (fiat || "USD").toUpperCase();
     const assetUpper = (asset || "ZEC").toUpperCase();
-    
+
     // Fetch rate - caching handled by Next.js fetch cache with revalidate: 10
     const result = await fetchRateFromProvider(fiatUpper, assetUpper);
     return result;
   } catch (e) {
     return {
       ok: false,
-      rate: null,
-      source: null,
+      rate: undefined,
+      source: undefined,
       fiat: (fiat || "USD").toUpperCase(),
       asset: (asset || "ZEC").toUpperCase(),
-      error: String(e?.message || e),
+      error: String((e as Error)?.message || e),
     };
   }
 }

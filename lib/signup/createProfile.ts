@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { CreateProfilePayload, ProfileLinkInput, Profile } from "@/types";
+import type { Profile } from "@/types";
+import type { CreateProfilePayload, ProfileLinkInput } from "@/types/api";
 
 export async function checkAddressTaken(address: string): Promise<boolean> {
   const supabase = createSupabaseServerClient();
