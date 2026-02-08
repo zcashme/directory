@@ -1,7 +1,7 @@
 "use client";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
-import type { Profile } from "@/types/index";
+import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { nsUseFeedback, nsUseFeedbackController } from "@/ui/messaging/ns-useFeedback";
@@ -17,7 +17,6 @@ import NsHeader from "./NsHeader";
 import NsLocationFilterModal from "./NsLocationFilterModal";
 import NsTable from "./NsTable";
 import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
-import znsFavicon from "./assets/zns-favicon.png";
 import useFlightPaths from "./useFlightPaths";
 import useNsCounts from "./useNsCounts";
 import useNsDirectory from "./useNsDirectory";
@@ -75,26 +74,6 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     () => (activeProfile ? getProfileTags(activeProfile) : []),
     [activeProfile]
   );
-
-  useEffect(() => {
-    const previousTitle = document.title;
-    document.title = "ZNS";
-    let faviconLink = document.querySelector("link[rel~='icon']");
-    const previousHref = faviconLink?.getAttribute("href") || "";
-    if (!faviconLink) {
-      faviconLink = document.createElement("link");
-      faviconLink.rel = "icon";
-      document.head.appendChild(faviconLink);
-    }
-    faviconLink.href = znsFavicon?.src || znsFavicon;
-    return () => {
-      document.title = previousTitle;
-      if (faviconLink && previousHref) {
-        faviconLink.href = previousHref;
-      }
-    };
-  }, []);
-
 
   useEffect(() => {
     const handleScroll = () => {

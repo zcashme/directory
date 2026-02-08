@@ -3,7 +3,7 @@
 // React & Next.js
 import { useEffect, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { Profile, Token } from "@/types/index";
+import type { Profile, Token } from "@/lib/profile/types";
 
 // Contexts - using typed hooks
 import { useSelection } from "@/app/[slug]/providers/selection-provider";
@@ -151,54 +151,6 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     window.addEventListener("forceFeedbackNoteMode", handler);
     return () => window.removeEventListener("forceFeedbackNoteMode", handler);
   }, [setMode, setForceShowQR]);
-
-  // Effects - Document Metadata (Title & Favicon)
-  useEffect(() => {
-    if (!profile) return;
-
-    const originalTitle = document.title;
-    const originalFavicon = document.querySelector("link[rel='icon']")?.getAttribute("href") || "/favicon.ico";
-
-    const displayName = profile.display_name || profile.name || "Profile";
-    document.title = `${displayName} | Zcash.me`;
-
-    if (profile.profile_image_url) {
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-        const size = 64;
-        const canvas = document.createElement("canvas");
-        canvas.width = size;
-        canvas.height = size;
-        const ctx = canvas.getContext("2d");
-
-        if (ctx) {
-          ctx.beginPath();
-          ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
-          ctx.closePath();
-          ctx.clip();
-          ctx.drawImage(img, 0, 0, size, size);
-
-          let faviconLink: HTMLLinkElement | null = document.querySelector("link[rel='icon']");
-          if (!faviconLink) {
-            faviconLink = document.createElement("link");
-            faviconLink.rel = "icon";
-            document.head.appendChild(faviconLink);
-          }
-          faviconLink.href = canvas.toDataURL("image/png");
-        }
-      };
-      img.src = profile.profile_image_url;
-    }
-
-    return () => {
-      document.title = originalTitle;
-      const faviconLink = document.querySelector("link[rel='icon']");
-      if (faviconLink) {
-        faviconLink.setAttribute("href", originalFavicon);
-      }
-    };
-  }, [profile]);
 
   // Early Returns
   if (loading || !profile) {

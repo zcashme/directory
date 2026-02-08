@@ -20,8 +20,11 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: profile.display_name || profile.name || slug,
+    title: `${profile.display_name || profile.name || slug} | Zcash.me`,
     description: profile.bio || `Zcash profile for ${profile.name || slug}`,
+    icons: {
+      icon: profile.profile_image_url || "/favicon.ico",
+    },
   };
 }
 
