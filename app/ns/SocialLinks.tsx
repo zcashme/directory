@@ -43,18 +43,18 @@ export default function SocialLinks({
         const isDiscord = isDiscordLink(link.url);
         const isVerified = Boolean(link.is_verified);
         const displayHandle = getSocialDisplay(link);
-        const title = link.domainLabel || getLinkLabel(link.url);
+        const title = link.domainLabel ?? getLinkLabel(link.url);
 
         if (!isVerified) {
           return (
             <button
-              key={link.id || link.url}
+              key={link.id ?? link.url}
               type="button"
               onClick={(event) => {
                 if (stopPropagation) event.stopPropagation();
                 onUnverifiedClick?.({
                   url: link.url,
-                  label: link.label || "",
+                  label: link.label ?? "",
                   display: getSocialHandle(link.url),
                   isDiscord,
                 });
@@ -63,7 +63,7 @@ export default function SocialLinks({
               title={title}
             >
               <img
-                src={(link.icon as any)?.src || link.icon || (FALLBACK_ICON as any)?.src || FALLBACK_ICON}
+                src={resolveImageSrc(link.icon) ?? resolveImageSrc(FALLBACK_ICON)}
                 alt={title}
                 className="h-4 w-4"
               />
@@ -73,8 +73,8 @@ export default function SocialLinks({
         }
 
         return (
-          <a
-            key={link.id || link.url}
+            <a
+              key={link.id ?? link.url}
             href={link.url}
             target="_blank"
             rel="noopener noreferrer"
@@ -83,7 +83,7 @@ export default function SocialLinks({
             title={title}
           >
             <img
-              src={link.icon?.src || link.icon || FALLBACK_ICON?.src || FALLBACK_ICON}
+              src={resolveImageSrc(link.icon) ?? resolveImageSrc(FALLBACK_ICON)}
               alt={title}
               className="h-4 w-4"
             />

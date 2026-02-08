@@ -1,4 +1,5 @@
-"use client";
+ "use client";
+import type { StaticImageData } from "next/image";
 import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
 import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
 
@@ -6,6 +7,11 @@ interface TagBadgesProps {
   tags?: string[];
   idPrefix?: string;
 }
+
+const resolveAssetSrc = (asset: StaticImageData | string | undefined): string | undefined => {
+  if (!asset) return undefined;
+  return typeof asset === "string" ? asset : asset.src;
+};
 
 export default function TagBadges({ tags = [], idPrefix = "" }: TagBadgesProps) {
   if (!tags.length) return null;
@@ -49,11 +55,11 @@ export default function TagBadges({ tags = [], idPrefix = "" }: TagBadgesProps) 
             </svg>
           )}
           {tag === "Core" && (
-            <img src={(coreIcon as any)?.src || coreIcon} alt="Core" className="h-4 w-auto" />
+            <img src={resolveAssetSrc(coreIcon)} alt="Core" className="h-4 w-auto" />
           )}
           {tag === "Long-term" && (
             <img
-              src={(longTermIcon as any)?.src || longTermIcon}
+              src={resolveAssetSrc(longTermIcon)}
               alt="Long-term"
               className="h-4 w-auto"
             />

@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
@@ -19,7 +18,7 @@ import NsTable from "./NsTable";
 import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
 import useFlightPaths from "./useFlightPaths";
 import useNsCounts from "./useNsCounts";
-import useNsDirectory from "./useNsDirectory";
+import useNsDirectory, { type EnrichedLink, type LinksByProfileId } from "./useNsDirectory";
 import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
@@ -84,9 +83,11 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const activeLinks = activeProfile
-    ? linksByProfileId[activeProfile?.id] || []
+  const activeLinks: EnrichedLink[] = activeProfile
+    ? linksByProfileId[activeProfile.id] ?? []
     : [];
+  const activeProfileName = activeProfile?.display_name ?? activeProfile?.name ?? "Unnamed";
+  const activeProfileSlug = normalizeSlug(activeProfileName);
 
 
   const showAnnouncement = announcementConfig.enabled && !isBannerDismissed;
@@ -222,13 +223,13 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
         <NsTable
           loading={loading}
           filteredProfiles={filteredProfiles}
-          linksByProfileId={linksByProfileId as any}
+          linksByProfileId={linksByProfileId}
           selectedAddress={selectedAddress}
           setSelectedAddress={setSelectedAddress}
           setDraftMemo={setDraftMemo}
           setActiveProfile={setActiveProfile}
           setForceShowQR={setForceShowQR}
-          setUnverifiedLink={setUnverifiedLink as any}
+          setUnverifiedLink={setUnverifiedLink}
         />
 
         {showLocationFilter && (
@@ -264,7 +265,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 flex-nowrap min-w-0">
                       <div className="min-w-0 text-base font-black tracking-tight text-gray-900">
-                        {activeProfile?.display_name || activeProfile?.name || "Unnamed"}
+                        {activeProfileName}
                       </div>
                       <TagBadges tags={activeTags} idPrefix="active-" />
                     </div>
@@ -272,14 +273,12 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                       <button
                         type="button"
                         onClick={() => {
-                          const slug = normalizeSlug(
-                            activeProfile?.name || activeProfile?.display_name || ""
-                          );
+                          const slug = activeProfileSlug;
                           if (!slug) return;
                           const shareUrl = `https://zcash.me/${slug}`;
                           if (navigator.share) {
                             navigator.share({
-                              title: activeProfile?.display_name || activeProfile?.name || "Zcash.me",
+                              title: activeProfileName,
                               url: shareUrl,
                             });
                             return;
@@ -289,13 +288,9 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                           setTimeout(() => setShareStatus(""), 1500);
                         }}
                         className="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
-                        disabled={
-                          !normalizeSlug(
-                            activeProfile?.name || activeProfile?.display_name || ""
-                          )
-                        }
+                        disabled={!activeProfileSlug}
                       >
-                        {shareStatus || "Share"}
+                        {shareStatus ?? "Share"}
                       </button>
                       <button
                         type="button"
@@ -308,20 +303,20 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                       </button>
                     </div>
                   </div>
-                  <a
-                    href={`https://zcash.me/${normalizeSlug(activeProfile?.name || activeProfile?.display_name || "")}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
-                  >
-                    <span>Zcash.me/</span>
-                    <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
-                  </a>
-                  <SocialLinks
-                    links={activeLinks as any}
-                    onUnverifiedClick={setUnverifiedLink as any}
-                    stopPropagation
-                  />
+                    <a
+                      href={`https://zcash.me/${activeProfileSlug}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
+                    >
+                      <span>Zcash.me/</span>
+                      <span>{activeProfileName}</span>
+                    </a>
+                    <SocialLinks
+                      links={activeLinks}
+                      onUnverifiedClick={setUnverifiedLink}
+                      stopPropagation
+                    />
                 </div>
               </div>
 
@@ -348,12 +343,12 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
 
               <div className="mt-4 directoryns-fieldset">
                 <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                  Write a message to {activeProfile.display_name || activeProfile.name || "recipient"}
+                  Write a message to {activeProfileName}
                 </div>
                 <textarea
                   value={memo}
                   onChange={(event) => setDraftMemo(event.target.value)}
-                  placeholder={`Write your message to ${activeProfile.display_name || activeProfile.name || "recipient"} here...`}
+                  placeholder={`Write your message to ${activeProfileName} here...`}
                   className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-hidden rounded-none"
                   rows={4}
                   onClick={(event) => event.stopPropagation()}
@@ -378,9 +373,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
               <div className="mt-4 directoryns-qr directoryns-fieldset">
                 <QrUriBlock
                   uri={uri}
-                  profileName={
-                    activeProfile?.display_name || activeProfile?.name || "recipient"
-                  }
+                  profileName={activeProfileName}
                   forceShowQR={forceShowQR}
                   defaultShowQR={false}
                   defaultShowURI={false}

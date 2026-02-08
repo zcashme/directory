@@ -38,7 +38,7 @@ export default function NsTable({
         <NsRow
           key={profile?.id ?? profile?.address}
           profile={profile}
-          links={linksByProfileId[profile?.id] || []}
+          links={linksByProfileId[profile.id] ?? []}
           selectedAddress={selectedAddress}
           onSelectAddress={setSelectedAddress}
           onSetDraftMemo={setDraftMemo}

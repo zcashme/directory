@@ -1,5 +1,15 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { LocationOption } from "./useNsFilters";
+
+interface NsLocationFilterModalProps {
+  locationSearch: string;
+  setLocationSearch: (_value: string) => void;
+  filteredLocationOptions: LocationOption[];
+  locationFilter: string[];
+  setLocationFilter: (_value: string[]) => void;
+  onClose: () => void;
+}
+
 export default function NsLocationFilterModal({
   locationSearch,
   setLocationSearch,
@@ -7,7 +17,7 @@ export default function NsLocationFilterModal({
   locationFilter,
   setLocationFilter,
   onClose,
-}: any) {
+}: NsLocationFilterModalProps) {
   return (
     <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 md:items-center">
       <button

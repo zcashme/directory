@@ -1,5 +1,5 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
+import type { StaticImageData } from "next/image";
 import allIcon from "./assets/network-state-plus-flag-avatar-logo-black.png";
 import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
 import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
@@ -9,8 +9,13 @@ import { FILTER_BASE, FILTER_CONTENT } from "./directoryNsStyles";
 const getFilterButtonClass = (active: boolean, activeClass: string, hoverClass: string): string => {
   const scopedHoverClass = hoverClass.replace(/hover:/g, "md:hover:");
   return `${FILTER_BASE} md:hover:scale-[1.03] ${
-    active ? activeClass : "bg-white"
-  } ${scopedHoverClass}`;
+  active ? activeClass : "bg-white"
+} ${scopedHoverClass}`;
+
+const resolveIconSrc = (asset: StaticImageData | string | undefined): string | undefined => {
+  if (!asset) return undefined;
+  return typeof asset === "string" ? asset : asset.src;
+};
 };
 
 export default function NsFilters({
@@ -34,7 +39,7 @@ export default function NsFilters({
           className={getFilterButtonClass(!anyFilterActive, "bg-blue-300", "hover:bg-blue-200")}
         >
           <span className={FILTER_CONTENT}>
-            <img src={allIcon?.src || allIcon} alt="All" className="h-4 w-auto" />
+            <img src={resolveIconSrc(allIcon)} alt="All" className="h-4 w-auto" />
             All ({nsCount})
           </span>
         </button>
@@ -72,7 +77,7 @@ export default function NsFilters({
           className={getFilterButtonClass(filters.core, "bg-[#f6b223]", "hover:bg-[#f6b223]")}
         >
           <span className={FILTER_CONTENT}>
-            <img src={coreIcon?.src || coreIcon} alt="Core" className="h-4 w-auto" />
+            <img src={resolveIconSrc(coreIcon)} alt="Core" className="h-4 w-auto" />
             Core ({coreCount})
           </span>
         </button>
@@ -83,7 +88,7 @@ export default function NsFilters({
         >
           <span className={FILTER_CONTENT}>
             <img
-              src={longTermIcon?.src || longTermIcon}
+              src={resolveIconSrc(longTermIcon)}
               alt="Long-Term"
               className="h-4 w-auto"
             />
@@ -143,7 +148,7 @@ export default function NsFilters({
         className="border border-gray-900 px-3 py-2 text-xs font-semibold uppercase transition-transform duration-150 hover:scale-[1.03] rounded-none sm:ml-auto"
       >
         <span className="flex w-full items-center justify-center gap-2 text-center">
-          <img src={discordFavicon?.src || discordFavicon} alt="Discord" className="h-4 w-auto" />
+          <img src={resolveIconSrc(discordFavicon)} alt="Discord" className="h-4 w-auto" />
           Join the Discord
         </span>
       </a>

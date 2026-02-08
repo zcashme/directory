@@ -38,21 +38,26 @@ export default function NsRow({
   onForceShowQR,
   onUnverifiedLink,
 }: NsRowProps) {
-  const location = getProfileLocation(profile) || "-";
+  const location = getProfileLocation(profile) ?? "-";
   const countryCode =
-    profile?.iso2 ||
+    profile?.iso2 ??
     (typeof profile?.country === "string" && profile.country.trim().length === 2
       ? profile.country
       : "");
-  const countryFlag = getCountryFlag(countryCode || "");
+  const countryFlag = getCountryFlag(countryCode ?? "");
   const tags = getProfileTags(profile);
   const lastVerified = getLastVerifiedLabel(profile);
-  const addressValue = profile?.address || "";
+  const addressValue = profile?.address ?? "";
   const addressDisplay = addressValue
     ? `${addressValue.slice(0, 6)}...${addressValue.slice(-6)}`
     : "-";
   const canShowAddressBar = addressDisplay !== "-";
-  const bioText = profile?.bio?.trim() || (profile as any)?.tagline?.trim() || "";
+  const biography = profile?.bio?.trim();
+  const tagline = (profile as Profile & { tagline?: string }).tagline?.trim();
+  const bioText = biography ?? tagline ?? "";
+  const displayName = profile?.display_name ?? profile?.name ?? "Unnamed";
+  const canonicalName = profile?.name ?? profile?.display_name ?? "";
+  const profileSlug = normalizeSlug(canonicalName);
 
   return (
     <div
@@ -83,22 +88,20 @@ export default function NsRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-nowrap">
               <div className="min-w-0 text-base font-black tracking-tight text-gray-900">
-                {profile?.display_name || profile?.name || "Unnamed"}
+                {displayName}
               </div>
               <TagBadges tags={tags} idPrefix={`${profile?.id}-`} />
             </div>
-            <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-              <a
-                href={`https://zcash.me/${normalizeSlug(
-                  profile?.name || profile?.display_name || ""
-                )}`}
+              <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
+                <a
+                  href={`https://zcash.me/${profileUrlSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
                 className="flex max-w-full items-baseline gap-0 text-left hover:underline"
               >
                 <span>Zcash.me/</span>
-                <span>{profile?.name || profile?.display_name || "Unnamed"}</span>
+                  <span>{displayName}</span>
               </a>
             </div>
           </div>
@@ -114,7 +117,7 @@ export default function NsRow({
           </div>
           {canShowAddressBar ? (
             <div className="mt-1 inline-flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-[10px] font-mono text-gray-700 rounded-none">
-              <span title={addressValue || addressDisplay}>{addressDisplay}</span>
+                <span title={addressValue ?? addressDisplay}>{addressDisplay}</span>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 <button
                   type="button"

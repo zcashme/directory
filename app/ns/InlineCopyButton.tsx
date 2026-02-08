@@ -8,14 +8,22 @@ interface InlineCopyButtonProps {
 export default function InlineCopyButton({ text }: InlineCopyButtonProps) {
   const [copied, setCopied] = useState<boolean>(false);
 
+  const handleCopy = async () => {
+    if (!text) return;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Ignore clipboard errors
+    }
+  };
+
   return (
     <button
       type="button"
       onClick={() => {
-        if (!text) return;
-        navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        void handleCopy();
       }}
       title={copied ? "Copied" : "Copy"}
       className={`flex items-center gap-1 px-1 text-xs transition-colors ${

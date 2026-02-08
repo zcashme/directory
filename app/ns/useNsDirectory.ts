@@ -24,12 +24,7 @@ interface UseNsDirectoryReturn {
 }
 
 export default function useNsDirectory(initialProfiles: Profile[] | null): UseNsDirectoryReturn {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { profiles, loading, addProfile } = useNsProfiles(initialProfiles as any, false) as {
-    profiles: Profile[];
-    loading: boolean;
-    addProfile: (_profile: Profile) => void;
-  };
+  const { profiles, loading, addProfile } = useNsProfiles(initialProfiles, false);
   const [linksByProfileId, setLinksByProfileId] = useState<LinksByProfileId>({});
   const [linksError, setLinksError] = useState<string | null>(null);
 
@@ -48,12 +43,12 @@ export default function useNsDirectory(initialProfiles: Profile[] | null): UseNs
       if (!isActive) return;
 
       if (!result.ok) {
-        setLinksError(result.error || "Failed to fetch links");
+        setLinksError(result.error ?? "Failed to fetch links");
         return;
       }
 
       const map: LinksByProfileId = {};
-      Object.entries(result.data || {}).forEach(([zcasherId, links]) => {
+      Object.entries(result.data ?? {}).forEach(([zcasherId, links]) => {
         map[zcasherId] = links.map((link): EnrichedLink => {
           const icon = getLinkIcon(link.url);
           const domainLabel = getLinkLabel(link.url);

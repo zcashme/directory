@@ -36,13 +36,13 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
     ]);
 
     const rankAll = new Map<string, number>(
-      (lbAll || []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_alltime || 0])
+      (lbAll ?? []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_alltime ?? 0])
     );
     const rankWeek = new Map<string, number>(
-      (lbWeek || []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_weekly || 0])
+      (lbWeek ?? []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_weekly ?? 0])
     );
     const rankMonth = new Map<string, number>(
-      (lbMonth || []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_monthly || 0])
+      (lbMonth ?? []).map((r: RankEntry) => [String(r.referred_by_zcasher_id), r.rank_monthly ?? 0])
     );
 
     const pageSize = 1000;
@@ -62,8 +62,8 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
         break;
       }
 
-      all = all.concat(data || []);
-      total = count || total;
+      all = all.concat(data ?? []);
+      total = count ?? total;
 
       if (!data?.length || all.length >= total) break;
       from += pageSize;
@@ -78,9 +78,9 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
 
       return {
         ...p,
-        rank_alltime: rankAll.get(pid) || 0,
-        rank_weekly: rankWeek.get(pid) || 0,
-        rank_monthly: rankMonth.get(pid) || 0,
+        rank_alltime: rankAll.get(pid) ?? 0,
+        rank_weekly: rankWeek.get(pid) ?? 0,
+        rank_monthly: rankMonth.get(pid) ?? 0,
         links: linkList,
         verified_links_count: linkVerifiedCount,
         last_verified_label: getLastVerifiedLabel(p),

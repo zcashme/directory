@@ -1,6 +1,22 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import znsFlag from "./assets/zns-flag.png";
+
+interface AnnouncementConfig {
+  message: string;
+  actionLabel: string;
+  dismissLabel: string;
+}
+
+interface NsHeaderProps {
+  showAnnouncement: boolean;
+  announcementConfig: AnnouncementConfig;
+  onDismissAnnouncement: () => void;
+  search: string;
+  onSearchChange: (_value: string) => void;
+  loading: boolean;
+  nsCount: number;
+  onJoinClick: () => void;
+}
 
 export default function NsHeader({
   showAnnouncement,
@@ -11,7 +27,7 @@ export default function NsHeader({
   loading,
   nsCount,
   onJoinClick,
-}: any) {
+}: NsHeaderProps) {
   return (
     <>
       {showAnnouncement && (
@@ -53,7 +69,7 @@ export default function NsHeader({
             <div className="flex flex-wrap items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide sm:flex-nowrap">
               <div className="flex items-center gap-2">
                 <img
-                  src={znsFlag?.src || znsFlag}
+                  src={typeof znsFlag === "string" ? znsFlag : znsFlag.src}
                   alt="ZNS flag"
                   className="h-5 w-auto"
                 />

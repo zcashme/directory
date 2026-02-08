@@ -20,7 +20,7 @@ export const isVerifiedProfile = (profile: Profile | undefined): boolean =>
   Boolean(profile?.links?.some((link) => link.is_verified));
 
 export const getProfileLocation = (profile: Profile | undefined): string =>
-  profile?.nearest_city_name || "";
+  profile?.nearest_city_name ?? "";
 
 export const getCountryFlag = (country: string = ""): string => {
   const code = country.trim().toUpperCase();
@@ -35,7 +35,7 @@ export const getCountryFlag = (country: string = ""): string => {
 };
 
 export const getCountryName = (profile: Profile | undefined): string =>
-  (profile?.country || "").trim();
+  (profile?.country ?? "").trim();
 
 export const getProfileTags = (profile: Profile | undefined): string[] => {
   const tags: string[] = [];
@@ -45,4 +45,3 @@ export const getProfileTags = (profile: Profile | undefined): string[] => {
   if (isTruthyFlag(profile?.is_ns_longterm)) tags.push("Long-term");
   return tags;
 };
-

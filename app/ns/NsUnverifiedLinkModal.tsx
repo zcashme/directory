@@ -1,8 +1,13 @@
 "use client";
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import CopyButton from "@/ui/profile/CopyButton";
+import type { UnverifiedLinkData } from "./types";
 
-export default function NsUnverifiedLinkModal({ unverifiedLink, onClose }: any) {
+interface NsUnverifiedLinkModalProps {
+  unverifiedLink: UnverifiedLinkData | null;
+  onClose: () => void;
+}
+
+export default function NsUnverifiedLinkModal({ unverifiedLink, onClose }: NsUnverifiedLinkModalProps) {
   if (!unverifiedLink) return null;
 
   return (
@@ -22,14 +27,14 @@ export default function NsUnverifiedLinkModal({ unverifiedLink, onClose }: any) 
         </p>
         {unverifiedLink.isDiscord ? (
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <span className="text-base font-black text-gray-900">
-              {unverifiedLink.display || unverifiedLink.label || "unknown"}
-            </span>
-            <CopyButton
-              text={unverifiedLink.display || unverifiedLink.label || ""}
-              label="Copy"
-              copiedLabel="Copied"
-            />
+              <span className="text-base font-black text-gray-900">
+                {unverifiedLink.display ?? unverifiedLink.label ?? "unknown"}
+              </span>
+              <CopyButton
+                text={unverifiedLink.display ?? unverifiedLink.label ?? ""}
+                label="Copy"
+                copiedLabel="Copied"
+              />
           </div>
         ) : (
           <p className="mt-2 break-all text-[11px] text-gray-500">

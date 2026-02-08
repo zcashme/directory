@@ -104,9 +104,9 @@ export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
       .forEach((profile) => {
         const city = getProfileLocation(profile);
         if (!city) return;
-        const countryName = getCountryName(profile) || "Unknown";
+    const countryName = getCountryName(profile) ?? "Unknown";
         const countryCode =
-          profile?.iso2 ||
+          profile?.iso2 ??
           (typeof profile?.country === "string" && profile.country.trim().length === 2
             ? profile.country
             : "");
@@ -114,7 +114,7 @@ export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
         if (!map.has(key)) {
           map.set(key, {
             country: countryName,
-            flag: getCountryFlag(countryCode || ""),
+            flag: getCountryFlag(countryCode ?? ""),
             cities: new Set<string>(),
           });
         }
@@ -167,11 +167,11 @@ export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
     if (query) {
       filtered = filtered
         .map((profile, index) => {
-          const name = (profile?.name || "").toLowerCase();
-          const displayName = (profile?.display_name || "").toLowerCase();
-          const bio = (profile?.bio || "").toLowerCase();
-          const location = (profile?.nearest_city_name || "").toLowerCase();
-          const links = (profile?.link_search_text || "").toLowerCase();
+    const name = (profile?.name ?? "").toLowerCase();
+    const displayName = (profile?.display_name ?? "").toLowerCase();
+    const bio = (profile?.bio ?? "").toLowerCase();
+    const location = (profile?.nearest_city_name ?? "").toLowerCase();
+    const links = (profile?.link_search_text ?? "").toLowerCase();
           const displayMatch = displayName.includes(query);
           const nameMatch = name.includes(query);
           const linkMatch = links.includes(query);
@@ -218,7 +218,7 @@ export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
       filtered = filtered.filter((profile) => {
         const city = getProfileLocation(profile);
         if (!city) return false;
-        const countryName = getCountryName(profile) || "Unknown";
+    const countryName = getCountryName(profile) ?? "Unknown";
         const key = `${countryName}|||${city}`;
         return selected.has(key);
       });
@@ -229,7 +229,7 @@ export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
     }
 
     if (!query) {
-      filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+      filtered.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
     }
     return filtered;
   }, [profiles, search, filters, locationFilter, tagFilter]);
