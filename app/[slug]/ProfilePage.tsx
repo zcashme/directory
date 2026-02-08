@@ -3,7 +3,8 @@
 // React & Next.js
 import { useEffect, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { Profile, Token } from "@/lib/profile/types";
+import type { Profile, Token, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
+import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 // Contexts - using typed hooks
 import { useSelection } from "@/app/[slug]/providers/selection-provider";
@@ -32,6 +33,11 @@ interface ZcashCardWrapperProps {
   title?: ReactNode;
   children: ReactNode;
 }
+
+type PendingEditsEvent = CustomEvent<{
+  field: PendingEditsField;
+  value: PendingEditValue;
+}>;
 
 function ZcashCardWrapper({ title, children }: ZcashCardWrapperProps) {
   return (
@@ -85,9 +91,10 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
 
     const handleDraft = () => setMode("note");
 
-    const handlePendingEdits = (e: CustomEvent) => {
-      if (!e.detail) return;
-      setPendingEdits(e.detail.field, e.detail.value);
+    const handlePendingEdits = (e: PendingEditsEvent) => {
+      const detail = e.detail;
+      if (!detail) return;
+      setPendingEdits(detail.field, detail.value);
     };
 
     window.addEventListener("enterSignInMode", handleSignIn as unknown as EventListener);
@@ -111,14 +118,15 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     if (!zId) return;
     const requestId = verify.requestId || null;
 
-    const hasEdits = pendingEdits && (
-      ((pendingEdits as any).profile && Object.keys((pendingEdits as any).profile).length > 0) ||
-      (Array.isArray((pendingEdits as any).l) && (pendingEdits as any).l.length > 0)
-    );
+    const profileEdits = pendingEdits.profile ?? {};
+    const linkTokens = pendingEdits.l ?? [];
+    const hasProfileEdits = Object.keys(profileEdits).length > 0;
+    const hasLinkTokens = linkTokens.length > 0;
+    const hasEdits = hasProfileEdits || hasLinkTokens;
 
     const profileDiff = {
-      ...((pendingEdits as any)?.profile || {}),
-      l: (pendingEdits as any)?.l || [],
+      ...profileEdits,
+      l: linkTokens,
     };
 
     const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
@@ -162,7 +170,7 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   }
 
   // Props bundles for UI components
-  const feedbackProps = {
+  const feedbackProps: FeedbackProps = {
     setForceShowQR,
     pendingEdits,
     setPendingEdits,
@@ -238,7 +246,7 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
           profile={profile}
           fullView
           duplicateNameCount={duplicateNameCount}
-          feedbackProps={feedbackProps as any}
+          feedbackProps={feedbackProps}
         />
 
         <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">

@@ -1,6 +1,12 @@
 import { supabase } from "@/lib/supabase/supabase-client";
 import { normalizeSlug } from "@/lib/profile/profileUtils";
-import type { Profile, ProfileLink } from "@/lib/profile/types";
+import type {
+  Profile,
+  ProfileLink,
+  PendingEdits,
+  PendingEditsField,
+  PendingEditValue,
+} from "@/lib/profile/types";
 
 interface AuthProvider {
   key: "twitter" | "linkedin_oidc" | "github" | "discord";
@@ -67,17 +73,12 @@ export const getLinkAuthToken = (link: Partial<ProfileLink> | null | undefined):
   return trimmed ? `+!${trimmed}` : null;
 };
 
-interface PendingEdits {
-  l?: string[];
-  [key: string]: unknown;
-}
-
 export const isLinkAuthPending = (pendingEdits: PendingEdits | null | undefined, token: string | null): boolean =>
   Array.isArray(pendingEdits?.l) && !!token && pendingEdits.l.includes(token);
 
 export const appendLinkToken = (
   pendingEdits: PendingEdits | null | undefined,
-  setPendingEdits: (key: string, value: string[]) => void,
+  setPendingEdits: (key: PendingEditsField, value: PendingEditValue) => void,
   token: string
 ): void => {
   const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
@@ -87,7 +88,7 @@ export const appendLinkToken = (
 
 export const removeLinkToken = (
   pendingEdits: PendingEdits | null | undefined,
-  setPendingEdits: (key: string, value: string[]) => void,
+  setPendingEdits: (key: PendingEditsField, value: PendingEditValue) => void,
   token: string
 ): void => {
   const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];

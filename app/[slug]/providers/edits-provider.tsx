@@ -2,14 +2,15 @@
 import { createContext, useState, useEffect, useContext } from "react";
 import type { ReactNode } from "react";
 import type { EditsContextType } from "./types";
+import type { PendingEdits, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
 
 const EditsContext = createContext<EditsContextType | undefined>(undefined);
 
 export function EditsProvider({ children }: { children: ReactNode }) {
-  const [pendingEdits, _setPendingEdits] = useState<Record<string, unknown>>({});
+  const [pendingEdits, _setPendingEdits] = useState<PendingEdits>({});
   const [editChangesRequested, setEditChangesRequested] = useState<boolean>(false);
 
-  const setPendingEdits = (field: string, value: unknown) => {
+  const setPendingEdits = (field: PendingEditsField, value: PendingEditValue) => {
     _setPendingEdits((prev) => ({ ...prev, [field]: value }));
   };
   const clearPendingEdits = () => _setPendingEdits({});

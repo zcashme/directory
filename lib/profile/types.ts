@@ -101,6 +101,24 @@ export interface LinkVerificationPayload {
   [key: string]: unknown;
 }
 
+export interface PendingProfileChange {
+  name?: string;
+  display_name?: string;
+  bio?: string;
+  profile_image_url?: string;
+  address?: string;
+  c?: string;
+  d?: string[];
+}
+
+export interface PendingEdits {
+  profile?: PendingProfileChange;
+  l?: string[];
+}
+
+export type PendingEditsField = keyof PendingEdits;
+export type PendingEditValue = PendingEdits["profile"] | PendingEdits["l"];
+
 /**
  * Rank type discriminator
  */

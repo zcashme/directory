@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Profile } from "@/lib/profile/types";
+import type { Profile, PendingEdits } from "@/lib/profile/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
@@ -14,19 +14,6 @@ const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q
 
 const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
-
-interface PendingEdits {
-  profile?: {
-    name?: string;
-    display_name?: string;
-    bio?: string;
-    profile_image_url?: string;
-    address?: string;
-    c?: unknown;
-    d?: string[];
-  };
-  l?: unknown[];
-}
 
 interface VerifyState {
   memo?: string;

@@ -18,7 +18,8 @@ import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
-import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
+import type { Profile, EnrichedProfileLink, PendingProfileChange } from "@/lib/profile/types";
+import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
@@ -66,11 +67,6 @@ function createDeleteToggle(
       }
       return { ...prev, [field]: next };
     });
-}
-
-interface FeedbackProps {
-  setPendingEdits?: (field: string, value: unknown) => void; // eslint-disable-line no-unused-vars
-  pendingEdits?: Record<string, any>;
 }
 
 interface ProfileEditorProps {
@@ -228,7 +224,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
   useEffect(() => {
     if (!setPendingEdits) return;
 
-    const changed: Record<string, any> = {};
+    const changed: PendingProfileChange = {};
     let cityToken: string | undefined = undefined;
 
     if (nearestCityId && nearestCityId !== profile.nearest_city_id) {

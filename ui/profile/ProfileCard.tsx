@@ -25,7 +25,12 @@ import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Profile, EnrichedProfileLink, ProfileTrustWarning } from "@/lib/profile/types";
+import type {
+  Profile,
+  EnrichedProfileLink,
+  ProfileTrustWarning,
+} from "@/lib/profile/types";
+import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 const Motion = motion;
 
@@ -320,11 +325,6 @@ function RedirectModal({ isOpen, label }: RedirectModalProps) {
   );
 }
 
-interface FeedbackProps {
-  setForceShowQR?: (value: boolean | number) => void; // eslint-disable-line no-unused-vars
-  pendingEdits?: Record<string, unknown>;
-  setPendingEdits?: (field: string, value: unknown) => void; // eslint-disable-line no-unused-vars
-}
 
 interface ProfileCardProps {
   profile: Profile;

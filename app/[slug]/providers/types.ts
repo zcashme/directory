@@ -1,5 +1,6 @@
 import type { Token } from "@/lib/swap/types";
 import type { SwapQuoteDisplay } from "@/lib/swap/types";
+import type { PendingEdits, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
 
 /**
  * Selection context type - manages QR code display state
@@ -13,8 +14,8 @@ export interface SelectionContextType {
  * Edits context type - manages pending profile edits
  */
 export interface EditsContextType {
-  pendingEdits: Record<string, unknown>;
-  setPendingEdits: (_field: string, _value: unknown) => void;
+  pendingEdits: PendingEdits;
+  setPendingEdits: (field: PendingEditsField, value: PendingEditValue) => void;
   clearPendingEdits: () => void;
   editChangesRequested: boolean;
   setEditChangesRequested: (_value: boolean) => void;
