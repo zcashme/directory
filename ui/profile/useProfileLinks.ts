@@ -1,10 +1,34 @@
-import { useState, useEffect } from "react";
+import {
+  useState,
+  useEffect,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+import type { EnrichedProfileLink, Profile } from "@/lib/profile/types";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import { getProfileLinksAction } from "@/lib/profile/getProfileLinksAction";
 
-export default function useProfileLinks(profile, fullView, routeMatchesProfile) {
-  const [linksArray, setLinksArray] = useState(() => {
-    const rawLinks = Array.isArray(profile.links) ? profile.links : [];
+interface UseProfileLinksOptions {
+  profile: Profile | null | undefined;
+  fullView: boolean;
+  routeMatchesProfile: boolean;
+}
+
+interface UseProfileLinksResult {
+  linksArray: EnrichedProfileLink[];
+  setLinksArray: Dispatch<SetStateAction<EnrichedProfileLink[]>>;
+  isLoadingLinks: boolean;
+  linksLoaded: boolean;
+}
+
+export default function useProfileLinks({
+  profile,
+  fullView,
+  routeMatchesProfile,
+}: UseProfileLinksOptions): UseProfileLinksResult {
+  const [linksArray, setLinksArray] = useState<EnrichedProfileLink[]>(() => {
+    const initialLinks = profile?.links;
+    const rawLinks = Array.isArray(initialLinks) ? initialLinks : [];
     return rawLinks.map(enrichLink);
   });
 

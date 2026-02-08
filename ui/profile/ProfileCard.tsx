@@ -362,7 +362,11 @@ export default function ProfileCard({
     const current = normalizeSlug(currentRaw);
     return current === normalizeSlug(expected);
   }, [fullView, profile, pathname]);
-  const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
+  const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks({
+    profile,
+    fullView,
+    routeMatchesProfile,
+  });
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;

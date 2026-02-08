@@ -5,26 +5,94 @@ const VERIFY_API_BASE =
   process.env.NEXT_PUBLIC_API_URL ||
   "http://127.0.0.1:8000";
 
-export default function useVerificationPolling({ verifyQrEnabled, setVerifyRequestId }) {
-  const [pollRequestId, setPollRequestId] = useState(null);
-  const [pollStatus, setPollStatus] = useState(null);
-  const [pollOtpStatus, setPollOtpStatus] = useState(null);
-  const [pollOtpPhase, setPollOtpPhase] = useState(null);
-  const [pollOtpPhaseHistory, setPollOtpPhaseHistory] = useState([]);
+type OtpPhaseHistoryItem = {
+  phase?: string | null;
+};
+
+type VerifyPollResponse = {
+  status?: string;
+  otp_status?: string | null;
+  otp_phase?: string | null;
+  otp_phase_history?: OtpPhaseHistoryItem[];
+  request_id?: string | null;
+  started_at?: string | null;
+  [key: string]: unknown;
+};
+
+interface UseVerificationPollingOptions {
+  verifyQrEnabled: boolean;
+  setVerifyRequestId: (id: string | null) => void;
+}
+
+interface ProgressStep {
+  key: string;
+  label: string;
+  done: boolean;
+}
+
+interface ProgressState {
+  doneCount: number;
+  currentIndex: number | null;
+}
+
+interface OtpPhaseStep {
+  phase: string;
+  isCurrent: boolean;
+  failed: boolean;
+  showGreenCheck: boolean;
+}
+
+export interface UseVerificationPollingResult {
+  pollRequestId: string | null;
+  pollStatus: string | null;
+  pollOtpStatus: string | null;
+  pollOtpPhase: string | null;
+  pollOtpPhaseHistory: OtpPhaseHistoryItem[];
+  otpInlineSuccess: boolean;
+  pollError: string;
+  pollDebug: string;
+  pollStartedAt: string | null;
+  pollElapsedMs: number;
+  startPolling: (zid: string) => Promise<void>;
+  progressSteps: ProgressStep[];
+  progressState: ProgressState;
+  progressPercent: number;
+  progressBarClass: string;
+  statusSeconds: number;
+  statusLine: string;
+  otpPhaseSteps: OtpPhaseStep[];
+  showOtpPhaseLine: boolean;
+  progressExplainer: string;
+  handleInlineOtpSuccess: () => void;
+}
+
+export default function useVerificationPolling({
+  verifyQrEnabled,
+  setVerifyRequestId,
+}: UseVerificationPollingOptions): UseVerificationPollingResult {
+  const [pollRequestId, setPollRequestId] = useState<string | null>(null);
+  const [pollStatus, setPollStatus] = useState<string | null>(null);
+  const [pollOtpStatus, setPollOtpStatus] = useState<string | null>(null);
+  const [pollOtpPhase, setPollOtpPhase] = useState<string | null>(null);
+  const [pollOtpPhaseHistory, setPollOtpPhaseHistory] = useState<
+    OtpPhaseHistoryItem[]
+  >([]);
   const [otpInlineSuccess, setOtpInlineSuccess] = useState(false);
   const [pollError, setPollError] = useState("");
   const [pollDebug, setPollDebug] = useState("");
-  const [pollStartedAt, setPollStartedAt] = useState(null);
+  const [pollStartedAt, setPollStartedAt] = useState<string | null>(null);
   const [pollElapsedMs, setPollElapsedMs] = useState(0);
-  const pollTimerRef = useRef(null);
-  const pollElapsedRef = useRef(null);
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollElapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (verifyQrEnabled) return;
+
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current);
       pollTimerRef.current = null;
     }
+
     setPollRequestId(null);
     setPollStatus(null);
     setPollOtpStatus(null);
@@ -36,11 +104,12 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     setPollStartedAt(null);
     setPollElapsedMs(0);
     setVerifyRequestId(null);
+
     if (pollElapsedRef.current) {
       clearInterval(pollElapsedRef.current);
       pollElapsedRef.current = null;
     }
-  }, [verifyQrEnabled]);
+  }, [verifyQrEnabled, setVerifyRequestId]);
 
   useEffect(() => {
     if (!verifyQrEnabled || !pollRequestId) return;
@@ -56,14 +125,24 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
             pollRequestId
           )}/status`
         );
-        const data = await res.json();
+        const data = (await res.json()) as VerifyPollResponse;
+
+        if (cancelled) return;
+
         if (data?.status === "matched") {
           setPollStatus("matched");
           setPollOtpStatus(data?.otp_status || null);
           setPollOtpPhase(data?.otp_phase || null);
-          setPollOtpPhaseHistory(Array.isArray(data?.otp_phase_history) ? data.otp_phase_history : []);
+          setPollOtpPhaseHistory(
+            Array.isArray(data?.otp_phase_history)
+              ? data!.otp_phase_history
+              : []
+          );
           const otpPhaseNow = (data?.otp_phase || "").toLowerCase();
-          if (otpPhaseNow === "sent" || otpPhaseNow === "failed") {
+          if (
+            otpPhaseNow === "sent" ||
+            otpPhaseNow === "failed"
+          ) {
             if (pollElapsedRef.current) {
               clearInterval(pollElapsedRef.current);
               pollElapsedRef.current = null;
@@ -71,6 +150,7 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
             return;
           }
         }
+
         if (data?.status) {
           setPollStatus(data.status);
         }
@@ -79,10 +159,16 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
         }
         if (data?.otp_phase || data?.otp_phase_history) {
           setPollOtpPhase(data?.otp_phase || null);
-          setPollOtpPhaseHistory(Array.isArray(data?.otp_phase_history) ? data.otp_phase_history : []);
+          setPollOtpPhaseHistory(
+            Array.isArray(data?.otp_phase_history)
+              ? data.otp_phase_history
+              : []
+          );
         }
       } catch (err) {
-        const msg = `verify poll status failed: ${err?.message || err}`;
+        const msg = `verify poll status failed: ${
+          (err as Error)?.message || err
+        }`;
         setPollError("Unable to check verification status yet.");
         setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
       }
@@ -100,7 +186,7 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     };
   }, [pollRequestId, verifyQrEnabled]);
 
-  const startPolling = async (zid) => {
+  const startPolling = async (zid: string) => {
     setPollStatus("starting");
     setPollError("");
     try {
@@ -108,13 +194,17 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
         `${VERIFY_API_BASE}/verify/poll/start?zid=${encodeURIComponent(zid)}`,
         { method: "POST" }
       );
-      const data = await res.json();
+      const data = (await res.json()) as VerifyPollResponse;
+
       if (!res.ok || !data?.request_id) {
-        const msg = `verify poll start failed: ${res.status} ${res.statusText} ${JSON.stringify(data)}`;
+        const msg = `verify poll start failed: ${res.status} ${res.statusText} ${JSON.stringify(
+          data
+        )}`;
         setPollError(data?.error || "Failed to start verification polling.");
         setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
         return;
       }
+
       setPollRequestId(data.request_id);
       setVerifyRequestId(data.request_id);
       setPollStatus(data.status || "pending");
@@ -123,6 +213,7 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
       setPollOtpPhaseHistory([]);
       setOtpInlineSuccess(false);
       setPollStartedAt(data.started_at || null);
+
       if (data.started_at && !pollElapsedRef.current) {
         const startedAtMs = Date.parse(data.started_at);
         if (!Number.isNaN(startedAtMs)) {
@@ -133,31 +224,23 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
         }
       }
     } catch (err) {
-      const msg = `verify poll start failed: ${err?.message || err}`;
+      const msg = `verify poll start failed: ${(err as Error)?.message || err}`;
       setPollError("Failed to start verification polling.");
       setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
     }
   };
 
-  const progressSteps = useMemo(() => {
+  const progressSteps = useMemo<ProgressStep[]>(() => {
     const otpPhase = (pollOtpPhase || "").toLowerCase();
     return [
       { key: "polling", label: "Starting up", done: !!pollRequestId },
-      {
-        key: "listening",
-        label: "Listening for memo",
-        done: pollStatus === "matched",
-      },
-      {
-        key: "otp",
-        label: "Sending OTP",
-        done: otpPhase === "sent" || otpPhase === "failed",
-      },
+      { key: "listening", label: "Listening for memo", done: pollStatus === "matched" },
+      { key: "otp", label: "Sending OTP", done: otpPhase === "sent" || otpPhase === "failed" },
       { key: "passcode", label: "Enter Passcode", done: false },
     ];
   }, [pollOtpPhase, pollRequestId, pollStatus]);
 
-  const progressState = useMemo(() => {
+  const progressState = useMemo<ProgressState>(() => {
     if (otpInlineSuccess) {
       return { doneCount: progressSteps.length, currentIndex: null };
     }
@@ -185,11 +268,11 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     return Math.round((progressState.doneCount / progressSteps.length) * 100);
   }, [progressState.doneCount, progressSteps.length]);
 
-  const otpPhaseSteps = useMemo(() => {
+  const otpPhaseSteps = useMemo<OtpPhaseStep[]>(() => {
     const phases = ["creating", "stored", "sending", "sent"];
     const current = (pollOtpPhase || "").toLowerCase();
     const failed = current === "failed";
-    const history = Array.isArray(pollOtpPhaseHistory) ? pollOtpPhaseHistory : [];
+    const history = pollOtpPhaseHistory;
     const seen = history
       .map((h) => (h?.phase || "").toLowerCase())
       .filter(Boolean);
@@ -211,11 +294,12 @@ export default function useVerificationPolling({ verifyQrEnabled, setVerifyReque
     });
   }, [pollOtpPhase, pollOtpPhaseHistory, progressState.currentIndex]);
 
-  const showOtpPhaseLine = progressState.currentIndex >= 2;
+  const showOtpPhaseLine = (progressState.currentIndex ?? 0) >= 2;
 
   const progressExplainer = useMemo(() => {
     if (pollError) return "There was a problem starting verification. Please try again.";
     if (otpInlineSuccess) return "OTP accepted. Page will refresh shortly.";
+
     switch (progressState.currentIndex) {
       case 0:
         return "Please wait while we start the verification check.";
