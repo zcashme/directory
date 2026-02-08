@@ -623,7 +623,7 @@ export default function ProfileCard({
               title={`Share ${profile.display_name || profile.name}`}
             >
               <img
-                src={shareIcon.src}
+                src={shareIcon}
                 alt="Share"
                 className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
               />

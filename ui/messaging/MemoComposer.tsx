@@ -142,7 +142,7 @@ useEffect(() => {
 
           {!isFocused && (
             <img
-              src={bookClosed.src}
+              src={bookClosed}
               alt=""
               className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 opacity-80 invert sepia saturate-[5000%] hue-rotate-190 brightness-90"
             />
@@ -150,7 +150,7 @@ useEffect(() => {
 
           {isFocused && (
             <img
-              src={bookOpen.src}
+              src={bookOpen}
               alt=""
               onClick={() => {
                 setIsFocused(false);
