@@ -33,9 +33,11 @@ export default function ProfileAvatar({
   const outerSize = size + 6;
 
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+  const avatarUrl =
+    (profile.profile_image_url || profile.avatar_url)?.trim() || "";
 
   useEffect(() => {
-    const shouldAnimate = lookAround && !profile.avatar_url;
+    const shouldAnimate = lookAround && !avatarUrl;
     if (!shouldAnimate) {
       setEyeOffset({ x: 0, y: 0 });
       return;
@@ -68,7 +70,7 @@ export default function ProfileAvatar({
     return () => {
       if (timeoutId) clearTimeout(timeoutId);
     };
-  }, [lookAround, profile.avatar_url]);
+  }, [lookAround, avatarUrl]);
 
   return (
     <>
@@ -94,9 +96,9 @@ export default function ProfileAvatar({
         style={{ width: outerSize, height: outerSize, ...gradientStyle }}
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
-          {profile.avatar_url ? (
+          {avatarUrl ? (
             <img
-              src={profile.avatar_url}
+              src={avatarUrl}
               alt={profile.name || "Profile"}
               className={`w-full h-full ${imageClassName}`}
               loading="lazy"

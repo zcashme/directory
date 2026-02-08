@@ -212,6 +212,20 @@ export function SwapProvider({ children }: { children: ReactNode }) {
 
   // ===== SWAP MODE MANAGEMENT =====
 
+  const resetSwapState = useCallback(() => {
+    setOriginTokenIdState(zecTokenId);
+    setSwapAmount("");
+    setRefundAddress("");
+    setSlippageTolerance("0.5");
+    setQuoteData(null);
+    setQuotePreview(null);
+    setQuoteStatus("");
+    setDepositUri("");
+    setStatusKey(null);
+    setSwapStatus("");
+    setSwapError("");
+  }, [zecTokenId]);
+
   const setToken = useCallback((tokenId: string) => {
     // If selecting ZEC, exit swap mode
     if (tokenId === zecTokenId) {
@@ -231,20 +245,6 @@ export function SwapProvider({ children }: { children: ReactNode }) {
       setSwapError("");
     }
   }, [tokenOptions, zecTokenId, resetSwapState]);
-
-  const resetSwapState = useCallback(() => {
-    setOriginTokenIdState(zecTokenId);
-    setSwapAmount("");
-    setRefundAddress("");
-    setSlippageTolerance("0.5");
-    setQuoteData(null);
-    setQuotePreview(null);
-    setQuoteStatus("");
-    setDepositUri("");
-    setStatusKey(null);
-    setSwapStatus("");
-    setSwapError("");
-  }, [zecTokenId]);
 
   // ===== QUOTE CLEARING ON INPUT CHANGE =====
 
