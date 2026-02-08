@@ -321,27 +321,14 @@ function RedirectModal({ isOpen, label }: RedirectModalProps) {
 }
 
 interface FeedbackProps {
-  forceShowQR?: boolean | number;
-  setForceShowQR?: (_value: boolean | number) => void;
+  setForceShowQR?: (value: boolean | number) => void; // eslint-disable-line no-unused-vars
   pendingEdits?: Record<string, unknown>;
-  setPendingEdits?: (_field: string, _value: unknown) => void;
-  mode?: string;
-  setMode?: (_mode: string) => void;
-  verify?: {
-    memo: string;
-    amount: string;
-    zId: number | null;
-    requestId: string | null;
-  };
-  setVerifyId?: (_zId: number | null) => void;
-  setVerifyRequestId?: (_requestId: string | null) => void;
-  setVerifyMemo?: (_memo: string | null) => void;
-  setVerifyAmount?: (_amount: string | null) => void;
+  setPendingEdits?: (field: string, value: unknown) => void; // eslint-disable-line no-unused-vars
 }
 
 interface ProfileCardProps {
   profile: Profile;
-  onSelect?: (_profile: Profile) => void;
+  onSelect?: (profile: Profile) => void; // eslint-disable-line no-unused-vars
   warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;

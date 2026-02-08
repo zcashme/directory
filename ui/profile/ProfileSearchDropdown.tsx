@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Profile } from "@/lib/profile/types";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -23,11 +23,11 @@ interface SearchResult {
 
 interface ProfileSearchDropdownProps {
   value: string;
-  onChange: (_value: string | Profile) => void;
+  onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
   listOnly?: boolean;
   showByDefault?: boolean;
-  onUsernameAvailable?: (_username: string | null) => void;
+  onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
   className?: string;
   [key: string]: unknown;
 }

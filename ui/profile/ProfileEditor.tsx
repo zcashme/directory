@@ -69,7 +69,7 @@ function createDeleteToggle(
 }
 
 interface FeedbackProps {
-  setPendingEdits?: (_field: string, _value: unknown) => void;
+  setPendingEdits?: (field: string, value: unknown) => void; // eslint-disable-line no-unused-vars
   pendingEdits?: Record<string, any>;
 }
 

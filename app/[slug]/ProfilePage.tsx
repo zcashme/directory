@@ -163,17 +163,9 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
 
   // Props bundles for UI components
   const feedbackProps = {
-    forceShowQR,
     setForceShowQR,
     pendingEdits,
     setPendingEdits,
-    mode,
-    setMode,
-    verify,
-    setVerifyId,
-    setVerifyRequestId,
-    setVerifyMemo,
-    setVerifyAmount,
   };
 
   const memoComposerProps = {

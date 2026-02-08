@@ -25,28 +25,25 @@ export default function useProfileEvents(profile) {
       const profileSince = p?.joined_at || p?.created_at || p?.since || null;
 
       if (!e?.detail && profileId && profileAddress) {
-        if (!profileId || !profileAddress) {
-        } else {
-          window.dispatchEvent(
-            new CustomEvent("enterSignInMode", {
-              detail: {
-                zId: profileId,
-                address: profileAddress,
-                name: profileName,
-                verified: profileVerified,
-                since: profileSince,
-              },
-            })
-          );
+        window.dispatchEvent(
+          new CustomEvent("enterSignInMode", {
+            detail: {
+              zId: profileId,
+              address: profileAddress,
+              name: profileName,
+              verified: profileVerified,
+              since: profileSince,
+            },
+          })
+        );
 
-          window.lastZcashFlipDetail = {
-            zId: profileId,
-            address: profileAddress,
-            name: profileName,
-            verified: profileVerified,
-            since: profileSince,
-          };
-        }
+        window.lastZcashFlipDetail = {
+          zId: profileId,
+          address: profileAddress,
+          name: profileName,
+          verified: profileVerified,
+          since: profileSince,
+        };
       }
     };
 
