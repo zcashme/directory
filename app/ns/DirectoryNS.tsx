@@ -243,13 +243,13 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
         <NsTable
           loading={loading}
           filteredProfiles={filteredProfiles}
-          linksByProfileId={linksByProfileId}
+          linksByProfileId={linksByProfileId as any}
           selectedAddress={selectedAddress}
           setSelectedAddress={setSelectedAddress}
           setDraftMemo={setDraftMemo}
           setActiveProfile={setActiveProfile}
           setForceShowQR={setForceShowQR}
-          setUnverifiedLink={setUnverifiedLink}
+          setUnverifiedLink={setUnverifiedLink as any}
         />
 
         {showLocationFilter && (
@@ -280,7 +280,6 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                   size={72}
                   imageClassName="object-contain"
                   className="shadow-xs"
-                  showFallbackIcon
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
@@ -340,8 +339,8 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                     <span>{activeProfile?.name || activeProfile?.display_name || "Unnamed"}</span>
                   </a>
                   <SocialLinks
-                    links={activeLinks}
-                    onUnverifiedClick={setUnverifiedLink}
+                    links={activeLinks as any}
+                    onUnverifiedClick={setUnverifiedLink as any}
                     stopPropagation
                   />
                 </div>
