@@ -48,7 +48,7 @@ export default function InlineOtpForm({ profile, onSuccess }: InlineOtpFormProps
       setResult("fail");
       setMessage(failMsg);
       setStep(2);
-    } catch (_err) {
+    } catch {
       setResult("fail");
       setMessage("Unexpected error.");
       setStep(2);
@@ -76,7 +76,9 @@ export default function InlineOtpForm({ profile, onSuccess }: InlineOtpFormProps
             />
             <button
               type="button"
-              onClick={handleSubmit}
+              onClick={() => {
+                void handleSubmit();
+              }}
               className="rounded-xl border border-black/30 px-4 py-2 text-sm font-semibold text-blue-700 hover:border-blue-600 hover:bg-blue-50"
             >
               Submit OTP

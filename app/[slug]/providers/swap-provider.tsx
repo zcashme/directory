@@ -2,7 +2,17 @@
 import { createContext, useState, useEffect, useCallback, useMemo, useContext } from "react";
 import type { ReactNode } from "react";
 import type { SwapContextType } from "./types";
-import type { Token, SwapQuoteDisplay } from "@/lib/swap/types";
+import type { SwapContextQuoteData, Token, SwapQuoteDisplay } from "@/lib/swap/types";
+
+const getErrorMessage = (error: unknown, fallback: string) => {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  return fallback;
+};
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
@@ -23,7 +33,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
   const [isLoadingTokens, setIsLoadingTokens] = useState<boolean>(false);
 
   // ===== QUOTE STATE (Output from "Get quote") =====
-  const [quoteData, setQuoteData] = useState<unknown | null>(null);
+  const [quoteData, setQuoteData] = useState<SwapContextQuoteData>(null);
   const [quotePreview, setQuotePreview] = useState<SwapQuoteDisplay | null>(null);
 
   // ===== SWAP STATE (Output from "Confirm quote") =====
@@ -44,7 +54,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
   );
 
   const originSymbol = useMemo(
-    () => selectedOriginToken?.symbol || selectedOriginToken?.ticker || "ZEC",
+    () => selectedOriginToken?.symbol ?? selectedOriginToken?.ticker ?? "ZEC",
     [selectedOriginToken]
   );
 
@@ -59,7 +69,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
     try {
       const result = await getSwapTokens();
       if (!result.ok) {
-        setSwapError(result.error || "Failed to load tokens");
+        setSwapError(result.error ?? "Failed to load tokens");
         return;
       }
 
@@ -68,8 +78,8 @@ export function SwapProvider({ children }: { children: ReactNode }) {
       // Find ZEC
       const zecToken = tokens.find(
         (token) =>
-          (token.symbol || token.ticker || "").toUpperCase() === "ZEC" &&
-          (token.blockchain || "").toLowerCase().includes("zec")
+        (token.symbol ?? token.ticker ?? "").toUpperCase() === "ZEC" &&
+        (token.blockchain ?? "").toLowerCase().includes("zec")
       );
 
       setTokenOptions(tokens);
@@ -81,8 +91,8 @@ export function SwapProvider({ children }: { children: ReactNode }) {
           setOriginTokenIdState(zecId);
         }
       }
-    } catch (error: any) {
-      setSwapError(error.message || "Failed to load tokens");
+    } catch (error) {
+      setSwapError(getErrorMessage(error, "Failed to load tokens"));
     } finally {
       setIsLoadingTokens(false);
     }
@@ -117,16 +127,16 @@ export function SwapProvider({ children }: { children: ReactNode }) {
 
     try {
       const result = await getSwapQuote({
-        fromToken: fromToken || originTokenId || "",
-        toToken: toToken || zecTokenId || "",
+        fromToken: fromToken ?? originTokenId ?? "",
+        toToken: toToken ?? zecTokenId ?? "",
         amountIn,
         destAddress,
-        refundAddress: refund || refundAddress,
-        slippageTolerance: slippage || slippageTolerance,
+        refundAddress: refund ?? refundAddress,
+        slippageTolerance: slippage ?? slippageTolerance,
       });
 
       if (!result.ok) {
-        setSwapError(result.error || "Failed to get quote");
+        setSwapError(result.error ?? "Failed to get quote");
         setQuoteStatus("");
         return null;
       }
@@ -135,8 +145,8 @@ export function SwapProvider({ children }: { children: ReactNode }) {
       setQuoteData(result);
       setQuoteStatus("Quote ready");
       return result;
-    } catch (error: any) {
-      setSwapError(error.message || "Failed to get quote");
+    } catch (error) {
+      setSwapError(getErrorMessage(error, "Failed to get quote"));
       setQuoteStatus("");
       return null;
     } finally {
@@ -169,30 +179,30 @@ export function SwapProvider({ children }: { children: ReactNode }) {
 
     try {
       const result = await confirmSwapAction({
-        fromToken: fromToken || originTokenId || "",
-        toToken: toToken || zecTokenId || "",
+        fromToken: fromToken ?? originTokenId ?? "",
+        toToken: toToken ?? zecTokenId ?? "",
         amountIn,
         destAddress,
-        refundAddress: refund || refundAddress,
-        slippageTolerance: slippage || slippageTolerance,
+        refundAddress: refund ?? refundAddress,
+        slippageTolerance: slippage ?? slippageTolerance,
       });
 
       if (!result.ok) {
-        setSwapError(result.error || "Failed to confirm swap");
+        setSwapError(result.error ?? "Failed to confirm swap");
         setQuoteStatus("");
         return null;
       }
 
       // Store deposit and status
-      setDepositUri(result.paymentUri || result.deposit?.address || "");
+      setDepositUri(result.paymentUri ?? result.deposit?.address ?? "");
       setStatusKey(result.statusKey);
       setQuoteData(result);
       setSwapStatus("PENDING_DEPOSIT");
       setQuoteStatus("Swap confirmed!");
 
       return result;
-    } catch (error: any) {
-      setSwapError(error.message || "Failed to confirm swap");
+    } catch (error) {
+      setSwapError(getErrorMessage(error, "Failed to confirm swap"));
       setQuoteStatus("");
       return null;
     } finally {
@@ -220,7 +230,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
       setQuoteStatus("");
       setSwapError("");
     }
-  }, [tokenOptions, zecTokenId]);
+  }, [tokenOptions, zecTokenId, resetSwapState]);
 
   const resetSwapState = useCallback(() => {
     setOriginTokenIdState(zecTokenId);
@@ -262,7 +272,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
   // ===== EFFECTS =====
 
   useEffect(() => {
-    loadTokens();
+    void loadTokens();
   }, [loadTokens]);
 
   // ===== CONTEXT VALUE =====

@@ -38,7 +38,7 @@ export default function QrUriBlock({
   const [saved, setSaved] = useState(false);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(uri);
+    void navigator.clipboard.writeText(uri);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -53,7 +53,7 @@ export default function QrUriBlock({
     const url = URL.createObjectURL(blob);
 
     const link = document.createElement("a");
-    const safeName = (profileName || "recipient")
+    const safeName = (profileName ?? "recipient")
       .trim()
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-");
@@ -70,10 +70,10 @@ export default function QrUriBlock({
   if (!uri) return null;
 
   const actionButtonClasses =
-    actionButtonClassName ||
+    actionButtonClassName ??
     "flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap";
   const hideButtonClasses =
-    hideButtonClassName ||
+    hideButtonClassName ??
     "flex items-center gap-1 px-3 pl-0 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
 
   return (

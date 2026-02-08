@@ -1,5 +1,9 @@
-import type { Token } from "@/lib/swap/types";
-import type { SwapQuoteDisplay } from "@/lib/swap/types";
+import type {
+  SwapConfirmResponse,
+  SwapContextQuoteData,
+  SwapQuoteDisplay,
+  SwapQuoteResponse,
+} from "@/lib/swap/types";
 import type { PendingEdits, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
 
 /**
@@ -57,7 +61,7 @@ export interface SwapContextType {
   swapAmount: string;
   refundAddress: string;
   slippageTolerance: string;
-  quoteData: unknown | null;
+  quoteData: SwapContextQuoteData;
   quotePreview: SwapQuoteDisplay | null;
   depositUri: string;
   statusKey: { depositAddress: string } | null;
@@ -78,7 +82,7 @@ export interface SwapContextType {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<unknown | null>;
+  }) => Promise<SwapQuoteResponse | null>;
   confirmSwap: (_params: {
     amountIn: string;
     destAddress: string;
@@ -86,7 +90,7 @@ export interface SwapContextType {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<unknown | null>;
+  }) => Promise<SwapConfirmResponse | null>;
   resetSwapState: () => void;
   loadTokens: () => Promise<void>;
 }

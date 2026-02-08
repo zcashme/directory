@@ -38,8 +38,8 @@ export default function ProfileVerification({
   setVerifyAmount,
 }: ProfileVerificationProps) {
   // Use verify context values for memo/amount
-  const memo = verify?.memo || "";
-  const amount = verify?.amount || DEFAULT_SIGNIN_AMOUNT;
+  const memo = verify?.memo ?? "";
+  const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [verifyQrEnabled, setVerifyQrEnabled] = useState(false);
@@ -63,7 +63,7 @@ export default function ProfileVerification({
   } = useVerificationPolling({ verifyQrEnabled, setVerifyRequestId });
 
   const explainerText = useMemo(() => {
-    const profileEdits = pendingEdits?.profile || {};
+    const profileEdits = pendingEdits?.profile ?? {};
     const deleted = Array.isArray(profileEdits?.d) ? profileEdits.d : [];
     const changedFields: string[] = [];
 
@@ -100,7 +100,7 @@ export default function ProfileVerification({
   }, [pendingEdits]);
 
   useEffect(() => {
-    const trimmed = (amount || "").trim();
+    const trimmed = (amount ?? "").trim();
     if (!trimmed || trimmed === "0") {
       setVerifyAmount(DEFAULT_SIGNIN_AMOUNT);
     }
@@ -111,7 +111,7 @@ export default function ProfileVerification({
   }, [pendingEdits]);
 
   const { validAmount, error, verifyUri } = useMemo(() => {
-    const cleaned = (amount || "").trim();
+    const cleaned = (amount ?? "").trim();
     const raw = cleaned.replace(/[^\d.]/g, "");
     const num = parseFloat(raw);
     const validMin = !Number.isNaN(num) && num >= MIN_SIGNIN_AMOUNT;
@@ -133,12 +133,17 @@ export default function ProfileVerification({
     if (pollStatus === "matched") setShowFooterHelp(false);
   }, [pollStatus]);
 
-  const handleGenerateQr = async () => {
+  const handleGenerateQr = () => {
     if (!verifyUri || error) return;
-    const zid = verify?.zId || profile?.id;
+    const zid = verify?.zId ?? profile?.id;
     if (!zid) return;
     setVerifyQrEnabled(true);
-    startPolling(zid);
+    void startPolling(zid);
+  };
+
+  const handleCopyDebug = () => {
+    if (!pollDebug) return;
+    void navigator.clipboard.writeText(pollDebug).catch(() => {});
   };
 
   return (
@@ -156,7 +161,7 @@ export default function ProfileVerification({
                 className="text-blue-600 cursor-pointer"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               >
-                {profile?.name || "Your profile"}
+                {profile?.name ?? "Your profile"}
               </span>
             </span>
 
@@ -188,7 +193,7 @@ export default function ProfileVerification({
               </span>
             </span>
             <span className="block mt-2 text-[14px] text-gray-800">
-              {memo || "(waiting for edits)"}
+              {memo ?? "(waiting for edits)"}
             </span>
           </pre>
         </div>
@@ -286,7 +291,7 @@ export default function ProfileVerification({
                   ))}
                 </div>
               )}
-              {(pollOtpPhase || "").toLowerCase() === "sent" && (
+              {(pollOtpPhase ?? "").toLowerCase() === "sent" && (
                 <div className="mt-2 text-xs text-green-700 text-center font-semibold">
                   OTP sent, check your wallet for your one-time passcode
                 </div>
@@ -296,7 +301,7 @@ export default function ProfileVerification({
                   {progressExplainer}
                 </div>
               )}
-              {(pollOtpPhase || "").toLowerCase() === "sent" && !otpInlineSuccess && (
+              {(pollOtpPhase ?? "").toLowerCase() === "sent" && !otpInlineSuccess && (
                 <InlineOtpForm profile={profile} onSuccess={handleInlineOtpSuccess} />
               )}
             </div>
@@ -307,13 +312,7 @@ export default function ProfileVerification({
                 <button
                   type="button"
                   className="text-xs font-semibold text-blue-600 underline"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(pollDebug);
-                    } catch (_err) {
-                      // Ignore clipboard errors
-                    }
-                  }}
+                  onClick={handleCopyDebug}
                 >
                   Copy
                 </button>

@@ -4,6 +4,12 @@ import type { ReactNode } from "react";
 import type { EditsContextType } from "./types";
 import type { PendingEdits, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
 
+declare global {
+  interface Window {
+    pendingEdits?: PendingEdits;
+  }
+}
+
 const EditsContext = createContext<EditsContextType | undefined>(undefined);
 
 export function EditsProvider({ children }: { children: ReactNode }) {
@@ -16,7 +22,8 @@ export function EditsProvider({ children }: { children: ReactNode }) {
   const clearPendingEdits = () => _setPendingEdits({});
 
   useEffect(() => {
-    if (pendingEdits) (window as any).pendingEdits = pendingEdits;
+    if (typeof window === "undefined") return;
+    window.pendingEdits = pendingEdits;
   }, [pendingEdits]);
 
   const value: EditsContextType = {

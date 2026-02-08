@@ -10,6 +10,7 @@ export interface Token {
   ticker?: string;
   decimals: number;
   blockchain: string;
+  logo?: string;
   [key: string]: unknown;
 }
 
@@ -162,6 +163,14 @@ export interface SwapConfirmError {
  * Discriminated union for swap confirm responses
  */
 export type SwapConfirmResponse = SwapConfirmSuccess | SwapConfirmError;
+
+/**
+ * Quote data stored in context (quote result or confirm result).
+ */
+export type SwapContextQuoteData =
+  | SwapQuoteResponse
+  | SwapConfirmResponse
+  | null;
 
 /**
  * Swap status polling response from API

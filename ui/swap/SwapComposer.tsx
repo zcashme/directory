@@ -1,6 +1,16 @@
 "use client";
-import type { Profile, Token } from "@/lib/profile/types";
-import type { SwapQuoteDisplay } from "@/lib/swap/types";
+import type { Profile } from "@/lib/profile/types";
+import type {
+  SwapConfirmResponse,
+  SwapConfirmSuccess,
+  SwapContextQuoteData,
+  SwapQuoteDisplay,
+  SwapQuoteResponse,
+  Token,
+} from "@/lib/swap/types";
+
+const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfirmSuccess =>
+  Boolean(data && data.ok === true && "deposit" in data);
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import { getTokenId } from "@/lib/swap/swapPayload";
@@ -18,7 +28,7 @@ interface SwapComposerProps {
   slippageTolerance: string;
   // Quote output state
   quotePreview: SwapQuoteDisplay | null;
-  quoteData: any | null;
+  quoteData: SwapContextQuoteData;
   // Swap output state
   depositUri: string;
   statusKey: { depositAddress: string } | null;
@@ -42,7 +52,7 @@ interface SwapComposerProps {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<unknown | null>;
+  }) => Promise<SwapQuoteResponse | null>;
   confirmSwap: (_params: {
     amountIn: string;
     destAddress: string;
@@ -50,7 +60,7 @@ interface SwapComposerProps {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<unknown | null>;
+  }) => Promise<SwapConfirmResponse | null>;
   resetSwapState: () => void;
 }
 
@@ -85,7 +95,9 @@ export default function SwapComposer({
   resetSwapState,
 }: SwapComposerProps) {
 
-  const recipientName = profile?.display_name || profile?.name || "Recipient";
+  const recipientName = profile?.display_name ?? profile?.name ?? "Recipient";
+  const confirmedQuote = isConfirmSuccess(quoteData) ? quoteData : null;
+  const depositAmountDecimal = confirmedQuote?.deposit?.amountDecimal ?? "";
 
   // Validation checks
   const canGetQuote = !isGettingQuote && swapAmount && refundAddress && parseFloat(swapAmount) > 0;
@@ -93,10 +105,10 @@ export default function SwapComposer({
 
   // Format tokens for selector
   const formattedTokenOptions = tokenOptions.map((token) => ({
-    id: getTokenId(token) || "",
-    symbol: token.symbol || token.ticker || "?",
-    chain: token.blockchain || "",
-    logo: (token as any).logo || "",
+    id: getTokenId(token) ?? "",
+    symbol: token.symbol ?? token.ticker ?? "?",
+    chain: token.blockchain ?? "",
+    logo: token.logo ?? "",
   }));
 
   // Handlers
@@ -219,7 +231,7 @@ export default function SwapComposer({
       <SwapDepositDisplay
         depositUri={depositUri}
         depositAddress={statusKey?.depositAddress}
-        amountDecimal={(quoteData as any)?.deposit?.amountDecimal}
+        amountDecimal={depositAmountDecimal}
         originSymbol={originSymbol}
         swapStatus={swapStatus}
         recipientName={recipientName}
@@ -296,7 +308,9 @@ export default function SwapComposer({
           <div className="flex gap-3">
             <button
               type="button"
-              onClick={handleGetQuote}
+              onClick={() => {
+                void handleGetQuote();
+              }}
               disabled={!canGetQuote}
               className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
                 canGetQuote
@@ -308,7 +322,9 @@ export default function SwapComposer({
             </button>
             <button
               type="button"
-              onClick={handleConfirmQuote}
+              onClick={() => {
+                void handleConfirmQuote();
+              }}
               disabled={!canConfirmQuote}
               className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
                 canConfirmQuote

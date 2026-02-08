@@ -3,7 +3,8 @@
 // React & Next.js
 import { useEffect, useState, useCallback, useMemo } from "react";
 import type { ReactNode } from "react";
-import type { Profile, Token, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
+import type { Profile, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
+import type { Token } from "@/lib/swap/types";
 import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 // Contexts - using typed hooks
@@ -74,12 +75,9 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
 
   // Feedback events effect
   useEffect(() => {
-    let listenerBound = false;
-    if (listenerBound) return;
-    listenerBound = true;
-
-    const handleSignIn = (e: CustomEvent) => {
-      const { zId } = e.detail || {};
+    const handleSignIn = (event: Event) => {
+      const customEvent = event as CustomEvent<{ zId?: number }>;
+      const { zId } = customEvent.detail ?? {};
       if (zId) {
         setVerifyId(zId);
         setVerifyMemo(`{z:${zId}}`);
@@ -91,20 +89,21 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
 
     const handleDraft = () => setMode("note");
 
-    const handlePendingEdits = (e: PendingEditsEvent) => {
-      const detail = e.detail;
+    const handlePendingEdits = (event: Event) => {
+      const customEvent = event as PendingEditsEvent;
+      const detail = customEvent.detail;
       if (!detail) return;
       setPendingEdits(detail.field, detail.value);
     };
 
-    window.addEventListener("enterSignInMode", handleSignIn as unknown as EventListener);
-    window.addEventListener("enterDraftMode", handleDraft as unknown as EventListener);
-    window.addEventListener("pendingEditsUpdated", handlePendingEdits as unknown as EventListener);
+    window.addEventListener("enterSignInMode", handleSignIn);
+    window.addEventListener("enterDraftMode", handleDraft);
+    window.addEventListener("pendingEditsUpdated", handlePendingEdits);
 
     return () => {
-      window.removeEventListener("enterSignInMode", handleSignIn as unknown as EventListener);
-      window.removeEventListener("enterDraftMode", handleDraft as unknown as EventListener);
-      window.removeEventListener("pendingEditsUpdated", handlePendingEdits as unknown as EventListener);
+      window.removeEventListener("enterSignInMode", handleSignIn);
+      window.removeEventListener("enterDraftMode", handleDraft);
+      window.removeEventListener("pendingEditsUpdated", handlePendingEdits);
     };
   }, [setMode, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setVerifyRequestId]);
 
@@ -114,9 +113,9 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   // Update verify memo when in signin mode with pending edits
   useEffect(() => {
     if (mode !== "signin") return;
-    const zId = verify.zId || null;
+    const zId = verify.zId ?? null;
     if (!zId) return;
-    const requestId = verify.requestId || null;
+    const requestId = verify.requestId ?? null;
 
     const profileEdits = pendingEdits.profile ?? {};
     const linkTokens = pendingEdits.l ?? [];
@@ -177,28 +176,33 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   };
 
   const memoComposerProps = {
+    profile,
     forceShowQR,
     uri,
-    memo: draft.memo || "",
-    amount: draft.amount || "",
+    memo: draft.memo ?? "",
+    amount: draft.amount ?? "",
     openWallet,
     setDraftMemo,
     setDraftAmount,
-    asset: swapContext.originSymbol || "ZEC",
-    assetOptions: (swapContext.tokenOptions || []).map((token: Token) => ({
-      id: token.id || token.assetId || token.tokenId || token.asset,
-      symbol: token.symbol || token.ticker || "",
-      label: `${token.symbol || token.ticker || ""} - ${token.blockchain || ""}`,
-      logo: token.logo || null,
-      chain: token.blockchain || "",
-      decimals: token.decimals || 8,
-    })),
+    asset: swapContext.originSymbol ?? "ZEC",
+    assetOptions: (swapContext.tokenOptions ?? []).map((token: Token) => {
+      const symbolDisplay = token.symbol ?? token.ticker ?? "";
+      return {
+        id: token.id ?? token.assetId ?? token.tokenId ?? token.asset,
+        symbol: symbolDisplay,
+        label: `${symbolDisplay} - ${token.blockchain ?? ""}`,
+        logo: token.logo ?? null,
+        chain: token.blockchain ?? "",
+        decimals: token.decimals ?? 8,
+      };
+    }),
     onSetAsset: swapContext.setToken,
   };
 
   const swapComposerProps = {
+    profile,
     // Token state
-    tokenOptions: swapContext.tokenOptions || [],
+    tokenOptions: swapContext.tokenOptions ?? [],
     originTokenId: swapContext.originTokenId,
     originSymbol: swapContext.originSymbol,
     zecTokenId: swapContext.zecTokenId,
@@ -282,10 +286,10 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
                 </ZcashCardWrapper>
               ) : (
                 <ZcashCardWrapper>
-                  {swapContext.isSwapMode ? (
-                    <SwapComposer profile={profile} {...swapComposerProps as any} />
+                {swapContext.isSwapMode ? (
+                    <SwapComposer {...swapComposerProps} />
                   ) : (
-                    <MemoComposer profile={profile} {...memoComposerProps as any} />
+                    <MemoComposer {...memoComposerProps} />
                   )}
                 </ZcashCardWrapper>
               )}

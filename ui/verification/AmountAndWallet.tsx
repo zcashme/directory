@@ -127,11 +127,11 @@ export default function AmountAndWallet({
       const result = await getRateAction(nextFiat || "USD", nextAsset || "ZEC");
       if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
         setRate(result.rate);
-        setRateSource(result.source || "API");
+        setRateSource(result.source ?? "API");
         setRateFetched(true);
         return true;
       }
-    } catch (_err) {
+    } catch {
       // Silent error handling
     }
     return false;
@@ -141,7 +141,7 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
-      fetchRate(fiat, asset);
+      void fetchRate(fiat, asset);
     }, 60000);
     return () => clearInterval(id);
   }, [rateRequested, fiat, asset]);
@@ -190,19 +190,27 @@ export default function AmountAndWallet({
     if (!rateRequested) return;
     setRateFetched(false);
     setUsdInput("");
-    fetchRate(fiat, asset);
+    void fetchRate(fiat, asset);
   }, [fiat, asset, rateRequested]);
 
   const handleToggleUsd = () => {
     if (!rateRequested) {
       setRateRequested(true);
-      fetchRate(fiat, asset);
+      void fetchRate(fiat, asset);
     }
     setIsUsdOpen((prev) => !prev);
   };
 
   const handleToggleCurrency = () => {
     setIsCurrencyOpen((prev) => !prev);
+  };
+
+  const matchesTokenSearch = (token: TokenOption) => {
+    if (!tokenSearch) return true;
+    const term = tokenSearch.toLowerCase();
+    if (token.symbol?.toLowerCase().includes(term)) return true;
+    if (token.label?.toLowerCase().includes(term)) return true;
+    return false;
   };
 
   return (
@@ -277,7 +285,7 @@ export default function AmountAndWallet({
                 // Auto-open USD pill when typing a number if it's available
                 if (showUsdPill && !isUsdOpen && val && !rateRequested) {
                   setRateRequested(true);
-                  fetchRate(fiat, asset);
+                  void fetchRate(fiat, asset);
                   setIsUsdOpen(true);
                 }
 
@@ -320,11 +328,7 @@ export default function AmountAndWallet({
                       </div>
                       <div className="py-1">
                         {assetOptions
-                          .filter((token) =>
-                            !tokenSearch ||
-                            token.symbol?.toLowerCase().includes(tokenSearch.toLowerCase()) ||
-                            token.label?.toLowerCase().includes(tokenSearch.toLowerCase())
-                          )
+                          .filter(matchesTokenSearch)
                           .map((token) => (
                             <button
                               key={token.id}
@@ -335,7 +339,7 @@ export default function AmountAndWallet({
                                 setTokenSearch("");
                               }}
                               className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                asset === (token.symbol || token.ticker)
+                                asset === (token.symbol ?? token.ticker)
                                   ? "bg-blue-50 font-semibold text-gray-900"
                                   : "text-gray-700 hover:bg-gray-50"
                               }`}
@@ -356,11 +360,7 @@ export default function AmountAndWallet({
                               </span>
                             </button>
                           ))}
-                        {assetOptions.filter((token) =>
-                          !tokenSearch ||
-                          token.symbol?.toLowerCase().includes(tokenSearch.toLowerCase()) ||
-                          token.label?.toLowerCase().includes(tokenSearch.toLowerCase())
-                        ).length === 0 && (
+                        {assetOptions.filter(matchesTokenSearch).length === 0 && (
                           <div className="px-3 py-2 text-sm text-gray-500 text-center">
                             No tokens found
                           </div>
@@ -423,7 +423,8 @@ export default function AmountAndWallet({
                         if (!/^[0-9]*\.?[0-9]*$/.test(val)) return;
 
                         // Reject multiple decimal points
-                        if ((val.match(/\./g) || []).length > 1) return;
+                        const dotMatches = val.match(/\./g) ?? [];
+                        if (dotMatches.length > 1) return;
 
                         // Reject multiple leading zeros like "00" or "001"
                         if (/^0{2,}/.test(val)) return;

@@ -41,8 +41,8 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
-  const pname = profile?.name || "Profile";
-  const paddr = profile?.address || "(unknown)";
+  const pname = profile?.name ?? "Profile";
+  const paddr = profile?.address ?? "(unknown)";
 
   async function handleSubmit() {
     setStep(1);
@@ -107,7 +107,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
       setCustomMessage(message);
       setStep(2);
 
-    } catch (_err) {
+    } catch {
       setResult("fail");
       setCustomMessage("Unexpected error.");
       setStep(2);
@@ -242,7 +242,9 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
                 </button>
 
                 <button
-                  onClick={handleSubmit}
+                  onClick={() => {
+                    void handleSubmit();
+                  }}
                   className="py-2.5 px-5 rounded-xl border border-black/30 text-sm font-semibold
                              text-blue-700 hover:border-blue-600 hover:bg-blue-50"
                 >
