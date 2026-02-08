@@ -1,27 +1,30 @@
 # Dependencies
 node_modules/
 
-# Build output
+# Next.js & build output
 .next/
 dist/
+out/
+build/
+
+# TypeScript intermediate cache
+tsconfig.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
 
 # Environment
 .env
-.env.local
-.env.development
-.env.production
+.env.*
 
-# Editor / OS
+# Editors and OS
 .vscode/
 .idea/
 .DS_Store
 *.sw?
 
-# Logs
-*.log
-
-# Design references (not part of build)
-profile-card-design_(1)/
-
-# Vercel
-.vercel/
+# Misc
+coverage/

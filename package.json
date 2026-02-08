@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint ."
+    "dev": "cross-env NODE_OPTIONS=--loader=ts-node/esm next dev --webpack",
+    "build": "cross-env NODE_OPTIONS=--loader=ts-node/esm next build",
+    "start": "cross-env NODE_OPTIONS=--loader=ts-node/esm next start",
+    "lint": "cross-env NODE_OPTIONS=--loader=ts-node/esm eslint ."
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.17",
@@ -34,8 +34,15 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^16.3.0",
+    "cross-env": "^7.0.3",
     "postcss": "^8.4.41",
     "tailwindcss": "^4.1.12",
+    "ts-node": "^2.2.0",
     "typescript": "^5.9.3"
+  },
+  "postcss": {
+    "plugins": {
+      "@tailwindcss/postcss": {}
+    }
   }
 }

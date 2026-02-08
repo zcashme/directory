@@ -1,3 +1,4 @@
+import type { FlatConfig } from "eslint";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
@@ -30,7 +31,7 @@ const typeScriptRules = {
 };
 
 const tsFileGlobs = ["**/*.{ts,tsx,cts,mts}"];
-const withTsFiles = (config) =>
+const withTsFiles = (config: FlatConfig): FlatConfig =>
   config.files
     ? config
     : {
