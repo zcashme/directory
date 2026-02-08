@@ -1,3 +1,13 @@
+interface AuthExplainerModalProps {
+  isOpen: boolean;
+  canAuthenticate: boolean;
+  authPending?: boolean;
+  authRedirectOpen?: boolean;
+  providerLabel?: string;
+  onClose: () => void;
+  onAuthenticate: () => void;
+}
+
 export default function AuthExplainerModal({
   isOpen,
   canAuthenticate,
@@ -6,7 +16,7 @@ export default function AuthExplainerModal({
   providerLabel,
   onClose,
   onAuthenticate,
-}) {
+}: AuthExplainerModalProps) {
   if (!isOpen) return null;
 
   return (

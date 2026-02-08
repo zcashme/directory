@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { isValidUrl } from "@/lib/profile/validateUrl";
-import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
+import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
@@ -14,7 +14,7 @@ import {
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import HelpIcon from "@/ui/common/HelpIcon";
-import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
+import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
@@ -47,13 +47,19 @@ function CharCounter({ text }: CharCounterProps) {
 function createDeleteToggle(
   field: string,
   originals: Record<string, string>,
-  setDeletedFields: React.Dispatch<React.SetStateAction<Record<string, boolean>>>,
+  setDeletedFields: React.Dispatch<React.SetStateAction<{
+    address: boolean;
+    name: boolean;
+    display_name: boolean;
+    bio: boolean;
+    profile_image_url: boolean;
+  }>>,
   setForm: React.Dispatch<React.SetStateAction<any>>,
   handleChange: (field: string, value: string) => void
 ) {
   return () =>
     setDeletedFields((prev) => {
-      const next = !prev[field];
+      const next = !prev[field as keyof typeof prev];
       if (next) {
         setForm((f: any) => ({ ...f, [field]: "" }));
       } else {
@@ -74,7 +80,7 @@ interface ProfileEditorProps {
   feedbackProps?: FeedbackProps;
 }
 
-interface ParsedLink extends Partial<EnrichedProfileLink> {
+interface ParsedLink {
   id: number | null;
   url: string;
   username?: string;
@@ -82,10 +88,14 @@ interface ParsedLink extends Partial<EnrichedProfileLink> {
   valid: boolean;
   reason: string | null;
   is_verified: boolean;
-  verification_expires_at: string | null;
+  verification_expires_at?: string | null;
   _uid: string;
   platform?: "X" | "GitHub" | "Instagram" | "Discord" | null;
   otherUrl?: string;
+  label?: string;
+  icon?: string;
+  domain?: string;
+  handle?: string;
 }
 
 interface FormState {
@@ -461,8 +471,8 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
     setPendingEdits("l", filtered);
   };
 
-  const toggleAddress = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (!profile.address_verified) {
+  const toggleAddress = (e?: React.MouseEvent<HTMLButtonElement>) => {
+    if (!profile.address_verified && e) {
       const btn = e.currentTarget;
       const popup = e.currentTarget.nextElementSibling as HTMLElement;
       btn.classList.remove("shake");

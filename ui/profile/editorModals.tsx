@@ -1,6 +1,11 @@
 import ModalPortal from "@/ui/common/ModalPortal";
 
-export function RedirectModal({ isOpen, label }) {
+interface RedirectModalProps {
+  isOpen: boolean;
+  label: string;
+}
+
+export function RedirectModal({ isOpen, label }: RedirectModalProps) {
   if (!isOpen) return null;
   return (
     <ModalPortal>
@@ -22,7 +27,14 @@ export function RedirectModal({ isOpen, label }) {
   );
 }
 
-export function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }) {
+interface AvatarReauthModalProps {
+  isOpen: boolean;
+  providerLabel: string;
+  onReauth: () => void;
+  onLater: () => void;
+}
+
+export function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }: AvatarReauthModalProps) {
   if (!isOpen) return null;
   return (
     <ModalPortal>
@@ -54,7 +66,13 @@ export function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }) 
   );
 }
 
-export function AvatarPreviewModal({ isOpen, src, onClose }) {
+interface AvatarPreviewModalProps {
+  isOpen: boolean;
+  src: string;
+  onClose: () => void;
+}
+
+export function AvatarPreviewModal({ isOpen, src, onClose }: AvatarPreviewModalProps) {
   if (!isOpen) return null;
   return (
     <ModalPortal>

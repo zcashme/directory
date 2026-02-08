@@ -802,7 +802,7 @@ export default function ProfileCard({
                 {showLinkShimmer ? (
                   <div className="link-tray-shimmer h-10 w-full rounded-md" />
                 ) : linksArray.length > 0 ? (
-                  linksArray.map((link) => {
+                  linksArray.map((link: EnrichedProfileLink) => {
                     const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
                     const canLinkLeft = !(isDiscordLink && !link.is_verified);
                     return (
@@ -846,7 +846,7 @@ export default function ProfileCard({
                           onClick={
                             link.is_verified
                               ? undefined
-                              : (event) => handleAuthBadgeClick(event, link)
+                              : (event: React.MouseEvent) => handleAuthBadgeClick(event, link)
                           }
                         />
                       </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { getRateAction } from "@/lib/rates/getRateAction";
 
 interface Currency {
@@ -112,7 +112,6 @@ export default function AmountAndWallet({
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
-  const [isTypingCrypto, setIsTypingCrypto] = useState(false);
   const [isTypingFiat, setIsTypingFiat] = useState(false);
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
@@ -251,8 +250,6 @@ export default function AmountAndWallet({
               inputMode="decimal"
               placeholder="0.0000"
               value={amount || ""}
-              onFocus={() => setIsTypingCrypto(true)}
-              onBlur={() => setIsTypingCrypto(false)}
               onChange={(e) => {
                 const val = e.target.value;
 
