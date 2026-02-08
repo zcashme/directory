@@ -564,7 +564,7 @@ export default function ProfileCard({ profile, onSelect, warning, fullView = fal
               title={`Share ${profile.display_name || profile.name}`}
             >
               <img
-                src={shareIcon}
+                src={shareIcon.src}
                 alt="Share"
                 className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
               />
