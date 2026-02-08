@@ -107,6 +107,8 @@ export function ProfileCardContent({
       addressPadding: "px-3 py-1.5",
       linkPadding: "px-4 pt-2 pb-3",
       linkGap: "gap-2",
+      linkRowGap: "gap-2",
+      linkRowPadding: "py-0.5",
     },
   };
 
@@ -373,9 +375,9 @@ export default function ProfileCard({
     const current = normalizeSlug(currentRaw);
     return current === normalizeSlug(expected);
   }, [fullView, profile, pathname]);
-  const { linksArray, setLinksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
+  const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks(profile, fullView, routeMatchesProfile);
 
-  const { verifiedAddress, verifiedLinks, isVerified, canAuthenticateLinks } = getProfileTrust(profile);
+  const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
@@ -420,6 +422,7 @@ export default function ProfileCard({
       return;
     }
     if (!authToken || authPending) return;
+    if (!setPendingEdits) return;
     appendLinkToken(pendingEdits, setPendingEdits, authToken);
     setAuthInfoOpen(false);
   };
@@ -428,7 +431,7 @@ export default function ProfileCard({
     return (
       <VerifiedCardWrapper
         verifiedCount={profile.verified_links_count ?? 0}
-        featured={profile.featured}
+        featured={!!profile.featured}
         onClick={() => {
           onSelect?.(profile);
           requestAnimationFrame(() =>
@@ -443,7 +446,6 @@ export default function ProfileCard({
             size={45}
             imageClassName="object-contain"
             className="shadow-xs"
-            showFallbackIcon
           />
 
           <div className="flex flex-col grow overflow-hidden min-w-0">
@@ -452,10 +454,6 @@ export default function ProfileCard({
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
-                  verifiedCount={
-                    (profile.verified_links_count ?? 0) +
-                    (profile.address_verified ? 1 : 0)
-                  }
                 />
               )}
               {isNewProfile(profile) && (
@@ -474,7 +472,8 @@ export default function ProfileCard({
                 <div className="flex flex-wrap justify-start gap-x-2 gap-y-0.5">
                   {(["alltime", "weekly", "monthly", "daily"] as const).map(period => {
                     const rank = profile[`rank_${period}`];
-                    return rank && rank > 0 && <ReferRankBadgeMulti key={period} rank={rank} period={period.replace("time", "") as "all" | "weekly" | "monthly" | "daily"} />;
+                    const periodLabel = period === "alltime" ? "all" : period;
+                    return rank && rank > 0 && <ReferRankBadgeMulti key={period} rank={rank} period={periodLabel as any} />;
                   })}
                 </div>
               )}
@@ -501,7 +500,7 @@ export default function ProfileCard({
         (profile.verified_links_count ?? 0) +
         (profile.address_verified ? 1 : 0)
       }
-      featured={profile.featured}
+      featured={!!profile.featured}
       className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
       data-active-profile
       data-address={profile.address}
@@ -637,9 +636,6 @@ export default function ProfileCard({
             size={80}
             imageClassName="object-contain"
             className="mx-auto shadow-xs flex items-center justify-center"
-            showFallbackIcon
-            blink
-            lookAround
           />
 
           {/* Awards section (animated, appears when Show Awards is active) */}
@@ -661,28 +657,28 @@ export default function ProfileCard({
                 {(profile.rank_alltime ?? 0) > 0 && (
                   <ReferRankBadgeMulti
                     rank={profile.rank_alltime!}
-                    period="all"
+                    period="all" as any
                     alwaysOpen
                   />
                 )}
                 {(profile.rank_weekly ?? 0) > 0 && (
                   <ReferRankBadgeMulti
                     rank={profile.rank_weekly!}
-                    period="weekly"
+                    period="weekly" as any
                     alwaysOpen
                   />
                 )}
                 {(profile.rank_monthly ?? 0) > 0 && (
                   <ReferRankBadgeMulti
                     rank={profile.rank_monthly!}
-                    period="monthly"
+                    period="monthly" as any
                     alwaysOpen
                   />
                 )}
                 {(profile.rank_daily ?? 0) > 0 && (
                   <ReferRankBadgeMulti
                     rank={profile.rank_daily!}
-                    period="daily"
+                    period="daily" as any
                     alwaysOpen
                   />
                 )}
@@ -697,10 +693,6 @@ export default function ProfileCard({
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
-                  verifiedCount={
-                    (profile.verified_links_count ?? 0) +
-                    (profile.address_verified ? 1 : 0)
-                  }
                 />
               )}
             </h2>

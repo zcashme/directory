@@ -14,11 +14,16 @@ export interface Profile {
   nearest_city_id?: number | null; // Foreign key to city
   nearest_city_name?: string; // Display name of city
   avatar_url?: string; // Profile avatar image URL
+  profile_image_url?: string; // Alternative field for avatar
   links?: ProfileLink[]; // Array of social/web links
   verified_links_count?: number; // Count of verified links
   total_links?: number; // Total number of links
   since?: string; // ISO date of profile creation
+  joined_at?: string; // Alternative field for since
+  created_at?: string; // Alternative field for since
   last_verified_at?: string; // ISO date of last verification
+  last_verified?: string; // Alternative field for last_verified_at
+  featured?: boolean; // Featured profile
 
   // Ranking fields (from ranking tables)
   rank_alltime?: number; // All-time referrer rank (0 if not ranked)
