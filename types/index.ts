@@ -30,6 +30,15 @@ export interface Profile {
   rank_weekly?: number; // Weekly referrer rank (0 if not ranked)
   rank_monthly?: number; // Monthly referrer rank (0 if not ranked)
   rank_daily?: number; // Daily referrer rank (0 if not ranked)
+
+  // NS (Name Service) Directory fields
+  is_ns?: boolean | string | number; // NS directory member flag
+  is_ns_core?: boolean | string | number; // NS core member flag
+  is_ns_longterm?: boolean | string | number; // NS long-term member flag
+  country?: string; // Country name or code
+  iso2?: string; // ISO 2-letter country code
+  link_search_text?: string; // Searchable text from links
+  last_verified_label?: string; // Human-readable last verified label
 }
 
 /**
