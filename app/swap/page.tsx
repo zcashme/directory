@@ -175,7 +175,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
   const [statusMessage, setStatusMessage] = useState<string>("Checking swap status...");
   const [failureReason, setFailureReason] = useState<string | null>(null);
   const [swapData, setSwapData] = useState<SwapData | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState<boolean>(true);
+  const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
 
   const uiStatus = mapToUIState(apiStatus);
 
@@ -383,7 +383,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
           onClick={() => setDetailsOpen(!detailsOpen)}
           className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 font-semibold text-gray-800"
         >
-          <span>Transaction Details</span>
+          <span>Swap details</span>
           <span className={`transform transition ${detailsOpen ? "rotate-180" : ""}`}>
             ▲
           </span>
