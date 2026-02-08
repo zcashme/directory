@@ -173,7 +173,7 @@ function FannedCard({
 
 interface FeaturedCardsSectionProps {
   featuredProfiles: Profile[];
-  onCardClick: (_profile: Profile) => void;
+  onCardClick: (profile: Profile) => void;
 }
 
 function FeaturedCardsSection({ featuredProfiles, onCardClick }: FeaturedCardsSectionProps) {

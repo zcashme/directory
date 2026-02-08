@@ -118,9 +118,9 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             className="bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md transition-all duration-300 whitespace-nowrap overflow-hidden relative animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500 absolute right-0 top-1/2 -translate-y-1/2 z-[100]"
             style={{
               width: availableUsername
-                ? `${Math.max((availableUsername.length + 10) * 7.5, 120)}px`
+                ? '110px'
                 : undefined,
-              minWidth: availableUsername ? '120px' : '70px',
+              minWidth: availableUsername ? '110px' : '70px',
             }}
           >
             <span
@@ -135,7 +135,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 availableUsername ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[20px]"
               }`}
             >
-              Claim /{availableUsername}
+              Claim
             </span>
           </button>
         </div>
