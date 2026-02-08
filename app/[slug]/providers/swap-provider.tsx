@@ -1,38 +1,42 @@
 "use client";
-import { createContext, useState, useEffect, useCallback, useMemo } from "react";
+import { createContext, useState, useEffect, useCallback, useMemo, useContext } from "react";
+import type { ReactNode } from "react";
+import type { SwapContextType } from "@/types/contexts";
+import type { Token } from "@/types/index";
+import type { SwapQuoteDisplay } from "@/types/swap";
 import { getSwapTokens } from "@/lib/swap/fetchTokens";
 import { getSwapQuote } from "@/lib/swap/quoteAction";
 import { confirmSwapAction } from "@/lib/swap/confirmAction";
 import { getTokenId } from "@/lib/swap/swapPayload";
 
-export const SwapContext = createContext();
+const SwapContext = createContext<SwapContextType | undefined>(undefined);
 
-export function SwapProvider({ children }) {
+export function SwapProvider({ children }: { children: ReactNode }) {
   // ===== INPUT STATE (User controls these) =====
-  const [originTokenId, setOriginTokenIdState] = useState(null);
-  const [swapAmount, setSwapAmount] = useState("");
-  const [refundAddress, setRefundAddress] = useState("");
-  const [slippageTolerance, setSlippageTolerance] = useState("0.5");
+  const [originTokenId, setOriginTokenIdState] = useState<string | null>(null);
+  const [swapAmount, setSwapAmount] = useState<string>("");
+  const [refundAddress, setRefundAddress] = useState<string>("");
+  const [slippageTolerance, setSlippageTolerance] = useState<string>("0.5");
 
   // ===== TOKEN STATE (Loaded once) =====
-  const [tokenOptions, setTokenOptions] = useState([]);
-  const [zecTokenId, setZecTokenId] = useState(null);
-  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
+  const [tokenOptions, setTokenOptions] = useState<Token[]>([]);
+  const [zecTokenId, setZecTokenId] = useState<string | null>(null);
+  const [isLoadingTokens, setIsLoadingTokens] = useState<boolean>(false);
 
   // ===== QUOTE STATE (Output from "Get quote") =====
-  const [quoteData, setQuoteData] = useState(null);
-  const [quotePreview, setQuotePreview] = useState(null);
+  const [quoteData, setQuoteData] = useState<unknown | null>(null);
+  const [quotePreview, setQuotePreview] = useState<SwapQuoteDisplay | null>(null);
 
   // ===== SWAP STATE (Output from "Confirm quote") =====
-  const [depositUri, setDepositUri] = useState("");
-  const [statusKey, setStatusKey] = useState(null);
-  const [swapStatus, setSwapStatus] = useState("");
+  const [depositUri, setDepositUri] = useState<string>("");
+  const [statusKey, setStatusKey] = useState<{ depositAddress: string } | null>(null);
+  const [swapStatus, setSwapStatus] = useState<string>("");
 
   // ===== UI STATE (What's visible) =====
-  const [isGettingQuote, setIsGettingQuote] = useState(false);
-  const [isConfirming, setIsConfirming] = useState(false);
-  const [quoteStatus, setQuoteStatus] = useState("");
-  const [swapError, setSwapError] = useState("");
+  const [isGettingQuote, setIsGettingQuote] = useState<boolean>(false);
+  const [isConfirming, setIsConfirming] = useState<boolean>(false);
+  const [quoteStatus, setQuoteStatus] = useState<string>("");
+  const [swapError, setSwapError] = useState<string>("");
 
   // ===== COMPUTED VALUES =====
   const selectedOriginToken = useMemo(
@@ -78,7 +82,7 @@ export function SwapProvider({ children }) {
           setOriginTokenIdState(zecId);
         }
       }
-    } catch (error) {
+    } catch (error: any) {
       setSwapError(error.message || "Failed to load tokens");
     } finally {
       setIsLoadingTokens(false);
@@ -87,7 +91,14 @@ export function SwapProvider({ children }) {
 
   // ===== QUOTE ACTIONS =====
 
-  const getQuote = useCallback(async (params) => {
+  const getQuote = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
     const {
       amountIn,
       destAddress,
@@ -97,7 +108,7 @@ export function SwapProvider({ children }) {
       slippage,
     } = params;
 
-    if (!isSwapMode) return;
+    if (!isSwapMode) return null;
 
     setIsGettingQuote(true);
     setSwapError("");
@@ -107,8 +118,8 @@ export function SwapProvider({ children }) {
 
     try {
       const result = await getSwapQuote({
-        fromToken: fromToken || originTokenId,
-        toToken: toToken || zecTokenId,
+        fromToken: fromToken || originTokenId || "",
+        toToken: toToken || zecTokenId || "",
         amountIn,
         destAddress,
         refundAddress: refund || refundAddress,
@@ -125,7 +136,7 @@ export function SwapProvider({ children }) {
       setQuoteData(result);
       setQuoteStatus("Quote ready");
       return result;
-    } catch (error) {
+    } catch (error: any) {
       setSwapError(error.message || "Failed to get quote");
       setQuoteStatus("");
       return null;
@@ -134,7 +145,14 @@ export function SwapProvider({ children }) {
     }
   }, [isSwapMode, originTokenId, zecTokenId, refundAddress, slippageTolerance]);
 
-  const confirmSwap = useCallback(async (params) => {
+  const confirmSwap = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
     const {
       amountIn,
       destAddress,
@@ -144,7 +162,7 @@ export function SwapProvider({ children }) {
       slippage,
     } = params;
 
-    if (!isSwapMode) return;
+    if (!isSwapMode) return null;
 
     setIsConfirming(true);
     setSwapError("");
@@ -152,8 +170,8 @@ export function SwapProvider({ children }) {
 
     try {
       const result = await confirmSwapAction({
-        fromToken: fromToken || originTokenId,
-        toToken: toToken || zecTokenId,
+        fromToken: fromToken || originTokenId || "",
+        toToken: toToken || zecTokenId || "",
         amountIn,
         destAddress,
         refundAddress: refund || refundAddress,
@@ -174,7 +192,7 @@ export function SwapProvider({ children }) {
       setQuoteStatus("Swap confirmed!");
 
       return result;
-    } catch (error) {
+    } catch (error: any) {
       setSwapError(error.message || "Failed to confirm swap");
       setQuoteStatus("");
       return null;
@@ -185,7 +203,7 @@ export function SwapProvider({ children }) {
 
   // ===== SWAP MODE MANAGEMENT =====
 
-  const setToken = useCallback((tokenId) => {
+  const setToken = useCallback((tokenId: string) => {
     // If selecting ZEC, exit swap mode
     if (tokenId === zecTokenId) {
       setOriginTokenIdState(zecTokenId);
@@ -221,21 +239,21 @@ export function SwapProvider({ children }) {
 
   // ===== QUOTE CLEARING ON INPUT CHANGE =====
 
-  const setSwapAmountWithClear = useCallback((amount) => {
+  const setSwapAmountWithClear = useCallback((amount: string) => {
     setSwapAmount(amount);
     setQuoteData(null);
     setQuotePreview(null);
     setQuoteStatus("");
   }, []);
 
-  const setRefundAddressWithClear = useCallback((address) => {
+  const setRefundAddressWithClear = useCallback((address: string) => {
     setRefundAddress(address);
     setQuoteData(null);
     setQuotePreview(null);
     setQuoteStatus("");
   }, []);
 
-  const setSlippageToleranceWithClear = useCallback((slippage) => {
+  const setSlippageToleranceWithClear = useCallback((slippage: string) => {
     setSlippageTolerance(slippage);
     setQuoteData(null);
     setQuotePreview(null);
@@ -249,7 +267,7 @@ export function SwapProvider({ children }) {
   }, [loadTokens]);
 
   // ===== CONTEXT VALUE =====
-  const value = {
+  const value: SwapContextType = {
     // Token state
     tokenOptions,
     originTokenId,
@@ -292,4 +310,12 @@ export function SwapProvider({ children }) {
       {children}
     </SwapContext.Provider>
   );
+}
+
+export function useSwap(): SwapContextType {
+  const context = useContext(SwapContext);
+  if (!context) {
+    throw new Error("useSwap must be used within SwapProvider");
+  }
+  return context;
 }
