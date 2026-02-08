@@ -1,6 +1,6 @@
 // lib/social/usernames.ts
 
-type SocialPlatform =
+export type SocialPlatform =
   | "X"
   | "GitHub"
   | "Instagram"
@@ -11,9 +11,10 @@ type SocialPlatform =
   | "Bluesky"
   | "Mastodon"
   | "Snapchat"
-  | "Telegram";
+  | "Telegram"
+  | "Other";
 
-export const HOSTS: Record<SocialPlatform, string[]> = {
+export const HOSTS: Partial<Record<SocialPlatform, string[]>> = {
   X: ["x.com", "twitter.com", "www.x.com", "www.twitter.com"],
   GitHub: ["github.com", "www.github.com"],
   Instagram: ["instagram.com", "www.instagram.com"],
@@ -73,7 +74,7 @@ interface PlatformConfig {
   prefix?: string;
 }
 
-const PLATFORMS: Record<SocialPlatform, PlatformConfig> = {
+const PLATFORMS: Partial<Record<SocialPlatform, PlatformConfig>> = {
   X: { base: "https://x.com/" },
   GitHub: { base: "https://github.com/" },
   Instagram: { base: "https://instagram.com/" },

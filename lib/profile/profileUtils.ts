@@ -3,7 +3,7 @@ import type { Profile, ProfileTrust, ProfileTrustWarning, RankType } from "@/typ
 /**
  * Derives trust-state booleans from a profile object.
  */
-export function getProfileTrust(profile: Profile): ProfileTrust {
+export function getProfileTrust(profile: Partial<Profile>): ProfileTrust {
   const verifiedAddress = !!profile.address_verified;
 
   const verifiedLinks = typeof profile.verified_links_count === "number"
@@ -128,7 +128,7 @@ export function getWarningConfig({ profile, warning, verifiedAddress, verifiedLi
 /**
  * Derives the highest-priority rank type from a profile.
  */
-export function getRankType(profile: Profile): RankType {
+export function getRankType(profile: Partial<Profile>): RankType {
   if (profile.rank_alltime && profile.rank_alltime > 0) return "alltime";
   if (profile.rank_weekly && profile.rank_weekly > 0) return "weekly";
   if (profile.rank_monthly && profile.rank_monthly > 0) return "monthly";
