@@ -49,6 +49,12 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
 
     try {
       const zid = profile?.id;
+      if (!zid) {
+        setResult("fail");
+        setCustomMessage("Profile ID is missing");
+        setStep(2);
+        return;
+      }
       const result = await confirmOtpAction(zid, otp);
 
       if (!result.ok) {

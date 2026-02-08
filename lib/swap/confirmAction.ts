@@ -10,9 +10,10 @@ import {
 } from "@/lib/swap/swapPayload";
 import { getCachedTokens } from "./fetchTokens";
 import { validateAddressForBlockchain } from "./addressValidation";
+import type { SwapQuoteRequest, SwapConfirmResponse } from "@/types/swap";
 
-function getUserFriendlyErrorMessage(apiErrorMessage) {
-  const errorMap = {
+function getUserFriendlyErrorMessage(apiErrorMessage: string | undefined): string {
+  const errorMap: Record<string, string> = {
     "refundTo is not valid": "Your refund address is incorrect. Please verify and try again.",
     "refundTo should not be empty": "Refund address is required.",
     "recipient is not valid": "The destination address is invalid. Please check the address format.",
@@ -31,7 +32,7 @@ function getUserFriendlyErrorMessage(apiErrorMessage) {
 }
 
 // Payment URI builder: creates proper URIs for BTC, ETH, SOL; falls back to address-only for others.
-function buildPaymentUri(originSymbolOrChain, address, amountDecimal) {
+function buildPaymentUri(originSymbolOrChain: string | undefined, address: string, amountDecimal: string): string {
   const sym = String(originSymbolOrChain || "").toUpperCase();
 
   if (sym === "BTC") {
@@ -54,15 +55,15 @@ function buildPaymentUri(originSymbolOrChain, address, amountDecimal) {
   return address;
 }
 
-export async function confirmSwapAction(body) {
+export async function confirmSwapAction(body: SwapQuoteRequest): Promise<SwapConfirmResponse> {
   const tokensPayload = await getCachedTokens();
-  if (tokensPayload.error) {
+  if ("error" in tokensPayload && tokensPayload.error) {
     const friendlyError = getUserFriendlyErrorMessage(tokensPayload.error);
     return { ok: false, error: friendlyError, retryable: true };
   }
 
   const payload = buildQuotePayload(body, { dry: false, tokensPayload });
-  if (payload.error) {
+  if ("error" in payload) {
     const friendlyError = getUserFriendlyErrorMessage(payload.error);
     return { ok: false, error: friendlyError, retryable: true };
   }
@@ -77,12 +78,12 @@ export async function confirmSwapAction(body) {
   }
 
   const resp = await oneclickQuote(payload);
-  if (resp.error) {
+  if ("error" in resp) {
     const friendlyError = getUserFriendlyErrorMessage(resp.error);
     return { ok: false, error: friendlyError, retryable: true };
   }
 
-  const { depositAddress, depositMemo, depositMode } = extractDepositFields(resp);
+  const { depositAddress, depositMode } = extractDepositFields(resp);
   if (!depositAddress) {
     return { ok: false, error: "Unable to process swap. Please try again.", retryable: true };
   }
@@ -96,11 +97,11 @@ export async function confirmSwapAction(body) {
     q.amountIn ||
     payload.amount;
 
-  const originTokenInfo = findToken(tokensPayload, payload.originAsset) || {};
-  const decimals = Number(originTokenInfo.decimals ?? 8);
+  const originTokenInfo = findToken(tokensPayload, payload.originAsset);
+  const decimals = Number(originTokenInfo?.decimals ?? 8);
   const amountDecimal = baseUnitsToDecimal(String(depositAmountBase), decimals);
 
-  const originSymbol = originTokenInfo.symbol || originTokenInfo.ticker || payload.originAsset;
+  const originSymbol = originTokenInfo?.symbol || originTokenInfo?.ticker || payload.originAsset;
   const paymentUri = buildPaymentUri(originSymbol, depositAddress, amountDecimal);
 
   // Safety check for BTC direction bugs
@@ -116,7 +117,7 @@ export async function confirmSwapAction(body) {
     ok: true,
     deposit: {
       address: depositAddress,
-      mode: depositMode,
+      mode: depositMode ?? undefined,
       amountBaseUnits: String(depositAmountBase),
       amountDecimal,
       originAsset: payload.originAsset,

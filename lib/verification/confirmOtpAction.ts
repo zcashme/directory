@@ -1,12 +1,13 @@
 "use server";
 
 import { confirmOtp } from "@/lib/verification/confirmOtp";
+import type { ConfirmOtpResponse } from "@/types/api";
 
 /**
  * Server Action for confirming OTP
  * Used by InlineOtpForm and SubmitOtp components
  */
-export async function confirmOtpAction(zcasherId, otp) {
+export async function confirmOtpAction(zcasherId: number | string, otp: string): Promise<ConfirmOtpResponse> {
   try {
     if (!zcasherId || !otp || typeof otp !== "string" || !otp.trim()) {
       return {
@@ -33,7 +34,7 @@ export async function confirmOtpAction(zcasherId, otp) {
   } catch (error) {
     return {
       ok: false,
-      error: String(error?.message || error),
+      error: String((error as Error)?.message || error),
       data: { status: "error" },
     };
   }
