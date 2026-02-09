@@ -4,70 +4,32 @@ import type {
   SwapQuoteDisplay,
 } from '@/lib/swap/types';
 
-// Polling configuration
-const POLLING_CONFIG = {
-  INTERVAL_MS: 5000, // Poll every 5 seconds
-};
+const POLL_INTERVAL = 5000;
 
-type UIStatus = "PENDING_SWAP" | "SWAP_SUCCESS" | "SWAP_FAILED";
-
-// Map API statuses to UI states
-const mapToUIState = (apiStatus: string | undefined): UIStatus => {
-  const status = apiStatus?.toUpperCase();
-
-  // Pending states
-  if (status === "PENDING_DEPOSIT" || status === "PROCESSING") {
-    return "PENDING_SWAP";
-  }
-
-  // Success state
-  if (status === "SUCCESS") {
-    return "SWAP_SUCCESS";
-  }
-
-  // Failed states
-  if (status === "INCOMPLETE_DEPOSIT" || status === "REFUNDED" || status === "FAILED") {
-    return "SWAP_FAILED";
-  }
-
-  return "PENDING_SWAP"; // Default to pending
-};
-
-// Get failure reason
-const getFailureReason = (apiStatus: string | undefined): string | null => {
-  const status = apiStatus?.toUpperCase();
-
-  if (status === "INCOMPLETE_DEPOSIT") {
-    return "Deposit was below the required amount";
-  }
-  if (status === "REFUNDED") {
-    return "Funds were refunded to your address";
-  }
-  if (status === "FAILED") {
-    return "Swap encountered an error";
-  }
-
-  return null;
-};
-
-export interface SwapData {
-  amountInFormatted?: string;
-  amountInUsd?: string;
-  amountOutFormatted?: string;
-  amountOutUsd?: string;
-  minAmountOutFormatted?: string;
-  originAsset?: string;
-  destinationAsset?: string;
-  depositAddress?: string;
-  timeEstimate?: number;
-  deadline?: string;
-  refundTo?: string;
-  timestamp?: string;
+export interface SwapStatusData {
+  status: string;
+  swapDetails?: {
+    amountInFormatted?: string;
+    amountInUsd?: string;
+    amountOutFormatted?: string;
+    amountOutUsd?: string;
+  };
+  quoteResponse?: {
+    quoteRequest?: {
+      originAsset?: string;
+      destinationAsset?: string;
+      refundTo?: string;
+    };
+    quote?: {
+      amountOutFormatted?: string;
+      depositAddress?: string;
+      timeEstimate?: number;
+      deadline?: string;
+    };
+  };
+  updatedAt?: string;
 }
 
-/**
- * Swap state store - manages all swap-related state
- */
 interface SwapState {
   originTokenId: string | null;
   swapAmount: string;
@@ -81,16 +43,10 @@ interface SwapState {
   quoteStatus: string;
   swapError: string;
 
-  // Status polling state
-  isPolling: boolean;
-  pollIntervalId: NodeJS.Timeout | null;
-  apiStatus: string;
-  uiStatus: UIStatus;
-  statusMessage: string;
-  failureReason: string | null;
-  swapData: SwapData | null;
+  // Status polling
+  statusData: SwapStatusData | null;
   statusError: string;
-  isPollingInProgress: boolean;
+  pollInterval: NodeJS.Timeout | null;
 
   setOriginTokenId: (id: string | null) => void;
   setSwapAmount: (amount: string) => void;
@@ -106,12 +62,31 @@ interface SwapState {
   resetQuote: () => void;
   resetSwapState: (zecTokenId: string | null) => void;
 
-  // Status polling actions
+  // Status polling
   startPolling: (depositAddress: string) => void;
   stopPolling: () => void;
-  performPoll: (depositAddress: string) => Promise<void>;
-  resetStatusState: () => void;
 }
+
+const poll = async (depositAddress: string, set: (state: Partial<SwapState>) => void, get: () => SwapState) => {
+  try {
+    const response = await fetch(`/api/swap/status?${new URLSearchParams({ depositAddress })}`);
+    const data = await response.json();
+
+    if (data.error) {
+      set({ statusError: 'Unable to fetch status' });
+      return;
+    }
+
+    set({ statusData: data, statusError: '' });
+
+    // Stop polling on terminal states
+    if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(data.status?.toUpperCase())) {
+      get().stopPolling();
+    }
+  } catch {
+    set({ statusError: 'Connection error' });
+  }
+};
 
 export const useSwapStore = create<SwapState>((set, get) => ({
   originTokenId: null,
@@ -125,17 +100,9 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   swapStatus: '',
   quoteStatus: '',
   swapError: '',
-
-  // Status polling state
-  isPolling: false,
-  pollIntervalId: null,
-  apiStatus: 'PENDING_DEPOSIT',
-  uiStatus: 'PENDING_SWAP',
-  statusMessage: 'Checking swap status...',
-  failureReason: null,
-  swapData: null,
+  statusData: null,
   statusError: '',
-  isPollingInProgress: false,
+  pollInterval: null,
 
   setOriginTokenId: (id) => set({ originTokenId: id }),
   setSwapAmount: (amount) => set({ swapAmount: amount }),
@@ -164,169 +131,17 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       swapError: '',
     }),
 
-  // Status polling actions
-  startPolling: (depositAddress: string) => {
-    const state = get();
-
-    // Clear any existing interval
-    if (state.pollIntervalId) {
-      clearInterval(state.pollIntervalId);
-    }
-
-    // Set initial state
-    set({
-      isPolling: true,
-      statusKey: { depositAddress },
-      apiStatus: 'PENDING_DEPOSIT',
-      uiStatus: 'PENDING_SWAP',
-      statusMessage: 'Checking swap status...',
-      failureReason: null,
-      statusError: '',
-    });
-
-    // Perform first poll immediately
-    get().performPoll(depositAddress);
-
-    // Set up interval for subsequent polls
-    const intervalId = setInterval(() => {
-      if (get().isPolling) {
-        get().performPoll(depositAddress);
-      }
-    }, POLLING_CONFIG.INTERVAL_MS);
-
-    set({ pollIntervalId: intervalId });
+  startPolling: (depositAddress) => {
+    get().stopPolling();
+    set({ statusKey: { depositAddress }, statusError: '' });
+    poll(depositAddress, set, get);
+    const interval = setInterval(() => poll(depositAddress, set, get), POLL_INTERVAL);
+    set({ pollInterval: interval });
   },
 
   stopPolling: () => {
-    const state = get();
-    if (state.pollIntervalId) {
-      clearInterval(state.pollIntervalId);
-    }
-    set({ isPolling: false, pollIntervalId: null });
-  },
-
-  performPoll: async (depositAddress: string) => {
-    const state = get();
-
-    // Prevent concurrent polls
-    if (state.isPollingInProgress) {
-      return;
-    }
-
-    if (!depositAddress) {
-      set({
-        statusError: 'Invalid swap identifier',
-        isPolling: false,
-      });
-      return;
-    }
-
-    set({ isPollingInProgress: true });
-
-    try {
-      const params = new URLSearchParams({ depositAddress });
-      const response = await fetch(`/api/swap/status?${params.toString()}`);
-      const result = await response.json();
-
-      // Handle API error
-      if (result.error) {
-        set({
-          statusError: 'Unable to fetch swap status. Retrying...',
-          isPollingInProgress: false,
-        });
-        return;
-      }
-
-      // Clear error on successful poll
-      set({ statusError: '' });
-
-      if (!result.status) {
-        set({ isPollingInProgress: false });
-        return;
-      }
-
-      const status = result.status.toUpperCase();
-
-      // Extract and flatten relevant data
-      const swapDetails = result.swapDetails || {};
-      const quoteRequest = result.quoteResponse?.quoteRequest || {};
-      const quote = result.quoteResponse?.quote || {};
-
-      const swapData: SwapData = {
-        amountInFormatted: swapDetails.amountInFormatted,
-        amountInUsd: swapDetails.amountInUsd,
-        amountOutFormatted: swapDetails.amountOutFormatted,
-        amountOutUsd: swapDetails.amountOutUsd,
-        minAmountOutFormatted: quote.amountOutFormatted,
-        originAsset: quoteRequest.originAsset,
-        destinationAsset: quoteRequest.destinationAsset,
-        depositAddress: quote.depositAddress,
-        timeEstimate: quote.timeEstimate,
-        deadline: quote.deadline,
-        refundTo: quoteRequest.refundTo,
-        timestamp: result.updatedAt,
-      };
-
-      // Map to UI state and handle accordingly
-      const mappedStatus = mapToUIState(status);
-      let statusMessage = '';
-      let failureReason: string | null = null;
-      let shouldStopPolling = false;
-
-      switch (mappedStatus) {
-        case "PENDING_SWAP":
-          statusMessage = "Your swap is pending. This usually takes a few minutes.";
-          break;
-        case "SWAP_SUCCESS":
-          statusMessage = "Swap completed successfully!";
-          shouldStopPolling = true;
-          break;
-        case "SWAP_FAILED":
-          statusMessage = "Swap failed.";
-          failureReason = getFailureReason(status);
-          shouldStopPolling = true;
-          break;
-        default:
-          statusMessage = "Checking swap status...";
-      }
-
-      set({
-        apiStatus: status,
-        uiStatus: mappedStatus,
-        statusMessage,
-        failureReason,
-        swapData,
-        isPollingInProgress: false,
-      });
-
-      // Stop polling if terminal state reached
-      if (shouldStopPolling) {
-        get().stopPolling();
-      }
-    } catch (_err) {
-      set({
-        statusError: 'Connection error. Retrying...',
-        isPollingInProgress: false,
-      });
-    }
-  },
-
-  resetStatusState: () => {
-    const state = get();
-    if (state.pollIntervalId) {
-      clearInterval(state.pollIntervalId);
-    }
-    set({
-      statusKey: null,
-      isPolling: false,
-      pollIntervalId: null,
-      apiStatus: 'PENDING_DEPOSIT',
-      uiStatus: 'PENDING_SWAP',
-      statusMessage: 'Checking swap status...',
-      failureReason: null,
-      swapData: null,
-      statusError: '',
-      isPollingInProgress: false,
-    });
+    const { pollInterval } = get();
+    if (pollInterval) clearInterval(pollInterval);
+    set({ pollInterval: null });
   },
 }));
