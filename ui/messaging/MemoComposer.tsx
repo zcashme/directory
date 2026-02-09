@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/profile/types";
+import { useMessagingStore } from "@/lib/stores/messaging";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
@@ -51,8 +52,7 @@ export default function MemoComposer({
 }: MemoComposerProps) {
   const router = useRouter();
 
-  const [memo, setMemo] = useState("");
-  const [amount, setAmount] = useState("");
+  const { memo, amount, setMemo, setAmount } = useMessagingStore();
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
   const [isFocused, setIsFocused] = useState(false);

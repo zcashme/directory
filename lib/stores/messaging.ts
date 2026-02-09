@@ -13,6 +13,11 @@ interface MessagingState {
   currentProfileAddress: string | null;
   mode: ProfileMode;
   showBack: boolean;
+
+  // Memo composition state
+  memo: string;
+  amount: string;
+
   verify: {
     amount: string;
     zId: number | null;
@@ -34,6 +39,8 @@ interface MessagingState {
   ensureProfile: (address: string) => void;
   setMode: (mode: ProfileMode | ((prev: ProfileMode) => ProfileMode)) => void;
   setShowBack: (showBack: boolean) => void;
+  setMemo: (memo: string) => void;
+  setAmount: (amount: string) => void;
   setVerify: (verify: { amount: string; zId: number | null; requestId: string | null } | ((prev: { amount: string; zId: number | null; requestId: string | null }) => { amount: string; zId: number | null; requestId: string | null })) => void;
 
   // Verification polling actions
@@ -67,6 +74,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   currentProfileAddress: null,
   mode: 'memo',
   showBack: false,
+  memo: '',
+  amount: '',
   verify: { amount: '0.003', zId: null, requestId: null },
   ...initialVerifyState,
 
@@ -76,6 +85,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         currentProfileAddress: address,
         mode: 'memo',
         showBack: false,
+        memo: '',
+        amount: '',
         verify: { amount: '0.003', zId: null, requestId: null },
         ...initialVerifyState,
       });
@@ -86,6 +97,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       mode: typeof mode === 'function' ? mode(state.mode) : mode,
     })),
   setShowBack: (showBack) => set({ showBack }),
+  setMemo: (memo) => set({ memo }),
+  setAmount: (amount) => set({ amount }),
   setVerify: (verify) =>
     set((state) => ({
       verify: typeof verify === 'function' ? verify(state.verify) : verify,
