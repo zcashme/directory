@@ -168,6 +168,11 @@ export async function getSwapQuote(params: {
 
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
 
+    // Format minAmountOut from base units to decimal
+    const minAmountOutFormatted = response.quote.minAmountOut
+      ? baseUnitsToDecimal(response.quote.minAmountOut, destToken.decimals)
+      : undefined;
+
     const result: SwapQuoteSuccess = {
       ok: true,
       quoteId: response.correlationId,
@@ -187,7 +192,7 @@ export async function getSwapQuote(params: {
         amountInUsd: parseFloat(response.quote.amountInUsd) || undefined,
         amountOutUsd: parseFloat(response.quote.amountOutUsd) || undefined,
         timeEstimate: response.quote.timeEstimate ? `~${response.quote.timeEstimate}s` : "Unknown",
-        minAmountOut: response.quote.minAmountOut,
+        minAmountOut: minAmountOutFormatted,
       },
     };
 
