@@ -36,20 +36,16 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
 
   return (
     <>
-      {/* Centered search bar with logo */}
-      <div className="sticky top-3 z-[50] w-full flex justify-center px-4">
-        <div className="flex items-center gap-3 px-4 py-2.5 shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full max-w-[720px] border border-gray-200/50 relative" style={{ width: '720px', backgroundColor: 'var(--color-background)' }}>
-          {/* Logo */}
+      <div className="sticky top-3 z-[50] flex justify-center px-4">
+        <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
           <button
             onClick={() => router.push("/")}
-            className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer z-10"
+            className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer flex-shrink-0"
           >
             Zcash.me/
           </button>
 
-          {/* Green wrapper for input + X button */}
           <div className="flex-1 relative flex items-center">
-            {/* Input */}
             <input
               ref={searchInputRef}
               value={search}
@@ -64,28 +60,22 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 }
               }}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
-              className="flex-1 pl-3 pt-2.5 pb-1.5 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-hidden transition-all"
-              style={{
-                paddingRight: search ? '2.5rem' : '0.5rem',
-                outline: 'none',
-              }}
+              className="w-full pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
 
-            {/* X button */}
             {search && (
               <button
                 onClick={() => {
                   resetSearch();
                   searchInputRef.current?.focus();
                 }}
-                className="text-gray-500 hover:text-red-500 text-lg font-semibold leading-none flex-shrink-0 absolute right-2 top-1/2 -translate-y-1/2"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none flex-shrink-0"
                 aria-label="Clear search"
               >
                 ✕
               </button>
             )}
 
-            {/* Dropdown */}
             {search && !suppressDropdown && (
               <div className="absolute left-0 right-0 top-full mt-1 z-[9999]">
                 <ProfileSearchDropdown
@@ -111,18 +101,14 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             )}
           </div>
 
-          {/* Join/Claim Button */}
           <button
             onClick={() => {
               setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
-            className="bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md transition-all duration-300 whitespace-nowrap overflow-hidden relative animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500 absolute right-0 top-1/2 -translate-y-1/2 z-[100]"
+            className="flex-shrink-0 bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md transition-all duration-300 whitespace-nowrap overflow-hidden relative animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
             style={{
-              width: availableUsername
-                ? '110px'
-                : undefined,
-              minWidth: availableUsername ? '110px' : '70px',
+              width: availableUsername ? '110px' : '70px',
             }}
           >
             <span
