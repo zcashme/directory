@@ -19,22 +19,29 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  // Handle swap subdomain - rewrite to /swap internally
+  // Block direct access to app-specific routes
+  if (!subdomain) {
+    if (url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/stats-app')) {
+      return new NextResponse(null, { status: 404 });
+    }
+  }
+
+  // Handle swap subdomain - rewrite to /swap-app internally
   if (subdomain === 'swap') {
     if (url.pathname === '/') {
-      url.pathname = '/swap';
-    } else if (!url.pathname.startsWith('/swap')) {
-      url.pathname = `/swap${url.pathname}`;
+      url.pathname = '/swap-app';
+    } else if (!url.pathname.startsWith('/swap-app')) {
+      url.pathname = `/swap-app${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }
 
-  // Handle stats subdomain - rewrite to /stats internally
+  // Handle stats subdomain - rewrite to /stats-app internally
   if (subdomain === 'stats') {
     if (url.pathname === '/') {
-      url.pathname = '/stats';
-    } else if (!url.pathname.startsWith('/stats')) {
-      url.pathname = `/stats${url.pathname}`;
+      url.pathname = '/stats-app';
+    } else if (!url.pathname.startsWith('/stats-app')) {
+      url.pathname = `/stats-app${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }
