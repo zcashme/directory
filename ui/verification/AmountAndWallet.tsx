@@ -370,7 +370,7 @@ export default function AmountAndWallet({
                   )}
                 </div>
               ) : (
-                <div className="select-none cursor-not-allowed">{asset} ▼</div>
+                <div className="select-none cursor-not-allowed">{asset}</div>
               )}
             </div>
           </div>
