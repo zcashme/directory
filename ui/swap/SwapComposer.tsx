@@ -36,8 +36,6 @@ interface SwapComposerProps {
   isConfirming: boolean;
   quoteStatus: string;
   swapError: string;
-  // Computed
-  isSwapMode: boolean;
   // Actions
   setToken: (_tokenId: string) => void;
   setSwapAmount: (_amount: string) => void;
