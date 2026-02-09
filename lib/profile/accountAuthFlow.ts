@@ -74,28 +74,6 @@ export const getLinkAuthToken = (link: Partial<ProfileLink> | null | undefined):
 export const isLinkAuthPending = (pendingEdits: PendingEdits | null | undefined, token: string | null): boolean =>
   Array.isArray(pendingEdits?.l) && !!token && pendingEdits.l.includes(token);
 
-export const appendLinkToken = (
-  setPendingEdits: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void,
-  token: string
-): void => {
-  setPendingEdits((prev) => {
-    const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
-    const next = prevLinks.includes(token) ? prevLinks : [...prevLinks, token];
-    return { ...prev, l: next };
-  });
-};
-
-export const removeLinkToken = (
-  setPendingEdits: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void,
-  token: string
-): void => {
-  setPendingEdits((prev) => {
-    const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
-    const next = prevLinks.filter((t) => t !== token);
-    return { ...prev, l: next };
-  });
-};
-
 interface StartOAuthParams {
   providerKey: string;
   profile: Partial<Profile> | undefined;
