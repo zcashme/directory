@@ -251,7 +251,7 @@ export function ProfileCardContent({
                       {isDiscordLink && !link.is_verified ? (
                         <>
                           <span className={`flex-1 min-w-0 truncate text-right ${s.linkDomain}`}>{link.label}</span>
-                          <CopyButton text={link.label} label="Copy" copiedLabel="Copied" />
+                          <CopyButton text={link.label} label="Copy" copiedLabel="Copied" size="xs" />
                         </>
                       ) : (
                         <>
@@ -264,7 +264,7 @@ export function ProfileCardContent({
                           >
                             {extractDomain(link.url)}
                           </a>
-                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
+                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" size="xs" />
                         </>
                       )}
                     </div>

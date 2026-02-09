@@ -19,8 +19,15 @@ export default function CopyButton({
   icon = "⧉",
   copiedIcon = "⮼",
   timeout = 2000,
+  size = "sm",
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
+
+  const sizeClasses = {
+    xs: "text-xs",
+    sm: "text-sm",
+    md: "text-base",
+  };
 
   const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -36,6 +43,8 @@ export default function CopyButton({
       className={
         `group flex items-center justify-center transition-all px-1 overflow-hidden ` +
         (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-blue-600") +
+        " " +
+        sizeClasses[size] +
         " " +
         className
       }
