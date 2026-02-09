@@ -302,14 +302,14 @@ export default function SwapComposer({
 
       {/* SWAP SETTINGS (Hidden after confirmation) */}
       {!statusKey?.depositAddress && (
-        <div className="mt-4 bg-transparent rounded-xl">
+        <div className="mt-3 bg-transparent rounded-xl">
           {/* Collapsible Header */}
           <button
             type="button"
             onClick={() => setIsSlippageExpanded(!isSlippageExpanded)}
-            className="w-full px-4 py-3 flex items-center rounded-xl cursor-pointer"
+            className="w-full px-4 py-3 flex items-center justify-center rounded-xl cursor-pointer"
           >
-            <span className="text-sm font-semibold text-gray-800">
+            <span className="text-sm text-gray-800">
               Slippage Tolerance ({slippageTolerance}%)
             </span>
             <span className={`text-gray-600 transform transition ml-2 ${isSlippageExpanded ? 'rotate-180' : ''}`}>▼</span>
