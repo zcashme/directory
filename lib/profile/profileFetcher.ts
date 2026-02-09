@@ -52,33 +52,34 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
 
   let profile: Profile | null = null;
 
+  // Try exact slug match first
+  const { data } = await supabase
+    .from("zcasher_searchable")
+    .select("*")
+    .eq("slug", slug)
+    .limit(1)
+    .maybeSingle();
+  profile = data || null;
+
   // Try username-discriminator pattern (e.g., zooko-132)
-  const dashMatch = slug.match(/^(?<base>[a-z0-9_]+)-(?<id>\d+)$/);
-  if (dashMatch?.groups?.id) {
-    const id = parseInt(dashMatch.groups.id, 10);
-    const { data } = await supabase
-      .from("zcasher_searchable")
-      .select("*")
-      .eq("id", id)
-      .limit(1)
-      .maybeSingle();
-    profile = data || null;
-
-    // If discriminator doesn't exist, fall back to username
-    if (!profile && dashMatch.groups.base) {
-      profile = await findProfileByName(supabase, dashMatch.groups.base);
-    }
-  }
-
-  // Try exact slug match
+  // Only for single-dash patterns (exclude multi-dash like "my-profile-name-123")
   if (!profile) {
-    const { data } = await supabase
-      .from("zcasher_searchable")
-      .select("*")
-      .eq("slug", slug)
-      .limit(1)
-      .maybeSingle();
-    profile = data || null;
+    const dashMatch = slug.match(/^(?<base>[a-z0-9_]+)-(?<id>\d+)$/);
+    if (dashMatch?.groups?.id) {
+      const id = parseInt(dashMatch.groups.id, 10);
+      const { data } = await supabase
+        .from("zcasher_searchable")
+        .select("*")
+        .eq("id", id)
+        .limit(1)
+        .maybeSingle();
+      profile = data || null;
+
+      // If discriminator doesn't exist, fall back to username only
+      if (!profile && dashMatch.groups.base) {
+        profile = await findProfileByName(supabase, dashMatch.groups.base);
+      }
+    }
   }
 
   // Try name-based search

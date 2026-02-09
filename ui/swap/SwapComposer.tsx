@@ -232,7 +232,6 @@ export default function SwapComposer({
         amountDecimal={depositAmountDecimal}
         originSymbol={originSymbol}
         swapStatus={swapStatus}
-        recipientName={recipientName}
       />
 
       {/* STATUS MESSAGE (Before quote/polling) */}

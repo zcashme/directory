@@ -26,6 +26,7 @@ export const getCachedTokens = unstable_cache(
  */
 
 export async function getSwapTokens(): Promise<APIResponse<Token[]>> {
+  console.log("[SERVER ACTION] getSwapTokens called at", new Date().toISOString());
   const result = await getCachedTokens();
   if ("error" in result && result.error) {
     return { ok: false, error: result.error, retryable: true };

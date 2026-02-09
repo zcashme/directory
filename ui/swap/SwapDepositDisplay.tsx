@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import CopyButton from "@/ui/profile/CopyButton";
 
@@ -8,7 +7,6 @@ interface SwapDepositDisplayProps {
   amountDecimal?: string;
   originSymbol: string;
   swapStatus: string;
-  recipientName: string;
 }
 
 export default function SwapDepositDisplay({
@@ -18,7 +16,6 @@ export default function SwapDepositDisplay({
   originSymbol,
   swapStatus,
 }: SwapDepositDisplayProps) {
-  const [showQR] = useState(true);
 
   // Don't render if no deposit address
   if (!depositAddress) return null;
@@ -53,17 +50,15 @@ export default function SwapDepositDisplay({
       </div>
 
       {/* QR Code */}
-      {showQR && (
-        <div className="flex flex-col items-center gap-2 mb-4">
-          <QRCodeSVG
-            value={qrValue}
-            size={250}
-            includeMargin={true}
-            bgColor="#faf6ed"
-            fgColor="#000000"
-          />
-        </div>
-      )}
+      <div className="flex flex-col items-center gap-2 mb-4">
+        <QRCodeSVG
+          value={qrValue}
+          size={250}
+          includeMargin={true}
+          bgColor="#faf6ed"
+          fgColor="#000000"
+        />
+      </div>
 
       {/* Address display */}
       <div className="mb-4">

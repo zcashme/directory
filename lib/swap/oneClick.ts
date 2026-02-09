@@ -25,6 +25,19 @@ async function fetchWithTimeout(url: string, options: RequestInit = {}): Promise
   }
 }
 
+/**
+ * Extract error message from API response text
+ * @returns Error message if found, null if response should be parsed as success
+ */
+function parseErrorResponse(text: string): string | null {
+  try {
+    const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
+    return errorData?.error || errorData?.message || errorData?.detail || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function oneclickTokens(): Promise<FetchResult<Token[]>> {
   if (!API_KEY) {
     return { error: "1Click API key not configured. Please contact support." };
@@ -33,17 +46,8 @@ export async function oneclickTokens(): Promise<FetchResult<Token[]>> {
   const r = await fetchWithTimeout(`${BASE_URL}/v0/tokens`, { headers: headers() });
   const text = await r.text();
   if (!r.ok) {
-    // Try to extract the error message from the response
-    try {
-      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
-      const serverError = errorData?.error || errorData?.message || errorData?.detail;
-      if (serverError) {
-        return { error: serverError };
-      }
-    } catch {
-      // If we can't parse the error response, fall through to generic message
-    }
-    return { error: "Failed to load tokens from API" };
+    const serverError = parseErrorResponse(text);
+    return { error: serverError || "Failed to load tokens from API" };
   }
 
   try {
@@ -97,17 +101,8 @@ export async function oneclickQuote(payload: QuotePayload): Promise<FetchResult<
   const text = await r.text();
 
   if (!r.ok) {
-    // Try to extract the error message from the response
-    try {
-      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
-      const serverError = errorData?.error || errorData?.message || errorData?.detail;
-      if (serverError) {
-        return { error: serverError };
-      }
-    } catch {
-      // If we can't parse the error response, fall through to generic message
-    }
-    return { error: "Could not get quote. Check your input and try again." };
+    const serverError = parseErrorResponse(text);
+    return { error: serverError || "Could not get quote. Check your input and try again." };
   }
 
   try {
@@ -127,17 +122,8 @@ export async function oneclickStatus(params: Record<string, string>): Promise<Fe
   const text = await r.text();
 
   if (!r.ok) {
-    // Try to extract the error message from the response
-    try {
-      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
-      const serverError = errorData?.error || errorData?.message || errorData?.detail;
-      if (serverError) {
-        return { error: serverError };
-      }
-    } catch {
-      // If we can't parse the error response, fall through to generic message
-    }
-    return { error: "Could not check swap status. Try again in a moment." };
+    const serverError = parseErrorResponse(text);
+    return { error: serverError || "Could not check swap status. Try again in a moment." };
   }
 
   try {
@@ -170,17 +156,8 @@ export async function oneclickDepositSubmit({ txHash, depositAddress }: DepositS
   const text = await r.text();
 
   if (!r.ok) {
-    // Try to extract the error message from the response
-    try {
-      const errorData = JSON.parse(text) as { error?: string; message?: string; detail?: string };
-      const serverError = errorData?.error || errorData?.message || errorData?.detail;
-      if (serverError) {
-        return { error: serverError };
-      }
-    } catch {
-      // If we can't parse the error response, fall through to generic message
-    }
-    return { error: "Could not submit transaction hash. Please try again." };
+    const serverError = parseErrorResponse(text);
+    return { error: serverError || "Could not submit transaction hash. Please try again." };
   }
 
   try {
