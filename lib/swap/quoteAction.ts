@@ -4,6 +4,7 @@ import { oneclickQuote } from "@/lib/swap/oneClick";
 import { buildQuotePayload, quoteObj, findToken } from "@/lib/swap/swapPayload";
 import { getCachedTokens } from "./fetchTokens";
 import { validateAddressForBlockchain } from "./addressValidation";
+import { getUserFriendlyErrorMessage } from "./errorMessages";
 import type { SwapQuoteRequest, SwapQuoteResponse } from "@/lib/swap/types";
 
 function formatTimeEstimate(seconds: number | undefined): string {
@@ -13,25 +14,6 @@ function formatTimeEstimate(seconds: number | undefined): string {
   if (minutes < 60) return `~${minutes} minute${minutes === 1 ? "" : "s"}`;
   const hours = Math.ceil(minutes / 60);
   return `~${hours} hour${hours === 1 ? "" : "s"}`;
-}
-
-function getUserFriendlyErrorMessage(apiErrorMessage: string | undefined): string {
-  const errorMap: Record<string, string> = {
-    "refundTo is not valid": "Your refund address is incorrect. Please verify and try again.",
-    "refundTo should not be empty": "Refund address is required.",
-    "recipient is not valid": "The destination address is invalid. Please check the address format.",
-    "tokenIn is not valid": "Invalid origin token. Please select a valid token.",
-    "tokenOut is not valid": "Invalid destination token. Please refresh and try again.",
-    "amount must be greater than 0": "Amount must be greater than zero.",
-  };
-
-  for (const [apiError, userMessage] of Object.entries(errorMap)) {
-    if (apiErrorMessage?.includes(apiError)) {
-      return userMessage;
-    }
-  }
-
-  return apiErrorMessage || "An error occurred. Please try again.";
 }
 
 export async function getSwapQuote(body: SwapQuoteRequest): Promise<SwapQuoteResponse> {
