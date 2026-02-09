@@ -8,8 +8,6 @@ import {
   getAuthProviderForUrl,
   getLinkAuthToken,
   isLinkAuthPending,
-  appendLinkToken,
-  removeLinkToken,
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
@@ -18,8 +16,8 @@ import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
-import { useEditsStore } from "@/lib/stores/edits";
-import type { Profile, EnrichedProfileLink, PendingProfileChange } from "@/lib/profile/types";
+import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
+import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
@@ -45,60 +43,11 @@ function CharCounter({ text }: CharCounterProps) {
   );
 }
 
-function createDeleteToggle(
-  field: string,
-  originals: Record<string, string>,
-  setDeletedFields: React.Dispatch<React.SetStateAction<{
-    address: boolean;
-    name: boolean;
-    display_name: boolean;
-    bio: boolean;
-    profile_image_url: boolean;
-  }>>,
-  setForm: React.Dispatch<React.SetStateAction<any>>
-) {
-  return () =>
-    setDeletedFields((prev) => {
-      const next = !prev[field as keyof typeof prev];
-      if (next) {
-        setForm((f: any) => ({ ...f, [field]: "" }));
-      } else {
-        setForm((f: any) => ({ ...f, [field]: originals[field] }));
-      }
-      return { ...prev, [field]: next };
-    });
-}
+// Removed - now using store.setDeletedField directly
 
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
-}
-
-interface ParsedLink {
-  id: number | null;
-  url: string;
-  username?: string;
-  previewUrl?: string;
-  valid: boolean;
-  reason: string | null;
-  is_verified: boolean;
-  verification_expires_at?: string | null;
-  _uid: string;
-  platform?: "X" | "GitHub" | "Instagram" | "Discord" | null;
-  otherUrl?: string;
-  label?: string;
-  icon?: string;
-  domain?: string;
-  handle?: string;
-}
-
-interface FormState {
-  address: string;
-  name: string;
-  display_name: string;
-  bio: string;
-  profile_image_url: string;
-  links: ParsedLink[];
 }
 
 interface AvatarPrompt {
@@ -107,7 +56,17 @@ interface AvatarPrompt {
 }
 
 export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
-  const { setPendingEdits, pendingEdits } = useEditsStore();
+  const {
+    form,
+    deletedFields,
+    pendingEdits,
+    setForm,
+    updateField,
+    setDeletedField,
+    initializeForm,
+    addLinkAuthToken,
+    removeLinkAuthToken,
+  } = useEditsStore();
   const pendingProfileEdits = pendingEdits?.profile || {};
   const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
     ? pendingProfileEdits.d
@@ -128,11 +87,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     GitHub: "github",
   };
 
-  // stored values (read-only originals)
-  const origCityId = profile.nearest_city_id || null;
-  const origCityName = profile.nearest_city_name || "";
-  const [nearestCityDisplay, setNearestCityDisplay] = useState(origCityName);
-  const [nearestCityId, setNearestCityId] = useState<number | null>(origCityId);
+  // Display value for city search input (local UI state)
+  const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name || "");
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -156,24 +112,19 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     });
   }, [profile, links]);
 
-  // Form state
-  const [form, setForm] = useState<FormState>({
-    address: "",
-    name: "",
-    display_name: "",
-    bio: "",
-    profile_image_url: "",
-    links: originalLinks.map((l) => ({ ...l })),
-  });
+  // Initialize form from profile and links
+  useEffect(() => {
+    initializeForm(profile, originalLinks);
+  }, [profile.id]); // Only re-initialize if profile ID changes
 
-  const [deletedCity, setDeletedCity] = useState(false);
-  const [deletedFields, setDeletedFields] = useState({
-    address: false,
-    name: false,
-    display_name: false,
-    bio: false,
-    profile_image_url: false,
-  });
+  // Update links when originalLinks changes (e.g., after verification)
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      links: originalLinks.map((l) => ({ ...l })),
+    }));
+  }, [originalLinks, setForm]);
+
 
   const [imageUrlValid, setImageUrlValid] = useState(true);
   const [imageUrlReason, setImageUrlReason] = useState<string | null>(null);
@@ -183,13 +134,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setImageUrlValid(valid);
     setImageUrlReason(reason);
   }, [form.profile_image_url]);
-
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      links: originalLinks.map((l) => ({ ...l })),
-    }));
-  }, [originalLinks]);
 
   const originals = useMemo(
     () => ({
@@ -203,7 +147,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   );
 
   // Verification flow hook
-  useVerificationFlow(profile.id, setForm, setShowRedirect);
+  useVerificationFlow(profile.id, setShowRedirect);
 
   const startOAuth = (providerKey: string, url: string) =>
     startOAuthVerification({
@@ -219,193 +163,13 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const authInfoPending =
     authInfoToken && isLinkAuthPending(pendingEdits, authInfoToken);
 
-  // Profile field diffs including deletions
-  useEffect(() => {
-    if (!setPendingEdits) return;
-
-    const changed: PendingProfileChange = {};
-    let cityToken: string | undefined = undefined;
-
-    if (nearestCityId && nearestCityId !== profile.nearest_city_id) {
-      cityToken = String(nearestCityId);
-    }
-    if (deletedCity && profile.nearest_city_id) {
-      cityToken = "-";
-    }
-    if (cityToken !== undefined) {
-      changed.c = cityToken;
-    }
-
-    if (!deletedFields.address && form.address && form.address.trim() !== "" && form.address !== originals.address)
-      changed.address = form.address;
-    if (!deletedFields.name && form.name && form.name.trim() !== "" && form.name !== originals.name)
-      changed.name = form.name;
-    if (!deletedFields.display_name && form.display_name && form.display_name.trim() !== "" && form.display_name !== originals.display_name)
-      changed.display_name = form.display_name;
-    if (!deletedFields.bio && form.bio && form.bio.trim() !== "" && form.bio !== originals.bio)
-      changed.bio = form.bio;
-    if (
-      !deletedFields.profile_image_url &&
-      imageUrlValid &&
-      form.profile_image_url &&
-      form.profile_image_url.trim() !== "" &&
-      form.profile_image_url !== originals.profile_image_url
-    ) {
-      changed.profile_image_url = form.profile_image_url;
-    }
-
-    const deleted: string[] = [];
-    if (deletedFields.address) deleted.push("a");
-    if (deletedFields.name) deleted.push("n");
-    if (deletedFields.display_name) deleted.push("h");
-    if (deletedFields.bio) deleted.push("b");
-    if (deletedFields.profile_image_url) deleted.push("i");
-
-    if (deleted.length > 0) {
-      changed.d = deleted;
-    } else {
-      delete changed.d;
-    }
-
-    const changedStr = JSON.stringify(changed);
-    if ((ProfileEditor as any)._lastPending !== changedStr) {
-      (ProfileEditor as any)._lastPending = changedStr;
-      setPendingEdits((prev) => ({ ...prev, profile: changed }));
-    }
-  }, [
-    form.address, form.name, form.display_name, form.bio, form.profile_image_url,
-    nearestCityId, profile.nearest_city_id, deletedCity, imageUrlValid,
-    originals.address, originals.name, originals.display_name, originals.bio, originals.profile_image_url,
-    deletedFields.address, deletedFields.name, deletedFields.display_name, deletedFields.bio, deletedFields.profile_image_url,
-    setPendingEdits
-  ]);
-
-  // Compute link tokens
-  useEffect(() => {
-    if (!setPendingEdits) return;
-
-    const effectTokens: string[] = [];
-    const originalById = new Map<string, ParsedLink>();
-    const originalUrlSet = new Set<string>();
-
-    for (const l of originalLinks) {
-      if (!l) continue;
-      const url = (l.url || "").trim();
-      if (l.id) originalById.set(String(l.id), { ...l, url });
-      if (url) originalUrlSet.add(url);
-    }
-
-    const currentUrls = new Set(
-      form.links.map((l) => (l.url || "").trim()).filter(Boolean)
-    );
-    const currentById = new Map(
-      form.links
-        .filter((l) => l.id)
-        .map((l) => [String(l.id), (l.url || "").trim()])
-    );
-
-    let normalizedVerify = Array.isArray(pendingEdits?.l)
-      ? [...pendingEdits.l]
-      : [];
-
-    for (const token of pendingEdits?.l || []) {
-      if (!token.startsWith("+!")) continue;
-      const oldUrl = token.slice(2);
-      const stillExists = form.links.some(
-        (l) => (l.url || "").trim() === oldUrl.trim()
-      );
-
-      if (!stillExists) {
-        normalizedVerify = normalizedVerify.filter((t) => t !== token);
-        const newUrl = form.links
-          .map((l) => (l.url || "").trim())
-          .find((u) => u && !originalUrlSet.has(u));
-        if (newUrl) normalizedVerify.push(`+!${newUrl}`);
-      }
-    }
-
-    for (const row of form.links) {
-      const id = row.id ?? null;
-      const newUrlRaw = (row.url || "").trim();
-      const { valid: urlValid } = isValidUrl(newUrlRaw);
-      const newUrl = urlValid ? newUrlRaw : "";
-
-      if (id) {
-        const original = originalById.get(String(id));
-        const originalUrl = original ? original.url : "";
-        if (newUrl === originalUrl) continue;
-        if (!newUrl) { effectTokens.push(`-${id}`); continue; }
-        effectTokens.push(`+${id}:${newUrl}`);
-      } else {
-        if (!newUrl) continue;
-        const isNew = !originalUrlSet.has(newUrl);
-        const verifyToken = `+!${newUrl}`;
-        const isExplicitVerify = normalizedVerify.includes(verifyToken);
-        if (isNew && !isExplicitVerify) {
-          effectTokens.push(`+${newUrl}`);
-        }
-      }
-    }
-
-    const preservedOld = Array.isArray(normalizedVerify)
-      ? normalizedVerify.filter((t) => {
-        if (/^![0-9]+$/.test(t) || /^\+!/.test(t)) return true;
-        if (/^-[0-9]+$/.test(t)) return true;
-        if (/^\+[0-9]+:/.test(t)) {
-          const id = t.slice(1, t.indexOf(":"));
-          const original = originalById.get(id);
-          const currentUrl = currentById.get(id) || "";
-          const { valid: currentValid } = isValidUrl(currentUrl);
-          if (!currentUrl || !currentValid) return false;
-          if (original && currentUrl === original.url) return false;
-          const hasNewer = effectTokens.some((et) => et.startsWith(`+${id}:`));
-          return !hasNewer;
-        }
-        if (/^\+[^!]/.test(t) && !t.includes(":")) {
-          const url = t.slice(1).trim();
-          const hasExplicitVerify = normalizedVerify.includes(`+!${url}`);
-          return currentUrls.has(url) && !hasExplicitVerify;
-        }
-        return false;
-      })
-      : [];
-
-    const uniqTokens = (arr: string[]) => {
-      const seen = new Set<string>();
-      const out: string[] = [];
-      for (const t of arr) {
-        if (!seen.has(t)) { seen.add(t); out.push(t); }
-      }
-      return out;
-    };
-
-    const merged = uniqTokens([...effectTokens, ...preservedOld]);
-
-    const filtered = merged.filter((t) => {
-      if (t.startsWith("!")) {
-        const id = t.slice(1);
-        return !merged.includes(`-${id}`);
-      }
-      if (t.startsWith("+!")) {
-        const url = (t.slice(2) || "").trim();
-        if (!url) return false;
-        return currentUrls.has(url);
-      }
-      return true;
-    });
-
-    const serialized = JSON.stringify(filtered);
-    if ((ProfileEditor as any)._lastLinks !== serialized) {
-      (ProfileEditor as any)._lastLinks = serialized;
-      setPendingEdits((prev) => ({ ...prev, l: filtered }));
-    }
-  }, [form.links, originalLinks, pendingEdits?.l, setPendingEdits]);
+  // Profile field diffs and link tokens are now auto-computed in the store
 
   // Handlers
   const handleChange = (field: string, value: string) =>
-    setForm((prev) => ({ ...prev, [field]: value }));
+    updateField(field as keyof FormState, value);
 
-  const avatarCallbacks = { setAvatarPrompt, setDeletedFields, handleChange };
+  const avatarCallbacks = { setAvatarPrompt, setDeletedField, handleChange };
 
   const handleLinkChange = (uid: string, value: string) => {
     setForm((prev) => ({
@@ -440,13 +204,13 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       ],
     }));
 
-  const removeLink = (uid: string) =>
-    setForm((prev) => {
-      const removed = prev.links.find((l) => l._uid === uid);
-      const newLinks = prev.links.filter((l) => l._uid !== uid);
-      if (removed?.id && setPendingEdits) appendLinkToken(setPendingEdits, `-${removed.id}`);
-      return { ...prev, links: newLinks };
-    });
+  const removeLink = (uid: string) => {
+    setForm((prev) => ({
+      ...prev,
+      links: prev.links.filter((l) => l._uid !== uid)
+    }));
+    // Note: Deletion token (-{id}) is automatically computed by the store
+  };
 
   const resetLinks = () => {
     setForm((prev) => ({
@@ -459,12 +223,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
               verification_expires_at: null, _uid: crypto.randomUUID(),
             } as ParsedLink],
     }));
-    if (!setPendingEdits) return;
-    setPendingEdits((prev) => {
-      const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
-      const filtered = prevLinks.filter((t) => !/^[-+!]/.test(t) && !/^\+!/.test(t));
-      return { ...prev, l: filtered };
-    });
+    // Note: Link tokens are automatically recomputed by the store
   };
 
   const toggleAddress = (e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -479,7 +238,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       (popup as any)._timer = setTimeout(() => { popup.classList.remove("show"); }, 3000);
       return;
     }
-    createDeleteToggle("address", originals, setDeletedFields, setForm)();
+    setDeletedField("address", !deletedFields.address);
   };
 
   return (
@@ -497,8 +256,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           if (!profile.address_verified) return;
           if (authInfoProvider) { startOAuth(authInfoProvider.key, authInfoLink.url); return; }
           if (!authInfoToken || authInfoPending) return;
-          if (!setPendingEdits) return;
-          appendLinkToken(setPendingEdits, authInfoToken);
+          addLinkAuthToken(authInfoToken);
           setAuthInfoOpen(false);
         }}
       />
@@ -562,7 +320,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
           isDeleted={deletedFields.name}
-          onDelete={createDeleteToggle("name", originals, setDeletedFields, setForm)}
+          onDelete={() => setDeletedField("name", !deletedFields.name)}
         >
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
@@ -594,7 +352,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your public display name."
           hasPending={hasPendingField("display_name", "h")}
           isDeleted={deletedFields.display_name}
-          onDelete={createDeleteToggle("display_name", originals, setDeletedFields, setForm)}
+          onDelete={() => setDeletedField("display_name", !deletedFields.display_name)}
         >
           <input
             id="display_name"
@@ -613,7 +371,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your current story arc in 100 characters or less."
           hasPending={hasPendingField("bio", "b")}
           isDeleted={deletedFields.bio}
-          onDelete={createDeleteToggle("bio", originals, setDeletedFields, setForm)}
+          onDelete={() => setDeletedField("bio", !deletedFields.bio)}
         >
           <div className="relative">
             <textarea
@@ -634,33 +392,27 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Nearest City"
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
           hasPending={!!pendingProfileEdits?.c}
-          isDeleted={deletedCity}
+          isDeleted={deletedFields.nearest_city}
           onDelete={() => {
-            const next = !deletedCity;
-            setDeletedCity(next);
-            if (next) {
-              setNearestCityId(null);
-              setNearestCityDisplay("");
-            } else {
-              setNearestCityId(origCityId);
-              setNearestCityDisplay("");
-            }
+            setDeletedField('nearest_city', !deletedFields.nearest_city);
+            setNearestCityDisplay("");
           }}
         >
           <CitySearchDropdown
             value={nearestCityDisplay}
             placeholder={
-              !deletedCity && origCityId && nearestCityDisplay === ""
-                ? origCityName
+              !deletedFields.nearest_city && form.nearest_city_id && nearestCityDisplay === ""
+                ? form.nearest_city_name
                 : "Search nearest city…"
             }
             onChange={(val) => {
               if (typeof val === "string") {
                 setNearestCityDisplay(val);
-                setNearestCityId(null);
+                updateField('nearest_city_id', null);
               } else {
                 setNearestCityDisplay(val.fullLabel);
-                setNearestCityId(val.id);
+                updateField('nearest_city_id', val.id);
+                updateField('nearest_city_name', val.fullLabel);
               }
             }}
           />
@@ -673,7 +425,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Link to PNG or JPG. Search 'free image link host'."
           hasPending={hasPendingField("profile_image_url", "i")}
           isDeleted={deletedFields.profile_image_url}
-          onDelete={createDeleteToggle("profile_image_url", originals, setDeletedFields, setForm)}
+          onDelete={() => setDeletedField("profile_image_url", !deletedFields.profile_image_url)}
         >
           <input
             id="pimg"
@@ -810,12 +562,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     type="button"
                     onClick={() => {
                       if (!token) return;
-                      if (!setPendingEdits) return;
                       if (authProvider) { startOAuth(authProvider.key, row.url); return; }
                       if (isPending) {
-                        removeLinkToken(setPendingEdits, token);
+                        removeLinkAuthToken(token);
                       } else {
-                        appendLinkToken(setPendingEdits, token);
+                        addLinkAuthToken(token);
                       }
                     }}
                     className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && isOAuthLink)

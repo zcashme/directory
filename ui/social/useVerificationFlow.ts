@@ -13,6 +13,7 @@ import {
   getDiscordAvatarUrl,
   normalizeDiscordHandle,
 } from "@/lib/profile/providerAvatars";
+import { useEditsStore } from "@/lib/stores/edits";
 
 interface ProfileLink {
   url: string;
@@ -35,9 +36,9 @@ interface LinkedInData {
 
 export default function useVerificationFlow(
   profileId: number,
-  setForm: Dispatch<SetStateAction<ProfileForm>>,
   setShowRedirect: Dispatch<SetStateAction<boolean>>
 ): void {
+  const { setForm } = useEditsStore();
   useEffect(() => {
     const applyVerification = async (session: unknown) => {
       if (!session) return;
@@ -282,5 +283,5 @@ export default function useVerificationFlow(
     setTimeout(checkSession, 3000);
 
     return () => subscription.unsubscribe();
-  }, [profileId, setForm, setShowRedirect]);
+  }, [profileId, setShowRedirect, setForm]);
 }
