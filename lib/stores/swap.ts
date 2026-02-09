@@ -140,7 +140,7 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       originTokenId: zecTokenId,
       swapAmount: '',
       refundAddress: '',
-      slippageTolerance: '0.5',
+      slippageTolerance: '1',
       quoteData: null,
       quotePreview: null,
       quoteStatus: '',
