@@ -52,9 +52,8 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
   const previousResultsRef = useRef<Profile[]>([]);
@@ -63,16 +62,15 @@ export default function ProfileSearchDropdown({
   const keystrokeDebounced = useKeystrokeDebounce(value, 10);
   const searchDebounced = useSearchDebounce(value, 150);
 
-  const clearHideTimer = () => {
-    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-  };
-
-  const startHideTimer = () => {
-    clearHideTimer();
-    hideTimerRef.current = setTimeout(() => {
-      if (!isHovering) setShow(false);
-    }, 4000);
-  };
+  // Mobile detection
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Check if previous results still match the query (to avoid unnecessary refreshes)
   // IMPORTANT: This only checks if we can reuse search results, NOT if we can skip availability checks
@@ -171,29 +169,14 @@ export default function ProfileSearchDropdown({
 
   useEffect(() => {
     if (!keystrokeDebounced) {
-      if (!usernameAvailable) {
-        setShow(false);
-      }
+      setShow(false);
       return;
     }
 
     if (showByDefault || usernameAvailable) {
       setShow(true);
     }
-
-    // Don't start hide timer if username is available (claim popup should persist)
-    if (!usernameAvailable) {
-      startHideTimer();
-    } else {
-      clearHideTimer();
-    }
-
-    return () => {
-      if (!usernameAvailable) {
-        clearHideTimer();
-      }
-    };
-  }, [keystrokeDebounced, isHovering, showByDefault, usernameAvailable]);
+  }, [keystrokeDebounced, showByDefault, usernameAvailable]);
 
   useEffect(() => {
     if (!show) return;
@@ -238,19 +221,10 @@ export default function ProfileSearchDropdown({
       {(show || usernameAvailable) && keystrokeDebounced && (
         <div
           ref={listOnly ? dropdownRef : null}
-          onMouseEnter={() => {
-            setIsHovering(true);
-            clearHideTimer();
-            if (!show) setShow(true);
-          }}
-          onMouseLeave={() => {
-            setIsHovering(false);
-            // Don't start hide timer if username is available (claim popup should persist)
-            if (!usernameAvailable) {
-              startHideTimer();
-            }
-          }}
-          className="absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
+          className={isMobile
+            ? "fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl"
+            : "absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
+          }
         >
           {loading ? (
             <div className="px-3 py-2 text-sm text-gray-800 font-medium">
@@ -267,7 +241,7 @@ export default function ProfileSearchDropdown({
                   className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 bg-green-50/50 cursor-pointer hover:bg-green-100/50 transition-colors"
                 >
                   <span>
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available! Claim this name
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
                   </span>
                 </div>
               )}
