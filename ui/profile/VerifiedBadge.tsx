@@ -14,32 +14,19 @@ export default function VerifiedBadge({
   // Start collapsed by default
   const [open, setOpen] = useState(false);
 
-  // Collapse automatically after initial reveal
-  useEffect(() => {
-    const timer = setTimeout(() => setOpen(false), 700);
-    return () => clearTimeout(timer);
-  }, []);
-
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setHasMounted(true));
     return () => cancelAnimationFrame(t);
   }, []);
 
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsTouchDevice("ontouchstart" in window || navigator.maxTouchPoints > 0);
-    }
-  }, []);
-
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
-    if (isTouchDevice && open) {
+    if (open) {
       timer = setTimeout(() => setOpen(false), 2000);
     }
     return () => clearTimeout(timer);
-  }, [open, isTouchDevice]);
+  }, [open]);
 
   const baseClasses =
     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide select-none whitespace-nowrap align-middle";
@@ -76,7 +63,7 @@ export default function VerifiedBadge({
     <span
       onTouchStart={(e) => {
         e.stopPropagation();
-        if (isTouchDevice) setOpen(true);
+        setOpen(true);
       }}
       aria-label={verifiedLabel}
       className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
@@ -111,7 +98,7 @@ export default function VerifiedBadge({
     <span
       onTouchStart={(e) => {
         e.stopPropagation();
-        if (isTouchDevice) setOpen(true);
+        setOpen(true);
       }}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
