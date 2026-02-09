@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
-import { usePathname } from "next/navigation";
+import React, { useState, useEffect } from "react";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
-import { normalizeSlug, buildSlug, buildShareUrl } from "@/lib/profile/profileUtils";
+import { buildShareUrl } from "@/lib/profile/profileUtils";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
@@ -343,7 +342,6 @@ export default function ProfileCard({
   fullView = false,
   duplicateNameCount = 0
 }: ProfileCardProps) {
-  const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
   const [authLink, setAuthLink] = useState<EnrichedProfileLink | null>(null);
@@ -356,18 +354,9 @@ export default function ProfileCard({
   const { setForceShowQR } = useSelectionStore();
   const { pendingEdits, setPendingEdits } = useEditsStore();
   const { setMode, setVerify } = useMessagingStore();
-  const routeMatchesProfile = useMemo(() => {
-    if (!fullView) return true;
-    const expected = buildSlug(profile);
-    if (!expected) return false;
-    const currentRaw = decodeURIComponent((pathname || "/").slice(1));
-    const current = normalizeSlug(currentRaw);
-    return current === normalizeSlug(expected);
-  }, [fullView, profile, pathname]);
   const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks({
     profile,
     fullView,
-    routeMatchesProfile,
   });
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
@@ -375,8 +364,7 @@ export default function ProfileCard({
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
-  const showLinkShimmer =
-    isLoadingLinks || (fullView && (!routeMatchesProfile || !linksLoaded));
+  const showLinkShimmer = isLoadingLinks || (fullView && !linksLoaded);
   const hasDuplicateNames = duplicateNameCount > 1;
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
 

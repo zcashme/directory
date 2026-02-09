@@ -11,7 +11,6 @@ import { getProfileLinksAction } from "@/lib/profile/getProfileLinksAction";
 interface UseProfileLinksOptions {
   profile: Profile | null | undefined;
   fullView: boolean;
-  routeMatchesProfile: boolean;
 }
 
 interface UseProfileLinksResult {
@@ -24,7 +23,6 @@ interface UseProfileLinksResult {
 export default function useProfileLinks({
   profile,
   fullView,
-  routeMatchesProfile,
 }: UseProfileLinksOptions): UseProfileLinksResult {
   const [linksArray, setLinksArray] = useState<EnrichedProfileLink[]>(() => {
     const initialLinks = profile?.links;
@@ -37,11 +35,6 @@ export default function useProfileLinks({
 
   useEffect(() => {
     if (!fullView) return;
-    if (!routeMatchesProfile) {
-      setIsLoadingLinks(true);
-      setLinksLoaded(false);
-      return;
-    }
     if (!profile?.id) return;
     let isMounted = true;
     setIsLoadingLinks(true);
@@ -63,7 +56,7 @@ export default function useProfileLinks({
     return () => {
       isMounted = false;
     };
-  }, [fullView, routeMatchesProfile, profile?.id]);
+  }, [fullView, profile?.id]);
 
   return { linksArray, setLinksArray, isLoadingLinks, linksLoaded };
 }
