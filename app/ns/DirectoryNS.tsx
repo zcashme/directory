@@ -3,7 +3,9 @@ import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { useNsFeedback, useNsFeedbackController } from "@/ui/messaging/ns-useFeedback";
+import { useSelectionStore } from "@/lib/stores/ui-state";
+import { useMessagingStore } from "@/lib/stores/messaging";
+import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
@@ -24,9 +26,9 @@ import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
-  const { setSelectedAddress, setForceShowQR, forceShowQR } = useNsFeedback();
-  const { memo, amount, setDraftMemo, setDraftAmount, selectedAddress, uri } =
-    useNsFeedbackController();
+  const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useSelectionStore();
+  const { draft, setDraft } = useMessagingStore();
+  const { memo, amount } = draft;
   const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
     initialProfiles
   );
@@ -57,6 +59,19 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     setUnverifiedLink,
   } = useProfileModal();
   const flightPaths = useFlightPaths();
+
+  const setDraftMemo = (memoValue: string) => {
+    setDraft((prev) => ({ ...prev, memo: memoValue }));
+  };
+
+  const setDraftAmount = (amountValue: string) => {
+    setDraft((prev) => ({ ...prev, amount: amountValue }));
+  };
+
+  const uri = useMemo(() => {
+    const finalAmount = amount && amount !== "0" ? amount : "0";
+    return buildZcashUri(selectedAddress ?? "", finalAmount, memo);
+  }, [draft, selectedAddress]);
 
   const announcementConfig = {
     enabled: true,
