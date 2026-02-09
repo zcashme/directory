@@ -548,7 +548,6 @@ export default function ProfileCard({
                         ...prev,
                         zId: profile.id ?? null,
                         requestId: null,
-                        amount: "0",
                       }));
                       setMode("verification");
                     }}
