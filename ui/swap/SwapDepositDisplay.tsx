@@ -1,5 +1,6 @@
 import { QRCodeSVG } from "qrcode.react";
 import CopyButton from "@/ui/profile/CopyButton";
+import { getSwapUrl } from "@/lib/swap/utils";
 
 interface SwapDepositDisplayProps {
   depositUri: string;
@@ -23,7 +24,8 @@ export default function SwapDepositDisplay({
   const qrValue = hasPaymentUri ? depositUri : depositAddress;
 
   const handleGoToSwapStatus = () => {
-    window.open(`/swap?depositAddress=${encodeURIComponent(depositAddress)}`, '_blank');
+    const swapUrl = getSwapUrl({ depositAddress });
+    window.open(swapUrl, '_blank');
   };
 
 

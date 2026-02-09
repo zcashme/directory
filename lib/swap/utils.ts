@@ -86,3 +86,32 @@ export function parseTokenSymbol(assetId?: string): string {
 
   return symbol.toUpperCase();
 }
+
+/**
+ * Generate swap URL using subdomain routing
+ * Example: getSwapUrl({ depositAddress: "0x123..." })
+ * Returns: "https://swap.zcash.me?depositAddress=0x123..."
+ */
+export function getSwapUrl(params?: { depositAddress?: string }): string {
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'zcash.me';
+  const protocol = baseDomain.includes('localhost') ? 'http' : 'https';
+
+  // Build query string
+  const queryString = params?.depositAddress
+    ? `?depositAddress=${encodeURIComponent(params.depositAddress)}`
+    : '';
+
+  return `${protocol}://swap.${baseDomain}${queryString}`;
+}
+
+/**
+ * Generate stats URL using subdomain routing
+ * Example: getStatsUrl()
+ * Returns: "https://stats.zcash.me"
+ */
+export function getStatsUrl(): string {
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'zcash.me';
+  const protocol = baseDomain.includes('localhost') ? 'http' : 'https';
+
+  return `${protocol}://stats.${baseDomain}`;
+}

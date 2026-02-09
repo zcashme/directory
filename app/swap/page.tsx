@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
-import { parseTokenSymbol } from "@/lib/swap/utils";
+import { parseTokenSymbol, getSwapUrl } from "@/lib/swap/utils";
 import { useSwapStore } from "@/lib/stores/swap";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 import shareIcon from "@/ui/assets/share.svg";
@@ -260,7 +260,7 @@ function SwapPageContent() {
 
   const handleReset = () => {
     stopPolling();
-    router.push("/swap");
+    router.push(getSwapUrl());
   };
 
   return (
@@ -275,7 +275,7 @@ function SwapPageContent() {
               <div className="mb-6">
                 <h1 className="text-md font-semibold">Swap Status</h1>
               </div>
-              <SwapStatusForm onSubmit={(addr) => router.push(`/swap?depositAddress=${encodeURIComponent(addr)}`)} />
+              <SwapStatusForm onSubmit={(addr) => router.push(getSwapUrl({ depositAddress: addr }))} />
             </>
           )}
         </div>
