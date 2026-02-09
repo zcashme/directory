@@ -29,6 +29,8 @@ interface ProfileSearchDropdownProps {
   showByDefault?: boolean;
   onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
   onResultsChange?: (results: Profile[]) => void; // eslint-disable-line no-unused-vars
+  onClaimClick?: () => void; // eslint-disable-line no-unused-vars
+  showUsernameAvailability?: boolean;
   selectedIndex?: number;
   className?: string;
   [key: string]: unknown;
@@ -41,6 +43,8 @@ export default function ProfileSearchDropdown({
   listOnly = false,
   showByDefault = true,
   onUsernameAvailable,
+  onClaimClick,
+  showUsernameAvailability = true,
   className = "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400",
   ...props
 }: ProfileSearchDropdownProps) {
@@ -138,7 +142,7 @@ export default function ProfileSearchDropdown({
             (p) => (p.name || "").toLowerCase() === currentQuery.toLowerCase()
           );
 
-          if (!exists && !exactMatch) {
+          if (showUsernameAvailability && !exists && !exactMatch) {
             usernameAvailableRef.current = currentQuery;
             setUsernameAvailable(currentQuery);
             onUsernameAvailable?.(currentQuery);
@@ -163,7 +167,7 @@ export default function ProfileSearchDropdown({
     return () => {
       searchActiveRef.current = false;
     };
-  }, [searchDebounced, onUsernameAvailable]);
+  }, [searchDebounced, onUsernameAvailable, showUsernameAvailability]);
 
   useEffect(() => {
     if (!keystrokeDebounced) {
@@ -256,9 +260,14 @@ export default function ProfileSearchDropdown({
             <>
               {/* Show availability message at the top if username is available */}
               {usernameAvailable && (
-                <div className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 bg-green-50/50">
+                <div
+                  onClick={() => {
+                    onClaimClick?.();
+                  }}
+                  className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 bg-green-50/50 cursor-pointer hover:bg-green-100/50 transition-colors"
+                >
                   <span>
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> Claim this name
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available! Claim this name
                   </span>
                 </div>
               )}

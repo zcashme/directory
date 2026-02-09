@@ -93,6 +93,10 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                   onUsernameAvailable={(username) => {
                     setAvailableUsername(username);
                   }}
+                  onClaimClick={() => {
+                    setPrefillUsername(availableUsername);
+                    setIsJoinOpen(true);
+                  }}
                   placeholder="search"
                 />
               </div>

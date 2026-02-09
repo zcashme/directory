@@ -143,8 +143,8 @@ export default function SwapComposer({
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
       {/* HEADER: Back + Recipient */}
-      <div className="flex justify-between items-start relative mb-3 border border-red-500">
-        <div className="text-md font-semibold text-gray-800 whitespace-normal pt-2 border border-blue-500">
+      <div className="flex justify-between items-start relative mb-3">
+        <div className="text-md font-semibold text-gray-800 whitespace-normal">
           Send to{" "}
           <span
             className="text-blue-600 cursor-pointer"
@@ -157,7 +157,7 @@ export default function SwapComposer({
         <button
           type="button"
           onClick={resetSwapState}
-          className="text-gray-600 hover:text-gray-800 text-sm pt-1 flex-shrink-0 border border-green-500"
+          className="text-gray-600 hover:text-gray-800 text-sm flex-shrink-0"
           aria-label="Go back to ZEC payment"
         >
           ← ZEC

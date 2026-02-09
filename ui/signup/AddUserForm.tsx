@@ -601,15 +601,18 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         Referred by Zcash.me/
       </label>
 
-      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
+      <div className="relative flex items-center w-full rounded-2xl border border-black/30 overflow-visible bg-transparent focus-within:border-green-600">
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
-        <ProfileSearchDropdown
-          value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
-          onChange={(v) => setReferrer(v)}
-          placeholder="username"
-          showByDefault={false}
-          className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
-        />
+        <div className="relative flex-1">
+          <ProfileSearchDropdown
+            value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
+            onChange={(v) => setReferrer(v)}
+            placeholder="username"
+            showByDefault={false}
+            showUsernameAvailability={false}
+            className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
+          />
+        </div>
       </div>
 
 
