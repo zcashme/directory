@@ -70,6 +70,7 @@ export function baseUnitsToDecimal(amountBase: string | number | bigint, decimal
 /**
  * Parse token symbol from asset ID
  * Example: "eth.mainnet.0x..." -> "ETH"
+ * Example: "nep141:eth.omft" -> "ETH"
  */
 export function parseTokenSymbol(assetId?: string): string {
   if (!assetId) return "";
@@ -77,5 +78,11 @@ export function parseTokenSymbol(assetId?: string): string {
   const parts = assetId.split(".");
   if (parts.length === 0) return "";
 
-  return parts[0].toUpperCase();
+  // Handle chain prefix like "nep141:eth"
+  let symbol = parts[0];
+  if (symbol.includes(":")) {
+    symbol = symbol.split(":")[1] || symbol;
+  }
+
+  return symbol.toUpperCase();
 }

@@ -182,44 +182,24 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
           <div className="border-t border-gray-800 px-4 py-3 space-y-3 text-sm">
             {[
               {
-                label: "Exchange",
-                value:
-                  fromSymbol && toSymbol
-                    ? `${fromSymbol} → ${toSymbol}`
-                    : null,
-              },
-              {
                 label: "Origin Asset",
-                value: request?.originAsset,
-                mono: true,
+                value: request?.originAsset ? parseTokenSymbol(request.originAsset) : null,
               },
               {
                 label: "Destination Asset",
-                value: request?.destinationAsset,
-                mono: true,
+                value: request?.destinationAsset ? parseTokenSymbol(request.destinationAsset) : null,
               },
               { label: "Deposit Address", value: depositAddress, mono: true },
               {
-                label: "Min Amount Out",
-                value:
-                  quote?.amountOutFormatted &&
-                  `${quote.amountOutFormatted} ${parseTokenSymbol(request?.destinationAsset)}`,
-              },
-              {
-                label: "Time Estimate",
-                value:
-                  quote?.timeEstimate && `${quote.timeEstimate} seconds`,
+                label: "Refund Address",
+                value: request?.refundTo,
+                mono: true,
               },
               {
                 label: "Deadline",
                 value:
                   quote?.deadline &&
                   new Date(quote.deadline).toLocaleString(),
-              },
-              {
-                label: "Refund To",
-                value: request?.refundTo,
-                mono: true,
               },
               {
                 label: "Updated",
