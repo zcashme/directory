@@ -105,17 +105,8 @@ export default function ProfileVerification({
   }, [pendingEdits]);
 
   useEffect(() => {
-    const trimmed = (amount ?? "").trim();
-    if (!trimmed || trimmed === "0") {
-      setVerify((prev) => ({ ...prev, amount: DEFAULT_SIGNIN_AMOUNT }));
-    }
-  }, [amount, setVerify]);
-
-  // Initialize amount on mount or when pendingEdits changes
-  useEffect(() => {
     resetVerificationPolling();
-    setVerify((prev) => ({ ...prev, amount: DEFAULT_SIGNIN_AMOUNT }));
-  }, [pendingEdits, resetVerificationPolling, setVerify]);
+  }, [pendingEdits, resetVerificationPolling]);
 
   const { validAmount, error, verifyUri } = useMemo(() => {
     const cleaned = (amount ?? "").trim();

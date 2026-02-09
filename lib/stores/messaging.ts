@@ -65,7 +65,7 @@ const initialVerifyState = {
 export const useMessagingStore = create<MessagingState>((set) => ({
   mode: 'memo',
   draft: { memo: '', amount: '' },
-  verify: { amount: '0', zId: null, requestId: null },
+  verify: { amount: '0.003', zId: null, requestId: null },
   ...initialVerifyState,
 
   setMode: (mode) =>
@@ -95,8 +95,8 @@ export const useMessagingStore = create<MessagingState>((set) => ({
     })),
   setPollStartedAt: (startedAt) => set({ pollStartedAt: startedAt }),
   setPollElapsedMs: (elapsed) => set({ pollElapsedMs: elapsed }),
-  resetVerificationPolling: () => set({
+  resetVerificationPolling: () => set((state) => ({
     ...initialVerifyState,
-    verify: { amount: '0', zId: null, requestId: null },
-  }),
+    verify: { ...state.verify, zId: null, requestId: null },
+  })),
 }));
