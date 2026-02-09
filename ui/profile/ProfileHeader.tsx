@@ -106,25 +106,9 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
-            className="flex-shrink-0 bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md transition-all duration-300 whitespace-nowrap overflow-hidden relative animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
-            style={{
-              width: availableUsername ? '110px' : '70px',
-            }}
+            className="flex-shrink-0 bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
           >
-            <span
-              className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-                availableUsername ? "opacity-0 translate-x-[-20px]" : "opacity-100 translate-x-0"
-              }`}
-            >
-              Join
-            </span>
-            <span
-              className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${
-                availableUsername ? "opacity-100 translate-x-0" : "opacity-0 translate-x-[20px]"
-              }`}
-            >
-              Claim
-            </span>
+            {availableUsername ? 'Claim' : 'Join'}
           </button>
         </div>
       </div>
