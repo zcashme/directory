@@ -147,9 +147,7 @@ export default function SwapComposer({
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
       {/* HEADER: Back + Recipient */}
       <div className="flex justify-between items-start relative mb-3">
-        <div className="w-6 flex-shrink-0" />
-
-        <div className="text-md font-semibold text-gray-800 whitespace-normal pt-2 flex-1 text-center px-3">
+        <div className="text-md font-semibold text-gray-800 whitespace-normal pt-2">
           Send to{" "}
           <span
             className="text-blue-600 cursor-pointer"
