@@ -4,8 +4,6 @@ import type {
   Profile,
   ProfileLink,
   PendingEdits,
-  PendingEditsField,
-  PendingEditValue,
 } from "@/lib/profile/types";
 
 interface AuthProvider {
@@ -77,23 +75,25 @@ export const isLinkAuthPending = (pendingEdits: PendingEdits | null | undefined,
   Array.isArray(pendingEdits?.l) && !!token && pendingEdits.l.includes(token);
 
 export const appendLinkToken = (
-  pendingEdits: PendingEdits | null | undefined,
-  setPendingEdits: (key: PendingEditsField, value: PendingEditValue) => void,
+  setPendingEdits: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void,
   token: string
 ): void => {
-  const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
-  const next = prev.includes(token) ? prev : [...prev, token];
-  setPendingEdits("l", next);
+  setPendingEdits((prev) => {
+    const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
+    const next = prevLinks.includes(token) ? prevLinks : [...prevLinks, token];
+    return { ...prev, l: next };
+  });
 };
 
 export const removeLinkToken = (
-  pendingEdits: PendingEdits | null | undefined,
-  setPendingEdits: (key: PendingEditsField, value: PendingEditValue) => void,
+  setPendingEdits: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void,
   token: string
 ): void => {
-  const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
-  const next = prev.filter((t) => t !== token);
-  setPendingEdits("l", next);
+  setPendingEdits((prev) => {
+    const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
+    const next = prevLinks.filter((t) => t !== token);
+    return { ...prev, l: next };
+  });
 };
 
 interface StartOAuthParams {

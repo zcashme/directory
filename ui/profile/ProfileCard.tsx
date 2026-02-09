@@ -416,7 +416,7 @@ export default function ProfileCard({
     }
     if (!authToken || authPending) return;
     if (!setPendingEdits) return;
-    appendLinkToken(pendingEdits, setPendingEdits, authToken);
+    appendLinkToken(setPendingEdits, authToken);
     setAuthInfoOpen(false);
   };
 

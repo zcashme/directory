@@ -270,7 +270,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     const changedStr = JSON.stringify(changed);
     if ((ProfileEditor as any)._lastPending !== changedStr) {
       (ProfileEditor as any)._lastPending = changedStr;
-      setPendingEdits("profile", changed);
+      setPendingEdits((prev) => ({ ...prev, profile: changed }));
     }
   }, [
     form.address, form.name, form.display_name, form.bio, form.profile_image_url,
@@ -397,7 +397,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     const serialized = JSON.stringify(filtered);
     if ((ProfileEditor as any)._lastLinks !== serialized) {
       (ProfileEditor as any)._lastLinks = serialized;
-      setPendingEdits("l", filtered);
+      setPendingEdits((prev) => ({ ...prev, l: filtered }));
     }
   }, [form.links, originalLinks, pendingEdits?.l, setPendingEdits]);
 
@@ -444,7 +444,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setForm((prev) => {
       const removed = prev.links.find((l) => l._uid === uid);
       const newLinks = prev.links.filter((l) => l._uid !== uid);
-      if (removed?.id && setPendingEdits) appendLinkToken(pendingEdits, setPendingEdits, `-${removed.id}`);
+      if (removed?.id && setPendingEdits) appendLinkToken(setPendingEdits, `-${removed.id}`);
       return { ...prev, links: newLinks };
     });
 
@@ -460,9 +460,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             } as ParsedLink],
     }));
     if (!setPendingEdits) return;
-    const prev = Array.isArray(pendingEdits?.l) ? [...pendingEdits.l] : [];
-    const filtered = prev.filter((t) => !/^[-+!]/.test(t) && !/^\+!/.test(t));
-    setPendingEdits("l", filtered);
+    setPendingEdits((prev) => {
+      const prevLinks = Array.isArray(prev?.l) ? [...prev.l] : [];
+      const filtered = prevLinks.filter((t) => !/^[-+!]/.test(t) && !/^\+!/.test(t));
+      return { ...prev, l: filtered };
+    });
   };
 
   const toggleAddress = (e?: React.MouseEvent<HTMLButtonElement>) => {
@@ -496,7 +498,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           if (authInfoProvider) { startOAuth(authInfoProvider.key, authInfoLink.url); return; }
           if (!authInfoToken || authInfoPending) return;
           if (!setPendingEdits) return;
-          appendLinkToken(pendingEdits, setPendingEdits, authInfoToken);
+          appendLinkToken(setPendingEdits, authInfoToken);
           setAuthInfoOpen(false);
         }}
       />
@@ -811,9 +813,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                       if (!setPendingEdits) return;
                       if (authProvider) { startOAuth(authProvider.key, row.url); return; }
                       if (isPending) {
-                        removeLinkToken(pendingEdits, setPendingEdits, token);
+                        removeLinkToken(setPendingEdits, token);
                       } else {
-                        appendLinkToken(pendingEdits, setPendingEdits, token);
+                        appendLinkToken(setPendingEdits, token);
                       }
                     }}
                     className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && isOAuthLink)

@@ -116,9 +116,6 @@ export interface PendingEdits {
   l?: string[];
 }
 
-export type PendingEditsField = keyof PendingEdits;
-export type PendingEditValue = PendingEdits["profile"] | PendingEdits["l"];
-
 /**
  * Rank type discriminator
  */
