@@ -248,19 +248,6 @@ function FeaturedCardsSection({ onCardClick }: FeaturedCardsSectionProps) {
   }, []);
 
   if (!featuredProfiles.length) {
-    if (loading || error) {
-      return (
-        <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
-          <div
-            className={`rounded-2xl border px-6 py-10 text-center text-sm font-semibold ${
-              error ? "border-red-200 bg-red-50 text-red-700" : "border-gray-200 bg-white/70 text-gray-600"
-            }`}
-          >
-            {error ?? "Loading featured profiles..."}
-          </div>
-        </div>
-      );
-    }
     return null;
   }
 

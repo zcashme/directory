@@ -1,40 +1,55 @@
-import { useContext, useEffect, useMemo, useCallback } from "react";
-import { NsSelectionContext } from "@/app/ns/ns-selection-provider";
-import { EditsContext } from "@/app/[slug]/providers/edits-provider";
-import { MessagingContext } from "@/app/[slug]/providers/messaging-provider";
-import type { NsSelectionContextType } from "@/app/ns/types";
-import type {
-  EditsContextType,
-  MessagingContextType,
-} from "@/app/[slug]/providers/types";
+import { useEffect, useMemo, useCallback } from "react";
+import { useSelectionStore } from "@/lib/stores/selection-store";
+import { useEditsStore } from "@/lib/stores/edits-store";
+import { useMessagingStore } from "@/lib/stores/messaging-store";
+import type { PendingEdits } from "@/lib/profile/types";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
-type NsFeedbackContext = NsSelectionContextType &
-  EditsContextType &
-  MessagingContextType;
-
-const ensureContext = <T,>(context: T | undefined, name: string): T => {
-  if (!context) {
-    throw new Error(`${name} is missing. Make sure the provider is mounted.`);
-  }
-  return context;
+type NsFeedbackContext = {
+  selectedAddress: string | null;
+  setSelectedAddress: (address: string | null) => void;
+  forceShowQR: boolean;
+  setForceShowQR: (value: boolean | ((prev: boolean) => boolean)) => void;
+  pendingEdits: PendingEdits;
+  setPendingEdits: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void;
+  editChangesRequested: boolean;
+  setEditChangesRequested: (requested: boolean | ((prev: boolean) => boolean)) => void;
+  mode: string;
+  setMode: (mode: string | ((prev: string) => string)) => void;
+  draft: {
+    memo: string;
+    amount: string;
+  };
+  setDraft: (draft: { memo: string; amount: string } | ((prev: { memo: string; amount: string }) => { memo: string; amount: string })) => void;
+  verify: {
+    memo: string;
+    amount: string;
+    zId: number | null;
+    requestId: string | null;
+  };
+  setVerify: (verify: { memo: string; amount: string; zId: number | null; requestId: string | null } | ((prev: { memo: string; amount: string; zId: number | null; requestId: string | null }) => { memo: string; amount: string; zId: number | null; requestId: string | null })) => void;
 };
 
 export function useNsFeedback(): NsFeedbackContext {
-  const nsSelection = ensureContext(
-    useContext(NsSelectionContext),
-    "NsSelectionContext"
-  );
-  const edits = ensureContext(useContext(EditsContext), "EditsContext");
-  const messaging = ensureContext(
-    useContext(MessagingContext),
-    "MessagingContext"
-  );
+  const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useSelectionStore();
+  const { pendingEdits, setPendingEdits, editChangesRequested, setEditChangesRequested } = useEditsStore();
+  const { mode, setMode, draft, setDraft, verify, setVerify } = useMessagingStore();
 
   return {
-    ...nsSelection,
-    ...edits,
-    ...messaging,
+    selectedAddress,
+    setSelectedAddress,
+    forceShowQR,
+    setForceShowQR,
+    pendingEdits,
+    setPendingEdits,
+    editChangesRequested,
+    setEditChangesRequested,
+    mode,
+    setMode,
+    draft,
+    setDraft,
+    verify,
+    setVerify,
   };
 }
 

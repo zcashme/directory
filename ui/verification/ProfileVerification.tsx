@@ -16,10 +16,10 @@ const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
 interface VerifyState {
-  memo?: string;
-  amount?: string;
-  zId?: number;
-  requestId?: string | null;
+  memo: string;
+  amount: string;
+  zId: number | null;
+  requestId: string | null;
 }
 
 interface ProfileVerificationProps {

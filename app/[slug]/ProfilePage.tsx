@@ -8,10 +8,10 @@ import type { Token } from "@/lib/swap/types";
 import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 // Contexts - using typed hooks
-import { useSelection } from "@/app/[slug]/providers/selection-provider";
-import { useEdits } from "@/app/[slug]/providers/edits-provider";
-import { useMessaging } from "@/app/[slug]/providers/messaging-provider";
-import { useSwap } from "@/app/[slug]/providers/swap-provider";
+import { useSelectionStore } from "@/lib/stores/selection-store";
+import { useEditsStore } from "@/lib/stores/edits-store";
+import { useMessagingStore } from "@/lib/stores/messaging-store";
+import { useSwap } from "@/lib/hooks/use-swap";
 
 // Zcash utilities
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
@@ -62,13 +62,13 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   const [loading] = useState<boolean>(false);
 
   // Contexts - using typed hooks
-  const { forceShowQR, setForceShowQR } = useSelection();
-  const { pendingEdits, setPendingEdits } = useEdits();
+  const { forceShowQR, setForceShowQR } = useSelectionStore();
+  const { pendingEdits, setPendingEdits } = useEditsStore();
   const {
     mode, setMode,
     draft, setDraft,
     verify, setVerify,
-  } = useMessaging();
+  } = useMessagingStore();
   const swapContext = useSwap();
 
   // Feedback events effect
@@ -127,7 +127,7 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
       l: linkTokens,
     };
 
-    const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
+    const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, String(zId), requestId);
     if (nextMemo !== verify.memo) {
       setVerify((prev) => ({ ...prev, memo: nextMemo }));
     }

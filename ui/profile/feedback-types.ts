@@ -1,11 +1,7 @@
-import type {
-  PendingEdits,
-  PendingEditsField,
-  PendingEditValue,
-} from "@/lib/profile/types";
+import type { PendingEdits } from "@/lib/profile/types";
 
 export interface FeedbackProps {
-  setForceShowQR?: (value: boolean | number) => void;
+  setForceShowQR?: (value: boolean | ((prev: boolean) => boolean)) => void;
   pendingEdits?: PendingEdits;
-  setPendingEdits?: (field: PendingEditsField, value: PendingEditValue) => void;
+  setPendingEdits?: (edits: PendingEdits | ((prev: PendingEdits) => PendingEdits)) => void;
 }
