@@ -573,15 +573,19 @@ export default function ProfileCard({
 
             {/* Share button (top-right) */}
             <button
-              onClick={() => {
+              onClick={async () => {
                 const shareUrl = buildShareUrl(profile);
 
                 if (navigator.share) {
-                  navigator.share({
-                    title: `${profile.display_name || profile.name} on Zcash.me`,
-                    text: "Check out this Zcash profile:",
-                    url: shareUrl,
-                  });
+                  try {
+                    await navigator.share({
+                      title: `${profile.display_name || profile.name} on Zcash.me`,
+                      text: "Check out this Zcash profile:",
+                      url: shareUrl,
+                    });
+                  } catch {
+                    // User cancelled
+                  }
                 } else {
                   navigator.clipboard.writeText(shareUrl);
                   alert("Profile link copied to clipboard!");

@@ -7,6 +7,7 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 import { parseTokenSymbol } from "@/lib/swap/utils";
 import { useSwapStore } from "@/lib/stores/swap";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
+import shareIcon from "@/ui/assets/share.svg";
 
 const STATUS_CONFIG = {
   SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
@@ -53,6 +54,7 @@ function SwapStatusForm({ onSubmit }: { onSubmit: (_address: string) => void }) 
 
 function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const { statusData, statusError, startPolling, stopPolling } = useSwapStore();
 
   useEffect(() => {
@@ -227,10 +229,42 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
           Check Another
         </button>
         <button
-          onClick={() => navigator.clipboard.writeText(window.location.href)}
+          onClick={() => {
+            navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >
-          Copy Link
+          {copied ? "Copied" : "Copy Link"}
+        </button>
+        <button
+          onClick={async () => {
+            const shareUrl = window.location.href;
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: "Swap Status",
+                  text: "Check out this swap status:",
+                  url: shareUrl,
+                });
+              } catch {
+                // User cancelled
+              }
+            } else {
+              navigator.clipboard.writeText(shareUrl);
+              setCopied(true);
+              setTimeout(() => setCopied(false), 1500);
+            }
+          }}
+          className="border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+          title="Share swap status"
+        >
+          <img
+            src={shareIcon}
+            alt="Share"
+            className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
+          />
         </button>
       </div>
     </div>
