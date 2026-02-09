@@ -353,17 +353,13 @@ export default function ProfileCard({
   const { setForceShowQR } = useSelectionStore();
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
   const { setMode, setVerify } = useMessagingStore();
-  const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks({
-    profile,
-    fullView,
-  });
+  const { linksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
-  const showLinkShimmer = isLoadingLinks || (fullView && !linksLoaded);
   const hasDuplicateNames = duplicateNameCount > 1;
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
 
@@ -773,10 +769,8 @@ export default function ProfileCard({
           >
             {/* Links tray only */}
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
-              <div className={showLinkShimmer ? "px-4 py-3 bg-transparent/70 border-t border-gray-200" : "px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2"}>
-                {showLinkShimmer ? (
-                  <div className="link-tray-shimmer h-10 w-full rounded-md" />
-                ) : linksArray.length > 0 ? (
+              <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
+                {linksArray.length > 0 ? (
                   linksArray.map((link: EnrichedProfileLink) => {
                     const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
                     const canLinkLeft = !(isDiscordLink && !link.is_verified);
@@ -859,11 +853,11 @@ export default function ProfileCard({
                     </div>
                   );
                   })
-                ) : linksLoaded ? (
+                ) : (
                   <p className="italic text-gray-500 text-center">
                     No contributed links yet.
                   </p>
-                ) : null}
+                )}
               </div>
             </div>
           </div>
