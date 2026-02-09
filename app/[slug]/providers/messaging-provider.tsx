@@ -17,24 +17,13 @@ export function MessagingProvider({ children }: { children: ReactNode }) {
     memo: "", amount: "0", zId: null, requestId: null,
   });
 
-  const setDraftMemo = (v: string | null) => setDraft((p) => ({ ...p, memo: v ?? "" }));
-  const setDraftAmount = (v: string | null) => setDraft((p) => ({ ...p, amount: v ?? "" }));
-  const setVerifyMemo = (v: string | null) => setVerify((p) => ({ ...p, memo: v ?? "" }));
-  const setVerifyAmount = (v: string | null) => setVerify((p) => ({ ...p, amount: v ?? "0" }));
-  const setVerifyId = (zId: number | null) => setVerify((p) => ({ ...p, zId }));
-  const setVerifyRequestId = (requestId: string | null) => setVerify((p) => ({ ...p, requestId }));
-
   const value: MessagingContextType = {
     mode,
     setMode,
     draft,
+    setDraft,
     verify,
-    setDraftMemo,
-    setDraftAmount,
-    setVerifyMemo,
-    setVerifyAmount,
-    setVerifyId,
-    setVerifyRequestId,
+    setVerify,
   };
 
   return (

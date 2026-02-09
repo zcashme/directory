@@ -66,10 +66,8 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   const { pendingEdits, setPendingEdits } = useEdits();
   const {
     mode, setMode,
-    draft, verify,
-    setDraftMemo, setDraftAmount,
-    setVerifyMemo, setVerifyAmount,
-    setVerifyId, setVerifyRequestId,
+    draft, setDraft,
+    verify, setVerify,
   } = useMessaging();
   const swapContext = useSwap();
 
@@ -78,12 +76,13 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     const handleSignIn = (event: Event) => {
       const customEvent = event as CustomEvent<{ zId?: number }>;
       const { zId } = customEvent.detail ?? {};
-      if (zId) {
-        setVerifyId(zId);
-        setVerifyMemo(`{z:${zId}}`);
-      }
-      setVerifyRequestId(null);
-      setVerifyAmount("0");
+      setVerify((prev) => ({
+        ...prev,
+        zId: zId ?? null,
+        memo: zId ? `{z:${zId}}` : prev.memo,
+        requestId: null,
+        amount: "0",
+      }));
       setMode("signin");
     };
 
@@ -93,7 +92,7 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
       const customEvent = event as PendingEditsEvent;
       const detail = customEvent.detail;
       if (!detail) return;
-      setPendingEdits(detail.field, detail.value);
+      setPendingEdits((prev) => ({ ...prev, [detail.field]: detail.value }));
     };
 
     window.addEventListener("enterSignInMode", handleSignIn);
@@ -105,7 +104,7 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
       window.removeEventListener("enterDraftMode", handleDraft);
       window.removeEventListener("pendingEditsUpdated", handlePendingEdits);
     };
-  }, [setMode, setPendingEdits, setVerifyId, setVerifyMemo, setVerifyAmount, setVerifyRequestId]);
+  }, [setMode, setPendingEdits, setVerify]);
 
   // Memo controller logic
   const address = profile?.address;
@@ -130,9 +129,9 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
 
     const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, zId, requestId);
     if (nextMemo !== verify.memo) {
-      setVerifyMemo(nextMemo);
+      setVerify((prev) => ({ ...prev, memo: nextMemo }));
     }
-  }, [mode, verify.zId, verify.requestId, pendingEdits, verify.memo, setVerifyMemo]);
+  }, [mode, verify.zId, verify.requestId, pendingEdits, verify.memo, setVerify]);
 
   // Computed URIs
   const uri = useMemo(() => {
@@ -175,6 +174,35 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     setPendingEdits,
   };
 
+  const setDraftMemo = useCallback((memo: string) => {
+    setDraft((prev) => ({ ...prev, memo }));
+  }, [setDraft]);
+
+  const setDraftAmount = useCallback((amount: string) => {
+    setDraft((prev) => ({ ...prev, amount }));
+  }, [setDraft]);
+
+  const handleSetAsset = useCallback((tokenId: string) => {
+    // If selecting ZEC, exit swap mode
+    if (tokenId === swapContext.zecTokenId) {
+      swapContext.resetSwapState();
+      return;
+    }
+
+    // Enter swap mode with selected token
+    const token = swapContext.tokenOptions?.find(
+      (t) => (t.id ?? t.assetId ?? t.tokenId ?? t.asset) === tokenId
+    );
+    if (token) {
+      swapContext.setOriginTokenId(tokenId);
+      // Clear quote but keep other state
+      swapContext.setQuoteData(null);
+      swapContext.setQuotePreview(null);
+      swapContext.setQuoteStatus("");
+      swapContext.setSwapError("");
+    }
+  }, [swapContext]);
+
   const memoComposerProps = {
     profile,
     forceShowQR,
@@ -196,8 +224,29 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
         decimals: token.decimals ?? 8,
       };
     }),
-    onSetAsset: swapContext.setToken,
+    onSetAsset: handleSetAsset,
   };
+
+  const handleSwapAmountChange = useCallback((amount: string) => {
+    swapContext.setSwapAmount(amount);
+    swapContext.setQuoteData(null);
+    swapContext.setQuotePreview(null);
+    swapContext.setQuoteStatus("");
+  }, [swapContext]);
+
+  const handleRefundAddressChange = useCallback((address: string) => {
+    swapContext.setRefundAddress(address);
+    swapContext.setQuoteData(null);
+    swapContext.setQuotePreview(null);
+    swapContext.setQuoteStatus("");
+  }, [swapContext]);
+
+  const handleSlippageToleranceChange = useCallback((slippage: string) => {
+    swapContext.setSlippageTolerance(slippage);
+    swapContext.setQuoteData(null);
+    swapContext.setQuotePreview(null);
+    swapContext.setQuoteStatus("");
+  }, [swapContext]);
 
   const swapComposerProps = {
     profile,
@@ -225,14 +274,22 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     // Computed
     isSwapMode: swapContext.isSwapMode,
     // Actions
-    setToken: swapContext.setToken,
-    setSwapAmount: swapContext.setSwapAmount,
-    setRefundAddress: swapContext.setRefundAddress,
-    setSlippageTolerance: swapContext.setSlippageTolerance,
+    setToken: handleSetAsset,
+    setSwapAmount: handleSwapAmountChange,
+    setRefundAddress: handleRefundAddressChange,
+    setSlippageTolerance: handleSlippageToleranceChange,
     getQuote: swapContext.getQuote,
     confirmSwap: swapContext.confirmSwap,
     resetSwapState: swapContext.resetSwapState,
   };
+
+  const setVerifyRequestId = useCallback((requestId: string | null) => {
+    setVerify((prev) => ({ ...prev, requestId }));
+  }, [setVerify]);
+
+  const setVerifyAmount = useCallback((amount: string) => {
+    setVerify((prev) => ({ ...prev, amount }));
+  }, [setVerify]);
 
   const verificationProps = {
     pendingEdits,

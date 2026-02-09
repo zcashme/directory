@@ -22,7 +22,7 @@ const SwapContext = createContext<SwapContextType | undefined>(undefined);
 
 export function SwapProvider({ children }: { children: ReactNode }) {
   // ===== INPUT STATE (User controls these) =====
-  const [originTokenId, setOriginTokenIdState] = useState<string | null>(null);
+  const [originTokenId, setOriginTokenId] = useState<string | null>(null);
   const [swapAmount, setSwapAmount] = useState<string>("");
   const [refundAddress, setRefundAddress] = useState<string>("");
   const [slippageTolerance, setSlippageTolerance] = useState<string>("0.5");
@@ -88,7 +88,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
         const zecId = getTokenId(zecToken);
         setZecTokenId(zecId);
         if (!originTokenId) {
-          setOriginTokenIdState(zecId);
+          setOriginTokenId(zecId);
         }
       }
     } catch (error) {
@@ -213,7 +213,7 @@ export function SwapProvider({ children }: { children: ReactNode }) {
   // ===== SWAP MODE MANAGEMENT =====
 
   const resetSwapState = useCallback(() => {
-    setOriginTokenIdState(zecTokenId);
+    setOriginTokenId(zecTokenId ?? null);
     setSwapAmount("");
     setRefundAddress("");
     setSlippageTolerance("0.5");
@@ -225,49 +225,6 @@ export function SwapProvider({ children }: { children: ReactNode }) {
     setSwapStatus("");
     setSwapError("");
   }, [zecTokenId]);
-
-  const setToken = useCallback((tokenId: string) => {
-    // If selecting ZEC, exit swap mode
-    if (tokenId === zecTokenId) {
-      setOriginTokenIdState(zecTokenId);
-      resetSwapState();
-      return;
-    }
-
-    // Enter swap mode with selected token
-    const token = tokenOptions.find((t) => getTokenId(t) === tokenId);
-    if (token) {
-      setOriginTokenIdState(getTokenId(token));
-      // Clear quote but keep other state
-      setQuoteData(null);
-      setQuotePreview(null);
-      setQuoteStatus("");
-      setSwapError("");
-    }
-  }, [tokenOptions, zecTokenId, resetSwapState]);
-
-  // ===== QUOTE CLEARING ON INPUT CHANGE =====
-
-  const setSwapAmountWithClear = useCallback((amount: string) => {
-    setSwapAmount(amount);
-    setQuoteData(null);
-    setQuotePreview(null);
-    setQuoteStatus("");
-  }, []);
-
-  const setRefundAddressWithClear = useCallback((address: string) => {
-    setRefundAddress(address);
-    setQuoteData(null);
-    setQuotePreview(null);
-    setQuoteStatus("");
-  }, []);
-
-  const setSlippageToleranceWithClear = useCallback((slippage: string) => {
-    setSlippageTolerance(slippage);
-    setQuoteData(null);
-    setQuotePreview(null);
-    setQuoteStatus("");
-  }, []);
 
   // ===== EFFECTS =====
 
@@ -303,11 +260,25 @@ export function SwapProvider({ children }: { children: ReactNode }) {
     // Computed
     isSwapMode,
 
-    // Actions
-    setToken,
-    setSwapAmount: setSwapAmountWithClear,
-    setRefundAddress: setRefundAddressWithClear,
-    setSlippageTolerance: setSlippageToleranceWithClear,
+    // Setters
+    setTokenOptions,
+    setOriginTokenId,
+    setZecTokenId,
+    setIsLoadingTokens,
+    setSwapAmount,
+    setRefundAddress,
+    setSlippageTolerance,
+    setQuoteData,
+    setQuotePreview,
+    setDepositUri,
+    setStatusKey,
+    setSwapStatus,
+    setIsGettingQuote,
+    setIsConfirming,
+    setQuoteStatus,
+    setSwapError,
+
+    // Async actions
     getQuote,
     confirmSwap,
     resetSwapState,

@@ -13,13 +13,8 @@ declare global {
 const EditsContext = createContext<EditsContextType | undefined>(undefined);
 
 export function EditsProvider({ children }: { children: ReactNode }) {
-  const [pendingEdits, _setPendingEdits] = useState<PendingEdits>({});
+  const [pendingEdits, setPendingEdits] = useState<PendingEdits>({});
   const [editChangesRequested, setEditChangesRequested] = useState<boolean>(false);
-
-  const setPendingEdits = (field: PendingEditsField, value: PendingEditValue) => {
-    _setPendingEdits((prev) => ({ ...prev, [field]: value }));
-  };
-  const clearPendingEdits = () => _setPendingEdits({});
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -29,7 +24,6 @@ export function EditsProvider({ children }: { children: ReactNode }) {
   const value: EditsContextType = {
     pendingEdits,
     setPendingEdits,
-    clearPendingEdits,
     editChangesRequested,
     setEditChangesRequested,
   };
