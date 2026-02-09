@@ -17,7 +17,6 @@ import {
   getAuthProviderForUrl,
   getLinkAuthToken,
   isLinkAuthPending,
-  appendLinkToken,
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
@@ -352,7 +351,7 @@ export default function ProfileCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const { showBack, setShowBack } = useProfileEvents();
   const { setForceShowQR } = useSelectionStore();
-  const { pendingEdits, setPendingEdits } = useEditsStore();
+  const { pendingEdits, addLinkAuthToken } = useEditsStore();
   const { setMode, setVerify } = useMessagingStore();
   const { linksArray, isLoadingLinks, linksLoaded } = useProfileLinks({
     profile,
@@ -403,8 +402,7 @@ export default function ProfileCard({
       return;
     }
     if (!authToken || authPending) return;
-    if (!setPendingEdits) return;
-    appendLinkToken(setPendingEdits, authToken);
+    addLinkAuthToken(authToken);
     setAuthInfoOpen(false);
   };
 
