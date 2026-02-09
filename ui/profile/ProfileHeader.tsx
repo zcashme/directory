@@ -106,7 +106,10 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
-            className="flex-shrink-0 bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
+            className="flex-shrink-0 bg-green-600 text-white px-4 py-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500 transition-transform duration-200"
+            style={{
+              transform: availableUsername ? 'rotateY(360deg)' : 'rotateY(0deg)',
+            }}
           >
             {availableUsername ? 'Claim' : 'Join'}
           </button>
