@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 import { searchProfiles, checkUsernameExists } from "@/lib/directory/searchProfiles";
 import type { SearchProfilesResponse } from "@/lib/api/types";
 
@@ -29,7 +30,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SearchProf
       profiles,
       exists
     });
-  } catch (_error) {
+  } catch {
     return NextResponse.json(
       { error: "Search failed", profiles: [], exists: false },
       { status: 500 }

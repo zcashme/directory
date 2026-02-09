@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { isValidUrl } from "@/lib/profile/validateUrl";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {

@@ -88,7 +88,7 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
     });
 
     return enriched;
-  } catch (_err) {
+  } catch {
     return [];
   }
 }

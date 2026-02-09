@@ -229,7 +229,7 @@ export default function useVerificationFlow(
         if (!result.ok) {
           // Silent failure
         }
-      } catch (_err) {
+      } catch {
         // Silent failure
       }
 

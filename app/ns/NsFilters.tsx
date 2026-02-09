@@ -9,13 +9,13 @@ import { FILTER_BASE, FILTER_CONTENT } from "./directoryNsStyles";
 const getFilterButtonClass = (active: boolean, activeClass: string, hoverClass: string): string => {
   const scopedHoverClass = hoverClass.replace(/hover:/g, "md:hover:");
   return `${FILTER_BASE} md:hover:scale-[1.03] ${
-  active ? activeClass : "bg-white"
-} ${scopedHoverClass}`;
+    active ? activeClass : "bg-white"
+  } ${scopedHoverClass}`;
+};
 
 const resolveIconSrc = (asset: StaticImageData | string | undefined): string | undefined => {
   if (!asset) return undefined;
   return typeof asset === "string" ? asset : asset.src;
-};
 };
 
 export default function NsFilters({

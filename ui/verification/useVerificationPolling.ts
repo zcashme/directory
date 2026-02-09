@@ -57,12 +57,10 @@ export default function useVerificationPolling(): UseVerificationPollingResult {
     verifyQrEnabled,
     verify,
     pollStatus,
-    pollOtpStatus,
     pollOtpPhase,
     pollOtpPhaseHistory,
     otpInlineSuccess,
     pollError,
-    pollStartedAt,
     pollElapsedMs,
     setVerify,
     setPollStatus,
@@ -74,7 +72,6 @@ export default function useVerificationPolling(): UseVerificationPollingResult {
     setPollDebug,
     setPollStartedAt,
     setPollElapsedMs,
-    resetVerificationPolling,
   } = useMessagingStore();
 
   const pollRequestId = verify.requestId;

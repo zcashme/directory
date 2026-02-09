@@ -18,7 +18,7 @@ import type {
   SwapConfirmSuccess,
   SwapStatusData,
 } from "./types";
-import { getTokenId, findToken, toBaseUnits, baseUnitsToDecimal } from "./utils";
+import { findToken, toBaseUnits, baseUnitsToDecimal } from "./utils";
 
 // Configure SDK
 OpenAPI.BASE = "https://1click.chaindefuser.com";

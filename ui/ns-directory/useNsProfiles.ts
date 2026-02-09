@@ -34,7 +34,7 @@ export default function useNsProfiles(
         }
 
         if (!hasInitial) setLoading(false);
-      } catch (_err) {
+      } catch {
         if (!hasInitial) setLoading(false);
       }
     }

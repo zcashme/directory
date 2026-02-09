@@ -262,7 +262,7 @@ function computePendingEdits(
   return result;
 }
 
-export const useEditsStore = create<EditsState>((set, get) => ({
+export const useEditsStore = create<EditsState>((set) => ({
   form: emptyForm,
   original: emptyForm,
   deletedFields: emptyDeletedFields,

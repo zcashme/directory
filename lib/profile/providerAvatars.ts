@@ -177,7 +177,7 @@ export async function applyProviderAvatar(
         const data = await res.json();
         nextUrl = data?.avatar_url || null;
       }
-    } catch (_err) {
+    } catch {
       // Ignore fetch errors
     }
     applyResult(nextUrl);

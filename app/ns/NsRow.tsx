@@ -56,8 +56,7 @@ export default function NsRow({
   const tagline = (profile as Profile & { tagline?: string }).tagline?.trim();
   const bioText = biography ?? tagline ?? "";
   const displayName = profile?.display_name ?? profile?.name ?? "Unnamed";
-  const canonicalName = profile?.name ?? profile?.display_name ?? "";
-  const profileSlug = normalizeSlug(canonicalName);
+  const profileSlug = normalizeSlug(displayName);
 
   return (
     <div
@@ -94,7 +93,7 @@ export default function NsRow({
             </div>
               <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
                 <a
-                  href={`https://zcash.me/${profileUrlSlug}`}
+                  href={`https://zcash.me/${profileSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
