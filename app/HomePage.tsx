@@ -171,16 +171,26 @@ function FannedCard({
   );
 }
 
+const FEATURED_PROFILES_ROUTE = "/api/featured-profiles";
+const FEATURED_REFRESH_INTERVAL_MS = 5 * 60 * 1000;
+
 interface FeaturedCardsSectionProps {
-  featuredProfiles: Profile[];
   onCardClick: (profile: Profile) => void;
 }
 
-function FeaturedCardsSection({ featuredProfiles, onCardClick }: FeaturedCardsSectionProps) {
+function FeaturedCardsSection({ onCardClick }: FeaturedCardsSectionProps) {
+  const [featuredProfiles, setFeaturedProfiles] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isInteracting, setIsInteracting] = useState<boolean>(false);
+  const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+
   const centerIndex = Math.floor(featuredProfiles.length / 2);
-  const [activeCardIndex, setActiveCardIndex] = useState<number>(centerIndex);
+
+  useEffect(() => {
+    setActiveCardIndex(centerIndex);
+  }, [centerIndex]);
 
   useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -197,9 +207,62 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }: FeaturedCardsSe
     return () => clearInterval(interval);
   }, [featuredProfiles.length, isInteracting]);
 
-  const handleCardClick = (index: number, profile: Profile) => {
-    onCardClick(profile);
-  };
+  useEffect(() => {
+    let mounted = true;
+    let controller: AbortController | null = null;
+
+    const fetchProfiles = async () => {
+      controller?.abort();
+      controller = new AbortController();
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(FEATURED_PROFILES_ROUTE, {
+          signal: controller.signal,
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Unable to load featured profiles.");
+        const payload = (await response.json()) as { profiles?: Profile[] };
+        if (!mounted) return;
+        setFeaturedProfiles(Array.isArray(payload.profiles) ? payload.profiles : []);
+      } catch (err) {
+        if (!mounted) return;
+        if ((err as { name?: string }).name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Unable to load featured profiles.");
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    void fetchProfiles();
+    const refresh = setInterval(() => {
+      void fetchProfiles();
+    }, FEATURED_REFRESH_INTERVAL_MS);
+
+    return () => {
+      mounted = false;
+      controller?.abort();
+      clearInterval(refresh);
+    };
+  }, []);
+
+  if (!featuredProfiles.length) {
+    if (loading || error) {
+      return (
+        <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
+          <div
+            className={`rounded-2xl border px-6 py-10 text-center text-sm font-semibold ${
+              error ? "border-red-200 bg-red-50 text-red-700" : "border-gray-200 bg-white/70 text-gray-600"
+            }`}
+          >
+            {error ?? "Loading featured profiles..."}
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
 
   const getDesktopPosition = (index: number) => {
     const count = featuredProfiles.length;
@@ -219,50 +282,56 @@ function FeaturedCardsSection({ featuredProfiles, onCardClick }: FeaturedCardsSe
 
   const getStackIndex = (index: number) => {
     if (!isMobile) return index;
-    return (index - activeCardIndex + featuredProfiles.length) % featuredProfiles.length;
+    const count = featuredProfiles.length;
+    if (!count) return index;
+    return (index - activeCardIndex + count) % count;
   };
 
-  if (featuredProfiles.length === 0) return null;
+  const handleCardClick = (profile: Profile) => {
+    onCardClick(profile);
+  };
 
   return (
-    <div className="mb-16" style={{ overflowX: "clip" }}>
-      <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
-        {featuredProfiles.map((profile, index) => {
-          const stackIndex = getStackIndex(index);
-          const isActive = isMobile && index === activeCardIndex;
-          const isSpotlit = !isMobile && index === activeCardIndex;
-          const desktopPos = getDesktopPosition(index);
-          return (
-            <FannedCard
-              key={profile.id ?? profile.address}
-              profile={profile}
-              rotation={desktopPos.rotation}
-              offset={desktopPos.offset}
-              verticalOffset={desktopPos.verticalOffset}
-              zIndex={desktopPos.zIndex}
-              isMobile={isMobile}
-              isActive={isActive}
-              stackIndex={stackIndex}
-              isSpotlit={isSpotlit}
-              shimmerSpeed={isSpotlit ? "card-shimmer" : ""}
-              onInteractionStart={() => setIsInteracting(true)}
-              onInteractionEnd={() => setIsInteracting(false)}
-              onClick={() => handleCardClick(index, profile)}
-            />
-          );
-        })}
-      </div>
-      {isMobile && featuredProfiles.length > 1 && (
-        <div className="flex justify-center gap-2 mt-4">
-          {featuredProfiles.map((profile, index) => (
-            <button
-              key={profile.id ?? `indicator-${index}`}
-              onClick={() => setActiveCardIndex(index)}
-              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
-            />
-          ))}
+    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
+      <div className="mb-16" style={{ overflowX: "clip" }}>
+        <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
+          {featuredProfiles.map((profile, index) => {
+            const stackIndex = getStackIndex(index);
+            const isActive = isMobile && index === activeCardIndex;
+            const isSpotlit = !isMobile && index === activeCardIndex;
+            const desktopPos = getDesktopPosition(index);
+            return (
+              <FannedCard
+                key={profile.id ?? profile.address}
+                profile={profile}
+                rotation={desktopPos.rotation}
+                offset={desktopPos.offset}
+                verticalOffset={desktopPos.verticalOffset}
+                zIndex={desktopPos.zIndex}
+                isMobile={isMobile}
+                isActive={isActive}
+                stackIndex={stackIndex}
+                isSpotlit={isSpotlit}
+                shimmerSpeed={isSpotlit ? "card-shimmer" : ""}
+                onInteractionStart={() => setIsInteracting(true)}
+                onInteractionEnd={() => setIsInteracting(false)}
+                onClick={() => handleCardClick(profile)}
+              />
+            );
+          })}
         </div>
-      )}
+        {isMobile && featuredProfiles.length > 1 && (
+          <div className="flex justify-center gap-2 mt-4">
+            {featuredProfiles.map((profile, index) => (
+              <button
+                key={profile.id ?? `indicator-${index}`}
+                onClick={() => setActiveCardIndex(index)}
+                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -281,28 +350,24 @@ const SOCIAL_LINKS: SocialLink[] = [
 ];
 
 interface HomePageProps {
-  initialFeaturedProfiles?: Profile[];
   profileCount?: number;
 }
 
-export default function HomePage({ initialFeaturedProfiles = [], profileCount = 0 }: HomePageProps) {
+export default function HomePage({ profileCount = 0 }: HomePageProps) {
   const router = useRouter();
+  const handleCardClick = useCallback(
+    (profile: Profile) => {
+      const slug = buildSlug(profile);
+      if (slug) router.push(`/${slug}`);
+    },
+    [router]
+  );
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="flex-1">
         <ProfileHeader profileCount={profileCount} />
-        {initialFeaturedProfiles.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
-            <FeaturedCardsSection
-              featuredProfiles={initialFeaturedProfiles}
-              onCardClick={(profile) => {
-                const slug = buildSlug(profile);
-                if (slug) router.push(`/${slug}`);
-              }}
-            />
-          </div>
-        )}
+        <FeaturedCardsSection onCardClick={handleCardClick} />
       </div>
       <footer className="mt-auto py-8 border-t border-gray-200">
         <div className="max-w-lg mx-auto px-4">
