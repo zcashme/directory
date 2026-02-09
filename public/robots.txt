@@ -1,4 +1,228 @@
+# robots.txt for zcash.me
+# Last updated: 2026-02-09
+
+# Default rule for all bots - welcome!
 User-agent: *
 Allow: /
+Crawl-delay: 1
 
+# Disallow only what's necessary
+Disallow: /api/
+Disallow: /_next/
+Disallow: /providers/
+
+# But allow images and static media for better SEO
+Allow: /_next/image
+Allow: /_next/static/
+Allow: /favicon.ico
+Allow: /favicon.png
+Allow: /*.png
+Allow: /*.jpg
+Allow: /*.jpeg
+Allow: /*.gif
+Allow: /*.svg
+Allow: /*.webp
+
+# Explicitly allow all public pages
+Allow: /
+Allow: /ns/
+Allow: /swap/
+Allow: /privacy/
+Allow: /terms/
+Allow: /*/
+
+# Major search engines - full access, no restrictions
+User-agent: Googlebot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 1
+
+User-agent: Slurp
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+
+User-agent: DuckDuckBot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+
+User-agent: Baiduspider
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 2
+
+User-agent: Yandex
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 2
+
+# Social media bots - full access for previews
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: TelegramBot
+Allow: /
+
+User-agent: WhatsApp
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: redditbot
+Allow: /
+
+# AI/LLM bots - allowed but rate limited
+User-agent: GPTBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: ChatGPT-User
+Allow: /
+Crawl-delay: 2
+
+User-agent: Google-Extended
+Allow: /
+Crawl-delay: 2
+
+User-agent: CCBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: anthropic-ai
+Allow: /
+Crawl-delay: 2
+
+User-agent: Claude-Web
+Allow: /
+Crawl-delay: 2
+
+User-agent: cohere-ai
+Allow: /
+Crawl-delay: 2
+
+User-agent: PerplexityBot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Amazonbot
+Allow: /
+Crawl-delay: 2
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+Crawl-delay: 2
+
+# SEO/Marketing bots - allowed but slowed down
+User-agent: AhrefsBot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 10
+
+User-agent: MJ12bot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 10
+
+User-agent: DotBot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 10
+
+User-agent: Screaming Frog SEO Spider
+Allow: /
+Crawl-delay: 5
+
+User-agent: DataForSeoBot
+Allow: /
+Disallow: /api/
+Disallow: /providers/
+Crawl-delay: 10
+
+# Block only truly problematic bots
+User-agent: SiteAuditBot
+Disallow: /
+
+User-agent: SiteLockSpider
+Disallow: /
+
+User-agent: BLEXBot
+Disallow: /
+
+User-agent: LinkpadBot
+Disallow: /
+
+User-agent: MegaIndex
+Disallow: /
+
+User-agent: Scrapy
+Disallow: /
+
+User-agent: HTTrack
+Disallow: /
+
+User-agent: Wget
+Disallow: /
+
+User-agent: WebCopier
+Disallow: /
+
+User-agent: WebReaper
+Disallow: /
+
+User-agent: EmailCollector
+Disallow: /
+
+User-agent: EmailSiphon
+Disallow: /
+
+User-agent: WebBandit
+Disallow: /
+
+User-agent: NICErsPRO
+Disallow: /
+
+# Sitemaps
 Sitemap: https://zcash.me/sitemap.xml
+
+# Host directive
+Host: https://zcash.me
