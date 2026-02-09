@@ -140,7 +140,6 @@ export default function ProfilePage({
     slippage?: string;
   }) => {
     setIsConfirming(true);
-    swap.setSwapStatus("Confirming swap...");
     swap.setSwapError("");
 
     try {
@@ -158,10 +157,8 @@ export default function ProfilePage({
         swap.setQuoteData(result);
         swap.setDepositUri(result.paymentUri);
         swap.setStatusKey(result.statusKey);
-        swap.setSwapStatus("Waiting for deposit...");
       } else {
         swap.setSwapError(result.error);
-        swap.setSwapStatus("");
       }
 
       return result;
@@ -223,7 +220,6 @@ export default function ProfilePage({
                     quoteData={swap.quoteData}
                     depositUri={swap.depositUri}
                     statusKey={swap.statusKey}
-                    swapStatus={swap.swapStatus}
                     isGettingQuote={isGettingQuote}
                     isConfirming={isConfirming}
                     quoteStatus={swap.quoteStatus}

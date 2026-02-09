@@ -40,7 +40,6 @@ interface SwapState {
   quotePreview: SwapQuoteDisplay | null;
   depositUri: string;
   statusKey: { depositAddress: string } | null;
-  swapStatus: string;
   quoteStatus: string;
   swapError: string;
 
@@ -58,7 +57,6 @@ interface SwapState {
   setQuotePreview: (preview: SwapQuoteDisplay | null) => void;
   setDepositUri: (uri: string) => void;
   setStatusKey: (key: { depositAddress: string } | null) => void;
-  setSwapStatus: (status: string) => void;
   setQuoteStatus: (status: string) => void;
   setSwapError: (error: string) => void;
   resetQuote: () => void;
@@ -100,7 +98,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   quotePreview: null,
   depositUri: '',
   statusKey: null,
-  swapStatus: '',
   quoteStatus: '',
   swapError: '',
   statusData: null,
@@ -121,7 +118,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         quoteStatus: '',
         depositUri: '',
         statusKey: null,
-        swapStatus: '',
         swapError: '',
         statusData: null,
         statusError: '',
@@ -136,7 +132,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   setQuotePreview: (preview) => set({ quotePreview: preview }),
   setDepositUri: (uri) => set({ depositUri: uri }),
   setStatusKey: (key) => set({ statusKey: key }),
-  setSwapStatus: (status) => set({ swapStatus: status }),
   setQuoteStatus: (status) => set({ quoteStatus: status }),
   setSwapError: (error) => set({ swapError: error }),
   resetQuote: () => set({ quoteData: null, quotePreview: null, quoteStatus: '' }),
@@ -151,7 +146,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       quoteStatus: '',
       depositUri: '',
       statusKey: null,
-      swapStatus: '',
       swapError: '',
     }),
 

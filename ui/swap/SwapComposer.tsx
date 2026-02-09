@@ -30,7 +30,6 @@ interface SwapComposerProps {
   // Swap output state
   depositUri: string;
   statusKey: { depositAddress: string } | null;
-  swapStatus: string;
   // UI state
   isGettingQuote: boolean;
   isConfirming: boolean;
@@ -75,7 +74,6 @@ export default function SwapComposer({
   // Swap output state
   depositUri,
   statusKey,
-  swapStatus,
   // UI state
   isGettingQuote,
   isConfirming,
@@ -180,7 +178,7 @@ export default function SwapComposer({
       />
 
       {/* QUOTE PREVIEW DISPLAY (After "Get quote" succeeds) */}
-      {quotePreview && !swapStatus && (
+      {quotePreview && (
         <div className="mt-3 p-4 rounded-xl border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
           <div className="space-y-2">
             <div className="flex justify-between items-center">
@@ -227,11 +225,10 @@ export default function SwapComposer({
         depositAddress={statusKey?.depositAddress}
         amountDecimal={depositAmountDecimal}
         originSymbol={originSymbol}
-        swapStatus={swapStatus}
       />
 
       {/* STATUS MESSAGE (Before quote/polling) */}
-      {quoteStatus && !quotePreview && !swapStatus && (
+      {quoteStatus && !quotePreview && !statusKey?.depositAddress && (
         <div className="mt-3 p-3 rounded-xl border border-gray-800 bg-white text-sm text-gray-700">
           {quoteStatus}
         </div>
@@ -244,8 +241,8 @@ export default function SwapComposer({
         </div>
       )}
 
-      {/* SWAP SETTINGS (Hidden during polling) */}
-      {!swapStatus && (
+      {/* SWAP SETTINGS (Hidden after confirmation) */}
+      {!statusKey?.depositAddress && (
         <div className="mt-4 p-4 bg-transparent rounded-xl border border-gray-800">
           <h3 className="text-sm font-semibold text-gray-800 mb-4">Slippage Tolerance (%)</h3>
 

@@ -6,7 +6,6 @@ interface SwapDepositDisplayProps {
   depositAddress?: string;
   amountDecimal?: string;
   originSymbol: string;
-  swapStatus: string;
 }
 
 export default function SwapDepositDisplay({
@@ -14,15 +13,10 @@ export default function SwapDepositDisplay({
   depositAddress,
   amountDecimal,
   originSymbol,
-  swapStatus,
 }: SwapDepositDisplayProps) {
 
   // Don't render if no deposit address
   if (!depositAddress) return null;
-
-  // Only show for active swap statuses
-  const activeStatuses = ['PENDING_DEPOSIT', 'PROCESSING', 'INCOMPLETE_DEPOSIT'];
-  if (!swapStatus || !activeStatuses.includes(swapStatus)) return null;
 
   // Detect payment URI (BTC) vs address-only
   const hasPaymentUri = depositUri?.includes(':');
