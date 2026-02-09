@@ -8,10 +8,10 @@ import type { Token } from "@/lib/swap/types";
 import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 // Stores
-import { useSelectionStore, useEditsStore } from "@/lib/stores/ui-state";
+import { useSelectionStore } from "@/lib/stores/selection";
+import { useEditsStore } from "@/lib/stores/edits";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import { useSwapStore } from "@/lib/stores/swap";
-import { useSwapTokens, useGetSwapQuote, useConfirmSwap } from "@/lib/query/swap-queries";
 
 // Zcash utilities
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
@@ -71,9 +71,6 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     verify, setVerify,
   } = useMessagingStore();
   const swap = useSwapStore();
-  const { data: tokens = [] } = useSwapTokens();
-  const getQuoteMutation = useGetSwapQuote();
-  const confirmSwapMutation = useConfirmSwap();
 
   // Feedback events effect
   useEffect(() => {
