@@ -31,6 +31,7 @@ export interface SwapStatusData {
 }
 
 interface SwapState {
+  currentProfileAddress: string | null;
   originTokenId: string | null;
   swapAmount: string;
   refundAddress: string;
@@ -48,6 +49,7 @@ interface SwapState {
   statusError: string;
   pollInterval: NodeJS.Timeout | null;
 
+  ensureProfile: (address: string, zecTokenId: string | null) => void;
   setOriginTokenId: (id: string | null) => void;
   setSwapAmount: (amount: string) => void;
   setRefundAddress: (address: string) => void;
@@ -89,6 +91,7 @@ const poll = async (depositAddress: string, set: (state: Partial<SwapState>) => 
 };
 
 export const useSwapStore = create<SwapState>((set, get) => ({
+  currentProfileAddress: null,
   originTokenId: null,
   swapAmount: '',
   refundAddress: '',
@@ -104,6 +107,27 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   statusError: '',
   pollInterval: null,
 
+  ensureProfile: (address, zecTokenId) => {
+    if (get().currentProfileAddress !== address) {
+      get().stopPolling();
+      set({
+        currentProfileAddress: address,
+        originTokenId: zecTokenId,
+        swapAmount: '',
+        refundAddress: '',
+        slippageTolerance: '0.5',
+        quoteData: null,
+        quotePreview: null,
+        quoteStatus: '',
+        depositUri: '',
+        statusKey: null,
+        swapStatus: '',
+        swapError: '',
+        statusData: null,
+        statusError: '',
+      });
+    }
+  },
   setOriginTokenId: (id) => set({ originTokenId: id }),
   setSwapAmount: (amount) => set({ swapAmount: amount }),
   setRefundAddress: (address) => set({ refundAddress: address }),

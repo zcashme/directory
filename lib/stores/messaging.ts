@@ -10,6 +10,7 @@ export type ProfileMode = "verification" | "swap" | "memo";
  * Messaging store - manages memo/message composition and verification state for Zcash
  */
 interface MessagingState {
+  currentProfileAddress: string | null;
   mode: ProfileMode;
   showBack: boolean;
   verify: {
@@ -30,6 +31,7 @@ interface MessagingState {
   pollElapsedMs: number;
 
   // Actions
+  ensureProfile: (address: string) => void;
   setMode: (mode: ProfileMode | ((prev: ProfileMode) => ProfileMode)) => void;
   setShowBack: (showBack: boolean) => void;
   setVerify: (verify: { amount: string; zId: number | null; requestId: string | null } | ((prev: { amount: string; zId: number | null; requestId: string | null }) => { amount: string; zId: number | null; requestId: string | null })) => void;
@@ -61,12 +63,24 @@ const initialVerifyState = {
   pollElapsedMs: 0,
 };
 
-export const useMessagingStore = create<MessagingState>((set) => ({
+export const useMessagingStore = create<MessagingState>((set, get) => ({
+  currentProfileAddress: null,
   mode: 'memo',
   showBack: false,
   verify: { amount: '0.003', zId: null, requestId: null },
   ...initialVerifyState,
 
+  ensureProfile: (address) => {
+    if (get().currentProfileAddress !== address) {
+      set({
+        currentProfileAddress: address,
+        mode: 'memo',
+        showBack: false,
+        verify: { amount: '0.003', zId: null, requestId: null },
+        ...initialVerifyState,
+      });
+    }
+  },
   setMode: (mode) =>
     set((state) => ({
       mode: typeof mode === 'function' ? mode(state.mode) : mode,
