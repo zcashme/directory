@@ -22,6 +22,7 @@ import {
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
+import { useMessagingStore } from "@/lib/stores/messaging";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
@@ -352,8 +353,9 @@ export default function ProfileCard({
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { showBack, setShowBack } = useProfileEvents(profile);
+  const { showBack, setShowBack } = useProfileEvents();
   const { setForceShowQR, pendingEdits, setPendingEdits } = feedbackProps;
+  const { setMode, setVerify } = useMessagingStore();
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
     const expected = buildSlug(profile);
@@ -562,17 +564,14 @@ export default function ProfileCard({
                     onClick={() => {
                       setShowBack(true);
                       setMenuOpen(false);
-                      window.dispatchEvent(
-                        new CustomEvent("enterSignInMode", {
-                          detail: {
-                            zId: profile.id,
-                            address: profile.address || "",
-                            name: profile.name || "",
-                            verified: !!profile.address_verified,
-                            since: profile.since || null,
-                          },
-                        })
-                      );
+                      setVerify((prev) => ({
+                        ...prev,
+                        zId: profile.id ?? null,
+                        memo: profile.id ? `{z:${profile.id}}` : prev.memo,
+                        requestId: null,
+                        amount: "0",
+                      }));
+                      setMode("verification");
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-blue-50"
                   >
@@ -938,12 +937,12 @@ export default function ProfileCard({
             <button
               onClick={() => {
                 (window as any).skipZcashFeedbackScroll = true;
-
                 setShowBack(false);
-                window.dispatchEvent(new CustomEvent("enterDraftMode"));
-                window.dispatchEvent(new CustomEvent("forceFeedbackNoteMode"));
+                setMode("memo");
+                if (setForceShowQR) {
+                  setForceShowQR(false);
+                }
               }}
-
               title="Return to front"
               aria-label="Return to front"
               className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"

@@ -21,7 +21,7 @@ interface MessagingState {
 }
 
 export const useMessagingStore = create<MessagingState>((set) => ({
-  mode: 'note',
+  mode: 'memo',
   draft: { memo: '', amount: '' },
   verify: { memo: '', amount: '0', zId: null, requestId: null },
   setMode: (mode) =>

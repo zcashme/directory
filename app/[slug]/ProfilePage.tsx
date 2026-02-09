@@ -1,11 +1,8 @@
 "use client";
 
-// React & Next.js
-import { useEffect, useState, useCallback, useMemo } from "react";
-import type { ReactNode } from "react";
-import type { Profile, PendingEditsField, PendingEditValue } from "@/lib/profile/types";
+import { useEffect, useState, useCallback, useMemo, useTransition } from "react";
+import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
-import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 // Stores
 import { useSelectionStore } from "@/lib/stores/selection";
@@ -17,38 +14,17 @@ import { useSwapStore } from "@/lib/stores/swap";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 import { getTokenId } from "@/lib/swap/swapPayload";
 
-// UI Components - Profile
+// Server actions
+import { getSwapTokens } from "@/lib/swap/fetchTokens";
+import { getSwapQuote } from "@/lib/swap/quoteAction";
+import { confirmSwapAction } from "@/lib/swap/confirmAction";
+
+// UI Components
 import ProfileCard from "@/ui/profile/ProfileCard";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
-
-// UI Components - Messaging
 import MemoComposer from "@/ui/messaging/MemoComposer";
-
-// UI Components - Verification
 import ProfileVerification from "@/ui/verification/ProfileVerification";
-
-// UI Components - Swap
 import SwapComposer from "@/ui/swap/SwapComposer";
-
-// Helper Components
-interface ZcashCardWrapperProps {
-  title?: ReactNode;
-  children: ReactNode;
-}
-
-type PendingEditsEvent = CustomEvent<{
-  field: PendingEditsField;
-  value: PendingEditValue;
-}>;
-
-function ZcashCardWrapper({ title, children }: ZcashCardWrapperProps) {
-  return (
-    <div className="p-0 mt-4 bg-transparent shadow-none border-none rounded-none">
-      {title && <h3 className="font-semibold text-gray-800 mb-2">{title}</h3>}
-      {children}
-    </div>
-  );
-}
 
 interface ProfilePageProps {
   initialProfile: Profile;
@@ -56,133 +32,75 @@ interface ProfilePageProps {
   duplicateNameCount?: number;
 }
 
-// Main Component
-export default function ProfilePage({ initialProfile, profileCount, duplicateNameCount }: ProfilePageProps) {
+export default function ProfilePage({
+  initialProfile,
+  profileCount,
+  duplicateNameCount
+}: ProfilePageProps) {
   // State
   const [profile] = useState<Profile>(initialProfile);
-  const [loading] = useState<boolean>(false);
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
+  const [quoteTransition, startQuoteTransition] = useTransition();
+  const [confirmTransition, startConfirmTransition] = useTransition();
 
   // Stores
   const { forceShowQR, setForceShowQR } = useSelectionStore();
   const { pendingEdits, setPendingEdits } = useEditsStore();
-  const {
-    mode, setMode,
-    draft, setDraft,
-    verify, setVerify,
-  } = useMessagingStore();
+  const { mode, draft, setDraft, verify, setVerify } = useMessagingStore();
   const swap = useSwapStore();
 
-  // Feedback events effect
+  // Fetch tokens on mount
   useEffect(() => {
-    const handleSignIn = (event: Event) => {
-      const customEvent = event as CustomEvent<{ zId?: number }>;
-      const { zId } = customEvent.detail ?? {};
-      setVerify((prev) => ({
-        ...prev,
-        zId: zId ?? null,
-        memo: zId ? `{z:${zId}}` : prev.memo,
-        requestId: null,
-        amount: "0",
-      }));
-      setMode("signin");
-    };
+    setIsLoadingTokens(true);
+    getSwapTokens()
+      .then((result) => {
+        if (result.ok) {
+          setTokens(result.data);
+        }
+      })
+      .finally(() => setIsLoadingTokens(false));
+  }, []);
 
-    const handleDraft = () => setMode("note");
-
-    const handlePendingEdits = (event: Event) => {
-      const customEvent = event as PendingEditsEvent;
-      const detail = customEvent.detail;
-      if (!detail) return;
-      setPendingEdits((prev) => ({ ...prev, [detail.field]: detail.value }));
-    };
-
-    window.addEventListener("enterSignInMode", handleSignIn);
-    window.addEventListener("enterDraftMode", handleDraft);
-    window.addEventListener("pendingEditsUpdated", handlePendingEdits);
-
-    return () => {
-      window.removeEventListener("enterSignInMode", handleSignIn);
-      window.removeEventListener("enterDraftMode", handleDraft);
-      window.removeEventListener("pendingEditsUpdated", handlePendingEdits);
-    };
-  }, [setMode, setPendingEdits, setVerify]);
-
-  // Memo controller logic
-  const address = profile?.address;
-
-  // Update verify memo when in signin mode with pending edits
+  // Update verification memo when pending edits change
   useEffect(() => {
-    if (mode !== "signin") return;
+    if (mode !== "verification") return;
     const zId = verify.zId ?? null;
     if (!zId) return;
-    const requestId = verify.requestId ?? null;
 
     const profileEdits = pendingEdits.profile ?? {};
     const linkTokens = pendingEdits.l ?? [];
-    const hasProfileEdits = Object.keys(profileEdits).length > 0;
-    const hasLinkTokens = linkTokens.length > 0;
-    const hasEdits = hasProfileEdits || hasLinkTokens;
+    const hasEdits = Object.keys(profileEdits).length > 0 || linkTokens.length > 0;
 
-    const profileDiff = {
-      ...profileEdits,
-      l: linkTokens,
-    };
+    const profileDiff = hasEdits ? { ...profileEdits, l: linkTokens } : {};
+    const nextMemo = buildZcashEditMemo(profileDiff, String(zId), verify.requestId ?? null);
 
-    const nextMemo = buildZcashEditMemo(hasEdits ? profileDiff : {}, String(zId), requestId);
     if (nextMemo !== verify.memo) {
       setVerify((prev) => ({ ...prev, memo: nextMemo }));
     }
-  }, [mode, verify.zId, verify.requestId, pendingEdits, verify.memo, setVerify]);
+  }, [mode, verify.zId, verify.requestId, verify.memo, pendingEdits, setVerify]);
 
-  // Computed URIs
-  const uri = useMemo(() => {
-    const memo = draft.memo || "";
-    const amount = draft.amount || "0";
-    return buildZcashUri(address, amount, memo);
-  }, [address, draft]);
-
+  // Build URIs
+  const memoUri = useMemo(() => {
+    return buildZcashUri(profile.address, draft.amount || "0", draft.memo || "");
+  }, [profile.address, draft.amount, draft.memo]);
 
   const openWallet = useCallback(() => {
-    if (!uri) return;
-    window.open(uri, "_blank");
-  }, [uri]);
+    if (memoUri) window.open(memoUri, "_blank");
+  }, [memoUri]);
 
+  // Token selection
+  const selectedToken = tokens.find((t) => getTokenId(t) === swap.originTokenId);
+  const originSymbol = selectedToken?.symbol ?? "ZEC";
+  const zecToken = tokens.find((t) =>
+    t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
+  );
+  const zecTokenId = getTokenId(zecToken) ?? null;
+  const isSwapMode = swap.originTokenId !== null &&
+                     zecTokenId !== null &&
+                     swap.originTokenId !== zecTokenId;
 
-
-  // Effects - Event Listeners
-  useEffect(() => {
-    const handler = () => {
-      setMode("note");
-      setForceShowQR(false);
-    };
-    window.addEventListener("forceFeedbackNoteMode", handler);
-    return () => window.removeEventListener("forceFeedbackNoteMode", handler);
-  }, [setMode, setForceShowQR]);
-
-  // Early Returns
-  if (loading || !profile) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading profile...</div>
-      </div>
-    );
-  }
-
-  // Props bundles for UI components
-  const feedbackProps: FeedbackProps = {
-    setForceShowQR,
-    pendingEdits,
-    setPendingEdits,
-  };
-
-  const setDraftMemo = useCallback((memo: string) => {
-    setDraft((prev) => ({ ...prev, memo }));
-  }, [setDraft]);
-
-  const setDraftAmount = useCallback((amount: string) => {
-    setDraft((prev) => ({ ...prev, amount }));
-  }, [setDraft]);
-
+  // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
     swap.setOriginTokenId(tokenId);
     swap.setQuoteData(null);
@@ -191,20 +109,72 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     swap.setSwapError("");
   }, [swap]);
 
-  const selectedToken = tokens.find((t) => getTokenId(t) === swap.originTokenId);
-  const originSymbol = selectedToken?.symbol ?? "ZEC";
+  const handleGetQuote = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
+    let result = null;
+    startQuoteTransition(() => {
+      getSwapQuote({
+        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        toToken: params.toToken ?? zecTokenId ?? "",
+        amountIn: params.amountIn,
+        destAddress: params.destAddress,
+        refundAddress: params.refund ?? swap.refundAddress,
+        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+      }).then((r) => { result = r; });
+    });
+    return result;
+  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
+
+  const handleConfirmSwap = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
+    let result = null;
+    startConfirmTransition(() => {
+      confirmSwapAction({
+        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        toToken: params.toToken ?? zecTokenId ?? "",
+        amountIn: params.amountIn,
+        destAddress: params.destAddress,
+        refundAddress: params.refund ?? swap.refundAddress,
+        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+      }).then((r) => { result = r; });
+    });
+    return result;
+  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
+
+  // Props bundles
+  const feedbackProps = {
+    setForceShowQR,
+    pendingEdits,
+    setPendingEdits,
+  };
 
   const memoComposerProps = {
     profile,
     forceShowQR,
-    uri,
+    uri: memoUri,
     memo: draft.memo ?? "",
     amount: draft.amount ?? "",
     openWallet,
-    setDraftMemo,
-    setDraftAmount,
+    setDraftMemo: useCallback((memo: string) => {
+      setDraft((prev) => ({ ...prev, memo }));
+    }, [setDraft]),
+    setDraftAmount: useCallback((amount: string) => {
+      setDraft((prev) => ({ ...prev, amount }));
+    }, [setDraft]),
     asset: originSymbol,
-    assetOptions: (tokens ?? []).map((token: Token) => ({
+    assetOptions: tokens.map((token) => ({
       id: getTokenId(token) ?? "",
       symbol: token.symbol,
       label: `${token.symbol} - ${token.blockchain}`,
@@ -215,86 +185,12 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     onSetAsset: handleSetAsset,
   };
 
-  const handleSwapAmountChange = useCallback((amount: string) => {
-    swap.setSwapAmount(amount);
-    swap.setQuoteData(null);
-    swap.setQuotePreview(null);
-    swap.setQuoteStatus("");
-  }, [swap]);
-
-  const handleRefundAddressChange = useCallback((address: string) => {
-    swap.setRefundAddress(address);
-    swap.setQuoteData(null);
-    swap.setQuotePreview(null);
-    swap.setQuoteStatus("");
-  }, [swap]);
-
-  const handleSlippageToleranceChange = useCallback((slippage: string) => {
-    swap.setSlippageTolerance(slippage);
-    swap.setQuoteData(null);
-    swap.setQuotePreview(null);
-    swap.setQuoteStatus("");
-  }, [swap]);
-
-  const zecToken = tokens.find((t) =>
-    t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
-  );
-  const zecTokenId = getTokenId(zecToken) ?? null;
-
-  const handleGetQuote = useCallback(async (params: {
-    amountIn: string;
-    destAddress: string;
-    fromToken?: string;
-    toToken?: string;
-    refund?: string;
-    slippage?: string;
-  }) => {
-    try {
-      const result = await getQuoteMutation.mutateAsync({
-        fromToken: params.fromToken ?? swap.originTokenId ?? "",
-        toToken: params.toToken ?? zecTokenId ?? "",
-        amountIn: params.amountIn,
-        destAddress: params.destAddress,
-        refundAddress: params.refund ?? swap.refundAddress,
-        slippageTolerance: params.slippage ?? swap.slippageTolerance,
-      });
-      return result;
-    } catch {
-      return null;
-    }
-  }, [getQuoteMutation, swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
-
-  const handleConfirmSwap = useCallback(async (params: {
-    amountIn: string;
-    destAddress: string;
-    fromToken?: string;
-    toToken?: string;
-    refund?: string;
-    slippage?: string;
-  }) => {
-    try {
-      const result = await confirmSwapMutation.mutateAsync({
-        fromToken: params.fromToken ?? swap.originTokenId ?? "",
-        toToken: params.toToken ?? zecTokenId ?? "",
-        amountIn: params.amountIn,
-        destAddress: params.destAddress,
-        refundAddress: params.refund ?? swap.refundAddress,
-        slippageTolerance: params.slippage ?? swap.slippageTolerance,
-      });
-      return result;
-    } catch {
-      return null;
-    }
-  }, [confirmSwapMutation, swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
-
-  const isSwapMode = swap.originTokenId !== null && zecTokenId !== null && swap.originTokenId !== zecTokenId;
-
   const swapComposerProps = {
     profile,
-    tokenOptions: tokens ?? [],
+    tokenOptions: tokens,
     originTokenId: swap.originTokenId,
-    originSymbol: originSymbol,
-    zecTokenId: zecTokenId,
+    originSymbol,
+    zecTokenId,
     swapAmount: swap.swapAmount,
     refundAddress: swap.refundAddress,
     slippageTolerance: swap.slippageTolerance,
@@ -303,44 +199,64 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     depositUri: swap.depositUri,
     statusKey: swap.statusKey,
     swapStatus: swap.swapStatus,
-    isGettingQuote: false,
-    isConfirming: false,
+    isGettingQuote: quoteTransition,
+    isConfirming: confirmTransition,
     quoteStatus: swap.quoteStatus,
     swapError: swap.swapError,
-    isSwapMode: isSwapMode,
+    isSwapMode,
     setToken: handleSetAsset,
-    setSwapAmount: handleSwapAmountChange,
-    setRefundAddress: handleRefundAddressChange,
-    setSlippageTolerance: handleSlippageToleranceChange,
+    setSwapAmount: useCallback((amount: string) => {
+      swap.setSwapAmount(amount);
+      swap.setQuoteData(null);
+      swap.setQuotePreview(null);
+      swap.setQuoteStatus("");
+    }, [swap]),
+    setRefundAddress: useCallback((address: string) => {
+      swap.setRefundAddress(address);
+      swap.setQuoteData(null);
+      swap.setQuotePreview(null);
+      swap.setQuoteStatus("");
+    }, [swap]),
+    setSlippageTolerance: useCallback((slippage: string) => {
+      swap.setSlippageTolerance(slippage);
+      swap.setQuoteData(null);
+      swap.setQuotePreview(null);
+      swap.setQuoteStatus("");
+    }, [swap]),
     getQuote: handleGetQuote,
     confirmSwap: handleConfirmSwap,
-    resetSwapState: () => { swap.resetSwapState(zecTokenId); },
+    resetSwapState: () => swap.resetSwapState(zecTokenId),
   };
-
-  const setVerifyRequestId = useCallback((requestId: string | null) => {
-    setVerify((prev) => ({ ...prev, requestId }));
-  }, [setVerify]);
-
-  const setVerifyAmount = useCallback((amount: string) => {
-    setVerify((prev) => ({ ...prev, amount }));
-  }, [setVerify]);
-
-  const setVerifyMemo = useCallback((memo: string) => {
-    setVerify((prev) => ({ ...prev, memo }));
-  }, [setVerify]);
 
   const verificationProps = {
     pendingEdits,
     verify,
-    setVerifyRequestId,
-    setVerifyAmount,
-    setVerifyMemo,
+    setVerifyRequestId: useCallback((requestId: string | null) => {
+      setVerify((prev) => ({ ...prev, requestId }));
+    }, [setVerify]),
+    setVerifyAmount: useCallback((amount: string) => {
+      setVerify((prev) => ({ ...prev, amount }));
+    }, [setVerify]),
+    setVerifyMemo: useCallback((memo: string) => {
+      setVerify((prev) => ({ ...prev, memo }));
+    }, [setVerify]),
   };
+
+  if (isLoadingTokens) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-gray-600">Loading...</div>
+      </div>
+    );
+  }
 
   return (
     <>
       <ProfileHeader profileCount={profileCount} />
-      <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div
+        className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen"
+        style={{ backgroundColor: 'var(--color-background)' }}
+      >
         <ProfileCard
           key={profile.address}
           profile={profile}
@@ -349,45 +265,32 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
           feedbackProps={feedbackProps}
         />
 
-        <div id="zcash-feedback" className="border-t mt-10 pt-6 text-center">
-          <div className="w-full flex justify-center bg-transparent border-none shadow-none">
+        <div id="zcash-feedback" className="border-t mt-10 pt-6">
+          <div className="w-full flex justify-center">
             <div className="w-full max-w-xl mt-[-9px]">
-              {mode === "signin" ? (
-                <ZcashCardWrapper
-                  title={
-                    <div
-                      className="
-                        w-full
-                        border
-                        rounded-xl
-                        px-4
-                        py-3
-                        bg-transparent
-                        text-center
-                        border-[#000000]/90
-                      "
-                      style={{ lineHeight: "1.2" }}
-                    >
-                      <div className="font-semibold text-[15px] text-gray-800 flex items-center justify-center gap-1">
-                        Create Verification Message & Request OTP
-                      </div>
-
-                      <div className="text-[13px] text-gray-600 mt-1 font-light">
-                        customize message and verify address to apply edits
-                      </div>
+              {mode === "verification" ? (
+                <div className="p-0 mt-4">
+                  <div
+                    className="w-full border rounded-xl px-4 py-3 text-center border-[#000000]/90 mb-4"
+                    style={{ lineHeight: "1.2" }}
+                  >
+                    <div className="font-semibold text-[15px] text-gray-800">
+                      Create Verification Message & Request OTP
                     </div>
-                  }
-                >
+                    <div className="text-[13px] text-gray-600 mt-1 font-light">
+                      customize message and verify address to apply edits
+                    </div>
+                  </div>
                   <ProfileVerification profile={profile} {...verificationProps} />
-                </ZcashCardWrapper>
+                </div>
               ) : (
-                <ZcashCardWrapper>
-                {isSwapMode ? (
+                <div className="p-0 mt-4">
+                  {isSwapMode ? (
                     <SwapComposer {...swapComposerProps} />
                   ) : (
                     <MemoComposer {...memoComposerProps} />
                   )}
-                </ZcashCardWrapper>
+                </div>
               )}
             </div>
           </div>
