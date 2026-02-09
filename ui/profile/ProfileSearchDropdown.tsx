@@ -28,6 +28,8 @@ interface ProfileSearchDropdownProps {
   listOnly?: boolean;
   showByDefault?: boolean;
   onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
+  onResultsChange?: (results: Profile[]) => void; // eslint-disable-line no-unused-vars
+  selectedIndex?: number;
   className?: string;
   [key: string]: unknown;
 }

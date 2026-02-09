@@ -20,6 +20,8 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [availableUsername, setAvailableUsername] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [results, setResults] = useState<Profile[]>([]);
 
   const resetSearch = () => {
     setSearch("");

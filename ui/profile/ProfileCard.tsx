@@ -185,10 +185,10 @@ export function ProfileCardContent({
                     QR
                   </span>
                 </button>
-                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
+                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
               </div>
             ) : (
-              <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
+              <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
             )}
           </div>
         </div>
@@ -763,7 +763,7 @@ export default function ProfileCard({
                       setTimeout(() => {
                         const el = document.getElementById("zcash-feedback");
                         if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }, 400);
+                      }, 200);
                     }}
                     className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
                     title="Show QR"

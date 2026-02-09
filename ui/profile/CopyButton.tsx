@@ -8,6 +8,7 @@ interface CopyButtonProps {
   icon?: string;
   copiedIcon?: string;
   timeout?: number;
+  size?: "xs" | "sm" | "md";
 }
 
 export default function CopyButton({
