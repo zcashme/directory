@@ -164,6 +164,12 @@ export async function getSwapQuote(params: {
       recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
       deadline: deadlineIso(20),
       quoteWaitingTimeMs: 3000,
+      appFees: [
+        {
+          recipient: "zcash-me.near",
+          fee: 1000,
+        },
+      ],
     };
 
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
@@ -257,6 +263,12 @@ export async function confirmSwap(params: {
       recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
       deadline: deadlineIso(20),
       quoteWaitingTimeMs: 3000,
+      appFees: [
+        {
+          recipient: "zcash-me.near",
+          fee: 1000,
+        },
+      ],
     };
 
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
