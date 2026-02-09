@@ -4,12 +4,14 @@ interface VerifiedBadgeProps {
   verified?: boolean;
   verifiedLabel?: string;
   unverifiedLabel?: string;
+  onClick?: React.MouseEventHandler<HTMLSpanElement>;
 }
 
 export default function VerifiedBadge({
   verified = true,
   verifiedLabel = "Verified",
   unverifiedLabel = "Unverified",
+  onClick,
 }: VerifiedBadgeProps) {
   // Start collapsed by default
   const [open, setOpen] = useState(false);
@@ -61,6 +63,7 @@ export default function VerifiedBadge({
   if (verified) {
     return (
     <span
+      onClick={onClick}
       onTouchStart={(e) => {
         e.stopPropagation();
         setOpen(true);
@@ -96,6 +99,7 @@ export default function VerifiedBadge({
   // Unverified unchanged
   return (
     <span
+      onClick={onClick}
       onTouchStart={(e) => {
         e.stopPropagation();
         setOpen(true);

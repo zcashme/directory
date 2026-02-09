@@ -10,7 +10,7 @@ import { buildShareUrl } from "@/lib/profile/profileUtils";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
-import { extractDomain, FALLBACK_ICON } from "@/lib/profile/profileLinks";
+import { extractDomain, FALLBACK_ICON, isDiscordLink } from "@/lib/profile/profileLinks";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
   getAuthProviderForUrl,
@@ -31,10 +31,122 @@ import type {
   ProfileTrustWarning,
 } from "@/lib/profile/types";
 
-const Motion = motion;
-
 type Variant = "default" | "mobile" | "compact";
 type LinkVariant = "default" | "simple";
+
+const formatUsername = (value = "") => value.trim().replace(/\s+/g, "_");
+
+const resolveIconSrc = (icon?: EnrichedProfileLink["icon"]) =>
+  (typeof icon === "string" ? icon : icon?.src) ||
+  (typeof FALLBACK_ICON === "string" ? FALLBACK_ICON : FALLBACK_ICON?.src) ||
+  "";
+
+interface LinkRowClasses {
+  row: string;
+  left: string;
+  leftLink: string;
+  right: string;
+  icon: string;
+  label: string;
+  domain: string;
+  copySize?: "xs" | "sm" | "md";
+  copyWrapper?: string;
+}
+
+interface ProfileLinkRowProps {
+  link: EnrichedProfileLink;
+  classes: LinkRowClasses;
+  hideBadge?: boolean;
+  badgeLabels?: { verified: string; unverified: string };
+  badgeOnClick?: (event: React.MouseEvent, link: EnrichedProfileLink) => void;
+  stopPropagation?: boolean;
+}
+
+function ProfileLinkRow({
+  link,
+  classes,
+  hideBadge = false,
+  badgeLabels = { verified: "Authenticated", unverified: "Not Authenticated" },
+  badgeOnClick,
+  stopPropagation = false,
+}: ProfileLinkRowProps) {
+  const isDiscord = isDiscordLink(link.url || "");
+  const canLinkLeft = !(isDiscord && !link.is_verified);
+  const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
+  const badgeClick =
+    badgeOnClick && !link.is_verified ? (event: React.MouseEvent) => badgeOnClick(event, link) : undefined;
+  const copyProps = { label: "Copy", copiedLabel: "Copied", size: classes.copySize };
+  const icon = (
+    <img
+      src={resolveIconSrc(link.icon)}
+      alt=""
+      className={classes.icon}
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
+  );
+  const leftContent = (
+    <>
+      {icon}
+      <span className={classes.label}>{link.label}</span>
+    </>
+  );
+  const copy = (text: string) => (
+    <div className={classes.copyWrapper}>
+      <CopyButton text={text} {...copyProps} />
+    </div>
+  );
+
+  return (
+    <div className={classes.row}>
+      <div className={classes.left}>
+        {canLinkLeft ? (
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={handleLinkClick}
+            className={classes.leftLink}
+          >
+            {leftContent}
+          </a>
+        ) : (
+          leftContent
+        )}
+        {!hideBadge && (
+          <VerifiedBadge
+            verified={link.is_verified}
+            verifiedLabel={badgeLabels.verified}
+            unverifiedLabel={badgeLabels.unverified}
+            onClick={badgeClick}
+          />
+        )}
+      </div>
+      <div className={classes.right}>
+        {isDiscord && !link.is_verified ? (
+          <>
+            <span className={classes.domain}>{link.label}</span>
+            {copy(link.label || "")}
+          </>
+        ) : (
+          <>
+            <a
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={handleLinkClick}
+              className={`${classes.domain} hover:text-blue-600 transition-colors`}
+            >
+              {extractDomain(link.url || "")}
+            </a>
+            {copy(link.url || "")}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 interface ProfileCardContentProps {
   profile: Profile;
@@ -66,7 +178,6 @@ export function ProfileCardContent({
   className = "",
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-  const formatUsername = (value = "") => value.trim().replace(/\s+/g, "_");
 
   const sizes = {
     mobile: {
@@ -117,6 +228,20 @@ export function ProfileCardContent({
   };
 
   const s = sizes[variant] || sizes.default;
+  const badgeLabels = {
+    verified: linkVariant === "simple" ? "Auth" : "Authenticated",
+    unverified: linkVariant === "simple" ? "Not Auth" : "Not Authenticated",
+  };
+  const linkRowClasses: LinkRowClasses = {
+    row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`,
+    left: `flex items-center ${s.linkGap} shrink-0 min-w-0`,
+    leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`,
+    right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
+    icon: `${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`,
+    label: `font-medium ${s.linkLabel} text-gray-800 truncate`,
+    domain: `flex-1 min-w-0 truncate text-right ${s.linkDomain}`,
+    copySize: "xs",
+  };
 
   return (
     <div className={`${className} flex flex-col h-full`}>
@@ -126,7 +251,7 @@ export function ProfileCardContent({
           {profile.display_name || profile.name}
         </span>
         {isVerified && (
-          <span className={`flex-shrink-0 ${variant === "mobile" ? "scale-[0.6]" : variant === "compact" ? "scale-[0.6]" : "scale-[0.6]"} origin-center`}>
+          <span className="flex-shrink-0 scale-[0.6] origin-center">
             <VerifiedBadge verified={true} />
           </span>
         )}
@@ -198,78 +323,16 @@ export function ProfileCardContent({
         <div className={`mt-5 flex-1 min-h-0 w-full relative z-10 flex flex-col flex-grow`}>
           <div className="rounded-2xl border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
             <div className={`${s.linkPadding} flex flex-col ${s.linkGap} flex-1 min-h-0 overflow-y-auto`}>
-              {linksArray.slice(0, 3).map((link, i) => {
-                const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
-                const canLinkLeft = !(isDiscordLink && !link.is_verified);
-                return (
-                  <div
-                    key={link.id || i}
-                    className={`flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`}
-                  >
-                    <div className={`flex items-center ${s.linkGap} shrink-0 min-w-0`}>
-                      {canLinkLeft ? (
-                        <a
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className={`flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`}
-                        >
-                          <img
-                            src={typeof link.icon === 'string' ? link.icon : link.icon?.src || FALLBACK_ICON?.src || (typeof FALLBACK_ICON === 'string' ? FALLBACK_ICON : '')}
-                            alt=""
-                            className={`${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                          <span className={`font-medium ${s.linkLabel} text-gray-800 truncate`}>
-                            {link.label}
-                          </span>
-                        </a>
-                      ) : (
-                        <>
-                          <img
-                            src={typeof link.icon === 'string' ? link.icon : link.icon?.src || FALLBACK_ICON?.src || (typeof FALLBACK_ICON === 'string' ? FALLBACK_ICON : '')}
-                            alt=""
-                            className={`${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`}
-                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-                          />
-                          <span className={`font-medium ${s.linkLabel} text-gray-800 truncate`}>
-                            {link.label}
-                          </span>
-                        </>
-                      )}
-                      {!hideLinkBadges && (
-                        <VerifiedBadge
-                          verified={link.is_verified}
-                          verifiedLabel={linkVariant === "simple" ? "Auth" : "Authenticated"}
-                          unverifiedLabel={linkVariant === "simple" ? "Not Auth" : "Not Authenticated"}
-                        />
-                      )}
-                    </div>
-                    <div className={`flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`}>
-                      {isDiscordLink && !link.is_verified ? (
-                        <>
-                          <span className={`flex-1 min-w-0 truncate text-right ${s.linkDomain}`}>{link.label}</span>
-                          <CopyButton text={link.label} label="Copy" copiedLabel="Copied" size="xs" />
-                        </>
-                      ) : (
-                        <>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            onClick={(e) => e.stopPropagation()}
-                            className={`flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors ${s.linkDomain}`}
-                          >
-                            {extractDomain(link.url)}
-                          </a>
-                          <CopyButton text={link.url} label="Copy" copiedLabel="Copied" size="xs" />
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {linksArray.slice(0, 3).map((link, i) => (
+                <ProfileLinkRow
+                  key={link.id || i}
+                  link={link}
+                  classes={linkRowClasses}
+                  hideBadge={hideLinkBadges}
+                  badgeLabels={badgeLabels}
+                  stopPropagation
+                />
+              ))}
               {linksArray.length > 3 && (
                 <span className={`${s.linkDomain} text-gray-500 text-center pt-1`}>
                   +{linksArray.length - 3} more
@@ -360,6 +423,16 @@ export default function ProfileCard({
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
   const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const fullLinkRowClasses: LinkRowClasses = {
+    row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
+    left: "flex items-center gap-2 shrink-0",
+    leftLink: "flex items-center gap-2 shrink-0 hover:text-blue-600 transition-colors",
+    right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1",
+    icon: "w-4 h-4 rounded-xs opacity-80",
+    label: "font-medium text-gray-800 whitespace-nowrap",
+    domain: "flex-1 min-w-0 truncate text-right",
+    copyWrapper: "shrink-0",
+  };
 
   const hasAwards =
     (profile?.rank_alltime ?? 0) > 0 ||
@@ -371,9 +444,6 @@ export default function ProfileCard({
     if (!warningConfig) return;
     setShowDetail(!!warningConfig.defaultExpanded);
   }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
-
-  const formatUsername = (value = "") =>
-    value.trim().replace(/\s+/g, "_");
 
   const handleAuthBadgeClick = (event: React.MouseEvent, link: EnrichedProfileLink) => {
     event.stopPropagation();
@@ -613,7 +683,7 @@ export default function ProfileCard({
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>
             {showStats && (
-              <Motion.div
+              <motion.div
                 key="awards"
                 initial={{ opacity: 0, y: -10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -626,35 +696,20 @@ export default function ProfileCard({
                 }}
                 className="flex flex-wrap justify-center gap-2 mt-3 mb-1"
               >
-                {(profile.rank_alltime ?? 0) > 0 && (
-                  <ReferRankBadgeMulti
-                    rank={profile.rank_alltime!}
-                    period="all" as any
-                    alwaysOpen
-                  />
-                )}
-                {(profile.rank_weekly ?? 0) > 0 && (
-                  <ReferRankBadgeMulti
-                    rank={profile.rank_weekly!}
-                    period="weekly" as any
-                    alwaysOpen
-                  />
-                )}
-                {(profile.rank_monthly ?? 0) > 0 && (
-                  <ReferRankBadgeMulti
-                    rank={profile.rank_monthly!}
-                    period="monthly" as any
-                    alwaysOpen
-                  />
-                )}
-                {(profile.rank_daily ?? 0) > 0 && (
-                  <ReferRankBadgeMulti
-                    rank={profile.rank_daily!}
-                    period="daily" as any
-                    alwaysOpen
-                  />
-                )}
-              </Motion.div>
+                {(["alltime", "weekly", "monthly", "daily"] as const).map((period) => {
+                  const rank = profile[`rank_${period}`];
+                  if (!rank || rank <= 0) return null;
+                  const periodLabel = period === "alltime" ? "all" : period;
+                  return (
+                    <ReferRankBadgeMulti
+                      key={period}
+                      rank={rank}
+                      period={periodLabel as any}
+                      alwaysOpen
+                    />
+                  );
+                })}
+              </motion.div>
             )}
           </AnimatePresence>
 
@@ -772,88 +827,14 @@ export default function ProfileCard({
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
               <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                 {linksArray.length > 0 ? (
-                  linksArray.map((link: EnrichedProfileLink) => {
-                    const isDiscordLink = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(link.url || "");
-                    const canLinkLeft = !(isDiscordLink && !link.is_verified);
-                    return (
-                    <div
-                      key={link.id}
-                      className="flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0"
-                    >
-                      <div className="flex items-center gap-2 shrink-0">
-                        {canLinkLeft ? (
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 shrink-0 hover:text-blue-600 transition-colors"
-                          >
-                            <img
-                              src={typeof link.icon === 'string' ? link.icon : link.icon?.src || FALLBACK_ICON?.src || (typeof FALLBACK_ICON === 'string' ? FALLBACK_ICON : '')}
-                              alt=""
-                              className="w-4 h-4 rounded-xs opacity-80"
-                            />
-                            <span className="font-medium text-gray-800 whitespace-nowrap">
-                              {link.label}
-                            </span>
-                          </a>
-                        ) : (
-                          <>
-                            <img
-                              src={typeof link.icon === 'string' ? link.icon : link.icon?.src || FALLBACK_ICON?.src || (typeof FALLBACK_ICON === 'string' ? FALLBACK_ICON : '')}
-                              alt=""
-                              className="w-4 h-4 rounded-xs opacity-80"
-                            />
-                            <span className="font-medium text-gray-800 whitespace-nowrap">
-                              {link.label}
-                            </span>
-                          </>
-                        )}
-                        <VerifiedBadge
-                          verified={link.is_verified}
-                          verifiedLabel="Authenticated"
-                          unverifiedLabel="Not Authenticated"
-                          onClick={
-                            link.is_verified
-                              ? undefined
-                              : (event: React.MouseEvent) => handleAuthBadgeClick(event, link)
-                          }
-                        />
-                      </div>
-                      <div className="flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1">
-                        {(() => {
-                          if (isDiscordLink && !link.is_verified) {
-                            return (
-                              <>
-                                <span className="flex-1 min-w-0 truncate text-right">
-                                  {link.label}
-                                </span>
-                                <div className="shrink-0">
-                                  <CopyButton text={link.label} label="Copy" copiedLabel="Copied" />
-                                </div>
-                              </>
-                            );
-                          }
-                          return (
-                            <>
-                              <a
-                                href={link.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex-1 min-w-0 truncate text-right hover:text-blue-600 transition-colors"
-                              >
-                                {extractDomain(link.url)}
-                              </a>
-                              <div className="shrink-0">
-                                <CopyButton text={link.url} label="Copy" copiedLabel="Copied" />
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
-                    </div>
-                  );
-                  })
+                  linksArray.map((link: EnrichedProfileLink) => (
+                    <ProfileLinkRow
+                      key={link.id || link.url}
+                      link={link}
+                      classes={fullLinkRowClasses}
+                      badgeOnClick={handleAuthBadgeClick}
+                    />
+                  ))
                 ) : (
                   <p className="italic text-gray-500 text-center">
                     No contributed links yet.
