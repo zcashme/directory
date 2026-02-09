@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { oneclickStatus } from "@/lib/swap/oneClick";
+import { getSwapStatus } from "@/lib/swap/oneclick";
 import type { SwapStatusData } from "@/lib/swap/types";
 
 interface SwapStatusErrorResponse {
@@ -10,6 +10,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SwapStatus
   try {
     const { searchParams } = new URL(request.url);
     const depositAddress = searchParams.get("depositAddress");
+    const depositMemo = searchParams.get("depositMemo");
 
     if (!depositAddress) {
       return NextResponse.json(
@@ -18,9 +19,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<SwapStatus
       );
     }
 
-    const params = { depositAddress };
-
-    const result = await oneclickStatus(params);
+    const result = await getSwapStatus(depositAddress, depositMemo || undefined);
 
     return NextResponse.json(result);
   } catch (_error) {

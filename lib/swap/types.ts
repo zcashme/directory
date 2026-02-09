@@ -4,80 +4,13 @@
 export interface Token {
   id?: string;
   assetId?: string;
-  tokenId?: string;
-  asset?: string;
   symbol: string;
-  ticker?: string;
   decimals: number;
   blockchain: string;
-  logo?: string;
-  [key: string]: unknown;
 }
 
 /**
- * Quote request payload (user input)
- */
-export interface SwapQuoteRequest {
-  fromToken: string;
-  toToken: string;
-  amountIn: string;
-  destAddress: string;
-  refundAddress: string;
-  slippageTolerance?: number | string;
-}
-
-/**
- * Internal quote payload (sent to 1Click API)
- */
-export interface QuotePayload {
-  dry: boolean;
-  swapType: "EXACT_INPUT";
-  slippageTolerance: number;
-  originAsset: string;
-  destinationAsset: string;
-  amount: string;
-  depositType: "ORIGIN_CHAIN";
-  refundTo: string;
-  refundType: "ORIGIN_CHAIN";
-  recipient: string;
-  recipientType: "DESTINATION_CHAIN";
-  deadline: string;
-  quoteWaitingTimeMs: number;
-  error?: string;
-}
-
-/**
- * API Quote response structure from 1Click
- */
-export interface QuoteResponse {
-  id?: string;
-  quoteId?: string;
-  amountInFormatted?: string;
-  amountOutFormatted?: string;
-  amountInUsd?: number;
-  amountInUSD?: number;
-  amountInFiat?: number;
-  amountOutUsd?: number;
-  amountOutUSD?: number;
-  amountOutFiat?: number;
-  timeEstimate?: number;
-  timeEstimateSec?: number;
-  estimatedTimeSeconds?: number;
-  minAmountOut?: string;
-  minimumAmountOut?: string;
-  depositAddress?: string;
-  depositMode?: string;
-  depositMemo?: string;
-  amountToDeposit?: string;
-  requiredDepositAmount?: string;
-  depositAmount?: string;
-  amountIn?: string;
-  error?: string;
-  [key: string]: unknown;
-}
-
-/**
- * Frontend quote display structure
+ * Swap quote display data
  */
 export interface SwapQuoteDisplay {
   fromSymbol: string;
@@ -91,24 +24,26 @@ export interface SwapQuoteDisplay {
 }
 
 /**
- * Success response from getSwapQuote action
+ * Success response from swap quote
  */
 export interface SwapQuoteSuccess {
   ok: true;
   quoteId: string | null;
-  quote: QuoteResponse;
-  display: SwapQuoteDisplay;
-  requestDebug: {
-    originAsset: string;
-    destinationAsset: string;
-    amount: string;
-    slippageTolerance: number;
-    deadline: string;
+  quote: {
+    amountInFormatted: string;
+    amountOutFormatted: string;
+    amountInUsd?: number;
+    amountOutUsd?: number;
+    timeEstimate?: number;
+    minAmountOut?: string;
+    depositAddress?: string;
+    depositMemo?: string;
   };
+  display: SwapQuoteDisplay;
 }
 
 /**
- * Error response from getSwapQuote action
+ * Error response from swap quote
  */
 export interface SwapQuoteError {
   ok: false;
@@ -134,7 +69,7 @@ export interface SwapDeposit {
 }
 
 /**
- * Success response from confirmSwapAction
+ * Success response from swap confirmation
  */
 export interface SwapConfirmSuccess {
   ok: true;
@@ -151,7 +86,7 @@ export interface SwapConfirmSuccess {
 }
 
 /**
- * Error response from confirmSwapAction
+ * Error response from swap confirmation
  */
 export interface SwapConfirmError {
   ok: false;
@@ -165,7 +100,7 @@ export interface SwapConfirmError {
 export type SwapConfirmResponse = SwapConfirmSuccess | SwapConfirmError;
 
 /**
- * Quote data stored in context (quote result or confirm result).
+ * Quote data stored in context (quote result or confirm result)
  */
 export type SwapContextQuoteData =
   | SwapQuoteResponse
@@ -173,7 +108,7 @@ export type SwapContextQuoteData =
   | null;
 
 /**
- * Swap status polling response from API
+ * Swap status data from API
  */
 export interface SwapStatusData {
   status: string;
@@ -189,57 +124,12 @@ export interface SwapStatusData {
       destinationAsset: string;
       refundTo: string;
     };
-    quote?: QuoteResponse;
+    quote?: {
+      amountOutFormatted?: string;
+      depositAddress?: string;
+      timeEstimate?: number;
+      deadline?: string;
+    };
   };
   updatedAt?: string;
-  error?: string;
-  [key: string]: unknown;
 }
-
-/**
- * UI-mapped swap status
- */
-export type UISwapStatus = "PENDING_SWAP" | "SWAP_SUCCESS" | "SWAP_FAILED";
-
-/**
- * Swap state in context
- */
-export interface SwapState {
-  tokens: Token[];
-  selectedOriginToken: Token | null;
-  selectedDestToken: Token | null;
-  amountIn: string;
-  destAddress: string;
-  refundAddress: string;
-  slippageTolerance: string;
-  quote: QuoteResponse | null;
-  quoteId: string | null;
-  deposit: SwapDeposit | null;
-  paymentUri: string | null;
-  statusKey: { depositAddress: string } | null;
-  isLoadingQuote: boolean;
-  isConfirming: boolean;
-  error: string | null;
-}
-
-/**
- * Token lookup result
- */
-export interface TokenLookupResult {
-  tokens: Token[];
-  error?: null;
-}
-
-/**
- * Token lookup error
- */
-export interface TokenLookupError {
-  tokens?: undefined;
-  error: string;
-  retryable?: boolean;
-}
-
-/**
- * Discriminated union for token lookup
- */
-export type TokenLookupResponse = TokenLookupResult | TokenLookupError;
