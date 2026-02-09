@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useCallback } from "react";
-import { useSelectionStore } from "@/lib/stores/selection-store";
-import { useEditsStore } from "@/lib/stores/edits-store";
-import { useMessagingStore } from "@/lib/stores/messaging-store";
+import { useSelectionStore, useEditsStore } from "@/lib/stores/ui-state";
+import { useMessagingStore } from "@/lib/stores/messaging";
 import type { PendingEdits } from "@/lib/profile/types";
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
@@ -85,15 +84,36 @@ export function useNsFeedbackController(
     draft,
     verify,
     pendingEdits,
-    setDraftMemo,
-    setDraftAmount,
-    setVerifyMemo,
-    setVerifyAmount,
-    setVerifyId,
-    setVerifyRequestId,
+    setDraft,
+    setVerify,
     setMode,
     mode,
   } = useNsFeedback();
+
+  // Derived setters
+  const setDraftMemo = useCallback((value: string | null) => {
+    setDraft((prev) => ({ ...prev, memo: value ?? '' }));
+  }, [setDraft]);
+
+  const setDraftAmount = useCallback((value: string | null) => {
+    setDraft((prev) => ({ ...prev, amount: value ?? '' }));
+  }, [setDraft]);
+
+  const setVerifyMemo = useCallback((value: string | null) => {
+    setVerify((prev) => ({ ...prev, memo: value ?? '' }));
+  }, [setVerify]);
+
+  const setVerifyAmount = useCallback((value: string | null) => {
+    setVerify((prev) => ({ ...prev, amount: value ?? '' }));
+  }, [setVerify]);
+
+  const setVerifyId = useCallback((value: number | null) => {
+    setVerify((prev) => ({ ...prev, zId: value }));
+  }, [setVerify]);
+
+  const setVerifyRequestId = useCallback((value: string | null) => {
+    setVerify((prev) => ({ ...prev, requestId: value }));
+  }, [setVerify]);
 
   const effectiveAddress = address ?? selectedAddress;
 

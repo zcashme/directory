@@ -14,7 +14,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "noEmit": false,
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,

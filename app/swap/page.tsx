@@ -340,7 +340,9 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
                 style={{ animationDelay: "0.2s" }}
               ></div>
             </div>
-            <span className="text-xs text-gray-600">Polling...</span>
+            <span className="text-xs text-gray-600">
+              {apiStatus?.toUpperCase() === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
+            </span>
           </div>
         )}
       </div>

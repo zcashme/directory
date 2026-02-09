@@ -160,10 +160,10 @@ export default function SwapComposer({
         <button
           type="button"
           onClick={resetSwapState}
-          className="text-gray-600 hover:text-gray-800 text-xl pt-1 flex-shrink-0"
+          className="text-gray-600 hover:text-gray-800 text-sm pt-1 flex-shrink-0"
           aria-label="Go back to ZEC payment"
         >
-          ←
+          ← ZEC
         </button>
       </div>
 

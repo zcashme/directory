@@ -1,27 +1,25 @@
 import { create } from 'zustand';
-import type { SwapContextQuoteData, SwapQuoteDisplay } from '@/lib/swap/types';
+import type {
+  SwapContextQuoteData,
+  SwapQuoteDisplay,
+} from '@/lib/swap/types';
 
+/**
+ * Swap state store - manages all swap-related state
+ */
 interface SwapState {
-  // Input state (user controls)
   originTokenId: string | null;
   swapAmount: string;
   refundAddress: string;
   slippageTolerance: string;
-
-  // Quote state
   quoteData: SwapContextQuoteData;
   quotePreview: SwapQuoteDisplay | null;
-
-  // Swap state
   depositUri: string;
   statusKey: { depositAddress: string } | null;
   swapStatus: string;
-
-  // UI state
   quoteStatus: string;
   swapError: string;
 
-  // Setters
   setOriginTokenId: (id: string | null) => void;
   setSwapAmount: (amount: string) => void;
   setRefundAddress: (address: string) => void;
@@ -37,7 +35,6 @@ interface SwapState {
 }
 
 export const useSwapStore = create<SwapState>((set) => ({
-  // Initial state
   originTokenId: null,
   swapAmount: '',
   refundAddress: '',
@@ -50,7 +47,6 @@ export const useSwapStore = create<SwapState>((set) => ({
   quoteStatus: '',
   swapError: '',
 
-  // Setters
   setOriginTokenId: (id) => set({ originTokenId: id }),
   setSwapAmount: (amount) => set({ swapAmount: amount }),
   setRefundAddress: (address) => set({ refundAddress: address }),

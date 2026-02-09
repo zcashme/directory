@@ -4,10 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "cross-env NODE_OPTIONS=--loader=ts-node/esm next dev --webpack",
-    "build": "cross-env NODE_OPTIONS=--loader=ts-node/esm next build",
-    "start": "cross-env NODE_OPTIONS=--loader=ts-node/esm next start",
-    "lint": "cross-env NODE_OPTIONS=--loader=ts-node/esm eslint ."
+    "dev": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@floating-ui/react": "^0.27.17",

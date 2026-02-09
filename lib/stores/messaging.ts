@@ -1,5 +1,8 @@
 import { create } from 'zustand';
 
+/**
+ * Messaging store - manages memo/message composition state for Zcash
+ */
 interface MessagingState {
   mode: string;
   draft: {

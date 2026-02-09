@@ -28,6 +28,7 @@ interface ProfileVerificationProps {
   verify: VerifyState;
   setVerifyRequestId: (requestId: string | null) => void;
   setVerifyAmount: (amount: string) => void;
+  setVerifyMemo?: (memo: string) => void;
 }
 
 export default function ProfileVerification({
@@ -36,6 +37,7 @@ export default function ProfileVerification({
   verify,
   setVerifyRequestId,
   setVerifyAmount,
+  setVerifyMemo,
 }: ProfileVerificationProps) {
   // Use verify context values for memo/amount
   const memo = verify?.memo ?? "";
@@ -169,33 +171,32 @@ export default function ProfileVerification({
           </h3>
         </div>
 
-        {/* Memo Display */}
+        {/* Memo Editor */}
         <div className="relative group w-full mb-1">
-          <pre
+          <div className="block -mx-0 -mt-0 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
+            <span className="block text-[12px] text-gray-200">
+              {explainerText}
+            </span>
+          </div>
+          <textarea
+            value={memo ?? ""}
+            onChange={(e) => setVerifyMemo?.(e.target.value)}
             className="
-            w-full
-            border border-[#000000]/90
-            rounded-xl
-            px-3 py-2
-            text-[14px]
-            bg-transparent
-            text-gray-800
-            font-mono
-            whitespace-pre-wrap break-words text-left
-            cursor-not-allowed select-none
-            transition-shadow duration-200
-          "
+              w-full
+              border border-[#000000]/90
+              rounded-b-xl
+              px-3 py-2
+              text-[14px]
+              bg-transparent
+              text-gray-800
+              font-mono
+              resize-none
+              focus:ring-1
+              focus:ring-blue-500
+              focus:outline-none
+            "
             style={{ minHeight: "6rem", lineHeight: "1.35" }}
-          >
-            <span className="block -mx-3 -mt-2 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
-              <span className="block text-[12px] text-gray-200">
-                {explainerText}
-              </span>
-            </span>
-            <span className="block mt-2 text-[14px] text-gray-800">
-              {memo ?? "(waiting for edits)"}
-            </span>
-          </pre>
+          />
         </div>
 
         {/* Amount + Wallet */}
