@@ -4,7 +4,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
-import { parseTokenSymbol } from "@/lib/swap/tokenUtils";
+import { parseTokenSymbol } from "@/lib/swap/utils";
 import { useSwapStore } from "@/lib/stores/swap";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 

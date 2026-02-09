@@ -13,7 +13,7 @@ const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfir
   Boolean(data && data.ok === true && "deposit" in data);
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
-import { getTokenId } from "@/lib/swap/swapPayload";
+import { getTokenId } from "@/lib/swap/utils";
 
 interface SwapComposerProps {
   profile: Profile;

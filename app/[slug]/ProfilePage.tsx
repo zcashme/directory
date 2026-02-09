@@ -11,12 +11,12 @@ import { useSwapStore } from "@/lib/stores/swap";
 
 // Zcash utilities
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { getTokenId } from "@/lib/swap/swapPayload";
+
+// Swap utilities
+import { getTokenId } from "@/lib/swap/utils";
 
 // Server actions
-import { getSwapTokens } from "@/lib/swap/fetchTokens";
-import { getSwapQuote } from "@/lib/swap/quoteAction";
-import { confirmSwapAction } from "@/lib/swap/confirmAction";
+import { getSwapTokens, getSwapQuote, confirmSwap } from "@/lib/swap/oneclick";
 
 // UI Components
 import ProfileCard from "@/ui/profile/ProfileCard";
@@ -50,7 +50,7 @@ export default function ProfilePage({
     setIsLoadingTokens(true);
     getSwapTokens()
       .then((result) => {
-        if (result.ok) setTokens(result.data);
+        if ("tokens" in result) setTokens(result.tokens);
       })
       .finally(() => setIsLoadingTokens(false));
   }, []);
@@ -98,10 +98,11 @@ export default function ProfilePage({
         destAddress: params.destAddress,
         refundAddress: params.refund ?? swap.refundAddress,
         slippageTolerance: params.slippage ?? swap.slippageTolerance,
+        tokens,
       }).then((r) => { result = r; });
     });
     return result;
-  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
+  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId, tokens]);
 
   const handleConfirmSwap = useCallback(async (params: {
     amountIn: string;
@@ -113,17 +114,18 @@ export default function ProfilePage({
   }) => {
     let result = null;
     startConfirmTransition(() => {
-      confirmSwapAction({
+      confirmSwap({
         fromToken: params.fromToken ?? swap.originTokenId ?? "",
         toToken: params.toToken ?? zecTokenId ?? "",
         amountIn: params.amountIn,
         destAddress: params.destAddress,
         refundAddress: params.refund ?? swap.refundAddress,
         slippageTolerance: params.slippage ?? swap.slippageTolerance,
+        tokens,
       }).then((r) => { result = r; });
     });
     return result;
-  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
+  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId, tokens]);
 
   const handleSwapFieldChange = useCallback((field: 'amount' | 'refund' | 'slippage') => (value: string) => {
     if (field === 'amount') swap.setSwapAmount(value);

@@ -7,6 +7,7 @@ export interface Token {
   symbol: string;
   decimals: number;
   blockchain: string;
+  logo?: string;
 }
 
 /**
