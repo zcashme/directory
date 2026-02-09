@@ -144,11 +144,13 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
       <div className="grid grid-cols-2 gap-3">
         <div className="border border-gray-800 rounded-xl p-4">
           <p className="text-xs text-gray-600 mb-2">
-            Sent {fromSymbol && <span className="font-medium">{fromSymbol}</span>}
+            Sent
           </p>
           <div className="flex items-center gap-2 mb-1">
             <TokenIcon symbol={fromSymbol || ""} size={24} />
-            <p className="text-lg font-semibold">{details?.amountInFormatted || "—"}</p>
+            <p className="text-lg font-semibold">
+              {details?.amountInFormatted || `— ${fromSymbol}`}
+            </p>
           </div>
           <p className="text-xs text-gray-600">
             {details?.amountInUsd ? `$${details.amountInUsd}` : "—"}
@@ -157,11 +159,13 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
 
         <div className="border border-gray-800 rounded-xl p-4">
           <p className="text-xs text-gray-600 mb-2">
-            Received {toSymbol && <span className="font-medium">{toSymbol}</span>}
+            Received
           </p>
           <div className="flex items-center gap-2 mb-1">
             <TokenIcon symbol={toSymbol || ""} size={24} />
-            <p className="text-lg font-semibold">{details?.amountOutFormatted || "—"}</p>
+            <p className="text-lg font-semibold">
+              {details?.amountOutFormatted || `— ${toSymbol}`}
+            </p>
           </div>
           <p className="text-xs text-gray-600">
             {details?.amountOutUsd ? `$${details.amountOutUsd}` : "—"}
