@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
 
@@ -39,8 +39,9 @@ export default function ProfilePage({
   const [isConfirming, setIsConfirming] = useState(false);
 
   const { pendingEdits } = useEditsStore();
-  const { mode, showBack, setMode } = useMessagingStore();
+  const { mode, showBack, setMode, setShowBack } = useMessagingStore();
   const swap = useSwapStore();
+  const prevProfileRef = useRef(initialProfile.address);
 
   // Fetch tokens on mount
   useEffect(() => {
@@ -62,6 +63,13 @@ export default function ProfilePage({
 
   // Mode selection logic based on card flip state and token selection
   useEffect(() => {
+    // Reset UI state only when switching to a different profile
+    if (prevProfileRef.current !== initialProfile.address) {
+      setShowBack(false);
+      swap.resetSwapState(zecTokenId);
+      prevProfileRef.current = initialProfile.address;
+    }
+
     if (showBack) {
       // Card is flipped to back (edit profile) -> verification mode
       setMode("verification");
@@ -77,7 +85,7 @@ export default function ProfilePage({
         setMode("memo");
       }
     }
-  }, [showBack, swap.originTokenId, zecTokenId, setMode]);
+  }, [showBack, swap.originTokenId, zecTokenId, setMode, initialProfile.address]);
 
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {

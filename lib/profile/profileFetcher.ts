@@ -98,8 +98,9 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   type RankResult = { data: { rank_alltime?: number } | null; error: unknown };
   type WeeklyRankResult = { data: { rank_weekly?: number } | null; error: unknown };
   type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
+  type LinksResult = { data: Array<{ id: number; label?: string; url: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
 
-  const [alltime, weekly, monthly]: [RankResult, WeeklyRankResult, MonthlyRankResult] = await Promise.all([
+  const [alltime, weekly, monthly, links]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult] = await Promise.all([
     supabase
       .from("referrer_ranked_alltime")
       .select("rank_alltime")
@@ -118,6 +119,11 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
       .maybeSingle(),
+    supabase
+      .from("zcasher_links")
+      .select("id,label,url,is_verified,zcasher_id")
+      .eq("zcasher_id", profile.id)
+      .order("id", { ascending: true }),
   ]);
 
   const ranks: RankData = {
@@ -125,6 +131,9 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
     rank_weekly: weekly?.data?.rank_weekly || 0,
     rank_monthly: monthly?.data?.rank_monthly || 0,
   };
+
+  // Attach links to profile
+  profile.links = links?.data || [];
 
   return mergeRanks(profile, ranks);
 }
