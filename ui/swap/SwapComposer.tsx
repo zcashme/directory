@@ -164,6 +164,29 @@ export default function SwapComposer({
         </button>
       </div>
 
+      {/* DISABLED MEMO FIELD */}
+      <div className="relative mb-2">
+        <textarea
+          rows={3}
+          disabled
+          placeholder="Message is available only when sending ZEC"
+          className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 bg-gray-100 text-gray-400 cursor-not-allowed"
+        />
+
+        <button
+          type="button"
+          disabled
+          className="absolute right-3 top-1 text-gray-300 cursor-not-allowed"
+          aria-label="Clear message (disabled)"
+        >
+          ⌫
+        </button>
+
+        <span className="absolute bottom-3 right-3 text-md text-gray-400">
+          512 bytes left
+        </span>
+      </div>
+
       {/* AMOUNT INPUT + TOKEN SELECTOR + USD DISPLAY */}
       <AmountAndWallet
         amount={swapAmount}
