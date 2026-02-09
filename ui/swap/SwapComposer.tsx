@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type {
   SwapConfirmResponse,
@@ -137,6 +138,8 @@ export default function SwapComposer({
 
   const slippageOptions = ["0.1", "0.5", "1", "2", "5"];
 
+  const [isSlippageExpanded, setIsSlippageExpanded] = useState(false);
+
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
       {/* HEADER: Back + Recipient */}
@@ -243,88 +246,109 @@ export default function SwapComposer({
 
       {/* SWAP SETTINGS (Hidden after confirmation) */}
       {!statusKey?.depositAddress && (
-        <div className="mt-4 p-4 bg-transparent rounded-xl border border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Slippage Tolerance (%)</h3>
+        <div className="mt-4 bg-transparent rounded-xl border border-gray-800">
+          {/* Collapsible Header */}
+          <button
+            type="button"
+            onClick={() => setIsSlippageExpanded(!isSlippageExpanded)}
+            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-xl"
+          >
+            <span className="text-sm font-semibold text-gray-800">
+              Slippage Tolerance ({slippageTolerance}%)
+            </span>
+            <svg
+              className={`w-5 h-5 text-gray-600 transition-transform ${isSlippageExpanded ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
 
-          {/* Slippage Controls */}
-          <div className="mb-4">
-            <div className="flex items-center gap-2 flex-wrap">
-              {slippageOptions.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  onClick={() => handleSlippageChange(option)}
-                  className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
-                    slippageTolerance === option
-                      ? "bg-white border-gray-800 text-gray-900"
-                      : "bg-transparent border-gray-300 text-gray-600 hover:border-gray-500"
-                  }`}
-                >
-                  {option}%
-                </button>
-              ))}
-              <div className="flex items-center gap-1 ml-auto">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={slippageTolerance}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (value === "") {
-                      setSlippageTolerance("0.5");
-                      return;
-                    }
-                    if (!/^\d*\.?\d*$/.test(value)) return;
-                    const numValue = parseFloat(value);
-                    if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                      setSlippageTolerance(value);
-                    }
-                  }}
-                  onBlur={(e) => {
-                    const value = e.target.value.trim();
-                    if (!value || isNaN(parseFloat(value))) {
-                      setSlippageTolerance("0.5");
-                    }
-                  }}
-                  placeholder="0.5"
-                  className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-                <span className="text-sm text-gray-600">%</span>
+          {/* Slippage Controls (Collapsible Content) */}
+          {isSlippageExpanded && (
+            <div className="px-4 pb-4 pt-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                {slippageOptions.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => handleSlippageChange(option)}
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
+                      slippageTolerance === option
+                        ? "bg-white border-gray-800 text-gray-900"
+                        : "bg-transparent border-gray-300 text-gray-600 hover:border-gray-500"
+                    }`}
+                  >
+                    {option}%
+                  </button>
+                ))}
+                <div className="flex items-center gap-1 ml-auto">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={slippageTolerance}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === "") {
+                        setSlippageTolerance("0.5");
+                        return;
+                      }
+                      if (!/^\d*\.?\d*$/.test(value)) return;
+                      const numValue = parseFloat(value);
+                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                        setSlippageTolerance(value);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const value = e.target.value.trim();
+                      if (!value || isNaN(parseFloat(value))) {
+                        setSlippageTolerance("0.5");
+                      }
+                    }}
+                    placeholder="0.5"
+                    className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-600">%</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+        </div>
+      )}
 
-          {/* ACTION BUTTONS */}
-          <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => {
-                void handleGetQuote();
-              }}
-              disabled={!canGetQuote}
-              className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
-                canGetQuote
-                  ? "bg-white text-gray-800 hover:bg-gray-50"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
-              }`}
-            >
-              {isGettingQuote ? "Getting quote..." : "Get quote"}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void handleConfirmQuote();
-              }}
-              disabled={!canConfirmQuote}
-              className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
-                canConfirmQuote
-                  ? "bg-white text-gray-800 hover:bg-gray-50"
-                  : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
-              }`}
-            >
-              {isConfirming ? "Confirming..." : "Confirm quote"}
-            </button>
-          </div>
+      {/* ACTION BUTTONS */}
+      {!statusKey?.depositAddress && (
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              void handleGetQuote();
+            }}
+            disabled={!canGetQuote}
+            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+              canGetQuote
+                ? "bg-white text-gray-800 hover:bg-gray-50"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+            }`}
+          >
+            {isGettingQuote ? "Getting quote..." : "Get quote"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleConfirmQuote();
+            }}
+            disabled={!canConfirmQuote}
+            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+              canConfirmQuote
+                ? "bg-white text-gray-800 hover:bg-gray-50"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+            }`}
+          >
+            {isConfirming ? "Confirming..." : "Confirm quote"}
+          </button>
         </div>
       )}
 
