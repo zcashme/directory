@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { getSwapStatus } from "@/lib/swap/oneclick";
+import { getSwapStatus } from "@/lib/swap/oneClick";
 import type { SwapStatusData } from "@/lib/swap/types";
 
 interface SwapStatusErrorResponse {

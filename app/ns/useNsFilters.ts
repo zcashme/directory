@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import {
@@ -21,7 +21,7 @@ interface FilterState {
 
 type FilterKey = keyof FilterState;
 
-interface LocationOption {
+export interface LocationOption {
   country: string;
   flag: string;
   cities: string[];
@@ -35,7 +35,7 @@ interface UseNsFiltersReturn {
   clearFilters: () => void;
   anyFilterActive: boolean;
   locationFilter: string[];
-  setLocationFilter: (_value: string[]) => void;
+  setLocationFilter: Dispatch<SetStateAction<string[]>>;
   tagFilter: string;
   setTagFilter: (_value: string) => void;
   locationSearch: string;

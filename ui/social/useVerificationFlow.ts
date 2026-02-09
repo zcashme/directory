@@ -8,23 +8,9 @@ import {
   getGithubHandle,
   getDiscordId,
   getDiscordUsername,
-  getXAvatarUrl,
-  getGithubAvatarUrl,
-  getDiscordAvatarUrl,
   normalizeDiscordHandle,
 } from "@/lib/profile/providerAvatars";
 import { useEditsStore } from "@/lib/stores/edits";
-
-interface ProfileLink {
-  url: string;
-  is_verified: boolean;
-  [key: string]: unknown;
-}
-
-interface ProfileForm {
-  links: ProfileLink[];
-  [key: string]: unknown;
-}
 
 interface LinkedInData {
   handle: string | null;
@@ -73,7 +59,7 @@ export default function useVerificationFlow(
       const isDiscordUrl = /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com)\/users\//i.test(url || "");
 
       if (isXUrl) {
-        const xUsername = getXHandle(session);
+        const xUsername = getXHandle(session as any);
         const mx = (url || "").replace(/\/$/, "").match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
         const targetUsername = mx ? mx[1] : null;
         const normalizedX = normalizeSocialUsername(xUsername || "", "X").toLowerCase();
@@ -84,8 +70,6 @@ export default function useVerificationFlow(
           localStorage.removeItem("verifying_link_url");
           return;
         }
-
-        const _avatarUrl = getXAvatarUrl(session);
       }
 
       if (isLinkedInUrl) {
@@ -131,7 +115,7 @@ export default function useVerificationFlow(
       }
 
       if (isGithubUrl) {
-        const ghHandle = getGithubHandle(session);
+        const ghHandle = getGithubHandle(session as any);
         const m = (url || "").replace(/\/$/, "").match(/github\.com\/([^/?#]+)/i);
         const targetGh = m ? m[1] : (url || "").replace(/\/$/, "").split("/").pop();
         const normalizedGh = normalizeSocialUsername(ghHandle || "", "GitHub").toLowerCase();
@@ -142,13 +126,11 @@ export default function useVerificationFlow(
           localStorage.removeItem("verifying_link_url");
           return;
         }
-
-        const _avatarUrl = await getGithubAvatarUrl(session);
       }
 
       if (isDiscordUrl) {
-        const discordId = getDiscordId(session);
-        const discordUsername = await getDiscordUsername(session);
+        const discordId = getDiscordId(session as any);
+        const discordUsername = await getDiscordUsername(session as any);
         const m = (url || "").replace(/\/$/, "").match(/(?:discord\.com|discordapp\.com)\/users\/([^/?#]+)/i);
         const targetDiscord = m ? m[1] : (url || "").replace(/\/$/, "").split("/").pop();
         const targetDecoded = targetDiscord ? decodeURIComponent(targetDiscord) : null;
@@ -176,7 +158,6 @@ export default function useVerificationFlow(
           return;
         }
 
-        const _avatarUrl = await getDiscordAvatarUrl(session);
         if (discordId) {
           verifiedDiscordId = String(discordId);
           verifiedDiscordUrl = `https://discord.com/users/${verifiedDiscordId}`;
@@ -225,7 +206,7 @@ export default function useVerificationFlow(
           updatePayload.url = verifiedDiscordUrl;
         }
 
-        const result = await updateLinkVerificationAction(profileId, handle, variants, updatePayload);
+        const result = await updateLinkVerificationAction(profileId, handle, variants, updatePayload as any);
         if (!result.ok) {
           // Silent failure
         }

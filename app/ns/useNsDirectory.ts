@@ -6,12 +6,12 @@ import useNsProfiles from "@/ui/ns-directory/useNsProfiles";
 import { getProfileLinksBatchAction } from "@/lib/profile/getProfileLinksBatchAction";
 import { getLinkIcon, getLinkLabel } from "@/lib/profile/profileLinks";
 
-interface EnrichedLink extends ProfileLink {
+export interface EnrichedLink extends ProfileLink {
   icon: StaticImageData | string;
   domainLabel: string;
 }
 
-interface LinksByProfileId {
+export interface LinksByProfileId {
   [zcasherId: string]: EnrichedLink[];
 }
 

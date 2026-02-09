@@ -179,7 +179,7 @@ export default function useVerificationPolling(): UseVerificationPollingResult {
         const msg = `verify poll start failed: ${res.status} ${res.statusText} ${JSON.stringify(
           data
         )}`;
-        setPollError(data?.error || "Failed to start verification polling.");
+        setPollError(String(data?.error || "Failed to start verification polling."));
         setPollDebug((prev) => (prev ? `${prev}\n${msg}` : msg));
         return;
       }

@@ -1,20 +1,9 @@
 "use client";
 import React from "react";
 import type { StaticImageData } from "next/image";
-import type { ProfileLink } from "@/lib/profile/types";
+import type { EnrichedLink } from "./useNsDirectory";
+import type { UnverifiedLinkData } from "./types";
 import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle, isDiscordLink } from "@/lib/profile/profileLinks";
-
-interface EnrichedLink extends ProfileLink {
-  icon?: StaticImageData | string;
-  domainLabel?: string;
-}
-
-interface UnverifiedLinkData {
-  url: string;
-  label: string;
-  display: string;
-  isDiscord: boolean;
-}
 
 interface SocialLinksProps {
   links?: EnrichedLink[];
@@ -22,6 +11,12 @@ interface SocialLinksProps {
   stopPropagation?: boolean;
   className?: string;
   linkClassName?: string;
+}
+
+function resolveImageSrc(icon: StaticImageData | string | undefined): string | undefined {
+  if (!icon) return undefined;
+  if (typeof icon === "string") return icon;
+  return icon.src;
 }
 
 export default function SocialLinks({

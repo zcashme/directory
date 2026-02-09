@@ -1,4 +1,4 @@
-import type { FlatConfig } from "eslint";
+import type { Linter } from "eslint";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import globals from "globals";
@@ -30,19 +30,8 @@ const typeScriptRules = {
   "no-unused-expressions": "warn",
 };
 
-const tsFileGlobs = ["**/*.{ts,tsx,cts,mts}"];
-const withTsFiles = (config: FlatConfig): FlatConfig =>
-  config.files
-    ? config
-    : {
-        ...config,
-        files: tsFileGlobs,
-      };
-
 export default [
   { ignores: [".next/**", "node_modules/**", "out/**", "public/**"] },
-  ...tseslint.configs["flat/recommended"].map(withTsFiles),
-  ...tseslint.configs["flat/recommended-type-checked"].map(withTsFiles),
   {
     files: ["**/*.{ts,tsx}"],
     plugins: {
@@ -63,4 +52,4 @@ export default [
     settings: { react: { version: "detect" } },
     rules: typeScriptRules,
   },
-];
+] as Linter.FlatConfig[];

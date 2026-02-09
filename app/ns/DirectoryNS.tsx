@@ -20,15 +20,14 @@ import NsTable from "./NsTable";
 import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
 import useFlightPaths from "./useFlightPaths";
 import useNsCounts from "./useNsCounts";
-import useNsDirectory, { type EnrichedLink, type LinksByProfileId } from "./useNsDirectory";
+import useNsDirectory, { type EnrichedLink } from "./useNsDirectory";
 import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
   const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useSelectionStore();
-  const { draft, setDraft } = useMessagingStore();
-  const { memo, amount } = draft;
+  const { memo, amount, setMemo, setAmount } = useMessagingStore();
   const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
     initialProfiles
   );
@@ -61,17 +60,17 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
   const flightPaths = useFlightPaths();
 
   const setDraftMemo = (memoValue: string) => {
-    setDraft((prev) => ({ ...prev, memo: memoValue }));
+    setMemo(memoValue);
   };
 
   const setDraftAmount = (amountValue: string) => {
-    setDraft((prev) => ({ ...prev, amount: amountValue }));
+    setAmount(amountValue);
   };
 
   const uri = useMemo(() => {
     const finalAmount = amount && amount !== "0" ? amount : "0";
     return buildZcashUri(selectedAddress ?? "", finalAmount, memo);
-  }, [draft, selectedAddress]);
+  }, [memo, amount, selectedAddress]);
 
   const announcementConfig = {
     enabled: true,

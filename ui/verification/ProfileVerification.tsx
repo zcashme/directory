@@ -136,7 +136,7 @@ export default function ProfileVerification({
     const zid = verify?.zId ?? profile?.id;
     if (!zid) return;
     setVerifyQrEnabled(true);
-    void startPolling(zid);
+    void startPolling(String(zid));
   };
 
   const handleCopyDebug = () => {

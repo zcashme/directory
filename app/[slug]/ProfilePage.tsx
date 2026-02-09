@@ -13,7 +13,7 @@ import { useSwapStore } from "@/lib/stores/swap";
 import { getTokenId } from "@/lib/swap/utils";
 
 // Server actions
-import { getSwapTokens, getSwapQuote, confirmSwap } from "@/lib/swap/oneclick";
+import { getSwapTokens, getSwapQuote, confirmSwap } from "@/lib/swap/oneClick";
 
 // UI Components
 import ProfileCard from "@/ui/profile/ProfileCard";

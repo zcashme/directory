@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Profile, EnrichedProfileLink } from '@/lib/profile/types';
+import type { Profile } from '@/lib/profile/types';
 import { isValidUrl } from '@/lib/profile/validateUrl';
 
 export interface ParsedLink {
@@ -10,9 +10,9 @@ export interface ParsedLink {
   valid: boolean;
   reason: string | null;
   is_verified: boolean;
-  verification_expires_at?: string | null;
+  verification_expires_at?: string;
   _uid: string;
-  platform?: "X" | "GitHub" | "Instagram" | "Discord" | null;
+  platform?: "X" | "GitHub" | "Instagram" | "Discord";
   otherUrl?: string;
   label?: string;
   icon?: string;

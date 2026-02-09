@@ -1,6 +1,8 @@
 "use client";
 import React from "react";
-import type { Profile, ProfileLink } from "@/lib/profile/types";
+import type { Profile } from "@/lib/profile/types";
+import type { EnrichedLink } from "./useNsDirectory";
+import type { UnverifiedLinkData } from "./types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
@@ -12,11 +14,6 @@ import {
   normalizeSlug,
 } from "./directoryNsUtils";
 
-interface EnrichedLink extends ProfileLink {
-  icon?: string;
-  domainLabel?: string;
-}
-
 interface NsRowProps {
   profile: Profile;
   links: EnrichedLink[];
@@ -24,8 +21,8 @@ interface NsRowProps {
   onSelectAddress: (_address: string | null) => void;
   onSetDraftMemo: (_memo: string) => void;
   onOpenProfile: (_profile: Profile) => void;
-  onForceShowQR: (_timestamp: number | boolean) => void;
-  onUnverifiedLink: (_link: ProfileLink | null) => void;
+  onForceShowQR: (_show: boolean) => void;
+  onUnverifiedLink: (_link: UnverifiedLinkData | null) => void;
 }
 
 export default function NsRow({
@@ -82,7 +79,6 @@ export default function NsRow({
             size={72}
             imageClassName="object-contain"
             className="shadow-xs"
-            showFallbackIcon
           />
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-nowrap">
@@ -128,7 +124,7 @@ export default function NsRow({
                       onSetDraftMemo("");
                     }
                     onOpenProfile(profile);
-                    onForceShowQR(Date.now());
+                    onForceShowQR(true);
                   }}
                   className={`flex items-center gap-1 px-1 text-xs transition-colors ${
                     addressValue

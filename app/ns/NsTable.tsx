@@ -1,13 +1,11 @@
 "use client";
 import { useMemo } from "react";
-import type { Profile, ProfileLink } from "@/lib/profile/types";
+import type { Profile } from "@/lib/profile/types";
+import type { LinksByProfileId } from "./useNsDirectory";
+import type { UnverifiedLinkData } from "./types";
 
 import LoadingDots from "./LoadingDots";
 import NsRow from "./NsRow";
-
-interface LinksByProfileId {
-  [zcasherId: string]: (ProfileLink & { icon?: string; domainLabel?: string })[];
-}
 
 interface NsTableProps {
   loading: boolean;
@@ -18,7 +16,7 @@ interface NsTableProps {
   setDraftMemo: (_memo: string) => void;
   setActiveProfile: (_profile: Profile | null) => void;
   setForceShowQR: (_show: boolean) => void;
-  setUnverifiedLink: (_link: ProfileLink | null) => void;
+  setUnverifiedLink: (_link: UnverifiedLinkData | null) => void;
 }
 
 export default function NsTable({

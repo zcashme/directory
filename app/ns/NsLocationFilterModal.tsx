@@ -1,4 +1,5 @@
 "use client";
+import type { Dispatch, SetStateAction } from "react";
 import type { LocationOption } from "./useNsFilters";
 
 interface NsLocationFilterModalProps {
@@ -6,7 +7,7 @@ interface NsLocationFilterModalProps {
   setLocationSearch: (_value: string) => void;
   filteredLocationOptions: LocationOption[];
   locationFilter: string[];
-  setLocationFilter: (_value: string[]) => void;
+  setLocationFilter: Dispatch<SetStateAction<string[]>>;
   onClose: () => void;
 }
 

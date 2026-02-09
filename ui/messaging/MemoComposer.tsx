@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import type { Profile } from "@/lib/profile/types";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";

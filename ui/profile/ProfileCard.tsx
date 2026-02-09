@@ -278,7 +278,7 @@ export function ProfileCardContent({
           )}
           <span className="whitespace-nowrap">
             Joined{" "}
-            {new Date(profile.joined_at || profile.created_at || profile.since).toLocaleString("default", {
+            {new Date(profile.joined_at || profile.created_at || profile.since || new Date().toISOString()).toLocaleString("default", {
               month: "short",
               year: "numeric",
             })}
@@ -422,7 +422,7 @@ export default function ProfileCard({
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
-  const warningConfig = getWarningConfig({ profile, warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const warningConfig = getWarningConfig({ profile, warning: !!warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
   const fullLinkRowClasses: LinkRowClasses = {
     row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
     left: "flex items-center gap-2 shrink-0",
@@ -755,7 +755,7 @@ export default function ProfileCard({
             <span className="whitespace-nowrap">
               Joined{" "}
               {new Date(
-                profile.joined_at || profile.created_at || profile.since
+                profile.joined_at || profile.created_at || profile.since || new Date().toISOString()
               ).toLocaleString("default", {
                 month: "short",
                 year: "numeric",
@@ -793,7 +793,7 @@ export default function ProfileCard({
                   <button
                     onClick={() => {
                       if (typeof setForceShowQR === "function") {
-                        setForceShowQR(Date.now());
+                        setForceShowQR(true);
                       }
 
                       setTimeout(() => {
@@ -922,7 +922,7 @@ export default function ProfileCard({
       <AuthExplainerModal
         isOpen={authInfoOpen && !!authLink}
         canAuthenticate={canAuthenticateLinks}
-        authPending={authPending}
+        authPending={!!authPending}
         authRedirectOpen={authRedirectOpen}
         providerLabel={selectedAuthProvider?.label}
         onClose={() => {

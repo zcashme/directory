@@ -52,7 +52,6 @@ export default function useNsProfiles(
       rank_weekly: 0,
       rank_monthly: 0,
       address_verified: false,
-      links: [],
       verified_links_count: 0,
       ...newProfile,
       id: newProfile.id || 0,

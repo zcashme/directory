@@ -8,7 +8,6 @@ import {
   QuoteRequest,
   type QuoteResponse as SDKQuoteResponse,
   type GetExecutionStatusResponse,
-  type SubmitDepositTxResponse,
 } from "@defuse-protocol/one-click-sdk-typescript";
 import type {
   Token,

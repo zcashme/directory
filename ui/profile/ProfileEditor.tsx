@@ -105,7 +105,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         valid: true,
         reason: null,
         is_verified: !!l.is_verified,
-        verification_expires_at: l.verification_expires_at || null,
+        verification_expires_at: l.verification_expires_at,
         _uid: crypto.randomUUID()
       } as ParsedLink;
     });
@@ -168,7 +168,16 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
-  const avatarCallbacks = { setAvatarPrompt, setDeletedField, handleChange };
+  const avatarCallbacks = {
+    setAvatarPrompt,
+    setDeletedFields: (fn: (prev: Record<string, boolean>) => Record<string, boolean>) => {
+      const newFields = fn(deletedFields as unknown as Record<string, boolean>);
+      Object.entries(newFields).forEach(([key, value]) => {
+        setDeletedField(key as keyof typeof deletedFields, value);
+      });
+    },
+    handleChange
+  };
 
   const handleLinkChange = (uid: string, value: string) => {
     setForm((prev) => ({
@@ -198,7 +207,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         {
           id: null, url: "", platform: "X" as const, username: "", otherUrl: "",
           valid: true, reason: null, is_verified: false,
-          verification_expires_at: null, _uid: crypto.randomUUID(),
+          _uid: crypto.randomUUID(),
         },
       ],
     }));
@@ -219,7 +228,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           ? originalLinks.map((l) => ({ ...l }))
           : [{
               id: null, url: "", is_verified: false,
-              verification_expires_at: null, _uid: crypto.randomUUID(),
+              _uid: crypto.randomUUID(),
             } as ParsedLink],
     }));
     // Note: Link tokens are automatically recomputed by the store
@@ -246,7 +255,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       <AuthExplainerModal
         isOpen={authInfoOpen && !!authInfoLink}
         canAuthenticate={!!profile.address_verified}
-        authPending={authInfoPending}
+        authPending={!!authInfoPending}
         authRedirectOpen={showRedirect}
         providerLabel={authInfoProvider?.label}
         onClose={() => { setAuthInfoOpen(false); setAuthInfoLink(null); }}
@@ -413,9 +422,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                 setNearestCityDisplay(val);
                 updateField('nearest_city_id', null);
               } else {
-                setNearestCityDisplay(val.fullLabel);
+                setNearestCityDisplay(val.fullLabel || "");
                 updateField('nearest_city_id', val.id);
-                updateField('nearest_city_name', val.fullLabel);
+                updateField('nearest_city_name', val.fullLabel || "");
               }
             }}
           />

@@ -32,15 +32,15 @@ async function findProfileByName(supabase: any, name: string): Promise<Profile |
 
   const candidates = data || [];
   const matching = candidates.filter(
-    (p) => normalize(p.name || "") === normalize(name)
+    (p: Profile) => normalize(p.name || "") === normalize(name)
   );
 
   if (!matching.length) return null;
 
   const verified = matching.find(
-    (p) => p.address_verified || (p.verified_links_count ?? 0) > 0 || p.links?.some((l: { is_verified: boolean }) => l.is_verified)
+    (p: Profile) => p.address_verified || (p.verified_links_count ?? 0) > 0 || p.links?.some((l: { is_verified: boolean }) => l.is_verified)
   );
-  return verified || matching.slice().sort((a, b) => a.id - b.id)[0];
+  return verified || matching.slice().sort((a: Profile, b: Profile) => (a.id ?? 0) - (b.id ?? 0))[0];
 }
 
 export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | null> {

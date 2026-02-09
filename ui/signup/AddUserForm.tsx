@@ -3,7 +3,8 @@
 import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
-import type { Profile, City } from "@/lib/profile/types";
+import type { Profile } from "@/lib/profile/types";
+import type { City } from "@/lib/directory/types";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import React, { useState, useEffect, useRef } from "react";
 import {
