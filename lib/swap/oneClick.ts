@@ -153,7 +153,7 @@ export async function getSwapQuote(params: {
     const request: QuoteRequest = {
       dry: true, // Dry run - no deposit address
       swapType: QuoteRequest.swapType.EXACT_INPUT,
-      slippageTolerance: toBasisPoints(params.slippageTolerance, 50),
+      slippageTolerance: toBasisPoints(params.slippageTolerance, 100),
       originAsset: params.fromToken,
       depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
       destinationAsset: params.toToken,
@@ -252,7 +252,7 @@ export async function confirmSwap(params: {
     const request: QuoteRequest = {
       dry: false, // Real swap - generates deposit address
       swapType: QuoteRequest.swapType.EXACT_INPUT,
-      slippageTolerance: toBasisPoints(params.slippageTolerance, 50),
+      slippageTolerance: toBasisPoints(params.slippageTolerance, 100),
       originAsset: params.fromToken,
       depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
       destinationAsset: params.toToken,
