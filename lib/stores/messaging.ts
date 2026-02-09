@@ -10,20 +10,19 @@ interface MessagingState {
     amount: string;
   };
   verify: {
-    memo: string;
     amount: string;
     zId: number | null;
     requestId: string | null;
   };
   setMode: (mode: string | ((prev: string) => string)) => void;
   setDraft: (draft: { memo: string; amount: string } | ((prev: { memo: string; amount: string }) => { memo: string; amount: string })) => void;
-  setVerify: (verify: { memo: string; amount: string; zId: number | null; requestId: string | null } | ((prev: { memo: string; amount: string; zId: number | null; requestId: string | null }) => { memo: string; amount: string; zId: number | null; requestId: string | null })) => void;
+  setVerify: (verify: { amount: string; zId: number | null; requestId: string | null } | ((prev: { amount: string; zId: number | null; requestId: string | null }) => { amount: string; zId: number | null; requestId: string | null })) => void;
 }
 
 export const useMessagingStore = create<MessagingState>((set) => ({
   mode: 'memo',
   draft: { memo: '', amount: '' },
-  verify: { memo: '', amount: '0', zId: null, requestId: null },
+  verify: { amount: '0', zId: null, requestId: null },
   setMode: (mode) =>
     set((state) => ({
       mode: typeof mode === 'function' ? mode(state.mode) : mode,

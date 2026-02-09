@@ -55,18 +55,6 @@ export default function ProfilePage({
       .finally(() => setIsLoadingTokens(false));
   }, []);
 
-  // Compute verification memo reactively from pending edits
-  const verificationMemo = useMemo(() => {
-    const zId = verify.zId ?? initialProfile.id ?? null;
-    if (!zId) return "";
-
-    const profileEdits = pendingEdits.profile ?? {};
-    const linkTokens = pendingEdits.l ?? [];
-    const hasEdits = Object.keys(profileEdits).length > 0 || linkTokens.length > 0;
-    const profileDiff = hasEdits ? { ...profileEdits, l: linkTokens } : {};
-    return buildZcashEditMemo(profileDiff, String(zId), verify.requestId ?? null);
-  }, [initialProfile.id, verify.zId, verify.requestId, pendingEdits]);
-
   // Token selection and swap mode detection
   const zecToken = tokens.find((t) =>
     t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
@@ -169,27 +157,14 @@ export default function ProfilePage({
           <div className="w-full flex justify-center">
             <div className="w-full max-w-xl mt-[-9px]">
               {mode === "verification" ? (
-                <div className="p-0 mt-4">
-                  <div
-                    className="w-full border rounded-xl px-4 py-3 text-center border-[#000000]/90 mb-4"
-                    style={{ lineHeight: "1.2" }}
-                  >
-                    <div className="font-semibold text-[15px] text-gray-800">
-                      Create Verification Message & Request OTP
-                    </div>
-                    <div className="text-[13px] text-gray-600 mt-1 font-light">
-                      customize message and verify address to apply edits
-                    </div>
-                  </div>
-                  <ProfileVerification
-                    profile={initialProfile}
-                    pendingEdits={pendingEdits}
-                    verify={verify}
-                    computedMemo={verificationMemo}
-                    setVerifyRequestId={(id) => setVerify((prev) => ({ ...prev, requestId: id }))}
-                    setVerifyAmount={(amount) => setVerify((prev) => ({ ...prev, amount }))}
-                  />
-                </div>
+                <ProfileVerification
+                  profile={initialProfile}
+                  pendingEdits={pendingEdits}
+                  verify={verify}
+                  computedMemo={verificationMemo}
+                  setVerifyRequestId={(id) => setVerify((prev) => ({ ...prev, requestId: id }))}
+                  setVerifyAmount={(amount) => setVerify((prev) => ({ ...prev, amount }))}
+                />
               ) : (
                 <div className="p-0 mt-4">
                   {isSwapMode ? (

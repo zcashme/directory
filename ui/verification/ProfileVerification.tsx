@@ -5,7 +5,7 @@ import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
+import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
@@ -16,7 +16,6 @@ const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
 interface VerifyState {
-  memo: string;
   amount: string;
   zId: number | null;
   requestId: string | null;
@@ -26,7 +25,6 @@ interface ProfileVerificationProps {
   profile: Profile;
   pendingEdits: PendingEdits;
   verify: VerifyState;
-  computedMemo: string;
   setVerifyRequestId: (requestId: string | null) => void;
   setVerifyAmount: (amount: string) => void;
 }
@@ -35,12 +33,21 @@ export default function ProfileVerification({
   profile,
   pendingEdits,
   verify,
-  computedMemo,
   setVerifyRequestId,
   setVerifyAmount,
 }: ProfileVerificationProps) {
-  // Use computed memo that auto-updates from pendingEdits
-  const memo = computedMemo;
+  // Compute verification memo reactively from pending edits
+  const memo = useMemo(() => {
+    const zId = verify.zId ?? profile.id ?? null;
+    if (!zId) return "";
+
+    const profileEdits = pendingEdits.profile ?? {};
+    const linkTokens = pendingEdits.l ?? [];
+    const hasEdits = Object.keys(profileEdits).length > 0 || linkTokens.length > 0;
+    const profileDiff = hasEdits ? { ...profileEdits, l: linkTokens } : {};
+    return buildZcashEditMemo(profileDiff, String(zId), verify.requestId ?? null);
+  }, [profile.id, verify.zId, verify.requestId, pendingEdits]);
+
   const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
