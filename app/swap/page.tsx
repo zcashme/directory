@@ -121,7 +121,7 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
             </p>
           </div>
           <p className="text-xs text-gray-600">
-            {details?.amountInUsd ? `$${details.amountInUsd}` : "—"}
+            {details?.amountInUsd ? `$${details.amountInUsd}` : "$—"}
           </p>
         </div>
 
@@ -136,7 +136,7 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
             </p>
           </div>
           <p className="text-xs text-gray-600">
-            {details?.amountOutUsd ? `$${details.amountOutUsd}` : "—"}
+            {details?.amountOutUsd ? `$${details.amountOutUsd}` : "$—"}
           </p>
         </div>
       </div>
