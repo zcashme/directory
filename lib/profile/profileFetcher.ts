@@ -22,6 +22,27 @@ const mergeRanks = (profile: Profile, ranks: RankData): Profile => ({
   rank_monthly: ranks.rank_monthly || 0,
 });
 
+async function findProfileByName(supabase: any, name: string): Promise<Profile | null> {
+  const nameAsSpace = name.replace(/_/g, " ");
+  const { data } = await supabase
+    .from("zcasher_searchable")
+    .select("*")
+    .or(`name.ilike.${nameAsSpace},name.ilike.${name}`)
+    .limit(20);
+
+  const candidates = data || [];
+  const matching = candidates.filter(
+    (p) => normalize(p.name || "") === normalize(name)
+  );
+
+  if (!matching.length) return null;
+
+  const verified = matching.find(
+    (p) => p.address_verified || (p.verified_links_count ?? 0) > 0 || p.links?.some((l: { is_verified: boolean }) => l.is_verified)
+  );
+  return verified || matching.slice().sort((a, b) => a.id - b.id)[0];
+}
+
 export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | null> {
   const supabase = createSupabaseServerClient();
   if (!supabase) return null;
@@ -31,6 +52,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
 
   let profile: Profile | null = null;
 
+  // Try username-discriminator pattern (e.g., zooko-132)
   const dashMatch = slug.match(/^(?<base>[a-z0-9_]+)-(?<id>\d+)$/);
   if (dashMatch?.groups?.id) {
     const id = parseInt(dashMatch.groups.id, 10);
@@ -41,8 +63,14 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
       .limit(1)
       .maybeSingle();
     profile = data || null;
+
+    // If discriminator doesn't exist, fall back to username
+    if (!profile && dashMatch.groups.base) {
+      profile = await findProfileByName(supabase, dashMatch.groups.base);
+    }
   }
 
+  // Try exact slug match
   if (!profile) {
     const { data } = await supabase
       .from("zcasher_searchable")
@@ -53,26 +81,9 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
     profile = data || null;
   }
 
+  // Try name-based search
   if (!profile) {
-    const slugAsName = slug.replace(/_/g, " ");
-    const { data } = await supabase
-      .from("zcasher_searchable")
-      .select("*")
-      .or(`name.ilike.${slugAsName},name.ilike.${slug}`)
-      .limit(20);
-
-    const candidates = data || [];
-    const matching = candidates.filter(
-      (p) => normalize(p.name || "") === normalize(slug)
-    );
-
-    if (matching.length) {
-      const verified = matching.find(
-        (p) => p.address_verified || (p.verified_links_count ?? 0) > 0 || p.links?.some((l: { is_verified: boolean }) => l.is_verified)
-      );
-      if (verified) profile = verified;
-      else profile = matching.slice().sort((a, b) => a.id - b.id)[0];
-    }
+    profile = await findProfileByName(supabase, slug);
   }
 
   if (!profile) return null;
