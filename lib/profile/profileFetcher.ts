@@ -65,19 +65,23 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   // Only for single-dash patterns (exclude multi-dash like "my-profile-name-123")
   if (!profile) {
     const dashMatch = slug.match(/^(?<base>[a-z0-9_]+)-(?<id>\d+)$/);
-    if (dashMatch?.groups?.id) {
+    if (dashMatch?.groups?.id && dashMatch.groups.base) {
       const id = parseInt(dashMatch.groups.id, 10);
+      const username = dashMatch.groups.base;
+
       const { data } = await supabase
         .from("zcasher_searchable")
         .select("*")
         .eq("id", id)
         .limit(1)
         .maybeSingle();
-      profile = data || null;
 
-      // If discriminator doesn't exist, fall back to username only
-      if (!profile && dashMatch.groups.base) {
-        profile = await findProfileByName(supabase, dashMatch.groups.base);
+      // Validate that the username matches the discriminator
+      if (data && normalize(data.name || "") === normalize(username)) {
+        profile = data;
+      } else {
+        // If discriminator doesn't exist or username doesn't match, fall back to username search
+        profile = await findProfileByName(supabase, username);
       }
     }
   }

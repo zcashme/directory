@@ -86,11 +86,10 @@ export async function confirmSwapAction(body: SwapQuoteRequest): Promise<SwapCon
   const originSymbol = originTokenInfo?.symbol || originTokenInfo?.ticker || payload.originAsset;
   const paymentUri = buildPaymentUri(originSymbol, depositAddress, amountDecimal);
 
-  // Safety check for BTC direction bugs
-  if (String(originSymbol).toUpperCase() === "BTC") {
-    const a = String(depositAddress);
-    const looksBtc = a.startsWith("bc1") || a.startsWith("1") || a.startsWith("3");
-    if (!looksBtc) {
+  // Validate deposit address format matches the origin token's blockchain
+  if (originTokenInfo && depositAddress) {
+    const validation = validateAddressForBlockchain(depositAddress, originTokenInfo.blockchain);
+    if (!validation.valid) {
       return { ok: false, error: "Invalid payment address. Please try again.", retryable: true };
     }
   }

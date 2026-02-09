@@ -19,9 +19,7 @@ interface SwapComposerProps {
   profile: Profile;
   // Token state
   tokenOptions: Token[];
-  originTokenId: string | null;
   originSymbol: string;
-  zecTokenId: string | null;
   // Swap input state
   swapAmount: string;
   refundAddress: string;

@@ -179,9 +179,7 @@ export default function ProfilePage({
                     <SwapComposer
                       profile={initialProfile}
                       tokenOptions={tokens}
-                      originTokenId={swap.originTokenId}
                       originSymbol={originSymbol}
-                      zecTokenId={zecTokenId}
                       swapAmount={swap.swapAmount}
                       refundAddress={swap.refundAddress}
                       slippageTolerance={swap.slippageTolerance}
