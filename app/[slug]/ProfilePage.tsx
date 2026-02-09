@@ -11,10 +11,11 @@ import type { FeedbackProps } from "@/ui/profile/feedback-types";
 import { useSelectionStore, useEditsStore } from "@/lib/stores/ui-state";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import { useSwapStore } from "@/lib/stores/swap";
-import { useSwapTokens } from "@/lib/query/swap-queries";
+import { useSwapTokens, useGetSwapQuote, useConfirmSwap } from "@/lib/query/swap-queries";
 
 // Zcash utilities
 import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
+import { getTokenId } from "@/lib/swap/swapPayload";
 
 // UI Components - Profile
 import ProfileCard from "@/ui/profile/ProfileCard";
@@ -71,6 +72,8 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
   } = useMessagingStore();
   const swap = useSwapStore();
   const { data: tokens = [] } = useSwapTokens();
+  const getQuoteMutation = useGetSwapQuote();
+  const confirmSwapMutation = useConfirmSwap();
 
   // Feedback events effect
   useEffect(() => {
@@ -191,11 +194,8 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     swap.setSwapError("");
   }, [swap]);
 
-  const selectedToken = tokens.find((t) => {
-    const tid = t.id ?? t.assetId ?? t.tokenId ?? t.asset;
-    return tid === swap.originTokenId;
-  });
-  const originSymbol = selectedToken?.symbol ?? selectedToken?.ticker ?? "ZEC";
+  const selectedToken = tokens.find((t) => getTokenId(t) === swap.originTokenId);
+  const originSymbol = selectedToken?.symbol ?? "ZEC";
 
   const memoComposerProps = {
     profile,
@@ -207,18 +207,14 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     setDraftMemo,
     setDraftAmount,
     asset: originSymbol,
-    assetOptions: (tokens ?? []).map((token: Token) => {
-      const symbolDisplay = token.symbol ?? token.ticker ?? "";
-      const tokenId = token.id ?? token.assetId ?? token.tokenId ?? token.asset ?? "";
-      return {
-        id: tokenId,
-        symbol: symbolDisplay,
-        label: `${symbolDisplay} - ${token.blockchain ?? ""}`,
-        logo: token.logo,
-        chain: token.blockchain ?? "",
-        decimals: token.decimals ?? 8,
-      };
-    }),
+    assetOptions: (tokens ?? []).map((token: Token) => ({
+      id: getTokenId(token) ?? "",
+      symbol: token.symbol,
+      label: `${token.symbol} - ${token.blockchain}`,
+      logo: token.logo,
+      chain: token.blockchain,
+      decimals: token.decimals,
+    })),
     onSetAsset: handleSetAsset,
   };
 
@@ -243,11 +239,56 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     swap.setQuoteStatus("");
   }, [swap]);
 
-  const zecToken = tokens.find((t) => {
-    const symbol = (t.symbol ?? t.ticker ?? "").toUpperCase();
-    return symbol === "ZEC" && (t.blockchain ?? "").toLowerCase().includes("zec");
-  });
-  const zecTokenId = (zecToken?.id ?? zecToken?.assetId ?? zecToken?.tokenId ?? zecToken?.asset) ?? null;
+  const zecToken = tokens.find((t) =>
+    t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
+  );
+  const zecTokenId = getTokenId(zecToken) ?? null;
+
+  const handleGetQuote = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
+    try {
+      const result = await getQuoteMutation.mutateAsync({
+        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        toToken: params.toToken ?? zecTokenId ?? "",
+        amountIn: params.amountIn,
+        destAddress: params.destAddress,
+        refundAddress: params.refund ?? swap.refundAddress,
+        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+      });
+      return result;
+    } catch {
+      return null;
+    }
+  }, [getQuoteMutation, swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
+
+  const handleConfirmSwap = useCallback(async (params: {
+    amountIn: string;
+    destAddress: string;
+    fromToken?: string;
+    toToken?: string;
+    refund?: string;
+    slippage?: string;
+  }) => {
+    try {
+      const result = await confirmSwapMutation.mutateAsync({
+        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        toToken: params.toToken ?? zecTokenId ?? "",
+        amountIn: params.amountIn,
+        destAddress: params.destAddress,
+        refundAddress: params.refund ?? swap.refundAddress,
+        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+      });
+      return result;
+    } catch {
+      return null;
+    }
+  }, [confirmSwapMutation, swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId]);
 
   const isSwapMode = swap.originTokenId !== null && zecTokenId !== null && swap.originTokenId !== zecTokenId;
 
@@ -274,9 +315,9 @@ export default function ProfilePage({ initialProfile, profileCount, duplicateNam
     setSwapAmount: handleSwapAmountChange,
     setRefundAddress: handleRefundAddressChange,
     setSlippageTolerance: handleSlippageToleranceChange,
-    getQuote: () => Promise.resolve(null),
-    confirmSwap: () => Promise.resolve(null),
-    resetSwapState: () => { swap.resetSwapState(zecTokenId ?? null); },
+    getQuote: handleGetQuote,
+    confirmSwap: handleConfirmSwap,
+    resetSwapState: () => { swap.resetSwapState(zecTokenId); },
   };
 
   const setVerifyRequestId = useCallback((requestId: string | null) => {

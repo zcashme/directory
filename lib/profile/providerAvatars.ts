@@ -109,7 +109,6 @@ interface ProviderCallbacks {
 export async function applyProviderAvatar(
   provider: string,
   url: string,
-  _profileId: number | string | undefined,
   callbacks: ProviderCallbacks
 ): Promise<void> {
   const { setAvatarPrompt, setDeletedFields, handleChange } = callbacks;

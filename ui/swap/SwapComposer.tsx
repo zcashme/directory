@@ -106,8 +106,8 @@ export default function SwapComposer({
   // Format tokens for selector
   const formattedTokenOptions = tokenOptions.map((token) => ({
     id: getTokenId(token) ?? "",
-    symbol: token.symbol ?? token.ticker ?? "?",
-    chain: token.blockchain ?? "",
+    symbol: token.symbol,
+    chain: token.blockchain,
     logo: token.logo ?? "",
   }));
 

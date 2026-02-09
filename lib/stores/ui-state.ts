@@ -29,12 +29,6 @@ interface PendingEdits {
   [key: string]: any;
 }
 
-declare global {
-  interface Window {
-    pendingEdits?: PendingEdits;
-  }
-}
-
 interface EditsState {
   pendingEdits: PendingEdits;
   editChangesRequested: boolean;
@@ -48,10 +42,6 @@ export const useEditsStore = create<EditsState>((set) => ({
   setPendingEdits: (edits) =>
     set((state) => {
       const newEdits = typeof edits === 'function' ? edits(state.pendingEdits) : edits;
-      // Side effect: sync to window.pendingEdits
-      if (typeof window !== 'undefined') {
-        window.pendingEdits = newEdits;
-      }
       return { pendingEdits: newEdits };
     }),
   setEditChangesRequested: (requested) =>

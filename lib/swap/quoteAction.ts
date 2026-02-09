@@ -73,8 +73,8 @@ export async function getSwapQuote(body: SwapQuoteRequest): Promise<SwapQuoteRes
 
   const originTok = findToken(tokensPayload, payload.originAsset);
   const destTok = findToken(tokensPayload, payload.destinationAsset);
-  const fromSymbol = originTok?.symbol || originTok?.ticker || payload.originAsset;
-  const toSymbol = destTok?.symbol || destTok?.ticker || payload.destinationAsset;
+  const fromSymbol = originTok?.symbol || payload.originAsset;
+  const toSymbol = destTok?.symbol || payload.destinationAsset;
 
   return {
     ok: true,

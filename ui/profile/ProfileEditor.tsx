@@ -773,7 +773,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
                     {showDiscordAvatarAction && (
                       <button
                         type="button"
-                        onClick={() => applyProviderAvatar("Discord", row.url, profile.id, avatarCallbacks)}
+                        onClick={() => applyProviderAvatar("Discord", row.url, avatarCallbacks)}
                         className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
                       >
                         Use Discord Avatar
@@ -782,7 +782,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
                     {showXAvatarAction && (
                       <button
                         type="button"
-                        onClick={() => applyProviderAvatar("X", row.url, profile.id, avatarCallbacks)}
+                        onClick={() => applyProviderAvatar("X", row.url, avatarCallbacks)}
                         className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
                       >
                         Use X Avatar
@@ -791,7 +791,7 @@ export default function ProfileEditor({ profile, links, feedbackProps = {} }: Pr
                     {showGithubAvatarAction && (
                       <button
                         type="button"
-                        onClick={() => applyProviderAvatar("GitHub", row.url, profile.id, avatarCallbacks)}
+                        onClick={() => applyProviderAvatar("GitHub", row.url, avatarCallbacks)}
                         className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
                       >
                         Use Github Avatar
