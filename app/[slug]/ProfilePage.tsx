@@ -9,9 +9,6 @@ import { useEditsStore } from "@/lib/stores/edits";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import { useSwapStore } from "@/lib/stores/swap";
 
-// Zcash utilities
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-
 // Swap utilities
 import { getTokenId } from "@/lib/swap/utils";
 
@@ -42,7 +39,7 @@ export default function ProfilePage({
   const [confirmTransition, startConfirmTransition] = useTransition();
 
   const { pendingEdits } = useEditsStore();
-  const { mode, draft, setDraft } = useMessagingStore();
+  const { mode, showBack, setMode } = useMessagingStore();
   const swap = useSwapStore();
 
   // Fetch tokens on mount
@@ -55,24 +52,32 @@ export default function ProfilePage({
       .finally(() => setIsLoadingTokens(false));
   }, []);
 
-  // Token selection and swap mode detection
+  // Token selection
   const zecToken = tokens.find((t) =>
     t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
   );
   const zecTokenId = getTokenId(zecToken) ?? null;
   const selectedToken = tokens.find((t) => getTokenId(t) === swap.originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
-  const isSwapMode = swap.originTokenId !== null && zecTokenId !== null && swap.originTokenId !== zecTokenId;
 
-  // URI builders
-  const memoUri = useMemo(() =>
-    buildZcashUri(initialProfile.address, draft.amount || "0", draft.memo || ""),
-    [initialProfile.address, draft.amount, draft.memo]
-  );
+  // Mode selection logic based on card flip state and token selection
+  useEffect(() => {
+    if (showBack) {
+      // Card is flipped to back (edit profile) -> verification mode
+      setMode("verification");
+    } else {
+      // Card is on front -> determine mode based on token selection
+      const isNonZecToken = swap.originTokenId !== null &&
+                            zecTokenId !== null &&
+                            swap.originTokenId !== zecTokenId;
 
-  const openWallet = useCallback(() => {
-    if (memoUri) window.open(memoUri, "_blank");
-  }, [memoUri]);
+      if (isNonZecToken) {
+        setMode("swap");
+      } else {
+        setMode("memo");
+      }
+    }
+  }, [showBack, swap.originTokenId, zecTokenId, setMode]);
 
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
@@ -134,14 +139,6 @@ export default function ProfilePage({
     swap.resetQuote();
   }, [swap]);
 
-  const handleSetDraftMemo = useCallback((memo: string) => {
-    setDraft((prev) => ({ ...prev, memo }));
-  }, [setDraft]);
-
-  const handleSetDraftAmount = useCallback((amount: string) => {
-    setDraft((prev) => ({ ...prev, amount }));
-  }, [setDraft]);
-
   const handleResetSwapState = useCallback(() => {
     swap.resetSwapState(zecTokenId);
   }, [swap, zecTokenId]);
@@ -175,56 +172,49 @@ export default function ProfilePage({
                   profile={initialProfile}
                   pendingEdits={pendingEdits}
                 />
+              ) : mode === "swap" ? (
+                <div className="p-0 mt-4">
+                  <SwapComposer
+                    profile={initialProfile}
+                    tokenOptions={tokens}
+                    originSymbol={originSymbol}
+                    swapAmount={swap.swapAmount}
+                    refundAddress={swap.refundAddress}
+                    slippageTolerance={swap.slippageTolerance}
+                    quotePreview={swap.quotePreview}
+                    quoteData={swap.quoteData}
+                    depositUri={swap.depositUri}
+                    statusKey={swap.statusKey}
+                    swapStatus={swap.swapStatus}
+                    isGettingQuote={quoteTransition}
+                    isConfirming={confirmTransition}
+                    quoteStatus={swap.quoteStatus}
+                    swapError={swap.swapError}
+                    setToken={handleSetAsset}
+                    setSwapAmount={handleSwapFieldChange('amount')}
+                    setRefundAddress={handleSwapFieldChange('refund')}
+                    setSlippageTolerance={handleSwapFieldChange('slippage')}
+                    getQuote={handleGetQuote}
+                    confirmSwap={handleConfirmSwap}
+                    resetSwapState={handleResetSwapState}
+                  />
+                </div>
               ) : (
                 <div className="p-0 mt-4">
-                  {isSwapMode ? (
-                    <SwapComposer
-                      profile={initialProfile}
-                      tokenOptions={tokens}
-                      originSymbol={originSymbol}
-                      swapAmount={swap.swapAmount}
-                      refundAddress={swap.refundAddress}
-                      slippageTolerance={swap.slippageTolerance}
-                      quotePreview={swap.quotePreview}
-                      quoteData={swap.quoteData}
-                      depositUri={swap.depositUri}
-                      statusKey={swap.statusKey}
-                      swapStatus={swap.swapStatus}
-                      isGettingQuote={quoteTransition}
-                      isConfirming={confirmTransition}
-                      quoteStatus={swap.quoteStatus}
-                      swapError={swap.swapError}
-                      isSwapMode={isSwapMode}
-                      setToken={handleSetAsset}
-                      setSwapAmount={handleSwapFieldChange('amount')}
-                      setRefundAddress={handleSwapFieldChange('refund')}
-                      setSlippageTolerance={handleSwapFieldChange('slippage')}
-                      getQuote={handleGetQuote}
-                      confirmSwap={handleConfirmSwap}
-                      resetSwapState={handleResetSwapState}
-                    />
-                  ) : (
-                    <MemoComposer
-                      profile={initialProfile}
-                      forceShowQR={false}
-                      uri={memoUri}
-                      memo={draft.memo ?? ""}
-                      amount={draft.amount ?? ""}
-                      openWallet={openWallet}
-                      setDraftMemo={handleSetDraftMemo}
-                      setDraftAmount={handleSetDraftAmount}
-                      asset={originSymbol}
-                      assetOptions={tokens.map((token) => ({
-                        id: getTokenId(token) ?? "",
-                        symbol: token.symbol,
-                        label: `${token.symbol} - ${token.blockchain}`,
-                        logo: token.logo,
-                        chain: token.blockchain,
-                        decimals: token.decimals,
-                      }))}
-                      onSetAsset={handleSetAsset}
-                    />
-                  )}
+                  <MemoComposer
+                    profile={initialProfile}
+                    forceShowQR={false}
+                    asset={originSymbol}
+                    assetOptions={tokens.map((token) => ({
+                      id: getTokenId(token) ?? "",
+                      symbol: token.symbol,
+                      label: `${token.symbol} - ${token.blockchain}`,
+                      logo: token.logo,
+                      chain: token.blockchain,
+                      decimals: token.decimals,
+                    }))}
+                    onSetAsset={handleSetAsset}
+                  />
                 </div>
               )}
             </div>

@@ -4,15 +4,14 @@ type OtpPhaseHistoryItem = {
   phase?: string | null;
 };
 
+export type ProfileMode = "verification" | "swap" | "memo";
+
 /**
  * Messaging store - manages memo/message composition and verification state for Zcash
  */
 interface MessagingState {
-  mode: string;
-  draft: {
-    memo: string;
-    amount: string;
-  };
+  mode: ProfileMode;
+  showBack: boolean;
   verify: {
     amount: string;
     zId: number | null;
@@ -31,8 +30,8 @@ interface MessagingState {
   pollElapsedMs: number;
 
   // Actions
-  setMode: (mode: string | ((prev: string) => string)) => void;
-  setDraft: (draft: { memo: string; amount: string } | ((prev: { memo: string; amount: string }) => { memo: string; amount: string })) => void;
+  setMode: (mode: ProfileMode | ((prev: ProfileMode) => ProfileMode)) => void;
+  setShowBack: (showBack: boolean) => void;
   setVerify: (verify: { amount: string; zId: number | null; requestId: string | null } | ((prev: { amount: string; zId: number | null; requestId: string | null }) => { amount: string; zId: number | null; requestId: string | null })) => void;
 
   // Verification polling actions
@@ -64,7 +63,7 @@ const initialVerifyState = {
 
 export const useMessagingStore = create<MessagingState>((set) => ({
   mode: 'memo',
-  draft: { memo: '', amount: '' },
+  showBack: false,
   verify: { amount: '0.003', zId: null, requestId: null },
   ...initialVerifyState,
 
@@ -72,10 +71,7 @@ export const useMessagingStore = create<MessagingState>((set) => ({
     set((state) => ({
       mode: typeof mode === 'function' ? mode(state.mode) : mode,
     })),
-  setDraft: (draft) =>
-    set((state) => ({
-      draft: typeof draft === 'function' ? draft(state.draft) : draft,
-    })),
+  setShowBack: (showBack) => set({ showBack }),
   setVerify: (verify) =>
     set((state) => ({
       verify: typeof verify === 'function' ? verify(state.verify) : verify,

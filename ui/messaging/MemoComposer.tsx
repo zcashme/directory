@@ -9,6 +9,7 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import bookOpen from "@/ui/assets/book-open.svg";
 import bookClosed from "@/ui/assets/book-closed.svg";
 import { buildSlug } from "@/lib/profile/profileUtils";
+import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 
 interface MemoCounterProps {
   text: string;
@@ -36,12 +37,6 @@ interface AssetOption {
 interface MemoComposerProps {
   profile: Profile;
   forceShowQR: boolean;
-  uri: string;
-  memo: string;
-  amount: string;
-  openWallet: (() => void) | null;
-  setDraftMemo: (_memo: string) => void;
-  setDraftAmount: (_amount: string) => void;
   asset?: string;
   assetOptions?: AssetOption[];
   onSetAsset?: (_asset: string) => void;
@@ -50,24 +45,28 @@ interface MemoComposerProps {
 export default function MemoComposer({
   profile,
   forceShowQR,
-  uri,
-  memo,
-  amount,
-  openWallet,
-  setDraftMemo,
-  setDraftAmount,
   asset = "ZEC",
   assetOptions = [],
   onSetAsset,
 }: MemoComposerProps) {
   const router = useRouter();
 
+  const [memo, setMemo] = useState("");
+  const [amount, setAmount] = useState("");
   const [search, setSearch] = useState("");
   const [showList, setShowList] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
+  const uri = useMemo(() =>
+    buildZcashUri(profile.address, amount || "0", memo || ""),
+    [profile.address, amount, memo]
+  );
+
+  const openWallet = () => {
+    if (uri) window.open(uri, "_blank");
+  };
 
   const handleSelect = (profile: Profile) => {
     if (!profile) return;
@@ -105,7 +104,7 @@ useEffect(() => {
   const emoji = useEmojiAutocomplete({
     textareaRef,
     value: memo,
-    setValue: setDraftMemo,
+    setValue: setMemo,
   }) as {
     results: Array<{ ch: string; label: string }>;
     insert: (_item: { ch: string; label: string }) => void;
@@ -223,7 +222,7 @@ useEffect(() => {
           disabled={disabled}
           onChange={(e) => {
             const el = e.target;
-            setDraftMemo(el.value);
+            setMemo(el.value);
             el.style.height = "auto";
             el.style.height = el.scrollHeight + "px";
             emoji.update();
@@ -254,7 +253,7 @@ useEffect(() => {
 
         {memo && !disabled && (
           <button
-            onClick={() => setDraftMemo("")}
+            onClick={() => setMemo("")}
             className="absolute right-3 top-1 text-gray-400 hover:text-gray-600"
           >
             ⌫
@@ -267,8 +266,8 @@ useEffect(() => {
       {/* AMOUNT + WALLET */}
       <AmountAndWallet
         amount={amount}
-        setAmount={setDraftAmount}
-        openWallet={openWallet || undefined}
+        setAmount={setAmount}
+        openWallet={openWallet}
         showOpenWallet={false}
         showUsdPill
         showRateMessage

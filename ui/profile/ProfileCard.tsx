@@ -11,7 +11,6 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON } from "@/lib/profile/profileLinks";
-import useProfileEvents from "@/ui/profile/useProfileEvents";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
   getAuthProviderForUrl,
@@ -349,10 +348,9 @@ export default function ProfileCard({
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { showBack, setShowBack } = useProfileEvents();
   const { setForceShowQR } = useSelectionStore();
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
-  const { setMode, setVerify } = useMessagingStore();
+  const { showBack, setShowBack, setMode, setVerify } = useMessagingStore();
   const { linksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
