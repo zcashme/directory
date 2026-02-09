@@ -6,6 +6,7 @@ import type { FormEvent, ChangeEvent } from "react";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import { parseTokenSymbol } from "@/lib/swap/tokenUtils";
 import { useSwapStore } from "@/lib/stores/swap";
+import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 
 const STATUS_CONFIG = {
   SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
@@ -50,23 +51,6 @@ function SwapStatusForm({ onSubmit }: { onSubmit: (_address: string) => void }) 
   );
 }
 
-function TokenIcon({ symbol, size = 32 }: { symbol: string; size?: number }) {
-  const colors: Record<string, string> = {
-    ZEC: "bg-yellow-400", BTC: "bg-orange-400", ETH: "bg-blue-400",
-    USDC: "bg-blue-300", USDT: "bg-green-400", SOL: "bg-purple-400",
-    ARB: "bg-blue-500", NEAR: "bg-gray-700",
-  };
-
-  return (
-    <div
-      className={`${colors[symbol] || "bg-gray-400"} rounded-full flex items-center justify-center text-white font-bold`}
-      style={{ width: size, height: size, fontSize: size * 0.4 }}
-    >
-      {symbol?.[0] || "?"}
-    </div>
-  );
-}
-
 function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const { statusData, statusError, startPolling, stopPolling } = useSwapStore();
@@ -84,48 +68,72 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
   const quote = statusData?.quoteResponse?.quote;
   const request = statusData?.quoteResponse?.quoteRequest;
 
+  const fromSymbol = parseTokenSymbol(request?.originAsset) || "";
+  const toSymbol = parseTokenSymbol(request?.destinationAsset) || "";
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-2">
-        <h1 className="text-md font-semibold">Swap Status</h1>
-        <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
-          {config.label}
-        </span>
-        {isPolling && (
-          <div className="flex items-center gap-1.5">
-            <div className="flex gap-0.5">
-              {[0, 0.1, 0.2].map((delay, i) => (
-                <div
-                  key={i}
-                  className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
-                  style={{ animationDelay: `${delay}s` }}
-                />
-              ))}
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-md font-semibold">Swap Status</h1>
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
+            {config.label}
+          </span>
+          {isPolling && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
+                {[0, 0.1, 0.2].map((delay, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                    style={{ animationDelay: `${delay}s` }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-gray-600">
+                {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
+              </span>
             </div>
-            <span className="text-xs text-gray-600">
-              {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
-            </span>
+          )}
+        </div>
+
+        {fromSymbol && toSymbol && (
+          <div className="flex justify-center py-4">
+            <SwapCurrencyPair
+              fromSymbol={fromSymbol}
+              toSymbol={toSymbol}
+              size="lg"
+              showLabel={true}
+            />
           </div>
         )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="border border-gray-800 rounded-xl p-4">
-          <p className="text-xs text-gray-600 mb-2">Sent</p>
+          <p className="text-xs text-gray-600 mb-2">
+            Sent {fromSymbol && <span className="font-medium">{fromSymbol}</span>}
+          </p>
           <div className="flex items-center gap-2 mb-1">
-            <TokenIcon symbol={parseTokenSymbol(request?.originAsset) || ""} size={24} />
+            <TokenIcon symbol={fromSymbol || ""} size={24} />
             <p className="text-lg font-semibold">{details?.amountInFormatted || "—"}</p>
           </div>
-          <p className="text-xs text-gray-600">{details?.amountInUsd ? `$${details.amountInUsd}` : "—"}</p>
+          <p className="text-xs text-gray-600">
+            {details?.amountInUsd ? `$${details.amountInUsd}` : "—"}
+          </p>
         </div>
 
         <div className="border border-gray-800 rounded-xl p-4">
-          <p className="text-xs text-gray-600 mb-2">Received</p>
+          <p className="text-xs text-gray-600 mb-2">
+            Received {toSymbol && <span className="font-medium">{toSymbol}</span>}
+          </p>
           <div className="flex items-center gap-2 mb-1">
-            <TokenIcon symbol={parseTokenSymbol(request?.destinationAsset) || ""} size={24} />
+            <TokenIcon symbol={toSymbol || ""} size={24} />
             <p className="text-lg font-semibold">{details?.amountOutFormatted || "—"}</p>
           </div>
-          <p className="text-xs text-gray-600">{details?.amountOutUsd ? `$${details.amountOutUsd}` : "—"}</p>
+          <p className="text-xs text-gray-600">
+            {details?.amountOutUsd ? `$${details.amountOutUsd}` : "—"}
+          </p>
         </div>
       </div>
 
@@ -141,19 +149,63 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
         {detailsOpen && (
           <div className="border-t border-gray-800 px-4 py-3 space-y-3 text-sm">
             {[
-              { label: "Origin", value: `${parseTokenSymbol(request?.originAsset)} (${request?.originAsset})` },
-              { label: "Destination", value: `${parseTokenSymbol(request?.destinationAsset)} (${request?.destinationAsset})` },
+              {
+                label: "Exchange",
+                value:
+                  fromSymbol && toSymbol
+                    ? `${fromSymbol} → ${toSymbol}`
+                    : null,
+              },
+              {
+                label: "Origin Asset",
+                value: request?.originAsset,
+                mono: true,
+              },
+              {
+                label: "Destination Asset",
+                value: request?.destinationAsset,
+                mono: true,
+              },
               { label: "Deposit Address", value: depositAddress, mono: true },
-              { label: "Min Amount Out", value: quote?.amountOutFormatted && `${quote.amountOutFormatted} ${parseTokenSymbol(request?.destinationAsset)}` },
-              { label: "Time Estimate", value: quote?.timeEstimate && `${quote.timeEstimate} seconds` },
-              { label: "Deadline", value: quote?.deadline && new Date(quote.deadline).toLocaleString() },
-              { label: "Refund To", value: request?.refundTo, mono: true },
-              { label: "Updated", value: statusData?.updatedAt && new Date(statusData.updatedAt).toLocaleString() },
+              {
+                label: "Min Amount Out",
+                value:
+                  quote?.amountOutFormatted &&
+                  `${quote.amountOutFormatted} ${parseTokenSymbol(request?.destinationAsset)}`,
+              },
+              {
+                label: "Time Estimate",
+                value:
+                  quote?.timeEstimate && `${quote.timeEstimate} seconds`,
+              },
+              {
+                label: "Deadline",
+                value:
+                  quote?.deadline &&
+                  new Date(quote.deadline).toLocaleString(),
+              },
+              {
+                label: "Refund To",
+                value: request?.refundTo,
+                mono: true,
+              },
+              {
+                label: "Updated",
+                value:
+                  statusData?.updatedAt &&
+                  new Date(statusData.updatedAt).toLocaleString(),
+              },
             ].map(({ label, value, mono }, i) =>
               value ? (
                 <div key={i} className="flex justify-between gap-2">
                   <span className="text-gray-600">{label}</span>
-                  <span className={`text-xs text-right ${mono ? "font-mono break-all max-w-xs" : ""}`}>{value}</span>
+                  <span
+                    className={`text-xs text-right ${
+                      mono ? "font-mono break-all max-w-xs" : ""
+                    }`}
+                  >
+                    {value}
+                  </span>
                 </div>
               ) : null
             )}
