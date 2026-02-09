@@ -50,7 +50,39 @@ supabase/**
 .env.production
 .env
 compress.ps1
-zcash-verification-service/
+# zcash-verification-service (minimal tracked set; ignore everything else)
+zcash-verification-service/.git/
+zcash-verification-service/.venv/
+zcash-verification-service/_archive/
+zcash-verification-service/db/
+zcash-verification-service/doc/
+zcash-verification-service/scripts/
+zcash-verification-service/tests/
+zcash-verification-service/.env
+zcash-verification-service/.gitignore
+zcash-verification-service/api/admin_routes.py
+zcash-verification-service/api/__pycache__/admin_routes.cpython-312.pyc
+zcash-verification-service/api/__pycache__/otp_service.cpython-312.pyc
+zcash-verification-service/api/__pycache__/transaction_service.cpython-312.pyc
+zcash-verification-service/api/__pycache__/verify_routes.cpython-312.pyc
+zcash-verification-service/api/__pycache__/verify_routes_rpc.cpython-312.pyc
+zcash-verification-service/api/__pycache__/verify_routes_rpc_zid.cpython-312.pyc
+zcash-verification-service/api/__pycache__/verify_routes_rpc_zid_poll.cpython-312.pyc
+zcash-verification-service/api/verify_routes.py
+zcash-verification-service/api/verify_routes_orig.py
+zcash-verification-service/api/verify_routes_rpc.py
+zcash-verification-service/api/verify_routes_rpc_zid.py
+zcash-verification-service/api/verify_routes_rpc_zid_poll_old.py
+zcash-verification-service/core/__pycache__/__init__.cpython-312.pyc
+zcash-verification-service/core/__pycache__/cli_controller.cpython-312.pyc
+zcash-verification-service/core/__pycache__/supabase_client.cpython-312.pyc
+zcash-verification-service/core/__pycache__/zcash_rpc.cpython-312.pyc
+zcash-verification-service/core/__pycache__/zcash_runner.cpython-312.pyc
+zcash-verification-service/core/cli_controller.py
+zcash-verification-service/readme_OTP.md
+zcash-verification-service/verify_environment.py
+zcash-verification-service/zcash-devtool README.md
+zcash-verification-service/zcash-devtool walkthrough.md
 
 
 
