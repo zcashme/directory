@@ -9,33 +9,34 @@ import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
+import { useMessagingStore } from "@/lib/stores/messaging";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 
 const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
-interface VerifyState {
-  amount: string;
-  zId: number | null;
-  requestId: string | null;
-}
-
 interface ProfileVerificationProps {
   profile: Profile;
   pendingEdits: PendingEdits;
-  verify: VerifyState;
-  setVerifyRequestId: (requestId: string | null) => void;
-  setVerifyAmount: (amount: string) => void;
 }
 
 export default function ProfileVerification({
   profile,
   pendingEdits,
-  verify,
-  setVerifyRequestId,
-  setVerifyAmount,
 }: ProfileVerificationProps) {
+  const {
+    verify,
+    verifyQrEnabled,
+    pollStatus,
+    pollOtpPhase,
+    otpInlineSuccess,
+    pollDebug,
+    setVerify,
+    setVerifyQrEnabled,
+    resetVerificationPolling,
+  } = useMessagingStore();
+
   // Compute verification memo reactively from pending edits
   const memo = useMemo(() => {
     const zId = verify.zId ?? profile.id ?? null;
@@ -51,14 +52,9 @@ export default function ProfileVerification({
   const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
-  const [verifyQrEnabled, setVerifyQrEnabled] = useState(false);
   const [showFooterHelp, setShowFooterHelp] = useState(false);
 
   const {
-    pollStatus,
-    pollOtpPhase,
-    otpInlineSuccess,
-    pollDebug,
     startPolling,
     progressSteps,
     progressState,
@@ -69,7 +65,7 @@ export default function ProfileVerification({
     showOtpPhaseLine,
     progressExplainer,
     handleInlineOtpSuccess,
-  } = useVerificationPolling({ verifyQrEnabled, setVerifyRequestId });
+  } = useVerificationPolling();
 
   const explainerText = useMemo(() => {
     const profileEdits = pendingEdits?.profile ?? {};
@@ -111,13 +107,13 @@ export default function ProfileVerification({
   useEffect(() => {
     const trimmed = (amount ?? "").trim();
     if (!trimmed || trimmed === "0") {
-      setVerifyAmount(DEFAULT_SIGNIN_AMOUNT);
+      setVerify((prev) => ({ ...prev, amount: DEFAULT_SIGNIN_AMOUNT }));
     }
-  }, [amount, setVerifyAmount]);
+  }, [amount, setVerify]);
 
   useEffect(() => {
-    setVerifyQrEnabled(false);
-  }, [pendingEdits]);
+    resetVerificationPolling();
+  }, [pendingEdits, resetVerificationPolling]);
 
   const { validAmount, error, verifyUri } = useMemo(() => {
     const cleaned = (amount ?? "").trim();
@@ -208,7 +204,7 @@ export default function ProfileVerification({
         <div className="mt-3 w-full">
           <AmountAndWallet
             amount={amount}
-            setAmount={setVerifyAmount}
+            setAmount={(amount) => setVerify((prev) => ({ ...prev, amount }))}
             openWallet={handleGenerateQr}
             openWalletLabel="Generate QR"
           />

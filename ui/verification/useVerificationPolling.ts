@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { useMessagingStore } from "@/lib/stores/messaging";
 
 const VERIFY_API_BASE =
   process.env.NEXT_PUBLIC_VERIFY_API_URL ||
@@ -19,11 +20,6 @@ type VerifyPollResponse = {
   [key: string]: unknown;
 };
 
-interface UseVerificationPollingOptions {
-  verifyQrEnabled: boolean;
-  setVerifyRequestId: (id: string | null) => void;
-}
-
 interface ProgressStep {
   key: string;
   label: string;
@@ -43,16 +39,6 @@ interface OtpPhaseStep {
 }
 
 export interface UseVerificationPollingResult {
-  pollRequestId: string | null;
-  pollStatus: string | null;
-  pollOtpStatus: string | null;
-  pollOtpPhase: string | null;
-  pollOtpPhaseHistory: OtpPhaseHistoryItem[];
-  otpInlineSuccess: boolean;
-  pollError: string;
-  pollDebug: string;
-  pollStartedAt: string | null;
-  pollElapsedMs: number;
   startPolling: (zid: string) => Promise<void>;
   progressSteps: ProgressStep[];
   progressState: ProgressState;
@@ -66,53 +52,52 @@ export interface UseVerificationPollingResult {
   handleInlineOtpSuccess: () => void;
 }
 
-export default function useVerificationPolling({
-  verifyQrEnabled,
-  setVerifyRequestId,
-}: UseVerificationPollingOptions): UseVerificationPollingResult {
-  const [pollRequestId, setPollRequestId] = useState<string | null>(null);
-  const [pollStatus, setPollStatus] = useState<string | null>(null);
-  const [pollOtpStatus, setPollOtpStatus] = useState<string | null>(null);
-  const [pollOtpPhase, setPollOtpPhase] = useState<string | null>(null);
-  const [pollOtpPhaseHistory, setPollOtpPhaseHistory] = useState<
-    OtpPhaseHistoryItem[]
-  >([]);
-  const [otpInlineSuccess, setOtpInlineSuccess] = useState(false);
-  const [pollError, setPollError] = useState("");
-  const [pollDebug, setPollDebug] = useState("");
-  const [pollStartedAt, setPollStartedAt] = useState<string | null>(null);
-  const [pollElapsedMs, setPollElapsedMs] = useState(0);
+export default function useVerificationPolling(): UseVerificationPollingResult {
+  const {
+    verifyQrEnabled,
+    verify,
+    pollStatus,
+    pollOtpStatus,
+    pollOtpPhase,
+    pollOtpPhaseHistory,
+    otpInlineSuccess,
+    pollError,
+    pollStartedAt,
+    pollElapsedMs,
+    setVerify,
+    setPollStatus,
+    setPollOtpStatus,
+    setPollOtpPhase,
+    setPollOtpPhaseHistory,
+    setOtpInlineSuccess,
+    setPollError,
+    setPollDebug,
+    setPollStartedAt,
+    setPollElapsedMs,
+    resetVerificationPolling,
+  } = useMessagingStore();
+
+  const pollRequestId = verify.requestId;
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pollElapsedRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  useEffect(() => {
-    if (verifyQrEnabled) return;
-
+  // Cleanup function to stop polling
+  const stopPolling = () => {
     if (pollTimerRef.current) {
       clearTimeout(pollTimerRef.current);
       pollTimerRef.current = null;
     }
-
-    setPollRequestId(null);
-    setPollStatus(null);
-    setPollOtpStatus(null);
-    setPollOtpPhase(null);
-    setPollOtpPhaseHistory([]);
-    setOtpInlineSuccess(false);
-    setPollError("");
-    setPollDebug("");
-    setPollStartedAt(null);
-    setPollElapsedMs(0);
-    setVerifyRequestId(null);
-
     if (pollElapsedRef.current) {
       clearInterval(pollElapsedRef.current);
       pollElapsedRef.current = null;
     }
-  }, [verifyQrEnabled, setVerifyRequestId]);
+  };
 
   useEffect(() => {
-    if (!verifyQrEnabled || !pollRequestId) return;
+    if (!verifyQrEnabled || !pollRequestId) {
+      stopPolling();
+      return;
+    }
 
     let cancelled = false;
     const intervalMs = 1500;
@@ -179,12 +164,9 @@ export default function useVerificationPolling({
 
     return () => {
       cancelled = true;
-      if (pollTimerRef.current) {
-        clearTimeout(pollTimerRef.current);
-        pollTimerRef.current = null;
-      }
+      stopPolling();
     };
-  }, [pollRequestId, verifyQrEnabled]);
+  }, [pollRequestId, verifyQrEnabled, setPollStatus, setPollOtpStatus, setPollOtpPhase, setPollOtpPhaseHistory, setPollError, setPollDebug]);
 
   const startPolling = async (zid: string) => {
     setPollStatus("starting");
@@ -205,8 +187,7 @@ export default function useVerificationPolling({
         return;
       }
 
-      setPollRequestId(data.request_id);
-      setVerifyRequestId(data.request_id);
+      setVerify((prev) => ({ ...prev, requestId: data.request_id! }));
       setPollStatus(data.status || "pending");
       setPollOtpStatus(null);
       setPollOtpPhase(null);
@@ -326,16 +307,6 @@ export default function useVerificationPolling({
   };
 
   return {
-    pollRequestId,
-    pollStatus,
-    pollOtpStatus,
-    pollOtpPhase,
-    pollOtpPhaseHistory,
-    otpInlineSuccess,
-    pollError,
-    pollDebug,
-    pollStartedAt,
-    pollElapsedMs,
     startPolling,
     progressSteps,
     progressState,

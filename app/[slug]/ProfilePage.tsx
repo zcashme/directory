@@ -10,7 +10,7 @@ import { useMessagingStore } from "@/lib/stores/messaging";
 import { useSwapStore } from "@/lib/stores/swap";
 
 // Zcash utilities
-import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
+import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import { getTokenId } from "@/lib/swap/swapPayload";
 
 // Server actions
@@ -42,7 +42,7 @@ export default function ProfilePage({
   const [confirmTransition, startConfirmTransition] = useTransition();
 
   const { pendingEdits } = useEditsStore();
-  const { mode, draft, setDraft, verify, setVerify } = useMessagingStore();
+  const { mode, draft, setDraft } = useMessagingStore();
   const swap = useSwapStore();
 
   // Fetch tokens on mount
@@ -132,6 +132,18 @@ export default function ProfilePage({
     swap.resetQuote();
   }, [swap]);
 
+  const handleSetDraftMemo = useCallback((memo: string) => {
+    setDraft((prev) => ({ ...prev, memo }));
+  }, [setDraft]);
+
+  const handleSetDraftAmount = useCallback((amount: string) => {
+    setDraft((prev) => ({ ...prev, amount }));
+  }, [setDraft]);
+
+  const handleResetSwapState = useCallback(() => {
+    swap.resetSwapState(zecTokenId);
+  }, [swap, zecTokenId]);
+
   if (isLoadingTokens) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -160,10 +172,6 @@ export default function ProfilePage({
                 <ProfileVerification
                   profile={initialProfile}
                   pendingEdits={pendingEdits}
-                  verify={verify}
-                  computedMemo={verificationMemo}
-                  setVerifyRequestId={(id) => setVerify((prev) => ({ ...prev, requestId: id }))}
-                  setVerifyAmount={(amount) => setVerify((prev) => ({ ...prev, amount }))}
                 />
               ) : (
                 <div className="p-0 mt-4">
@@ -193,7 +201,7 @@ export default function ProfilePage({
                       setSlippageTolerance={handleSwapFieldChange('slippage')}
                       getQuote={handleGetQuote}
                       confirmSwap={handleConfirmSwap}
-                      resetSwapState={() => swap.resetSwapState(zecTokenId)}
+                      resetSwapState={handleResetSwapState}
                     />
                   ) : (
                     <MemoComposer
@@ -203,8 +211,8 @@ export default function ProfilePage({
                       memo={draft.memo ?? ""}
                       amount={draft.amount ?? ""}
                       openWallet={openWallet}
-                      setDraftMemo={(memo) => setDraft((prev) => ({ ...prev, memo }))}
-                      setDraftAmount={(amount) => setDraft((prev) => ({ ...prev, amount }))}
+                      setDraftMemo={handleSetDraftMemo}
+                      setDraftAmount={handleSetDraftAmount}
                       asset={originSymbol}
                       assetOptions={tokens.map((token) => ({
                         id: getTokenId(token) ?? "",
