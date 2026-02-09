@@ -7,7 +7,6 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 import { parseTokenSymbol, getSwapUrl } from "@/lib/swap/utils";
 import { useSwapStore } from "@/lib/stores/swap";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
-import shareIcon from "@/ui/assets/share.svg";
 
 const STATUS_CONFIG = {
   SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
@@ -54,7 +53,6 @@ function SwapStatusForm({ onSubmit }: { onSubmit: (_address: string) => void }) 
 
 function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
   const { statusData, statusError, startPolling, stopPolling } = useSwapStore();
 
   useEffect(() => {
@@ -76,57 +74,27 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="relative">
-          <div className="flex items-center gap-2">
-            <h1 className="text-md font-semibold">Swap Status</h1>
-            <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
-              {config.label}
-            </span>
-            {isPolling && (
-              <div className="flex items-center gap-1.5">
-                <div className="flex gap-0.5">
-                  {[0, 0.1, 0.2].map((delay, i) => (
-                    <div
-                      key={i}
-                      className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
-                      style={{ animationDelay: `${delay}s` }}
-                    />
-                  ))}
-                </div>
-                <span className="text-xs text-gray-600">
-                  {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
-                </span>
+        <div className="flex items-center gap-2">
+          <h1 className="text-md font-semibold">Swap Status</h1>
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
+            {config.label}
+          </span>
+          {isPolling && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
+                {[0, 0.1, 0.2].map((delay, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                    style={{ animationDelay: `${delay}s` }}
+                  />
+                ))}
               </div>
-            )}
-          </div>
-          <button
-            onClick={async () => {
-              const shareUrl = window.location.href;
-              if (navigator.share) {
-                try {
-                  await navigator.share({
-                    title: "Swap Status",
-                    text: "Check out this swap status:",
-                    url: shareUrl,
-                  });
-                } catch {
-                  // User cancelled
-                }
-              } else {
-                navigator.clipboard.writeText(shareUrl);
-                setCopied(true);
-                setTimeout(() => setCopied(false), 1500);
-              }
-            }}
-            className="absolute right-0 top-3 flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-            title="Share swap status"
-          >
-            <img
-              src={shareIcon}
-              alt="Share"
-              className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
-            />
-          </button>
+              <span className="text-xs text-gray-600">
+                {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
+              </span>
+            </div>
+          )}
         </div>
 
         {fromSymbol && toSymbol && (
@@ -243,14 +211,23 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
           Check Another
         </button>
         <button
-          onClick={() => {
-            navigator.clipboard.writeText(window.location.href);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
+          onClick={async () => {
+            const shareUrl = window.location.href;
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: "Swap Status",
+                  text: "Check out this swap status:",
+                  url: shareUrl,
+                });
+              } catch {
+                // User cancelled
+              }
+            }
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >
-          {copied ? "Copied" : "Copy Link"}
+          Share Link
         </button>
       </div>
     </div>
