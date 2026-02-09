@@ -377,7 +377,6 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                   openWallet={() => {}}
                   showOpenWallet={false}
                   showUsdPill
-                  showRateMessage
                 />
               </div>
 

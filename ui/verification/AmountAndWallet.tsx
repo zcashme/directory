@@ -69,7 +69,6 @@ interface AmountAndWalletProps {
   openWalletLabel?: string;
   showOpenWallet?: boolean;
   showUsdPill?: boolean;
-  showRateMessage?: boolean;
 
   // Token selector props (optional)
   asset?: string;
@@ -90,7 +89,6 @@ export default function AmountAndWallet({
   openWalletLabel = "Open in Wallet",
   showOpenWallet = true,
   showUsdPill = false,
-  showRateMessage = false,
   // Token selector props (optional)
   asset = "ZEC",
   assetOptions = [],
@@ -108,7 +106,6 @@ export default function AmountAndWallet({
   const [fiatSearch, setFiatSearch] = useState("");
   const [fiat, setFiat] = useState("USD");
   const [rate, setRate] = useState(1);
-  const [rateSource, setRateSource] = useState("API");
   const [rateFetched, setRateFetched] = useState(false);
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
@@ -127,7 +124,6 @@ export default function AmountAndWallet({
       const result = await getRateAction(nextFiat || "USD", nextAsset || "ZEC");
       if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
         setRate(result.rate);
-        setRateSource(result.source ?? "API");
         setRateFetched(true);
         return true;
       }
@@ -215,19 +211,6 @@ export default function AmountAndWallet({
 
   return (
     <div className="w-full mb-2">
-      {showRateMessage && (
-        <div className="w-full flex items-center justify-center gap-2 text-center mb-2 min-h-[18px]">
-          <p
-            className={`text-[12px] italic m-0 text-gray-600 transition-all duration-200 ${
-              rateFetched && isUsdOpen
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 -translate-y-1"
-            }`}
-          >
-            Rate of {formatDecimal(rate, "1.00")} {fiat} per {asset} provided by {rateSource}.
-          </p>
-        </div>
-      )}
       <div className="flex items-center gap-3">
         <div className="relative flex flex-1 items-stretch overflow-visible">
           {showUsdPill && (

@@ -1,15 +1,10 @@
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import type { Profile } from "@/lib/profile/types";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
-import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
-import bookOpen from "@/ui/assets/book-open.svg";
-import bookClosed from "@/ui/assets/book-closed.svg";
-import { buildSlug } from "@/lib/profile/profileUtils";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 
 interface MemoCounterProps {
@@ -50,12 +45,7 @@ export default function MemoComposer({
   assetOptions = [],
   onSetAsset,
 }: MemoComposerProps) {
-  const router = useRouter();
-
   const { memo, amount, setMemo, setAmount } = useMessagingStore();
-  const [search, setSearch] = useState("");
-  const [showList, setShowList] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -66,17 +56,6 @@ export default function MemoComposer({
 
   const openWallet = () => {
     if (uri) window.open(uri, "_blank");
-  };
-
-  const handleSelect = (profile: Profile) => {
-    if (!profile) return;
-    if (typeof window !== "undefined") {
-      (window as any).lastSelectionWasExplicit = true;
-    }
-    const slug = buildSlug(profile);
-    if (slug) router.push(`/${slug}`);
-    setSearch("");
-    setShowList(false);
   };
 
   useEffect(() => {
@@ -115,7 +94,7 @@ useEffect(() => {
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
 
-      {/* HEADER ROW: Recipient + Search + Help */}
+      {/* HEADER ROW: Recipient */}
       <div className="flex justify-between items-start relative mb-3">
 
         {/* Left side */}
@@ -129,81 +108,6 @@ useEffect(() => {
           </span>
         </div>
 
-        {/* Right side search bar */}
-{/* Right side: Help + Search */}
-<div className="flex items-center gap-3 ml-3">
-
-
-
-  {/* Search wrapper */}
-  <div className="relative flex-1 flex justify-end">
-
-
-          {!isFocused && (
-            <img
-              src={bookClosed}
-              alt=""
-              className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 opacity-80 invert sepia saturate-[5000%] hue-rotate-190 brightness-90"
-            />
-          )}
-
-          {isFocused && (
-            <img
-              src={bookOpen}
-              alt=""
-              onClick={() => {
-                setIsFocused(false);
-                setSearch("");
-                setShowList(false);
-              }}
-              className="cursor-pointer absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 opacity-80 invert sepia saturate-[5000%] hue-rotate-190 brightness-90"
-            />
-          )}
-
-          {/* search input */}
-          <input
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setShowList(true);
-            }}
-            onFocus={() => {
-              setShowList(true);
-              setIsFocused(true);
-            }}
-            onBlur={() => {
-              setTimeout(() => {
-                setIsFocused(false);
-                setSearch("");
-                setShowList(false);
-              }, 150);
-            }}
-            placeholder={isFocused ? "name" : ""}
-            className={`h-10 border rounded-xl transition-all duration-150 w-10 focus:w-[100%] text-gray-700 text-center ${
-              isFocused
-                ? "px-3 text-base placeholder:text-gray-400"
-                : "text-xl placeholder:text-black"
-            }`}
-          />
-
-          {showList && search && (
-            <div className="absolute top-full left-0 z-50 w-full mt-1">
-              <ProfileSearchDropdown
-                listOnly={true}
-                value={search}
-                onChange={(v) => {
-                  if (typeof v === "object") {
-                    handleSelect(v as Profile);
-                  } else {
-                    setSearch(v);
-                  }
-                }}
-                placeholder="name or addr"
-              />
-            </div>
-          )}
-        </div>
-      </div>
 
       </div>
 
@@ -270,7 +174,6 @@ useEffect(() => {
         openWallet={openWallet}
         showOpenWallet={false}
         showUsdPill
-        showRateMessage
         asset={asset}
         assetOptions={assetOptions}
         setAsset={onSetAsset}

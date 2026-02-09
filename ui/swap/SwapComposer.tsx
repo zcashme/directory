@@ -171,7 +171,6 @@ export default function SwapComposer({
         openWallet={undefined}
         showOpenWallet={false}
         showUsdPill={true}
-        showRateMessage={false}
         asset={originSymbol}
         assetOptions={formattedTokenOptions}
         setAsset={handleTokenChange}
@@ -244,26 +243,53 @@ export default function SwapComposer({
         </div>
       )}
 
+      {/* ACTION BUTTONS */}
+      {!statusKey?.depositAddress && (
+        <div className="mt-4 flex gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              void handleGetQuote();
+            }}
+            disabled={!canGetQuote}
+            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+              canGetQuote
+                ? "bg-white text-gray-800 hover:bg-gray-50"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+            }`}
+          >
+            {isGettingQuote ? "Getting quote..." : "Get quote"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              void handleConfirmQuote();
+            }}
+            disabled={!canConfirmQuote}
+            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+              canConfirmQuote
+                ? "bg-white text-gray-800 hover:bg-gray-50"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+            }`}
+          >
+            {isConfirming ? "Confirming..." : "Confirm quote"}
+          </button>
+        </div>
+      )}
+
       {/* SWAP SETTINGS (Hidden after confirmation) */}
       {!statusKey?.depositAddress && (
-        <div className="mt-4 bg-transparent rounded-xl border border-gray-800">
+        <div className="mt-4 bg-transparent rounded-xl">
           {/* Collapsible Header */}
           <button
             type="button"
             onClick={() => setIsSlippageExpanded(!isSlippageExpanded)}
-            className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors rounded-xl"
+            className="w-full px-4 py-3 flex items-center rounded-xl cursor-pointer"
           >
             <span className="text-sm font-semibold text-gray-800">
               Slippage Tolerance ({slippageTolerance}%)
             </span>
-            <svg
-              className={`w-5 h-5 text-gray-600 transition-transform ${isSlippageExpanded ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
+            <span className={`text-gray-600 transform transition ml-2 ${isSlippageExpanded ? 'rotate-180' : ''}`}>▼</span>
           </button>
 
           {/* Slippage Controls (Collapsible Content) */}
@@ -315,40 +341,6 @@ export default function SwapComposer({
               </div>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ACTION BUTTONS */}
-      {!statusKey?.depositAddress && (
-        <div className="mt-4 flex gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              void handleGetQuote();
-            }}
-            disabled={!canGetQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
-              canGetQuote
-                ? "bg-white text-gray-800 hover:bg-gray-50"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
-            }`}
-          >
-            {isGettingQuote ? "Getting quote..." : "Get quote"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              void handleConfirmQuote();
-            }}
-            disabled={!canConfirmQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
-              canConfirmQuote
-                ? "bg-white text-gray-800 hover:bg-gray-50"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
-            }`}
-          >
-            {isConfirming ? "Confirming..." : "Confirm quote"}
-          </button>
         </div>
       )}
 
