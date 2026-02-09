@@ -319,6 +319,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
           isDeleted={deletedFields.name}
+          deleteDisabled={!originals.name}
           onDelete={() => setDeletedField("name", !deletedFields.name)}
         >
           <div className="relative">
@@ -351,6 +352,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your public display name."
           hasPending={hasPendingField("display_name", "h")}
           isDeleted={deletedFields.display_name}
+          deleteDisabled={!originals.display_name}
           onDelete={() => setDeletedField("display_name", !deletedFields.display_name)}
         >
           <input
@@ -370,6 +372,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Your current story arc in 100 characters or less."
           hasPending={hasPendingField("bio", "b")}
           isDeleted={deletedFields.bio}
+          deleteDisabled={!originals.bio}
           onDelete={() => setDeletedField("bio", !deletedFields.bio)}
         >
           <div className="relative">
@@ -392,6 +395,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
           hasPending={!!pendingProfileEdits?.c}
           isDeleted={deletedFields.nearest_city}
+          deleteDisabled={!profile.nearest_city_id}
           onDelete={() => {
             setDeletedField('nearest_city', !deletedFields.nearest_city);
             setNearestCityDisplay("");
@@ -424,6 +428,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           helpText="Link to PNG or JPG. Search 'free image link host'."
           hasPending={hasPendingField("profile_image_url", "i")}
           isDeleted={deletedFields.profile_image_url}
+          deleteDisabled={!originals.profile_image_url}
           onDelete={() => setDeletedField("profile_image_url", !deletedFields.profile_image_url)}
         >
           <input
