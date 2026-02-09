@@ -1,56 +1,13 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import type { FormEvent, ChangeEvent } from "react";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import { parseTokenSymbol } from "@/lib/swap/tokenUtils";
-
-// Polling configuration
-const POLLING_CONFIG = {
-  INTERVAL_MS: 5000, // Poll every 5 seconds
-};
+import { useSwapStore } from "@/lib/stores/swap";
 
 type UIStatus = "PENDING_SWAP" | "SWAP_SUCCESS" | "SWAP_FAILED";
-
-// Map API statuses to UI states
-const mapToUIState = (apiStatus: string | undefined): UIStatus => {
-  const status = apiStatus?.toUpperCase();
-
-  // Pending states
-  if (status === "PENDING_DEPOSIT" || status === "PROCESSING") {
-    return "PENDING_SWAP";
-  }
-
-  // Success state
-  if (status === "SUCCESS") {
-    return "SWAP_SUCCESS";
-  }
-
-  // Failed states
-  if (status === "INCOMPLETE_DEPOSIT" || status === "REFUNDED" || status === "FAILED") {
-    return "SWAP_FAILED";
-  }
-
-  return "PENDING_SWAP"; // Default to pending
-};
-
-// Get failure reason
-const getFailureReason = (apiStatus: string | undefined): string | null => {
-  const status = apiStatus?.toUpperCase();
-
-  if (status === "INCOMPLETE_DEPOSIT") {
-    return "Deposit was below the required amount";
-  }
-  if (status === "REFUNDED") {
-    return "Funds were refunded to your address";
-  }
-  if (status === "FAILED") {
-    return "Swap encountered an error";
-  }
-
-  return null;
-};
 
 // Status colors for badges
 const STATUS_COLORS: Record<UIStatus, string> = {
@@ -59,28 +16,9 @@ const STATUS_COLORS: Record<UIStatus, string> = {
   SWAP_FAILED: "bg-red-100 text-red-700",
 };
 
-interface StatusKey {
-  depositAddress: string;
-}
-
-interface SwapData {
-  amountInFormatted?: string;
-  amountInUsd?: string;
-  amountOutFormatted?: string;
-  amountOutUsd?: string;
-  minAmountOutFormatted?: string;
-  originAsset?: string;
-  destinationAsset?: string;
-  depositAddress?: string;
-  timeEstimate?: number;
-  deadline?: string;
-  refundTo?: string;
-  timestamp?: string;
-}
-
 // Input form component
 interface SwapStatusFormProps {
-  onSubmit: (_key: StatusKey) => void;
+  onSubmit: (_depositAddress: string) => void;
   isLoading: boolean;
 }
 
@@ -97,9 +35,7 @@ function SwapStatusForm({ onSubmit, isLoading }: SwapStatusFormProps) {
       return;
     }
 
-    onSubmit({
-      depositAddress: depositAddress.trim(),
-    });
+    onSubmit(depositAddress.trim());
   };
 
   return (
@@ -164,139 +100,31 @@ function TokenIcon({ symbol, size = 32 }: TokenIconProps) {
 
 // Status display with new layout
 interface SwapStatusDisplayProps {
-  statusKey: StatusKey;
+  depositAddress: string;
   onReset: () => void;
 }
 
-function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
-  const [apiStatus, setApiStatus] = useState<string>("PENDING_DEPOSIT");
-  const [error, setError] = useState<string>("");
-  const [isPolling, setIsPolling] = useState<boolean>(true);
-  const [statusMessage, setStatusMessage] = useState<string>("Checking swap status...");
-  const [failureReason, setFailureReason] = useState<string | null>(null);
-  const [swapData, setSwapData] = useState<SwapData | null>(null);
+function SwapStatusDisplay({ depositAddress, onReset }: SwapStatusDisplayProps) {
   const [detailsOpen, setDetailsOpen] = useState<boolean>(false);
 
-  const uiStatus = mapToUIState(apiStatus);
+  // Get state from store
+  const {
+    isPolling,
+    uiStatus,
+    apiStatus,
+    statusMessage,
+    failureReason,
+    swapData,
+    statusError,
+    startPolling,
+    stopPolling,
+  } = useSwapStore();
 
-  const pollCountRef = useRef<number>(0);
-  const pollIntervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastPollRef = useRef<boolean | null>(null);
-
-  // Perform a single poll
-  const performPoll = useCallback(async () => {
-    if (lastPollRef.current) {
-      return;
-    }
-
-    if (!statusKey?.depositAddress) {
-      setError("Invalid swap identifier");
-      setIsPolling(false);
-      return;
-    }
-
-    lastPollRef.current = true;
-
-    try {
-      const params = new URLSearchParams({
-        depositAddress: statusKey.depositAddress,
-      });
-
-      const response = await fetch(`/api/swap/status?${params.toString()}`);
-      const result = await response.json();
-
-      // Handle API error
-      if (result.error) {
-        setError("Unable to fetch swap status. Retrying...");
-        return;
-      }
-
-      // Clear error on successful poll
-      setError("");
-
-      if (!result.status) {
-        return;
-      }
-
-      const status = result.status.toUpperCase();
-      setApiStatus(status);
-
-      // Extract and flatten relevant data
-      const swapDetails = result.swapDetails || {};
-      const quoteRequest = result.quoteResponse?.quoteRequest || {};
-      const quote = result.quoteResponse?.quote || {};
-
-      setSwapData({
-        amountInFormatted: swapDetails.amountInFormatted,
-        amountInUsd: swapDetails.amountInUsd,
-        amountOutFormatted: swapDetails.amountOutFormatted,
-        amountOutUsd: swapDetails.amountOutUsd,
-        minAmountOutFormatted: quote.amountOutFormatted,
-        originAsset: quoteRequest.originAsset,
-        destinationAsset: quoteRequest.destinationAsset,
-        depositAddress: quote.depositAddress,
-        timeEstimate: quote.timeEstimate,
-        deadline: quote.deadline,
-        refundTo: quoteRequest.refundTo,
-        timestamp: result.updatedAt,
-      });
-
-      // Map to UI state and handle accordingly
-      const mappedStatus = mapToUIState(status);
-
-      switch (mappedStatus) {
-        case "PENDING_SWAP":
-          setStatusMessage("Your swap is pending. This usually takes a few minutes.");
-          setFailureReason(null);
-          break;
-        case "SWAP_SUCCESS":
-          setStatusMessage("Swap completed successfully!");
-          setFailureReason(null);
-          setIsPolling(false);
-          break;
-        case "SWAP_FAILED":
-          setStatusMessage("Swap failed.");
-          setFailureReason(getFailureReason(status));
-          setIsPolling(false);
-          break;
-        default:
-          setStatusMessage("Checking swap status...");
-          setFailureReason(null);
-      }
-    } catch (_err) {
-      setError("Connection error. Retrying...");
-    } finally {
-      lastPollRef.current = null;
-    }
-  }, [statusKey]);
-
-  // Start polling on mount
+  // Start polling on mount, stop on unmount
   useEffect(() => {
-    if (!statusKey?.depositAddress) {
-      setError("Invalid swap identifier");
-      return;
-    }
-
-    pollCountRef.current = 0;
-
-    // Perform first poll immediately
-    performPoll();
-    pollCountRef.current += 1;
-
-    // Setup interval - poll every 5 seconds
-    pollIntervalRef.current = setInterval(() => {
-      if (isPolling) {
-        pollCountRef.current += 1;
-        performPoll();
-      }
-    }, POLLING_CONFIG.INTERVAL_MS);
-
-    return () => {
-      if (pollIntervalRef.current) {
-        clearInterval(pollIntervalRef.current);
-      }
-    };
-  }, [statusKey, isPolling, performPoll]);
+    startPolling(depositAddress);
+    return () => stopPolling();
+  }, [depositAddress, startPolling, stopPolling]);
 
   const statusColor = STATUS_COLORS[uiStatus] || STATUS_COLORS.PENDING_SWAP;
 
@@ -353,7 +181,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
         <div className="border border-gray-800 rounded-xl p-4">
           <p className="text-xs text-gray-600 mb-2">Sent</p>
           <div className="flex items-center gap-2 mb-1">
-            <TokenIcon symbol={parseTokenSymbol(swapData?.originAsset)} size={24} />
+            <TokenIcon symbol={parseTokenSymbol(swapData?.originAsset) || ""} size={24} />
             <p className="text-lg font-semibold text-gray-800">
               {swapData?.amountInFormatted || "—"}
             </p>
@@ -367,7 +195,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
         <div className="border border-gray-800 rounded-xl p-4">
           <p className="text-xs text-gray-600 mb-2">Received</p>
           <div className="flex items-center gap-2 mb-1">
-            <TokenIcon symbol={parseTokenSymbol(swapData?.destinationAsset)} size={24} />
+            <TokenIcon symbol={parseTokenSymbol(swapData?.destinationAsset) || ""} size={24} />
             <p className="text-lg font-semibold text-gray-800">
               {swapData?.amountOutFormatted || "—"}
             </p>
@@ -424,7 +252,7 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
             <div className="flex justify-between items-start gap-2">
               <span className="text-sm text-gray-600">Deposit Address</span>
               <code className="text-xs font-mono text-gray-700 text-right break-all max-w-xs">
-                {statusKey.depositAddress}
+                {depositAddress}
               </code>
             </div>
 
@@ -492,9 +320,9 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
       </div>
 
       {/* Error message */}
-      {error && (
+      {statusError && (
         <div className="text-red-600 text-sm border border-red-300 rounded-xl p-3 bg-red-50">
-          {error}
+          {statusError}
         </div>
       )}
 
@@ -523,26 +351,16 @@ function SwapStatusDisplay({ statusKey, onReset }: SwapStatusDisplayProps) {
 function SwapPageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [statusKey, setStatusKey] = useState<StatusKey | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const resetStatusState = useSwapStore((state) => state.resetStatusState);
 
-  // Check for depositAddress in query params on mount
-  useEffect(() => {
-    const depositAddress = searchParams.get("depositAddress");
+  const depositAddress = searchParams.get("depositAddress");
 
-    if (depositAddress) {
-      setStatusKey({ depositAddress });
-      setIsLoading(false);
-    }
-  }, [searchParams]);
-
-  const handleFormSubmit = (key: StatusKey) => {
-    setIsLoading(true);
-    router.push(`/swap?depositAddress=${encodeURIComponent(key.depositAddress)}`);
+  const handleFormSubmit = (address: string) => {
+    router.push(`/swap?depositAddress=${encodeURIComponent(address)}`);
   };
 
   const handleReset = () => {
-    setStatusKey(null);
+    resetStatusState();
     router.push("/swap");
   };
 
@@ -554,9 +372,9 @@ function SwapPageContent() {
         style={{ backgroundColor: "var(--color-background)" }}
       >
         <div className="max-w-2xl mx-auto">
-        {statusKey ? (
+        {depositAddress ? (
           <div className="mb-6">
-            <SwapStatusDisplay statusKey={statusKey} onReset={handleReset} />
+            <SwapStatusDisplay depositAddress={depositAddress} onReset={handleReset} />
           </div>
         ) : (
           <>
@@ -570,7 +388,7 @@ function SwapPageContent() {
             <div className="bg-transparent border-none shadow-none p-0">
               <SwapStatusForm
                 onSubmit={handleFormSubmit}
-                isLoading={isLoading}
+                isLoading={false}
               />
             </div>
           </>
