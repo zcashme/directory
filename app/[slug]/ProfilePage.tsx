@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo, useTransition } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
 
@@ -35,8 +35,8 @@ export default function ProfilePage({
 }: ProfilePageProps) {
   const [tokens, setTokens] = useState<Token[]>([]);
   const [isLoadingTokens, setIsLoadingTokens] = useState(false);
-  const [quoteTransition, startQuoteTransition] = useTransition();
-  const [confirmTransition, startConfirmTransition] = useTransition();
+  const [isGettingQuote, setIsGettingQuote] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const { pendingEdits } = useEditsStore();
   const { mode, showBack, setMode } = useMessagingStore();
@@ -94,9 +94,12 @@ export default function ProfilePage({
     refund?: string;
     slippage?: string;
   }) => {
-    let result = null;
-    startQuoteTransition(() => {
-      getSwapQuote({
+    setIsGettingQuote(true);
+    swap.setQuoteStatus("Getting quote...");
+    swap.setSwapError("");
+
+    try {
+      const result = await getSwapQuote({
         fromToken: params.fromToken ?? swap.originTokenId ?? "",
         toToken: params.toToken ?? zecTokenId ?? "",
         amountIn: params.amountIn,
@@ -104,10 +107,22 @@ export default function ProfilePage({
         refundAddress: params.refund ?? swap.refundAddress,
         slippageTolerance: params.slippage ?? swap.slippageTolerance,
         tokens,
-      }).then((r) => { result = r; });
-    });
-    return result;
-  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId, tokens]);
+      });
+
+      if (result.ok) {
+        swap.setQuoteData(result);
+        swap.setQuotePreview(result.display);
+        swap.setQuoteStatus("");
+      } else {
+        swap.setSwapError(result.error);
+        swap.setQuoteStatus("");
+      }
+
+      return result;
+    } finally {
+      setIsGettingQuote(false);
+    }
+  }, [swap, zecTokenId, tokens]);
 
   const handleConfirmSwap = useCallback(async (params: {
     amountIn: string;
@@ -117,9 +132,12 @@ export default function ProfilePage({
     refund?: string;
     slippage?: string;
   }) => {
-    let result = null;
-    startConfirmTransition(() => {
-      confirmSwap({
+    setIsConfirming(true);
+    swap.setSwapStatus("Confirming swap...");
+    swap.setSwapError("");
+
+    try {
+      const result = await confirmSwap({
         fromToken: params.fromToken ?? swap.originTokenId ?? "",
         toToken: params.toToken ?? zecTokenId ?? "",
         amountIn: params.amountIn,
@@ -127,10 +145,23 @@ export default function ProfilePage({
         refundAddress: params.refund ?? swap.refundAddress,
         slippageTolerance: params.slippage ?? swap.slippageTolerance,
         tokens,
-      }).then((r) => { result = r; });
-    });
-    return result;
-  }, [swap.originTokenId, swap.refundAddress, swap.slippageTolerance, zecTokenId, tokens]);
+      });
+
+      if (result.ok) {
+        swap.setQuoteData(result);
+        swap.setDepositUri(result.paymentUri);
+        swap.setStatusKey(result.statusKey);
+        swap.setSwapStatus("Waiting for deposit...");
+      } else {
+        swap.setSwapError(result.error);
+        swap.setSwapStatus("");
+      }
+
+      return result;
+    } finally {
+      setIsConfirming(false);
+    }
+  }, [swap, zecTokenId, tokens]);
 
   const handleSwapFieldChange = useCallback((field: 'amount' | 'refund' | 'slippage') => (value: string) => {
     if (field === 'amount') swap.setSwapAmount(value);
@@ -186,8 +217,8 @@ export default function ProfilePage({
                     depositUri={swap.depositUri}
                     statusKey={swap.statusKey}
                     swapStatus={swap.swapStatus}
-                    isGettingQuote={quoteTransition}
-                    isConfirming={confirmTransition}
+                    isGettingQuote={isGettingQuote}
+                    isConfirming={isConfirming}
                     quoteStatus={swap.quoteStatus}
                     swapError={swap.swapError}
                     setToken={handleSetAsset}

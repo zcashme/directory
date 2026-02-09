@@ -5,7 +5,7 @@ import {
   OneClickService,
   ApiError,
   type TokenResponse,
-  type QuoteRequest,
+  QuoteRequest,
   type QuoteResponse as SDKQuoteResponse,
   type GetExecutionStatusResponse,
   type SubmitDepositTxResponse,

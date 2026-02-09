@@ -190,7 +190,7 @@ export default function SwapComposer({
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">You receive</span>
+              <span className="text-sm text-gray-600">{recipientName} receives</span>
               <span className="text-md font-semibold text-gray-900">
                 {quotePreview.amountOutFormatted} {quotePreview.toSymbol}
               </span>
