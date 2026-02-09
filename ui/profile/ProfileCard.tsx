@@ -23,6 +23,8 @@ import {
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import { useMessagingStore } from "@/lib/stores/messaging";
+import { useSelectionStore } from "@/lib/stores/selection";
+import { useEditsStore } from "@/lib/stores/edits";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
@@ -31,7 +33,6 @@ import type {
   EnrichedProfileLink,
   ProfileTrustWarning,
 } from "@/lib/profile/types";
-import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 const Motion = motion;
 
@@ -333,7 +334,6 @@ interface ProfileCardProps {
   warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;
-  feedbackProps?: FeedbackProps;
 }
 
 export default function ProfileCard({
@@ -341,8 +341,7 @@ export default function ProfileCard({
   onSelect,
   warning,
   fullView = false,
-  duplicateNameCount = 0,
-  feedbackProps = {}
+  duplicateNameCount = 0
 }: ProfileCardProps) {
   const pathname = usePathname();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
@@ -354,7 +353,8 @@ export default function ProfileCard({
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const { showBack, setShowBack } = useProfileEvents();
-  const { setForceShowQR, pendingEdits, setPendingEdits } = feedbackProps;
+  const { setForceShowQR } = useSelectionStore();
+  const { pendingEdits, setPendingEdits } = useEditsStore();
   const { setMode, setVerify } = useMessagingStore();
   const routeMatchesProfile = useMemo(() => {
     if (!fullView) return true;
@@ -567,7 +567,6 @@ export default function ProfileCard({
                       setVerify((prev) => ({
                         ...prev,
                         zId: profile.id ?? null,
-                        memo: profile.id ? `{z:${profile.id}}` : prev.memo,
                         requestId: null,
                         amount: "0",
                       }));
@@ -952,7 +951,7 @@ export default function ProfileCard({
             </button>
           </div>
 
-          <ProfileEditor profile={profile} links={linksArray} feedbackProps={feedbackProps} />
+          <ProfileEditor profile={profile} links={linksArray} />
         </div>
 
       </div>

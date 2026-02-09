@@ -26,21 +26,21 @@ interface ProfileVerificationProps {
   profile: Profile;
   pendingEdits: PendingEdits;
   verify: VerifyState;
+  computedMemo: string;
   setVerifyRequestId: (requestId: string | null) => void;
   setVerifyAmount: (amount: string) => void;
-  setVerifyMemo?: (memo: string) => void;
 }
 
 export default function ProfileVerification({
   profile,
   pendingEdits,
   verify,
+  computedMemo,
   setVerifyRequestId,
   setVerifyAmount,
-  setVerifyMemo,
 }: ProfileVerificationProps) {
-  // Use verify context values for memo/amount
-  const memo = verify?.memo ?? "";
+  // Use computed memo that auto-updates from pendingEdits
+  const memo = computedMemo;
   const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
 
   const [isOtpOpen, setIsOtpOpen] = useState(false);
@@ -180,20 +180,18 @@ export default function ProfileVerification({
           </div>
           <textarea
             value={memo ?? ""}
-            onChange={(e) => setVerifyMemo?.(e.target.value)}
+            readOnly
             className="
               w-full
               border border-[#000000]/90
               rounded-b-xl
               px-3 py-2
               text-[14px]
-              bg-transparent
+              bg-gray-50
               text-gray-800
               font-mono
               resize-none
-              focus:ring-1
-              focus:ring-blue-500
-              focus:outline-none
+              cursor-default
             "
             style={{ minHeight: "6rem", lineHeight: "1.35" }}
           />

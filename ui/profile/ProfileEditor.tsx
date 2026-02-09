@@ -18,8 +18,8 @@ import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
+import { useEditsStore } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink, PendingProfileChange } from "@/lib/profile/types";
-import type { FeedbackProps } from "@/ui/profile/feedback-types";
 
 const FIELD_CLASS =
   "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
@@ -72,7 +72,6 @@ function createDeleteToggle(
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
-  feedbackProps?: FeedbackProps;
 }
 
 interface ParsedLink {
@@ -107,8 +106,8 @@ interface AvatarPrompt {
   url: string;
 }
 
-export default function ProfileEditor({ profile, links, feedbackProps = {} }: ProfileEditorProps) {
-  const { setPendingEdits, pendingEdits } = feedbackProps;
+export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
+  const { setPendingEdits, pendingEdits } = useEditsStore();
   const pendingProfileEdits = pendingEdits?.profile || {};
   const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
     ? pendingProfileEdits.d

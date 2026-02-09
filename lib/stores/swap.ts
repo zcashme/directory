@@ -31,6 +31,7 @@ interface SwapState {
   setSwapStatus: (status: string) => void;
   setQuoteStatus: (status: string) => void;
   setSwapError: (error: string) => void;
+  resetQuote: () => void;
   resetSwapState: (zecTokenId: string | null) => void;
 }
 
@@ -58,6 +59,7 @@ export const useSwapStore = create<SwapState>((set) => ({
   setSwapStatus: (status) => set({ swapStatus: status }),
   setQuoteStatus: (status) => set({ quoteStatus: status }),
   setSwapError: (error) => set({ swapError: error }),
+  resetQuote: () => set({ quoteData: null, quotePreview: null, quoteStatus: '' }),
   resetSwapState: (zecTokenId) =>
     set({
       originTokenId: zecTokenId,
