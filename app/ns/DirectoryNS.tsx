@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { useSelectionStore } from "@/lib/stores/ui-state";
+import { useSelectionStore } from "@/lib/stores/selection";
 import { useMessagingStore } from "@/lib/stores/messaging";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
