@@ -1,10 +1,48 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import ReactDOM from "react-dom";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import type { Profile } from "@/lib/profile/types";
 
+// Constants
+const STEPS = {
+  ENTRY: 0,
+  CHECKING: 1,
+  RESULT: 2,
+} as const;
+
+type Step = typeof STEPS[keyof typeof STEPS];
+type ResultType = "ok" | "fail";
+
+const OTP_MESSAGES: Record<string, { type: ResultType; text: string }> = {
+  verified: {
+    type: "ok",
+    text: "Your profile has been updated. Close to refresh the page.",
+  },
+  verified_and_no_pending_edits: {
+    type: "ok",
+    text: "Your address is verified, but there were no changes to apply.",
+  },
+  invalid: {
+    type: "fail",
+    text: "Incorrect code. Please try again.",
+  },
+  locked: {
+    type: "fail",
+    text: "Too many failed attempts. This OTP is now locked.",
+  },
+  expired: {
+    type: "fail",
+    text: "This OTP has expired. Request a new one.",
+  },
+  otp_already_used: {
+    type: "fail",
+    text: "This OTP was already used. Generate a new one.",
+  },
+};
+
+// Helper Components
 interface XIconProps {
   className?: string;
 }
@@ -30,89 +68,74 @@ interface SubmitOtpProps {
 }
 
 export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
-  const [step, setStep] = useState(0);       // 0 = enter OTP, 1 = checking, 2 = done
+  const [step, setStep] = useState<Step>(STEPS.ENTRY);
   const [otp, setOtp] = useState("");
-  const [result, setResult] = useState<"ok" | "fail" | null>(null);
+  const [result, setResult] = useState<ResultType | null>(null);
   const [customMessage, setCustomMessage] = useState("");
   const [showHelp, setShowHelp] = useState(false);
 
+  // Reset state when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setStep(STEPS.ENTRY);
+      setOtp("");
+      setResult(null);
+      setCustomMessage("");
+      setShowHelp(false);
+    }
+  }, [isOpen]);
+
+
+  // Helper to show result screen
+  const showResult = (type: ResultType, message: string) => {
+    setResult(type);
+    setCustomMessage(message);
+    setStep(STEPS.RESULT);
+  };
+
+  // Handle OTP submission
+  async function handleSubmit() {
+    setStep(STEPS.CHECKING);
+
+    const zid = profile?.id;
+    if (!zid) {
+      showResult("fail", "Profile ID is missing");
+      return;
+    }
+
+    try {
+      const response = await confirmOtpAction(zid, otp.trim());
+
+      if (!response.ok) {
+        showResult("fail", response.error || "Unexpected server error.");
+        return;
+      }
+
+      const status = response.data?.status;
+      const statusInfo = status ? OTP_MESSAGES[status] : null;
+
+      if (statusInfo) {
+        showResult(statusInfo.type, statusInfo.text);
+      } else {
+        showResult("fail", "Unexpected response from server.");
+      }
+    } catch {
+      showResult("fail", "Unexpected error.");
+    }
+  }
+
+  // Handle Enter key press
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && step === STEPS.ENTRY && otp.trim()) {
+      void handleSubmit();
+    }
+  };
 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
   const pname = profile?.name ?? "Profile";
   const paddr = profile?.address ?? "(unknown)";
-
-  async function handleSubmit() {
-    setStep(1);
-
-    try {
-      const zid = profile?.id;
-      if (!zid) {
-        setResult("fail");
-        setCustomMessage("Profile ID is missing");
-        setStep(2);
-        return;
-      }
-      const result = await confirmOtpAction(zid, otp);
-
-      if (!result.ok) {
-        setResult("fail");
-        setCustomMessage(result.error || "Unexpected server error.");
-        setStep(2);
-        return;
-      }
-
-      let message = "";
-      const status = result.data?.status;
-
-      switch (status) {
-        case "verified":
-          setResult("ok");
-          message = "Your profile has been updated. Close to refresh the page.";
-          break;
-
-        case "verified_and_no_pending_edits":
-          setResult("ok");
-          message = "Your address is verified, but there were no changes to apply.";
-          break;
-
-        case "invalid":
-          setResult("fail");
-          message = "Incorrect code. Please try again.";
-          break;
-
-        case "locked":
-          setResult("fail");
-          message = "Too many failed attempts. This OTP is now locked.";
-          break;
-
-        case "expired":
-          setResult("fail");
-          message = "This OTP has expired. Request a new one.";
-          break;
-
-        case "otp_already_used":
-          setResult("fail");
-          message = "This OTP was already used. Generate a new one.";
-          break;
-
-        default:
-          setResult("fail");
-          message = "Unexpected response from server.";
-          break;
-      }
-
-      setCustomMessage(message);
-      setStep(2);
-
-    } catch {
-      setResult("fail");
-      setCustomMessage("Unexpected error.");
-      setStep(2);
-    }
-  }
 
   return ReactDOM.createPortal(
     <div
@@ -121,15 +144,13 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
     >
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-        onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
-        }}
+        onClick={onClose}
       />
 
       <div
-        ref={dialogRef}
         className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl
-                   shadow-xl border border-black/30 animate-fadeIn"
+                   shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200"
+        onKeyPress={handleKeyPress}
       >
 
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
@@ -145,7 +166,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
         </div>
 
         {/* Slide 0: OTP entry */}
-        {step === 0 && (
+        {step === STEPS.ENTRY && (
           <div className="px-5 py-4 space-y-4">
             <div className="text-sm text-gray-700 leading-relaxed">
               <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
@@ -181,7 +202,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
         )}
 
         {/* Slide 1: Checking */}
-        {step === 1 && (
+        {step === STEPS.CHECKING && (
           <div className="px-5 py-10 text-center text-gray-700">
             <div className="animate-pulse text-lg font-semibold">Checking your code...</div>
             <p className="mt-2 text-sm">Please wait</p>
@@ -189,7 +210,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
         )}
 
         {/* Slide 2: Result */}
-        {step === 2 && (
+        {step === STEPS.RESULT && (
           <div className="px-5 py-10 text-center text-gray-700">
             {result === "ok" ? (
               <>
@@ -205,7 +226,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
           </div>
         )}
 
-        {showHelp && step === 0 && (
+        {showHelp && step === STEPS.ENTRY && (
           <p className="mx-5 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 pt-2 leading-snug">
             After sending your authentication request, receive an OTP within 24 hours.
             Submit that OTP here to approve your changes.
@@ -213,7 +234,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
           </p>
         )}
 
-        {showHelp && step === 2 && (
+        {showHelp && step === STEPS.RESULT && (
           <p className="mx-5 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 pt-2 leading-snug">
             Your code did not match the records.
             Make sure you entered the most recent OTP you received.
@@ -231,7 +252,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
           </button>
 
           <div className="flex items-center gap-3">
-            {step === 0 && (
+            {step === STEPS.ENTRY && (
               <>
                 <button
                   onClick={onClose}
@@ -245,15 +266,17 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
                   onClick={() => {
                     void handleSubmit();
                   }}
+                  disabled={!otp.trim()}
                   className="py-2.5 px-5 rounded-xl border border-black/30 text-sm font-semibold
-                             text-blue-700 hover:border-blue-600 hover:bg-blue-50"
+                             text-blue-700 hover:border-blue-600 hover:bg-blue-50
+                             disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Submit OTP
                 </button>
               </>
             )}
 
-            {step === 2 && result === "ok" && (
+            {step === STEPS.RESULT && result === "ok" && (
               <button
                 onClick={() => {
                   onClose();
@@ -266,7 +289,7 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
               </button>
             )}
 
-            {step === 2 && result !== "ok" && (
+            {step === STEPS.RESULT && result !== "ok" && (
               <button
                 onClick={onClose}
                 className="py-2.5 px-5 rounded-xl border border-black/30 text-sm font-semibold
@@ -279,14 +302,6 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
         </div>
 
       </div>
-
-      <style>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: scale(.98); }
-          to { opacity: 1; transform: scale(1); }
-        }
-        .animate-fadeIn { animation: fadeIn .25s ease-out; }
-      `}</style>
     </div>,
     document.body
   );
