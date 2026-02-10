@@ -34,6 +34,7 @@ interface ApiDirectoryResult {
 interface ApiSearchResult {
   results: ApiDirectoryResult[];
   next_cursor: string | null;
+  exists?: boolean;
 }
 
 // Transform API response to internal Profile format
@@ -56,6 +57,7 @@ function transformApiResult(r: ApiDirectoryResult): Profile {
 interface SearchResult {
   results: Profile[];
   next_cursor: string | null;
+  exists?: boolean;
 }
 
 interface ProfileSearchDropdownProps {
@@ -156,7 +158,7 @@ export default function ProfileSearchDropdown({
 
     // Use API route instead of Server Action to prevent router cache invalidation
     const searchPromise: Promise<SearchResult> = canReuseResults
-      ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null })
+      ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null, exists: true })
       : fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
           headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
         })
@@ -164,6 +166,7 @@ export default function ProfileSearchDropdown({
           .then((apiResult: ApiSearchResult) => ({
             results: apiResult.results.map(transformApiResult),
             next_cursor: apiResult.next_cursor,
+            exists: apiResult.exists,
           }))
           .catch(() => ({ results: [], next_cursor: null }));
 
@@ -171,18 +174,14 @@ export default function ProfileSearchDropdown({
       .then((result: SearchResult) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
           const data = result.results || [];
+          const exists = result.exists ?? false;
 
           setResults(data);
           if (!canReuseResults) {
             previousResultsRef.current = data;
           }
 
-          // Check if exact query matches any result (case-insensitive)
-          const exactMatch = data.some(
-            (p) => (p.name || "").toLowerCase() === currentQuery.toLowerCase()
-          );
-
-          if (showUsernameAvailability && !exactMatch) {
+          if (showUsernameAvailability && !exists) {
             usernameAvailableRef.current = currentQuery;
             setUsernameAvailable(currentQuery);
             onUsernameAvailable?.(currentQuery);

@@ -166,7 +166,7 @@ export async function getSwapQuote(params: {
       appFees: [
         {
           recipient: "zcash-me.near",
-          fee: 1000,
+          fee: 150,
         },
       ],
     };
@@ -265,7 +265,7 @@ export async function confirmSwap(params: {
       appFees: [
         {
           recipient: "zcash-me.near",
-          fee: 1000,
+          fee: 150,
         },
       ],
     };
