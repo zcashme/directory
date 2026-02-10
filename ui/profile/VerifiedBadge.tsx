@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import type { MouseEventHandler } from "react";
 
 interface VerifiedBadgeProps {
   verified?: boolean;
   verifiedLabel?: string;
   unverifiedLabel?: string;
-  onClick?: React.MouseEventHandler<HTMLSpanElement>;
+  onClick?: MouseEventHandler<HTMLSpanElement>;
 }
 
 export default function VerifiedBadge({

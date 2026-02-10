@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
+import type { MouseEvent } from "react";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -58,7 +59,7 @@ interface ProfileLinkRowProps {
   classes: LinkRowClasses;
   hideBadge?: boolean;
   badgeLabels?: { verified: string; unverified: string };
-  badgeOnClick?: (event: React.MouseEvent, link: EnrichedProfileLink) => void;
+  badgeOnClick?: (event: MouseEvent, link: EnrichedProfileLink) => void;
   stopPropagation?: boolean;
 }
 
@@ -72,9 +73,9 @@ function ProfileLinkRow({
 }: ProfileLinkRowProps) {
   const isDiscord = isDiscordLink(link.url || "");
   const canLinkLeft = !(isDiscord && !link.is_verified);
-  const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
+  const handleLinkClick = stopPropagation ? (event: MouseEvent) => event.stopPropagation() : undefined;
   const badgeClick =
-    badgeOnClick && !link.is_verified ? (event: React.MouseEvent) => badgeOnClick(event, link) : undefined;
+    badgeOnClick && !link.is_verified ? (event: MouseEvent) => badgeOnClick(event, link) : undefined;
   const copyProps = { label: "Copy", copiedLabel: "Copied", size: classes.copySize };
   const icon = (
     <img
@@ -445,7 +446,7 @@ export default function ProfileCard({
     setShowDetail(!!warningConfig.defaultExpanded);
   }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
 
-  const handleAuthBadgeClick = (event: React.MouseEvent, link: EnrichedProfileLink) => {
+  const handleAuthBadgeClick = (event: MouseEvent, link: EnrichedProfileLink) => {
     event.stopPropagation();
     if (!link || link.is_verified) return;
     setAuthLink(link);

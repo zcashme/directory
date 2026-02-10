@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 
 const slide = {
   initial: (dir: number) => ({ x: dir > 0 ? 40 : -40, opacity: 0 }),

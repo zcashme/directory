@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import { useState } from "react";
+import type { MouseEvent } from "react";
 
 interface CopyButtonProps {
   text: string;
@@ -29,7 +30,7 @@ export default function CopyButton({
     md: "text-base",
   };
 
-  const handleCopy = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleCopy = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
     setCopied(true);

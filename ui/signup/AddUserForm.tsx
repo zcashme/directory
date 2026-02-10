@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import type { City } from "@/lib/directory/types";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { SVGProps, FormEvent } from "react";
 import {
   createProfileAction,
   insertProfileLinksAction,
@@ -19,7 +20,7 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
 
-function XIcon(props: React.SVGProps<SVGSVGElement>) {
+function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
       <line x1="18" y1="6" x2="6" y2="18" />
@@ -319,7 +320,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   })();
 
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
 

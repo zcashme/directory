@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
+import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
@@ -234,7 +235,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     // Note: Link tokens are automatically recomputed by the store
   };
 
-  const toggleAddress = (e?: React.MouseEvent<HTMLButtonElement>) => {
+  const toggleAddress = (e?: MouseEvent<HTMLButtonElement>) => {
     if (!profile.address_verified && e) {
       const btn = e.currentTarget;
       const popup = e.currentTarget.nextElementSibling as HTMLElement;

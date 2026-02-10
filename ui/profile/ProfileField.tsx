@@ -1,4 +1,4 @@
-import { ReactNode } from "react";
+import type { ReactNode } from "react";
 import HelpIcon from "@/ui/common/HelpIcon";
 
 const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
