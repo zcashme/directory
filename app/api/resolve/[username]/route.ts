@@ -46,6 +46,10 @@ export async function GET(request: Request, { params }: RouteParams): Promise<Re
 
   const supabase = createSupabaseServerClient();
 
+  if (!supabase) {
+    return jsonResponse({ error: "server_misconfigured", username }, 500);
+  }
+
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
     .select(

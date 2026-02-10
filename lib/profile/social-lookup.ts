@@ -234,6 +234,14 @@ export async function lookupSocialAddress(platform: string, rawHandle: string): 
   }
 
   const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return {
+      status: 500,
+      body: { address: null, handle, error: "server_misconfigured" },
+    };
+  }
+
   const urlPatterns = buildUrlPatterns(handle, config);
 
   const labelPromise = supabase
