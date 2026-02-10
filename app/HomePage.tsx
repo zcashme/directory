@@ -263,7 +263,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           })}
         </div>
         {isMobile && profiles.length > 1 && (
-          <div className="flex justify-center gap-2 mt-4">
+          <div className="flex justify-center gap-2 mt-10">
             {profiles.map((profile, index) => (
               <button
                 key={profile.id ?? `indicator-${index}`}
