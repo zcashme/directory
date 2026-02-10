@@ -41,8 +41,8 @@ export default function CurrencySelector({
         disabled={disabled}
         className={`
           flex items-center gap-2 px-3 py-2 rounded-full
-          border border-gray-300 bg-white
-          hover:bg-gray-50 transition-colors
+          border border-gray-200 bg-gray-50
+          hover:bg-gray-100 transition-colors
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
         `}
       >
@@ -51,7 +51,7 @@ export default function CurrencySelector({
           {selectedCurrency.symbol}
         </span>
         <svg
-          className={`w-4 h-4 text-gray-600 transition-transform ${
+          className={`w-4 h-4 text-gray-500 transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
           fill="none"

@@ -1,34 +1,12 @@
 import { create } from 'zustand';
+import { getSwapStatus } from '@/lib/swap/oneClick';
 import type {
   SwapContextQuoteData,
   SwapQuoteDisplay,
+  SwapStatusData,
 } from '@/lib/swap/types';
 
 const POLL_INTERVAL = 5000;
-
-export interface SwapStatusData {
-  status: string;
-  swapDetails?: {
-    amountInFormatted?: string;
-    amountInUsd?: string;
-    amountOutFormatted?: string;
-    amountOutUsd?: string;
-  };
-  quoteResponse?: {
-    quoteRequest?: {
-      originAsset?: string;
-      destinationAsset?: string;
-      refundTo?: string;
-    };
-    quote?: {
-      amountOutFormatted?: string;
-      depositAddress?: string;
-      timeEstimate?: number;
-      deadline?: string;
-    };
-  };
-  updatedAt?: string;
-}
 
 interface SwapState {
   currentProfileAddress: string | null;
@@ -69,18 +47,17 @@ interface SwapState {
 
 const poll = async (depositAddress: string, set: (state: Partial<SwapState>) => void, get: () => SwapState) => {
   try {
-    const response = await fetch(`/api/swap/status?${new URLSearchParams({ depositAddress })}`);
-    const data = await response.json();
+    const result = await getSwapStatus(depositAddress);
 
-    if (data.error) {
+    if ("error" in result) {
       set({ statusError: 'Unable to fetch status' });
       return;
     }
 
-    set({ statusData: data, statusError: '' });
+    set({ statusData: result, statusError: '' });
 
     // Stop polling on terminal states
-    if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(data.status?.toUpperCase())) {
+    if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(result.status?.toUpperCase())) {
       get().stopPolling();
     }
   } catch {
