@@ -32,7 +32,8 @@
     }
   },
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "verification-service"
   ],
   "include": [
     "next-env.d.ts",
