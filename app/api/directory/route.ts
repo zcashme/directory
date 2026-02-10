@@ -1,21 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
 
-// Fields to select - explicit, no SELECT *
-const PROFILE_FIELDS = [
-  "id",
-  "name",
-  "display_name",
-  "address",
-  "address_verified",
-  "profile_image_url",
-  "bio",
-  "nearest_city_name",
-  "last_verified_at",
-  "verified_links_count",
-  "link_search_text",
-].join(",");
-
 interface DirectoryProfile {
   id: number;
   name: string;
@@ -26,34 +11,59 @@ interface DirectoryProfile {
   bio: string | null;
   nearest_city_name: string | null;
   last_verified_at: string | null;
-  verified_links_count: number;
   link_search_text: string | null;
 }
 
-interface DirectoryResult {
+interface ZcasherLink {
   id: number;
-  name: string;
+  label: string;
+  url: string;
+  is_verified: boolean;
+  zcasher_id: number;
+}
+
+interface LinkOutput {
+  id: number;
+  label: string;
+  url: string;
+  is_verified: boolean;
+}
+
+interface DirectoryResult {
+  username: string;
   display_name: string | null;
-  address: string | null;
-  address_verified: boolean;
   profile_image_url: string | null;
   bio: string | null;
   nearest_city_name: string | null;
+  address: string | null;
+  address_verified: boolean;
   verified_at: string | null;
-  verified_links_count: number;
+  authenticated_links: LinkOutput[];
+  unauthenticated_links: LinkOutput[];
 }
 
 interface DirectoryResponse {
   results: DirectoryResult[];
-  exists: boolean;
   next_cursor: string | null;
 }
 
 interface ErrorResponse {
   error: string;
-  results: [];
-  exists: boolean;
 }
+
+// Fields to select from zcasher_searchable
+const PROFILE_FIELDS = [
+  "id",
+  "name",
+  "display_name",
+  "address",
+  "address_verified",
+  "profile_image_url",
+  "bio",
+  "nearest_city_name",
+  "last_verified_at",
+  "link_search_text",
+].join(",");
 
 const jsonResponse = (
   body: DirectoryResponse | ErrorResponse,
@@ -65,13 +75,13 @@ const jsonResponse = (
     headers: withCacheHeaders({ "Content-Type": "application/json" }, cacheSeconds),
   });
 
-const encodeCursor = (lastId: number, lastName: string): string =>
-  Buffer.from(JSON.stringify({ id: lastId, name: lastName })).toString("base64");
+const encodeCursor = (lastName: string, lastId: number): string =>
+  Buffer.from(JSON.stringify({ name: lastName, id: lastId })).toString("base64");
 
-const decodeCursor = (cursor: string): { id: number; name: string } | null => {
+const decodeCursor = (cursor: string): { name: string; id: number } | null => {
   try {
     const decoded = JSON.parse(Buffer.from(cursor, "base64").toString("utf8"));
-    if (typeof decoded.id === "number" && typeof decoded.name === "string") {
+    if (typeof decoded.name === "string" && typeof decoded.id === "number") {
       return decoded;
     }
     return null;
@@ -79,6 +89,40 @@ const decodeCursor = (cursor: string): { id: number; name: string } | null => {
     return null;
   }
 };
+
+/**
+ * Compute ranking tier for a profile based on the query.
+ * Lower tier = higher priority.
+ *
+ * Ranking:
+ *   1) Usernames that start with the query
+ *   2) Link handles or non-social domains that start with the query
+ *   3) Usernames that include the query
+ *   4) Link handles or non-social domains that include the query
+ */
+function computeRankTier(profile: DirectoryProfile, query: string): number {
+  const q = query.toLowerCase();
+  const username = profile.name.toLowerCase();
+  const linkText = (profile.link_search_text || "").toLowerCase();
+
+  // link_search_text contains space-separated handles/domains
+  const linkParts = linkText.split(/\s+/).filter(Boolean);
+
+  // Tier 1: Username starts with query
+  if (username.startsWith(q)) return 1;
+
+  // Tier 2: Link handle/domain starts with query
+  if (linkParts.some((part) => part.startsWith(q))) return 2;
+
+  // Tier 3: Username contains query
+  if (username.includes(q)) return 3;
+
+  // Tier 4: Link handle/domain contains query
+  if (linkParts.some((part) => part.includes(q))) return 4;
+
+  // Fallback (shouldn't happen if search filter worked correctly)
+  return 5;
+}
 
 export async function GET(request: Request): Promise<Response> {
   const guard = await enforceApiGuard(request, { cacheSeconds: 30 });
@@ -94,22 +138,23 @@ export async function GET(request: Request): Promise<Response> {
   const supabase = createSupabaseServerClient();
 
   if (!supabase) {
-    return jsonResponse({ error: "server_misconfigured", results: [], exists: false }, 500);
+    return jsonResponse({ error: "server_misconfigured" }, 500);
   }
 
-  // Build query
+  // Build query - fetch more than needed for ranking, then slice
+  // When ranking, we need to fetch extra to ensure we get enough after sorting
+  const fetchLimit = q ? Math.min(limit * 4, 400) : limit + 1;
+
   let queryBuilder = supabase
     .from("zcasher_searchable")
     .select(PROFILE_FIELDS)
     .order("name", { ascending: true })
-    .limit(limit + 1); // Fetch one extra to check if there's a next page
+    .limit(fetchLimit);
 
   // Apply search filter if query provided
+  // Matches: usernames (contains), link handles/domains (contains)
   if (q) {
-    // Simple search: username starts with, display_name starts with, or link_search_text contains
-    queryBuilder = queryBuilder.or(
-      `name.ilike.${q}%,display_name.ilike.${q}%,link_search_text.ilike.%${q}%`
-    );
+    queryBuilder = queryBuilder.or(`name.ilike.%${q}%,link_search_text.ilike.%${q}%`);
   }
 
   // Apply verified filter
@@ -117,11 +162,11 @@ export async function GET(request: Request): Promise<Response> {
     queryBuilder = queryBuilder.eq("address_verified", true);
   }
 
-  // Apply cursor for pagination
-  if (cursor) {
+  // Apply cursor for pagination (only for non-ranked queries)
+  // For ranked queries, cursor contains rank info
+  if (cursor && !q) {
     const cursorData = decodeCursor(cursor);
     if (cursorData) {
-      // Continue from after the cursor position
       queryBuilder = queryBuilder.or(
         `name.gt.${cursorData.name},and(name.eq.${cursorData.name},id.gt.${cursorData.id})`
       );
@@ -131,43 +176,98 @@ export async function GET(request: Request): Promise<Response> {
   const { data, error } = await queryBuilder;
 
   if (error) {
-    return jsonResponse({ error: "search_failed", results: [], exists: false }, 500);
+    return jsonResponse({ error: "search_failed" }, 500);
   }
 
-  const profiles = (data || []) as unknown as DirectoryProfile[];
+  let profiles = (data || []) as unknown as DirectoryProfile[];
+
+  // Apply ranking when there's a search query
+  if (q && profiles.length > 0) {
+    // Compute rank for each profile and sort
+    const rankedProfiles = profiles.map((profile) => ({
+      profile,
+      tier: computeRankTier(profile, q),
+    }));
+
+    // Sort by tier (ascending), then by username (ascending)
+    rankedProfiles.sort((a, b) => {
+      if (a.tier !== b.tier) return a.tier - b.tier;
+      return a.profile.name.localeCompare(b.profile.name);
+    });
+
+    profiles = rankedProfiles.map((r) => r.profile);
+
+    // Handle cursor for ranked results
+    if (cursor) {
+      const cursorData = decodeCursor(cursor);
+      if (cursorData) {
+        const cursorIndex = profiles.findIndex(
+          (p) => p.name === cursorData.name && p.id === cursorData.id
+        );
+        if (cursorIndex >= 0) {
+          profiles = profiles.slice(cursorIndex + 1);
+        }
+      }
+    }
+  }
 
   // Check if there's a next page
   const hasMore = profiles.length > limit;
-  const resultsToReturn = hasMore ? profiles.slice(0, limit) : profiles;
+  const resultsToReturn = profiles.slice(0, limit);
 
   // Calculate next cursor
   let nextCursor: string | null = null;
   if (hasMore && resultsToReturn.length > 0) {
     const lastResult = resultsToReturn[resultsToReturn.length - 1];
-    nextCursor = encodeCursor(lastResult.id, lastResult.name);
+    nextCursor = encodeCursor(lastResult.name, lastResult.id);
   }
 
-  // Check if exact username exists (for UI username availability)
-  let exists = false;
-  if (q) {
-    exists = resultsToReturn.some(
-      (p) => p.name.toLowerCase() === q.toLowerCase()
-    );
+  // Fetch links for all profiles in batch
+  const profileIds = resultsToReturn.map((p) => p.id);
+  let linksMap: Map<number, ZcasherLink[]> = new Map();
+
+  if (profileIds.length > 0) {
+    const { data: links, error: linksError } = await supabase
+      .from("zcasher_links")
+      .select("id,label,url,is_verified,zcasher_id")
+      .in("zcasher_id", profileIds);
+
+    if (linksError) {
+      return jsonResponse({ error: "links_lookup_failed" }, 500);
+    }
+
+    // Group links by zcasher_id
+    for (const link of (links || []) as ZcasherLink[]) {
+      if (!linksMap.has(link.zcasher_id)) {
+        linksMap.set(link.zcasher_id, []);
+      }
+      linksMap.get(link.zcasher_id)!.push(link);
+    }
   }
 
-  // Transform to response format (remove link_search_text, rename last_verified_at)
-  const results: DirectoryResult[] = resultsToReturn.map((p) => ({
-    id: p.id,
-    name: p.name,
-    display_name: p.display_name,
-    address: p.address,
-    address_verified: p.address_verified,
-    profile_image_url: p.profile_image_url,
-    bio: p.bio,
-    nearest_city_name: p.nearest_city_name,
-    verified_at: p.last_verified_at,
-    verified_links_count: p.verified_links_count,
-  }));
+  // Transform to response format
+  const results: DirectoryResult[] = resultsToReturn.map((p) => {
+    const profileLinks = linksMap.get(p.id) || [];
+    const authenticated_links: LinkOutput[] = profileLinks
+      .filter((l) => l.is_verified)
+      .map((l) => ({ id: l.id, label: l.label, url: l.url, is_verified: l.is_verified }));
+    const unauthenticated_links: LinkOutput[] = profileLinks
+      .filter((l) => !l.is_verified)
+      .map((l) => ({ id: l.id, label: l.label, url: l.url, is_verified: l.is_verified }));
 
-  return jsonResponse({ results, exists, next_cursor: nextCursor }, 200, cacheSeconds);
+    return {
+      username: p.name,
+      display_name: p.display_name,
+      profile_image_url: p.profile_image_url,
+      bio: p.bio,
+      nearest_city_name: p.nearest_city_name,
+      address: p.address,
+      address_verified: p.address_verified,
+      verified_at: p.last_verified_at,
+      authenticated_links,
+      unauthenticated_links,
+    };
+  });
+
+  return jsonResponse({ results, next_cursor: nextCursor }, 200, cacheSeconds);
 }

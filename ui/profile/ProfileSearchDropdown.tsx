@@ -17,9 +17,44 @@ function useDebounce<T>(value: T, delay: number): T {
 const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
 const useSearchDebounce = useDebounce;    // API calls (150ms)
 
+// API response format from /api/directory (matches wallet API docs)
+interface ApiDirectoryResult {
+  username: string;
+  display_name: string | null;
+  profile_image_url: string | null;
+  bio: string | null;
+  nearest_city_name: string | null;
+  address: string | null;
+  address_verified: boolean;
+  verified_at: string | null;
+  authenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
+  unauthenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
+}
+
+interface ApiSearchResult {
+  results: ApiDirectoryResult[];
+  next_cursor: string | null;
+}
+
+// Transform API response to internal Profile format
+function transformApiResult(r: ApiDirectoryResult): Profile {
+  return {
+    id: 0, // Not provided by API, use 0 as placeholder
+    name: r.username,
+    display_name: r.display_name ?? undefined,
+    profile_image_url: r.profile_image_url ?? undefined,
+    bio: r.bio ?? undefined,
+    nearest_city_name: r.nearest_city_name ?? undefined,
+    address: r.address ?? "",
+    address_verified: r.address_verified,
+    last_verified_at: r.verified_at ?? undefined,
+    verified_links_count: r.authenticated_links.length,
+    links: [...r.authenticated_links, ...r.unauthenticated_links],
+  };
+}
+
 interface SearchResult {
   results: Profile[];
-  exists: boolean;
   next_cursor: string | null;
 }
 
@@ -120,19 +155,22 @@ export default function ProfileSearchDropdown({
     lastQueryRef.current = currentQuery;
 
     // Use API route instead of Server Action to prevent router cache invalidation
-    const searchPromise = canReuseResults
-      ? Promise.resolve({ results: previousResultsRef.current, exists: false, next_cursor: null })
+    const searchPromise: Promise<SearchResult> = canReuseResults
+      ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null })
       : fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
           headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
         })
-          .then(res => res.ok ? res.json() : { results: [], exists: false, next_cursor: null })
-          .catch(() => ({ results: [], exists: false, next_cursor: null }));
+          .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
+          .then((apiResult: ApiSearchResult) => ({
+            results: apiResult.results.map(transformApiResult),
+            next_cursor: apiResult.next_cursor,
+          }))
+          .catch(() => ({ results: [], next_cursor: null }));
 
     searchPromise
       .then((result: SearchResult) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
           const data = result.results || [];
-          const exists = result.exists || false;
 
           setResults(data);
           if (!canReuseResults) {
@@ -144,7 +182,7 @@ export default function ProfileSearchDropdown({
             (p) => (p.name || "").toLowerCase() === currentQuery.toLowerCase()
           );
 
-          if (showUsernameAvailability && !exists && !exactMatch) {
+          if (showUsernameAvailability && !exactMatch) {
             usernameAvailableRef.current = currentQuery;
             setUsernameAvailable(currentQuery);
             onUsernameAvailable?.(currentQuery);
@@ -254,7 +292,7 @@ export default function ProfileSearchDropdown({
               {results.length > 0 ? (
                 results.map((p) => (
                   <div
-                    key={p.id}
+                    key={p.name}
                     onClick={() => {
                       onChange(p);
                       setShow(false);
