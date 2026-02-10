@@ -39,12 +39,30 @@ export type GetProfileLinksBatchResponse = APIResponse<
 >;
 
 /**
- * Search profiles response (special case - includes exists flag)
+ * Directory search result profile
  */
-export interface SearchProfilesResponse {
-  profiles: Profile[];
-  exists: boolean;
+export interface DirectoryResult {
+  id: number;
+  name: string;
+  display_name: string | null;
+  address: string | null;
+  address_verified: boolean;
+  profile_image_url: string | null;
+  bio: string | null;
+  nearest_city_name: string | null;
+  verified_at: string | null;
+  verified_links_count: number;
 }
+
+/**
+ * Directory search response
+ */
+export interface DirectoryResponse {
+  results: DirectoryResult[];
+  exists: boolean;
+  next_cursor: string | null;
+}
+
 
 /**
  * Search cities response

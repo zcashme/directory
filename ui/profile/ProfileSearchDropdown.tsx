@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import type { RefObject } from "react";
 import type { Profile } from "@/lib/profile/types";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -17,8 +18,9 @@ const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
 const useSearchDebounce = useDebounce;    // API calls (150ms)
 
 interface SearchResult {
-  profiles: Profile[];
+  results: Profile[];
   exists: boolean;
+  next_cursor: string | null;
 }
 
 interface ProfileSearchDropdownProps {
@@ -119,15 +121,17 @@ export default function ProfileSearchDropdown({
 
     // Use API route instead of Server Action to prevent router cache invalidation
     const searchPromise = canReuseResults
-      ? Promise.resolve({ profiles: previousResultsRef.current, exists: false })
-      : fetch(`/api/search?q=${encodeURIComponent(currentQuery)}&limit=3`)
-          .then(res => res.ok ? res.json() : { profiles: [], exists: false })
-          .catch(() => ({ profiles: [], exists: false }));
+      ? Promise.resolve({ results: previousResultsRef.current, exists: false, next_cursor: null })
+      : fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
+          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
+        })
+          .then(res => res.ok ? res.json() : { results: [], exists: false, next_cursor: null })
+          .catch(() => ({ results: [], exists: false, next_cursor: null }));
 
     searchPromise
       .then((result: SearchResult) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          const data = result.profiles || [];
+          const data = result.results || [];
           const exists = result.exists || false;
 
           setResults(data);
@@ -201,7 +205,7 @@ export default function ProfileSearchDropdown({
       {/* Input only if NOT list-only */}
       {!listOnly && (
         <input
-          ref={dropdownRef as React.RefObject<HTMLInputElement>}
+          ref={dropdownRef as RefObject<HTMLInputElement>}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
