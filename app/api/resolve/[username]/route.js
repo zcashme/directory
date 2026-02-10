@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "../../../../lib/supabase-server";
+import { createSupabaseServerClient } from "../../../../lib/supabase/supabase-server";
 import { enforceApiGuard, withCacheHeaders } from "../../../../lib/api-guard";
 
 const jsonResponse = (body, status = 200, cacheSeconds = 0) =>

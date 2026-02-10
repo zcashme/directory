@@ -8,11 +8,19 @@
   background-size: 240px 240px;
 }
 
-/* Light theme only */
+/* Light theme only - Zcash.me Design System */
 :root {
-  --color-background: #f6efe6;
-  --color-card: #fbf7f1;
-  --color-primary: #203a47;
+  --color-background: #faf6ed;
+  --color-card: #ffffff;
+  --color-primary: #111827;
+  --color-text-primary: #111827;
+  --color-text-secondary: #4b5563;
+  --color-text-muted: #6b7280;
+  --color-accent-green: #16a34a;
+  --color-accent-green-light: #dcfce7;
+  --color-accent-green-dark: #15803d;
+  --color-border: #d1d5db;
+  --color-border-light: #e5e7eb;
 }
 
 html,
@@ -20,30 +28,61 @@ body {
   height: 100%;
   background: var(--color-background);
   color: var(--color-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
-/* --- Zcash.me Mid-Intensity Custom Scrollbar --- */
-::-webkit-scrollbar {
-  width: 8px;
+/* Hide scrollbars globally */
+* {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
 }
 
-::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.06); /* subtle contrast on dark bg */
-  border-radius: 8px;
+*::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Opera */
 }
 
-::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #1a73e8, #174ea6); /* soft blue gradient */
-  border-radius: 8px;
-  border: 2px solid rgba(0, 0, 0, 0.25); /* subtle inset */
-  box-shadow: 0 0 6px rgba(26, 115, 232, 0.4); /* soft glow */
-  transition: all 0.2s ease-in-out;
+/* Card shimmer effect */
+@keyframes cardShimmer {
+  0% {
+    transform: translateX(-100%) rotate(25deg);
+  }
+  100% {
+    transform: translateX(200%) rotate(25deg);
+  }
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #3b8bff, #1d63c8);
-  box-shadow: 0 0 10px rgba(59, 139, 255, 0.6);
-  border-color: rgba(0, 0, 0, 0.35);
+.card-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.card-shimmer::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 50%;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.03) 75%,
+    transparent 100%
+  );
+  transform: translateX(-100%) rotate(25deg);
+  animation: cardShimmer 4s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.card-shimmer-fast::before {
+  animation: cardShimmer 2.5s ease-in-out infinite;
+}
+
+.card-shimmer-slow::before {
+  animation: cardShimmer 6s ease-in-out infinite;
 }
 
 @keyframes shake-x {
@@ -230,4 +269,71 @@ body {
 .directoryns-help [class*="text-gray"],
 .directoryns-help [class*="text-blue"] {
   color: #111 !important;
+}
+
+/* 3D flip utilities (ProfileCard) */
+.transform-style-preserve-3d {
+  transform-style: preserve-3d;
+}
+.backface-hidden {
+  backface-visibility: hidden;
+}
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+.rotate-y-0 {
+  transform: rotateY(0deg);
+}
+
+/* Link loading shimmer (ProfileCard) */
+@keyframes link-tray-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.link-tray-shimmer {
+  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
+  background-size: 200% 100%;
+  animation: link-tray-shimmer 1.2s ease-in-out infinite;
+}
+
+/* Verified card hover scale (replaces Framer Motion) */
+.verified-card-hover {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+.verified-card-hover:hover {
+  transform: scale(1.02);
+}
+
+/* Verified card shimmer animation (replaces Framer Motion) */
+@keyframes verified-card-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.verified-card-shimmer {
+  background-size: 200% 200%;
+  animation: verified-card-shimmer 6s linear infinite;
+}
+
+/* Hide scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Force black text on 404 page */
+.next-error-h1,
+.next-error-h1 + div h2 {
+  color: #000 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  .next-error-h1,
+  .next-error-h1 + div h2 {
+    color: #000 !important;
+  }
 }
