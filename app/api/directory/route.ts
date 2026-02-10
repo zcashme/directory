@@ -45,6 +45,7 @@ interface DirectoryResult {
 interface DirectoryResponse {
   results: DirectoryResult[];
   next_cursor: string | null;
+  exists?: boolean;
 }
 
 interface ErrorResponse {
@@ -95,33 +96,21 @@ const decodeCursor = (cursor: string): { name: string; id: number } | null => {
  * Lower tier = higher priority.
  *
  * Ranking:
- *   1) Usernames that start with the query
- *   2) Link handles or non-social domains that start with the query
- *   3) Usernames that include the query
- *   4) Link handles or non-social domains that include the query
+ *   0) Usernames that start with the query
+ *   1) Usernames that contain the query
  */
 function computeRankTier(profile: DirectoryProfile, query: string): number {
   const q = query.toLowerCase();
   const username = profile.name.toLowerCase();
-  const linkText = (profile.link_search_text || "").toLowerCase();
 
-  // link_search_text contains space-separated handles/domains
-  const linkParts = linkText.split(/\s+/).filter(Boolean);
+  // Tier 0: Username starts with query
+  if (username.startsWith(q)) return 0;
 
-  // Tier 1: Username starts with query
-  if (username.startsWith(q)) return 1;
-
-  // Tier 2: Link handle/domain starts with query
-  if (linkParts.some((part) => part.startsWith(q))) return 2;
-
-  // Tier 3: Username contains query
-  if (username.includes(q)) return 3;
-
-  // Tier 4: Link handle/domain contains query
-  if (linkParts.some((part) => part.includes(q))) return 4;
+  // Tier 1: Username contains query
+  if (username.includes(q)) return 1;
 
   // Fallback (shouldn't happen if search filter worked correctly)
-  return 5;
+  return 2;
 }
 
 export async function GET(request: Request): Promise<Response> {
@@ -143,13 +132,17 @@ export async function GET(request: Request): Promise<Response> {
 
   // Build query - fetch more than needed for ranking, then slice
   // When ranking, we need to fetch extra to ensure we get enough after sorting
-  const fetchLimit = q ? Math.min(limit * 4, 400) : limit + 1;
+  const fetchLimit = q ? Math.min(limit * 2, 200) : limit + 1;
 
   let queryBuilder = supabase
     .from("zcasher_searchable")
     .select(PROFILE_FIELDS)
-    .order("name", { ascending: true })
     .limit(fetchLimit);
+
+  // Only order alphabetically when browsing without search query
+  if (!q) {
+    queryBuilder = queryBuilder.order("name", { ascending: true });
+  }
 
   // Apply search filter if query provided
   // Matches: usernames (contains), link handles/domains (contains)
@@ -269,5 +262,27 @@ export async function GET(request: Request): Promise<Response> {
     };
   });
 
-  return jsonResponse({ results, next_cursor: nextCursor }, 200, cacheSeconds);
+  // Check if exact username exists (for availability checks)
+  // Only check when there's a search query
+  let exists: boolean | undefined;
+  if (q) {
+    // First check if it's in the results we already have
+    const exactMatchInResults = resultsToReturn.some(
+      (p) => p.name.toLowerCase() === q.toLowerCase()
+    );
+    if (exactMatchInResults) {
+      exists = true;
+    } else {
+      // Query the database for exact match
+      const { data: exactMatch } = await supabase
+        .from("zcasher_searchable")
+        .select("id")
+        .ilike("name", q)
+        .limit(1)
+        .maybeSingle();
+      exists = !!exactMatch;
+    }
+  }
+
+  return jsonResponse({ results, next_cursor: nextCursor, exists }, 200, cacheSeconds);
 }

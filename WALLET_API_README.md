@@ -33,22 +33,19 @@ To obtain an API key for your wallet, contact the Zcash.me team.
 | `/api/resolve` | 60 seconds | 60/min |
 | `/api/social` | 300 seconds | 60/min |
 
-If you exceed the rate limit, you will receive `429 rate_limited` with a `Retry-After` header.
+If you exceed the rate limit, you will receive `429 rate_limited`.
 
 ---
 
 ## Endpoints
 
-### 1) Directory Search & Browse
+### 1) Directory Search
 
 ```
-GET /api/directory
+GET /api/directory?q=<search>&limit=25&cursor=<token>&verified_only=true
 ```
 
-Use this endpoint to:
-- Power autocomplete/search as users type
-- Browse the full directory (paginated)
-- Filter to verified users only
+Use this endpoint to power autocomplete or search lists.
 
 #### Parameters
 
@@ -62,26 +59,20 @@ Use this endpoint to:
 #### Search behavior
 
 When `q` is provided:
-- Matches usernames starting with the query (case-insensitive)
-- Matches display names starting with the query
-- Matches social handles/links containing the query
+- Matches usernames (case-insensitive)
+- Matches social handles extracted from links (e.g., `x.com/handle`, `linkedin.com/in/handle`)
+- Matches non-social domains (e.g., `example.com` matches `www.example.com`)
 
-#### Examples
+#### Ranking behavior
 
-**Search for users:**
-```
-GET /api/directory?q=cobra&limit=10
-```
+Results are ranked in this order:
+1. Usernames that start with the query
+2. Usernames that contain the query
 
-**Browse all verified users:**
-```
-GET /api/directory?verified_only=true&limit=50
-```
+#### Example
 
-**Browse full directory (paginated):**
 ```
-GET /api/directory?limit=100
-GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
+GET /api/directory?q=cobra&limit=25
 ```
 
 #### Response
@@ -90,20 +81,23 @@ GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
 {
   "results": [
     {
-      "id": 1,
-      "name": "cobra",
+      "username": "cobra",
       "display_name": "Cobra",
-      "address": "u1abc123...",
-      "address_verified": true,
       "profile_image_url": "https://example.com/avatar.jpg",
       "bio": "Zcash enthusiast and builder.",
       "nearest_city_name": "Denver",
+      "address": "u1...",
+      "address_verified": true,
       "verified_at": "2025-10-23T10:58:54.721199+00:00",
-      "verified_links_count": 2
+      "authenticated_links": [
+        { "id": 1, "label": "cobra.example.com", "url": "https://cobra.example.com", "is_verified": true }
+      ],
+      "unauthenticated_links": [
+        { "id": 2, "label": "cobracrypto", "url": "https://x.com/cobracrypto", "is_verified": false }
+      ]
     }
   ],
-  "exists": false,
-  "next_cursor": "eyJpZCI6MjUsIm5hbWUiOiJ6ZWtlIn0"
+  "next_cursor": "eyJuYW1lIjoiY29icmEiLCJpZCI6MX0"
 }
 ```
 
@@ -112,23 +106,31 @@ GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
 | Field | Type | Description |
 |-------|------|-------------|
 | `results` | array | Array of profile objects |
-| `exists` | boolean | True if exact username match exists (for availability checks) |
 | `next_cursor` | string \| null | Cursor for next page, null if no more results |
 
 #### Profile object fields
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | integer | Unique profile ID |
-| `name` | string | Username (URL slug) |
+| `username` | string | Username (URL slug) |
 | `display_name` | string \| null | Display name |
-| `address` | string \| null | Zcash address |
-| `address_verified` | boolean | True if address is verified on-chain |
 | `profile_image_url` | string \| null | Avatar URL |
 | `bio` | string \| null | Profile bio |
 | `nearest_city_name` | string \| null | Location |
+| `address` | string \| null | Zcash address |
+| `address_verified` | boolean | True if address is verified on-chain |
 | `verified_at` | string \| null | ISO timestamp of last verification |
-| `verified_links_count` | integer | Number of verified social links |
+| `authenticated_links` | array | Links that have been verified |
+| `unauthenticated_links` | array | Links that have not been verified |
+
+#### Link object fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | integer | Link ID |
+| `label` | string | Display label for the link |
+| `url` | string | Full URL |
+| `is_verified` | boolean | Whether link ownership is verified |
 
 ---
 
@@ -138,7 +140,7 @@ GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
 GET /api/resolve?username=<username>
 ```
 
-Use this to get full profile details including all social links.
+Use this to get full profile details for a specific user.
 
 #### Parameters
 
@@ -161,7 +163,7 @@ GET /api/resolve?username=cobra
   "profile_image_url": "https://example.com/avatar.jpg",
   "bio": "Zcash enthusiast and builder.",
   "nearest_city_name": "Denver",
-  "address": "u1abc123...",
+  "address": "u1...",
   "address_verified": true,
   "verified_at": "2025-10-23T10:58:54.721199+00:00",
   "authenticated_links": [
@@ -172,21 +174,6 @@ GET /api/resolve?username=cobra
   ]
 }
 ```
-
-#### Response fields
-
-| Field | Type | Description |
-|-------|------|-------------|
-| `username` | string | Username |
-| `display_name` | string \| null | Display name |
-| `profile_image_url` | string \| null | Avatar URL |
-| `bio` | string \| null | Profile bio |
-| `nearest_city_name` | string \| null | Location |
-| `address` | string \| null | Zcash address |
-| `address_verified` | boolean | True if address verified on-chain |
-| `verified_at` | string \| null | ISO timestamp of last verification |
-| `authenticated_links` | array | Links that have been verified |
-| `unauthenticated_links` | array | Links that have not been verified |
 
 ---
 
@@ -225,7 +212,7 @@ GET /api/social?platform=x&handle=thefrankbraun
     "url": "https://x.com/thefrankbraun",
     "is_verified": true
   },
-  "address": "u1abc123...",
+  "address": "u1...",
   "profile_name": "Frank Braun",
   "address_verified": true
 }
@@ -248,10 +235,10 @@ Use cursor-based pagination for browsing large result sets.
 GET /api/directory?limit=100
 
 # Response includes next_cursor
-{ "results": [...], "next_cursor": "eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9" }
+{ "results": [...], "next_cursor": "eyJuYW1lIjoiem9ybyIsImlkIjoxMDB9" }
 
 # Next page
-GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
+GET /api/directory?limit=100&cursor=eyJuYW1lIjoiem9ybyIsImlkIjoxMDB9
 ```
 
 **Important:** Treat the cursor as an opaque token. Do not parse or modify it.
@@ -268,7 +255,7 @@ GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
 | 401 | `unauthorized` | API key missing or invalid |
 | 404 | `not_found` | Username or handle not found |
 | 429 | `rate_limited` | Too many requests |
-| 500 | `search_failed`, `server_misconfigured` | Server error |
+| 500 | `search_failed`, `links_lookup_failed`, `server_misconfigured` | Server error |
 
 ### Error response format
 
@@ -282,19 +269,12 @@ GET /api/directory?limit=100&cursor=eyJpZCI6MTAwLCJuYW1lIjoiem9ybyJ9
 
 ## Integration examples
 
-### Basic search flow
+### Minimal integration flow
 
-```javascript
-// 1. User types in search box (debounced)
-const response = await fetch(`https://zcash.me/api/directory?q=${query}&limit=10`);
-const { results } = await response.json();
-
-// 2. User selects a profile
-const profile = await fetch(`https://zcash.me/api/resolve?username=${selected.name}`);
-const { address } = await profile.json();
-
-// 3. Send ZEC to address
-```
+1. User types a search term -> call `/api/directory?q=...`
+2. Show results (username + display name + verified badge)
+3. On selection, call `/api/resolve/:username` to get the address
+4. Optionally, allow direct social lookup with `/api/social?platform=...&handle=...`
 
 ### Slash shorthand resolution
 
@@ -312,13 +292,32 @@ function parseInput(input) {
 async function resolveInput(input) {
   const parsed = parseInput(input);
   if (parsed.type === 'zcashme') {
-    const res = await fetch(`https://zcash.me/api/resolve?username=${parsed.username}`);
+    const res = await fetch(`https://zcash.me/api/resolve?username=${parsed.username}`, {
+      headers: { 'X-API-Key': 'YOUR_KEY' }
+    });
     if (!res.ok) throw new Error('User not found');
     const data = await res.json();
     return data.address;
   }
   return parsed.value;
 }
+```
+
+### Search with autocomplete
+
+```javascript
+// Debounce search input by 200-300ms
+const response = await fetch(
+  `https://zcash.me/api/directory?q=${encodeURIComponent(query)}&limit=10`,
+  { headers: { 'X-API-Key': 'YOUR_KEY' } }
+);
+const { results } = await response.json();
+
+// Display results with verified badge
+results.forEach(profile => {
+  const hasVerification = profile.address_verified || profile.authenticated_links.length > 0;
+  console.log(`${profile.display_name || profile.username} ${hasVerification ? '✓' : ''}`);
+});
 ```
 
 ### Directory browser
@@ -333,7 +332,9 @@ async function* browseDirectory(verifiedOnly = true) {
     url.searchParams.set('verified_only', verifiedOnly);
     if (cursor) url.searchParams.set('cursor', cursor);
 
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: { 'X-API-Key': 'YOUR_KEY' }
+    });
     const { results, next_cursor } = await res.json();
 
     yield results;
@@ -354,8 +355,8 @@ for await (const batch of browseDirectory()) {
 ## UX recommendations
 
 1. **Debounce search input** by 200-300ms to reduce API calls
-2. **Start searching after 2+ characters** to reduce noise
-3. **Show verified badge** when `address_verified` is true or `verified_links_count > 0`
+2. **Start searching after 1-2 characters** to reduce noise
+3. **Show verified badge** when `address_verified` is true or a verified link exists
 4. **Cache results** client-side for responsive UX
 5. **Handle errors gracefully** with user-friendly messages
 
@@ -372,8 +373,12 @@ for await (const batch of browseDirectory()) {
 
 ## Changelog
 
+- **2025-02:** Updated `/api/directory` response format
+  - Renamed `name` to `username`
+  - Added `authenticated_links` and `unauthenticated_links` arrays
+  - Removed `id`, `exists`, `verified_links_count` fields
+  - Simplified ranking to 2 tiers (username-based only)
 - **2025-02:** Unified `/api/directory` endpoint replaces `/api/search`
   - Added `verified_only` filter
   - Added cursor-based pagination
-  - Simplified response format (no links in directory results)
   - All endpoints require API key
