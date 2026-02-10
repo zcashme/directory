@@ -1,144 +1,136 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import ProfileHeader from "@/ui/profile/ProfileHeader";
-import { useThreadStore } from "@/lib/stores/thread";
-import { getSession } from "@/lib/supabase/auth";
-import { fetchProfileForSlug } from "@/lib/profile/profileFetcher";
-import MessageComposer from "@/ui/thread/MessageComposer";
-import MessageFeed from "@/ui/thread/MessageFeed";
-import ThreadOtpFlow from "@/ui/thread/ThreadOtpFlow";
-import { ThreadMessageWithProfile } from "@/lib/thread/types";
-import type { Profile } from "@/lib/profile/types";
+import { useEffect, useState } from 'react';
+import { ThreadBoard } from '@/ui/thread/ThreadBoard';
+import { ThreadMessage, Board } from '@/lib/thread/types';
+import {
+  fetchBoardsAction,
+  fetchMessagesAction,
+  postMessageAction,
+  createBoardAction,
+} from '@/lib/thread/actions';
+import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 interface ThreadPageProps {
-  initialMessages: ThreadMessageWithProfile[];
+  initialMessages?: ThreadMessage[];
+  initialBoards?: Board[];
+  userName?: string;
+  userAvatar?: string;
+  userId?: string;
+  isLoggedIn?: boolean;
 }
 
-export default function ThreadPage({ initialMessages }: ThreadPageProps) {
-  const {
-    messageComposition,
-    verifyQrEnabled,
-    isOtpFormOpen,
-    setIsOtpFormOpen,
-    clearMessageComposition,
-    setVerifyQrEnabled,
-  } = useThreadStore();
+export default function ThreadPage({
+  initialMessages = [],
+  initialBoards = [],
+  userName = 'Guest',
+  userAvatar,
+  userId = '',
+  isLoggedIn = false,
+}: ThreadPageProps) {
+  const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
+  const [boards, setBoards] = useState<Board[]>(initialBoards);
+  const [currentBoardId, setCurrentBoardId] = useState(THREAD_CONSTANTS.DEFAULT_BOARD_ID);
+  const [isLoadingInitial, setIsLoadingInitial] = useState(!initialBoards.length);
+  const [messageOffset, setMessageOffset] = useState(0);
 
-  const [currentUser, setCurrentUser] = useState<Profile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [newMessageAdded, setNewMessageAdded] = useState(false);
-
-  // Load current user from session
+  // Initialize boards on mount
   useEffect(() => {
-    const loadCurrentUser = async () => {
-      try {
-        const { data, error: authError } = await getSession();
-        if (authError || !data?.session?.user?.email) {
-          setCurrentUser(null);
-          setIsLoading(false);
-          return;
+    const initializeBoards = async () => {
+      if (boards.length === 0) {
+        const result = await fetchBoardsAction();
+        if (result.success && result.data) {
+          setBoards(result.data);
         }
+      }
+      setIsLoadingInitial(false);
+    };
 
-        // Extract username from email (before @)
-        const email = data.session.user.email;
-        const username = email.split("@")[0];
+    initializeBoards();
+  }, []);
 
-        // Fetch profile for this user
-        const profile = await fetchProfileForSlug(username);
-        if (profile) {
-          setCurrentUser(profile);
-        } else {
-          setCurrentUser(null);
-        }
-      } catch (err) {
-        console.error("Error loading current user:", err);
-        setCurrentUser(null);
-      } finally {
-        setIsLoading(false);
+  // Load messages when board changes
+  useEffect(() => {
+    const loadMessages = async () => {
+      const result = await fetchMessagesAction(currentBoardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      if (result.success && result.data) {
+        setMessages(result.data);
+        setMessageOffset(0);
       }
     };
 
-    loadCurrentUser();
-  }, []);
+    loadMessages();
+  }, [currentBoardId]);
 
-  const handleMessageSuccess = () => {
-    // Clear composer
-    clearMessageComposition();
-    setVerifyQrEnabled(false);
-    setIsOtpFormOpen(false);
+  const handlePostMessage = async (content: string, boardId: string) => {
+    if (!isLoggedIn || !userId) {
+      throw new Error('Must be logged in to post messages');
+    }
 
-    // Mark that a new message was added (triggers MessageFeed refresh)
-    setNewMessageAdded(!newMessageAdded);
-
-    // Show success message
-    setTimeout(() => {
-      alert("Your message has been posted!");
-    }, 500);
+    const result = await postMessageAction(content, boardId, userId);
+    if (result.success && result.data) {
+      // Reload messages for the board
+      const messagesResult = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      if (messagesResult.success && messagesResult.data) {
+        setMessages(messagesResult.data);
+        setMessageOffset(0);
+      }
+    } else {
+      throw new Error(result.error || 'Failed to post message');
+    }
   };
 
+  const handleLoadMoreMessages = async (boardId: string) => {
+    const nextOffset = messageOffset + THREAD_CONSTANTS.MESSAGES_PER_PAGE;
+    const result = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, nextOffset);
+    if (result.success && result.data) {
+      setMessages((prev) => [...prev, ...result.data!]);
+      setMessageOffset(nextOffset);
+    }
+  };
+
+  const handleCreateBoard = async (name: string, description: string) => {
+    if (!isLoggedIn || !userId) {
+      throw new Error('Must be logged in to create boards');
+    }
+
+    const result = await createBoardAction(name, description, userId);
+    if (result.success && result.data) {
+      setBoards((prev) => [...prev, result.data!]);
+      // Auto-switch to new board
+      setCurrentBoardId(result.data.id);
+    } else {
+      throw new Error(result.error || 'Failed to create board');
+    }
+  };
+
+  const handleBoardSelect = (boardId: string) => {
+    setCurrentBoardId(boardId);
+  };
+
+  if (isLoadingInitial) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-32 mb-4"></div>
+          <div className="h-4 bg-gray-200 rounded w-48"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50" style={{ backgroundColor: 'var(--color-background)' }}>
-      <ProfileHeader profileCount={0} />
-      {/* Header */}
-      <div className="border-b border-gray-200 bg-white pt-24">
-        <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-          <h1 className="text-3xl font-bold text-gray-900">Thread</h1>
-          <p className="mt-2 text-gray-600">
-            A public message board where Zcash users can share thoughts and connect with the community.
-          </p>
-        </div>
-      </div>
-
-      {/* Main content */}
-      <div className="max-w-2xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-        {/* Composer section (only if logged in) */}
-        {!isLoading && currentUser && (
-          <div className="mb-8 bg-white rounded-lg shadow p-6 border border-gray-200">
-            <MessageComposer profile={currentUser} />
-          </div>
-        )}
-
-        {/* Verification flow section (shown when composing) */}
-        {verifyQrEnabled && currentUser && (
-          <div className="mb-8 bg-blue-50 border border-blue-200 rounded-lg p-6">
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Message Verification</h3>
-              <p className="text-sm text-gray-700">
-                Follow the steps to verify and publish your message.
-              </p>
-            </div>
-            <ThreadOtpFlow zcasherId={currentUser.id} onSuccess={handleMessageSuccess} />
-          </div>
-        )}
-
-        {/* Prompt to login */}
-        {!isLoading && !currentUser && (
-          <div className="mb-8 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg p-6 text-center">
-            <p className="text-gray-800 mb-3">
-              <span className="font-semibold">Want to share your thoughts?</span> Create or log into your Zcash profile to post a message.
-            </p>
-            <a
-              href="/create-profile"
-              className="inline-block px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-semibold transition-colors"
-            >
-              Get Started
-            </a>
-          </div>
-        )}
-
-        {/* Messages feed */}
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Messages</h2>
-            <MessageFeed
-              initialMessages={initialMessages}
-              onNewMessage={newMessageAdded}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+    <ThreadBoard
+      initialMessages={messages}
+      initialBoards={boards}
+      initialBoardId={currentBoardId}
+      userAvatar={userAvatar}
+      userName={userName}
+      isLoggedIn={isLoggedIn}
+      onPostMessage={handlePostMessage}
+      onLoadMoreMessages={handleLoadMoreMessages}
+      onCreateBoard={handleCreateBoard}
+      onBoardSelect={handleBoardSelect}
+    />
   );
 }

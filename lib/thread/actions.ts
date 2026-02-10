@@ -1,328 +1,190 @@
-"use server";
+'use server';
 
-import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import {
-  ConfirmThreadOtpResponse,
-  PendingThreadMessage,
-  ThreadMessageWithProfile,
-  StartThreadMessageResponse,
-} from "./types";
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { serializeThreadMemo, buildThreadMemo } from "./buildThreadMemo";
+import { ThreadMessage, Board, GetMessagesResponse, PostMessageResponse, GetBoardsResponse, CreateBoardResponse } from '@/lib/thread/types';
+import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 /**
- * Start a thread message: creates pending message and returns QR code URI
- * Called after user enters message text
- * Returns memo URI for signing with wallet
+ * Fetch all boards
  */
-export async function startThreadMessageAction(
-  zcasherId: number,
-  messageText: string,
-  signingAddress: string,
-  requestId: string
-): Promise<StartThreadMessageResponse> {
-  if (!zcasherId || zcasherId <= 0) {
-    return {
-      ok: false,
-      error: "Invalid user ID",
-    };
-  }
-
-  if (!messageText || messageText.trim().length === 0) {
-    return {
-      ok: false,
-      error: "Message cannot be empty",
-    };
-  }
-
-  if (!signingAddress) {
-    return {
-      ok: false,
-      error: "Signing address required",
-    };
-  }
-
-  if (!requestId) {
-    return {
-      ok: false,
-      error: "Request ID required",
-    };
-  }
-
+export async function fetchBoardsAction(): Promise<GetBoardsResponse> {
   try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      return {
-        ok: false,
-        error: "Database connection failed",
-      };
-    }
-
-    // Create pending message in database
-    const memoHash = btoa(JSON.stringify(buildThreadMemo(messageText, zcasherId))); // Simple hash for tracking
-
-    const { error: insertError } = await supabase
-      .from("pending_thread_messages")
-      .insert([
-        {
-          zcasher_id: zcasherId,
-          request_id: requestId,
-          message_text: messageText,
-          memo_hash: memoHash,
-        },
-      ]);
-
-    if (insertError) {
-      console.error("Error creating pending message:", insertError);
-      return {
-        ok: false,
-        error: "Failed to create pending message",
-      };
-    }
-
-    // Build memo object
-    const memo = buildThreadMemo(messageText, zcasherId);
-    const memoString = serializeThreadMemo(memo);
-
-    // Build Zcash URI for signing (0 amount, just memo)
-    const uri = buildZcashUri(signingAddress, "0", memoString);
-
-    return {
-      ok: true,
-      data: {
-        request_id: requestId,
-        memo_uri: uri,
+    // TODO: Replace with actual API call to fetch boards from database
+    // For now, return default board
+    const boards: Board[] = [
+      {
+        id: 'money',
+        name: 'money',
+        description: THREAD_CONSTANTS.DEFAULT_BOARD_DESCRIPTION,
+        creator_id: 'system',
+        created_at: new Date(0).toISOString(),
+        member_count: 0,
       },
+    ];
+
+    return {
+      success: true,
+      data: boards,
     };
   } catch (error) {
-    console.error("Error in startThreadMessageAction:", error);
+    console.error('Failed to fetch boards:', error);
     return {
-      ok: false,
-      error: "An unexpected error occurred",
+      success: false,
+      error: 'Failed to fetch boards',
     };
   }
 }
 
 /**
- * Confirm thread message with OTP
- * Called after user enters OTP from wallet
- * Promotes pending message to public thread_messages
+ * Fetch messages for a specific board
  */
-export async function confirmThreadOtpAction(
-  zcasherId: number,
-  otp: string
-): Promise<ConfirmThreadOtpResponse> {
-  if (!zcasherId || zcasherId <= 0) {
-    return {
-      status: "invalid",
-      message: "Invalid user ID",
-    };
-  }
-
-  if (!otp || otp.trim().length === 0) {
-    return {
-      status: "invalid",
-      message: "OTP cannot be empty",
-    };
-  }
-
-  try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      return {
-        status: "error",
-        message: "Database connection failed",
-      };
-    }
-
-    // Call RPC function to confirm OTP and promote message
-    const { data, error } = await supabase.rpc("confirm_thread_otp_sql", {
-      in_zcasher_id: zcasherId,
-      in_otp: otp.trim(),
-    });
-
-    if (error) {
-      console.error("RPC error:", error);
-      return {
-        status: "error",
-        message: "OTP verification failed",
-      };
-    }
-
-    if (!data || !Array.isArray(data) || data.length === 0) {
-      return {
-        status: "error",
-        message: "Unexpected response from server",
-      };
-    }
-
-    const result = data[0];
-    return {
-      status: result.status || "error",
-      message: result.message || "OTP verification failed",
-      message_id: result.message_id,
-    };
-  } catch (error) {
-    console.error("Error in confirmThreadOtpAction:", error);
-    return {
-      status: "error",
-      message: "An unexpected error occurred",
-    };
-  }
-}
-
-/**
- * Fetch public thread messages with associated profile data
- */
-export async function fetchThreadMessagesAction(
-  limit: number = 50,
+export async function fetchMessagesAction(
+  boardId: string,
+  limit: number = THREAD_CONSTANTS.MESSAGES_PER_PAGE,
   offset: number = 0
-): Promise<ThreadMessageWithProfile[]> {
+): Promise<GetMessagesResponse> {
   try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      return [];
-    }
+    // TODO: Replace with actual API call to fetch messages from database
+    // Query should filter by boardId and paginate results with limit and offset
+    void boardId;
+    void limit;
+    void offset;
 
-    // Fetch messages with joined profile data
-    const { data, error } = await supabase
-      .from("thread_messages")
-      .select(
-        `
-        id,
-        zcasher_id,
-        message_text,
-        memo_hash,
-        tx_id,
-        request_id,
-        created_at,
-        verified_at,
-        is_visible,
-        zcasher_searchable!inner(
-          id,
-          name,
-          display_name,
-          avatar_url,
-          address,
-          address_verified
-        )
-      `
-      )
-      .eq("is_visible", true)
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
-
-    if (error) {
-      console.error("Error fetching messages:", error);
-      return [];
-    }
-
-    if (!data) {
-      return [];
-    }
-
-    // Transform data to include profile
-    const messages: ThreadMessageWithProfile[] = data.map((msg: any) => ({
-      id: msg.id,
-      zcasher_id: msg.zcasher_id,
-      message_text: msg.message_text,
-      memo_hash: msg.memo_hash,
-      tx_id: msg.tx_id,
-      request_id: msg.request_id,
-      created_at: msg.created_at,
-      verified_at: msg.verified_at,
-      is_visible: msg.is_visible,
-      profile: msg.zcasher_searchable
-        ? {
-            id: msg.zcasher_searchable.id,
-            name: msg.zcasher_searchable.name,
-            display_name: msg.zcasher_searchable.display_name,
-            avatar_url: msg.zcasher_searchable.avatar_url,
-            address: msg.zcasher_searchable.address,
-            address_verified: msg.zcasher_searchable.address_verified,
-          }
-        : null,
-    }));
-
-    return messages;
-  } catch (error) {
-    console.error("Error in fetchThreadMessagesAction:", error);
-    return [];
-  }
-}
-
-/**
- * Get pending message for user (for status checking)
- */
-export async function getPendingThreadMessageAction(
-  zcasherId: number
-): Promise<PendingThreadMessage | null> {
-  try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      return null;
-    }
-
-    const { data, error } = await supabase
-      .from("pending_thread_messages")
-      .select("*")
-      .eq("zcasher_id", zcasherId)
-      .gt("expires_at", new Date().toISOString())
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .single();
-
-    if (error && error.code !== "PGRST116") {
-      // PGRST116 = no rows found, which is expected
-      console.error("Error fetching pending message:", error);
-    }
-
-    return data || null;
-  } catch (error) {
-    console.error("Error in getPendingThreadMessageAction:", error);
-    return null;
-  }
-}
-
-/**
- * Delete expired pending messages (cleanup)
- * Can be called periodically or triggered by admin
- */
-export async function cleanupExpiredPendingMessagesAction(): Promise<{
-  deleted: number;
-  error?: string;
-}> {
-  try {
-    const supabase = createSupabaseServerClient();
-    if (!supabase) {
-      return {
-        deleted: 0,
-        error: "Database connection failed",
-      };
-    }
-
-    const { data, error } = await supabase
-      .from("pending_thread_messages")
-      .delete()
-      .lt("expires_at", new Date().toISOString())
-      .select("id");
-
-    if (error) {
-      console.error("Error cleaning up expired messages:", error);
-      return {
-        deleted: 0,
-        error: "Cleanup failed",
-      };
-    }
+    const messages: ThreadMessage[] = [];
 
     return {
-      deleted: data?.length || 0,
+      success: true,
+      data: messages,
     };
   } catch (error) {
-    console.error("Error in cleanupExpiredPendingMessagesAction:", error);
+    console.error('Failed to fetch messages:', error);
     return {
-      deleted: 0,
-      error: "An unexpected error occurred",
+      success: false,
+      error: 'Failed to fetch messages',
+    };
+  }
+}
+
+/**
+ * Post a message to a board
+ */
+export async function postMessageAction(
+  content: string,
+  boardId: string,
+  userId: string
+): Promise<PostMessageResponse> {
+  try {
+    if (!content.trim()) {
+      return {
+        success: false,
+        error: 'Message content cannot be empty',
+      };
+    }
+
+    if (content.length > THREAD_CONSTANTS.MAX_MESSAGE_LENGTH) {
+      return {
+        success: false,
+        error: `Message exceeds maximum length of ${THREAD_CONSTANTS.MAX_MESSAGE_LENGTH} characters`,
+      };
+    }
+
+    // TODO: Replace with actual API call to save message to database
+    // Should:
+    // 1. Create ThreadMessage record
+    // 2. Increment board member count if new member
+    // 3. Return created message with full profile data
+
+    const message: ThreadMessage = {
+      id: `msg_${Date.now()}`,
+      user_id: userId,
+      username: 'User',
+      verified: false,
+      content: content.trim(),
+      board_id: boardId,
+      created_at: new Date().toISOString(),
+    };
+
+    return {
+      success: true,
+      data: message,
+    };
+  } catch (error) {
+    console.error('Failed to post message:', error);
+    return {
+      success: false,
+      error: 'Failed to post message',
+    };
+  }
+}
+
+/**
+ * Create a new board
+ */
+export async function createBoardAction(
+  name: string,
+  description: string,
+  creatorId: string
+): Promise<CreateBoardResponse> {
+  try {
+    if (!name.trim()) {
+      return {
+        success: false,
+        error: 'Board name is required',
+      };
+    }
+
+    if (name.length < 2 || name.length > 50) {
+      return {
+        success: false,
+        error: 'Board name must be between 2 and 50 characters',
+      };
+    }
+
+    // TODO: Replace with actual API call to create board in database
+    // Should:
+    // 1. Verify board name is unique
+    // 2. Create Board record
+    // 3. Return created board
+
+    const board: Board = {
+      id: name.toLowerCase().replace(/\s+/g, '-'),
+      name: name.trim(),
+      description: description.trim(),
+      creator_id: creatorId,
+      created_at: new Date().toISOString(),
+      member_count: 1,
+    };
+
+    return {
+      success: true,
+      data: board,
+    };
+  } catch (error) {
+    console.error('Failed to create board:', error);
+    return {
+      success: false,
+      error: 'Failed to create board',
+    };
+  }
+}
+
+/**
+ * Get board details
+ */
+export async function getBoardAction(boardId: string): Promise<{ success: boolean; data?: Board; error?: string }> {
+  try {
+    // TODO: Replace with actual API call to fetch board from database
+    // Should fetch by boardId with member count and stats
+    void boardId;
+
+    return {
+      success: false,
+      error: 'Board not found',
+    };
+  } catch (error) {
+    console.error('Failed to get board:', error);
+    return {
+      success: false,
+      error: 'Failed to get board',
     };
   }
 }

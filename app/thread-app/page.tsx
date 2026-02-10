@@ -1,23 +1,33 @@
-/**
- * Public thread-app page
- * Displays a public message board where users can post and view messages
- */
-
-import type { Metadata } from "next";
-import ThreadPage from "./ThreadPage";
-import { getThreadMessages } from "@/lib/thread/getMessages";
+import { Metadata } from 'next';
+import ThreadPage from './ThreadPage';
+import type { ThreadMessage, Board } from '@/lib/thread/types';
 
 export const metadata: Metadata = {
-  title: "Thread | Zcash.me",
-  description:
-    "A public message board for Zcash users to share thoughts and connect with the community.",
+  title: 'Threads',
+  description: 'Public message board',
 };
 
-export const revalidate = 30; // Revalidate every 30 seconds
+export const revalidate = 30; // ISR - revalidate every 30 seconds
 
-export default async function ThreadAppPage() {
-  // Fetch initial messages on the server
-  const initialMessages = await getThreadMessages(50, 0);
+export default async function Page() {
+  // TODO: Fetch current user from Supabase auth
+  // TODO: Fetch initial data from database
+  // For now, return empty arrays - client will fetch on mount
+  const isLoggedIn = false;
+  const userName = 'Guest';
+  const userAvatar = undefined;
+  const userId = '';
+  const initialMessages: ThreadMessage[] = [];
+  const initialBoards: Board[] = [];
 
-  return <ThreadPage initialMessages={initialMessages} />;
+  return (
+    <ThreadPage
+      initialMessages={initialMessages}
+      initialBoards={initialBoards}
+      userName={userName}
+      userAvatar={userAvatar}
+      userId={userId}
+      isLoggedIn={isLoggedIn}
+    />
+  );
 }
