@@ -1,99 +1,30 @@
+# Dependencies
+node_modules/
+
+# Next.js & build output
+.next/
+dist/
+out/
+build/
+
+# TypeScript intermediate cache
+tsconfig.tsbuildinfo
+
 # Logs
-logs
-*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
+*.log
 
-node_modules
-.next/
-dist
-dist-ssr
-*.local
+# Environment
+.env
+.env.*
 
-src/feedback/original/*
-
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Editors and OS
+.vscode/
+.idea/
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
 *.sw?
 
-
-# Local avatar data
-avatars.json
-avatars_local.txt
-
-# Local scripts
-compress.ps1
-
-# Local debug/reference files
-zcash-devtool-wallet-help.txt
-wallet-tx-sample.txt
-wallet-tx-sample.json
-
-
-# local files and secrets
-__tests__/*
-avatars/**
-docs/**
-supabase/**
-.env.local
-.env.development
-.env.production
-.env
-compress.ps1
-# zcash-verification-service (minimal tracked set; ignore everything else)
-zcash-verification-service/.git/
-zcash-verification-service/.venv/
-zcash-verification-service/_archive/
-zcash-verification-service/db/
-zcash-verification-service/doc/
-zcash-verification-service/scripts/
-zcash-verification-service/tests/
-zcash-verification-service/.env
-zcash-verification-service/.gitignore
-zcash-verification-service/api/admin_routes.py
-zcash-verification-service/api/__pycache__/admin_routes.cpython-312.pyc
-zcash-verification-service/api/__pycache__/otp_service.cpython-312.pyc
-zcash-verification-service/api/__pycache__/transaction_service.cpython-312.pyc
-zcash-verification-service/api/__pycache__/verify_routes.cpython-312.pyc
-zcash-verification-service/api/__pycache__/verify_routes_rpc.cpython-312.pyc
-zcash-verification-service/api/__pycache__/verify_routes_rpc_zid.cpython-312.pyc
-zcash-verification-service/api/__pycache__/verify_routes_rpc_zid_poll.cpython-312.pyc
-zcash-verification-service/api/verify_routes.py
-zcash-verification-service/api/verify_routes_orig.py
-zcash-verification-service/api/verify_routes_rpc.py
-zcash-verification-service/api/verify_routes_rpc_zid.py
-zcash-verification-service/api/verify_routes_rpc_zid_poll_old.py
-zcash-verification-service/core/__pycache__/__init__.cpython-312.pyc
-zcash-verification-service/core/__pycache__/cli_controller.cpython-312.pyc
-zcash-verification-service/core/__pycache__/supabase_client.cpython-312.pyc
-zcash-verification-service/core/__pycache__/zcash_rpc.cpython-312.pyc
-zcash-verification-service/core/__pycache__/zcash_runner.cpython-312.pyc
-zcash-verification-service/core/cli_controller.py
-zcash-verification-service/readme_OTP.md
-zcash-verification-service/verify_environment.py
-zcash-verification-service/zcash-devtool README.md
-zcash-verification-service/zcash-devtool walkthrough.md
-
-
-
-# Ignore admin refund tooling
-src/components/AdminRefundPage.jsx
-src/components/AdminRefundPage.*
-
-# Ignore admin refund page and any variants
-src/components/AdminRefundPage.jsx
-src/supabase.js
-# Local/untracked bundles
-zns-pos/
-zvs.tar.gz
-_archive/
+# Misc
+coverage/
