@@ -277,9 +277,10 @@ export default function SwapComposer({
             disabled={!canGetQuote}
             className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
               canGetQuote
-                ? "bg-white text-gray-800 hover:bg-gray-50"
+                ? "text-gray-800"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
             }`}
+            style={canGetQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
             {isGettingQuote ? "Getting quote..." : "Get quote"}
           </button>
@@ -291,9 +292,10 @@ export default function SwapComposer({
             disabled={!canConfirmQuote}
             className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
               canConfirmQuote
-                ? "bg-white text-gray-800 hover:bg-gray-50"
+                ? "text-gray-800"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
             }`}
+            style={canConfirmQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
             {isConfirming ? "Confirming..." : "Confirm quote"}
           </button>
