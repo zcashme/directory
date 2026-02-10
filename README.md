@@ -38,3 +38,12 @@ Contributions are welcome. For major changes, please [open an issue](https://git
 ## License
 
 MIT License © 2025 Zcash Users Group
+
+---
+
+## Backend (ZVS) Deployment Note
+
+The Zcash Verification Service backend is deployed separately on an Azure VM and is not part of this frontend repo.
+Local development uses a NEXT_PUBLIC_VERIFY_API_URL env var to point at the VM API, and the Vercel project is configured
+with the same variable for production.
+
