@@ -36,12 +36,14 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     <>
       <div className="sticky top-3 z-[50] flex justify-center px-4">
         <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
-          <button
-            onClick={() => router.push("/")}
-            className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer flex-shrink-0"
-          >
-            Zcash.me/
-          </button>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => router.push("/")}
+              className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
+            >
+              Zcash.me/
+            </button>
+          </div>
 
           <div className="flex-1 relative flex items-center">
             <input

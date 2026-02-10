@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcash/zcashUtils";
+import FormField from "@/ui/common/forms/FormField";
 
 interface ZcashAddressInputProps {
   value: string;
@@ -22,10 +23,12 @@ export default function ZcashAddressInput({
   }, [value]);
 
   return (
-    <div>
-      <label htmlFor={id} className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
-        {label}
-      </label>
+    <FormField
+      label={label}
+      htmlFor={id}
+      labelClassName="text-xs uppercase tracking-wide text-gray-600"
+      className="mb-0"
+    >
       <input
         id={id}
         value={value}
@@ -37,6 +40,6 @@ export default function ZcashAddressInput({
         autoComplete="off"
       />
       <p className={`mt-1 text-xs ${isValid ? "text-green-600" : "text-gray-500"}`}>{help}</p>
-    </div>
+    </FormField>
   );
 }

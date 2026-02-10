@@ -19,6 +19,7 @@ import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
+import { FormField } from "@/ui/common";
 
 function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -465,28 +466,27 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepName = (
     <StepContainer stepKey="step-name" dir={dir}>
-      <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
-        Username
-      </label>
-      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
-        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
-        <input
-          id="name"
-          value={name}
-          onChange={(e) => {
-            const input = e.target.value;
+      <FormField label="Username" htmlFor="name" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+        <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
+          <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+          <input
+            id="name"
+            value={name}
+            onChange={(e) => {
+              const input = e.target.value;
 
-            const filtered = input
-              .normalize("NFKC")
-              .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
+              const filtered = input
+                .normalize("NFKC")
+                .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
 
-            setName(filtered);
-          }}
-          className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
-          placeholder="username"
-          autoComplete="off"
-        />
-      </div>
+              setName(filtered);
+            }}
+            className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
+            placeholder="username"
+            autoComplete="off"
+          />
+        </div>
+      </FormField>
       <p
         className={`mt-1 text-xs ${nameConflict?.type === "error"
           ? "text-red-600"
@@ -513,18 +513,19 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       )}
 
       {/* Display Name */}
-      <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
-        Display Name
-      </label>
-      <input
-        id="displayName"
-        value={displayName}
-        onChange={(e) => setDisplayName(e.target.value)}
-        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-green-600 bg-transparent"
-        placeholder="Enter display name"
-        autoComplete="off"
-      />
-      <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
+      <div className="mt-4">
+        <FormField label="Display Name" htmlFor="displayName" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+          <input
+            id="displayName"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-green-600 bg-transparent"
+            placeholder="Enter display name"
+            autoComplete="off"
+          />
+        </FormField>
+        <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
+      </div>
 
     </StepContainer>
   );
@@ -560,36 +561,31 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepCity = (
     <StepContainer stepKey="step-city" dir={dir}>
-      <label
-        htmlFor="nearest-city"
-        className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
-      >
-        Nearest City
-      </label>
+      <FormField label="Nearest City" htmlFor="nearest-city" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+        <div className="relative w-full">
+          <CitySearchDropdown
+            value={nearestCityInput}
+            onChange={(val) => {
+              if (typeof val === "string") {
+                setNearestCityInput(val);
+                setNearestCity(null);
+              } else {
+                setNearestCity(val);
 
-      <div className="relative w-full">
-        <CitySearchDropdown
-          value={nearestCityInput}
-          onChange={(val) => {
-            if (typeof val === "string") {
-              setNearestCityInput(val);
-              setNearestCity(null);
-            } else {
-              setNearestCity(val);
+                const pretty = [
+                  val.city_ascii || val.city,
+                  val.admin_name,
+                  val.country,
+                ].filter(Boolean).join(", ");
 
-              const pretty = [
-                val.city_ascii || val.city,
-                val.admin_name,
-                val.country,
-              ].filter(Boolean).join(", ");
+                setNearestCityInput(pretty);
 
-              setNearestCityInput(pretty);
-
-            }
-          }}
-          placeholder="Type to search city…"
-        />
-      </div>
+              }
+            }}
+            placeholder="Type to search city…"
+          />
+        </div>
+      </FormField>
 
       <p className="mt-1 text-xs text-gray-500">
         Optional. Helps Zcashers find other Zcashers around them.
@@ -599,24 +595,21 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepReferrer = (
     <StepContainer stepKey="step-ref" dir={dir}>
-      <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
-        Referred by Zcash.me/
-      </label>
-
-      <div className="relative flex items-center w-full rounded-2xl border border-black/30 overflow-visible bg-transparent focus-within:border-green-600">
-        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
-        <div className="relative flex-1">
-          <ProfileSearchDropdown
-            value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
-            onChange={(v) => setReferrer(v)}
-            placeholder="username"
-            showByDefault={false}
-            showUsernameAvailability={false}
-            className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
-          />
+      <FormField label="Referred by Zcash.me/" htmlFor="referrer" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+        <div className="relative flex items-center w-full rounded-2xl border border-black/30 overflow-visible bg-transparent focus-within:border-green-600">
+          <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+          <div className="relative flex-1">
+            <ProfileSearchDropdown
+              value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
+              onChange={(v) => setReferrer(v)}
+              placeholder="username"
+              showByDefault={false}
+              showUsernameAvailability={false}
+              className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
+            />
+          </div>
         </div>
-      </div>
-
+      </FormField>
 
       <p className="mt-1 text-xs text-gray-500">Optional. Helps us reward members who refer new members.</p>
     </StepContainer>

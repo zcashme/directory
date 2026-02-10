@@ -1,5 +1,5 @@
 import { QRCodeSVG } from "qrcode.react";
-import CopyButton from "@/ui/profile/CopyButton";
+import CopyButton from "@/ui/common/buttons/CopyButton";
 import { getSwapUrl } from "@/lib/swap/utils";
 
 interface SwapDepositDisplayProps {

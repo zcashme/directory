@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { isValidUrl } from "@/lib/profile/validateUrl";
+import { Alert } from "@/ui/common";
 
 const BASE_FIELD_CLASS =
   "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-hidden text-gray-800 placeholder-gray-400";
@@ -55,7 +56,7 @@ export default function LinkInput({
       />
       {/* error message */}
       {showValidation && !valid && reason && (
-        <p className="text-xs text-red-600 mt-1">{reason}</p>
+        <Alert variant="error" size="sm" message={reason} className="mt-1" />
       )}
 
       {/* info-level message (tracking params, normalizable hints) */}

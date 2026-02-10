@@ -3,6 +3,7 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { isValidUrl } from "@/lib/profile/validateUrl";
 import HelpIcon from "@/ui/common/HelpIcon";
+import { Alert } from "@/ui/common";
 
 const PLATFORM_OPTIONS = [
   { key: "X", label: "X (Twitter)" },
@@ -209,7 +210,7 @@ export default function SocialLinkInput({
       )}
 
       {!valid && reason && (
-        <p className="text-xs text-red-600 mt-1 ml-1">{reason}</p>
+        <Alert variant="error" size="sm" message={reason} className="mt-1 ml-1" />
       )}
 
       {footer && <div className="mt-2">{footer}</div>}

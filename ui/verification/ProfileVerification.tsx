@@ -10,6 +10,7 @@ import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
 import { useMessagingStore } from "@/lib/stores/messaging";
+import { Alert } from "@/ui/common";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 
@@ -201,8 +202,8 @@ export default function ProfileVerification({
             openWallet={handleGenerateQr}
             openWalletLabel="Generate QR"
           />
-          {!validAmount && (
-            <span className="text-xs text-red-600">{error}</span>
+          {!validAmount && error && (
+            <Alert variant="error" size="sm" message={error} className="mt-1" />
           )}
         </div>
 
