@@ -28,7 +28,7 @@ If the key is missing or invalid, the API returns `401 unauthorized`.
 - Rate limit: 60 requests per minute per IP.
 - Caching (server-side):
   - `/api/directory`: 30 seconds
-  - `/api/resolve/:username`: 60 seconds
+  - `/api/resolve`: 60 seconds
   - `/api/social`: 300 seconds
 
 If you exceed the rate limit, you will receive `429 rate_limited`.
@@ -37,13 +37,13 @@ If you exceed the rate limit, you will receive `429 rate_limited`.
 
 ### 1) Resolve by username
 
-`GET /api/resolve/:username`
+`GET /api/resolve?username=<username>`
 
 Use this after the user selects a specific username.
 
 Example:
 ```
-GET /api/resolve/cobra
+GET /api/resolve?username=cobra
 ```
 
 Example response:
@@ -207,7 +207,7 @@ Responses are cached server-side for short periods. This means very recent profi
 may not appear immediately:
 
 - `/api/directory`: ~30s
-- `/api/resolve/:username`: ~60s
+- `/api/resolve`: ~60s
 - `/api/social`: ~300s
 
 ## Recommended UX guidelines
@@ -237,7 +237,7 @@ Rate limited:
 
 1) User types a search term -> call `/api/directory?q=...`
 2) Show results (username + display name + verified badge)
-3) On selection, call `/api/resolve/:username` to get the address
+3) On selection, call `/api/resolve?username=...` to get the address
 4) Optionally, allow direct social lookup with `/api/social?platform=...&handle=...`
 
 ## Technical Implementation 1: Slash shorthand resolution
@@ -252,7 +252,7 @@ Goal: Let users enter `/username` instead of `zcash.me/username`.
 ### Lookup
 
 ```
-GET /api/resolve/:username
+GET /api/resolve?username=<username>
 X-API-Key: YOUR_KEY
 ```
 

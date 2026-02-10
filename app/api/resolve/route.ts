@@ -1,17 +1,11 @@
-import { createSupabaseServerClient } from "../../../../lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "../../../../lib/api/guard";
+import { createSupabaseServerClient } from "../../../lib/supabase/supabase-server";
+import { enforceApiGuard, withCacheHeaders } from "../../../lib/api/guard";
 
 const jsonResponse = (body: Record<string, unknown>, status: number = 200, cacheSeconds: number = 0): Response =>
   new Response(JSON.stringify(body), {
     status,
     headers: withCacheHeaders({ "Content-Type": "application/json" }, cacheSeconds),
   });
-
-interface RouteParams {
-  params: Promise<{
-    username: string;
-  }>;
-}
 
 interface ZcasherProfile {
   id: number;
@@ -32,12 +26,12 @@ interface ZcasherLink {
   is_verified: boolean;
 }
 
-export async function GET(request: Request, { params }: RouteParams): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const guard = await enforceApiGuard(request, { cacheSeconds: 60 });
   if (guard instanceof Response) return guard;
 
-  const resolvedParams = await params;
-  const rawUsername = resolvedParams?.username || "";
+  const { searchParams } = new URL(request.url);
+  const rawUsername = searchParams.get("username") || "";
   const username = decodeURIComponent(String(rawUsername)).trim();
 
   if (!username) {
