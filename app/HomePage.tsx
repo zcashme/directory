@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
@@ -19,15 +20,25 @@ interface FannedCardAvatarProps {
   profile: Profile;
   size: number;
   isHighlighted: boolean;
+  verifiedBadgeScale?: number;
 }
 
-function FannedCardAvatar({ profile, size, isHighlighted }: FannedCardAvatarProps) {
+function FannedCardAvatar({ profile, size, isHighlighted, verifiedBadgeScale = 1 }: FannedCardAvatarProps) {
+  const isVerified = !!(profile.address_verified || (profile.verified_links_count ?? 0) > 0);
   return (
     <div className={`absolute ${size === 80 ? "-top-10" : "-top-12"} left-1/2 -translate-x-1/2 z-20`}>
-      <div className="rounded-full border border-black p-0.5 bg-transparent" style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}>
+      <div className="relative rounded-full border border-black p-0.5 bg-transparent" style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}>
         <div className="[&>div]:!bg-transparent [&>div]:!border-0">
           <ProfileAvatar profile={profile} size={size} imageClassName="object-cover" className="shadow-lg" />
         </div>
+        {isVerified && (
+          <span
+            className="absolute right-[1%] bottom-[1%] z-30 origin-center pointer-events-auto"
+            style={{ transform: `translate(8%, 8%) scale(${verifiedBadgeScale})` }}
+          >
+            <VerifiedBadge verified={true} />
+          </span>
+        )}
       </div>
     </div>
   );
@@ -109,7 +120,12 @@ function FannedCard({
           transformOrigin: "center center",
         }}
       >
-        <FannedCardAvatar profile={profile} size={Math.round(80 * avatarScale)} isHighlighted={isActive} />
+        <FannedCardAvatar
+          profile={profile}
+          size={Math.round(80 * avatarScale)}
+          isHighlighted={isActive}
+          verifiedBadgeScale={textScaleOverrides?.verifiedBadge ?? 1}
+        />
         <div
           className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
@@ -130,6 +146,7 @@ function FannedCard({
             linkVariant="simple"
             hideLinkBadges={true}
             textScaleOverrides={textScaleOverrides}
+            showDisplayNameVerifiedBadge={false}
           />
         </div>
       </div>
@@ -152,7 +169,12 @@ function FannedCard({
         perspective: "1000px",
       }}
     >
-      <FannedCardAvatar profile={profile} size={Math.round(100 * avatarScale)} isHighlighted={isHighlighted} />
+      <FannedCardAvatar
+        profile={profile}
+        size={Math.round(100 * avatarScale)}
+        isHighlighted={isHighlighted}
+        verifiedBadgeScale={textScaleOverrides?.verifiedBadge ?? 1}
+      />
       <div
         className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
@@ -180,6 +202,7 @@ function FannedCard({
           linkVariant="simple"
           hideLinkBadges={true}
           textScaleOverrides={textScaleOverrides}
+          showDisplayNameVerifiedBadge={false}
         />
       </div>
     </div>
@@ -196,23 +219,33 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   type TunerKey = keyof TunerScale;
   const defaultScale: TunerScale = {
     displayName: 1.4,
+    verifiedBadge: 1,
     username: 1.3,
     bio: 1.5,
     meta: 1.35,
     address: 1.5,
+    addressCopy: 1,
+    linkIcon: 1,
     linkLabel: 1.45,
     linkDomain: 1.5,
+    linkMore: 1.5,
+    linkCopy: 1,
     viewProfile: 1.45,
     avatar: 1,
   };
   const controls: { key: TunerKey; label: string }[] = [
     { key: "displayName", label: "Display Name" },
+    { key: "verifiedBadge", label: "Verified Badge" },
     { key: "username", label: "Username" },
     { key: "bio", label: "Bio" },
     { key: "meta", label: "Meta Line" },
     { key: "address", label: "Address Pill" },
+    { key: "addressCopy", label: "Address Copy Btn" },
+    { key: "linkIcon", label: "Link Icons" },
     { key: "linkLabel", label: "Link Labels" },
     { key: "linkDomain", label: "Link Domains" },
+    { key: "linkMore", label: "Link +More" },
+    { key: "linkCopy", label: "Link Copy Btn" },
     { key: "viewProfile", label: "View Profile Bar" },
     { key: "avatar", label: "Avatar" },
   ];
@@ -353,23 +386,33 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const basePxByKey: Record<TunerKey, number> = isMobile
     ? {
         displayName: 18,
+        verifiedBadge: 16,
         username: 9,
         bio: 8,
         meta: 8,
         address: 8,
+        addressCopy: 14,
+        linkIcon: 12,
         linkLabel: 8,
         linkDomain: 7,
+        linkMore: 7,
+        linkCopy: 12,
         viewProfile: 7,
         avatar: 80,
       }
     : {
         displayName: 20,
+        verifiedBadge: 16,
         username: 10,
         bio: 9,
         meta: 9,
         address: 9,
+        addressCopy: 14,
+        linkIcon: 14,
         linkLabel: 9,
         linkDomain: 8,
+        linkMore: 8,
+        linkCopy: 12,
         viewProfile: 8,
         avatar: 100,
       };
@@ -391,12 +434,17 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   };
   const textScaleOverrides: ProfileCardTextScale = {
     displayName: scale.displayName,
+    verifiedBadge: scale.verifiedBadge,
     username: scale.username,
     bio: scale.bio,
     meta: scale.meta,
     address: scale.address,
+    addressCopy: scale.addressCopy,
+    linkIcon: scale.linkIcon,
     linkLabel: scale.linkLabel,
     linkDomain: scale.linkDomain,
+    linkMore: scale.linkMore,
+    linkCopy: scale.linkCopy,
     viewProfile: scale.viewProfile,
   };
   const typedPrefix = animatedHeadline.slice(0, Math.min(animatedHeadline.length, headlinePrefix.length));

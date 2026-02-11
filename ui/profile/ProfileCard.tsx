@@ -48,11 +48,13 @@ interface LinkRowClasses {
   leftLink: string;
   right: string;
   icon: string;
+  iconStyle?: CSSProperties;
   label: string;
   labelStyle?: CSSProperties;
   domain: string;
   domainStyle?: CSSProperties;
   copySize?: "xs" | "sm" | "md";
+  copyScale?: number;
   copyWrapper?: string;
 }
 
@@ -84,6 +86,7 @@ function ProfileLinkRow({
       src={resolveIconSrc(link.icon)}
       alt=""
       className={classes.icon}
+      style={classes.iconStyle}
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = "none";
       }}
@@ -96,7 +99,14 @@ function ProfileLinkRow({
     </>
   );
   const copy = (text: string) => (
-    <div className={classes.copyWrapper}>
+    <div
+      className={classes.copyWrapper}
+      style={
+        classes.copyScale && classes.copyScale !== 1
+          ? { transform: `scale(${classes.copyScale})`, transformOrigin: "center" }
+          : undefined
+      }
+    >
       <CopyButton text={text} {...copyProps} />
     </div>
   );
@@ -166,16 +176,22 @@ interface ProfileCardContentProps {
   hideLinkBadges?: boolean;
   className?: string;
   textScaleOverrides?: Partial<ProfileCardTextScale>;
+  showDisplayNameVerifiedBadge?: boolean;
 }
 
 export interface ProfileCardTextScale {
   displayName: number;
+  verifiedBadge: number;
   username: number;
   bio: number;
   meta: number;
   address: number;
+  addressCopy: number;
+  linkIcon: number;
   linkLabel: number;
   linkDomain: number;
+  linkMore: number;
+  linkCopy: number;
   viewProfile: number;
 }
 
@@ -193,16 +209,22 @@ export function ProfileCardContent({
   hideLinkBadges = false,
   className = "",
   textScaleOverrides,
+  showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const textScale: ProfileCardTextScale = {
     displayName: 1,
+    verifiedBadge: 1,
     username: 1,
     bio: 1,
     meta: 1,
     address: 1,
+    addressCopy: 1,
+    linkIcon: 1,
     linkLabel: 1,
     linkDomain: 1,
+    linkMore: 1,
+    linkCopy: 1,
     viewProfile: 1,
     ...textScaleOverrides,
   };
@@ -221,10 +243,13 @@ export function ProfileCardContent({
       address: "text-[8px]",
       addressPx: 8,
       linkIcon: "w-3 h-3",
+      linkIconPx: 12,
       linkLabel: "text-[8px]",
       linkLabelPx: 8,
       linkDomain: "text-[7px]",
       linkDomainPx: 7,
+      linkCopyPx: 12,
+      addressCopyPx: 14,
       viewProfilePx: 7,
       viewProfileIconPx: 8,
       addressPadding: "px-2 py-1",
@@ -245,10 +270,13 @@ export function ProfileCardContent({
       address: "text-[9px]",
       addressPx: 9,
       linkIcon: "w-3.5 h-3.5",
+      linkIconPx: 14,
       linkLabel: "text-[9px]",
       linkLabelPx: 9,
       linkDomain: "text-[8px]",
       linkDomainPx: 8,
+      linkCopyPx: 12,
+      addressCopyPx: 14,
       viewProfilePx: 8,
       viewProfileIconPx: 10,
       addressPadding: "px-2.5 py-1.5",
@@ -269,10 +297,13 @@ export function ProfileCardContent({
       address: "text-sm",
       addressPx: 14,
       linkIcon: "w-4 h-4",
+      linkIconPx: 16,
       linkLabel: "text-sm",
       linkLabelPx: 14,
       linkDomain: "text-sm",
       linkDomainPx: 14,
+      linkCopyPx: 12,
+      addressCopyPx: 16,
       viewProfilePx: 12,
       viewProfileIconPx: 10,
       addressPadding: "px-3 py-1.5",
@@ -294,11 +325,16 @@ export function ProfileCardContent({
     leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`,
     right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
     icon: `${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`,
+    iconStyle: {
+      width: scaleFont(s.linkIconPx, textScale.linkIcon),
+      height: scaleFont(s.linkIconPx, textScale.linkIcon),
+    },
     label: "font-medium text-gray-800 truncate",
     labelStyle: { fontSize: scaleFont(s.linkLabelPx, textScale.linkLabel) },
     domain: "flex-1 min-w-0 truncate text-right",
     domainStyle: { fontSize: scaleFont(s.linkDomainPx, textScale.linkDomain) },
     copySize: "xs",
+    copyScale: textScale.linkCopy,
   };
 
   return (
@@ -306,9 +342,10 @@ export function ProfileCardContent({
       {/* Display Name */}
       <div className="relative z-10 w-full flex items-center justify-center">
         <div className="flex items-center justify-center gap-1.5 min-w-0">
-          {isVerified && (
+          {showDisplayNameVerifiedBadge && isVerified && (
             <span
               className="flex-shrink-0 scale-[0.6] origin-center invisible pointer-events-none"
+              style={{ transform: `scale(${0.6 * textScale.verifiedBadge})` }}
               aria-hidden="true"
             >
               <VerifiedBadge verified={true} />
@@ -320,8 +357,11 @@ export function ProfileCardContent({
           >
             {profile.display_name || profile.name}
           </span>
-          {isVerified && (
-            <span className="flex-shrink-0 scale-[0.6] origin-center">
+          {showDisplayNameVerifiedBadge && isVerified && (
+            <span
+              className="flex-shrink-0 scale-[0.6] origin-center"
+              style={{ transform: `scale(${0.6 * textScale.verifiedBadge})` }}
+            >
               <VerifiedBadge verified={true} />
             </span>
           )}
@@ -394,10 +434,26 @@ export function ProfileCardContent({
                     QR
                   </span>
                 </button>
-                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
+                <div
+                  style={
+                    textScale.addressCopy !== 1
+                      ? { transform: `scale(${textScale.addressCopy})`, transformOrigin: "center" }
+                      : undefined
+                  }
+                >
+                  <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
+                </div>
               </div>
             ) : (
-              <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
+              <div
+                style={
+                  textScale.addressCopy !== 1
+                    ? { transform: `scale(${textScale.addressCopy})`, transformOrigin: "center" }
+                    : undefined
+                }
+              >
+                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={variant === "mobile" ? "sm" : variant === "compact" ? "md" : "sm"} />
+              </div>
             )}
           </div>
         </div>
@@ -419,7 +475,10 @@ export function ProfileCardContent({
                 />
               ))}
               {linksArray.length > 3 && (
-                <span className={`${s.linkDomain} text-gray-500 text-center pt-1`}>
+                <span
+                  className="text-gray-500 text-center pt-1"
+                  style={{ fontSize: scaleFont(s.linkDomainPx, textScale.linkMore) }}
+                >
                   +{linksArray.length - 3} more
                 </span>
               )}
