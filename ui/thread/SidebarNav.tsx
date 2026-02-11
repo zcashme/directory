@@ -1,7 +1,9 @@
 'use client';
 
 import { Board } from '@/lib/thread/types';
+import { useRouter, usePathname } from 'next/navigation';
 import Image from 'next/image';
+import { Button } from '@/ui/common';
 
 interface SidebarNavProps {
   boards: Board[];
@@ -22,15 +24,28 @@ export function SidebarNav({
   userName,
   isLoading = false,
 }: SidebarNavProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleBoardSelect = (boardId: string) => {
+    onBoardSelect(boardId);
+    router.push(`/thread/${boardId}`);
+  };
+
+  const isActiveBoard = (boardId: string) => {
+    // Check if the current board matches the pathname
+    return pathname === `/thread/${boardId}` || (pathname === '/thread' && boardId === currentBoardId);
+  };
+
   return (
-    <aside className="w-64 border-r border-gray-200 bg-white h-full overflow-y-auto flex flex-col">
+    <aside className="w-64 border-r border-black/30 bg-white h-full overflow-y-auto flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-gray-200 bg-gradient-to-b from-blue-50 to-white">
-        <h2 className="text-2xl font-bold text-gray-900">💬 Threads</h2>
+      <div className="p-4 border-b border-black/30">
+        <h2 className="text-2xl font-bold text-gray-900">Threads</h2>
       </div>
 
       {/* User Profile Section */}
-      <div className="p-4 border-b border-gray-200">
+      <div className="p-4 border-b border-black/30">
         <div className="flex items-center gap-3">
           {userAvatar ? (
             <Image
@@ -72,11 +87,11 @@ export function SidebarNav({
             {boards.map((board) => (
               <button
                 key={board.id}
-                onClick={() => onBoardSelect(board.id)}
+                onClick={() => handleBoardSelect(board.id)}
                 className={`w-full text-left px-3 py-2 rounded text-sm transition ${
-                  currentBoardId === board.id
-                    ? 'bg-blue-100 border-l-4 border-blue-600 text-blue-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
+                  isActiveBoard(board.id)
+                    ? 'bg-blue-100 border-l-4 border-blue-700 text-blue-700 font-medium'
+                    : 'text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 <span className="truncate"># {board.name}</span>
@@ -87,17 +102,19 @@ export function SidebarNav({
       </div>
 
       {/* Create Board Button */}
-      <div className="p-4 border-t border-gray-200">
-        <button
+      <div className="p-4 border-t border-black/30">
+        <Button
+          variant="primary"
+          size="md"
           onClick={onCreateBoard}
-          className="w-full px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition"
+          className="w-full"
         >
           + Create Board
-        </button>
+        </Button>
       </div>
 
       {/* Settings/Help Links */}
-      <div className="p-4 border-t border-gray-200 space-y-2">
+      <div className="p-4 border-t border-black/30 space-y-2">
         <button className="w-full text-left text-xs text-gray-600 hover:text-gray-900 py-1 transition">
           ⚙️ Settings
         </button>

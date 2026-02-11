@@ -95,14 +95,12 @@ export function ThreadBoard({
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto flex flex-col bg-[#faf6ed]">
         {/* Mobile Board Selector */}
-        <div className="md:hidden sticky top-0 bg-white z-40 border-b border-gray-200">
-          <div className="px-4 py-3">
-            <BoardSelector
-              boards={boards}
-              currentBoardId={currentBoardId}
-              onBoardSelect={handleBoardSelect}
-            />
-          </div>
+        <div className="md:hidden sticky top-0 bg-[#faf6ed] z-40 border-b border-black/30 px-4 py-3">
+          <BoardSelector
+            boards={boards}
+            currentBoardId={currentBoardId}
+            onBoardSelect={handleBoardSelect}
+          />
         </div>
 
         {/* Content Wrapper */}
@@ -118,11 +116,12 @@ export function ThreadBoard({
                 userName={userName}
                 onSubmit={handlePostMessage}
                 disabled={isLoadingMessages}
+                boardName={currentBoard?.name || 'Board'}
               />
             ) : (
-              <div className="border border-gray-300 rounded-2xl p-4 bg-white shadow-sm mb-4">
+              <div className="bg-white/85 border border-black/30 rounded-lg p-4 shadow-sm mb-4">
                 <p className="text-gray-600 text-sm">
-                  <a href="/login" className="text-blue-600 hover:underline font-medium">
+                  <a href="/login" className="text-blue-700 hover:underline font-medium">
                     Sign in
                   </a>{' '}
                   to participate in the discussion.

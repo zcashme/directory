@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FormField } from '@/ui/common';
+import { Modal, ModalHeader, ModalBody, ModalFooter, FormField, Button, Input, TextArea } from '@/ui/common';
 
 interface CreateBoardModalProps {
   isOpen: boolean;
@@ -19,8 +19,6 @@ export function CreateBoardModal({
   const [boardName, setBoardName] = useState('');
   const [boardDescription, setBoardDescription] = useState('');
   const [error, setError] = useState('');
-
-  if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,30 +50,26 @@ export function CreateBoardModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-lg max-w-md w-full">
-        {/* Header */}
-        <div className="px-6 py-4 border-b border-gray-200">
-          <h2 className="text-lg font-bold text-gray-900">Create New Board</h2>
-        </div>
+    <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <ModalHeader title="Create New Board" onClose={onClose} />
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+      <ModalBody>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Board Name */}
           <FormField
             label="Board Name"
             htmlFor="boardName"
             hint={`${boardName.length} / 50 characters`}
+            required
           >
-            <input
+            <Input
               id="boardName"
               type="text"
               value={boardName}
-              onChange={(e) => setBoardName(e.target.value)}
+              onChange={setBoardName}
               placeholder="e.g., crypto, gaming, music"
               maxLength={50}
               disabled={isLoading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </FormField>
 
@@ -85,15 +79,14 @@ export function CreateBoardModal({
             htmlFor="boardDescription"
             hint={`${boardDescription.length} / 200 characters`}
           >
-            <textarea
+            <TextArea
               id="boardDescription"
               value={boardDescription}
-              onChange={(e) => setBoardDescription(e.target.value)}
+              onChange={setBoardDescription}
               placeholder="What is this board about?"
               maxLength={200}
               rows={3}
               disabled={isLoading}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm resize-none disabled:opacity-50 disabled:cursor-not-allowed"
             />
           </FormField>
 
@@ -103,27 +96,27 @@ export function CreateBoardModal({
               <p className="text-sm text-red-700">{error}</p>
             </div>
           )}
-
-          {/* Buttons */}
-          <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
-            >
-              {isLoading ? 'Creating...' : 'Create Board'}
-            </button>
-          </div>
         </form>
-      </div>
-    </div>
+      </ModalBody>
+
+      <ModalFooter>
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onClose}
+          disabled={isLoading}
+        >
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="md"
+          onClick={handleSubmit}
+          disabled={isLoading}
+        >
+          {isLoading ? 'Creating...' : 'Create Board'}
+        </Button>
+      </ModalFooter>
+    </Modal>
   );
 }

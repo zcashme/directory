@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { ThreadMessage } from '@/lib/thread/types';
 import { formatDistanceToNow } from '@/lib/thread/utils';
+import { Card, Badge } from '@/ui/common';
 
 interface ThreadCardProps {
   message: ThreadMessage;
@@ -12,7 +13,7 @@ export function ThreadCard({ message }: ThreadCardProps) {
   const timestamp = formatDistanceToNow(new Date(message.created_at));
 
   return (
-    <article className="border border-gray-300 rounded-lg p-4 mb-3 bg-white hover:border-gray-400 hover:shadow-sm transition-all duration-150">
+    <Card padding="md" shadow="sm" rounded="lg" className="mb-3">
       {/* Header Section */}
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -37,9 +38,9 @@ export function ThreadCard({ message }: ThreadCardProps) {
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-semibold text-sm text-gray-900 truncate">{message.username}</span>
             {message.verified && (
-              <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 px-2 py-0.5 rounded text-xs font-medium flex-shrink-0">
+              <Badge variant="success" size="xs">
                 ✓ Verified
-              </span>
+              </Badge>
             )}
           </div>
         </div>
@@ -54,6 +55,6 @@ export function ThreadCard({ message }: ThreadCardProps) {
           {message.content}
         </p>
       </div>
-    </article>
+    </Card>
   );
 }

@@ -3,15 +3,17 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { THREAD_CONSTANTS } from '@/lib/thread/constants';
+import { Card, Button } from '@/ui/common';
 
 interface ThreadComposerProps {
   userAvatar?: string;
   userName: string;
   onSubmit: (content: string) => Promise<void>;
   disabled?: boolean;
+  boardName?: string;
 }
 
-export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = false }: ThreadComposerProps) {
+export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = false, boardName = 'Board' }: ThreadComposerProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -53,7 +55,7 @@ export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = fals
   };
 
   return (
-    <div className="border border-gray-300 rounded-2xl p-4 bg-white shadow-sm mb-4">
+    <Card padding="md" rounded="2xl" className="mb-4">
       {/* Header with avatar */}
       <div className="flex items-center gap-3 mb-3">
         {userAvatar ? (
@@ -71,7 +73,10 @@ export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = fals
             </span>
           </div>
         )}
-        <span className="font-semibold text-sm text-gray-900">{userName}</span>
+        <div>
+          <span className="font-semibold text-sm text-gray-900">{userName}</span>
+          <p className="text-xs text-gray-500">Send to z/{boardName}</p>
+        </div>
       </div>
 
       {/* Textarea */}
@@ -82,7 +87,7 @@ export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = fals
         onKeyDown={handleKeyDown}
         placeholder="What's on your mind?"
         disabled={disabled || isSubmitting}
-        className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-700 focus:border-transparent resize-none min-h-[100px] disabled:opacity-50 disabled:cursor-not-allowed"
       />
 
       {/* Footer with counter and button */}
@@ -99,17 +104,18 @@ export function ThreadComposer({ userAvatar, userName, onSubmit, disabled = fals
           )}
         </div>
 
-        <button
+        <Button
+          variant="primary"
+          size="md"
           onClick={handleSubmit}
           disabled={!isValid || isSubmitting}
-          className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
         >
           {isSubmitting ? 'Posting...' : 'Post'}
-        </button>
+        </Button>
       </div>
 
       {/* Help text */}
       <p className="text-xs text-gray-400 mt-2">Tip: Press Ctrl+Enter to submit</p>
-    </div>
+    </Card>
   );
 }
