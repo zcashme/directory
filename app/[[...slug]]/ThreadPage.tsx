@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ThreadBoard } from '@/ui/thread/ThreadBoard';
 import { ThreadMessage, Board } from '@/lib/thread/types';
 import {
@@ -12,39 +13,59 @@ import {
 import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 interface ThreadPageProps {
+  boardSlug: string;
   initialMessages?: ThreadMessage[];
   initialBoards?: Board[];
 }
 
 export default function ThreadPage({
+  boardSlug,
   initialMessages = [],
   initialBoards = [],
 }: ThreadPageProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
   const [boards, setBoards] = useState<Board[]>(initialBoards);
-  const [currentBoardId, setCurrentBoardId] = useState(THREAD_CONSTANTS.DEFAULT_BOARD_ID);
+  const [currentBoardId, setCurrentBoardId] = useState<string>('');
   const [isLoadingInitial, setIsLoadingInitial] = useState(!initialBoards.length);
   const [messageOffset, setMessageOffset] = useState(0);
 
-  // Initialize boards on mount
+  // Initialize boards on mount and find board by slug
   useEffect(() => {
     const initializeBoards = async () => {
       if (boards.length === 0) {
         const result = await fetchBoardsAction();
         if (result.success && result.data) {
           setBoards(result.data);
+          // Find board matching the slug
+          const board = result.data.find((b) => b.slug === boardSlug);
+          if (board) {
+            setCurrentBoardId(board.id);
+          }
+        }
+      } else {
+        // Boards already loaded, find matching board
+        const board = boards.find((b) => b.slug === boardSlug);
+        if (board) {
+          setCurrentBoardId(board.id);
         }
       }
       setIsLoadingInitial(false);
     };
 
     initializeBoards();
-  }, []);
+  }, [boardSlug, boards]);
 
   // Load messages when board changes
   useEffect(() => {
+    if (!currentBoardId) return;
+
     const loadMessages = async () => {
-      const result = await fetchMessagesAction(currentBoardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      const result = await fetchMessagesAction(
+        currentBoardId,
+        THREAD_CONSTANTS.MESSAGES_PER_PAGE,
+        0
+      );
       if (result.success && result.data) {
         setMessages(result.data);
         setMessageOffset(0);
@@ -54,13 +75,24 @@ export default function ThreadPage({
     loadMessages();
   }, [currentBoardId]);
 
-  const handlePostMessage = async (content: string, boardId: string, walletAddress?: string, otpToken?: string) => {
-    // Wallet address and OTP token are required for posting
-    // They will be provided by the ZcashVerificationComposer component
-    const result = await postMessageAction(content, boardId, walletAddress, otpToken);
+  const handlePostMessage = async (
+    content: string,
+    boardId: string,
+    walletAddress?: string,
+    otpToken?: string
+  ) => {
+    const result = await postMessageAction(
+      content,
+      boardId,
+      walletAddress,
+      otpToken
+    );
     if (result.success && result.data) {
-      // Reload messages for the board
-      const messagesResult = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      const messagesResult = await fetchMessagesAction(
+        boardId,
+        THREAD_CONSTANTS.MESSAGES_PER_PAGE,
+        0
+      );
       if (messagesResult.success && messagesResult.data) {
         setMessages(messagesResult.data);
         setMessageOffset(0);
@@ -72,31 +104,46 @@ export default function ThreadPage({
 
   const handleLoadMoreMessages = async (boardId: string) => {
     const nextOffset = messageOffset + THREAD_CONSTANTS.MESSAGES_PER_PAGE;
-    const result = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, nextOffset);
+    const result = await fetchMessagesAction(
+      boardId,
+      THREAD_CONSTANTS.MESSAGES_PER_PAGE,
+      nextOffset
+    );
     if (result.success && result.data) {
       setMessages((prev) => [...prev, ...result.data!]);
       setMessageOffset(nextOffset);
     }
   };
 
-  const handleCreateBoard = async (name: string, description: string, walletAddress?: string, otpToken?: string) => {
-    // Wallet address and OTP token are required for creating boards
-    // They will be provided by the verification component
-    const result = await createBoardAction(name, description, walletAddress, otpToken);
+  const handleCreateBoard = async (
+    name: string,
+    description: string,
+    walletAddress?: string,
+    otpToken?: string
+  ) => {
+    const result = await createBoardAction(
+      name,
+      description,
+      walletAddress,
+      otpToken
+    );
     if (result.success && result.data) {
       setBoards((prev) => [...prev, result.data!]);
-      // Auto-switch to new board
-      setCurrentBoardId(result.data.id);
+      // Navigate to new board
+      router.push(`/${result.data.slug}`);
     } else {
       throw new Error(result.error || 'Failed to create board');
     }
   };
 
   const handleBoardSelect = (boardId: string) => {
-    setCurrentBoardId(boardId);
+    const board = boards.find((b) => b.id === boardId);
+    if (board) {
+      router.push(`/${board.slug}`);
+    }
   };
 
-  if (isLoadingInitial) {
+  if (isLoadingInitial || !currentBoardId) {
     return (
       <div className="flex justify-center items-center min-h-screen">
         <div className="animate-pulse">
