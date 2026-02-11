@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { TokenIcon } from "./SwapCurrencyPair";
+import type { Token } from "@/lib/swap/types";
 
 export interface Currency {
   symbol: string;
@@ -9,29 +10,31 @@ export interface Currency {
   network?: string;
 }
 
-const POPULAR_CURRENCIES: Currency[] = [
-  { symbol: "ETH", name: "Ethereum" },
-  { symbol: "BTC", name: "Bitcoin" },
-  { symbol: "ZEC", name: "Zcash" },
-  { symbol: "USDC", name: "USD Coin" },
-  { symbol: "USDT", name: "Tether" },
-  { symbol: "SOL", name: "Solana" },
-  { symbol: "ARB", name: "Arbitrum" },
-  { symbol: "NEAR", name: "NEAR Protocol" },
-];
+function tokenToCurrency(token: Token): Currency {
+  return {
+    symbol: token.symbol,
+    name: token.symbol,
+    network: token.blockchain,
+  };
+}
 
 interface CurrencySelectorProps {
   selectedCurrency: Currency;
   onSelect: (currency: Currency) => void;
   disabled?: boolean;
+  availableTokens?: Token[];
 }
 
 export default function CurrencySelector({
   selectedCurrency,
   onSelect,
   disabled = false,
+  availableTokens = [],
 }: CurrencySelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
+
+  // Convert tokens to currencies for display
+  const currencies = availableTokens.map(tokenToCurrency);
 
   return (
     <div className="relative">
@@ -47,9 +50,14 @@ export default function CurrencySelector({
         `}
       >
         <TokenIcon symbol={selectedCurrency.symbol} size={24} />
-        <span className="font-semibold text-gray-700">
-          {selectedCurrency.symbol}
-        </span>
+        <div className="flex flex-col items-start">
+          <span className="font-semibold text-gray-700">
+            {selectedCurrency.symbol}
+          </span>
+          {selectedCurrency.network && (
+            <span className="text-xs text-gray-500">{selectedCurrency.network}</span>
+          )}
+        </div>
         <svg
           className={`w-4 h-4 text-gray-500 transition-transform ${
             isOpen ? "rotate-180" : ""
@@ -82,46 +90,46 @@ export default function CurrencySelector({
               />
             </div>
             <div className="max-h-80 overflow-y-auto">
-              {POPULAR_CURRENCIES.map((currency) => (
-                <button
-                  key={currency.symbol}
-                  type="button"
-                  onClick={() => {
-                    onSelect(currency);
-                    setIsOpen(false);
-                  }}
-                  className={`
-                    w-full flex items-center gap-3 px-4 py-3
-                    hover:bg-gray-50 transition-colors
-                    ${
-                      selectedCurrency.symbol === currency.symbol
-                        ? "bg-blue-50"
-                        : ""
-                    }
-                  `}
-                >
-                  <TokenIcon symbol={currency.symbol} size={32} />
-                  <div className="flex-1 text-left">
-                    <div className="font-semibold text-gray-700">
-                      {currency.symbol}
+              {currencies.map((currency) => {
+                const key = `${currency.symbol}-${currency.network}`;
+                const isSelected = selectedCurrency.symbol === currency.symbol && selectedCurrency.network === currency.network;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      onSelect(currency);
+                      setIsOpen(false);
+                    }}
+                    className={`
+                      w-full flex items-center gap-3 px-4 py-3
+                      hover:bg-gray-50 transition-colors
+                      ${isSelected ? "bg-blue-50" : ""}
+                    `}
+                  >
+                    <TokenIcon symbol={currency.symbol} size={32} />
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-gray-700">
+                        {currency.symbol}
+                      </div>
+                      <div className="text-xs text-gray-500">{currency.network}</div>
                     </div>
-                    <div className="text-xs text-gray-500">{currency.name}</div>
-                  </div>
-                  {selectedCurrency.symbol === currency.symbol && (
-                    <svg
-                      className="w-5 h-5 text-blue-600"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  )}
-                </button>
-              ))}
+                    {isSelected && (
+                      <svg
+                        className="w-5 h-5 text-blue-600"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>
