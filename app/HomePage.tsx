@@ -490,7 +490,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
-    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-32">
+    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-20 md:pt-32">
       <div className="mb-10 md:mb-12 text-center -translate-y-4 md:-translate-y-6">
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
@@ -651,30 +651,32 @@ export default function HomePage({ initialFeaturedProfiles, profileCount = 0 }: 
         <ProfileHeader profileCount={profileCount} />
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
-      <footer className="mt-auto py-8 border-t border-gray-200">
+      <footer className="mt-auto py-4 border-t border-gray-200">
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-xs text-gray-500 whitespace-nowrap">© 2026 ZcashMe, Inc.</div>
+          <div className="flex flex-col items-center gap-2">
             <div className="flex justify-center items-center gap-6">
-            {SOCIAL_LINKS.map((link) => (
-              <motion.a
-                key={link.href}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                whileHover={{ scale: 1.1 }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-                aria-label={link.label}
-              >
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                  <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
-                </svg>
-              </motion.a>
-            ))}
+              {SOCIAL_LINKS.map((link) => (
+                <motion.a
+                  key={link.href}
+                  href={link.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.1 }}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                  aria-label={link.label}
+                >
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                    <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
+                  </svg>
+                </motion.a>
+              ))}
             </div>
-            <div className="flex items-center gap-4 text-xs text-gray-500 whitespace-nowrap">
-              <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
-              <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
+            <div className="w-full flex flex-col items-center gap-1 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+              <span>&copy; 2026 ZcashMe, Inc.</span>
+              <div className="flex items-center gap-4 sm:justify-end">
+                <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
+                <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
+              </div>
             </div>
           </div>
         </div>
