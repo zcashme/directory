@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
@@ -9,7 +9,7 @@ import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import { getSwapQuote } from "@/lib/swap/oneClick";
 import { useSwapsStore } from "@/lib/stores/swaps";
-import { parseTokenSymbol, getSwapUrl } from "@/lib/swap/utils";
+import { parseTokenSymbol } from "@/lib/swap/utils";
 import { getSwapStatus } from "@/lib/swap/oneClick";
 import type { SwapStatusData } from "@/lib/swap/types";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
@@ -240,33 +240,12 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
 
 function SwapsPageContent() {
   const depositAddress = useSearchParams().get("depositAddress");
-  const router = useRouter();
-
-  const handleReset = () => {
-    router.push(getSwapUrl());
-  };
-
-  // If depositAddress is present, show status checker
-  if (depositAddress) {
-    return (
-      <>
-        <ProfileHeader />
-        <div className="min-h-screen p-4 md:p-8 pt-12" style={{ backgroundColor: "var(--color-background)" }}>
-          <div className="max-w-2xl mx-auto">
-            <SwapStatusDisplay depositAddress={depositAddress} onReset={handleReset} />
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Otherwise, show swap creation interface
-  return <SwapCreationPage />;
+  return <SwapCreationPage initialDepositAddress={depositAddress} />;
 }
 
-function SwapCreationPage() {
-  const [isFlipped, setIsFlipped] = useState(false);
-  const [checkDepositAddress, setCheckDepositAddress] = useState("");
+function SwapCreationPage({ initialDepositAddress }: { initialDepositAddress: string | null }) {
+  const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
+  const [checkDepositAddress, setCheckDepositAddress] = useState(initialDepositAddress || "");
 
   const store = useSwapsStore();
   const {
@@ -406,7 +385,7 @@ function SwapCreationPage() {
   }
 
   const handleResetStatusCheck = () => {
-    setIsFlipped(false);
+    setIsStatus(false);
     setCheckDepositAddress("");
   };
 
@@ -431,7 +410,7 @@ function SwapCreationPage() {
               className="relative w-full transition-transform duration-700"
               style={{
                 transformStyle: "preserve-3d",
-                transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                transform: isStatus ? "rotateY(180deg)" : "rotateY(0deg)",
               }}
             >
               {/* Front Side - Main Swap Card */}
@@ -605,7 +584,7 @@ function SwapCreationPage() {
                 href="#"
                 onClick={(e) => {
                   e.preventDefault();
-                  setIsFlipped(true);
+                  setIsStatus(true);
                 }}
                 className="text-blue-600 hover:text-blue-800 underline"
               >
