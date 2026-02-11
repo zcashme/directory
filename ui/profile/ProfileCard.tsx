@@ -10,7 +10,6 @@ import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import { buildShareUrl } from "@/lib/profile/profileUtils";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
-import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON, isDiscordLink } from "@/lib/profile/profileLinks";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
@@ -860,11 +859,21 @@ export default function ProfileCard({
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
               title={`Share ${profile.display_name || profile.name}`}
             >
-              <img
-                src={shareIcon}
-                alt="Share"
+              <svg
+                viewBox="0 0 21 21"
+                fill="none"
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
                 className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
-              />
+                aria-hidden="true"
+              >
+                <g transform="translate(4 2)">
+                  <path d="m8.5 2.5-1.978-2-2.022 2" />
+                  <path d="m6.5.5v9" />
+                  <path d="m3.5 4.5h-1c-1.1045695 0-2 .8954305-2 2v7c0 1.1045695.8954305 2 2 2h8c1.1045695 0 2-.8954305 2-2v-7c0-1.1045695-.8954305-2-2-2h-1" />
+                </g>
+              </svg>
             </button>
           </div>
 
@@ -1138,3 +1147,4 @@ export default function ProfileCard({
     </VerifiedCardWrapper>
   );
 }
+
