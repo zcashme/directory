@@ -10,6 +10,7 @@ import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
+import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
@@ -257,6 +258,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isTypedNameComplete, setIsTypedNameComplete] = useState<boolean>(false);
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
+  const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -485,6 +487,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     if (!selectedProfile) return;
     onCardClick(selectedProfile);
   };
+  const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
     <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-32">
@@ -545,6 +548,15 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </div>
         )}
       </div>
+      <div className="mt-10 md:mt-12 flex justify-center">
+        <button
+          onClick={() => setIsJoinOpen(true)}
+          className="flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
+          style={{ height: "32px" }}
+        >
+          Claim your name
+        </button>
+      </div>
       {SHOW_TEMP_CARD_TUNER && (
       <div className="max-w-3xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">
         <div className="flex items-center justify-between mb-2">
@@ -596,6 +608,12 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         </div>
       </div>
       )}
+      <AddUserForm
+        isOpen={isJoinOpen}
+        prefillUsername={null}
+        onClose={closeJoinForm}
+        onUserAdded={closeJoinForm}
+      />
     </div>
   );
 }
