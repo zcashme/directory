@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { CSSProperties, MouseEvent } from "react";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
@@ -211,6 +211,8 @@ export function ProfileCardContent({
   textScaleOverrides,
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const [shouldShowViewProfile, setShouldShowViewProfile] = useState(true);
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const textScale: ProfileCardTextScale = {
     displayName: 1,
@@ -337,8 +339,38 @@ export function ProfileCardContent({
     copyScale: textScale.linkCopy,
   };
 
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+
+    const updateFooterVisibility = () => {
+      const overflows = el.scrollHeight > el.clientHeight + 1;
+      setShouldShowViewProfile(!overflows);
+    };
+
+    updateFooterVisibility();
+    window.addEventListener("resize", updateFooterVisibility);
+
+    return () => {
+      window.removeEventListener("resize", updateFooterVisibility);
+    };
+  }, [
+    profile,
+    linksArray,
+    variant,
+    showLinks,
+    showAddress,
+    showBio,
+    showDates,
+    showQRButton,
+    linkVariant,
+    hideLinkBadges,
+    textScaleOverrides,
+    showDisplayNameVerifiedBadge,
+  ]);
+
   return (
-    <div className={`${className} flex flex-col h-full`}>
+    <div ref={contentRef} className={`${className} flex flex-col h-full`}>
       {/* Display Name */}
       <div className="relative z-10 w-full flex items-center justify-center">
         <div className="flex items-center justify-center gap-1.5 min-w-0">
@@ -488,27 +520,29 @@ export function ProfileCardContent({
       )}
 
       {/* View Profile Footer - Fixed at bottom */}
-      <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
-        <span
-          className="text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1"
-          style={{ fontSize: scaleFont(s.viewProfilePx, textScale.viewProfile) }}
-        >
-          View Profile
-          <svg
-            className="text-green-600"
-            style={{
-              width: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
-              height: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
-            }}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            aria-hidden="true"
+      {shouldShowViewProfile && (
+        <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
+          <span
+            className="text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1"
+            style={{ fontSize: scaleFont(s.viewProfilePx, textScale.viewProfile) }}
           >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </span>
-      </div>
+            View Profile
+            <svg
+              className="text-green-600"
+              style={{
+                width: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
+                height: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
+              }}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </span>
+        </div>
+      )}
     </div>
   );
 }

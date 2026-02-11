@@ -548,11 +548,10 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </div>
         )}
       </div>
-      <div className="mt-10 md:mt-12 flex justify-center">
+      <div className="mt-10 md:mt-14 flex justify-center">
         <button
           onClick={() => setIsJoinOpen(true)}
-          className="flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
-          style={{ height: "32px" }}
+          className="h-8 md:h-10 flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 md:px-6 rounded-full text-sm md:text-base font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
         >
           Claim your name
         </button>
@@ -653,8 +652,10 @@ export default function HomePage({ initialFeaturedProfiles, profileCount = 0 }: 
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
       <footer className="mt-auto py-8 border-t border-gray-200">
-        <div className="max-w-lg mx-auto px-4">
-          <div className="flex justify-center items-center gap-6 relative">
+        <div className="max-w-5xl mx-auto px-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="text-xs text-gray-500 whitespace-nowrap">© 2026 ZcashMe, Inc.</div>
+            <div className="flex justify-center items-center gap-6">
             {SOCIAL_LINKS.map((link) => (
               <motion.a
                 key={link.href}
@@ -670,7 +671,8 @@ export default function HomePage({ initialFeaturedProfiles, profileCount = 0 }: 
                 </svg>
               </motion.a>
             ))}
-            <div className="absolute right-0 flex flex-col gap-0.5 text-xs text-gray-500">
+            </div>
+            <div className="flex items-center gap-4 text-xs text-gray-500 whitespace-nowrap">
               <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
               <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
             </div>
