@@ -65,12 +65,13 @@ export async function fetchMessagesAction(
 }
 
 /**
- * Post a message to a board
+ * Post a message to a board using Zcash verification
  */
 export async function postMessageAction(
   content: string,
   boardId: string,
-  userId: string
+  walletAddress?: string,
+  otpToken?: string
 ): Promise<PostMessageResponse> {
   try {
     if (!content.trim()) {
@@ -87,16 +88,32 @@ export async function postMessageAction(
       };
     }
 
+    // Verify OTP token and wallet address before posting
+    if (!otpToken || !otpToken.trim()) {
+      return {
+        success: false,
+        error: 'OTP verification required to post messages',
+      };
+    }
+
+    if (!walletAddress || !walletAddress.trim()) {
+      return {
+        success: false,
+        error: 'Wallet address required for posting',
+      };
+    }
+
     // TODO: Replace with actual API call to save message to database
     // Should:
-    // 1. Create ThreadMessage record
-    // 2. Increment board member count if new member
-    // 3. Return created message with full profile data
+    // 1. Verify OTP token is valid for the wallet address
+    // 2. Create ThreadMessage record with wallet as user identifier
+    // 3. Increment board member count if new member
+    // 4. Return created message with wallet identity
 
     const message: ThreadMessage = {
       id: `msg_${Date.now()}`,
-      user_id: userId,
-      username: 'User',
+      user_id: walletAddress,
+      username: `${walletAddress.substring(0, 10)}...${walletAddress.substring(walletAddress.length - 4)}`,
       verified: false,
       content: content.trim(),
       board_id: boardId,
@@ -117,12 +134,13 @@ export async function postMessageAction(
 }
 
 /**
- * Create a new board
+ * Create a new board using Zcash verification
  */
 export async function createBoardAction(
   name: string,
   description: string,
-  creatorId: string
+  walletAddress?: string,
+  otpToken?: string
 ): Promise<CreateBoardResponse> {
   try {
     if (!name.trim()) {
@@ -139,17 +157,33 @@ export async function createBoardAction(
       };
     }
 
+    // Verify OTP token and wallet address before creating board
+    if (!otpToken || !otpToken.trim()) {
+      return {
+        success: false,
+        error: 'OTP verification required to create boards',
+      };
+    }
+
+    if (!walletAddress || !walletAddress.trim()) {
+      return {
+        success: false,
+        error: 'Wallet address required for creating boards',
+      };
+    }
+
     // TODO: Replace with actual API call to create board in database
     // Should:
-    // 1. Verify board name is unique
-    // 2. Create Board record
-    // 3. Return created board
+    // 1. Verify OTP token is valid for the wallet address
+    // 2. Verify board name is unique
+    // 3. Create Board record with wallet as creator
+    // 4. Return created board
 
     const board: Board = {
       id: name.toLowerCase().replace(/\s+/g, '-'),
       name: name.trim(),
       description: description.trim(),
-      creator_id: creatorId,
+      creator_id: walletAddress,
       created_at: new Date().toISOString(),
       member_count: 1,
     };

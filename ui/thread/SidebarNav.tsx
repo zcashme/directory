@@ -2,7 +2,6 @@
 
 import { Board } from '@/lib/thread/types';
 import { useRouter, usePathname } from 'next/navigation';
-import Image from 'next/image';
 import { Button } from '@/ui/common';
 
 interface SidebarNavProps {
@@ -10,8 +9,6 @@ interface SidebarNavProps {
   currentBoardId: string;
   onBoardSelect: (boardId: string) => void;
   onCreateBoard: () => void;
-  userAvatar?: string;
-  userName: string;
   isLoading?: boolean;
 }
 
@@ -20,8 +17,6 @@ export function SidebarNav({
   currentBoardId,
   onBoardSelect,
   onCreateBoard,
-  userAvatar,
-  userName,
   isLoading = false,
 }: SidebarNavProps) {
   const router = useRouter();
@@ -42,30 +37,6 @@ export function SidebarNav({
       {/* Header */}
       <div className="p-4 border-b border-black/30">
         <h2 className="text-2xl font-bold text-gray-900">Threads</h2>
-      </div>
-
-      {/* User Profile Section */}
-      <div className="p-4 border-b border-black/30">
-        <div className="flex items-center gap-3">
-          {userAvatar ? (
-            <Image
-              src={userAvatar}
-              alt={userName}
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-          ) : (
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <span className="text-xs font-semibold text-gray-600">
-                {userName.charAt(0).toUpperCase()}
-              </span>
-            </div>
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-          </div>
-        </div>
       </div>
 
       {/* Boards List */}

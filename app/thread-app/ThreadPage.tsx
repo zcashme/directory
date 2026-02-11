@@ -14,19 +14,11 @@ import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 interface ThreadPageProps {
   initialMessages?: ThreadMessage[];
   initialBoards?: Board[];
-  userName?: string;
-  userAvatar?: string;
-  userId?: string;
-  isLoggedIn?: boolean;
 }
 
 export default function ThreadPage({
   initialMessages = [],
   initialBoards = [],
-  userName = 'Guest',
-  userAvatar,
-  userId = '',
-  isLoggedIn = false,
 }: ThreadPageProps) {
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
   const [boards, setBoards] = useState<Board[]>(initialBoards);
@@ -62,12 +54,10 @@ export default function ThreadPage({
     loadMessages();
   }, [currentBoardId]);
 
-  const handlePostMessage = async (content: string, boardId: string) => {
-    if (!isLoggedIn || !userId) {
-      throw new Error('Must be logged in to post messages');
-    }
-
-    const result = await postMessageAction(content, boardId, userId);
+  const handlePostMessage = async (content: string, boardId: string, walletAddress?: string, otpToken?: string) => {
+    // Wallet address and OTP token are required for posting
+    // They will be provided by the ZcashVerificationComposer component
+    const result = await postMessageAction(content, boardId, walletAddress, otpToken);
     if (result.success && result.data) {
       // Reload messages for the board
       const messagesResult = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
@@ -89,12 +79,10 @@ export default function ThreadPage({
     }
   };
 
-  const handleCreateBoard = async (name: string, description: string) => {
-    if (!isLoggedIn || !userId) {
-      throw new Error('Must be logged in to create boards');
-    }
-
-    const result = await createBoardAction(name, description, userId);
+  const handleCreateBoard = async (name: string, description: string, walletAddress?: string, otpToken?: string) => {
+    // Wallet address and OTP token are required for creating boards
+    // They will be provided by the verification component
+    const result = await createBoardAction(name, description, walletAddress, otpToken);
     if (result.success && result.data) {
       setBoards((prev) => [...prev, result.data!]);
       // Auto-switch to new board
@@ -124,9 +112,6 @@ export default function ThreadPage({
       initialMessages={messages}
       initialBoards={boards}
       initialBoardId={currentBoardId}
-      userAvatar={userAvatar}
-      userName={userName}
-      isLoggedIn={isLoggedIn}
       onPostMessage={handlePostMessage}
       onLoadMoreMessages={handleLoadMoreMessages}
       onCreateBoard={handleCreateBoard}

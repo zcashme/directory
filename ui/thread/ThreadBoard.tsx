@@ -13,12 +13,9 @@ interface ThreadBoardProps {
   initialMessages: ThreadMessage[];
   initialBoards: Board[];
   initialBoardId: string;
-  userAvatar?: string;
-  userName: string;
-  isLoggedIn: boolean;
-  onPostMessage: (content: string, boardId: string) => Promise<void>;
+  onPostMessage: (content: string, boardId: string, walletAddress?: string, otpToken?: string) => Promise<void>;
   onLoadMoreMessages: (boardId: string) => Promise<void>;
-  onCreateBoard: (name: string, description: string) => Promise<void>;
+  onCreateBoard: (name: string, description: string, walletAddress?: string, otpToken?: string) => Promise<void>;
   onBoardSelect: (boardId: string) => void;
 }
 
@@ -26,9 +23,6 @@ export function ThreadBoard({
   initialMessages,
   initialBoards,
   initialBoardId,
-  userAvatar,
-  userName,
-  isLoggedIn,
   onPostMessage,
   onLoadMoreMessages,
   onCreateBoard,
@@ -51,9 +45,9 @@ export function ThreadBoard({
     setIsLoadingMessages(false);
   };
 
-  const handlePostMessage = async (content: string) => {
+  const handlePostMessage = async (content: string, walletAddress?: string, otpToken?: string) => {
     try {
-      await onPostMessage(content, currentBoardId);
+      await onPostMessage(content, currentBoardId, walletAddress, otpToken);
       // Refresh messages
       setMessages([]);
       setIsLoadingMessages(true);
@@ -63,10 +57,10 @@ export function ThreadBoard({
     }
   };
 
-  const handleCreateBoard = async (name: string, description: string) => {
+  const handleCreateBoard = async (name: string, description: string, walletAddress?: string, otpToken?: string) => {
     setIsCreatingBoard(true);
     try {
-      await onCreateBoard(name, description);
+      await onCreateBoard(name, description, walletAddress, otpToken);
       // Refresh boards and show the new board
       setShowCreateBoardModal(false);
     } catch (error) {
@@ -86,8 +80,6 @@ export function ThreadBoard({
           currentBoardId={currentBoardId}
           onBoardSelect={handleBoardSelect}
           onCreateBoard={() => setShowCreateBoardModal(true)}
-          userAvatar={userAvatar}
-          userName={userName}
           isLoading={false}
         />
       </div>
@@ -110,15 +102,11 @@ export function ThreadBoard({
             {currentBoard && <BoardHeader board={currentBoard} />}
 
             {/* Message Composer */}
-            {isLoggedIn && (
-              <ThreadComposer
-                userAvatar={userAvatar}
-                userName={userName}
-                onSubmit={handlePostMessage}
-                disabled={isLoadingMessages}
-                boardName={currentBoard?.name || 'Board'}
-              />
-            )}
+            <ThreadComposer
+              onSubmit={handlePostMessage}
+              disabled={isLoadingMessages}
+              boardName={currentBoard?.name || 'Board'}
+            />
 
             {/* Message Feed */}
             <ThreadFeed

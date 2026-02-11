@@ -10,13 +10,8 @@ export const metadata: Metadata = {
 export const revalidate = 30; // ISR - revalidate every 30 seconds
 
 export default async function Page() {
-  // TODO: Fetch current user from Supabase auth
   // TODO: Fetch initial data from database
   // For now, return empty arrays - client will fetch on mount
-  const isLoggedIn = false;
-  const userName = 'Guest';
-  const userAvatar = undefined;
-  const userId = '';
   const initialMessages: ThreadMessage[] = [];
   const initialBoards: Board[] = [];
 
@@ -24,10 +19,6 @@ export default async function Page() {
     <ThreadPage
       initialMessages={initialMessages}
       initialBoards={initialBoards}
-      userName={userName}
-      userAvatar={userAvatar}
-      userId={userId}
-      isLoggedIn={isLoggedIn}
     />
   );
 }
