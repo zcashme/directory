@@ -483,8 +483,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     if (!isTypedProfileClickable || currentTypedProfileIndex === null) return;
     const selectedProfile = profiles[currentTypedProfileIndex];
     if (!selectedProfile) return;
-    const slug = buildSlug(selectedProfile);
-    if (slug) router.push(`/${slug}`);
+    onCardClick(selectedProfile);
   };
 
   return (
