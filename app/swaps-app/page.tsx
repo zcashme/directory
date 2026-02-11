@@ -18,7 +18,6 @@ function tokenToCurrency(token: Token): Currency {
 
 export default function SwapsPage() {
   const [tokens, setTokens] = useState<Token[]>([]);
-  const [tokensLoaded, setTokensLoaded] = useState(false);
   const [tokensLoading, setTokensLoading] = useState(false);
   const [tokensError, setTokensError] = useState<string | null>(null);
 
@@ -34,6 +33,7 @@ export default function SwapsPage() {
   const [quote, setQuote] = useState<SwapQuoteDisplay | null>(null);
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   const [showInfo, setShowInfo] = useState(false);
 
@@ -51,7 +51,6 @@ export default function SwapsPage() {
         }
 
         setTokens(result.tokens);
-        setTokensLoaded(true);
 
         // Set default tokens: ETH and ZEC
         const ethToken = result.tokens.find(t => t.symbol === "ETH");
@@ -107,6 +106,23 @@ export default function SwapsPage() {
       setQuoteError("Failed to get quote");
     } finally {
       setQuoteLoading(false);
+    }
+  };
+
+  const confirmQuote = async () => {
+    if (!quote || !fromToken || !toToken) return;
+
+    setConfirmLoading(true);
+    setQuoteError(null);
+
+    try {
+      // TODO: Implement actual quote confirmation logic
+      // For now, just simulate success
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (err) {
+      setQuoteError("Failed to confirm quote");
+    } finally {
+      setConfirmLoading(false);
     }
   };
 
@@ -172,10 +188,10 @@ export default function SwapsPage() {
     <>
       <ProfileHeader />
       <div
-        className="min-h-screen border-2 border-red-500"
+        className="p-4 md:p-8 pt-16 border-2 border-red-500"
         style={{ backgroundColor: "var(--color-background)" }}
       >
-        <div className="max-w-5xl mx-auto m-4 md:m-8 mt-16 border-2 border-orange-500">
+        <div className="max-w-5xl mx-auto border-2 border-orange-500">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
             <h1 className="text-2xl font-bold text-gray-700">Swap</h1>
@@ -253,7 +269,7 @@ export default function SwapsPage() {
                   type="button"
                   onClick={handleSwapDirection}
                   disabled={!fromToken || !toToken}
-                  className={`p-3 rounded-xl transition-colors ${
+                  className={`p-3 rounded-xl transition-colors rotate-90 ${
                     fromToken && toToken
                       ? "bg-gray-100 hover:bg-gray-200 text-gray-600"
                       : "bg-gray-100 opacity-50 cursor-not-allowed text-gray-400"
@@ -347,19 +363,33 @@ export default function SwapsPage() {
               </div>
             )}
 
-            {/* Get Quote Button */}
-            <button
-              type="button"
-              onClick={fetchQuote}
-              disabled={!canGetQuote || quoteLoading}
-              className={`w-full px-4 py-3 text-md font-semibold rounded-xl ${
-                canGetQuote && !quoteLoading
-                  ? "bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
-                  : "bg-gray-100 text-gray-400 border border-gray-300"
-              }`}
-            >
-              {quoteLoading ? "Getting quote..." : "Get a quote"}
-            </button>
+            {/* Quote Action Buttons */}
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={fetchQuote}
+                disabled={!canGetQuote || quoteLoading}
+                className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
+                  canGetQuote && !quoteLoading
+                    ? "bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                    : "bg-gray-100 text-gray-400 border border-gray-300"
+                }`}
+              >
+                {quoteLoading ? "Getting quote..." : "Get a quote"}
+              </button>
+              <button
+                type="button"
+                onClick={confirmQuote}
+                disabled={!quote || confirmLoading}
+                className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
+                  quote && !confirmLoading
+                    ? "bg-green-600 hover:bg-green-700 text-white transition-colors cursor-pointer"
+                    : "bg-gray-100 text-gray-400 border border-gray-300"
+                }`}
+              >
+                {confirmLoading ? "Confirming..." : "Confirm quote"}
+              </button>
+            </div>
 
             {/* Slippage Settings */}
             <div className="mt-4 flex items-center justify-end gap-2">
