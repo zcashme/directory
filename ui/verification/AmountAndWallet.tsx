@@ -210,9 +210,13 @@ export default function AmountAndWallet({
   };
 
   return (
-    <div className="w-full mb-2">
-      <div className="flex items-center gap-3">
-        <div className="relative flex flex-1 items-stretch overflow-visible">
+    <div className="w-full max-w-full mb-2 min-w-0">
+      <div className="w-full max-w-full min-w-0 flex items-center gap-3">
+        <div
+          className={`relative flex items-stretch overflow-visible min-w-0 max-w-full ${
+            showOpenWallet ? "flex-1" : "w-full"
+          }`}
+        >
           {showUsdPill && (
             <>
               <div
@@ -233,7 +237,7 @@ export default function AmountAndWallet({
           )}
 
           <div
-            className="relative min-w-0 transition-[width] duration-200 box-border"
+            className="relative min-w-0 max-w-full transition-[width] duration-200 box-border"
             style={showUsdPill ? { width: leftPillWidth } : { width: "100%" }}
           >
             <input
@@ -360,14 +364,14 @@ export default function AmountAndWallet({
 
           {showUsdPill && (
             <div
-              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 transition-[width] duration-200 box-border ${
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 max-w-full transition-[width] duration-200 box-border ${
                 isUsdOpen ? "px-3" : "px-3 justify-center"
               }`}
               style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >
               <div
-                className={`flex items-center w-full ${
+                className={`flex items-center w-full min-w-0 ${
                   isUsdOpen ? "gap-2" : "justify-center"
                 }`}
               >
