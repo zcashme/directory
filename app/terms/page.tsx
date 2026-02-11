@@ -159,7 +159,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold mb-2 text-gray-900">14. Contact</h2>
             <p className="text-gray-800">
-              For questions about these Terms or the Service, please contact: admin@zcash.me
+              For questions about these Terms or the Service, please contact: james@zcash.me
             </p>
           </section>
         </div>

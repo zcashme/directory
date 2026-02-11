@@ -21,8 +21,8 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-2 text-gray-900">1. Information We Collect</h2>
             <p className="mb-2 text-gray-800">To provide our verification service, we collect the following information:</p>
             <ul className="list-disc pl-5 space-y-1 text-gray-800">
-              <li><strong>Twitter/X Information:</strong> Your public Twitter handle and unique User ID (via OAuth). We do NOT access your tweets, DMs, or password.</li>
-              <li><strong>Zcash Information:</strong> Your public Zcash Unified Address or Shielded Address.</li>
+              <li><strong>Social media platforms:</strong> Your public handles and unique User ID (via OAuth). We do NOT access your posts, DMs, or password.</li>
+              <li><strong>Zcash Information:</strong> Your public Zcash Unified Address or Shielded Address. We do NOT access your wallet's balance or history.</li>
             </ul>
           </section>
 
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             <h2 className="text-xl font-semibold mb-2 text-gray-900">2. How We Use Your Data</h2>
             <p className="mb-2 text-gray-800">We use this data solely to:</p>
             <ul className="list-disc pl-5 space-y-1 text-gray-800">
-              <li>Verify that a specific Twitter handle belongs to the owner of a specific Zcash address.</li>
+              <li>Verify that a specific handle belongs to the owner of a specific Zcash address.</li>
               <li>Display this verification status publicly as requested by you.</li>
             </ul>
           </section>
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
 
           <section>
             <h2 className="text-xl font-semibold mb-2 text-gray-900">5. Contact</h2>
-            <p className="text-gray-800">If you have questions, please contact us at james.edaclinical.com.</p>
+            <p className="text-gray-800">If you have questions, please contact us at james@zcash.me.</p>
           </section>
         </div>
       </div>
