@@ -1,6 +1,7 @@
 "use client";
 
 import CurrencySelector, { type Currency } from "./CurrencySelector";
+import type { Token } from "@/lib/swap/types";
 
 interface SwapAmountInputProps {
   label: string;
@@ -11,6 +12,7 @@ interface SwapAmountInputProps {
   onAmountChange: (amount: string) => void;
   disabled?: boolean;
   readOnly?: boolean;
+  availableTokens?: Token[];
 }
 
 export default function SwapAmountInput({
@@ -22,6 +24,7 @@ export default function SwapAmountInput({
   onAmountChange,
   disabled = false,
   readOnly = false,
+  availableTokens = [],
 }: SwapAmountInputProps) {
   const handleAmountChange = (value: string) => {
     // Allow only numbers and one decimal point
@@ -32,13 +35,14 @@ export default function SwapAmountInput({
   };
 
   return (
-    <div className="space-y-3">
-      <label className="text-base font-semibold text-gray-700">{label}</label>
-      <div className="flex items-center gap-3 px-4 py-3 border border-gray-200 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
+    <div className="space-y-2">
+      <label className="text-sm font-semibold text-gray-700">{label}</label>
+      <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
         <CurrencySelector
           selectedCurrency={currency}
           onSelect={onCurrencyChange}
           disabled={disabled}
+          availableTokens={availableTokens}
         />
         <input
           type="text"
@@ -49,13 +53,13 @@ export default function SwapAmountInput({
           disabled={disabled}
           readOnly={readOnly}
           className={`
-            flex-1 text-2xl font-semibold text-gray-700
+            w-20 text-lg font-semibold text-gray-700
             bg-transparent outline-none
             placeholder-gray-400
             ${disabled || readOnly ? "cursor-not-allowed opacity-50" : ""}
           `}
         />
-        <div className="text-xl text-gray-500 font-medium">
+        <div className="text-base text-gray-500 font-medium whitespace-nowrap">
           ${usdValue || "0.00"}
         </div>
       </div>
