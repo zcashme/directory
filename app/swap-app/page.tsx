@@ -265,6 +265,9 @@ function SwapsPageContent() {
 }
 
 function SwapCreationPage() {
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [checkDepositAddress, setCheckDepositAddress] = useState("");
+
   const store = useSwapsStore();
   const {
     tokens,
@@ -402,6 +405,11 @@ function SwapCreationPage() {
     );
   }
 
+  const handleResetStatusCheck = () => {
+    setIsFlipped(false);
+    setCheckDepositAddress("");
+  };
+
   return (
     <>
       <ProfileHeader />
@@ -417,8 +425,24 @@ function SwapCreationPage() {
             </div>
           )}
 
-          {/* Main Swap Card */}
-          <div className="rounded-3xl border border-gray-800 p-6 shadow-lg relative" style={{ backgroundColor: 'var(--color-background)' }}>
+          {/* Flip Card Container */}
+          <div className="relative" style={{ perspective: "1000px", minHeight: "600px" }}>
+            <div
+              className="relative w-full transition-transform duration-700"
+              style={{
+                transformStyle: "preserve-3d",
+                transform: isFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+              }}
+            >
+              {/* Front Side - Main Swap Card */}
+              <div
+                className="rounded-3xl border border-gray-800 p-6 shadow-lg relative"
+                style={{
+                  backgroundColor: 'var(--color-background)',
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                }}
+              >
             {/* Info Icon with Tooltip */}
             <div
               className="absolute top-6 right-6"
@@ -577,7 +601,14 @@ function SwapCreationPage() {
 
             {/* Check Swap Link */}
             <div className="text-center text-sm text-gray-600 mt-3">
-              <a href="#" className="text-blue-600 hover:text-blue-800 underline">
+              <a
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsFlipped(true);
+                }}
+                className="text-blue-600 hover:text-blue-800 underline"
+              >
                 Check Swap
               </a>
             </div>
@@ -589,6 +620,69 @@ function SwapCreationPage() {
                 onChange={store.setSlippageTolerance}
                 variant="inline"
               />
+            </div>
+              </div>
+
+              {/* Back Side - Swap Status Checker */}
+              <div
+                className="rounded-3xl border border-gray-800 p-6 shadow-lg absolute top-0 left-0 w-full"
+                style={{
+                  backgroundColor: 'var(--color-background)',
+                  backfaceVisibility: "hidden",
+                  WebkitBackfaceVisibility: "hidden",
+                  transform: "rotateY(180deg)",
+                }}
+              >
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold">Check Swap Status</h2>
+                    <button
+                      onClick={handleResetStatusCheck}
+                      className="text-sm text-gray-600 hover:text-gray-800"
+                    >
+                      ← Back to Swap
+                    </button>
+                  </div>
+
+                  {!checkDepositAddress ? (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Enter Deposit Address
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Paste your deposit address..."
+                        className="w-full border border-gray-800 px-3 py-3 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500 mb-4"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            const value = (e.target as HTMLInputElement).value.trim();
+                            if (value) {
+                              setCheckDepositAddress(value);
+                            }
+                          }
+                        }}
+                      />
+                      <button
+                        onClick={(e) => {
+                          const input = e.currentTarget.previousElementSibling as HTMLInputElement;
+                          const value = input?.value.trim();
+                          if (value) {
+                            setCheckDepositAddress(value);
+                          }
+                        }}
+                        className="w-full px-4 py-3 text-md font-semibold rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                      >
+                        Check Status
+                      </button>
+                    </div>
+                  ) : (
+                    <SwapStatusDisplay
+                      depositAddress={checkDepositAddress}
+                      onReset={() => setCheckDepositAddress("")}
+                    />
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
