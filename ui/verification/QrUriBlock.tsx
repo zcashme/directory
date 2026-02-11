@@ -88,7 +88,7 @@ export default function QrUriBlock({
     <div className="flex flex-col items-center gap-4 mt-6 animate-fadeIn">
 
       {/* QR block */}
-      <div className="flex flex-col items-center gap-2">
+      <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
         {showQR && (
           <QRCodeSVG
             ref={qrRef}
@@ -97,6 +97,7 @@ export default function QrUriBlock({
             includeMargin={true}
             bgColor="transparent"
             fgColor="#000000"
+            style={{ width: "min(300px, 100%)", height: "auto" }}
           />
         )}
       </div>
@@ -160,12 +161,12 @@ export default function QrUriBlock({
 
       {/* URI block */}
       {showFull && (
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
           <a
             href={uri}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 underline break-all text-sm"
+            className="w-full max-w-full text-center text-blue-600 underline break-all text-sm"
           >
             {uri}
           </a>

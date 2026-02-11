@@ -48,7 +48,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             Zcash.me/
           </motion.button>
 
-          <div className="flex-1 relative flex items-center">
+          <div className="flex-1 min-w-0 relative flex items-center">
             <input
               ref={searchInputRef}
               value={search}
@@ -63,7 +63,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 }
               }}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
-              className="w-full pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
+              className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
 
             {search && (
