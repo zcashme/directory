@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import type { MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -259,6 +259,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
   const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -549,12 +550,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         )}
       </div>
       <div className="mt-10 md:mt-14 flex justify-center">
-        <button
+        <motion.button
           onClick={() => setIsJoinOpen(true)}
+          whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
+          transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
           className="h-8 md:h-10 flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 md:px-6 rounded-full text-sm md:text-base font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
         >
           Claim your name
-        </button>
+        </motion.button>
       </div>
       {SHOW_TEMP_CARD_TUNER && (
       <div className="max-w-3xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">

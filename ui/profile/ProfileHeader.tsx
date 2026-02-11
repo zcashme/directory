@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
@@ -14,6 +15,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) {
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
@@ -36,12 +38,15 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     <>
       <div className="sticky top-3 z-[1000] flex justify-center px-4">
         <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
-          <button
+          <motion.button
             onClick={() => router.push("/")}
-            className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer flex-shrink-0"
+            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, color: "#1e40af" }}
+            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
+            className="font-bold text-lg text-blue-700 hover:text-blue-800 active:text-blue-900 whitespace-nowrap cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 rounded-md px-1"
+            aria-label="Go to home page"
           >
             Zcash.me/
-          </button>
+          </motion.button>
 
           <div className="flex-1 relative flex items-center">
             <input
@@ -103,18 +108,20 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             )}
           </div>
 
-          <button
+          <motion.button
             onClick={() => {
               setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
+            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
+            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
             className="flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
             style={{
               height: '32px',
             }}
           >
             {availableUsername ? 'Claim' : 'Join'}
-          </button>
+          </motion.button>
         </div>
       </div>
 

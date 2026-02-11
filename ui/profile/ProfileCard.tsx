@@ -24,7 +24,7 @@ import { useSelectionStore } from "@/lib/stores/selection";
 import { useEditsStore } from "@/lib/stores/edits";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type {
   Profile,
   EnrichedProfileLink,
@@ -211,6 +211,7 @@ export function ProfileCardContent({
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const shouldReduceMotion = useReducedMotion();
   const [shouldShowViewProfile, setShouldShowViewProfile] = useState(true);
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const textScale: ProfileCardTextScale = {
@@ -532,7 +533,9 @@ export function ProfileCardContent({
       {/* View Profile Footer - Fixed at bottom */}
       {shouldShowViewProfile && (
         <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
-          <span
+          <motion.span
+            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
+            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
             className="text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1"
             style={{ fontSize: scaleFont(s.viewProfilePx, textScale.viewProfile) }}
           >
@@ -550,7 +553,7 @@ export function ProfileCardContent({
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </span>
+          </motion.span>
         </div>
       )}
     </div>
@@ -598,6 +601,7 @@ export default function ProfileCard({
   fullView = false,
   duplicateNameCount = 0
 }: ProfileCardProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
   const [authLink, setAuthLink] = useState<EnrichedProfileLink | null>(null);
@@ -610,6 +614,12 @@ export default function ProfileCard({
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
   const { showBack, setShowBack, setMode, setVerify } = useMessagingStore();
   const { linksArray } = useProfileLinks({ profile });
+  const tapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring", stiffness: 550, damping: 24, mass: 0.35 },
+      };
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
@@ -764,16 +774,17 @@ export default function ProfileCard({
           <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
             {/* Menu button */}
             <div className="relative">
-              <button
+              <motion.button
                 onClick={(e) => {
                   e.stopPropagation();
                   setMenuOpen((prev) => !prev);
                 }}
+                {...tapProps}
                 className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 title="More options"
               >
                 ☰
-              </button>
+              </motion.button>
 
               {/* Dropdown Menu */}
               {menuOpen && (
@@ -837,7 +848,7 @@ export default function ProfileCard({
             </div>
 
             {/* Share button (top-right) */}
-            <button
+            <motion.button
               onClick={async () => {
                 const shareUrl = buildShareUrl(profile);
 
@@ -856,6 +867,7 @@ export default function ProfileCard({
                   alert("Profile link copied to clipboard!");
                 }
               }}
+              {...tapProps}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
               title={`Share ${profile.display_name || profile.name}`}
             >
@@ -874,7 +886,7 @@ export default function ProfileCard({
                   <path d="m3.5 4.5h-1c-1.1045695 0-2 .8954305-2 2v7c0 1.1045695.8954305 2 2 2h8c1.1045695 0 2-.8954305 2-2v-7c0-1.1045695-.8954305-2-2-2h-1" />
                 </g>
               </svg>
-            </button>
+            </motion.button>
           </div>
 
           {/* Avatar */}

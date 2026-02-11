@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 
 interface QrUriBlockProps {
@@ -23,8 +24,15 @@ export default function QrUriBlock({
   hideButtonClassName,
 }: QrUriBlockProps) {
   const qrRef = useRef<SVGSVGElement>(null);
+  const shouldReduceMotion = useReducedMotion();
   const [showQR, setShowQR] = useState(defaultShowQR);
   const [showFull, setShowFull] = useState(defaultShowURI);
+  const tapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring", stiffness: 550, damping: 24, mass: 0.35 },
+      };
 
   useEffect(() => {
     if (forceShowQR) setShowQR(true);
@@ -97,50 +105,56 @@ export default function QrUriBlock({
       <div className="flex flex-wrap items-center justify-center gap-3 w-full">
         {showQR ? (
           <div className="flex items-center gap-0">
-            <button
+            <motion.button
               onClick={handleSaveQR}
+              {...tapProps}
               className={actionButtonClasses}
             >
               {saved ? "Saved" : "Save QR"}
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={() => setShowQR(false)}
+              {...tapProps}
               className={hideButtonClasses}
             >
               —Hide
-            </button>
+            </motion.button>
           </div>
         ) : (
-          <button
+          <motion.button
             onClick={() => setShowQR(true)}
+            {...tapProps}
             className={actionButtonClasses}
           >
             Show QR
-          </button>
+          </motion.button>
         )}
 
         {showFull ? (
           <div className="flex items-center gap-0">
-            <button
+            <motion.button
               onClick={handleCopy}
+              {...tapProps}
               className={actionButtonClasses}
             >
               {copied ? "Copied" : "Copy URI"}
-            </button>
-            <button
+            </motion.button>
+            <motion.button
               onClick={() => setShowFull(false)}
+              {...tapProps}
               className={hideButtonClasses}
             >
               —Hide
-            </button>
+            </motion.button>
           </div>
         ) : (
-          <button
+          <motion.button
             onClick={() => setShowFull(true)}
+            {...tapProps}
             className={actionButtonClasses}
           >
             Show URI
-          </button>
+          </motion.button>
         )}
       </div>
 
