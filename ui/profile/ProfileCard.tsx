@@ -10,7 +10,6 @@ import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import { buildShareUrl } from "@/lib/profile/profileUtils";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
-import shareIcon from "@/ui/assets/share.svg";
 import { extractDomain, FALLBACK_ICON, isDiscordLink } from "@/lib/profile/profileLinks";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
@@ -666,7 +665,7 @@ export default function ProfileCard({
               title={`Share ${profile.display_name || profile.name}`}
             >
               <img
-                src={shareIcon}
+                src="/assets/icons/share.svg"
                 alt="Share"
                 className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
               />
