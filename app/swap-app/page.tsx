@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import type { FormEvent, ChangeEvent } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
@@ -23,40 +22,6 @@ const STATUS_CONFIG = {
   PROCESSING: { color: "bg-blue-100 text-blue-700", label: "Processing" },
   PENDING_DEPOSIT: { color: "bg-blue-100 text-blue-700", label: "Pending" },
 } as const;
-
-function SwapStatusForm({ onSubmit }: { onSubmit: (_address: string) => void }) {
-  const [address, setAddress] = useState("");
-  const [error, setError] = useState("");
-
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
-    if (!address.trim()) {
-      setError("Address required");
-      return;
-    }
-    setError("");
-    onSubmit(address.trim());
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-3">
-      <input
-        type="text"
-        value={address}
-        onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
-        placeholder="Deposit address"
-        className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md"
-      />
-      {error && <div className="text-red-600 text-sm">{error}</div>}
-      <button
-        type="submit"
-        className="w-full border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
-      >
-        Check Status
-      </button>
-    </form>
-  );
-}
 
 function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -357,7 +322,7 @@ function SwapCreationPage() {
         store.setToAmount("");
         store.setQuoteError(result.error);
       }
-    } catch (err) {
+    } catch {
       store.setQuote(null);
       store.setToAmount("");
       store.setQuoteError("Failed to get quote");
@@ -376,7 +341,7 @@ function SwapCreationPage() {
       // TODO: Implement actual quote confirmation logic
       // For now, just simulate success
       await new Promise(resolve => setTimeout(resolve, 1000));
-    } catch (err) {
+    } catch {
       store.setQuoteError("Failed to confirm quote");
     } finally {
       store.setConfirmLoading(false);
@@ -445,11 +410,6 @@ function SwapCreationPage() {
         style={{ backgroundColor: "var(--color-background)" }}
       >
         <div className="max-w-5xl mx-auto">
-          {/* Header */}
-          <div className="flex items-center justify-center mb-6">
-            <h1 className="text-2xl font-bold text-gray-700">Swap</h1>
-          </div>
-
           {/* Error Display */}
           {tokensError && (
             <div className="mb-4 p-4 rounded-xl border border-red-300 bg-red-50 text-red-700">

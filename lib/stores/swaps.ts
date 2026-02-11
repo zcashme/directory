@@ -103,7 +103,7 @@ export const useSwapsStore = create<SwapsState>((set, get) => ({
         toToken: zecToken || null,
         tokensLoading: false,
       });
-    } catch (err) {
+    } catch {
       set({ tokensError: 'Failed to load tokens', tokensLoading: false });
     }
   },
