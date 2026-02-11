@@ -349,9 +349,20 @@ export function ProfileCardContent({
     };
 
     updateFooterVisibility();
+
+    const resizeObserver = new ResizeObserver(() => {
+      updateFooterVisibility();
+    });
+    resizeObserver.observe(el);
+
+    // Re-check after async layout changes (e.g. web fonts).
+    const rafId = requestAnimationFrame(updateFooterVisibility);
+
     window.addEventListener("resize", updateFooterVisibility);
 
     return () => {
+      cancelAnimationFrame(rafId);
+      resizeObserver.disconnect();
       window.removeEventListener("resize", updateFooterVisibility);
     };
   }, [

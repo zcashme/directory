@@ -128,7 +128,7 @@ function FannedCard({
           verifiedBadgeScale={textScaleOverrides?.verifiedBadge ?? 1}
         />
         <div
-          className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
+          className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative overflow-hidden ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
             backgroundColor: 'var(--color-background)',
             minHeight: '360px',
@@ -177,7 +177,7 @@ function FannedCard({
         verifiedBadgeScale={textScaleOverrides?.verifiedBadge ?? 1}
       />
       <div
-        className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
+        className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative overflow-hidden ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
           backgroundColor: 'var(--color-background)',
           minHeight: '400px',
