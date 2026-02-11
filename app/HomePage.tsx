@@ -44,8 +44,6 @@ interface FannedCardProps {
   isActive: boolean;
   stackIndex: number;
   isSpotlit: boolean;
-  onInteractionStart?: () => void;
-  onInteractionEnd?: () => void;
   shimmerSpeed?: string;
   textScaleOverrides?: Partial<ProfileCardTextScale>;
   avatarScale?: number;
@@ -62,8 +60,6 @@ function FannedCard({
   isActive,
   stackIndex,
   isSpotlit,
-  onInteractionStart,
-  onInteractionEnd,
   shimmerSpeed = "",
   textScaleOverrides,
   avatarScale = 1,
@@ -89,13 +85,11 @@ function FannedCard({
   const handleMouseEnter = () => {
     if (isMobile) return;
     setIsHovering(true);
-    onInteractionStart?.();
   };
 
   const handleMouseLeave = () => {
     setIsHovering(false);
     setTilt({ x: 0, y: 0 });
-    onInteractionEnd?.();
   };
   if (isMobile) {
     const stackOffset = isActive ? -16 : stackIndex * 8;
@@ -223,12 +217,18 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     { key: "avatar", label: "Avatar" },
   ];
   const [isMobile, setIsMobile] = useState<boolean>(false);
-  const [isInteracting, setIsInteracting] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [scale, setScale] = useState<TunerScale>(defaultScale);
   const [copyLabel, setCopyLabel] = useState<string>("Copy");
+  const [animatedHeadline, setAnimatedHeadline] = useState<string>("");
 
   const centerIndex = Math.floor(profiles.length / 2);
+  const headlinePrefix = "The easiest way to Zcash ";
+  const typedTargets = profiles.map((profile, index) => ({
+    index,
+    name: (profile.display_name?.trim() || profile.name?.trim() || "zcash user").trim(),
+  }));
+  const typedTargetsKey = typedTargets.map((target) => `${target.index}:${target.name}`).join("|");
 
   useEffect(() => {
     setActiveCardIndex(centerIndex);
@@ -242,12 +242,73 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   }, []);
 
   useEffect(() => {
-    if (profiles.length <= 1 || isInteracting) return;
-    const interval = setInterval(() => {
-      setActiveCardIndex((prev) => (prev + 1) % profiles.length);
-    }, 2500);
-    return () => clearInterval(interval);
-  }, [profiles.length, isInteracting]);
+    if (!typedTargets.length) {
+      setAnimatedHeadline(`${headlinePrefix}you`);
+      return;
+    }
+
+    const initialText = `${headlinePrefix}you`;
+    let currentText = "";
+    let currentTargetIndex = centerIndex % typedTargets.length;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let isCancelled = false;
+
+    const HOLD_MS = 1400;
+    const TYPE_MS = 90;
+    const DELETE_MS = 75;
+
+    const schedule = (fn: () => void, delay: number) => {
+      timeoutId = setTimeout(fn, delay);
+    };
+
+    const startTypingName = () => {
+      if (isCancelled) return;
+      const target = typedTargets[currentTargetIndex];
+      const nextText = `${headlinePrefix}${target.name}`;
+      if (currentText.length < nextText.length) {
+        currentText = nextText.slice(0, currentText.length + 1);
+        setAnimatedHeadline(currentText);
+        schedule(startTypingName, TYPE_MS);
+        return;
+      }
+
+      setActiveCardIndex(target.index);
+      schedule(() => {
+        currentTargetIndex = (currentTargetIndex + 1) % typedTargets.length;
+        startDeleting();
+      }, HOLD_MS);
+    };
+
+    const startDeleting = () => {
+      if (isCancelled) return;
+      if (currentText.length > headlinePrefix.length) {
+        currentText = currentText.slice(0, -1);
+        setAnimatedHeadline(currentText);
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
+      schedule(startTypingName, TYPE_MS * 2);
+    };
+
+    const startTypingInitial = () => {
+      if (isCancelled) return;
+      if (currentText.length < initialText.length) {
+        currentText = initialText.slice(0, currentText.length + 1);
+        setAnimatedHeadline(currentText);
+        schedule(startTypingInitial, TYPE_MS);
+        return;
+      }
+      schedule(startDeleting, HOLD_MS);
+    };
+
+    setAnimatedHeadline("");
+    schedule(startTypingInitial, TYPE_MS);
+
+    return () => {
+      isCancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+    };
+  }, [typedTargetsKey, centerIndex, headlinePrefix]);
 
   if (!profiles.length) {
     return null;
@@ -338,10 +399,19 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     linkDomain: scale.linkDomain,
     viewProfile: scale.viewProfile,
   };
+  const typedPrefix = animatedHeadline.slice(0, Math.min(animatedHeadline.length, headlinePrefix.length));
+  const typedTail = animatedHeadline.slice(headlinePrefix.length);
 
   return (
-    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
-      <div className="mb-16" style={{ overflowX: "clip" }}>
+    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-32">
+      <div className="mb-10 md:mb-12 text-center -translate-y-4 md:-translate-y-6">
+        <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
+          {typedPrefix}
+          <span className="text-green-700">{typedTail}</span>
+          <span className="typing-caret" aria-hidden="true">|</span>
+        </h2>
+      </div>
+      <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip" }}>
         <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
           {profiles.map((profile, index) => {
             const stackIndex = getStackIndex(index);
@@ -361,8 +431,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
                 stackIndex={stackIndex}
                 isSpotlit={isSpotlit}
                 shimmerSpeed={isSpotlit ? "card-shimmer" : ""}
-                onInteractionStart={() => setIsInteracting(true)}
-                onInteractionEnd={() => setIsInteracting(false)}
                 textScaleOverrides={textScaleOverrides}
                 avatarScale={scale.avatar}
                 onClick={() => handleCardClick(profile)}

@@ -137,6 +137,24 @@ body {
   animation: joinPulse 5.5s ease-in-out infinite;
 }
 
+@keyframes typing-caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-caret {
+  display: inline-block;
+  margin-left: 0.08em;
+  color: #15803d;
+  animation: typing-caret-blink 1s steps(1, end) infinite;
+}
+
 @keyframes toastSlideLeft {
   0% {
     opacity: 0;
