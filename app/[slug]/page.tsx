@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ProfilePage from "./ProfilePage";
 import { fetchProfileForSlug } from "@/lib/profile/profileFetcher";
-import { getProfileCount, getDuplicateNameCount } from "@/lib/profile/profileQueries";
+import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
+import { getSwapTokens } from "@/lib/swap/oneClick";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -37,16 +38,18 @@ export default async function Page({ params }: PageProps) {
     notFound();
   }
 
-  const [profileCount, duplicateNameCount] = await Promise.all([
-    getProfileCount(),
+  const [duplicateNameCount, tokensResult] = await Promise.all([
     profile.name ? getDuplicateNameCount(profile.name) : 0,
+    getSwapTokens(),
   ]);
+
+  const tokens = 'tokens' in tokensResult ? tokensResult.tokens : [];
 
   return (
     <ProfilePage
       initialProfile={profile}
-      profileCount={profileCount}
       duplicateNameCount={duplicateNameCount}
+      tokens={tokens}
     />
   );
 }

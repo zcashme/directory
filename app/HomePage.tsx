@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
-import ProfileHeader from "@/ui/profile/ProfileHeader";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
 import { buildSlug } from "@/lib/profile/profileUtils";
@@ -293,10 +292,9 @@ const SOCIAL_LINKS: SocialLink[] = [
 
 interface HomePageProps {
   initialFeaturedProfiles: Profile[];
-  profileCount?: number;
 }
 
-export default function HomePage({ initialFeaturedProfiles, profileCount = 0 }: HomePageProps) {
+export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
   const router = useRouter();
   const handleCardClick = useCallback(
     (profile: Profile) => {
@@ -309,7 +307,6 @@ export default function HomePage({ initialFeaturedProfiles, profileCount = 0 }: 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
       <div className="flex-1">
-        <ProfileHeader profileCount={profileCount} />
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
       <footer className="mt-auto py-8 border-t border-gray-200">

@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import "./globals.css";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Zcash.me",
-  description: "Zcash.me directory and profiles.",
-};
+import type { ReactNode } from "react";
+import ProfileHeader from "@/ui/profile/ProfileHeader";
+import "./globals.css";
 
 interface RootLayoutProps {
   children: ReactNode;
@@ -15,6 +12,7 @@ export default function RootLayout({ children }: RootLayoutProps) {
   return (
     <html lang="en">
       <body className="min-h-screen" style={{ backgroundColor: 'var(--color-background)' }}>
+        <ProfileHeader />
         {children}
       </body>
     </html>
