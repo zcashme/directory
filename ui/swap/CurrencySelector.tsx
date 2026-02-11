@@ -37,14 +37,14 @@ export default function CurrencySelector({
   const currencies = availableTokens.map(tokenToCurrency);
 
   return (
-    <div className="relative">
+    <div className="relative border-2 border-lime-500">
       <button
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
           flex items-center gap-2 px-3 py-2 rounded-full
-          border border-gray-200 bg-gray-50
+          border-2 border-amber-500 bg-gray-50
           hover:bg-gray-100 transition-colors
           ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
         `}
@@ -81,7 +81,7 @@ export default function CurrencySelector({
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl border border-gray-300 shadow-xl z-20 overflow-hidden">
+          <div className="absolute top-full left-0 mt-2 w-64 bg-white rounded-2xl border-2 border-fuchsia-500 shadow-xl z-20 overflow-hidden">
             <div className="p-3 border-b border-gray-200">
               <input
                 type="text"
@@ -103,6 +103,7 @@ export default function CurrencySelector({
                     }}
                     className={`
                       w-full flex items-center gap-3 px-4 py-3
+                      border-2 border-violet-500
                       hover:bg-gray-50 transition-colors
                       ${isSelected ? "bg-blue-50" : ""}
                     `}

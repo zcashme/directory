@@ -35,9 +35,9 @@ export default function SwapAmountInput({
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 border-2 border-pink-500">
       <label className="text-sm font-semibold text-gray-700">{label}</label>
-      <div className="flex items-center gap-2 px-3 py-2.5 border border-gray-200 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="flex items-center gap-2 px-3 py-2.5 border-2 border-rose-500 rounded-full" style={{ backgroundColor: 'var(--color-background)' }}>
         <CurrencySelector
           selectedCurrency={currency}
           onSelect={onCurrencyChange}

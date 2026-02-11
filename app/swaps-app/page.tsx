@@ -172,10 +172,10 @@ export default function SwapsPage() {
     <>
       <ProfileHeader />
       <div
-        className="min-h-screen p-4 md:p-8 pt-16"
+        className="min-h-screen border-2 border-red-500"
         style={{ backgroundColor: "var(--color-background)" }}
       >
-        <div className="max-w-5xl mx-auto">
+        <div className="max-w-5xl mx-auto m-4 md:m-8 mt-16 border-2 border-orange-500">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
             <h1 className="text-2xl font-bold text-gray-700">Swap</h1>
@@ -189,7 +189,7 @@ export default function SwapsPage() {
           )}
 
           {/* Main Swap Card */}
-          <div className="rounded-3xl border border-gray-200/50 p-6 shadow-lg relative" style={{ backgroundColor: 'var(--color-background)' }}>
+          <div className="rounded-3xl border-2 border-yellow-500 p-6 shadow-lg relative" style={{ backgroundColor: 'var(--color-background)' }}>
             {/* Info Icon with Tooltip */}
             <div
               className="absolute top-6 right-6"
@@ -224,9 +224,9 @@ export default function SwapsPage() {
               )}
             </div>
             {/* Currency Swap Section */}
-            <div className="flex items-start gap-3 mb-6">
+            <div className="flex items-start gap-3 mb-6 border-2 border-green-500">
               {/* From Section */}
-              <div className="flex-1">
+              <div className="flex-1 border-2 border-blue-500">
                 {fromToken ? (
                   <SwapAmountInput
                     label="From"
@@ -277,7 +277,7 @@ export default function SwapsPage() {
               </div>
 
               {/* To Section */}
-              <div className="flex-1">
+              <div className="flex-1 border-2 border-cyan-500">
                 {toToken ? (
                   <SwapAmountInput
                     label="To"
@@ -301,7 +301,7 @@ export default function SwapsPage() {
             </div>
 
             {/* Address Inputs Section */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="grid grid-cols-2 gap-4 mb-6 border-2 border-purple-500">
               <SwapAddressInput
                 label="Refund Address"
                 value={refundAddress}
