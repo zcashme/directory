@@ -17,11 +17,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Apply to all document/page routes, but NOT to:
-        // - _next/static (hashed immutable JS/CSS — safe to cache)
-        // - _next/image  (optimized images)
-        // - api routes   (manage their own caching)
-        // - favicon.ico
+        // Rule 1: Aggressive no-store for documents only
+        // Excludes static assets/API to preserve their standard caching behavior
         source: "/((?!_next/static|_next/image|api|favicon.ico).*)",
         headers: [
           {
@@ -30,11 +27,15 @@ const nextConfig: NextConfig = {
           },
           { key: "Pragma", value: "no-cache" },
           { key: "Expires", value: "0" },
-          // TEMPORARY: Remove after one deploy. Forces browsers to drop
-          // their disk cache for this origin. Does NOT clear cookies/storage.
-          { key: "Clear-Site-Data", value: '"cache"' },
-          // Diagnostic: curl -I to confirm which version is live
           { key: "x-app-version", value: BUILD_VERSION },
+        ],
+      },
+      {
+        // Rule 2: The "Nuke" button - Apply to EVERYTHING
+        // If the browser requests ANYTHING (JS, CSS, images, API), nuke the cache.
+        source: "/:path*",
+        headers: [
+          { key: "Clear-Site-Data", value: '"cache"' }
         ],
       },
     ];
