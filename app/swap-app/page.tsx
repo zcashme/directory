@@ -1,23 +1,303 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState, Suspense } from "react";
+import type { FormEvent, ChangeEvent } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
-import SwapAmountInput from "@/ui/swap/SwapAmountInput";
+import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
-import type { Currency } from "@/ui/swap/CurrencySelector";
 import { getSwapQuote } from "@/lib/swap/oneClick";
-import type { Token } from "@/lib/swap/types";
 import { useSwapsStore } from "@/lib/stores/swaps";
+import { parseTokenSymbol, getSwapUrl } from "@/lib/swap/utils";
+import { getSwapStatus } from "@/lib/swap/oneClick";
+import type { SwapStatusData } from "@/lib/swap/types";
+import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 
-function tokenToCurrency(token: Token): Currency {
-  return {
-    symbol: token.symbol,
-    name: token.symbol,
-    network: token.blockchain,
+const STATUS_CONFIG = {
+  SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
+  FAILED: { color: "bg-red-100 text-red-700", label: "Failed" },
+  REFUNDED: { color: "bg-red-100 text-red-700", label: "Refunded" },
+  INCOMPLETE_DEPOSIT: { color: "bg-red-100 text-red-700", label: "Incomplete" },
+  PROCESSING: { color: "bg-blue-100 text-blue-700", label: "Processing" },
+  PENDING_DEPOSIT: { color: "bg-blue-100 text-blue-700", label: "Pending" },
+} as const;
+
+function SwapStatusForm({ onSubmit }: { onSubmit: (_address: string) => void }) {
+  const [address, setAddress] = useState("");
+  const [error, setError] = useState("");
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!address.trim()) {
+      setError("Address required");
+      return;
+    }
+    setError("");
+    onSubmit(address.trim());
   };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <input
+        type="text"
+        value={address}
+        onChange={(e: ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
+        placeholder="Deposit address"
+        className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md"
+      />
+      {error && <div className="text-red-600 text-sm">{error}</div>}
+      <button
+        type="submit"
+        className="w-full border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+      >
+        Check Status
+      </button>
+    </form>
+  );
 }
 
-export default function SwapsPage() {
+function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [statusData, setStatusData] = useState<SwapStatusData | null>(null);
+  const [statusError, setStatusError] = useState("");
+
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    const poll = async () => {
+      try {
+        const result = await getSwapStatus(depositAddress);
+
+        if ("error" in result) {
+          setStatusError('Unable to fetch status');
+          return;
+        }
+
+        setStatusData(result);
+        setStatusError('');
+
+        // Stop polling on terminal states
+        if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(result.status?.toUpperCase())) {
+          if (interval) clearInterval(interval);
+        }
+      } catch {
+        setStatusError('Connection error');
+      }
+    };
+
+    // Initial poll
+    poll();
+
+    // Set up polling interval
+    interval = setInterval(poll, 5000);
+
+    // Cleanup
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [depositAddress]);
+
+  const status = statusData?.status?.toUpperCase() || "PENDING_DEPOSIT";
+  const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING_DEPOSIT;
+  const isPolling = !['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(status);
+
+  const details = statusData?.swapDetails;
+  const quote = statusData?.quoteResponse?.quote;
+  const request = statusData?.quoteResponse?.quoteRequest;
+
+  const fromSymbol = parseTokenSymbol(request?.originAsset) || "";
+  const toSymbol = parseTokenSymbol(request?.destinationAsset) || "";
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4">
+        <div className="flex items-center gap-2">
+          <h1 className="text-md font-semibold">Swap Status</h1>
+          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
+            {config.label}
+          </span>
+          {isPolling && (
+            <div className="flex items-center gap-1.5">
+              <div className="flex gap-0.5">
+                {[0, 0.1, 0.2].map((delay, i) => (
+                  <div
+                    key={i}
+                    className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                    style={{ animationDelay: `${delay}s` }}
+                  />
+                ))}
+              </div>
+              <span className="text-xs text-gray-600">
+                {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {fromSymbol && toSymbol && (
+          <div className="flex justify-center py-4">
+            <SwapCurrencyPair
+              fromSymbol={fromSymbol}
+              toSymbol={toSymbol}
+              size="lg"
+              showLabel={true}
+            />
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div className="border border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-600 mb-2">
+            Sent
+          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <TokenIcon symbol={fromSymbol || ""} size={24} />
+            <p className="text-lg font-semibold">
+              {details?.amountInFormatted || `— ${fromSymbol}`}
+            </p>
+          </div>
+          <p className="text-xs text-gray-600">
+            {details?.amountInUsd ? `$${details.amountInUsd}` : "$—"}
+          </p>
+        </div>
+
+        <div className="border border-gray-800 rounded-xl p-4">
+          <p className="text-xs text-gray-600 mb-2">
+            Received
+          </p>
+          <div className="flex items-center gap-2 mb-1">
+            <TokenIcon symbol={toSymbol || ""} size={24} />
+            <p className="text-lg font-semibold">
+              {details?.amountOutFormatted || `— ${toSymbol}`}
+            </p>
+          </div>
+          <p className="text-xs text-gray-600">
+            {details?.amountOutUsd ? `$${details.amountOutUsd}` : "$—"}
+          </p>
+        </div>
+      </div>
+
+      <div className="border border-gray-800 rounded-xl overflow-hidden">
+        <button
+          onClick={() => setDetailsOpen(!detailsOpen)}
+          className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 font-semibold"
+        >
+          <span>Swap Details</span>
+          <span className={`transform transition ${detailsOpen ? "rotate-180" : ""}`}>▼</span>
+        </button>
+
+        {detailsOpen && (
+          <div className="border-t border-gray-800 px-4 py-3 space-y-3 text-sm">
+            {[
+              {
+                label: "Origin Asset",
+                value: request?.originAsset ? parseTokenSymbol(request.originAsset) : null,
+              },
+              {
+                label: "Destination Asset",
+                value: request?.destinationAsset ? parseTokenSymbol(request.destinationAsset) : null,
+              },
+              { label: "Deposit Address", value: depositAddress, mono: true },
+              {
+                label: "Refund Address",
+                value: request?.refundTo,
+                mono: true,
+              },
+              {
+                label: "Deadline",
+                value:
+                  quote?.deadline &&
+                  new Date(quote.deadline).toLocaleString(),
+              },
+              {
+                label: "Updated",
+                value:
+                  statusData?.updatedAt &&
+                  new Date(statusData.updatedAt).toLocaleString(),
+              },
+            ].map(({ label, value, mono }, i) =>
+              value ? (
+                <div key={i} className="flex justify-between gap-2">
+                  <span className="text-gray-600">{label}</span>
+                  <span
+                    className={`text-xs text-right ${
+                      mono ? "font-mono break-all max-w-xs" : ""
+                    }`}
+                  >
+                    {value}
+                  </span>
+                </div>
+              ) : null
+            )}
+          </div>
+        )}
+      </div>
+
+      {statusError && (
+        <div className="text-red-600 text-sm border border-red-300 rounded-xl p-3 bg-red-50">
+          {statusError}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <button
+          onClick={onReset}
+          className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+        >
+          Check Another
+        </button>
+        <button
+          onClick={async () => {
+            const shareUrl = window.location.href;
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: "Swap Status",
+                  text: "Check out this swap status:",
+                  url: shareUrl,
+                });
+              } catch {
+                // User cancelled
+              }
+            }
+          }}
+          className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+        >
+          Share Link
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function SwapsPageContent() {
+  const depositAddress = useSearchParams().get("depositAddress");
+  const router = useRouter();
+
+  const handleReset = () => {
+    router.push(getSwapUrl());
+  };
+
+  // If depositAddress is present, show status checker
+  if (depositAddress) {
+    return (
+      <>
+        <ProfileHeader />
+        <div className="min-h-screen p-4 md:p-8 pt-12" style={{ backgroundColor: "var(--color-background)" }}>
+          <div className="max-w-2xl mx-auto">
+            <SwapStatusDisplay depositAddress={depositAddress} onReset={handleReset} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Otherwise, show swap creation interface
+  return <SwapCreationPage />;
+}
+
+function SwapCreationPage() {
   const store = useSwapsStore();
   const {
     tokens,
@@ -35,24 +315,13 @@ export default function SwapsPage() {
     quoteError,
     confirmLoading,
     showInfo,
-    exchangeRate,
-    rateFetched,
     loadTokens,
-    fetchExchangeRate,
   } = store;
 
   // Load tokens on mount
   useEffect(() => {
     void loadTokens();
   }, [loadTokens]);
-
-  // Fetch exchange rate when fromToken changes
-  useEffect(() => {
-    if (!fromToken) return;
-
-    store.setRateFetched(false);
-    void fetchExchangeRate(fromToken.symbol);
-  }, [fromToken, fetchExchangeRate]);
 
   const fetchQuote = async () => {
     if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0) {
@@ -116,8 +385,8 @@ export default function SwapsPage() {
     store.swapDirection();
   };
 
-  const handleFromTokenChange = (currency: Currency) => {
-    const token = tokens.find((t) => t.symbol === currency.symbol && t.blockchain === currency.network);
+  const handleFromTokenChange = (tokenId: string) => {
+    const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
     if (token) {
       store.setFromToken(token);
       store.setQuote(null);
@@ -125,8 +394,8 @@ export default function SwapsPage() {
     }
   };
 
-  const handleToTokenChange = (currency: Currency) => {
-    const token = tokens.find((t) => t.symbol === currency.symbol && t.blockchain === currency.network);
+  const handleToTokenChange = (tokenId: string) => {
+    const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
     if (token) {
       store.setToToken(token);
       store.setQuote(null);
@@ -142,15 +411,15 @@ export default function SwapsPage() {
     }
   };
 
-  // Calculate USD values - use quote values if available, otherwise calculate from exchange rate
-  const fromUsdValue = quote?.amountInUsd
-    ? quote.amountInUsd.toFixed(2)
-    : rateFetched && fromAmount
-      ? (parseFloat(fromAmount) * exchangeRate).toFixed(2)
-      : "0.00";
-  const toUsdValue = quote?.amountOutUsd ? quote.amountOutUsd.toFixed(2) : "—";
-
   const canGetQuote = fromToken && toToken && fromAmount && parseFloat(fromAmount) > 0 && refundAddress && destAddress;
+
+  // Format tokens for AmountAndWallet
+  const formattedTokens = tokens.map((token) => ({
+    id: token.id || token.assetId || token.symbol,
+    symbol: token.symbol,
+    chain: token.blockchain,
+    logo: token.logo || "",
+  }));
 
   if (tokensLoading && tokens.length === 0) {
     return (
@@ -225,24 +494,18 @@ export default function SwapsPage() {
             <div className="flex items-start gap-3 mb-6 border-2 border-green-500">
               {/* From Section */}
               <div className="flex-1 border-2 border-blue-500">
-                {fromToken ? (
-                  <SwapAmountInput
-                    label="From"
-                    currency={tokenToCurrency(fromToken)}
+                <div className="space-y-2 border-2 border-pink-500">
+                  <label className="text-sm font-semibold text-gray-700">From</label>
+                  <AmountAndWallet
                     amount={fromAmount}
-                    usdValue={fromUsdValue}
-                    onCurrencyChange={handleFromTokenChange}
-                    onAmountChange={handleFromAmountChange}
-                    availableTokens={tokens}
+                    setAmount={handleFromAmountChange}
+                    showUsdPill={true}
+                    showOpenWallet={false}
+                    asset={fromToken?.symbol || ""}
+                    assetOptions={formattedTokens}
+                    setAsset={handleFromTokenChange}
                   />
-                ) : (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700">From</label>
-                    <div className="mt-2 p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500">
-                      Select a token
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
 
               {/* Swap Direction Button */}
@@ -276,25 +539,18 @@ export default function SwapsPage() {
 
               {/* To Section */}
               <div className="flex-1 border-2 border-cyan-500">
-                {toToken ? (
-                  <SwapAmountInput
-                    label="To"
-                    currency={tokenToCurrency(toToken)}
+                <div className="space-y-2 border-2 border-pink-500">
+                  <label className="text-sm font-semibold text-gray-700">To</label>
+                  <AmountAndWallet
                     amount={toAmount}
-                    usdValue={toUsdValue}
-                    onCurrencyChange={handleToTokenChange}
-                    onAmountChange={store.setToAmount}
-                    readOnly
-                    availableTokens={tokens}
+                    setAmount={store.setToAmount}
+                    showUsdPill={true}
+                    showOpenWallet={false}
+                    asset={toToken?.symbol || ""}
+                    assetOptions={formattedTokens}
+                    setAsset={handleToTokenChange}
                   />
-                ) : (
-                  <div>
-                    <label className="text-sm font-semibold text-gray-700">To</label>
-                    <div className="mt-2 p-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-500">
-                      Select a token
-                    </div>
-                  </div>
-                )}
+                </div>
               </div>
             </div>
 
@@ -313,7 +569,6 @@ export default function SwapsPage() {
                 value={destAddress}
                 onChange={store.setDestAddress}
                 placeholder={toToken ? `Enter wallet address...` : "Select to token first"}
-                showProfileButton
                 disabled={!toToken}
               />
             </div>
@@ -409,5 +664,25 @@ export default function SwapsPage() {
         </div>
       </div>
     </>
+  );
+}
+
+export default function SwapsPage() {
+  return (
+    <Suspense
+      fallback={
+        <>
+          <ProfileHeader />
+          <div className="min-h-screen p-4 md:p-8 pt-12" style={{ backgroundColor: "var(--color-background)" }}>
+            <div className="max-w-2xl mx-auto">
+              <h1 className="text-md font-semibold mb-6">Loading...</h1>
+              <div className="text-center text-gray-600">Please wait...</div>
+            </div>
+          </div>
+        </>
+      }
+    >
+      <SwapsPageContent />
+    </Suspense>
   );
 }
