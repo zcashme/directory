@@ -30,14 +30,6 @@ const nextConfig: NextConfig = {
           { key: "x-app-version", value: BUILD_VERSION },
         ],
       },
-      {
-        // Rule 2: The "Nuke" button - Apply to EVERYTHING
-        // If the browser requests ANYTHING (JS, CSS, images, API), nuke the cache.
-        source: "/:path*",
-        headers: [
-          { key: "Clear-Site-Data", value: '"cache"' }
-        ],
-      },
     ];
   },
 };
