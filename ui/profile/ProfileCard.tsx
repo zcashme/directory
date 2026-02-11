@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -49,7 +49,9 @@ interface LinkRowClasses {
   right: string;
   icon: string;
   label: string;
+  labelStyle?: CSSProperties;
   domain: string;
+  domainStyle?: CSSProperties;
   copySize?: "xs" | "sm" | "md";
   copyWrapper?: string;
 }
@@ -90,7 +92,7 @@ function ProfileLinkRow({
   const leftContent = (
     <>
       {icon}
-      <span className={classes.label}>{link.label}</span>
+      <span className={classes.label} style={classes.labelStyle}>{link.label}</span>
     </>
   );
   const copy = (text: string) => (
@@ -127,7 +129,7 @@ function ProfileLinkRow({
       <div className={classes.right}>
         {isDiscord && !link.is_verified ? (
           <>
-            <span className={classes.domain}>{link.label}</span>
+            <span className={classes.domain} style={classes.domainStyle}>{link.label}</span>
             {copy(link.label || "")}
           </>
         ) : (
@@ -138,6 +140,7 @@ function ProfileLinkRow({
               rel="noopener noreferrer"
               onClick={handleLinkClick}
               className={`${classes.domain} hover:text-blue-600 transition-colors`}
+              style={classes.domainStyle}
             >
               {extractDomain(link.url || "")}
             </a>
@@ -162,6 +165,18 @@ interface ProfileCardContentProps {
   linkVariant?: LinkVariant;
   hideLinkBadges?: boolean;
   className?: string;
+  textScaleOverrides?: Partial<ProfileCardTextScale>;
+}
+
+export interface ProfileCardTextScale {
+  displayName: number;
+  username: number;
+  bio: number;
+  meta: number;
+  address: number;
+  linkLabel: number;
+  linkDomain: number;
+  viewProfile: number;
 }
 
 export function ProfileCardContent({
@@ -177,19 +192,41 @@ export function ProfileCardContent({
   linkVariant = "default",
   hideLinkBadges = false,
   className = "",
+  textScaleOverrides,
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const textScale: ProfileCardTextScale = {
+    displayName: 1,
+    username: 1,
+    bio: 1,
+    meta: 1,
+    address: 1,
+    linkLabel: 1,
+    linkDomain: 1,
+    viewProfile: 1,
+    ...textScaleOverrides,
+  };
+  const scaleFont = (basePx: number, mult: number) => `${Math.max(6, Number((basePx * mult).toFixed(1)))}px`;
 
   const sizes = {
     mobile: {
       name: "text-lg",
+      namePx: 18,
       username: "text-[9px]",
+      usernamePx: 9,
       bio: "text-[8px]",
+      bioPx: 8,
       dates: "text-[8px]",
+      datesPx: 8,
       address: "text-[8px]",
+      addressPx: 8,
       linkIcon: "w-3 h-3",
       linkLabel: "text-[8px]",
+      linkLabelPx: 8,
       linkDomain: "text-[7px]",
+      linkDomainPx: 7,
+      viewProfilePx: 7,
+      viewProfileIconPx: 8,
       addressPadding: "px-2 py-1",
       linkPadding: "px-2 pt-1 pb-1",
       linkGap: "gap-1",
@@ -198,13 +235,22 @@ export function ProfileCardContent({
     },
     default: {
       name: "text-xl",
+      namePx: 20,
       username: "text-[10px]",
+      usernamePx: 10,
       bio: "text-[9px]",
+      bioPx: 9,
       dates: "text-[9px]",
+      datesPx: 9,
       address: "text-[9px]",
+      addressPx: 9,
       linkIcon: "w-3.5 h-3.5",
       linkLabel: "text-[9px]",
+      linkLabelPx: 9,
       linkDomain: "text-[8px]",
+      linkDomainPx: 8,
+      viewProfilePx: 8,
+      viewProfileIconPx: 10,
       addressPadding: "px-2.5 py-1.5",
       linkPadding: "px-2.5 pt-1.5 pb-1.5",
       linkGap: "gap-1.5",
@@ -213,13 +259,22 @@ export function ProfileCardContent({
     },
     compact: {
       name: "text-xs",
+      namePx: 12,
       username: "text-xs",
+      usernamePx: 12,
       bio: "text-sm",
+      bioPx: 14,
       dates: "text-xs",
+      datesPx: 12,
       address: "text-sm",
+      addressPx: 14,
       linkIcon: "w-4 h-4",
       linkLabel: "text-sm",
+      linkLabelPx: 14,
       linkDomain: "text-sm",
+      linkDomainPx: 14,
+      viewProfilePx: 12,
+      viewProfileIconPx: 10,
       addressPadding: "px-3 py-1.5",
       linkPadding: "px-4 pt-2 pb-3",
       linkGap: "gap-2",
@@ -239,8 +294,10 @@ export function ProfileCardContent({
     leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`,
     right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
     icon: `${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`,
-    label: `font-medium ${s.linkLabel} text-gray-800 truncate`,
-    domain: `flex-1 min-w-0 truncate text-right ${s.linkDomain}`,
+    label: "font-medium text-gray-800 truncate",
+    labelStyle: { fontSize: scaleFont(s.linkLabelPx, textScale.linkLabel) },
+    domain: "flex-1 min-w-0 truncate text-right",
+    domainStyle: { fontSize: scaleFont(s.linkDomainPx, textScale.linkDomain) },
     copySize: "xs",
   };
 
@@ -257,7 +314,10 @@ export function ProfileCardContent({
               <VerifiedBadge verified={true} />
             </span>
           )}
-          <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
+          <span
+            className="font-bold text-gray-900 truncate max-w-full"
+            style={{ fontSize: scaleFont(s.namePx, textScale.displayName) }}
+          >
             {profile.display_name || profile.name}
           </span>
           {isVerified && (
@@ -269,18 +329,29 @@ export function ProfileCardContent({
       </div>
 
       {/* Username */}
-      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>/{formatUsername(profile.name)}</p>
+      <p
+        className="mt-1 text-gray-600 relative z-10"
+        style={{ fontSize: scaleFont(s.usernamePx, textScale.username) }}
+      >
+        /{formatUsername(profile.name)}
+      </p>
 
       {/* Bio */}
       {showBio && profile.bio && profile.bio.trim() !== "" && (
-        <p className={`mt-1 ${s.bio} text-gray-700 line-clamp-2 leading-relaxed px-1 relative z-10 break-words`}>
+        <p
+          className="mt-1 text-gray-700 line-clamp-2 leading-relaxed px-1 relative z-10 break-words"
+          style={{ fontSize: scaleFont(s.bioPx, textScale.bio) }}
+        >
           {profile.bio}
         </p>
       )}
 
       {/* Dates */}
       {showDates && (
-        <p className={`mt-3 ${s.dates} text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10`}>
+        <p
+          className="mt-3 text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10"
+          style={{ fontSize: scaleFont(s.datesPx, textScale.meta) }}
+        >
           {profile.nearest_city_name && (
             <>
               <span className="whitespace-nowrap">Near {profile.nearest_city_name}</span>
@@ -304,7 +375,10 @@ export function ProfileCardContent({
       {/* Address with copy button */}
       {showAddress && profile.address && (
         <div className="mt-2 flex items-center justify-center relative z-10">
-          <div className={`flex items-center gap-2 border text-gray-700 font-mono ${s.address} rounded-full ${s.addressPadding} shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50`}>
+          <div
+            className={`flex items-center gap-2 border text-gray-700 font-mono rounded-full ${s.addressPadding} shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50`}
+            style={{ fontSize: scaleFont(s.addressPx, textScale.address) }}
+          >
             <span className="select-all" title={profile.address}>
               {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
             </span>
@@ -356,10 +430,17 @@ export function ProfileCardContent({
 
       {/* View Profile Footer - Fixed at bottom */}
       <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
-        <span className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1`}>
+        <span
+          className="text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1"
+          style={{ fontSize: scaleFont(s.viewProfilePx, textScale.viewProfile) }}
+        >
           View Profile
           <svg
-            className={`${variant === "mobile" ? "w-2 h-2" : "w-2.5 h-2.5"} text-green-600`}
+            className="text-green-600"
+            style={{
+              width: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
+              height: scaleFont(s.viewProfileIconPx, textScale.viewProfile),
+            }}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

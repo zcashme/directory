@@ -11,6 +11,9 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { ProfileCardContent } from "@/ui/profile/ProfileCard";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
+import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
+
+const SHOW_TEMP_CARD_TUNER = false;
 
 interface FannedCardAvatarProps {
   profile: Profile;
@@ -44,6 +47,8 @@ interface FannedCardProps {
   onInteractionStart?: () => void;
   onInteractionEnd?: () => void;
   shimmerSpeed?: string;
+  textScaleOverrides?: Partial<ProfileCardTextScale>;
+  avatarScale?: number;
 }
 
 function FannedCard({
@@ -60,6 +65,8 @@ function FannedCard({
   onInteractionStart,
   onInteractionEnd,
   shimmerSpeed = "",
+  textScaleOverrides,
+  avatarScale = 1,
 }: FannedCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -108,7 +115,7 @@ function FannedCard({
           transformOrigin: "center center",
         }}
       >
-        <FannedCardAvatar profile={profile} size={80} isHighlighted={isActive} />
+        <FannedCardAvatar profile={profile} size={Math.round(80 * avatarScale)} isHighlighted={isActive} />
         <div
           className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
@@ -122,7 +129,14 @@ function FannedCard({
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
           }}
         >
-          <ProfileCardContent profile={profile} linksArray={linksArray} variant="mobile" linkVariant="simple" hideLinkBadges={true} />
+          <ProfileCardContent
+            profile={profile}
+            linksArray={linksArray}
+            variant="mobile"
+            linkVariant="simple"
+            hideLinkBadges={true}
+            textScaleOverrides={textScaleOverrides}
+          />
         </div>
       </div>
     );
@@ -144,7 +158,7 @@ function FannedCard({
         perspective: "1000px",
       }}
     >
-      <FannedCardAvatar profile={profile} size={100} isHighlighted={isHighlighted} />
+      <FannedCardAvatar profile={profile} size={Math.round(100 * avatarScale)} isHighlighted={isHighlighted} />
       <div
         className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
@@ -165,7 +179,14 @@ function FannedCard({
               : "0 15px 35px -10px rgba(0, 0, 0, 0.2)",
         }}
       >
-        <ProfileCardContent profile={profile} linksArray={linksArray} variant="default" linkVariant="simple" hideLinkBadges={true} />
+        <ProfileCardContent
+          profile={profile}
+          linksArray={linksArray}
+          variant="default"
+          linkVariant="simple"
+          hideLinkBadges={true}
+          textScaleOverrides={textScaleOverrides}
+        />
       </div>
     </div>
   );
@@ -177,9 +198,35 @@ interface FeaturedCardsSectionProps {
 }
 
 function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionProps) {
+  type TunerScale = ProfileCardTextScale & { avatar: number };
+  type TunerKey = keyof TunerScale;
+  const defaultScale: TunerScale = {
+    displayName: 1.4,
+    username: 1.3,
+    bio: 1.5,
+    meta: 1.35,
+    address: 1.5,
+    linkLabel: 1.45,
+    linkDomain: 1.5,
+    viewProfile: 1.45,
+    avatar: 1,
+  };
+  const controls: { key: TunerKey; label: string }[] = [
+    { key: "displayName", label: "Display Name" },
+    { key: "username", label: "Username" },
+    { key: "bio", label: "Bio" },
+    { key: "meta", label: "Meta Line" },
+    { key: "address", label: "Address Pill" },
+    { key: "linkLabel", label: "Link Labels" },
+    { key: "linkDomain", label: "Link Domains" },
+    { key: "viewProfile", label: "View Profile Bar" },
+    { key: "avatar", label: "Avatar" },
+  ];
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [isInteracting, setIsInteracting] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
+  const [scale, setScale] = useState<TunerScale>(defaultScale);
+  const [copyLabel, setCopyLabel] = useState<string>("Copy");
 
   const centerIndex = Math.floor(profiles.length / 2);
 
@@ -232,6 +279,65 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const handleCardClick = (profile: Profile) => {
     onCardClick(profile);
   };
+  const step = 0.05;
+  const minScale = 0.7;
+  const maxScale = 1.8;
+  const adjustScale = (key: TunerKey, delta: number) => {
+    setScale((prev) => {
+      const next = Math.min(maxScale, Math.max(minScale, Number((prev[key] + delta).toFixed(2))));
+      return { ...prev, [key]: next };
+    });
+  };
+  const resetScales = () => setScale(defaultScale);
+  const basePxByKey: Record<TunerKey, number> = isMobile
+    ? {
+        displayName: 18,
+        username: 9,
+        bio: 8,
+        meta: 8,
+        address: 8,
+        linkLabel: 8,
+        linkDomain: 7,
+        viewProfile: 7,
+        avatar: 80,
+      }
+    : {
+        displayName: 20,
+        username: 10,
+        bio: 9,
+        meta: 9,
+        address: 9,
+        linkLabel: 9,
+        linkDomain: 8,
+        viewProfile: 8,
+        avatar: 100,
+      };
+  const absolutePx = (key: TunerKey) => Number((basePxByKey[key] * scale[key]).toFixed(1));
+  const copyTunerValues = async () => {
+    const lines = controls.map((control) => `${control.label}: ${scale[control.key].toFixed(2)}x (${absolutePx(control.key)}px)`);
+    const payload = [
+      "Carousel card tuner values:",
+      ...lines,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopyLabel("Copied");
+      setTimeout(() => setCopyLabel("Copy"), 1500);
+    } catch {
+      setCopyLabel("Failed");
+      setTimeout(() => setCopyLabel("Copy"), 1500);
+    }
+  };
+  const textScaleOverrides: ProfileCardTextScale = {
+    displayName: scale.displayName,
+    username: scale.username,
+    bio: scale.bio,
+    meta: scale.meta,
+    address: scale.address,
+    linkLabel: scale.linkLabel,
+    linkDomain: scale.linkDomain,
+    viewProfile: scale.viewProfile,
+  };
 
   return (
     <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-40">
@@ -257,6 +363,8 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
                 shimmerSpeed={isSpotlit ? "card-shimmer" : ""}
                 onInteractionStart={() => setIsInteracting(true)}
                 onInteractionEnd={() => setIsInteracting(false)}
+                textScaleOverrides={textScaleOverrides}
+                avatarScale={scale.avatar}
                 onClick={() => handleCardClick(profile)}
               />
             );
@@ -274,6 +382,57 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </div>
         )}
       </div>
+      {SHOW_TEMP_CARD_TUNER && (
+      <div className="max-w-3xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Temporary Card Tuner</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={resetScales}
+              className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={copyTunerValues}
+              className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 min-w-[58px]"
+            >
+              {copyLabel}
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+          {controls.map((control) => (
+            <div key={control.key} className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-2 py-1.5">
+              <span className="text-xs text-gray-700">{control.label}</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => adjustScale(control.key, -step)}
+                  className="h-6 w-6 rounded border border-gray-300 text-sm leading-none text-gray-700 hover:bg-gray-50"
+                  aria-label={`Decrease ${control.label}`}
+                >
+                  -
+                </button>
+                <span className="w-28 text-center text-[11px] text-gray-600 tabular-nums">
+                  {scale[control.key].toFixed(2)}x | {absolutePx(control.key)}px
+                </span>
+                <button
+                  type="button"
+                  onClick={() => adjustScale(control.key, step)}
+                  className="h-6 w-6 rounded border border-gray-300 text-sm leading-none text-gray-700 hover:bg-gray-50"
+                  aria-label={`Increase ${control.label}`}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      )}
     </div>
   );
 }
