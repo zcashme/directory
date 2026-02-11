@@ -247,15 +247,25 @@ export function ProfileCardContent({
   return (
     <div className={`${className} flex flex-col h-full`}>
       {/* Display Name */}
-      <div className={`relative z-10 flex items-center justify-center gap-1.5`}>
-        <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
-          {profile.display_name || profile.name}
-        </span>
-        {isVerified && (
-          <span className="flex-shrink-0 scale-[0.6] origin-center">
-            <VerifiedBadge verified={true} />
+      <div className="relative z-10 w-full flex items-center justify-center">
+        <div className="flex items-center justify-center gap-1.5 min-w-0">
+          {isVerified && (
+            <span
+              className="flex-shrink-0 scale-[0.6] origin-center invisible pointer-events-none"
+              aria-hidden="true"
+            >
+              <VerifiedBadge verified={true} />
+            </span>
+          )}
+          <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
+            {profile.display_name || profile.name}
           </span>
-        )}
+          {isVerified && (
+            <span className="flex-shrink-0 scale-[0.6] origin-center">
+              <VerifiedBadge verified={true} />
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Username */}
