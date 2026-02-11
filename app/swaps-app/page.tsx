@@ -6,6 +6,7 @@ import SwapAmountInput from "@/ui/swap/SwapAmountInput";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
 import type { Currency } from "@/ui/swap/CurrencySelector";
 import { getSwapTokens, getSwapQuote } from "@/lib/swap/oneClick";
+import { getRateAction } from "@/lib/rates/getRateAction";
 import type { Token, SwapQuoteDisplay } from "@/lib/swap/types";
 
 function tokenToCurrency(token: Token): Currency {
@@ -37,6 +38,10 @@ export default function SwapsPage() {
 
   const [showInfo, setShowInfo] = useState(false);
 
+  // Exchange rate and USD display state
+  const [exchangeRate, setExchangeRate] = useState(1);
+  const [rateFetched, setRateFetched] = useState(false);
+
   // Load tokens on mount
   useEffect(() => {
     const loadTokens = async () => {
@@ -67,6 +72,26 @@ export default function SwapsPage() {
 
     loadTokens();
   }, []);
+
+  // Fetch exchange rate when fromToken changes
+  useEffect(() => {
+    if (!fromToken) return;
+
+    const fetchRate = async () => {
+      try {
+        const result = await getRateAction("USD", fromToken.symbol);
+        if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
+          setExchangeRate(result.rate);
+          setRateFetched(true);
+        }
+      } catch {
+        // Silent error handling
+      }
+    };
+
+    setRateFetched(false);
+    void fetchRate();
+  }, [fromToken]);
 
   const fetchQuote = async () => {
     if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0) {
@@ -165,8 +190,13 @@ export default function SwapsPage() {
     }
   };
 
-  const fromUsdValue = quote?.amountInUsd ? quote.amountInUsd.toFixed(2) : "0.00";
-  const toUsdValue = quote?.amountOutUsd ? quote.amountOutUsd.toFixed(2) : "0.00";
+  // Calculate USD values - use quote values if available, otherwise calculate from exchange rate
+  const fromUsdValue = quote?.amountInUsd
+    ? quote.amountInUsd.toFixed(2)
+    : rateFetched && fromAmount
+      ? (parseFloat(fromAmount) * exchangeRate).toFixed(2)
+      : "0.00";
+  const toUsdValue = quote?.amountOutUsd ? quote.amountOutUsd.toFixed(2) : "—";
 
   const canGetQuote = fromToken && toToken && fromAmount && parseFloat(fromAmount) > 0 && refundAddress && destAddress;
 
