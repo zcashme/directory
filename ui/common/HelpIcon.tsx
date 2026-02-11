@@ -28,7 +28,7 @@ export default function HelpIcon({ text }: HelpIconProps) {
         ?
       </span>
       {show && (
-        <div className="absolute z-20 w-48 text-xs text-gray-700 bg-white border border-gray-300 rounded-lg shadow-md p-2 -right-1 top-5">
+        <div className="absolute z-20 w-48 max-w-[calc(100vw-1rem)] text-xs text-gray-700 bg-white border border-gray-300 rounded-lg shadow-md p-2 right-0 top-5">
           {text}
         </div>
       )}

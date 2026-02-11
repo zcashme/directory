@@ -20,9 +20,9 @@ import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edi
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
 const FIELD_CLASS =
-  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400";
+  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400";
 const LINK_FIELD_CLASS =
-  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-green-500 text-gray-800 placeholder-gray-400 appearance-none";
+  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
@@ -287,7 +287,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           if (providerKey) startOAuth(providerKey, url);
         }}
       />
-      <div className="w-full max-w-xl bg-transparent overflow-hidden">
+      <div className="w-full max-w-xl bg-transparent overflow-visible">
 
         {/* Header */}
         <div className="px-1 pb-3 mb-4 border-b border-black/10">
@@ -448,7 +448,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             placeholder={originals.profile_image_url}
             onChange={(e) => handleChange("profile_image_url", e.target.value)}
             className={`${FIELD_CLASS} font-mono ${imageUrlValid
-              ? "border-[#0a1126]/60 focus:border-green-500"
+              ? "border-[#0a1126]/60 focus:border-blue-500"
               : "border-red-400 focus:border-red-500"
               }`}
           />
@@ -633,7 +633,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         <button
           type="button"
           onClick={addLink}
-          className="text-sm font-semibold text-green-700 hover:underline mt-1"
+          className="text-sm font-semibold text-blue-600 hover:underline mt-1"
         >
           ＋ Add Link
         </button>
