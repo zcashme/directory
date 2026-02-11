@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
 
   // Block direct access to app-specific routes
   if (!subdomain) {
-    if (url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread-app') || url.pathname.startsWith('/swaps-app')) {
+    if (url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swaps-app')) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -56,12 +56,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // Handle thread subdomain - rewrite to /thread-app internally
+  // Handle thread subdomain - rewrite to /thread internally
   if (subdomain === 'thread') {
     if (url.pathname === '/') {
-      url.pathname = '/thread-app';
-    } else if (!url.pathname.startsWith('/thread-app')) {
-      url.pathname = `/thread-app${url.pathname}`;
+      url.pathname = '/thread';
+    } else if (!url.pathname.startsWith('/thread')) {
+      url.pathname = `/thread${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }

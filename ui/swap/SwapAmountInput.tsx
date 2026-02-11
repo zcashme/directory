@@ -59,7 +59,7 @@ export default function SwapAmountInput({
             ${disabled || readOnly ? "cursor-not-allowed opacity-50" : ""}
           `}
         />
-        <div className="text-base text-gray-500 font-medium whitespace-nowrap">
+        <div className="text-base text-gray-500 font-medium whitespace-nowrap ml-auto">
           ${usdValue || "0.00"}
         </div>
       </div>

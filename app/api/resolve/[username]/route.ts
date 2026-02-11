@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "../../../../lib/supabase/supabase-server";
 import { enforceApiGuard, withCacheHeaders } from "../../../../lib/api/guard";
 
@@ -31,13 +32,14 @@ const jsonResponse = (body: Record<string, unknown>, status: number = 200, cache
   });
 
 export async function GET(
-  request: Request,
-  { params }: { params: RouteParams }
+  request: NextRequest,
+  { params }: { params: Promise<RouteParams> }
 ): Promise<Response> {
   const guard = await enforceApiGuard(request, { cacheSeconds: 60 });
   if (guard instanceof Response) return guard;
 
-  const rawUsername = params?.username || "";
+  const resolvedParams = await params;
+  const rawUsername = resolvedParams?.username || "";
   const username = decodeURIComponent(String(rawUsername)).trim();
 
   if (!username) {
@@ -45,6 +47,10 @@ export async function GET(
   }
 
   const supabase = createSupabaseServerClient();
+
+  if (!supabase) {
+    return jsonResponse({ error: "database_unavailable", username }, 503);
+  }
 
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")

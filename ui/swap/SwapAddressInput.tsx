@@ -35,13 +35,14 @@ export default function SwapAddressInput({
           placeholder={placeholder}
           disabled={disabled}
           className={`
-            flex-1 px-4 py-3 rounded-xl
-            border border-gray-300 bg-white
-            text-sm text-gray-800 placeholder-gray-400
+            flex-1 px-2 py-1.5 rounded-lg
+            border border-gray-300
+            text-sm text-gray-900 placeholder-gray-500
             focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
             transition-colors
             ${disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : ""}
           `}
+          style={!disabled ? { backgroundColor: "var(--color-background)" } : {}}
         />
       </div>
     </FormField>

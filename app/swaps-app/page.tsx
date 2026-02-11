@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import SwapAmountInput from "@/ui/swap/SwapAmountInput";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
 import type { Currency } from "@/ui/swap/CurrencySelector";
-import { getSwapTokens, getSwapQuote } from "@/lib/swap/oneClick";
-import { getRateAction } from "@/lib/rates/getRateAction";
-import type { Token, SwapQuoteDisplay } from "@/lib/swap/types";
+import { getSwapQuote } from "@/lib/swap/oneClick";
+import type { Token } from "@/lib/swap/types";
+import { useSwapsStore } from "@/lib/stores/swaps";
 
 function tokenToCurrency(token: Token): Currency {
   return {
@@ -18,80 +18,41 @@ function tokenToCurrency(token: Token): Currency {
 }
 
 export default function SwapsPage() {
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [tokensLoading, setTokensLoading] = useState(false);
-  const [tokensError, setTokensError] = useState<string | null>(null);
-
-  const [fromToken, setFromToken] = useState<Token | null>(null);
-  const [toToken, setToToken] = useState<Token | null>(null);
-  const [fromAmount, setFromAmount] = useState("");
-  const [toAmount, setToAmount] = useState("");
-
-  const [refundAddress, setRefundAddress] = useState("");
-  const [destAddress, setDestAddress] = useState("");
-  const [slippageTolerance, setSlippageTolerance] = useState("1");
-
-  const [quote, setQuote] = useState<SwapQuoteDisplay | null>(null);
-  const [quoteLoading, setQuoteLoading] = useState(false);
-  const [quoteError, setQuoteError] = useState<string | null>(null);
-  const [confirmLoading, setConfirmLoading] = useState(false);
-
-  const [showInfo, setShowInfo] = useState(false);
-
-  // Exchange rate and USD display state
-  const [exchangeRate, setExchangeRate] = useState(1);
-  const [rateFetched, setRateFetched] = useState(false);
+  const store = useSwapsStore();
+  const {
+    tokens,
+    tokensLoading,
+    tokensError,
+    fromToken,
+    toToken,
+    fromAmount,
+    toAmount,
+    refundAddress,
+    destAddress,
+    slippageTolerance,
+    quote,
+    quoteLoading,
+    quoteError,
+    confirmLoading,
+    showInfo,
+    exchangeRate,
+    rateFetched,
+    loadTokens,
+    fetchExchangeRate,
+  } = store;
 
   // Load tokens on mount
   useEffect(() => {
-    const loadTokens = async () => {
-      setTokensLoading(true);
-      setTokensError(null);
-
-      try {
-        const result = await getSwapTokens();
-        if ("error" in result) {
-          setTokensError(result.error);
-          return;
-        }
-
-        setTokens(result.tokens);
-
-        // Set default tokens: ETH and ZEC
-        const ethToken = result.tokens.find(t => t.symbol === "ETH");
-        const zecToken = result.tokens.find(t => t.symbol === "ZEC");
-
-        if (ethToken) setFromToken(ethToken);
-        if (zecToken) setToToken(zecToken);
-      } catch (err) {
-        setTokensError("Failed to load tokens");
-      } finally {
-        setTokensLoading(false);
-      }
-    };
-
-    loadTokens();
-  }, []);
+    void loadTokens();
+  }, [loadTokens]);
 
   // Fetch exchange rate when fromToken changes
   useEffect(() => {
     if (!fromToken) return;
 
-    const fetchRate = async () => {
-      try {
-        const result = await getRateAction("USD", fromToken.symbol);
-        if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
-          setExchangeRate(result.rate);
-          setRateFetched(true);
-        }
-      } catch {
-        // Silent error handling
-      }
-    };
-
-    setRateFetched(false);
-    void fetchRate();
-  }, [fromToken]);
+    store.setRateFetched(false);
+    void fetchExchangeRate(fromToken.symbol);
+  }, [fromToken, fetchExchangeRate]);
 
   const fetchQuote = async () => {
     if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0) {
@@ -99,12 +60,12 @@ export default function SwapsPage() {
     }
 
     if (!refundAddress || !destAddress) {
-      setQuoteError("Please enter both refund and destination addresses");
+      store.setQuoteError("Please enter both refund and destination addresses");
       return;
     }
 
-    setQuoteLoading(true);
-    setQuoteError(null);
+    store.setQuoteLoading(true);
+    store.setQuoteError(null);
 
     try {
       const result = await getSwapQuote({
@@ -118,75 +79,66 @@ export default function SwapsPage() {
       });
 
       if (result.ok) {
-        setQuote(result.display);
-        setToAmount(result.display.amountOutFormatted);
+        store.setQuote(result.display);
+        store.setToAmount(result.display.amountOutFormatted);
       } else {
-        setQuote(null);
-        setToAmount("");
-        setQuoteError(result.error);
+        store.setQuote(null);
+        store.setToAmount("");
+        store.setQuoteError(result.error);
       }
     } catch (err) {
-      setQuote(null);
-      setToAmount("");
-      setQuoteError("Failed to get quote");
+      store.setQuote(null);
+      store.setToAmount("");
+      store.setQuoteError("Failed to get quote");
     } finally {
-      setQuoteLoading(false);
+      store.setQuoteLoading(false);
     }
   };
 
   const confirmQuote = async () => {
     if (!quote || !fromToken || !toToken) return;
 
-    setConfirmLoading(true);
-    setQuoteError(null);
+    store.setConfirmLoading(true);
+    store.setQuoteError(null);
 
     try {
       // TODO: Implement actual quote confirmation logic
       // For now, just simulate success
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch (err) {
-      setQuoteError("Failed to confirm quote");
+      store.setQuoteError("Failed to confirm quote");
     } finally {
-      setConfirmLoading(false);
+      store.setConfirmLoading(false);
     }
   };
 
   const handleSwapDirection = () => {
-    const temp = fromToken;
-    setFromToken(toToken);
-    setToToken(temp);
-
-    const tempAmount = fromAmount;
-    setFromAmount(toAmount);
-    setToAmount(tempAmount);
-
-    setQuote(null);
-    setQuoteError(null);
+    store.swapDirection();
   };
 
   const handleFromTokenChange = (currency: Currency) => {
     const token = tokens.find((t) => t.symbol === currency.symbol && t.blockchain === currency.network);
     if (token) {
-      setFromToken(token);
-      setQuote(null);
-      setQuoteError(null);
+      store.setFromToken(token);
+      store.setQuote(null);
+      store.setQuoteError(null);
     }
   };
 
   const handleToTokenChange = (currency: Currency) => {
     const token = tokens.find((t) => t.symbol === currency.symbol && t.blockchain === currency.network);
     if (token) {
-      setToToken(token);
-      setQuote(null);
-      setQuoteError(null);
+      store.setToToken(token);
+      store.setQuote(null);
+      store.setQuoteError(null);
     }
   };
 
   const handleFromAmountChange = (amount: string) => {
-    setFromAmount(amount);
+    store.setFromAmount(amount);
     if (quote) {
-      setQuote(null);
-      setToAmount("");
+      store.setQuote(null);
+      store.setToAmount("");
     }
   };
 
@@ -239,8 +191,8 @@ export default function SwapsPage() {
             {/* Info Icon with Tooltip */}
             <div
               className="absolute top-6 right-6"
-              onMouseEnter={() => setShowInfo(true)}
-              onMouseLeave={() => setShowInfo(false)}
+              onMouseEnter={() => store.setShowInfo(true)}
+              onMouseLeave={() => store.setShowInfo(false)}
             >
               <button
                 type="button"
@@ -331,7 +283,7 @@ export default function SwapsPage() {
                     amount={toAmount}
                     usdValue={toUsdValue}
                     onCurrencyChange={handleToTokenChange}
-                    onAmountChange={setToAmount}
+                    onAmountChange={store.setToAmount}
                     readOnly
                     availableTokens={tokens}
                   />
@@ -351,7 +303,7 @@ export default function SwapsPage() {
               <SwapAddressInput
                 label="Refund Address"
                 value={refundAddress}
-                onChange={setRefundAddress}
+                onChange={store.setRefundAddress}
                 placeholder={fromToken ? `${fromToken.symbol} address...` : "Select from token first"}
                 helpText="Where to refund if swap fails"
                 disabled={!fromToken}
@@ -359,7 +311,7 @@ export default function SwapsPage() {
               <SwapAddressInput
                 label="Address"
                 value={destAddress}
-                onChange={setDestAddress}
+                onChange={store.setDestAddress}
                 placeholder={toToken ? `Enter wallet address...` : "Select to token first"}
                 showProfileButton
                 disabled={!toToken}
@@ -368,7 +320,7 @@ export default function SwapsPage() {
 
             {/* Quote Display */}
             {quote && (
-              <div className="mb-6 p-4 rounded-xl border border-gray-300 bg-gray-50/50">
+              <div className="mb-6 p-4 rounded-xl border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-gray-600">Min Received</span>
@@ -401,9 +353,10 @@ export default function SwapsPage() {
                 disabled={!canGetQuote || quoteLoading}
                 className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
                   canGetQuote && !quoteLoading
-                    ? "bg-blue-600 hover:bg-blue-700 text-white transition-colors cursor-pointer"
+                    ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
                     : "bg-gray-100 text-gray-400 border border-gray-300"
                 }`}
+                style={canGetQuote && !quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
               >
                 {quoteLoading ? "Getting quote..." : "Get a quote"}
               </button>
@@ -413,9 +366,10 @@ export default function SwapsPage() {
                 disabled={!quote || confirmLoading}
                 className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
                   quote && !confirmLoading
-                    ? "bg-green-600 hover:bg-green-700 text-white transition-colors cursor-pointer"
+                    ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
                     : "bg-gray-100 text-gray-400 border border-gray-300"
                 }`}
+                style={quote && !confirmLoading ? { backgroundColor: "var(--color-background)" } : {}}
               >
                 {confirmLoading ? "Confirming..." : "Confirm quote"}
               </button>
@@ -433,7 +387,7 @@ export default function SwapsPage() {
                   if (/^\d*\.?\d*$/.test(value)) {
                     const num = parseFloat(value);
                     if (!isNaN(num) && num >= 0 && num <= 100) {
-                      setSlippageTolerance(value);
+                      store.setSlippageTolerance(value);
                     }
                   }
                 }}

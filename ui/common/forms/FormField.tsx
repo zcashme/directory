@@ -122,6 +122,7 @@ export default function FormField({
               </span>
             )}
           </label>
+          {helpText && <HelpIcon text={helpText} />}
           {hint && (
             <span className="text-xs text-gray-500 italic">
               {hint}
@@ -131,7 +132,6 @@ export default function FormField({
 
         <div className="flex items-center gap-3">
           {actions}
-          {helpText && <HelpIcon text={helpText} />}
         </div>
       </div>
 

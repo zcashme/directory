@@ -275,14 +275,13 @@ export default function SwapComposer({
               void handleGetQuote();
             }}
             disabled={!canGetQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+            className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl transition-colors ${
               canGetQuote
-                ? "text-gray-800"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+                ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
             }`}
-            style={canGetQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
-            {isGettingQuote ? "Getting quote..." : "Get quote"}
+            {isGettingQuote ? "Getting quote..." : "Get a quote"}
           </button>
           <button
             type="button"
@@ -290,12 +289,11 @@ export default function SwapComposer({
               void handleConfirmQuote();
             }}
             disabled={!canConfirmQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+            className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl transition-colors ${
               canConfirmQuote
-                ? "text-gray-800"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+                ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
             }`}
-            style={canConfirmQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
             {isConfirming ? "Confirming..." : "Confirm quote"}
           </button>
