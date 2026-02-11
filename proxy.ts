@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
 
   // Block direct access to app-specific routes
   if (!subdomain) {
-    if (url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swaps-app')) {
+    if (url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swap-app')) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -66,12 +66,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.rewrite(url);
   }
 
-  // Handle swaps subdomain - rewrite to /swaps-app internally
+  // Handle swaps subdomain - rewrite to /swap-app internally
   if (subdomain === 'swaps') {
     if (url.pathname === '/') {
-      url.pathname = '/swaps-app';
-    } else if (!url.pathname.startsWith('/swaps-app')) {
-      url.pathname = `/swaps-app${url.pathname}`;
+      url.pathname = '/swap-app';
+    } else if (!url.pathname.startsWith('/swap-app')) {
+      url.pathname = `/swap-app${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }
