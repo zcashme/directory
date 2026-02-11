@@ -1,12 +1,8 @@
 import { create } from 'zustand';
-import { getSwapStatus } from '@/lib/swap/oneClick';
 import type {
   SwapContextQuoteData,
   SwapQuoteDisplay,
-  SwapStatusData,
 } from '@/lib/swap/types';
-
-const POLL_INTERVAL = 5000;
 
 interface SwapState {
   currentProfileAddress: string | null;
@@ -21,11 +17,6 @@ interface SwapState {
   quoteStatus: string;
   swapError: string;
 
-  // Status polling
-  statusData: SwapStatusData | null;
-  statusError: string;
-  pollInterval: NodeJS.Timeout | null;
-
   ensureProfile: (address: string, zecTokenId: string | null) => void;
   setOriginTokenId: (id: string | null) => void;
   setSwapAmount: (amount: string) => void;
@@ -39,31 +30,7 @@ interface SwapState {
   setSwapError: (error: string) => void;
   resetQuote: () => void;
   resetSwapState: (zecTokenId: string | null) => void;
-
-  // Status polling
-  startPolling: (depositAddress: string) => void;
-  stopPolling: () => void;
 }
-
-const poll = async (depositAddress: string, set: (state: Partial<SwapState>) => void, get: () => SwapState) => {
-  try {
-    const result = await getSwapStatus(depositAddress);
-
-    if ("error" in result) {
-      set({ statusError: 'Unable to fetch status' });
-      return;
-    }
-
-    set({ statusData: result, statusError: '' });
-
-    // Stop polling on terminal states
-    if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(result.status?.toUpperCase())) {
-      get().stopPolling();
-    }
-  } catch {
-    set({ statusError: 'Connection error' });
-  }
-};
 
 export const useSwapStore = create<SwapState>((set, get) => ({
   currentProfileAddress: null,
@@ -77,13 +44,9 @@ export const useSwapStore = create<SwapState>((set, get) => ({
   statusKey: null,
   quoteStatus: '',
   swapError: '',
-  statusData: null,
-  statusError: '',
-  pollInterval: null,
 
   ensureProfile: (address, zecTokenId) => {
     if (get().currentProfileAddress !== address) {
-      get().stopPolling();
       set({
         currentProfileAddress: address,
         originTokenId: zecTokenId,
@@ -96,8 +59,6 @@ export const useSwapStore = create<SwapState>((set, get) => ({
         depositUri: '',
         statusKey: null,
         swapError: '',
-        statusData: null,
-        statusError: '',
       });
     }
   },
@@ -125,18 +86,4 @@ export const useSwapStore = create<SwapState>((set, get) => ({
       statusKey: null,
       swapError: '',
     }),
-
-  startPolling: (depositAddress) => {
-    get().stopPolling();
-    set({ statusKey: { depositAddress }, statusError: '' });
-    poll(depositAddress, set, get);
-    const interval = setInterval(() => poll(depositAddress, set, get), POLL_INTERVAL);
-    set({ pollInterval: interval });
-  },
-
-  stopPolling: () => {
-    const { pollInterval } = get();
-    if (pollInterval) clearInterval(pollInterval);
-    set({ pollInterval: null });
-  },
 }));
