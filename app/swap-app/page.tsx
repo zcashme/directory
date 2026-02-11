@@ -507,7 +507,7 @@ function SwapCreationPage() {
                   <AmountAndWallet
                     amount={toAmount}
                     setAmount={store.setToAmount}
-                    showUsdPill={true}
+                    showUsdPill={false}
                     showOpenWallet={false}
                     asset={toToken?.symbol || ""}
                     assetOptions={formattedTokens}
@@ -573,6 +573,13 @@ function SwapCreationPage() {
               >
                 {confirmLoading ? "Confirming..." : "Confirm quote"}
               </button>
+            </div>
+
+            {/* Check Swap Link */}
+            <div className="text-center text-sm text-gray-600 mt-3">
+              <a href="#" className="text-blue-600 hover:text-blue-800 underline">
+                Check Swap
+              </a>
             </div>
 
             {/* Slippage Settings */}
