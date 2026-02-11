@@ -24,10 +24,10 @@ export default function SwapAddressInput({
     <FormField
       label={label}
       helpText={helpText}
-      className="space-y-2 border-2 border-indigo-500"
+      className="space-y-2"
       labelClassName="text-sm"
     >
-      <div className="flex items-center gap-2 border-2 border-sky-500">
+      <div className="flex items-center gap-2">
         <input
           type="text"
           value={value}

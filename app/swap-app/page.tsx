@@ -6,6 +6,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
+import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
+import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import { getSwapQuote } from "@/lib/swap/oneClick";
 import { useSwapsStore } from "@/lib/stores/swaps";
 import { parseTokenSymbol, getSwapUrl } from "@/lib/swap/utils";
@@ -439,10 +441,10 @@ function SwapCreationPage() {
     <>
       <ProfileHeader />
       <div
-        className="p-4 md:p-8 pt-16 border-2 border-red-500"
+        className="p-4 md:p-8 pt-16"
         style={{ backgroundColor: "var(--color-background)" }}
       >
-        <div className="max-w-5xl mx-auto border-2 border-orange-500">
+        <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-center mb-6">
             <h1 className="text-2xl font-bold text-gray-700">Swap</h1>
@@ -456,7 +458,7 @@ function SwapCreationPage() {
           )}
 
           {/* Main Swap Card */}
-          <div className="rounded-3xl border-2 border-yellow-500 p-6 shadow-lg relative" style={{ backgroundColor: 'var(--color-background)' }}>
+          <div className="rounded-3xl border border-gray-800 p-6 shadow-lg relative" style={{ backgroundColor: 'var(--color-background)' }}>
             {/* Info Icon with Tooltip */}
             <div
               className="absolute top-6 right-6"
@@ -491,10 +493,10 @@ function SwapCreationPage() {
               )}
             </div>
             {/* Currency Swap Section */}
-            <div className="flex items-start gap-3 mb-6 border-2 border-green-500">
+            <div className="flex flex-col md:flex-row md:items-end gap-3 mb-6">
               {/* From Section */}
-              <div className="flex-1 border-2 border-blue-500">
-                <div className="space-y-2 border-2 border-pink-500">
+              <div className="flex-1">
+                <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">From</label>
                   <AmountAndWallet
                     amount={fromAmount}
@@ -509,17 +511,18 @@ function SwapCreationPage() {
               </div>
 
               {/* Swap Direction Button */}
-              <div className="flex items-center pt-8">
+              <div className="flex items-center justify-center md:pb-1">
                 <button
                   type="button"
                   onClick={handleSwapDirection}
                   disabled={!fromToken || !toToken}
-                  className={`p-3 rounded-xl transition-colors rotate-90 ${
+                  className={`p-3 rounded-xl transition-colors md:rotate-90 border border-gray-800 ${
                     fromToken && toToken
-                      ? "bg-gray-100 hover:bg-gray-200 text-gray-600"
-                      : "bg-gray-100 opacity-50 cursor-not-allowed text-gray-400"
+                      ? "hover:bg-gray-100 text-gray-600"
+                      : "opacity-50 cursor-not-allowed text-gray-400"
                   }`}
                   title="Swap direction"
+                  style={fromToken && toToken ? { backgroundColor: "var(--color-background)" } : {}}
                 >
                   <svg
                     className="w-5 h-5"
@@ -538,8 +541,8 @@ function SwapCreationPage() {
               </div>
 
               {/* To Section */}
-              <div className="flex-1 border-2 border-cyan-500">
-                <div className="space-y-2 border-2 border-pink-500">
+              <div className="flex-1">
+                <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700">To</label>
                   <AmountAndWallet
                     amount={toAmount}
@@ -555,43 +558,25 @@ function SwapCreationPage() {
             </div>
 
             {/* Address Inputs Section */}
-            <div className="grid grid-cols-2 gap-4 mb-6 border-2 border-purple-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <SwapAddressInput
                 label="Refund Address"
                 value={refundAddress}
                 onChange={store.setRefundAddress}
                 placeholder={fromToken ? `${fromToken.symbol} address...` : "Select from token first"}
-                helpText="Where to refund if swap fails"
                 disabled={!fromToken}
               />
               <SwapAddressInput
-                label="Address"
+                label="Destination Address"
                 value={destAddress}
                 onChange={store.setDestAddress}
-                placeholder={toToken ? `Enter wallet address...` : "Select to token first"}
+                placeholder={toToken ? `${toToken.symbol} address...` : "Select to token first"}
                 disabled={!toToken}
               />
             </div>
 
             {/* Quote Display */}
-            {quote && (
-              <div className="mb-6 p-4 rounded-xl border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
-                <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Min Received</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {quote.minAmountOut || "—"} {quote.toSymbol}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Est. Time</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {quote.timeEstimate || "—"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
+            {quote && <SwapQuoteDisplay quote={quote} className="mb-6" />}
 
             {/* Error Display */}
             {quoteError && (
@@ -601,7 +586,7 @@ function SwapCreationPage() {
             )}
 
             {/* Quote Action Buttons */}
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3">
               <button
                 type="button"
                 onClick={fetchQuote}
@@ -631,34 +616,12 @@ function SwapCreationPage() {
             </div>
 
             {/* Slippage Settings */}
-            <div className="mt-4 flex items-center justify-end gap-2">
-              <span className="text-sm text-gray-600">Slippage tolerance</span>
-              <input
-                type="text"
-                inputMode="decimal"
+            <div className="mt-4">
+              <SwapSlippageControl
                 value={slippageTolerance}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (/^\d*\.?\d*$/.test(value)) {
-                    const num = parseFloat(value);
-                    if (!isNaN(num) && num >= 0 && num <= 100) {
-                      store.setSlippageTolerance(value);
-                    }
-                  }
-                }}
-                className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg text-center focus:outline-none focus:border-blue-500"
+                onChange={store.setSlippageTolerance}
+                variant="inline"
               />
-              <span className="text-sm text-gray-600">%</span>
-              <button
-                type="button"
-                className="p-1.5 text-gray-400 hover:text-gray-600"
-                title="Adjust slippage settings"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              </button>
             </div>
           </div>
         </div>
