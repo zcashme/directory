@@ -618,7 +618,7 @@ export default function ProfileCard({
     ? {}
     : {
         whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
-        transition: { type: "spring", stiffness: 550, damping: 24, mass: 0.35 },
+        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
       };
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);

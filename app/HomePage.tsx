@@ -553,7 +553,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         <motion.button
           onClick={() => setIsJoinOpen(true)}
           whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
-          transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
+          transition={{ type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 }}
           className="h-8 md:h-10 flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 md:px-6 rounded-full text-sm md:text-base font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
         >
           Claim your name
