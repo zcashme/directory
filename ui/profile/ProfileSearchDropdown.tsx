@@ -92,7 +92,6 @@ export default function ProfileSearchDropdown({
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
-  const [isMobile, setIsMobile] = useState(false);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
   const previousResultsRef = useRef<Profile[]>([]);
@@ -100,16 +99,6 @@ export default function ProfileSearchDropdown({
 
   const keystrokeDebounced = useKeystrokeDebounce(value, 10);
   const searchDebounced = useSearchDebounce(value, 150);
-
-  // Mobile detection
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   // Check if previous results still match the query (to avoid unnecessary refreshes)
   // IMPORTANT: This only checks if we can reuse search results, NOT if we can skip availability checks
@@ -262,10 +251,7 @@ export default function ProfileSearchDropdown({
       {(show || usernameAvailable) && keystrokeDebounced && (
         <div
           ref={listOnly ? dropdownRef : null}
-          className={isMobile
-            ? "fixed left-4 right-4 top-[72px] z-[1001] max-h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl"
-            : "absolute left-0 right-0 z-[1001] mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
-          }
+          className="absolute left-0 right-0 top-full z-[1001] mt-1 max-h-48 w-full overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
         >
           {loading ? (
             <div className="px-3 py-2 text-sm text-gray-800 font-medium">

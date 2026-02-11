@@ -37,7 +37,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   return (
     <>
       <div className="sticky top-3 z-[1000] flex justify-center px-4">
-        <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
           <motion.button
             onClick={() => router.push("/")}
             whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, color: "#1e40af" }}
@@ -79,33 +79,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               </button>
             )}
 
-            {search && !suppressDropdown && (
-              <div className="absolute left-0 right-0 top-full mt-1 z-[9999]">
-                <ProfileSearchDropdown
-                  listOnly
-                  value={search}
-                  onChange={(v) => {
-                    if (typeof v === "object") {
-                      const slug = buildSlug(v as Profile);
-                      if (slug) {
-                        (window as any).lastSelectionWasExplicit = true;
-                        router.push(`/${slug}`);
-                      }
-                    } else {
-                      setSearch(v);
-                    }
-                  }}
-                  onUsernameAvailable={(username) => {
-                    setAvailableUsername(username);
-                  }}
-                  onClaimClick={() => {
-                    setPrefillUsername(availableUsername);
-                    setIsJoinOpen(true);
-                  }}
-                  placeholder="search"
-                />
-              </div>
-            )}
           </div>
 
           <motion.button
@@ -122,6 +95,32 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
           >
             {availableUsername ? 'Claim' : 'Join'}
           </motion.button>
+
+          {search && !suppressDropdown && (
+            <ProfileSearchDropdown
+              listOnly
+              value={search}
+              onChange={(v) => {
+                if (typeof v === "object") {
+                  const slug = buildSlug(v as Profile);
+                  if (slug) {
+                    (window as any).lastSelectionWasExplicit = true;
+                    router.push(`/${slug}`);
+                  }
+                } else {
+                  setSearch(v);
+                }
+              }}
+              onUsernameAvailable={(username) => {
+                setAvailableUsername(username);
+              }}
+              onClaimClick={() => {
+                setPrefillUsername(availableUsername);
+                setIsJoinOpen(true);
+              }}
+              placeholder="search"
+            />
+          )}
         </div>
       </div>
 
