@@ -64,7 +64,6 @@ export function SidebarNav({
           )}
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{userName}</p>
-            <p className="text-xs text-gray-500">Online</p>
           </div>
         </div>
       </div>
@@ -111,16 +110,6 @@ export function SidebarNav({
         >
           + Create Board
         </Button>
-      </div>
-
-      {/* Settings/Help Links */}
-      <div className="p-4 border-t border-black/30 space-y-2">
-        <button className="w-full text-left text-xs text-gray-600 hover:text-gray-900 py-1 transition">
-          ⚙️ Settings
-        </button>
-        <button className="w-full text-left text-xs text-gray-600 hover:text-gray-900 py-1 transition">
-          ❓ Help
-        </button>
       </div>
     </aside>
   );

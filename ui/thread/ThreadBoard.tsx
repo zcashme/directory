@@ -110,7 +110,7 @@ export function ThreadBoard({
             {currentBoard && <BoardHeader board={currentBoard} />}
 
             {/* Message Composer */}
-            {isLoggedIn ? (
+            {isLoggedIn && (
               <ThreadComposer
                 userAvatar={userAvatar}
                 userName={userName}
@@ -118,15 +118,6 @@ export function ThreadBoard({
                 disabled={isLoadingMessages}
                 boardName={currentBoard?.name || 'Board'}
               />
-            ) : (
-              <div className="bg-white/85 border border-black/30 rounded-lg p-4 shadow-sm mb-4">
-                <p className="text-gray-600 text-sm">
-                  <a href="/login" className="text-blue-700 hover:underline font-medium">
-                    Sign in
-                  </a>{' '}
-                  to participate in the discussion.
-                </p>
-              </div>
             )}
 
             {/* Message Feed */}
