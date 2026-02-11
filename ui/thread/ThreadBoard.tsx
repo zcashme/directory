@@ -13,9 +13,9 @@ interface ThreadBoardProps {
   initialMessages: ThreadMessage[];
   initialBoards: Board[];
   initialBoardId: string;
-  onPostMessage: (content: string, boardId: string, walletAddress?: string, otpToken?: string) => Promise<void>;
+  onPostMessage: (content: string, boardId: string) => Promise<void>;
   onLoadMoreMessages: (boardId: string) => Promise<void>;
-  onCreateBoard: (name: string, description: string, walletAddress?: string, otpToken?: string) => Promise<void>;
+  onCreateBoard: (name: string, description: string) => Promise<void>;
   onBoardSelect: (boardId: string) => void;
 }
 
@@ -45,9 +45,9 @@ export function ThreadBoard({
     setIsLoadingMessages(false);
   };
 
-  const handlePostMessage = async (content: string, walletAddress?: string, otpToken?: string) => {
+  const handlePostMessage = async (content: string) => {
     try {
-      await onPostMessage(content, currentBoardId, walletAddress, otpToken);
+      await onPostMessage(content, currentBoardId);
       // Refresh messages
       setMessages([]);
       setIsLoadingMessages(true);
@@ -57,10 +57,10 @@ export function ThreadBoard({
     }
   };
 
-  const handleCreateBoard = async (name: string, description: string, walletAddress?: string, otpToken?: string) => {
+  const handleCreateBoard = async (name: string, description: string) => {
     setIsCreatingBoard(true);
     try {
-      await onCreateBoard(name, description, walletAddress, otpToken);
+      await onCreateBoard(name, description);
       // Refresh boards and show the new board
       setShowCreateBoardModal(false);
     } catch (error) {

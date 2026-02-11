@@ -58,10 +58,8 @@ export default function ThreadPage({
     loadMessages();
   }, [currentBoardId]);
 
-  const handlePostMessage = async (content: string, boardId: string, walletAddress?: string, otpToken?: string) => {
-    // Wallet address and OTP token are required for posting
-    // They will be provided by the ZcashVerificationComposer component
-    const result = await postMessageAction(content, boardId, walletAddress, otpToken);
+  const handlePostMessage = async (content: string, boardId: string) => {
+    const result = await postMessageAction(content, boardId);
     if (result.success && result.data) {
       // Reload messages for the board
       const messagesResult = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
@@ -83,10 +81,8 @@ export default function ThreadPage({
     }
   };
 
-  const handleCreateBoard = async (name: string, description: string, walletAddress?: string, otpToken?: string) => {
-    // Wallet address and OTP token are required for creating boards
-    // They will be provided by the verification component
-    const result = await createBoardAction(name, description, walletAddress, otpToken);
+  const handleCreateBoard = async (name: string, description: string) => {
+    const result = await createBoardAction(name, description);
     if (result.success && result.data) {
       setBoards((prev) => [...prev, result.data!]);
       // Auto-switch to new board via routing

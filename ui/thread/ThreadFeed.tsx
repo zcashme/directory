@@ -60,12 +60,7 @@ export function ThreadFeed({ messages, isLoading = false, onLoadMore }: ThreadFe
   }
 
   if (displayedMessages.length === 0) {
-    return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg font-medium mb-2">No messages yet</p>
-        <p className="text-gray-400">Start the conversation! Be the first to post.</p>
-      </div>
-    );
+    return <div className="space-y-3" />;
   }
 
   return (

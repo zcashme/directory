@@ -4,9 +4,9 @@
 
 export const THREAD_CONSTANTS = {
   // Default boards
-  DEFAULT_BOARD_ID: 'money',
-  DEFAULT_BOARD_NAME: 'money',
-  DEFAULT_BOARD_DESCRIPTION: 'Global discussion board for the entire internet',
+  DEFAULT_BOARD_ID: '',
+  DEFAULT_BOARD_NAME: '',
+  DEFAULT_BOARD_DESCRIPTION: '',
 
   // Message limits
   MAX_MESSAGE_LENGTH: 1000,
@@ -25,13 +25,4 @@ export const THREAD_CONSTANTS = {
   MAX_CONTENT_WIDTH: 768, // max-w-3xl
 };
 
-export const BOARD_DEFAULTS: Record<string, any> = {
-  money: {
-    id: 'money',
-    name: 'money',
-    description: 'Global discussion board for the entire internet',
-    creator_id: 'system',
-    created_at: new Date(0).toISOString(),
-    member_count: 0,
-  },
-};
+export const BOARD_DEFAULTS: Record<string, any> = {};

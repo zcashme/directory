@@ -33,10 +33,22 @@ export function SidebarNav({
   };
 
   return (
-    <aside className="w-64 border-r border-black/30 bg-white h-full overflow-y-auto flex flex-col">
+    <aside className="w-64 border-r border-black/30 bg-[#faf6ed] h-full overflow-y-auto flex flex-col">
       {/* Header */}
       <div className="p-4 border-b border-black/30">
         <h2 className="text-2xl font-bold text-gray-900">Threads</h2>
+      </div>
+
+      {/* Create Board Button */}
+      <div className="p-4 border-b border-black/30">
+        <Button
+          variant="primary"
+          size="md"
+          onClick={onCreateBoard}
+          className="w-full"
+        >
+          + Create Board
+        </Button>
       </div>
 
       {/* Boards List */}
@@ -69,18 +81,6 @@ export function SidebarNav({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Create Board Button */}
-      <div className="p-4 border-t border-black/30">
-        <Button
-          variant="primary"
-          size="md"
-          onClick={onCreateBoard}
-          className="w-full"
-        >
-          + Create Board
-        </Button>
       </div>
     </aside>
   );

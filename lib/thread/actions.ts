@@ -9,17 +9,7 @@ import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 export async function fetchBoardsAction(): Promise<GetBoardsResponse> {
   try {
     // TODO: Replace with actual API call to fetch boards from database
-    // For now, return default board
-    const boards: Board[] = [
-      {
-        id: 'money',
-        name: 'money',
-        description: THREAD_CONSTANTS.DEFAULT_BOARD_DESCRIPTION,
-        creator_id: 'system',
-        created_at: new Date(0).toISOString(),
-        member_count: 0,
-      },
-    ];
+    const boards: Board[] = [];
 
     return {
       success: true,

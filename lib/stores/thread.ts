@@ -9,7 +9,7 @@ export const useThreadStore = create<ThreadStore>()(
     isLoadingMessages: false,
 
     // Current board
-    currentBoardId: 'money',
+    currentBoardId: '',
     currentBoard: undefined,
 
     // All boards
@@ -67,7 +67,7 @@ export function useResetThreadStore() {
     useThreadStore.setState({
       messages: [],
       isLoadingMessages: false,
-      currentBoardId: 'money',
+      currentBoardId: '',
       currentBoard: undefined,
       boards: [],
       isLoadingBoards: false,
