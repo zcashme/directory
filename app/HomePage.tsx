@@ -254,6 +254,9 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [scale, setScale] = useState<TunerScale>(defaultScale);
   const [copyLabel, setCopyLabel] = useState<string>("Copy");
   const [animatedHeadline, setAnimatedHeadline] = useState<string>("");
+  const [isTypedNameComplete, setIsTypedNameComplete] = useState<boolean>(false);
+  const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
+  const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -262,6 +265,11 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     name: (profile.display_name?.trim() || profile.name?.trim() || "zcash user").trim(),
   }));
   const typedTargetsKey = typedTargets.map((target) => `${target.index}:${target.name}`).join("|");
+  const pauseRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    pauseRef.current = isNameHoverPaused;
+  }, [isNameHoverPaused]);
 
   useEffect(() => {
     setActiveCardIndex(centerIndex);
@@ -277,6 +285,8 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   useEffect(() => {
     if (!typedTargets.length) {
       setAnimatedHeadline(`${headlinePrefix}you`);
+      setIsTypedNameComplete(true);
+      setCurrentTypedProfileIndex(null);
       return;
     }
 
@@ -289,6 +299,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     const HOLD_MS = 1400;
     const TYPE_MS = 90;
     const DELETE_MS = 75;
+    const PAUSE_POLL_MS = 120;
 
     const schedule = (fn: () => void, delay: number) => {
       timeoutId = setTimeout(fn, delay);
@@ -297,16 +308,29 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     const startTypingName = () => {
       if (isCancelled) return;
       const target = typedTargets[currentTargetIndex];
+      setCurrentTypedProfileIndex(target.index);
       const nextText = `${headlinePrefix}${target.name}`;
       if (currentText.length < nextText.length) {
+        setIsTypedNameComplete(false);
         currentText = nextText.slice(0, currentText.length + 1);
         setAnimatedHeadline(currentText);
         schedule(startTypingName, TYPE_MS);
         return;
       }
 
+      if (pauseRef.current) {
+        schedule(startTypingName, PAUSE_POLL_MS);
+        return;
+      }
+
+      setIsTypedNameComplete(true);
       setActiveCardIndex(target.index);
       schedule(() => {
+        if (pauseRef.current) {
+          schedule(startTypingName, PAUSE_POLL_MS);
+          return;
+        }
+        setIsTypedNameComplete(false);
         currentTargetIndex = (currentTargetIndex + 1) % typedTargets.length;
         startDeleting();
       }, HOLD_MS);
@@ -314,6 +338,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startDeleting = () => {
       if (isCancelled) return;
+      setIsTypedNameComplete(false);
       if (currentText.length > headlinePrefix.length) {
         currentText = currentText.slice(0, -1);
         setAnimatedHeadline(currentText);
@@ -326,15 +351,19 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     const startTypingInitial = () => {
       if (isCancelled) return;
       if (currentText.length < initialText.length) {
+        setIsTypedNameComplete(false);
         currentText = initialText.slice(0, currentText.length + 1);
         setAnimatedHeadline(currentText);
         schedule(startTypingInitial, TYPE_MS);
         return;
       }
+      setIsTypedNameComplete(true);
+      setCurrentTypedProfileIndex(null);
       schedule(startDeleting, HOLD_MS);
     };
 
     setAnimatedHeadline("");
+    setIsTypedNameComplete(false);
     schedule(startTypingInitial, TYPE_MS);
 
     return () => {
@@ -449,14 +478,33 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   };
   const typedPrefix = animatedHeadline.slice(0, Math.min(animatedHeadline.length, headlinePrefix.length));
   const typedTail = animatedHeadline.slice(headlinePrefix.length);
+  const isTypedProfileClickable = isTypedNameComplete && currentTypedProfileIndex !== null;
+  const handleTypedNameClick = () => {
+    if (!isTypedProfileClickable || currentTypedProfileIndex === null) return;
+    const selectedProfile = profiles[currentTypedProfileIndex];
+    if (!selectedProfile) return;
+    const slug = buildSlug(selectedProfile);
+    if (slug) router.push(`/${slug}`);
+  };
 
   return (
     <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-32">
       <div className="mb-10 md:mb-12 text-center -translate-y-4 md:-translate-y-6">
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
-          <span className="text-green-700">{typedTail}</span>
-          <span className="typing-caret" aria-hidden="true">|</span>
+          <span className="block md:inline min-h-[1.3em]">
+            <span
+              className={`text-green-700 ${isTypedProfileClickable ? "cursor-pointer hover:underline" : ""}`}
+              onMouseEnter={() => {
+                if (isTypedNameComplete) setIsNameHoverPaused(true);
+              }}
+              onMouseLeave={() => setIsNameHoverPaused(false)}
+              onClick={handleTypedNameClick}
+            >
+              {typedTail}
+            </span>
+            <span className="typing-caret" aria-hidden="true">|</span>
+          </span>
         </h2>
       </div>
       <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip" }}>
