@@ -263,8 +263,8 @@ export default function ProfileSearchDropdown({
         <div
           ref={listOnly ? dropdownRef : null}
           className={isMobile
-            ? "fixed left-4 right-4 top-[72px] z-50 max-h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl"
-            : "absolute left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
+            ? "fixed left-4 right-4 top-[72px] z-[1001] max-h-[calc(100vh-80px)] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-xl"
+            : "absolute left-0 right-0 z-[1001] mt-1 max-h-48 overflow-y-auto rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl w-full"
           }
         >
           {loading ? (
