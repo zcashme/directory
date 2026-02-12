@@ -21,7 +21,10 @@ const STATUS_CONFIG = {
   PENDING_DEPOSIT: { color: "bg-blue-100 text-blue-700", label: "Pending" },
 } as const;
 
-function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string; onReset: () => void }) {
+function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: string }) {
+  const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
+  const [inputAddress, setInputAddress] = useState("");
+  const [showInput, setShowInput] = useState(!initialDepositAddress);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [statusData, setStatusData] = useState<SwapStatusData | null>(null);
   const [statusError, setStatusError] = useState("");
@@ -72,6 +75,54 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
 
   const fromSymbol = parseTokenSymbol(request?.originAsset) || "";
   const toSymbol = parseTokenSymbol(request?.destinationAsset) || "";
+
+  if (showInput) {
+    return (
+      <div>
+        <label className="block text-sm font-semibold text-gray-700 mb-2">
+          Enter Deposit Address
+        </label>
+        <input
+          type="text"
+          value={inputAddress}
+          onChange={(e) => setInputAddress(e.target.value)}
+          placeholder="Paste your deposit address..."
+          className="w-full border border-gray-800 px-3 py-3 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500 mb-4"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              const value = inputAddress.trim();
+              if (value) {
+                setDepositAddress(value);
+                setShowInput(false);
+                setStatusData(null);
+                setStatusError("");
+              }
+            }
+          }}
+        />
+        <button
+          onClick={() => {
+            const value = inputAddress.trim();
+            if (value) {
+              setDepositAddress(value);
+              setShowInput(false);
+              setStatusData(null);
+              setStatusError("");
+            }
+          }}
+          disabled={!inputAddress.trim()}
+          className={`w-full px-4 py-3 text-md font-semibold rounded-xl border border-gray-800 transition-colors ${
+            inputAddress.trim()
+              ? "text-gray-900 hover:bg-gray-50"
+              : "bg-gray-100 text-gray-400 border-gray-300"
+          }`}
+          style={inputAddress.trim() ? { backgroundColor: "var(--color-background)" } : {}}
+        >
+          Check Status
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -207,7 +258,10 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
 
       <div className="flex gap-2">
         <button
-          onClick={onReset}
+          onClick={() => {
+            setShowInput(true);
+            setInputAddress("");
+          }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >
           Check Another
@@ -238,7 +292,6 @@ function SwapStatusDisplay({ depositAddress, onReset }: { depositAddress: string
 
 export default function SwapAppClient({ initialDepositAddress }: { initialDepositAddress: string | null }) {
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
-  const [checkDepositAddress, setCheckDepositAddress] = useState(initialDepositAddress || "");
 
   const store = useSwapsStore();
   const {
@@ -371,10 +424,6 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     );
   }
 
-  const handleResetStatusCheck = () => {
-    setIsStatus(false);
-    setCheckDepositAddress("");
-  };
 
   return (
     <>
@@ -388,10 +437,10 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
       {/* Flip Card Container */}
       <div className="relative" style={{ perspective: "1000px", minHeight: "600px" }}>
         <div
-          className="relative w-full transition-transform duration-700"
+          className="relative w-full transition-transform duration-300"
           style={{
             transformStyle: "preserve-3d",
-            transform: isStatus ? "rotateY(180deg)" : "rotateY(0deg)",
+            transform: isStatus ? "rotateX(180deg)" : "rotateX(0deg)",
           }}
         >
           {/* Front Side - Main Swap Card */}
@@ -590,58 +639,23 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               backgroundColor: 'var(--color-background)',
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
+              transform: "rotateX(180deg)",
             }}
           >
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-lg font-semibold">Check Swap Status</h2>
                 <button
-                  onClick={handleResetStatusCheck}
+                  onClick={() => setIsStatus(false)}
                   className="text-sm text-gray-600 hover:text-gray-800"
                 >
                   ← Back to Swap
                 </button>
               </div>
 
-              {!checkDepositAddress ? (
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Enter Deposit Address
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Paste your deposit address..."
-                    className="w-full border border-gray-800 px-3 py-3 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500 mb-4"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const value = (e.target as HTMLInputElement).value.trim();
-                        if (value) {
-                          setCheckDepositAddress(value);
-                        }
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={(e) => {
-                      const input = e.currentTarget.previousElementSibling as HTMLInputElement;
-                      const value = input?.value.trim();
-                      if (value) {
-                        setCheckDepositAddress(value);
-                      }
-                    }}
-                    className="w-full px-4 py-3 text-md font-semibold rounded-xl border border-gray-800 text-gray-900 hover:bg-gray-50 transition-colors"
-                    style={{ backgroundColor: "var(--color-background)" }}
-                  >
-                    Check Status
-                  </button>
-                </div>
-              ) : (
-                <SwapStatusDisplay
-                  depositAddress={checkDepositAddress}
-                  onReset={() => setCheckDepositAddress("")}
-                />
-              )}
+              <SwapStatusDisplay
+                initialDepositAddress={initialDepositAddress || ""}
+              />
             </div>
           </div>
         </div>
