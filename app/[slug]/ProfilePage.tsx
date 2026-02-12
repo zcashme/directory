@@ -42,12 +42,14 @@ export default function ProfilePage({
   const messaging = useMessagingStore();
   const swap = useSwapStore();
   const { mode, showBack, setMode } = messaging;
+  const ensureMessagingProfile = messaging.ensureProfile;
+  const ensureSwapProfile = swap.ensureProfile;
 
   // Reset stores when switching to a different profile (synchronous, before paint)
   useLayoutEffect(() => {
-    messaging.ensureProfile(initialProfile.address);
-    swap.ensureProfile(initialProfile.address, null);
-  }, [initialProfile.address]);
+    ensureMessagingProfile(initialProfile.address);
+    ensureSwapProfile(initialProfile.address, null);
+  }, [initialProfile.address, ensureMessagingProfile, ensureSwapProfile]);
 
   // Fetch tokens on mount
   useEffect(() => {

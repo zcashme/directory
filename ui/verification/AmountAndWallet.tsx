@@ -43,6 +43,7 @@ const CURRENCIES: Record<string, Currency> = {
   ZAR: { symbol: "R", name: "South African Rand" }
 };
 const FIAT_TICKERS = Object.keys(CURRENCIES);
+const FIAT_STATE_STORAGE_KEY = "zcashme.amountAndWallet.fiatState";
 
 const formatDecimal = (value: number, fallback = "") => {
   const num = Number(value);
@@ -111,6 +112,8 @@ export default function AmountAndWallet({
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
+  const [preferFiatValue, setPreferFiatValue] = useState(false);
+  const [fiatStateHydrated, setFiatStateHydrated] = useState(false);
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -150,11 +153,11 @@ export default function AmountAndWallet({
   }, [rateRequested, fiat, asset]);
 
   useEffect(() => {
-    if (!rateFetched || !isUsdOpen || isTypingFiat) return;
+    if (!rateFetched || !isUsdOpen || isTypingFiat || preferFiatValue) return;
     const num = parseFloat(amount || "0");
     if (Number.isNaN(num)) return;
     setUsdInput(formatDecimal(num * rate));
-  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat]);
+  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat, preferFiatValue]);
 
   useEffect(() => {
     if (!isUsdOpen) {
@@ -162,6 +165,49 @@ export default function AmountAndWallet({
       setFiatSearch("");
     }
   }, [isUsdOpen]);
+
+  useEffect(() => {
+    if (!showUsdPill || typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem(FIAT_STATE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        usdInput?: string;
+        fiat?: string;
+        preferFiatValue?: boolean;
+        isUsdOpen?: boolean;
+      };
+      if (typeof parsed.usdInput === "string") setUsdInput(parsed.usdInput);
+      if (typeof parsed.fiat === "string" && FIAT_TICKERS.includes(parsed.fiat)) setFiat(parsed.fiat);
+      if (typeof parsed.preferFiatValue === "boolean") setPreferFiatValue(parsed.preferFiatValue);
+      if (parsed.isUsdOpen) {
+        setIsUsdOpen(true);
+        setRateRequested(true);
+      }
+    } catch {
+      // Ignore malformed session data.
+    } finally {
+      setFiatStateHydrated(true);
+    }
+  }, [showUsdPill]);
+
+  useEffect(() => {
+    if (!showUsdPill || typeof window === "undefined") return;
+    if (!fiatStateHydrated) return;
+    try {
+      window.sessionStorage.setItem(
+        FIAT_STATE_STORAGE_KEY,
+        JSON.stringify({
+          usdInput,
+          fiat,
+          preferFiatValue,
+          isUsdOpen,
+        })
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [showUsdPill, fiatStateHydrated, usdInput, fiat, preferFiatValue, isUsdOpen]);
 
   // Close token dropdown when clicking outside
   useEffect(() => {
@@ -192,9 +238,20 @@ export default function AmountAndWallet({
   useEffect(() => {
     if (!rateRequested) return;
     setRateFetched(false);
-    setUsdInput("");
     void fetchRate(fiat, asset);
   }, [fiat, asset, rateRequested]);
+
+  useEffect(() => {
+    if (!rateFetched || !isUsdOpen || !preferFiatValue) return;
+    if (!usdInput || usdInput.endsWith(".")) return;
+    const num = parseFloat(usdInput);
+    if (!Number.isFinite(num)) return;
+    const clamped = clamp(num, 0, 1000000);
+    const cryptoAmount = rate > 0 ? clamped / rate : clamped;
+    const formatted = cryptoAmount.toFixed(8).replace(/\.?0+$/, "");
+    if (formatted === (amount || "")) return;
+    setAmount(formatted);
+  }, [rateFetched, isUsdOpen, preferFiatValue, usdInput, rate, amount, setAmount]);
 
   const handleToggleUsd = () => {
     if (!rateRequested) {
@@ -275,6 +332,7 @@ export default function AmountAndWallet({
                 if (parts[1] && parts[1].length > 8) return;
 
                 setAmount(val);
+                setPreferFiatValue(false);
 
                 // Auto-open USD pill when typing a number if it's available
                 if (showUsdPill && !isUsdOpen && val && !rateRequested) {
@@ -411,8 +469,9 @@ export default function AmountAndWallet({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === "") {
-                          setUsdInput("");
-                          return;
+                        setUsdInput("");
+                        setPreferFiatValue(true);
+                        return;
                         }
 
                         // Only allow digits and a single decimal point
@@ -430,6 +489,7 @@ export default function AmountAndWallet({
                         if (parts[1] && parts[1].length > 2) return;
 
                         setUsdInput(val);
+                        setPreferFiatValue(true);
 
                         // Update crypto side only if we have a valid complete number
                         if (val && !val.endsWith('.')) {

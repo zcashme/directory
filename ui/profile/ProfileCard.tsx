@@ -598,7 +598,7 @@ function RedirectModal({ isOpen, label }: RedirectModalProps) {
 
 interface ProfileCardProps {
   profile: Profile;
-  onSelect?: (profile: Profile) => void; // eslint-disable-line no-unused-vars
+  onSelect?: (profile: Profile) => void;
   warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;
@@ -641,6 +641,7 @@ export default function ProfileCard({
   // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
   const warningEnabled = warning !== null;
   const warningConfig = getWarningConfig({ profile, warning: warningEnabled, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const warningDefaultExpanded = warningConfig?.defaultExpanded;
   const fullLinkRowClasses: LinkRowClasses = {
     row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
     left: "flex items-center gap-2 shrink-0",
@@ -659,9 +660,9 @@ export default function ProfileCard({
     (profile?.rank_daily ?? 0) > 0;
 
   useEffect(() => {
-    if (!warningConfig) return;
-    setShowDetail(!!warningConfig.defaultExpanded);
-  }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
+    if (warningDefaultExpanded === undefined) return;
+    setShowDetail(!!warningDefaultExpanded);
+  }, [warningDefaultExpanded]);
 
   useEffect(() => {
     if (!menuOpen) return;
