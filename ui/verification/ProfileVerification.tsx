@@ -9,6 +9,7 @@ import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
 
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
+import { useMessagingStore } from "@/lib/stores/messaging";
 import { Alert } from "@/ui/common";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
@@ -25,6 +26,15 @@ export default function ProfileVerification({
   profile,
   pendingEdits,
 }: ProfileVerificationProps) {
+  const verify = useMessagingStore(state => state.verify);
+  const verifyQrEnabled = useMessagingStore(state => state.verifyQrEnabled);
+  const pollStatus = useMessagingStore(state => state.pollStatus);
+  const pollOtpPhase = useMessagingStore(state => state.pollOtpPhase);
+  const otpInlineSuccess = useMessagingStore(state => state.otpInlineSuccess);
+  const pollDebug = useMessagingStore(state => state.pollDebug);
+  const setVerify = useMessagingStore(state => state.setVerify);
+  const setVerifyQrEnabled = useMessagingStore(state => state.setVerifyQrEnabled);
+  const resetVerificationPolling = useMessagingStore(state => state.resetVerificationPolling);
 
   // Compute verification memo reactively from pending edits
   const memo = useMemo(() => {

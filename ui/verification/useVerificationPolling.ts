@@ -53,26 +53,24 @@ export interface UseVerificationPollingResult {
 }
 
 export default function useVerificationPolling(): UseVerificationPollingResult {
-  const {
-    verifyQrEnabled,
-    verify,
-    pollStatus,
-    pollOtpPhase,
-    pollOtpPhaseHistory,
-    otpInlineSuccess,
-    pollError,
-    pollElapsedMs,
-    setVerify,
-    setPollStatus,
-    setPollOtpStatus,
-    setPollOtpPhase,
-    setPollOtpPhaseHistory,
-    setOtpInlineSuccess,
-    setPollError,
-    setPollDebug,
-    setPollStartedAt,
-    setPollElapsedMs,
-  } = useMessagingStore();
+  const verifyQrEnabled = useMessagingStore(state => state.verifyQrEnabled);
+  const verify = useMessagingStore(state => state.verify);
+  const pollStatus = useMessagingStore(state => state.pollStatus);
+  const pollOtpPhase = useMessagingStore(state => state.pollOtpPhase);
+  const pollOtpPhaseHistory = useMessagingStore(state => state.pollOtpPhaseHistory);
+  const otpInlineSuccess = useMessagingStore(state => state.otpInlineSuccess);
+  const pollError = useMessagingStore(state => state.pollError);
+  const pollElapsedMs = useMessagingStore(state => state.pollElapsedMs);
+  const setVerify = useMessagingStore(state => state.setVerify);
+  const setPollStatus = useMessagingStore(state => state.setPollStatus);
+  const setPollOtpStatus = useMessagingStore(state => state.setPollOtpStatus);
+  const setPollOtpPhase = useMessagingStore(state => state.setPollOtpPhase);
+  const setPollOtpPhaseHistory = useMessagingStore(state => state.setPollOtpPhaseHistory);
+  const setOtpInlineSuccess = useMessagingStore(state => state.setOtpInlineSuccess);
+  const setPollError = useMessagingStore(state => state.setPollError);
+  const setPollDebug = useMessagingStore(state => state.setPollDebug);
+  const setPollStartedAt = useMessagingStore(state => state.setPollStartedAt);
+  const setPollElapsedMs = useMessagingStore(state => state.setPollElapsedMs);
 
   const pollRequestId = verify.requestId;
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
