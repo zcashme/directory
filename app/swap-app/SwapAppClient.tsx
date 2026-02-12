@@ -7,10 +7,18 @@ import SwapAddressInput from "@/ui/swap/SwapAddressInput";
 import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
-import { getSwapQuote, confirmSwap, getSwapTokens, getSwapStatus } from "@/lib/swap/oneClick";
+import {
+  getSwapQuote,
+  confirmSwap,
+  getSwapTokens,
+  getSwapStatus,
+} from "@/lib/swap/oneClick";
 import { parseTokenSymbol } from "@/lib/swap/utils";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
-import type { Token, SwapQuoteDisplay as SwapQuoteDisplayType } from "@/lib/swap/types";
+import type {
+  Token,
+  SwapQuoteDisplay as SwapQuoteDisplayType,
+} from "@/lib/swap/types";
 
 const STATUS_CONFIG = {
   SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
@@ -21,9 +29,12 @@ const STATUS_CONFIG = {
   PENDING_DEPOSIT: { color: "bg-blue-100 text-blue-700", label: "Pending" },
 } as const;
 
-function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: string }) {
-  const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
-  const [inputAddress, setInputAddress] = useState("");
+function SwapStatusDisplay({
+  initialDepositAddress,
+}: {
+  initialDepositAddress: string;
+}) {
+  const [depositAddress] = useState(initialDepositAddress);
   const [showInput, setShowInput] = useState(!initialDepositAddress);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -37,19 +48,35 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       if (!data || "error" in data) return 5000;
 
       const status = data.status?.toUpperCase();
-      const isTerminal = ['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(status || "");
+      const isTerminal = [
+        "SUCCESS",
+        "FAILED",
+        "REFUNDED",
+        "INCOMPLETE_DEPOSIT",
+      ].includes(status || "");
 
       // Stop polling if terminal state reached
       return isTerminal ? false : 5000;
     },
   });
 
-  const statusData = statusResult && "status" in statusResult ? statusResult : null;
-  const statusError = statusResult && "error" in statusResult ? statusResult.error : (error?.message || "");
+  const statusData =
+    statusResult && "status" in statusResult ? statusResult : null;
+  const statusError =
+    statusResult && "error" in statusResult
+      ? statusResult.error
+      : error?.message || "";
 
   const status = statusData?.status?.toUpperCase() || "PENDING_DEPOSIT";
-  const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING_DEPOSIT;
-  const isPolling = !['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(status);
+  const config =
+    STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ||
+    STATUS_CONFIG.PENDING_DEPOSIT;
+  const isPolling = ![
+    "SUCCESS",
+    "FAILED",
+    "REFUNDED",
+    "INCOMPLETE_DEPOSIT",
+  ].includes(status);
 
   const details = statusData?.swapDetails;
   const quote = statusData?.quoteResponse?.quote;
@@ -63,7 +90,9 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-2">
           <h1 className="text-md font-semibold">Swap Status</h1>
-          <span className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}>
+          <span
+            className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}
+          >
             {config.label}
           </span>
           {isPolling && (
@@ -98,9 +127,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
 
       <div className="grid grid-cols-2 gap-3">
         <div className="border border-gray-800 rounded-xl p-4">
-          <p className="text-xs text-gray-600 mb-2">
-            Sent
-          </p>
+          <p className="text-xs text-gray-600 mb-2">Sent</p>
           <div className="flex items-center gap-2 mb-1">
             <TokenIcon symbol={fromSymbol || ""} size={24} />
             <p className="text-lg font-semibold">
@@ -113,9 +140,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
         </div>
 
         <div className="border border-gray-800 rounded-xl p-4">
-          <p className="text-xs text-gray-600 mb-2">
-            Received
-          </p>
+          <p className="text-xs text-gray-600 mb-2">Received</p>
           <div className="flex items-center gap-2 mb-1">
             <TokenIcon symbol={toSymbol || ""} size={24} />
             <p className="text-lg font-semibold">
@@ -134,7 +159,11 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
           className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 font-semibold"
         >
           <span>Swap Details</span>
-          <span className={`transform transition ${detailsOpen ? "rotate-180" : ""}`}>▼</span>
+          <span
+            className={`transform transition ${detailsOpen ? "rotate-180" : ""}`}
+          >
+            ▼
+          </span>
         </button>
 
         {detailsOpen && (
@@ -142,11 +171,15 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
             {[
               {
                 label: "Origin Asset",
-                value: request?.originAsset ? parseTokenSymbol(request.originAsset) : null,
+                value: request?.originAsset
+                  ? parseTokenSymbol(request.originAsset)
+                  : null,
               },
               {
                 label: "Destination Asset",
-                value: request?.destinationAsset ? parseTokenSymbol(request.destinationAsset) : null,
+                value: request?.destinationAsset
+                  ? parseTokenSymbol(request.destinationAsset)
+                  : null,
               },
               { label: "Deposit Address", value: depositAddress, mono: true },
               {
@@ -157,8 +190,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
               {
                 label: "Deadline",
                 value:
-                  quote?.deadline &&
-                  new Date(quote.deadline).toLocaleString(),
+                  quote?.deadline && new Date(quote.deadline).toLocaleString(),
               },
               {
                 label: "Updated",
@@ -178,7 +210,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
                     {value}
                   </span>
                 </div>
-              ) : null
+              ) : null,
             )}
           </div>
         )}
@@ -187,7 +219,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       {statusError && (
         <div
           className="text-gray-900 text-sm border border-gray-800 rounded-xl p-3"
-          style={{ backgroundColor: 'var(--color-background)' }}
+          style={{ backgroundColor: "var(--color-background)" }}
         >
           {statusError}
         </div>
@@ -196,7 +228,6 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       <div className="flex gap-2">
         <button
           onClick={() => {
-            setInputAddress("");
             setShowInput(true);
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
@@ -227,9 +258,15 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
   );
 }
 
-export default function SwapAppClient({ initialDepositAddress }: { initialDepositAddress: string | null }) {
+export default function SwapAppClient({
+  initialDepositAddress,
+}: {
+  initialDepositAddress: string | null;
+}) {
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
-  const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(initialDepositAddress || "");
+  const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(
+    initialDepositAddress || "",
+  );
 
   // Token state
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -253,7 +290,9 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
   // Deposit state (after confirmation)
   const [depositUri, setDepositUri] = useState("");
-  const [statusKey, setStatusKey] = useState<{ depositAddress: string } | null>(null);
+  const [statusKey, setStatusKey] = useState<{ depositAddress: string } | null>(
+    null,
+  );
   const [depositAmountDecimal, setDepositAmountDecimal] = useState("");
 
   // Load tracking deposit address from localStorage on mount
@@ -269,7 +308,10 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
   // Save tracking deposit address to localStorage when it changes
   useEffect(() => {
     if (trackingDepositAddress) {
-      localStorage.setItem("swapTrackingDepositAddress", trackingDepositAddress);
+      localStorage.setItem(
+        "swapTrackingDepositAddress",
+        trackingDepositAddress,
+      );
     }
   }, [trackingDepositAddress]);
 
@@ -389,7 +431,9 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
   };
 
   const handleFromTokenChange = (tokenId: string) => {
-    const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
+    const token = tokens.find(
+      (t) => (t.id || t.assetId || t.symbol) === tokenId,
+    );
     if (token) {
       setFromToken(token);
       setQuote(null);
@@ -398,7 +442,9 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
   };
 
   const handleToTokenChange = (tokenId: string) => {
-    const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
+    const token = tokens.find(
+      (t) => (t.id || t.assetId || t.symbol) === tokenId,
+    );
     if (token) {
       setToToken(token);
       setQuote(null);
@@ -431,12 +477,11 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
   if (tokensLoading && tokens.length === 0) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <p className="text-gray-600">Loading tokens...</p>
       </div>
     );
   }
-
 
   return (
     <>
@@ -444,14 +489,17 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
       {tokensError && (
         <div
           className="mb-4 p-4 rounded-xl border border-gray-800 text-gray-900"
-          style={{ backgroundColor: 'var(--color-background)' }}
+          style={{ backgroundColor: "var(--color-background)" }}
         >
           {tokensError}
         </div>
       )}
 
       {/* Flip Card Container */}
-      <div className="relative overflow-visible" style={{ perspective: "1000px", minHeight: "600px" }}>
+      <div
+        className="relative overflow-visible"
+        style={{ perspective: "1000px", minHeight: "500px" }}
+      >
         <div
           className="relative w-full transition-transform duration-300 overflow-visible"
           style={{
@@ -461,15 +509,15 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
         >
           {/* Front Side - Main Swap Card */}
           <div
-            className="rounded-3xl border border-gray-800 p-6 shadow-lg relative overflow-visible"
+            className="rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg relative overflow-visible"
             style={{
-              backgroundColor: 'var(--color-background)',
+              backgroundColor: "var(--color-background)",
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
             }}
           >
             {/* Info Icon with Tooltip */}
-            <div className="absolute top-6 right-6 group">
+            <div className="absolute top-4 right-4 md:top-6 md:right-6 group">
               <button
                 type="button"
                 className="text-gray-400 hover:text-gray-600"
@@ -489,19 +537,25 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                 </svg>
               </button>
               <div className="hidden group-hover:block absolute top-8 right-0 w-64 p-3 rounded-xl border border-gray-300 bg-white shadow-lg z-10">
-                <p className="text-sm text-gray-700 font-semibold mb-1">Powered by Near Intents</p>
+                <p className="text-sm text-gray-700 font-semibold mb-1">
+                  Powered by Near Intents
+                </p>
                 <p className="text-xs text-gray-600">
-                  This swap interface uses the Near Intents 1Click API to provide cross-chain cryptocurrency swaps with competitive rates and fast execution.
+                  This swap interface uses the Near Intents 1Click API to
+                  provide cross-chain cryptocurrency swaps with competitive
+                  rates and fast execution.
                 </p>
               </div>
             </div>
             {/* Currency Swap Section */}
-            <div className="relative mb-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+            <div className="mb-6">
+              <div className="flex flex-col md:flex-row gap-3 md:gap-3 items-stretch">
                 {/* From Section */}
-                <div>
+                <div className="flex-1">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">From</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      From
+                    </label>
                     <AmountAndWallet
                       amount={fromAmount}
                       setAmount={handleFromAmountChange}
@@ -514,10 +568,46 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   </div>
                 </div>
 
+                {/* Swap Direction Button */}
+                <div className="flex items-center justify-center md:pt-7">
+                  <button
+                    type="button"
+                    onClick={handleSwapDirection}
+                    disabled={!fromToken || !toToken}
+                    className={`p-2 rounded-xl transition-colors border border-gray-800 ${
+                      fromToken && toToken
+                        ? "hover:bg-gray-100 text-gray-600"
+                        : "opacity-50 cursor-not-allowed text-gray-400"
+                    }`}
+                    title="Swap direction"
+                    style={
+                      fromToken && toToken
+                        ? { backgroundColor: "var(--color-background)" }
+                        : {}
+                    }
+                  >
+                    <svg
+                      className="w-6 h-6 rotate-90 md:rotate-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
                 {/* To Section */}
-                <div>
+                <div className="flex-1">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-gray-700">To</label>
+                    <label className="text-sm font-semibold text-gray-700">
+                      To
+                    </label>
                     <AmountAndWallet
                       amount={toAmount}
                       setAmount={setToAmount}
@@ -530,36 +620,6 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   </div>
                 </div>
               </div>
-
-              {/* Swap Direction Button - Centered */}
-              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
-                <button
-                  type="button"
-                  onClick={handleSwapDirection}
-                  disabled={!fromToken || !toToken}
-                  className={`p-2 rounded-xl transition-colors border border-gray-800 ${
-                    fromToken && toToken
-                      ? "hover:bg-gray-100 text-gray-600"
-                      : "opacity-50 cursor-not-allowed text-gray-400"
-                  }`}
-                  title="Swap direction"
-                  style={fromToken && toToken ? { backgroundColor: "var(--color-background)" } : {}}
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                    />
-                  </svg>
-                </button>
-              </div>
             </div>
 
             {/* Address Inputs Section */}
@@ -568,14 +628,22 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                 label="Refund Address"
                 value={refundAddress}
                 onChange={setRefundAddress}
-                placeholder={fromToken ? `${fromToken.symbol} address...` : "Select from token first"}
+                placeholder={
+                  fromToken
+                    ? `${fromToken.symbol} address...`
+                    : "Select from token first"
+                }
                 disabled={!fromToken}
               />
               <SwapAddressInput
                 label="Destination Address"
                 value={destAddress}
                 onChange={setDestAddress}
-                placeholder={toToken ? `${toToken.symbol} address...` : "Select to token first"}
+                placeholder={
+                  toToken
+                    ? `${toToken.symbol} address...`
+                    : "Select to token first"
+                }
                 disabled={!toToken}
               />
             </div>
@@ -596,7 +664,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
             {quoteError && (
               <div
                 className="mb-6 p-4 rounded-xl border border-gray-800 text-gray-900 text-sm"
-                style={{ backgroundColor: 'var(--color-background)' }}
+                style={{ backgroundColor: "var(--color-background)" }}
               >
                 {quoteError}
               </div>
@@ -614,7 +682,11 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                       ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
                       : "bg-gray-100 text-gray-400 border border-gray-300"
                   }`}
-                  style={!quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
+                  style={
+                    !quoteLoading
+                      ? { backgroundColor: "var(--color-background)" }
+                      : {}
+                  }
                 >
                   {quoteLoading ? "Getting quote..." : "Get a quote"}
                 </button>
@@ -627,7 +699,11 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                       ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
                       : "bg-gray-100 text-gray-400 border border-gray-300"
                   }`}
-                  style={quote && !confirmLoading ? { backgroundColor: "var(--color-background)" } : {}}
+                  style={
+                    quote && !confirmLoading
+                      ? { backgroundColor: "var(--color-background)" }
+                      : {}
+                  }
                 >
                   {confirmLoading ? "Confirming..." : "Confirm quote"}
                 </button>
@@ -664,9 +740,9 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
           {/* Back Side - Swap Status Checker */}
           <div
-            className="rounded-3xl border border-gray-800 p-6 shadow-lg absolute top-0 left-0 w-full"
+            className="rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg absolute top-0 left-0 w-full"
             style={{
-              backgroundColor: 'var(--color-background)',
+              backgroundColor: "var(--color-background)",
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
               transform: "rotateX(180deg)",

@@ -157,9 +157,15 @@ export default function ProfileSearchDropdown({
     lastQueryRef.current = currentQuery;
 
     // Use API route instead of Server Action to prevent router cache invalidation
+    // If on a subdomain (like swap.zcash.me), use the main domain for API calls
+    const isSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('swap.');
+    const apiBaseUrl = isSubdomain
+      ? `${window.location.protocol}//${window.location.hostname.replace('swap.', '')}${window.location.port ? ':' + window.location.port : ''}`
+      : '';
+
     const searchPromise: Promise<SearchResult> = canReuseResults
       ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null, exists: true })
-      : fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
+      : fetch(`${apiBaseUrl}/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
           headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
         })
           .then(res => res.ok ? res.json() : { results: [], next_cursor: null })

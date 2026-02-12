@@ -104,14 +104,3 @@ export function getSwapUrl(params?: { depositAddress?: string }): string {
   return `${protocol}://swap.${baseDomain}${queryString}`;
 }
 
-/**
- * Generate stats URL using subdomain routing
- * Example: getStatsUrl()
- * Returns: "https://stats.zcash.me"
- */
-export function getStatsUrl(): string {
-  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'zcash.me';
-  const protocol = baseDomain.includes('localhost') ? 'http' : 'https';
-
-  return `${protocol}://stats.${baseDomain}`;
-}

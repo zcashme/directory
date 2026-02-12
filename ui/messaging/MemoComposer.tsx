@@ -1,6 +1,5 @@
 import { useMemo, useRef, useEffect } from "react";
 import type { Profile } from "@/lib/profile/types";
-import { useMessagingStore } from "@/lib/stores/messaging";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
@@ -36,6 +35,11 @@ interface MemoComposerProps {
   asset?: string;
   assetOptions?: AssetOption[];
   onSetAsset?: (_asset: string) => void;
+  // Controlled state props
+  memo: string;
+  setMemo: (_memo: string) => void;
+  amount: string;
+  setAmount: (_amount: string) => void;
 }
 
 export default function MemoComposer({
@@ -44,8 +48,11 @@ export default function MemoComposer({
   asset = "ZEC",
   assetOptions = [],
   onSetAsset,
+  memo,
+  setMemo,
+  amount,
+  setAmount,
 }: MemoComposerProps) {
-  const { memo, amount, setMemo, setAmount } = useMessagingStore();
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 

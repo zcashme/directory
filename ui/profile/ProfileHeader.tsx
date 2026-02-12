@@ -38,7 +38,18 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
         <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => {
+                // Check if we're on a subdomain (like swap.zcash.me)
+                const isSubdomain = window.location.hostname.includes('swap.');
+                if (isSubdomain) {
+                  // Redirect to main domain
+                  const mainDomain = window.location.hostname.replace('swap.', '');
+                  const port = window.location.port ? ':' + window.location.port : '';
+                  window.location.href = `${window.location.protocol}//${mainDomain}${port}/`;
+                } else {
+                  router.push("/");
+                }
+              }}
               className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
             >
               Zcash.me/
@@ -86,7 +97,16 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                       const slug = buildSlug(v as Profile);
                       if (slug) {
                         (window as any).lastSelectionWasExplicit = true;
-                        router.push(`/${slug}`);
+                        // Check if we're on a subdomain (like swap.zcash.me)
+                        const isSubdomain = window.location.hostname.includes('swap.');
+                        if (isSubdomain) {
+                          // Redirect to main domain
+                          const mainDomain = window.location.hostname.replace('swap.', '');
+                          const port = window.location.port ? ':' + window.location.port : '';
+                          window.location.href = `${window.location.protocol}//${mainDomain}${port}/${slug}`;
+                        } else {
+                          router.push(`/${slug}`);
+                        }
                       }
                     } else {
                       setSearch(v);

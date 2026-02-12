@@ -13,6 +13,7 @@
     "@defuse-protocol/one-click-sdk-typescript": "^0.1.15",
     "@floating-ui/react": "^0.27.17",
     "@supabase/supabase-js": "^2.56.0",
+    "@tanstack/react-query": "^5.90.21",
     "bech32": "^2.0.0",
     "bs58check": "^4.0.0",
     "emojilib": "^4.0.0",
