@@ -114,8 +114,9 @@ export default function AmountAndWallet({
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
-  const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const tokenButtonRef = useRef<HTMLButtonElement>(null);
+  const inputContainerRef = useRef<HTMLDivElement>(null);
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -229,7 +230,7 @@ export default function AmountAndWallet({
   return (
     <div className="w-full mb-2">
       <div className="flex items-center gap-3">
-        <div className="relative flex flex-1 items-stretch">
+        <div ref={inputContainerRef} className="relative flex flex-1 items-stretch">
           {showUsdPill && (
             <>
               <div
@@ -310,11 +311,14 @@ export default function AmountAndWallet({
                     ref={tokenButtonRef}
                     type="button"
                     onClick={() => {
-                      if (!isTokenDropdownOpen && tokenButtonRef.current) {
-                        const rect = tokenButtonRef.current.getBoundingClientRect();
+                      if (!isTokenDropdownOpen && inputContainerRef.current && tokenButtonRef.current) {
+                        const containerRect = inputContainerRef.current.getBoundingClientRect();
+                        const buttonRect = tokenButtonRef.current.getBoundingClientRect();
+                        const dropdownWidth = 256; // w-64 = 16rem = 256px
                         setTokenDropdownPos({
-                          top: rect.bottom + 4,
-                          right: window.innerWidth - rect.right,
+                          top: buttonRect.bottom + 4,
+                          left: containerRect.left + (containerRect.width - dropdownWidth) / 2,
+                          width: dropdownWidth,
                         });
                       }
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
@@ -327,7 +331,7 @@ export default function AmountAndWallet({
                   {isTokenDropdownOpen && tokenDropdownPos && createPortal(
                     <div
                       className="fixed w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] token-selector"
-                      style={{ top: tokenDropdownPos.top, right: tokenDropdownPos.right }}
+                      style={{ top: tokenDropdownPos.top, left: tokenDropdownPos.left }}
                     >
                       <div className="p-2 border-b border-gray-800">
                         <input
