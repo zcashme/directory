@@ -24,7 +24,6 @@ const STATUS_CONFIG = {
 function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: string }) {
   const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
   const [inputAddress, setInputAddress] = useState("");
-  const [showInput, setShowInput] = useState(!initialDepositAddress);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [statusData, setStatusData] = useState<SwapStatusData | null>(null);
   const [statusError, setStatusError] = useState("");
@@ -75,54 +74,6 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
 
   const fromSymbol = parseTokenSymbol(request?.originAsset) || "";
   const toSymbol = parseTokenSymbol(request?.destinationAsset) || "";
-
-  if (showInput) {
-    return (
-      <div>
-        <label className="block text-sm font-semibold text-gray-700 mb-2">
-          Enter Deposit Address
-        </label>
-        <input
-          type="text"
-          value={inputAddress}
-          onChange={(e) => setInputAddress(e.target.value)}
-          placeholder="Paste your deposit address..."
-          className="w-full border border-gray-800 px-3 py-3 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500 mb-4"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              const value = inputAddress.trim();
-              if (value) {
-                setDepositAddress(value);
-                setShowInput(false);
-                setStatusData(null);
-                setStatusError("");
-              }
-            }
-          }}
-        />
-        <button
-          onClick={() => {
-            const value = inputAddress.trim();
-            if (value) {
-              setDepositAddress(value);
-              setShowInput(false);
-              setStatusData(null);
-              setStatusError("");
-            }
-          }}
-          disabled={!inputAddress.trim()}
-          className={`w-full px-4 py-3 text-md font-semibold rounded-xl border border-gray-800 transition-colors ${
-            inputAddress.trim()
-              ? "text-gray-900 hover:bg-gray-50"
-              : "bg-gray-100 text-gray-400 border-gray-300"
-          }`}
-          style={inputAddress.trim() ? { backgroundColor: "var(--color-background)" } : {}}
-        >
-          Check Status
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -259,7 +210,6 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       <div className="flex gap-2">
         <button
           onClick={() => {
-            setShowInput(true);
             setInputAddress("");
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
@@ -309,7 +259,6 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     quoteLoading,
     quoteError,
     confirmLoading,
-    showInfo,
     loadTokens,
   } = store;
 
@@ -406,8 +355,6 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     }
   };
 
-  const canGetQuote = fromToken && toToken && fromAmount && parseFloat(fromAmount) > 0 && refundAddress && destAddress;
-
   // Format tokens for AmountAndWallet
   const formattedTokens = tokens.map((token) => ({
     id: token.id || token.assetId || token.symbol,
@@ -453,11 +400,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
             }}
           >
             {/* Info Icon with Tooltip */}
-            <div
-              className="absolute top-6 right-6"
-              onMouseEnter={() => store.setShowInfo(true)}
-              onMouseLeave={() => store.setShowInfo(false)}
-            >
+            <div className="absolute top-6 right-6 group">
               <button
                 type="button"
                 className="text-gray-400 hover:text-gray-600"
@@ -476,14 +419,12 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   />
                 </svg>
               </button>
-              {showInfo && (
-                <div className="absolute top-8 right-0 w-64 p-3 rounded-xl border border-gray-300 bg-white shadow-lg z-10">
-                  <p className="text-sm text-gray-700 font-semibold mb-1">Powered by Near Intents</p>
-                  <p className="text-xs text-gray-600">
-                    This swap interface uses the Near Intents 1Click API to provide cross-chain cryptocurrency swaps with competitive rates and fast execution.
-                  </p>
-                </div>
-              )}
+              <div className="hidden group-hover:block absolute top-8 right-0 w-64 p-3 rounded-xl border border-gray-300 bg-white shadow-lg z-10">
+                <p className="text-sm text-gray-700 font-semibold mb-1">Powered by Near Intents</p>
+                <p className="text-xs text-gray-600">
+                  This swap interface uses the Near Intents 1Click API to provide cross-chain cryptocurrency swaps with competitive rates and fast execution.
+                </p>
+              </div>
             </div>
             {/* Currency Swap Section */}
             <div className="flex flex-col md:flex-row md:items-end gap-3 mb-6">
@@ -583,13 +524,13 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               <button
                 type="button"
                 onClick={fetchQuote}
-                disabled={!canGetQuote || quoteLoading}
+                disabled={quoteLoading}
                 className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
-                  canGetQuote && !quoteLoading
+                  !quoteLoading
                     ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
                     : "bg-gray-100 text-gray-400 border border-gray-300"
                 }`}
-                style={canGetQuote && !quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
+                style={!quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
               >
                 {quoteLoading ? "Getting quote..." : "Get a quote"}
               </button>
