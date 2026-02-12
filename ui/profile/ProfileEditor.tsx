@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
+import { checkUsernameTakenByOtherVerifiedAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
@@ -15,6 +16,7 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
+import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
@@ -54,6 +56,17 @@ interface AvatarPrompt {
   provider: string;
   url: string;
 }
+
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const normalizeUsernameInput = (value: string) =>
+  (value || "")
+    .normalize("NFKC")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "_")
+    .replace(/[^a-z0-9_-]/g, "");
 
 export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const {
@@ -145,6 +158,56 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     }),
     [profile]
   );
+  const usernameLockedSuffix = useMemo(() => {
+    if (isUsernameVerified(profile)) return "";
+    if (typeof profile.id !== "number") return "";
+    return `-${profile.id}`;
+  }, [profile.address_verified, profile.id]);
+  const [usernameInput, setUsernameInput] = useState(form.name || "");
+  const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
+  const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
+
+  useEffect(() => {
+    setUsernameInput(form.name || "");
+  }, [form.name]);
+
+  useEffect(() => {
+    if (!isUsernameVerified(profile)) {
+      setUsernameConflict(null);
+      return;
+    }
+
+    const candidate = normalizeUsernameInput(usernameInput);
+    const originalName = normalizeUsernameInput(originals.name);
+
+    if (!candidate || candidate === originalName) {
+      setUsernameConflict(null);
+      if (form.name !== candidate) handleChange("name", candidate);
+      return;
+    }
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      const result = await checkUsernameTakenByOtherVerifiedAction(candidate, profile.id);
+      if (cancelled) return;
+      if (result.ok && result.verified) {
+        setUsernameConflict("That username is already used by another verified profile.");
+        if (form.name !== originalName) {
+          handleChange("name", originalName);
+        }
+      } else {
+        setUsernameConflict(null);
+        if (form.name !== candidate) {
+          handleChange("name", candidate);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [usernameInput, profile.address_verified, profile.id, originals.name]);
 
   // Verification flow hook
   useVerificationFlow(profile.id, setShowRedirect);
@@ -339,20 +402,47 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             <input
               id="name"
               type="text"
-              value={form.name}
+              value={displayedUsername}
               placeholder={originals.name}
               onChange={(e) => {
-                const val = e.target.value
-                  .normalize("NFKC")
-                  .trim()
-                  .toLowerCase()
-                  .replace(/\s+/g, "_")
-                  .replace(/[^a-z0-9_-]/g, "");
-                handleChange("name", val);
+                let raw = e.target.value ?? "";
+                if (usernameLockedSuffix) {
+                  raw = raw.replace(new RegExp(escapeRegex(usernameLockedSuffix), "g"), "");
+                }
+                const val = normalizeUsernameInput(raw);
+                setUsernameInput(val);
+                if (!isUsernameVerified(profile)) {
+                  handleChange("name", val);
+                }
               }}
-              className={`${FIELD_CLASS} pl-[5.5rem]`}
+              onKeyDown={(e) => {
+                if (!usernameLockedSuffix) return;
+                const input = e.currentTarget;
+                const baseLen = form.name.length;
+                const start = input.selectionStart ?? 0;
+                const end = input.selectionEnd ?? 0;
+                const overlapsLockedSuffix = end > baseLen;
+                if ((e.key === "Backspace" || e.key === "Delete") && overlapsLockedSuffix) {
+                  e.preventDefault();
+                  input.setSelectionRange(Math.min(start, baseLen), Math.min(start, baseLen));
+                }
+              }}
+              onClick={(e) => {
+                if (!usernameLockedSuffix) return;
+                const input = e.currentTarget;
+                const baseLen = form.name.length;
+                const start = input.selectionStart ?? 0;
+                const end = input.selectionEnd ?? 0;
+                if (start > baseLen || end > baseLen) {
+                  input.setSelectionRange(baseLen, baseLen);
+                }
+              }}
+              className={`${FIELD_CLASS} pl-[5.5rem] ${usernameConflict ? "border-red-400 focus:border-red-500" : ""}`}
             />
           </div>
+          {usernameConflict && (
+            <p className="mt-1 text-xs text-red-600">{usernameConflict}</p>
+          )}
         </ProfileField>
 
         {/* DISPLAY NAME */}

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { RefObject } from "react";
 import type { Profile } from "@/lib/profile/types";
+import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
@@ -19,6 +20,7 @@ const useSearchDebounce = useDebounce;    // API calls (150ms)
 
 // API response format from /api/directory (matches wallet API docs)
 interface ApiDirectoryResult {
+  id: number;
   username: string;
   display_name: string | null;
   profile_image_url: string | null;
@@ -40,7 +42,7 @@ interface ApiSearchResult {
 // Transform API response to internal Profile format
 function transformApiResult(r: ApiDirectoryResult): Profile {
   return {
-    id: 0, // Not provided by API, use 0 as placeholder
+    id: r.id,
     name: r.username,
     display_name: r.display_name ?? undefined,
     profile_image_url: r.profile_image_url ?? undefined,
@@ -53,6 +55,12 @@ function transformApiResult(r: ApiDirectoryResult): Profile {
     links: [...r.authenticated_links, ...r.unauthenticated_links],
   };
 }
+
+const formatUsername = (profile: Partial<Profile>): string =>
+  getUsernameWithDiscriminator(profile).replace(/\s+/g, "_");
+
+const getDisplayName = (profile: Partial<Profile>): string =>
+  profile.display_name || profile.name || "";
 
 interface SearchResult {
   results: Profile[];
@@ -277,7 +285,7 @@ export default function ProfileSearchDropdown({
               {results.length > 0 ? (
                 results.map((p) => (
                   <div
-                    key={p.name}
+                    key={`${p.name}-${p.id}`}
                     onClick={() => {
                       onChange(p);
                       setShow(false);
@@ -296,7 +304,7 @@ export default function ProfileSearchDropdown({
                     {/* Text + metadata */}
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <span className="truncate shrink-0">
-                        {p.display_name || p.name}
+                        {getDisplayName(p)}
                       </span>
 
                       {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
@@ -306,7 +314,7 @@ export default function ProfileSearchDropdown({
                       )}
 
                       <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                        /{p.name}
+                        /{formatUsername(p)}
                       </span>
                     </div>
                   </div>

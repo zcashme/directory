@@ -30,6 +30,7 @@ interface LinkOutput {
 }
 
 interface DirectoryResult {
+  id: number;
   username: string;
   display_name: string | null;
   profile_image_url: string | null;
@@ -249,6 +250,7 @@ export async function GET(request: Request): Promise<Response> {
       .map((l) => ({ id: l.id, label: l.label, url: l.url, is_verified: l.is_verified }));
 
     return {
+      id: p.id,
       username: p.name,
       display_name: p.display_name,
       profile_image_url: p.profile_image_url,

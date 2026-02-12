@@ -2,7 +2,10 @@
 
 import { createProfile, insertProfileLinks, checkAddressTaken } from "@/lib/signup/createProfile";
 import { checkUsernameExists } from "@/lib/directory/searchProfiles";
-import { checkUsernameIsVerified } from "@/lib/profile/profileQueries";
+import {
+  checkUsernameIsVerified,
+  checkUsernameTakenByOtherVerified,
+} from "@/lib/profile/profileQueries";
 import type {
   CreateProfileResponse,
   CheckAddressTakenResponse,
@@ -108,6 +111,32 @@ export async function checkUsernameIsVerifiedAction(username: string): Promise<C
     }
 
     const verified = await checkUsernameIsVerified(username.trim());
+    return { ok: true, verified };
+  } catch (error) {
+    return {
+      ok: false,
+      error: String((error as Error)?.message || error),
+      verified: false,
+    };
+  }
+}
+
+/**
+ * Server Action for checking whether a username is already used by another verified profile.
+ */
+export async function checkUsernameTakenByOtherVerifiedAction(
+  username: string,
+  currentProfileId?: number
+): Promise<CheckUsernameResponse> {
+  try {
+    if (!username || typeof username !== "string" || !username.trim()) {
+      return { ok: true, verified: false };
+    }
+
+    const verified = await checkUsernameTakenByOtherVerified(
+      username.trim(),
+      currentProfileId
+    );
     return { ok: true, verified };
   } catch (error) {
     return {

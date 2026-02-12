@@ -196,27 +196,41 @@ export const normalizeSlug = (value: string = ""): string =>
     .replace(/[^a-z0-9_-]/g, "");
 
 /**
- * Builds a slug for a profile based on its name and verification status.
+ * Returns true only when the profile's username is explicitly verified.
  */
-export const buildSlug = (profile: Profile): string => {
-  if (!profile?.name) return "";
-  const base = normalizeSlug(profile.name);
+export const isUsernameVerified = (profile: Partial<Profile> | null | undefined): boolean =>
+  profile?.address_verified === true;
+
+/**
+ * Returns the username display value with discriminator for unverified names.
+ */
+export const getUsernameWithDiscriminator = (
+  profile: Partial<Profile> | null | undefined
+): string => {
+  const base = (profile?.name || "").trim();
   if (!base) return "";
-  if (profile.slug) return profile.slug;
-  return profile.address_verified ? base : `${base}-${profile.id}`;
+  if (isUsernameVerified(profile)) return base;
+  return typeof profile?.id === "number" ? `${base}-${profile.id}` : base;
+};
+
+/**
+ * Returns the canonical profile slug using username + discriminator rule.
+ */
+export const buildSlug = (profile: Partial<Profile> | null | undefined): string => {
+  if (!profile?.name) return "";
+  const base = normalizeSlug((profile.name || "").trim());
+  if (!base) return "";
+  if (isUsernameVerified(profile)) {
+    return profile.slug || base;
+  }
+  return typeof profile.id === "number" ? `${base}-${profile.id}` : base;
 };
 
 /**
  * Builds a full shareable URL for a profile using display_name/name + origin.
  */
 export const buildShareUrl = (profile: Profile): string => {
-  const baseSlug = (profile.display_name || profile.name || "")
-    .normalize("NFKC")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_]/g, "");
-
+  const slug = buildSlug(profile);
   const origin = typeof window !== "undefined" ? window.location.origin : "";
-  return `${origin}/${profile.address_verified ? baseSlug : `${baseSlug}-${profile.id}`}`;
+  return `${origin}/${slug}`;
 };

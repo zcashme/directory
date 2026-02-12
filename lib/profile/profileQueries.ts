@@ -43,6 +43,34 @@ export async function checkUsernameIsVerified(username: string): Promise<boolean
 }
 
 /**
+ * Check if username is owned by another verified profile (excluding current profile id).
+ */
+export async function checkUsernameTakenByOtherVerified(
+  username: string,
+  currentProfileId?: number
+): Promise<boolean> {
+  if (!username || !username.trim()) return false;
+
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return false;
+
+  let query = supabase
+    .from("zcasher_searchable")
+    .select("id")
+    .ilike("name", username.trim())
+    .eq("address_verified", true)
+    .limit(1);
+
+  if (typeof currentProfileId === "number") {
+    query = query.neq("id", currentProfileId);
+  }
+
+  const { data, error } = await query;
+  if (error) return false;
+  return Array.isArray(data) && data.length > 0;
+}
+
+/**
  * Get duplicate name count for a specific name (on-demand query)
  * @param name - Name to check
  * @returns Count of profiles with this name

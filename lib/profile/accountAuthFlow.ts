@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/supabase-client";
-import { normalizeSlug } from "@/lib/profile/profileUtils";
+import { buildSlug } from "@/lib/profile/profileUtils";
 import type {
   Profile,
   ProfileLink,
@@ -42,9 +42,9 @@ const AUTH_PROVIDERS: AuthProvider[] = [
 
 const buildReturnUrl = (profile: Partial<Profile> | undefined, url: string, includeStateParams: boolean): string => {
   if (typeof window === "undefined") return "";
-  const baseSlug = normalizeSlug(profile?.name || "");
-  const uniqueSlug = `${baseSlug}-${profile?.id}`;
-  const returnUrlObj = new URL(`${window.location.origin}/${uniqueSlug}`);
+  const slug = buildSlug(profile);
+  if (!slug) return "";
+  const returnUrlObj = new URL(`${window.location.origin}/${slug}`);
   if (includeStateParams) {
     returnUrlObj.searchParams.set("verify_pid", String(profile?.id ?? ""));
     returnUrlObj.searchParams.set("verify_url", url);

@@ -2,7 +2,13 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { CSSProperties, MouseEvent } from "react";
-import { isNewProfile, getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
+import {
+  isNewProfile,
+  getProfileTrust,
+  getWarningConfig,
+  getLastVerifiedLabel,
+  getUsernameWithDiscriminator,
+} from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
@@ -34,7 +40,11 @@ import type {
 type Variant = "default" | "mobile" | "compact";
 type LinkVariant = "default" | "simple";
 
-const formatUsername = (value = "") => value.trim().replace(/\s+/g, "_");
+const formatUsername = (profile: Partial<Profile>) =>
+  getUsernameWithDiscriminator(profile).replace(/\s+/g, "_");
+
+const getDisplayName = (profile: Partial<Profile>) =>
+  profile.display_name || profile.name || "";
 
 const resolveIconSrc = (icon?: EnrichedProfileLink["icon"]) =>
   (typeof icon === "string" ? icon : icon?.src) ||
@@ -398,7 +408,7 @@ export function ProfileCardContent({
             className="font-bold text-gray-900 truncate max-w-full"
             style={{ fontSize: scaleFont(s.namePx, textScale.displayName) }}
           >
-            {profile.display_name || profile.name}
+            {getDisplayName(profile)}
           </span>
           {showDisplayNameVerifiedBadge && isVerified && (
             <span
@@ -416,7 +426,7 @@ export function ProfileCardContent({
         className="mt-1 text-gray-600 relative z-10"
         style={{ fontSize: scaleFont(s.usernamePx, textScale.username) }}
       >
-        /{formatUsername(profile.name)}
+        /{formatUsername(profile)}
       </p>
 
       {/* Bio */}
@@ -698,7 +708,7 @@ export default function ProfileCard({
 
           <div className="flex flex-col grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
-              <span className="truncate">{profile.display_name || profile.name}</span>
+              <span className="truncate">{getDisplayName(profile)}</span>
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
@@ -711,7 +721,7 @@ export default function ProfileCard({
               )}
             </span>
             <span className="text-xs font-medium text-gray-500 leading-tight">
-              /{formatUsername(profile.name)}
+              /{formatUsername(profile)}
             </span>
 
             <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
@@ -855,7 +865,7 @@ export default function ProfileCard({
                 if (navigator.share) {
                   try {
                     await navigator.share({
-                      title: `${profile.display_name || profile.name} on Zcash.me`,
+                      title: `${getDisplayName(profile)} on Zcash.me`,
                       text: "Check out this Zcash profile:",
                       url: shareUrl,
                     });
@@ -869,7 +879,7 @@ export default function ProfileCard({
               }}
               {...tapProps}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-              title={`Share ${profile.display_name || profile.name}`}
+              title={`Share ${getDisplayName(profile)}`}
             >
               <svg
                 viewBox="0 0 21 21"
@@ -933,7 +943,7 @@ export default function ProfileCard({
           {/* Name & Username Layout */}
           <div className="mt-3 flex flex-col items-center">
             <h2 className="text-3xl font-black text-gray-900 leading-tight flex items-center justify-center gap-2">
-              {profile.display_name || profile.name}
+              {getDisplayName(profile)}
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
@@ -941,7 +951,7 @@ export default function ProfileCard({
               )}
             </h2>
             <div className="text-base font-medium text-gray-500 mt-1">
-              /{formatUsername(profile.name)}
+              /{formatUsername(profile)}
             </div>
           </div>
 
