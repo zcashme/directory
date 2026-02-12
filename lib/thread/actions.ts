@@ -1,7 +1,6 @@
 'use server';
 
 import { ThreadMessage, Board, GetMessagesResponse, PostMessageResponse, GetBoardsResponse, CreateBoardResponse } from '@/lib/thread/types';
-import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 /**
  * Fetch all boards
@@ -29,7 +28,7 @@ export async function fetchBoardsAction(): Promise<GetBoardsResponse> {
  */
 export async function fetchMessagesAction(
   boardId: string,
-  limit: number = THREAD_CONSTANTS.MESSAGES_PER_PAGE,
+  limit: number = 20,
   offset: number = 0
 ): Promise<GetMessagesResponse> {
   try {
@@ -71,10 +70,10 @@ export async function postMessageAction(
       };
     }
 
-    if (content.length > THREAD_CONSTANTS.MAX_MESSAGE_LENGTH) {
+    if (content.length > 500) {
       return {
         success: false,
-        error: `Message exceeds maximum length of ${THREAD_CONSTANTS.MAX_MESSAGE_LENGTH} characters`,
+        error: `Message exceeds maximum length of 500 characters`,
       };
     }
 

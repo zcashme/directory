@@ -10,7 +10,6 @@ import {
   postMessageAction,
   createBoardAction,
 } from '@/lib/thread/actions';
-import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 interface ThreadPageProps {
   initialMessages?: ThreadMessage[];
@@ -21,7 +20,7 @@ interface ThreadPageProps {
 export default function ThreadPage({
   initialMessages = [],
   initialBoards = [],
-  initialBoardId = THREAD_CONSTANTS.DEFAULT_BOARD_ID,
+  initialBoardId = 'general',
 }: ThreadPageProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<ThreadMessage[]>(initialMessages);
@@ -48,7 +47,7 @@ export default function ThreadPage({
   // Load messages when board changes
   useEffect(() => {
     const loadMessages = async () => {
-      const result = await fetchMessagesAction(currentBoardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      const result = await fetchMessagesAction(currentBoardId, 20, 0);
       if (result.success && result.data) {
         setMessages(result.data);
         setMessageOffset(0);
@@ -62,7 +61,7 @@ export default function ThreadPage({
     const result = await postMessageAction(content, boardId);
     if (result.success && result.data) {
       // Reload messages for the board
-      const messagesResult = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, 0);
+      const messagesResult = await fetchMessagesAction(boardId, 20, 0);
       if (messagesResult.success && messagesResult.data) {
         setMessages(messagesResult.data);
         setMessageOffset(0);
@@ -73,8 +72,8 @@ export default function ThreadPage({
   };
 
   const handleLoadMoreMessages = async (boardId: string) => {
-    const nextOffset = messageOffset + THREAD_CONSTANTS.MESSAGES_PER_PAGE;
-    const result = await fetchMessagesAction(boardId, THREAD_CONSTANTS.MESSAGES_PER_PAGE, nextOffset);
+    const nextOffset = messageOffset + 20;
+    const result = await fetchMessagesAction(boardId, 20, nextOffset);
     if (result.success && result.data) {
       setMessages((prev) => [...prev, ...result.data!]);
       setMessageOffset(nextOffset);

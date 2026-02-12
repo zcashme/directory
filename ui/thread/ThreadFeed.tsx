@@ -3,7 +3,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { ThreadMessage } from '@/lib/thread/types';
 import { ThreadCard } from './ThreadCard';
-import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 
 interface ThreadFeedProps {
   messages: ThreadMessage[];
@@ -41,7 +40,7 @@ export function ThreadFeed({ messages, isLoading = false, onLoadMore }: ThreadFe
           }
         }
       },
-      { rootMargin: `${THREAD_CONSTANTS.INFINITE_SCROLL_BUFFER}px` }
+      { rootMargin: '200px' }
     );
 
     observer.observe(sentinelRef.current);

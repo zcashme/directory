@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { THREAD_CONSTANTS } from '@/lib/thread/constants';
 import { Card, Button, Input } from '@/ui/common';
 import { OtpInput } from '@/ui/verification/OtpInput';
 
@@ -29,7 +28,7 @@ export function ZcashVerificationComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const characterCount = content.length;
-  const maxLength = THREAD_CONSTANTS.MAX_MESSAGE_LENGTH;
+  const maxLength = 500;
   const isOverLimit = characterCount > maxLength;
   const isValid = characterCount > 0 && !isOverLimit;
   const isVerified = walletAddress.trim() && otpToken.trim();
