@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { getRateAction } from "@/lib/rates/getRateAction";
 
 interface Currency {
@@ -111,6 +112,8 @@ export default function AmountAndWallet({
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
+  const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const tokenButtonRef = useRef<HTMLButtonElement>(null);
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "45%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
@@ -292,27 +295,32 @@ export default function AmountAndWallet({
             />
 
             {/* Right-side token selector */}
-            <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector relative">
+            <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
               {setAsset && assetOptions.length > 0 ? (
-                <>
-                  <span>{asset}</span>
-                  <span
-                    className="cursor-pointer hover:text-blue-600"
-                    role="button"
-                    aria-label="Choose token"
-                    tabIndex={0}
-                    onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        setIsTokenDropdownOpen(!isTokenDropdownOpen);
+                <div className="relative pointer-events-auto">
+                  <button
+                    ref={tokenButtonRef}
+                    type="button"
+                    onClick={() => {
+                      if (!isTokenDropdownOpen && tokenButtonRef.current) {
+                        const rect = tokenButtonRef.current.getBoundingClientRect();
+                        setTokenDropdownPos({
+                          top: rect.bottom + 4,
+                          right: window.innerWidth - rect.right,
+                        });
                       }
+                      setIsTokenDropdownOpen(!isTokenDropdownOpen);
                     }}
+                    className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
                   >
-                    {" "}▼
-                  </span>
-                  {isTokenDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999]">
+                    <span>{asset}</span>
+                    <span>▼</span>
+                  </button>
+                  {isTokenDropdownOpen && tokenDropdownPos && createPortal(
+                    <div
+                      className="fixed w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] token-selector"
+                      style={{ top: tokenDropdownPos.top, right: tokenDropdownPos.right }}
+                    >
                       <div className="p-2 border-b border-gray-800">
                         <input
                           type="text"
@@ -370,9 +378,10 @@ export default function AmountAndWallet({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
-                </>
+                </div>
               ) : (
                 <div className="select-none cursor-not-allowed">{asset}</div>
               )}
