@@ -6,7 +6,8 @@ import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
 import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
-import { getSwapQuote, getSwapTokens, getSwapStatus } from "@/lib/swap/oneClick";
+import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
+import { getSwapQuote, confirmSwap, getSwapTokens, getSwapStatus } from "@/lib/swap/oneClick";
 import { parseTokenSymbol } from "@/lib/swap/utils";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 import type { Token, SwapQuoteDisplay as SwapQuoteDisplayType } from "@/lib/swap/types";
@@ -228,6 +229,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
 
 export default function SwapAppClient({ initialDepositAddress }: { initialDepositAddress: string | null }) {
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
+  const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(initialDepositAddress || "");
 
   // Token state
   const [tokens, setTokens] = useState<Token[]>([]);
@@ -248,6 +250,28 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
   const [quoteLoading, setQuoteLoading] = useState(false);
   const [quoteError, setQuoteError] = useState<string | null>(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+
+  // Deposit state (after confirmation)
+  const [depositUri, setDepositUri] = useState("");
+  const [statusKey, setStatusKey] = useState<{ depositAddress: string } | null>(null);
+  const [depositAmountDecimal, setDepositAmountDecimal] = useState("");
+
+  // Load tracking deposit address from localStorage on mount
+  useEffect(() => {
+    if (!initialDepositAddress) {
+      const stored = localStorage.getItem("swapTrackingDepositAddress");
+      if (stored) {
+        setTrackingDepositAddress(stored);
+      }
+    }
+  }, [initialDepositAddress]);
+
+  // Save tracking deposit address to localStorage when it changes
+  useEffect(() => {
+    if (trackingDepositAddress) {
+      localStorage.setItem("swapTrackingDepositAddress", trackingDepositAddress);
+    }
+  }, [trackingDepositAddress]);
 
   // Load tokens on mount
   useEffect(() => {
@@ -319,9 +343,23 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     setQuoteError(null);
 
     try {
-      // TODO: Implement actual quote confirmation logic
-      // For now, just simulate success
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await confirmSwap({
+        fromToken: fromToken.assetId || fromToken.symbol,
+        toToken: toToken.assetId || toToken.symbol,
+        amountIn: fromAmount,
+        destAddress,
+        refundAddress,
+        slippageTolerance,
+        tokens,
+      });
+
+      if (result.ok) {
+        setDepositUri(result.paymentUri);
+        setStatusKey(result.statusKey);
+        setDepositAmountDecimal(result.deposit?.amountDecimal ?? "");
+      } else {
+        setQuoteError(result.error);
+      }
     } catch {
       setQuoteError("Failed to confirm quote");
     } finally {
@@ -376,6 +414,13 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     }
   };
 
+  const handleSentFunds = () => {
+    if (statusKey?.depositAddress) {
+      setTrackingDepositAddress(statusKey.depositAddress);
+      setIsStatus(true);
+    }
+  };
+
   // Format tokens for AmountAndWallet
   const formattedTokens = tokens.map((token) => ({
     id: token.id || token.assetId || token.symbol,
@@ -395,6 +440,26 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
   return (
     <>
+      <style jsx global>{`
+        * {
+          outline: 1px solid rgba(255, 0, 0, 0.3) !important;
+        }
+        * * {
+          outline: 1px solid rgba(0, 255, 0, 0.3) !important;
+        }
+        * * * {
+          outline: 1px solid rgba(0, 0, 255, 0.3) !important;
+        }
+        * * * * {
+          outline: 1px solid rgba(255, 255, 0, 0.3) !important;
+        }
+        * * * * * {
+          outline: 1px solid rgba(255, 0, 255, 0.3) !important;
+        }
+        * * * * * * {
+          outline: 1px solid rgba(0, 255, 255, 0.3) !important;
+        }
+      `}</style>
       {/* Error Display */}
       {tokensError && (
         <div
@@ -451,7 +516,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               </div>
             </div>
             {/* Currency Swap Section */}
-            <div className="flex flex-col md:flex-row md:items-end gap-3 mb-6">
+            <div className="flex flex-col md:flex-row md:items-end md:gap-3 mb-6">
               {/* From Section */}
               <div className="flex-1">
                 <div className="space-y-2">
@@ -474,7 +539,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   type="button"
                   onClick={handleSwapDirection}
                   disabled={!fromToken || !toToken}
-                  className={`p-3 rounded-xl transition-colors md:rotate-90 border border-gray-800 ${
+                  className={`p-2 rounded-xl transition-colors md:rotate-90 border border-gray-800 ${
                     fromToken && toToken
                       ? "hover:bg-gray-100 text-gray-600"
                       : "opacity-50 cursor-not-allowed text-gray-400"
@@ -483,7 +548,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   style={fromToken && toToken ? { backgroundColor: "var(--color-background)" } : {}}
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-4 h-4"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -536,6 +601,15 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
             {/* Quote Display */}
             {quote && <SwapQuoteDisplay quote={quote} className="mb-6" />}
 
+            {/* Swap Deposit Display */}
+            <SwapDepositDisplay
+              depositUri={depositUri}
+              depositAddress={statusKey?.depositAddress}
+              amountDecimal={depositAmountDecimal}
+              originSymbol={fromToken?.symbol || ""}
+              onSentFunds={handleSentFunds}
+            />
+
             {/* Error Display */}
             {quoteError && (
               <div
@@ -547,57 +621,63 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
             )}
 
             {/* Quote Action Buttons */}
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                type="button"
-                onClick={fetchQuote}
-                disabled={quoteLoading}
-                className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
-                  !quoteLoading
-                    ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
-                    : "bg-gray-100 text-gray-400 border border-gray-300"
-                }`}
-                style={!quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
-              >
-                {quoteLoading ? "Getting quote..." : "Get a quote"}
-              </button>
-              <button
-                type="button"
-                onClick={confirmQuote}
-                disabled={!quote || confirmLoading}
-                className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
-                  quote && !confirmLoading
-                    ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
-                    : "bg-gray-100 text-gray-400 border border-gray-300"
-                }`}
-                style={quote && !confirmLoading ? { backgroundColor: "var(--color-background)" } : {}}
-              >
-                {confirmLoading ? "Confirming..." : "Confirm quote"}
-              </button>
-            </div>
-
-            {/* Check Swap Link */}
-            <div className="text-center text-sm text-gray-600 mt-3">
-              <a
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsStatus(true);
-                }}
-                className="text-blue-600 hover:text-blue-800 underline"
-              >
-                Check Swap
-              </a>
-            </div>
+            {!statusKey?.depositAddress && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  type="button"
+                  onClick={fetchQuote}
+                  disabled={quoteLoading}
+                  className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
+                    !quoteLoading
+                      ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
+                      : "bg-gray-100 text-gray-400 border border-gray-300"
+                  }`}
+                  style={!quoteLoading ? { backgroundColor: "var(--color-background)" } : {}}
+                >
+                  {quoteLoading ? "Getting quote..." : "Get a quote"}
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmQuote}
+                  disabled={!quote || confirmLoading}
+                  className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
+                    quote && !confirmLoading
+                      ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
+                      : "bg-gray-100 text-gray-400 border border-gray-300"
+                  }`}
+                  style={quote && !confirmLoading ? { backgroundColor: "var(--color-background)" } : {}}
+                >
+                  {confirmLoading ? "Confirming..." : "Confirm quote"}
+                </button>
+              </div>
+            )}
 
             {/* Slippage Settings */}
-            <div className="mt-4">
-              <SwapSlippageControl
-                value={slippageTolerance}
-                onChange={setSlippageTolerance}
-                variant="inline"
-              />
-            </div>
+            {!statusKey?.depositAddress && (
+              <div className="mt-4">
+                <SwapSlippageControl
+                  value={slippageTolerance}
+                  onChange={setSlippageTolerance}
+                  variant="inline"
+                />
+              </div>
+            )}
+
+            {/* Check Swap Link */}
+            {!statusKey?.depositAddress && (
+              <div className="text-center text-sm text-gray-600 mt-3">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setIsStatus(true);
+                  }}
+                  className="text-blue-600 hover:text-blue-800 underline"
+                >
+                  Check Swap
+                </a>
+              </div>
+            )}
           </div>
 
           {/* Back Side - Swap Status Checker */}
@@ -622,7 +702,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               </div>
 
               <SwapStatusDisplay
-                initialDepositAddress={initialDepositAddress || ""}
+                initialDepositAddress={trackingDepositAddress}
               />
             </div>
           </div>

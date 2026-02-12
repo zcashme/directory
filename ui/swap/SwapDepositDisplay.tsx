@@ -7,6 +7,7 @@ interface SwapDepositDisplayProps {
   depositAddress?: string;
   amountDecimal?: string;
   originSymbol: string;
+  onSentFunds?: () => void;
 }
 
 export default function SwapDepositDisplay({
@@ -14,6 +15,7 @@ export default function SwapDepositDisplay({
   depositAddress,
   amountDecimal,
   originSymbol,
+  onSentFunds,
 }: SwapDepositDisplayProps) {
 
   // Don't render if no deposit address
@@ -24,8 +26,12 @@ export default function SwapDepositDisplay({
   const qrValue = hasPaymentUri ? depositUri : depositAddress;
 
   const handleGoToSwapStatus = () => {
-    const swapUrl = getSwapUrl({ depositAddress });
-    window.open(swapUrl, '_blank');
+    if (onSentFunds) {
+      onSentFunds();
+    } else {
+      const swapUrl = getSwapUrl({ depositAddress });
+      window.open(swapUrl, '_blank');
+    }
   };
 
 
