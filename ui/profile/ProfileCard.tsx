@@ -799,63 +799,80 @@ export default function ProfileCard({
               </motion.button>
 
               {/* Dropdown Menu */}
-              {menuOpen && (
-                <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-                  {!showStats ? (
+              <AnimatePresence>
+                {menuOpen && (
+                  <motion.div
+                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -6 }}
+                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                    exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -6 }}
+                    transition={{ duration: shouldReduceMotion ? 0.1 : 0.16, ease: "easeOut" }}
+                    className="absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700"
+                  >
+                    {!showStats ? (
+                      <button
+                        onClick={() => {
+                          if (!hasAwards) return; // ignore click if no awards
+                          setShowStats(true);
+                          setMenuOpen(false);
+                        }}
+                        disabled={!hasAwards}
+                        className={`w-full whitespace-nowrap text-left px-3 py-2 transition-colors ${hasAwards
+                          ? "hover:bg-blue-50 text-gray-800"
+                          : "text-gray-400 cursor-not-allowed opacity-60"
+                          }`}
+                      >
+                        ⭔ Show Awards
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setShowStats(false);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
+                      >
+                        ⭔ Hide Awards
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
-                        if (!hasAwards) return; // ignore click if no awards
-                        setShowStats(true);
+                        setShowBack(true);
                         setMenuOpen(false);
+                        setVerify((prev) => ({
+                          ...prev,
+                          zId: profile.id ?? null,
+                          requestId: null,
+                        }));
+                        setMode("verification");
                       }}
-                      disabled={!hasAwards}
-                      className={`w-full text-left px-4 py-2 transition-colors ${hasAwards
-                        ? "hover:bg-blue-50 text-gray-800"
-                        : "text-gray-400 cursor-not-allowed opacity-60"
-                        }`}
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
                     >
-                      ⭔ Show Awards
+                      ↺ Edit Profile
                     </button>
-                  ) : (
+
                     <button
                       onClick={() => {
-                        setShowStats(false);
                         setMenuOpen(false);
+                        // TODO: wire Verify Profile action once flow is defined.
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
                     >
-                      ⭔ Hide Awards
+                      ✓ Verify Profile
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => {
-                      setShowBack(true);
-                      setMenuOpen(false);
-                      setVerify((prev) => ({
-                        ...prev,
-                        zId: profile.id ?? null,
-                        requestId: null,
-                      }));
-                      setMode("verification");
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                  >
-                    ↺ Edit Profile
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setIsOtpOpen(true);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                  >
-                    ⛨ Enter Passcode
-                  </button>
-
-                </div>
-              )}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setIsOtpOpen(true);
+                      }}
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
+                    >
+                      ⛨ Enter Passcode
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
             </div>
 
