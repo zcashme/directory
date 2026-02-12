@@ -637,7 +637,9 @@ export default function ProfileCard({
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
-  const warningConfig = getWarningConfig({ profile, warning: !!warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
+  const warningEnabled = warning !== null;
+  const warningConfig = getWarningConfig({ profile, warning: warningEnabled, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
   const fullLinkRowClasses: LinkRowClasses = {
     row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
     left: "flex items-center gap-2 shrink-0",
