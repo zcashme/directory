@@ -34,7 +34,8 @@ function SwapStatusDisplay({
 }: {
   initialDepositAddress: string;
 }) {
-  const [depositAddress] = useState(initialDepositAddress);
+  const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
+  const [inputValue, setInputValue] = useState(initialDepositAddress);
   const [showInput, setShowInput] = useState(!initialDepositAddress);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -84,6 +85,53 @@ function SwapStatusDisplay({
 
   const fromSymbol = parseTokenSymbol(request?.originAsset) || "";
   const toSymbol = parseTokenSymbol(request?.destinationAsset) || "";
+
+  const handleCheckSwap = () => {
+    if (inputValue.trim()) {
+      setDepositAddress(inputValue.trim());
+      setShowInput(false);
+    }
+  };
+
+  // Show input form when no deposit address is being tracked
+  if (showInput) {
+    return (
+      <div className="space-y-6">
+        <p className="text-sm text-gray-600">
+          Enter the deposit address from your swap to check its status.
+        </p>
+
+        <div className="space-y-2">
+          <label className="text-sm font-semibold text-gray-700">
+            Deposit Address
+          </label>
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Enter deposit address..."
+            className="w-full px-4 py-3 rounded-xl border border-gray-800 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-gray-400"
+            style={{ backgroundColor: "var(--color-background)" }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleCheckSwap();
+            }}
+          />
+        </div>
+
+        <button
+          onClick={handleCheckSwap}
+          disabled={!inputValue.trim()}
+          className={`w-full px-4 py-3 rounded-xl font-semibold ${
+            inputValue.trim()
+              ? "border border-gray-800 hover:bg-gray-50"
+              : "bg-gray-100 text-gray-400 border border-gray-300"
+          }`}
+        >
+          Check Swap
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -228,6 +276,7 @@ function SwapStatusDisplay({
       <div className="flex gap-2">
         <button
           onClick={() => {
+            setInputValue("");
             setShowInput(true);
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
@@ -236,7 +285,7 @@ function SwapStatusDisplay({
         </button>
         <button
           onClick={async () => {
-            const shareUrl = window.location.href;
+            const shareUrl = `${window.location.origin}${window.location.pathname}?depositAddress=${depositAddress}`;
             if (navigator.share) {
               try {
                 await navigator.share({
@@ -254,7 +303,7 @@ function SwapStatusDisplay({
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >
-          Share Link
+          Share
         </button>
       </div>
     </div>
@@ -501,7 +550,7 @@ export default function SwapAppClient({
       {/* Flip Card Container */}
       <div
         className="relative overflow-visible"
-        style={{ perspective: "1000px", minHeight: "500px" }}
+        style={{ perspective: "1000px" }}
       >
         <div
           className="relative w-full transition-transform duration-300 overflow-visible"
@@ -512,7 +561,9 @@ export default function SwapAppClient({
         >
           {/* Front Side - Main Swap Card */}
           <div
-            className="rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg relative overflow-visible"
+            className={`rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg overflow-visible ${
+              isStatus ? "absolute top-0 left-0 w-full" : ""
+            }`}
             style={{
               backgroundColor: "var(--color-background)",
               backfaceVisibility: "hidden",
@@ -743,7 +794,9 @@ export default function SwapAppClient({
 
           {/* Back Side - Swap Status Checker */}
           <div
-            className="rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg absolute top-0 left-0 w-full"
+            className={`rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg ${
+              isStatus ? "" : "absolute top-0 left-0 w-full"
+            }`}
             style={{
               backgroundColor: "var(--color-background)",
               backfaceVisibility: "hidden",
