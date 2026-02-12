@@ -75,8 +75,8 @@ export default function ProfilePage({
     } else {
       // Card is on front -> determine mode based on token selection
       const isNonZecToken = swap.originTokenId !== null &&
-                            zecTokenId !== null &&
-                            swap.originTokenId !== zecTokenId;
+        zecTokenId !== null &&
+        swap.originTokenId !== zecTokenId;
 
       if (isNonZecToken) {
         setMode("swap");
@@ -199,9 +199,9 @@ export default function ProfilePage({
           duplicateNameCount={duplicateNameCount}
         />
 
-        <div id="zcash-feedback" className="border-t mt-10 pt-6">
+        <div id="zcash-feedback" className="border-t mt-8 pt-10">
           <div className="w-full flex justify-center">
-            <div className="w-full max-w-xl mt-[-9px]">
+            <div className="w-full max-w-lg mt-[-9px]">
               {mode === "verification" ? (
                 <ProfileVerification
                   profile={initialProfile}

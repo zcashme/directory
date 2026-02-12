@@ -72,13 +72,13 @@ export default function MemoComposer({
   const recipientName =
     profile?.display_name || profile?.name || "Recipient";
 
-useEffect(() => {
-  if (!forceShowQR) return;
-  setTimeout(() => {
-    const el = document.getElementById("zcash-feedback");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, 300);
-}, [forceShowQR]);
+  useEffect(() => {
+    if (!forceShowQR) return;
+    setTimeout(() => {
+      const el = document.getElementById("zcash-feedback");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 300);
+  }, [forceShowQR]);
 
   const emoji = useEmojiAutocomplete({
     textareaRef,
@@ -94,22 +94,7 @@ useEffect(() => {
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
 
-      {/* HEADER ROW: Recipient */}
-      <div className="flex justify-between items-start relative mb-3">
 
-        {/* Left side */}
-        <div className="text-md font-semibold text-gray-800 whitespace-normal pt-2">
-          Send to {" "}
-          <span
-            className="text-blue-600 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            {recipientName}
-          </span>
-        </div>
-
-
-      </div>
 
       {/* MEMO FIELD */}
       <div className="relative mb-2">
@@ -137,11 +122,10 @@ useEffect(() => {
               ? "Memos are not supported for transparent addresses"
               : `Write your message to ${recipientName} here...`
           }
-          className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 ${
-            disabled
+          className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 ${disabled
               ? "bg-gray-100 text-gray-400 cursor-not-allowed"
               : "focus:ring-1 focus:ring-blue-500 pl-8"
-          }`}
+            }`}
         />
 
         {emoji.results.length > 0 && !disabled && (
