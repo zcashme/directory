@@ -2,24 +2,17 @@
 name = "zvs"
 version = "0.1.0"
 edition = "2021"
-authors = ["Jules <jules@zcash.me>"]
-description = "Zcash Verification Service - connect to lightwalletd and scan for memos"
+description = "Stateless Zcash Verification Service"
 license = "MIT"
 
 [dependencies]
-# Async runtime
-tokio = { version = "1.35", features = ["full"] }
-
-# gRPC for lightwalletd
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
 tonic = "0.11"
 prost = "0.12"
-
-# Serialization
-serde = { version = "1.0", features = ["derive"] }
+zcash_primitives = "0.13"
+bech32 = "0.9"
 hex = "0.4"
-
-# Error handling
-anyhow = "1.0"
+anyhow = "1"
 
 [build-dependencies]
 tonic-build = "0.11"

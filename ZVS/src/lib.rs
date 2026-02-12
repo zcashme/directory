@@ -1,95 +1,147 @@
-//! # ZVS - Zcash Verification Service
+//! ZVS - Stateless Zcash Verification Service
 //!
-//! Connect to lightwalletd and scan for incoming memos.
-//!
-//! ## Example
-//!
-//! ```no_run
-//! use zvs::ZVS;
-//!
-//! #[tokio::main]
-//! async fn main() -> Result<(), Box<dyn std::error::Error>> {
-//!     let zvs = ZVS::connect(
-//!         "http://localhost:9067",
-//!         "zxviews1...".to_string(),
-//!         "secret-extended-key-main1...".to_string(),
-//!     ).await?;
-//!
-//!     // Verify connection
-//!     let height = zvs.get_height().await?;
-//!     println!("Connected! Current block height: {}", height);
-//!
-//!     // Scan last 100 blocks
-//!     let memos = zvs.scan(100).await?;
-//!     println!("Found {} memos", memos.len());
-//!
-//!     Ok(())
-//! }
-//! ```
+//! Connects to lightwalletd, decrypts incoming memos.
 
-pub mod client;
-pub mod memo;
+use anyhow::{anyhow, Result};
+use std::io::Cursor;
+use tonic::transport::Channel;
+use zcash_primitives::{
+    consensus::{BlockHeight, MainNetwork},
+    sapling::{
+        keys::PreparedIncomingViewingKey,
+        note::ExtractedNoteCommitment,
+        note_encryption::{try_sapling_compact_note_decryption, try_sapling_note_decryption},
+    },
+    transaction::{components::sapling::CompactOutputDescription, Transaction},
+    zip32::sapling::ExtendedFullViewingKey,
+};
 
-pub use client::LightwalletdClient;
-pub use memo::IncomingMemo;
+pub mod proto {
+    tonic::include_proto!("cash.z.wallet.sdk.rpc");
+}
 
-use anyhow::Result;
+use proto::{
+    compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec, TxFilter,
+};
 
-/// ZVS - connects to lightwalletd and scans for memos
+/// Decrypted memo from blockchain
+#[derive(Debug, Clone)]
+pub struct Memo {
+    pub txid: String,
+    pub height: u32,
+    pub amount: u64,
+    pub text: String,
+}
+
+/// Decode bech32 viewing key
+fn decode_vk(key: &str) -> Result<ExtendedFullViewingKey> {
+    let (hrp, data, _) = bech32::decode(key).map_err(|e| anyhow!("bech32: {e}"))?;
+    if hrp != "zxviews" {
+        return Err(anyhow!("expected zxviews HRP, got {hrp}"));
+    }
+    let bytes: Vec<u8> =
+        bech32::FromBase32::from_base32(&data).map_err(|e| anyhow!("base32: {e}"))?;
+    ExtendedFullViewingKey::read(Cursor::new(bytes)).map_err(|e| anyhow!("parse fvk: {e}"))
+}
+
+/// Try compact decryption (detects payment, returns amount but no memo)
+fn try_compact_decrypt(
+    out: &proto::CompactSaplingOutput,
+    ivk: &PreparedIncomingViewingKey,
+    height: BlockHeight,
+) -> Option<u64> {
+    let epk_bytes: [u8; 32] = out.ephemeral_key.clone().try_into().ok()?;
+    let cmu: ExtractedNoteCommitment =
+        Option::from(ExtractedNoteCommitment::from_bytes(&out.cmu.clone().try_into().ok()?))?;
+
+    let compact = CompactOutputDescription {
+        ephemeral_key: epk_bytes.into(),
+        cmu,
+        enc_ciphertext: out.ciphertext.clone().try_into().ok()?,
+    };
+
+    let (note, _) = try_sapling_compact_note_decryption(&MainNetwork, height, ivk, &compact)?;
+    Some(note.value().inner())
+}
+
+/// Decrypt full transaction output to get memo
+fn decrypt_memo(
+    tx: &Transaction,
+    output_idx: usize,
+    ivk: &PreparedIncomingViewingKey,
+    height: BlockHeight,
+) -> Option<String> {
+    let output = tx.sapling_bundle()?.shielded_outputs().get(output_idx)?;
+    let (_, _, memo) = try_sapling_note_decryption(&MainNetwork, height, ivk, output)?;
+    let bytes = memo.as_slice();
+    let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
+    Some(String::from_utf8_lossy(&bytes[..end]).into())
+}
+
+/// ZVS instance
 pub struct ZVS {
-    client: LightwalletdClient,
-    viewing_key: String,
-    spending_key: String,
+    client: CompactTxStreamerClient<Channel>,
+    ivk: PreparedIncomingViewingKey,
 }
 
 impl ZVS {
-    /// Connect to lightwalletd
-    ///
-    /// ## Arguments
-    /// * `lightwalletd_url` - URL of lightwalletd server (e.g., "http://localhost:9067")
-    /// * `viewing_key` - Full viewing key for decrypting memos (zxviews1...)
-    /// * `spending_key` - Extended spending key (secret-extended-key-main1...)
-    pub async fn connect(
-        lightwalletd_url: &str,
-        viewing_key: String,
-        spending_key: String,
-    ) -> Result<Self> {
-        let client = LightwalletdClient::connect(lightwalletd_url).await?;
-        Ok(Self {
-            client,
-            viewing_key,
-            spending_key,
-        })
+    pub async fn connect(url: &str, viewing_key: &str) -> Result<Self> {
+        let vk = decode_vk(viewing_key)?;
+        let ivk = PreparedIncomingViewingKey::new(&vk.fvk.vk.ivk());
+        let client = CompactTxStreamerClient::connect(url.to_owned()).await?;
+        Ok(Self { client, ivk })
     }
 
-    /// Get current block height (to verify connection works)
-    pub async fn get_height(&self) -> Result<u64> {
-        let mut client = self.client.clone();
-        client.get_latest_block().await
+    pub async fn height(&mut self) -> Result<u32> {
+        Ok(self.client.get_latest_block(ChainSpec {}).await?.into_inner().height as u32)
     }
 
-    /// Scan latest N blocks for incoming memos
-    pub async fn scan(&self, num_blocks: u64) -> Result<Vec<IncomingMemo>> {
-        let mut client = self.client.clone();
-        let latest = client.get_latest_block().await?;
+    /// Scan blocks and decrypt memos
+    pub async fn scan(&mut self, num_blocks: u32) -> Result<Vec<Memo>> {
+        let latest = self.height().await?;
         let start = latest.saturating_sub(num_blocks);
 
-        let blocks = client.get_block_range(start, latest).await?;
+        let range = BlockRange {
+            start: Some(BlockId { height: start as u64, hash: vec![] }),
+            end: Some(BlockId { height: latest as u64, hash: vec![] }),
+        };
+        let mut stream = self.client.get_block_range(range).await?.into_inner();
 
-        // TODO: Decrypt outputs using self.viewing_key
-        // For now just return empty to prove connection works
-        println!("Scanned {} blocks ({} to {})", blocks.len(), start, latest);
+        // Phase 1: Find candidates using compact decryption
+        let mut candidates: Vec<(Vec<u8>, u32, usize, u64)> = vec![];
+        while let Some(block) = stream.message().await? {
+            let h = BlockHeight::from_u32(block.height as u32);
+            for tx in &block.vtx {
+                for (idx, out) in tx.outputs.iter().enumerate() {
+                    if let Some(amount) = try_compact_decrypt(out, &self.ivk, h) {
+                        candidates.push((tx.hash.clone(), block.height as u32, idx, amount));
+                    }
+                }
+            }
+        }
 
-        Ok(vec![])
-    }
+        // Phase 2: Fetch full transactions and decrypt memos
+        let mut memos = vec![];
+        for (txid, height, output_idx, amount) in candidates {
+            let resp = self.client.get_transaction(TxFilter { hash: txid.clone() }).await?;
+            let tx = Transaction::read(
+                &resp.into_inner().data[..],
+                zcash_primitives::consensus::BranchId::Nu5,
+            )
+            .map_err(|e| anyhow!("parse tx: {e}"))?;
 
-    /// Get the viewing key
-    pub fn viewing_key(&self) -> &str {
-        &self.viewing_key
-    }
+            if let Some(text) = decrypt_memo(&tx, output_idx, &self.ivk, BlockHeight::from_u32(height)) {
+                let mut txid_rev = txid;
+                txid_rev.reverse();
+                memos.push(Memo {
+                    txid: hex::encode(txid_rev),
+                    height,
+                    amount,
+                    text,
+                });
+            }
+        }
 
-    /// Get the spending key
-    pub fn spending_key(&self) -> &str {
-        &self.spending_key
+        Ok(memos)
     }
 }
