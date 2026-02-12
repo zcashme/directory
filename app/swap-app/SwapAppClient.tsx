@@ -1,16 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
 import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
-import { getSwapQuote } from "@/lib/swap/oneClick";
-import { useSwapsStore } from "@/lib/stores/swaps";
+import { getSwapQuote, getSwapTokens, getSwapStatus } from "@/lib/swap/oneClick";
 import { parseTokenSymbol } from "@/lib/swap/utils";
-import { getSwapStatus } from "@/lib/swap/oneClick";
-import type { SwapStatusData } from "@/lib/swap/types";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
+import type { Token, SwapQuoteDisplay as SwapQuoteDisplayType } from "@/lib/swap/types";
 
 const STATUS_CONFIG = {
   SUCCESS: { color: "bg-green-100 text-green-700", label: "Success" },
@@ -24,45 +23,28 @@ const STATUS_CONFIG = {
 function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: string }) {
   const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
   const [inputAddress, setInputAddress] = useState("");
+  const [showInput, setShowInput] = useState(!initialDepositAddress);
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const [statusData, setStatusData] = useState<SwapStatusData | null>(null);
-  const [statusError, setStatusError] = useState("");
 
-  useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+  // Poll swap status every 5 seconds
+  const { data: statusResult, error } = useQuery({
+    queryKey: ["swapStatus", depositAddress],
+    queryFn: () => getSwapStatus(depositAddress),
+    enabled: !!depositAddress && !showInput,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      if (!data || "error" in data) return 5000;
 
-    const poll = async () => {
-      try {
-        const result = await getSwapStatus(depositAddress);
+      const status = data.status?.toUpperCase();
+      const isTerminal = ['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(status || "");
 
-        if ("error" in result) {
-          setStatusError('Unable to fetch status');
-          return;
-        }
+      // Stop polling if terminal state reached
+      return isTerminal ? false : 5000;
+    },
+  });
 
-        setStatusData(result);
-        setStatusError('');
-
-        // Stop polling on terminal states
-        if (['SUCCESS', 'FAILED', 'REFUNDED', 'INCOMPLETE_DEPOSIT'].includes(result.status?.toUpperCase())) {
-          if (interval) clearInterval(interval);
-        }
-      } catch {
-        setStatusError('Connection error');
-      }
-    };
-
-    // Initial poll
-    poll();
-
-    // Set up polling interval
-    interval = setInterval(poll, 5000);
-
-    // Cleanup
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [depositAddress]);
+  const statusData = statusResult && "status" in statusResult ? statusResult : null;
+  const statusError = statusResult && "error" in statusResult ? statusResult.error : (error?.message || "");
 
   const status = statusData?.status?.toUpperCase() || "PENDING_DEPOSIT";
   const config = STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.PENDING_DEPOSIT;
@@ -202,7 +184,10 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
       </div>
 
       {statusError && (
-        <div className="text-red-600 text-sm border border-red-300 rounded-xl p-3 bg-red-50">
+        <div
+          className="text-gray-900 text-sm border border-gray-800 rounded-xl p-3"
+          style={{ backgroundColor: 'var(--color-background)' }}
+        >
           {statusError}
         </div>
       )}
@@ -211,6 +196,7 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
         <button
           onClick={() => {
             setInputAddress("");
+            setShowInput(true);
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >
@@ -243,42 +229,60 @@ function SwapStatusDisplay({ initialDepositAddress }: { initialDepositAddress: s
 export default function SwapAppClient({ initialDepositAddress }: { initialDepositAddress: string | null }) {
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
 
-  const store = useSwapsStore();
-  const {
-    tokens,
-    tokensLoading,
-    tokensError,
-    fromToken,
-    toToken,
-    fromAmount,
-    toAmount,
-    refundAddress,
-    destAddress,
-    slippageTolerance,
-    quote,
-    quoteLoading,
-    quoteError,
-    confirmLoading,
-    loadTokens,
-  } = store;
+  // Token state
+  const [tokens, setTokens] = useState<Token[]>([]);
+  const [tokensLoading, setTokensLoading] = useState(false);
+  const [tokensError, setTokensError] = useState<string | null>(null);
+
+  // Swap form state
+  const [fromToken, setFromToken] = useState<Token | null>(null);
+  const [toToken, setToToken] = useState<Token | null>(null);
+  const [fromAmount, setFromAmount] = useState("");
+  const [toAmount, setToAmount] = useState("");
+  const [refundAddress, setRefundAddress] = useState("");
+  const [destAddress, setDestAddress] = useState("");
+  const [slippageTolerance, setSlippageTolerance] = useState("1");
+
+  // Quote state
+  const [quote, setQuote] = useState<SwapQuoteDisplayType | null>(null);
+  const [quoteLoading, setQuoteLoading] = useState(false);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
   // Load tokens on mount
   useEffect(() => {
+    const loadTokens = async () => {
+      setTokensLoading(true);
+      setTokensError(null);
+
+      try {
+        const result = await getSwapTokens();
+
+        if ("tokens" in result) {
+          setTokens(result.tokens);
+          // Set default tokens if available
+          if (result.tokens.length >= 2) {
+            setFromToken(result.tokens[0]);
+            setToToken(result.tokens[1]);
+          }
+        } else {
+          setTokensError(result.error);
+        }
+      } catch (error) {
+        setTokensError("Failed to load tokens");
+      } finally {
+        setTokensLoading(false);
+      }
+    };
+
     void loadTokens();
-  }, [loadTokens]);
+  }, []);
 
   const fetchQuote = async () => {
-    if (!fromToken || !toToken || !fromAmount || parseFloat(fromAmount) <= 0) {
-      return;
-    }
+    if (!fromToken || !toToken) return;
 
-    if (!refundAddress || !destAddress) {
-      store.setQuoteError("Please enter both refund and destination addresses");
-      return;
-    }
-
-    store.setQuoteLoading(true);
-    store.setQuoteError(null);
+    setQuoteLoading(true);
+    setQuoteError(null);
 
     try {
       const result = await getSwapQuote({
@@ -292,66 +296,83 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
       });
 
       if (result.ok) {
-        store.setQuote(result.display);
-        store.setToAmount(result.display.amountOutFormatted);
+        setQuote(result.display);
+        setToAmount(result.display.amountOutFormatted);
       } else {
-        store.setQuote(null);
-        store.setToAmount("");
-        store.setQuoteError(result.error);
+        setQuote(null);
+        setToAmount("");
+        setQuoteError(result.error);
       }
     } catch {
-      store.setQuote(null);
-      store.setToAmount("");
-      store.setQuoteError("Failed to get quote");
+      setQuote(null);
+      setToAmount("");
+      setQuoteError("Failed to get quote");
     } finally {
-      store.setQuoteLoading(false);
+      setQuoteLoading(false);
     }
   };
 
   const confirmQuote = async () => {
     if (!quote || !fromToken || !toToken) return;
 
-    store.setConfirmLoading(true);
-    store.setQuoteError(null);
+    setConfirmLoading(true);
+    setQuoteError(null);
 
     try {
       // TODO: Implement actual quote confirmation logic
       // For now, just simulate success
       await new Promise(resolve => setTimeout(resolve, 1000));
     } catch {
-      store.setQuoteError("Failed to confirm quote");
+      setQuoteError("Failed to confirm quote");
     } finally {
-      store.setConfirmLoading(false);
+      setConfirmLoading(false);
     }
   };
 
   const handleSwapDirection = () => {
-    store.swapDirection();
+    const tempFrom = fromToken;
+    const tempTo = toToken;
+    const tempFromAmount = fromAmount;
+    const tempToAmount = toAmount;
+
+    setFromToken(tempTo);
+    setToToken(tempFrom);
+    setFromAmount(tempToAmount);
+    setToAmount(tempFromAmount);
+
+    // Swap addresses too
+    const tempRefund = refundAddress;
+    setRefundAddress(destAddress);
+    setDestAddress(tempRefund);
+
+    // Clear quote since direction changed
+    setQuote(null);
+    setQuoteError(null);
   };
 
   const handleFromTokenChange = (tokenId: string) => {
     const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
     if (token) {
-      store.setFromToken(token);
-      store.setQuote(null);
-      store.setQuoteError(null);
+      setFromToken(token);
+      setQuote(null);
+      setQuoteError(null);
     }
   };
 
   const handleToTokenChange = (tokenId: string) => {
     const token = tokens.find((t) => (t.id || t.assetId || t.symbol) === tokenId);
     if (token) {
-      store.setToToken(token);
-      store.setQuote(null);
-      store.setQuoteError(null);
+      setToToken(token);
+      setQuote(null);
+      setQuoteError(null);
     }
   };
 
   const handleFromAmountChange = (amount: string) => {
-    store.setFromAmount(amount);
+    setFromAmount(amount);
     if (quote) {
-      store.setQuote(null);
-      store.setToAmount("");
+      setQuote(null);
+      setToAmount("");
     }
   };
 
@@ -376,7 +397,10 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
     <>
       {/* Error Display */}
       {tokensError && (
-        <div className="mb-4 p-4 rounded-xl border border-red-300 bg-red-50 text-red-700">
+        <div
+          className="mb-4 p-4 rounded-xl border border-gray-800 text-gray-900"
+          style={{ backgroundColor: 'var(--color-background)' }}
+        >
           {tokensError}
         </div>
       )}
@@ -480,7 +504,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   <label className="text-sm font-semibold text-gray-700">To</label>
                   <AmountAndWallet
                     amount={toAmount}
-                    setAmount={store.setToAmount}
+                    setAmount={setToAmount}
                     showUsdPill={false}
                     showOpenWallet={false}
                     asset={toToken?.symbol || ""}
@@ -496,14 +520,14 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               <SwapAddressInput
                 label="Refund Address"
                 value={refundAddress}
-                onChange={store.setRefundAddress}
+                onChange={setRefundAddress}
                 placeholder={fromToken ? `${fromToken.symbol} address...` : "Select from token first"}
                 disabled={!fromToken}
               />
               <SwapAddressInput
                 label="Destination Address"
                 value={destAddress}
-                onChange={store.setDestAddress}
+                onChange={setDestAddress}
                 placeholder={toToken ? `${toToken.symbol} address...` : "Select to token first"}
                 disabled={!toToken}
               />
@@ -514,7 +538,10 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
             {/* Error Display */}
             {quoteError && (
-              <div className="mb-6 p-4 rounded-xl border border-red-300 bg-red-50 text-red-700 text-sm">
+              <div
+                className="mb-6 p-4 rounded-xl border border-gray-800 text-gray-900 text-sm"
+                style={{ backgroundColor: 'var(--color-background)' }}
+              >
                 {quoteError}
               </div>
             )}
@@ -567,7 +594,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
             <div className="mt-4">
               <SwapSlippageControl
                 value={slippageTolerance}
-                onChange={store.setSlippageTolerance}
+                onChange={setSlippageTolerance}
                 variant="inline"
               />
             </div>
