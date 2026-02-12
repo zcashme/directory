@@ -159,6 +159,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const [usernameInput, setUsernameInput] = useState(form.name || "");
   const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
   const [usernameTouched, setUsernameTouched] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [lastValidUsername, setLastValidUsername] = useState(form.name || "");
   const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
 
   useEffect(() => {
@@ -168,43 +170,56 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   useEffect(() => {
     setUsernameTouched(false);
     setUsernameConflict(null);
+    setUsernameStatus("idle");
+    setLastValidUsername(profile.name || "");
   }, [profile.id]);
 
   useEffect(() => {
     if (!usernameTouched) {
       setUsernameConflict(null);
-      return;
-    }
-
-    if (!isUsernameVerified(profile)) {
-      setUsernameConflict(null);
+      setUsernameStatus("idle");
       return;
     }
 
     const candidate = sanitizeUsernameInput(usernameInput);
     const originalNameRaw = originals.name || "";
 
+    if (!candidate) {
+      setUsernameConflict(null);
+      setUsernameStatus("idle");
+      if (form.name !== "") handleChange("name", "");
+      return;
+    }
+
     if (!candidate || candidate === originalNameRaw) {
       setUsernameConflict(null);
+      setUsernameStatus("idle");
       const nextValue = candidate || originalNameRaw;
-      if (form.name !== nextValue) handleChange("name", nextValue);
+      if (form.name !== nextValue) {
+        handleChange("name", nextValue);
+      }
+      setLastValidUsername(nextValue);
       return;
     }
 
     let cancelled = false;
+    setUsernameStatus("checking");
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailabilityAction(candidate, profile.id);
       if (cancelled) return;
       if (result.ok && result.taken_by_other_verified) {
         setUsernameConflict("That username is already used by another verified profile.");
-        if (form.name !== originalNameRaw) {
-          handleChange("name", originalNameRaw);
+        setUsernameStatus("taken");
+        if (form.name !== lastValidUsername) {
+          handleChange("name", lastValidUsername);
         }
       } else {
         setUsernameConflict(null);
+        setUsernameStatus("available");
         if (form.name !== candidate) {
           handleChange("name", candidate);
         }
+        setLastValidUsername(candidate);
       }
     }, 250);
 
@@ -212,7 +227,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [usernameInput, usernameTouched, profile.address_verified, profile.id, originals.name]);
+  }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
   // Verification flow hook
   useVerificationFlow(profile.id, setShowRedirect);
@@ -323,6 +338,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setDeletedField("name", nextDeleted);
     setUsernameTouched(false);
     setUsernameConflict(null);
+    setUsernameStatus("idle");
     setUsernameInput(nextDeleted ? "" : originals.name);
   };
 
@@ -404,8 +420,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           htmlFor="name"
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
-          pendingHint="⚠ Verify to remove your profile from Zcash.me."
-          pendingHintClassName="text-xs text-red-600 italic"
+          pendingHint={deletedFields.name ? "⚠ Verify to remove your profile from Zcash.me." : "Verify to apply changes"}
+          pendingHintClassName={deletedFields.name ? "text-xs text-red-600 italic" : undefined}
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
           onDelete={toggleNameDelete}
@@ -427,9 +443,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                 const val = sanitizeUsernameInput(raw);
                 setUsernameTouched(true);
                 setUsernameInput(val);
-                if (!isUsernameVerified(profile)) {
-                  handleChange("name", val);
-                }
               }}
               onKeyDown={(e) => {
                 if (!usernameLockedSuffix) return;
@@ -458,6 +471,12 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           </div>
           {usernameConflict && (
             <p className="mt-1 text-xs text-red-600">{usernameConflict}</p>
+          )}
+          {!usernameConflict && usernameTouched && usernameInput && usernameStatus === "checking" && (
+            <p className="mt-1 text-xs text-gray-500">Checking availability...</p>
+          )}
+          {!usernameConflict && usernameTouched && usernameInput && usernameStatus === "available" && (
+            <p className="mt-1 text-xs text-green-600">This name is available.</p>
           )}
         </ProfileField>
 
