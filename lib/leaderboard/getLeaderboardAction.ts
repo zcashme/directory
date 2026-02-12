@@ -244,6 +244,23 @@ export async function getLeaderboardAction(
       const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
       const lastVerifiedAt = user.last_verified_at ? new Date(user.last_verified_at) : null;
 
+      // For time-filtered periods, only count referrals within the period
+      // Skip referrals that don't fall within the selected period
+      if (periodStart) {
+        const isVerifiedUser = user.address_verified && lastVerifiedAt;
+        if (isVerifiedUser) {
+          // For verified referrals, filter by verification date
+          if (lastVerifiedAt < periodStart) {
+            continue; // Skip - verified before the period started
+          }
+        } else {
+          // For unverified referrals, filter by creation date
+          if (createdAt < periodStart) {
+            continue; // Skip - created before the period started
+          }
+        }
+      }
+
       const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) || 0;
       const referrerPendingLinks = pendingLinksMap.get(referrerId) || 0;
 

@@ -142,7 +142,7 @@ export default function LeaderboardPage() {
         {/* Leaderboard Table */}
         {!loading && !error && entries.length > 0 && (
           <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-            {/* Header */}
+            {/* Desktop Header */}
             <div className="hidden xl:block min-w-[1400px]">
               {/* Column Group Headers */}
               <div className="grid grid-cols-[60px_160px_1fr_1fr_1fr_1fr_1fr] gap-0 bg-gray-100 text-xs font-bold border-b border-gray-300">
@@ -182,6 +182,17 @@ export default function LeaderboardPage() {
                 <div className="px-2 py-2 text-right">Remaining</div>
                 <div className="px-2 py-2 text-right">Total</div>
               </div>
+            </div>
+
+            {/* Mobile/Tablet Header */}
+            <div className="xl:hidden grid grid-cols-[40px_1fr_50px_50px_60px_70px_28px] sm:grid-cols-[50px_1fr_60px_60px_70px_80px_32px] gap-1 sm:gap-2 px-2 sm:px-3 py-2 bg-gray-100 text-[10px] sm:text-xs font-semibold text-gray-600 border-b border-gray-200">
+              <div>#</div>
+              <div>Referrer</div>
+              <div className="text-right">Total</div>
+              <div className="text-right">Verif.</div>
+              <div className="text-right">Rate</div>
+              <div className="text-right">Earned</div>
+              <div></div>
             </div>
 
             {/* Rows */}
@@ -291,39 +302,56 @@ function LeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
         <div className="px-2 py-3 text-right font-bold text-xs">{formatCurrency(entry.totalEarnedToDate + entry.totalRewardsRemaining)}</div>
       </div>
 
-      {/* Mobile/Tablet Row */}
+      {/* Mobile/Tablet Row - Table format with expandable details */}
       <div className="xl:hidden border-b border-gray-100 last:border-b-0">
         <button
           onClick={() => setExpanded(!expanded)}
-          className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50"
+          className="w-full hover:bg-gray-50 transition-colors"
         >
-          <div className="flex items-center gap-3">
-            <span className={`font-bold ${entry.rank <= 3 ? "text-lg" : "text-sm text-gray-500"}`}>
-              {entry.rank === 1 && "🥇"}
-              {entry.rank === 2 && "🥈"}
-              {entry.rank === 3 && "🥉"}
-              {entry.rank > 3 && `#${entry.rank}`}
-            </span>
+          {/* Table Row */}
+          <div className="grid grid-cols-[40px_1fr_50px_50px_60px_70px_28px] sm:grid-cols-[50px_1fr_60px_60px_70px_80px_32px] gap-1 sm:gap-2 px-2 sm:px-3 py-3 items-center text-xs sm:text-sm">
+            {/* Rank */}
             <div className="text-left">
-              <div className="font-medium flex items-center gap-2">
-                {entry.referrerName}
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${TIER_COLORS[entry.commissionTier]}`}>
-                  {TIER_LABELS[entry.commissionTier]}
-                </span>
-              </div>
-              <div className="text-xs text-gray-400">
-                {entry.verifiedReferrals} verified · {formatPercent(entry.currentCommissionRate)} rate · {formatCurrency(entry.totalEarnedToDate)} earned
-              </div>
+              <span className={`font-bold ${entry.rank <= 3 ? "text-base" : "text-xs text-gray-500"}`}>
+                {entry.rank === 1 && "🥇"}
+                {entry.rank === 2 && "🥈"}
+                {entry.rank === 3 && "🥉"}
+                {entry.rank > 3 && `#${entry.rank}`}
+              </span>
+            </div>
+
+            {/* Name + Tier */}
+            <div className="text-left min-w-0">
+              <div className="font-medium truncate text-xs sm:text-sm">{entry.referrerName}</div>
+              <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] sm:text-[10px] font-medium ${TIER_COLORS[entry.commissionTier]}`}>
+                {TIER_LABELS[entry.commissionTier]}
+              </span>
+            </div>
+
+            {/* Total */}
+            <div className="text-right font-medium">{entry.totalReferrals}</div>
+
+            {/* Verified */}
+            <div className="text-right font-medium text-green-600">{entry.verifiedReferrals}</div>
+
+            {/* Rate */}
+            <div className="text-right font-medium">{formatPercent(entry.currentCommissionRate)}</div>
+
+            {/* Earned */}
+            <div className="text-right font-medium text-green-700">{formatCurrency(entry.totalEarnedToDate)}</div>
+
+            {/* Expand Icon */}
+            <div className="flex justify-center">
+              <svg
+                className={`w-4 h-4 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
             </div>
           </div>
-          <svg
-            className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
         </button>
 
         {expanded && (
