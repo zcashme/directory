@@ -611,6 +611,7 @@ export default function ProfileCard({
   fullView = false,
   duplicateNameCount = 0
 }: ProfileCardProps) {
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -661,6 +662,22 @@ export default function ProfileCard({
     if (!warningConfig) return;
     setShowDetail(!!warningConfig.defaultExpanded);
   }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menuContainer = menuContainerRef.current;
+      if (!menuContainer) return;
+      if (menuContainer.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [menuOpen]);
 
   const handleAuthBadgeClick = (event: MouseEvent, link: EnrichedProfileLink) => {
     event.stopPropagation();
@@ -785,7 +802,7 @@ export default function ProfileCard({
           {/* Top buttons row (menu + share) */}
           <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
             {/* Menu button */}
-            <div className="relative">
+            <div ref={menuContainerRef} className="relative">
               <motion.button
                 onClick={(e) => {
                   e.stopPropagation();

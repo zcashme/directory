@@ -174,10 +174,6 @@ export default function ProfilePage({
     swap.resetQuote();
   }, [swap]);
 
-  const handleResetSwapState = useCallback(() => {
-    swap.resetSwapState(zecTokenId);
-  }, [swap, zecTokenId]);
-
   if (isLoadingTokens) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -230,7 +226,6 @@ export default function ProfilePage({
                     setSlippageTolerance={handleSwapFieldChange('slippage')}
                     getQuote={handleGetQuote}
                     confirmSwap={handleConfirmSwap}
-                    resetSwapState={handleResetSwapState}
                   />
                 </div>
               ) : (

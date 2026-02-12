@@ -80,7 +80,6 @@ interface AmountAndWalletProps {
   showRefund?: boolean;
   refundAddress?: string;
   setRefundAddress?: (_address: string) => void;
-  tokenBlockchain?: string;
 }
 
 export default function AmountAndWallet({
@@ -98,12 +97,12 @@ export default function AmountAndWallet({
   showRefund = false,
   refundAddress = "",
   setRefundAddress,
-  tokenBlockchain = ""
 }: AmountAndWalletProps) {
   const shouldReduceMotion = useReducedMotion();
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
+  const [isRefundFocused, setIsRefundFocused] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const [fiatSearch, setFiatSearch] = useState("");
   const [fiat, setFiat] = useState("USD");
@@ -540,14 +539,18 @@ export default function AmountAndWallet({
 
       {showRefund && (
         <div className="w-full mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your {asset} {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund address
-          </label>
+          {isRefundFocused && (
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              {asset} address in case {asset} → ZEC fails
+            </label>
+          )}
           <input
             type="text"
             value={refundAddress}
             onChange={(e) => setRefundAddress?.(e.target.value)}
-            placeholder={`Paste your ${asset} address`}
+            onFocus={() => setIsRefundFocused(true)}
+            onBlur={() => setIsRefundFocused(false)}
+            placeholder={`Paste your ${asset} refund address`}
             className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500"
           />
         </div>

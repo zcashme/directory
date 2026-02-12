@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 import { useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type {
@@ -57,7 +57,6 @@ interface SwapComposerProps {
     refund?: string;
     slippage?: string;
   }) => Promise<SwapConfirmResponse | null>;
-  resetSwapState: () => void;
 }
 
 export default function SwapComposer({
@@ -86,8 +85,7 @@ export default function SwapComposer({
   setRefundAddress,
   setSlippageTolerance,
   getQuote,
-  confirmSwap,
-  resetSwapState,
+  confirmSwap
 }: SwapComposerProps) {
 
   const recipientName = profile?.display_name ?? profile?.name ?? "Recipient";
@@ -142,45 +140,14 @@ export default function SwapComposer({
 
   return (
     <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
-      {/* HEADER: Back + Recipient */}
-      <div className="flex justify-between items-start relative mb-3">
-        <div className="text-md font-semibold text-gray-800 whitespace-normal">
-          Send to{" "}
-          <span
-            className="text-blue-600 cursor-pointer"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
-            {recipientName}
-          </span>
-        </div>
-
-        <button
-          type="button"
-          onClick={resetSwapState}
-          className="text-gray-600 hover:text-gray-800 text-sm flex-shrink-0"
-          aria-label="Go back to ZEC payment"
-        >
-          ← ZEC
-        </button>
-      </div>
-
       {/* DISABLED MEMO FIELD */}
       <div className="relative mb-2">
         <textarea
           rows={3}
           disabled
-          placeholder="Message is available only when sending ZEC"
+          placeholder={`Messaging is only available when sending Zcash to ${recipientName}`}
           className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 bg-gray-100 text-gray-400 cursor-not-allowed"
         />
-
-        <button
-          type="button"
-          disabled
-          className="absolute right-3 top-1 text-gray-300 cursor-not-allowed"
-          aria-label="Clear message (disabled)"
-        >
-          ⌫
-        </button>
 
         <span className="absolute bottom-3 right-3 text-md text-gray-400">
           512 bytes left
@@ -222,7 +189,7 @@ export default function SwapComposer({
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Value</span>
                 <span className="text-sm text-gray-600">
-                  ≈ ${parseFloat(quotePreview.amountOutUsd.toString()).toFixed(2)} USD
+                  â‰ˆ ${parseFloat(quotePreview.amountOutUsd.toString()).toFixed(2)} USD
                 </span>
               </div>
             )}
@@ -379,3 +346,4 @@ export default function SwapComposer({
     </div>
   );
 }
+
