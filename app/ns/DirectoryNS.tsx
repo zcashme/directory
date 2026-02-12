@@ -287,18 +287,22 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                     <div className="flex items-center gap-2 shrink-0">
                       <button
                         type="button"
-                        onClick={() => {
+                        onClick={async () => {
                           const slug = activeProfileSlug;
                           if (!slug) return;
                           const shareUrl = `https://zcash.me/${slug}`;
                           if (navigator.share) {
-                            navigator.share({
-                              title: activeProfileName,
-                              url: shareUrl,
-                            });
-                            return;
+                            try {
+                              await navigator.share({
+                                title: activeProfileName,
+                                url: shareUrl,
+                              });
+                              return;
+                            } catch {
+                              // User cancelled or failed - fall through to clipboard
+                            }
                           }
-                          navigator.clipboard.writeText(shareUrl);
+                          await navigator.clipboard.writeText(shareUrl);
                           setShareStatus("Copied");
                           setTimeout(() => setShareStatus(""), 1500);
                         }}

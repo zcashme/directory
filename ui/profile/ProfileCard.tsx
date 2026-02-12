@@ -28,8 +28,6 @@ import RedirectModal from "./RedirectModal";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
 import { formatUsername } from "./profileCardUtils";
 
-// Re-export for backwards compatibility
-export { default as ProfileCardContent } from "./ProfileCardContent";
 export type { ProfileCardTextScale } from "./profileCardTypes";
 
 export default function ProfileCard({
@@ -291,13 +289,13 @@ export default function ProfileCard({
                       text: "Check out this Zcash profile:",
                       url: shareUrl,
                     });
+                    return;
                   } catch {
-                    // User cancelled
+                    // User cancelled or failed - fall through to clipboard
                   }
-                } else {
-                  navigator.clipboard.writeText(shareUrl);
-                  alert("Profile link copied to clipboard!");
                 }
+                await navigator.clipboard.writeText(shareUrl);
+                alert("Profile link copied to clipboard!");
               }}
               {...tapProps}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"

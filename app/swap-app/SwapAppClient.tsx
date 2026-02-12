@@ -244,10 +244,13 @@ function SwapStatusDisplay({
                   text: "Check out this swap status:",
                   url: shareUrl,
                 });
+                return;
               } catch {
-                // User cancelled
+                // User cancelled or failed - fall through to clipboard
               }
             }
+            await navigator.clipboard.writeText(shareUrl);
+            alert("Link copied to clipboard!");
           }}
           className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
         >

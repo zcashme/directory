@@ -8,7 +8,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
-import { ProfileCardContent } from "@/ui/profile/ProfileCard";
+import ProfileCardContent from "@/ui/profile/ProfileCardContent";
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
