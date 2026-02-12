@@ -111,10 +111,10 @@ export default function AmountAndWallet({
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
-  const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
+  const rightPillWidth = isUsdOpen ? "40%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
 
-  const overlayRight = isUsdOpen ? "50%" : "2.5rem";
+  const overlayRight = isUsdOpen ? "40%" : "2.5rem";
   const overlayWidth = "2.25rem";
   const overlayHalf = "1.125rem";
   const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
@@ -212,7 +212,7 @@ export default function AmountAndWallet({
   return (
     <div className="w-full mb-2">
       <div className="flex items-center gap-3">
-        <div className="relative flex flex-1 items-stretch overflow-visible">
+        <div className="relative flex flex-1 items-stretch">
           {showUsdPill && (
             <>
               <div
@@ -281,7 +281,7 @@ export default function AmountAndWallet({
                 }
               }}
               className="border border-gray-800 px-3 rounded-xl w-full h-11
-                         text-md pr-16 text-gray-900
+                         text-md pr-12 md:pr-16 text-gray-900
                          pl-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
 
@@ -298,7 +298,7 @@ export default function AmountAndWallet({
                     <span>▼</span>
                   </button>
                   {isTokenDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto">
+                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] pointer-events-auto">
                       <div className="p-2 border-b border-gray-800">
                         <input
                           type="text"
@@ -450,7 +450,7 @@ export default function AmountAndWallet({
                         ▼
                       </span>
                       {isCurrencyOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50">
+                        <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999]">
                           <div className="p-2 border-b border-gray-800">
                             <input
                               type="text"

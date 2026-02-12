@@ -440,26 +440,6 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
 
   return (
     <>
-      <style jsx global>{`
-        * {
-          outline: 1px solid rgba(255, 0, 0, 0.3) !important;
-        }
-        * * {
-          outline: 1px solid rgba(0, 255, 0, 0.3) !important;
-        }
-        * * * {
-          outline: 1px solid rgba(0, 0, 255, 0.3) !important;
-        }
-        * * * * {
-          outline: 1px solid rgba(255, 255, 0, 0.3) !important;
-        }
-        * * * * * {
-          outline: 1px solid rgba(255, 0, 255, 0.3) !important;
-        }
-        * * * * * * {
-          outline: 1px solid rgba(0, 255, 255, 0.3) !important;
-        }
-      `}</style>
       {/* Error Display */}
       {tokensError && (
         <div
@@ -471,9 +451,9 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
       )}
 
       {/* Flip Card Container */}
-      <div className="relative" style={{ perspective: "1000px", minHeight: "600px" }}>
+      <div className="relative overflow-visible" style={{ perspective: "1000px", minHeight: "600px" }}>
         <div
-          className="relative w-full transition-transform duration-300"
+          className="relative w-full transition-transform duration-300 overflow-visible"
           style={{
             transformStyle: "preserve-3d",
             transform: isStatus ? "rotateX(180deg)" : "rotateX(0deg)",
@@ -481,7 +461,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
         >
           {/* Front Side - Main Swap Card */}
           <div
-            className="rounded-3xl border border-gray-800 p-6 shadow-lg relative"
+            className="rounded-3xl border border-gray-800 p-6 shadow-lg relative overflow-visible"
             style={{
               backgroundColor: 'var(--color-background)',
               backfaceVisibility: "hidden",
@@ -516,30 +496,48 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
               </div>
             </div>
             {/* Currency Swap Section */}
-            <div className="flex flex-col md:flex-row md:items-end md:gap-3 mb-6">
-              {/* From Section */}
-              <div className="flex-1">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">From</label>
-                  <AmountAndWallet
-                    amount={fromAmount}
-                    setAmount={handleFromAmountChange}
-                    showUsdPill={true}
-                    showOpenWallet={false}
-                    asset={fromToken?.symbol || ""}
-                    assetOptions={formattedTokens}
-                    setAsset={handleFromTokenChange}
-                  />
+            <div className="relative mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                {/* From Section */}
+                <div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">From</label>
+                    <AmountAndWallet
+                      amount={fromAmount}
+                      setAmount={handleFromAmountChange}
+                      showUsdPill={true}
+                      showOpenWallet={false}
+                      asset={fromToken?.symbol || ""}
+                      assetOptions={formattedTokens}
+                      setAsset={handleFromTokenChange}
+                    />
+                  </div>
+                </div>
+
+                {/* To Section */}
+                <div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-semibold text-gray-700">To</label>
+                    <AmountAndWallet
+                      amount={toAmount}
+                      setAmount={setToAmount}
+                      showUsdPill={false}
+                      showOpenWallet={false}
+                      asset={toToken?.symbol || ""}
+                      assetOptions={formattedTokens}
+                      setAsset={handleToTokenChange}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Swap Direction Button */}
-              <div className="flex items-center justify-center md:pb-1">
+              {/* Swap Direction Button - Centered */}
+              <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10">
                 <button
                   type="button"
                   onClick={handleSwapDirection}
                   disabled={!fromToken || !toToken}
-                  className={`p-2 rounded-xl transition-colors md:rotate-90 border border-gray-800 ${
+                  className={`p-2 rounded-xl transition-colors border border-gray-800 ${
                     fromToken && toToken
                       ? "hover:bg-gray-100 text-gray-600"
                       : "opacity-50 cursor-not-allowed text-gray-400"
@@ -548,7 +546,7 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                   style={fromToken && toToken ? { backgroundColor: "var(--color-background)" } : {}}
                 >
                   <svg
-                    className="w-4 h-4"
+                    className="w-6 h-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -557,26 +555,10 @@ export default function SwapAppClient({ initialDepositAddress }: { initialDeposi
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
                     />
                   </svg>
                 </button>
-              </div>
-
-              {/* To Section */}
-              <div className="flex-1">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700">To</label>
-                  <AmountAndWallet
-                    amount={toAmount}
-                    setAmount={setToAmount}
-                    showUsdPill={false}
-                    showOpenWallet={false}
-                    asset={toToken?.symbol || ""}
-                    assetOptions={formattedTokens}
-                    setAsset={handleToTokenChange}
-                  />
-                </div>
               </div>
             </div>
 
