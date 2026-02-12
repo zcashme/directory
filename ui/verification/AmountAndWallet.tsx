@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
+import { createPortal } from "react-dom";
 import { getRateAction } from "@/lib/rates/getRateAction";
 
 interface Currency {
@@ -39,7 +40,7 @@ const CURRENCIES: Record<string, Currency> = {
   THB: { symbol: "฿", name: "Thai Baht" },
   TRY: { symbol: "₺", name: "Turkish Lira" },
   VND: { symbol: "₫", name: "Vietnamese Dong" },
-  ZAR: { symbol: "R", name: "South African Rand" }
+  ZAR: { symbol: "R", name: "South African Rand" },
 };
 const FIAT_TICKERS = Object.keys(CURRENCIES);
 
@@ -48,7 +49,8 @@ const formatDecimal = (value: number, fallback = "") => {
   return Number.isFinite(num) ? num.toFixed(2) : fallback;
 };
 
-const clamp = (num: number, min: number, max: number) => Math.min(Math.max(num, min), max);
+const clamp = (num: number, min: number, max: number) =>
+  Math.min(Math.max(num, min), max);
 
 interface TokenOption {
   id: string;
@@ -97,7 +99,7 @@ export default function AmountAndWallet({
   showRefund = false,
   refundAddress = "",
   setRefundAddress,
-  tokenBlockchain = ""
+  tokenBlockchain = "",
 }: AmountAndWalletProps) {
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
@@ -110,11 +112,13 @@ export default function AmountAndWallet({
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
+  const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; right: number } | null>(null);
+  const tokenButtonRef = useRef<HTMLButtonElement>(null);
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
-  const rightPillWidth = isUsdOpen ? "40%" : "2.5rem";
+  const rightPillWidth = isUsdOpen ? "45%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
 
-  const overlayRight = isUsdOpen ? "40%" : "2.5rem";
+  const overlayRight = isUsdOpen ? "45%" : "2.5rem";
   const overlayWidth = "2.25rem";
   const overlayHalf = "1.125rem";
   const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
@@ -122,7 +126,12 @@ export default function AmountAndWallet({
   const fetchRate = async (nextFiat: string, nextAsset: string) => {
     try {
       const result = await getRateAction(nextFiat || "USD", nextAsset || "ZEC");
-      if (result.ok && result.rate && Number.isFinite(result.rate) && result.rate > 0) {
+      if (
+        result.ok &&
+        result.rate &&
+        Number.isFinite(result.rate) &&
+        result.rate > 0
+      ) {
         setRate(result.rate);
         setRateFetched(true);
         return true;
@@ -219,14 +228,14 @@ export default function AmountAndWallet({
                 className="pointer-events-none absolute top-0 border-t border-gray-800"
                 style={{
                   width: overlayWidth,
-                  right: overlayRightOffset
+                  right: overlayRightOffset,
                 }}
               />
               <div
                 className="pointer-events-none absolute bottom-0 border-b border-gray-800"
                 style={{
                   width: overlayWidth,
-                  right: overlayRightOffset
+                  right: overlayRightOffset,
                 }}
               />
             </>
@@ -260,7 +269,7 @@ export default function AmountAndWallet({
                 if (/^0\d+/.test(val)) return;
 
                 // Cap decimal places at 8
-                const parts = val.split('.');
+                const parts = val.split(".");
                 if (parts[1] && parts[1].length > 8) return;
 
                 setAmount(val);
@@ -273,7 +282,7 @@ export default function AmountAndWallet({
                 }
 
                 // Update fiat side only if we have a valid complete number
-                if (rateFetched && isUsdOpen && val && !val.endsWith('.')) {
+                if (rateFetched && isUsdOpen && val && !val.endsWith(".")) {
                   const num = parseFloat(val);
                   if (Number.isFinite(num) && num > 0) {
                     setUsdInput(formatDecimal(num * rate));
@@ -286,19 +295,32 @@ export default function AmountAndWallet({
             />
 
             {/* Right-side token selector */}
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
+            <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
               {setAsset && assetOptions.length > 0 ? (
                 <div className="relative pointer-events-auto">
                   <button
+                    ref={tokenButtonRef}
                     type="button"
-                    onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
+                    onClick={() => {
+                      if (!isTokenDropdownOpen && tokenButtonRef.current) {
+                        const rect = tokenButtonRef.current.getBoundingClientRect();
+                        setTokenDropdownPos({
+                          top: rect.bottom + 4,
+                          right: window.innerWidth - rect.right,
+                        });
+                      }
+                      setIsTokenDropdownOpen(!isTokenDropdownOpen);
+                    }}
                     className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
                   >
                     <span>{asset}</span>
                     <span>▼</span>
                   </button>
-                  {isTokenDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] pointer-events-auto">
+                  {isTokenDropdownOpen && tokenDropdownPos && createPortal(
+                    <div
+                      className="fixed w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] token-selector"
+                      style={{ top: tokenDropdownPos.top, right: tokenDropdownPos.right }}
+                    >
                       <div className="p-2 border-b border-gray-800">
                         <input
                           type="text"
@@ -309,7 +331,7 @@ export default function AmountAndWallet({
                           autoFocus
                         />
                       </div>
-                      <div className="py-1">
+                      <div className="py-1 max-h-60 overflow-y-auto">
                         {assetOptions
                           .filter(matchesTokenSearch)
                           .map((token) => (
@@ -333,23 +355,31 @@ export default function AmountAndWallet({
                                   alt={token.symbol}
                                   className="w-5 h-5 rounded-full flex-shrink-0"
                                   onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = "none";
+                                    (
+                                      e.target as HTMLImageElement
+                                    ).style.display = "none";
                                   }}
                                 />
                               )}
                               <span className="flex-1 min-w-0">
-                                <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
-                                <div className="text-xs text-gray-500 truncate">{token.chain}</div>
+                                <div className="font-medium text-gray-800 truncate">
+                                  {token.symbol}
+                                </div>
+                                <div className="text-xs text-gray-500 truncate">
+                                  {token.chain}
+                                </div>
                               </span>
                             </button>
                           ))}
-                        {assetOptions.filter(matchesTokenSearch).length === 0 && (
+                        {assetOptions.filter(matchesTokenSearch).length ===
+                          0 && (
                           <div className="px-3 py-2 text-sm text-gray-500 text-center">
                             No tokens found
                           </div>
                         )}
                       </div>
-                    </div>
+                    </div>,
+                    document.body
                   )}
                 </div>
               ) : (
@@ -413,19 +443,22 @@ export default function AmountAndWallet({
                         if (/^0{2,}/.test(val)) return;
 
                         // Cap decimal places at 2 for fiat
-                        const parts = val.split('.');
+                        const parts = val.split(".");
                         if (parts[1] && parts[1].length > 2) return;
 
                         setUsdInput(val);
 
                         // Update crypto side only if we have a valid complete number
-                        if (val && !val.endsWith('.')) {
+                        if (val && !val.endsWith(".")) {
                           const num = parseFloat(val);
                           if (Number.isFinite(num)) {
                             const clamped = clamp(num, 0, 1000000);
-                            const cryptoAmount = rate > 0 ? clamped / rate : clamped;
+                            const cryptoAmount =
+                              rate > 0 ? clamped / rate : clamped;
                             // Format to reasonable precision while preserving trailing zeros intent
-                            const formatted = cryptoAmount.toFixed(8).replace(/\.?0+$/, "");
+                            const formatted = cryptoAmount
+                              .toFixed(8)
+                              .replace(/\.?0+$/, "");
                             setAmount(formatted);
                           }
                         }
@@ -462,11 +495,18 @@ export default function AmountAndWallet({
                             />
                           </div>
                           <div className="py-1 max-h-60 overflow-y-auto">
-                            {FIAT_TICKERS.filter((ticker) =>
-                              !fiatSearch ||
-                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                            {FIAT_TICKERS.filter(
+                              (ticker) =>
+                                !fiatSearch ||
+                                ticker
+                                  .toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()) ||
+                                CURRENCIES[ticker]?.name
+                                  ?.toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()) ||
+                                CURRENCIES[ticker]?.symbol
+                                  ?.toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()),
                             ).map((ticker) => (
                               <button
                                 key={ticker}
@@ -485,17 +525,26 @@ export default function AmountAndWallet({
                                 <span className="w-6 text-gray-600 flex-shrink-0">
                                   {CURRENCIES[ticker]?.symbol || ""}
                                 </span>
-                                <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
+                                <span className="text-gray-800 font-medium flex-shrink-0">
+                                  {ticker}
+                                </span>
                                 <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
                                   {CURRENCIES[ticker]?.name || ""}
                                 </span>
                               </button>
                             ))}
-                            {FIAT_TICKERS.filter((ticker) =>
-                              !fiatSearch ||
-                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                            {FIAT_TICKERS.filter(
+                              (ticker) =>
+                                !fiatSearch ||
+                                ticker
+                                  .toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()) ||
+                                CURRENCIES[ticker]?.name
+                                  ?.toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()) ||
+                                CURRENCIES[ticker]?.symbol
+                                  ?.toLowerCase()
+                                  .includes(fiatSearch.toLowerCase()),
                             ).length === 0 && (
                               <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                 No currencies found
@@ -525,7 +574,9 @@ export default function AmountAndWallet({
       {showRefund && (
         <div className="w-full mt-3">
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your {asset} {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund address
+            Your {asset}{" "}
+            {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund
+            address
           </label>
           <input
             type="text"
