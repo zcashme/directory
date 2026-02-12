@@ -100,10 +100,14 @@ impl ZVS {
     pub async fn scan(&mut self, num_blocks: u32) -> Result<Vec<Memo>> {
         let latest = self.height().await?;
         let start = latest.saturating_sub(num_blocks);
+        self.scan_range(start, latest).await
+    }
 
+    /// Scan a specific block range and decrypt memos
+    pub async fn scan_range(&mut self, start: u32, end: u32) -> Result<Vec<Memo>> {
         let range = BlockRange {
             start: Some(BlockId { height: start as u64, hash: vec![] }),
-            end: Some(BlockId { height: latest as u64, hash: vec![] }),
+            end: Some(BlockId { height: end as u64, hash: vec![] }),
         };
         let mut stream = self.client.get_block_range(range).await?.into_inner();
 
