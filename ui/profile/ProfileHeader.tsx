@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
@@ -14,6 +15,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) {
   const router = useRouter();
+  const shouldReduceMotion = useReducedMotion();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
@@ -56,7 +58,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             </button>
           </div>
 
-          <div className="flex-1 relative flex items-center">
+          <div className="flex-1 min-w-0 relative flex items-center">
             <input
               ref={searchInputRef}
               value={search}
@@ -71,7 +73,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 }
               }}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
-              className="w-full pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
+              className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
 
             {search && (
@@ -125,18 +127,21 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             )}
           </div>
 
-          <button
+          <motion.button
             onClick={() => {
               setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
+            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
+            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
             className="flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
             style={{
               height: '32px',
             }}
           >
             {availableUsername ? 'Claim' : 'Join'}
-          </button>
+          </motion.button>
+
         </div>
       </div>
 

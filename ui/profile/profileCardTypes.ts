@@ -25,6 +25,22 @@ export interface ProfileLinkRowProps {
   stopPropagation?: boolean;
 }
 
+export interface ProfileCardTextScale {
+  displayName: number;
+  verifiedBadge: number;
+  username: number;
+  bio: number;
+  meta: number;
+  address: number;
+  addressCopy: number;
+  linkIcon: number;
+  linkLabel: number;
+  linkDomain: number;
+  linkMore: number;
+  linkCopy: number;
+  viewProfile: number;
+}
+
 export interface ProfileCardContentProps {
   profile: Profile;
   linksArray?: EnrichedProfileLink[];
@@ -38,6 +54,8 @@ export interface ProfileCardContentProps {
   linkVariant?: LinkVariant;
   hideLinkBadges?: boolean;
   className?: string;
+  textScaleOverrides?: Partial<ProfileCardTextScale>;
+  showDisplayNameVerifiedBadge?: boolean;
 }
 
 export interface RedirectModalProps {

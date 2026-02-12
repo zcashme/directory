@@ -41,9 +41,23 @@ MIT License © 2025 Zcash Users Group
 
 ---
 
+
 ## Backend (ZVS) Deployment Note
 
 The Zcash Verification Service backend is deployed separately on an Azure VM and is not part of this frontend repo.
 Local development uses a NEXT_PUBLIC_VERIFY_API_URL env var to point at the VM API, and the Vercel project is configured
 with the same variable for production.
+
+## ⚠️ Important: Service Worker Kill Switch (Added Feb 2026)
+
+This repository contains `public/sw.js` and `public/service-worker.js` which contain logic to **immediately unregister themselves** and reload the page.
+
+**Why?**
+These files were added to fix a critical caching issue where mobile browsers were stuck serving an old, broken version of the app from a legacy Service Worker cache. These "Kill Switch" files force those stuck browsers to update.
+
+**When to Remove?**
+You can safely delete these files around **April/May 2026** (2-3 months after they were added).
+
+**Critical Warning for Future PWA Builds:**
+If you later decide to build a PWA for this project (e.g. using `next-pwa`), you **MUST** replace or remove these files. If you leave them as-is, your new Service Worker will be immediately killed and your PWA will not work.
 

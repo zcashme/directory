@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
+import { motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
 
 interface Currency {
@@ -101,6 +102,7 @@ export default function AmountAndWallet({
   setRefundAddress,
   tokenBlockchain = "",
 }: AmountAndWalletProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
@@ -114,6 +116,12 @@ export default function AmountAndWallet({
   const [isTypingFiat, setIsTypingFiat] = useState(false);
   const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; right: number } | null>(null);
   const tokenButtonRef = useRef<HTMLButtonElement>(null);
+  const tapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+      };
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "45%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
@@ -242,7 +250,7 @@ export default function AmountAndWallet({
           )}
 
           <div
-            className="relative min-w-0 transition-[width] duration-200 box-border"
+            className="relative min-w-0 max-w-full transition-[width] duration-200 box-border"
             style={showUsdPill ? { width: leftPillWidth } : { width: "100%" }}
           >
             <input
@@ -335,7 +343,7 @@ export default function AmountAndWallet({
                         {assetOptions
                           .filter(matchesTokenSearch)
                           .map((token) => (
-                            <button
+                            <motion.button
                               key={token.id}
                               type="button"
                               onClick={() => {
@@ -343,6 +351,7 @@ export default function AmountAndWallet({
                                 setIsTokenDropdownOpen(false);
                                 setTokenSearch("");
                               }}
+                              {...tapProps}
                               className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                 asset === (token.symbol ?? token.ticker)
                                   ? "bg-blue-50 font-semibold text-gray-900"
@@ -369,7 +378,7 @@ export default function AmountAndWallet({
                                   {token.chain}
                                 </div>
                               </span>
-                            </button>
+                            </motion.button>
                           ))}
                         {assetOptions.filter(matchesTokenSearch).length ===
                           0 && (
@@ -390,14 +399,14 @@ export default function AmountAndWallet({
 
           {showUsdPill && (
             <div
-              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 transition-[width] duration-200 box-border ${
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 max-w-full transition-[width] duration-200 box-border ${
                 isUsdOpen ? "px-3" : "px-3 justify-center"
               }`}
               style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >
               <div
-                className={`flex items-center w-full ${
+                className={`flex items-center w-full min-w-0 ${
                   isUsdOpen ? "gap-2" : "justify-center"
                 }`}
               >
@@ -508,7 +517,7 @@ export default function AmountAndWallet({
                                   ?.toLowerCase()
                                   .includes(fiatSearch.toLowerCase()),
                             ).map((ticker) => (
-                              <button
+                              <motion.button
                                 key={ticker}
                                 type="button"
                                 onClick={() => {
@@ -516,6 +525,7 @@ export default function AmountAndWallet({
                                   setIsCurrencyOpen(false);
                                   setFiatSearch("");
                                 }}
+                                {...tapProps}
                                 className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                   fiat === ticker
                                     ? "bg-blue-50 font-semibold text-gray-900"
@@ -531,7 +541,7 @@ export default function AmountAndWallet({
                                 <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
                                   {CURRENCIES[ticker]?.name || ""}
                                 </span>
-                              </button>
+                              </motion.button>
                             ))}
                             {FIAT_TICKERS.filter(
                               (ticker) =>
@@ -562,12 +572,13 @@ export default function AmountAndWallet({
         </div>
 
         {showOpenWallet && (
-          <button
+          <motion.button
             onClick={openWallet}
+            {...tapProps}
             className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
           >
             {openWalletLabel}
-          </button>
+          </motion.button>
         )}
       </div>
 

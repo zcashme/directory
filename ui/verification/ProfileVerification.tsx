@@ -153,7 +153,7 @@ export default function ProfileVerification({
           <h3 className="font-semibold text-gray-800 flex items-center gap-2">
 
             <span>
-              Send from {" "}
+              To verify, send from {" "}
               <span
                 className="text-blue-600 cursor-pointer"
                 onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

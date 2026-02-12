@@ -19,7 +19,7 @@ import {
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import { useEditsStore } from "@/lib/stores/edits";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 
@@ -30,6 +30,7 @@ import { formatUsername } from "./profileCardUtils";
 
 // Re-export for backwards compatibility
 export { default as ProfileCardContent } from "./ProfileCardContent";
+export type { ProfileCardTextScale } from "./profileCardTypes";
 
 export default function ProfileCard({
   profile,
@@ -39,6 +40,7 @@ export default function ProfileCard({
   duplicateNameCount = 0,
   onShowQR
 }: ProfileCardProps) {
+  const shouldReduceMotion = useReducedMotion();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
   const [authLink, setAuthLink] = useState<EnrichedProfileLink | null>(null);
@@ -50,6 +52,12 @@ export default function ProfileCard({
   const [showBack, setShowBack] = useState(false);
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
   const { linksArray } = useProfileLinks({ profile });
+  const tapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+      };
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
@@ -204,16 +212,17 @@ export default function ProfileCard({
           <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
             {/* Menu button */}
             <div className="relative">
-              <button
+              <motion.button
                 onClick={(e) => {
                   e.stopPropagation();
                   setMenuOpen((prev) => !prev);
                 }}
+                {...tapProps}
                 className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 title="More options"
               >
                 ☰
-              </button>
+              </motion.button>
 
               {/* Dropdown Menu */}
               {menuOpen && (
@@ -271,7 +280,7 @@ export default function ProfileCard({
             </div>
 
             {/* Share button (top-right) */}
-            <button
+            <motion.button
               onClick={async () => {
                 const shareUrl = buildShareUrl(profile);
 
@@ -290,6 +299,7 @@ export default function ProfileCard({
                   alert("Profile link copied to clipboard!");
                 }
               }}
+              {...tapProps}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
               title={`Share ${profile.display_name || profile.name}`}
             >
@@ -297,8 +307,9 @@ export default function ProfileCard({
                 src="/assets/icons/share.svg"
                 alt="Share"
                 className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity"
+                aria-hidden="true"
               />
-            </button>
+            </motion.button>
           </div>
 
           {/* Avatar */}
@@ -558,3 +569,4 @@ export default function ProfileCard({
     </VerifiedCardWrapper>
   );
 }
+

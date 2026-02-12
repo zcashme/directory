@@ -26,6 +26,7 @@
 html,
 body {
   height: 100%;
+  overflow-x: hidden;
   background: var(--color-background);
   color: var(--color-primary);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
@@ -135,6 +136,24 @@ body {
 
 .animate-joinPulse {
   animation: joinPulse 5.5s ease-in-out infinite;
+}
+
+@keyframes typing-caret-blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.typing-caret {
+  display: inline-block;
+  margin-left: 0.08em;
+  color: #15803d;
+  animation: typing-caret-blink 1s steps(1, end) infinite;
 }
 
 @keyframes toastSlideLeft {
