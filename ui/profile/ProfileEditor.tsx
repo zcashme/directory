@@ -16,6 +16,7 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
+import { isValidUrl } from "@/lib/profile/validateUrl";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
@@ -641,6 +642,18 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           const showDiscordAvatarAction = isVerified && isDiscord;
           const showXAvatarAction = isVerified && isX;
           const showGithubAvatarAction = isVerified && isGithub;
+          const rowConflict =
+            (!isVerified && row.valid === false) ||
+            (isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
+          const rowContainerClass = `${LINK_CONTAINER_CLASS} ${
+            rowConflict ? "border-red-400" : "border-[#0a1126]/60"
+          }`;
+          const rowSelectClass = `${LINK_FIELD_CLASS} ${
+            rowConflict ? "border-red-400 focus:border-red-500" : "border-[#0a1126]/60 focus:border-blue-500"
+          }`;
+          const rowInputClass = `${LINK_FIELD_CLASS} ${
+            rowConflict ? "border-red-400 focus:border-red-500" : "border-[#0a1126]/60 focus:border-blue-500"
+          }`;
 
           const linkActions = (
             <div className="flex items-center justify-between">
@@ -730,7 +743,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           return (
             <div key={row._uid} className="mb-2">
               {isVerified ? (
-                <div className={LINK_CONTAINER_CLASS}>
+                <div className={rowContainerClass}>
                   <LinkInput
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
@@ -746,9 +759,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                   value={row}
                   onChange={(v) => handleSocialLinkChange(row._uid, v)}
                   footer={linkActions}
-                  containerClassName={LINK_CONTAINER_CLASS}
-                  selectClassName={LINK_FIELD_CLASS}
-                  inputClassName={LINK_FIELD_CLASS}
+                  containerClassName={rowContainerClass}
+                  selectClassName={rowSelectClass}
+                  inputClassName={rowInputClass}
                 />
               )}
             </div>

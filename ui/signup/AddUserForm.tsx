@@ -68,6 +68,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   const [address, setAddress] = useState("");
   const [addressHelp, setAddressHelp] = useState("");
   const [addressConflict, setAddressConflict] = useState<ConflictInfo | null>(null);
+  const [referrerConflict, setReferrerConflict] = useState<ConflictInfo | null>(null);
 
   const [referrer, setReferrer] = useState<Referrer | string>("");
 
@@ -106,7 +107,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       setNameConflict(null);
       setAddress("");
       setAddressHelp("");
+      setAddressConflict(null);
       setReferrer("");
+      setReferrerConflict(null);
 
       const fromEvent = (window as any).lastReferrer;
       if (fromEvent?.id && fromEvent?.name) {
@@ -233,6 +236,38 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       clearTimeout(timer);
     };
   }, [address]);
+
+  useEffect(() => {
+    if (typeof referrer === "object") {
+      setReferrerConflict(null);
+      return;
+    }
+
+    const query = (referrer || "").trim();
+    if (!query) {
+      setReferrerConflict(null);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      const result = await checkUsernameAvailabilityAction(query);
+      if (!active) return;
+      if (result.ok && !result.exists) {
+        setReferrerConflict({
+          type: "error",
+          text: "No matching username found. Select a valid referrer or clear this field.",
+        });
+      } else {
+        setReferrerConflict(null);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [referrer]);
 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
@@ -452,7 +487,13 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
         Username
       </label>
-      <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
+      <div
+        className={`flex items-center w-full rounded-2xl border overflow-hidden bg-transparent ${
+          nameConflict?.type === "error"
+            ? "border-red-400 focus-within:border-red-500"
+            : "border-black/30 focus-within:border-green-600"
+        }`}
+      >
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
         <input
           id="name"
@@ -512,7 +553,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepAddress = (
     <StepContainer stepKey="step-address" dir={dir}>
-      <ZcashAddressInput value={address} onChange={setAddress} />
+      <ZcashAddressInput
+        value={address}
+        onChange={setAddress}
+        hasConflict={addressConflict?.type === "error"}
+      />
       {(addressConflict || addressHelp) && (
         <p
           className={`mt-1 text-xs ${addressConflict?.type === "error"
@@ -582,12 +627,23 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         Referred by Zcash.me/
       </label>
 
-      <div className="relative flex items-center w-full rounded-2xl border border-black/30 overflow-visible bg-transparent focus-within:border-green-600">
+      <div
+        className={`relative flex items-center w-full rounded-2xl border overflow-visible bg-transparent ${
+          referrerConflict?.type === "error"
+            ? "border-red-400 focus-within:border-red-500"
+            : "border-black/30 focus-within:border-green-600"
+        }`}
+      >
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
         <div className="relative flex-1">
           <ProfileSearchDropdown
             value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
-            onChange={(v) => setReferrer(v)}
+            onChange={(v) => {
+              setReferrer(v);
+              if (typeof v === "object") {
+                setReferrerConflict(null);
+              }
+            }}
             placeholder="username"
             showByDefault={false}
             showUsernameAvailability={false}
@@ -597,7 +653,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       </div>
 
 
-      <p className="mt-1 text-xs text-gray-500">Optional. Helps us reward members who refer new members.</p>
+      <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-500"}`}>
+        {referrerConflict?.text || "Optional. Helps us reward members who refer new members."}
+      </p>
     </StepContainer>
   );
 
