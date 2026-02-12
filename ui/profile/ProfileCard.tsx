@@ -17,8 +17,6 @@ import {
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
-import { useMessagingStore } from "@/lib/stores/messaging";
-import { useSelectionStore } from "@/lib/stores/selection";
 import { useEditsStore } from "@/lib/stores/edits";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence } from "framer-motion";
@@ -48,9 +46,9 @@ export default function ProfileCard({
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const { setForceShowQR } = useSelectionStore();
+  const [showBack, setShowBack] = useState(false);
+  const [forceShowQR, setForceShowQR] = useState(false);
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
-  const { showBack, setShowBack, setMode, setVerify } = useMessagingStore();
   const { linksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
@@ -251,12 +249,6 @@ export default function ProfileCard({
                     onClick={() => {
                       setShowBack(true);
                       setMenuOpen(false);
-                      setVerify((prev) => ({
-                        ...prev,
-                        zId: profile.id ?? null,
-                        requestId: null,
-                      }));
-                      setMode("verification");
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-blue-50"
                   >
@@ -429,9 +421,7 @@ export default function ProfileCard({
                   {/* QR Button */}
                   <button
                     onClick={() => {
-                      if (typeof setForceShowQR === "function") {
-                        setForceShowQR(true);
-                      }
+                      setForceShowQR(true);
 
                       setTimeout(() => {
                         const el = document.getElementById("zcash-feedback");
@@ -536,10 +526,7 @@ export default function ProfileCard({
               onClick={() => {
                 (window as any).skipZcashFeedbackScroll = true;
                 setShowBack(false);
-                setMode("memo");
-                if (setForceShowQR) {
-                  setForceShowQR(false);
-                }
+                setForceShowQR(false);
               }}
               title="Return to front"
               aria-label="Return to front"

@@ -3,8 +3,6 @@ import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { useSelectionStore } from "@/lib/stores/selection";
-import { useMessagingStore } from "@/lib/stores/messaging";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
@@ -26,8 +24,11 @@ import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
-  const { selectedAddress, setSelectedAddress, forceShowQR, setForceShowQR } = useSelectionStore();
-  const { memo, amount, setMemo, setAmount } = useMessagingStore();
+  // Local state
+  const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
+  const [forceShowQR, setForceShowQR] = useState(false);
+  const [memo, setMemo] = useState('');
+  const [amount, setAmount] = useState('');
   const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
     initialProfiles
   );
