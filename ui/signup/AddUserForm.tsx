@@ -12,8 +12,7 @@ import {
   createProfileAction,
   insertProfileLinksAction,
   checkAddressTakenAction,
-  checkUsernameExistsForFormAction,
-  checkUsernameIsVerifiedAction,
+  checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
 import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -32,14 +31,8 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
 import { isValidUrl } from "@/lib/profile/validateUrl";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
+import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-
-
-const toSlugish = (s = "") =>
-  s
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, "_");
 
 interface Referrer {
   id: number;
@@ -141,18 +134,13 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     let active = true;
 
     const checkName = async () => {
-      const trimmedName = name.trim();
-
-      const existsResult = await checkUsernameExistsForFormAction(trimmedName);
+      const trimmedName = sanitizeUsernameInput(name);
+      const availabilityResult = await checkUsernameAvailabilityAction(trimmedName);
 
       if (!active) return;
 
-      if (existsResult.ok && existsResult.exists) {
-        const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
-
-        if (!active) return;
-
-        if (verifiedResult.ok && verifiedResult.verified) {
+      if (availabilityResult.ok && availabilityResult.exists) {
+        if (availabilityResult.verified_exists) {
           setNameConflict({
             type: "error",
             text: "That name is already used by a verified profile.",
@@ -167,7 +155,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         setNameConflict(null);
       }
 
-      setNameHelp(`Shared as: Zcash.me/${toSlugish(trimmedName)}`);
+      setNameHelp(`Shared as: Zcash.me/${normalizeUsernameForSlug(trimmedName)}`);
     };
 
     const timer = setTimeout(checkName, 300);
@@ -339,18 +327,14 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    const trimmedName = name.trim();
-    const usernameExistsResult = await checkUsernameExistsForFormAction(trimmedName);
+    const trimmedName = sanitizeUsernameInput(name);
+    const usernameAvailabilityResult = await checkUsernameAvailabilityAction(trimmedName);
 
-    if (usernameExistsResult.ok && usernameExistsResult.exists) {
-      const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
-
-      if (verifiedResult.ok && verifiedResult.verified) {
-        setError(
-          'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
-        );
-        return;
-      }
+    if (usernameAvailabilityResult.ok && usernameAvailabilityResult.verified_exists) {
+      setError(
+        'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+      );
+      return;
     }
 
     const addr = address.trim().toLowerCase();
@@ -402,7 +386,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
     try {
       const profileResult = await createProfileAction({
-        name: name.trim(),
+        name: sanitizeUsernameInput(name),
         display_name: displayName.trim() || undefined,
         address: address.trim(),
         nearest_city_id: nearestCity?.id || undefined,
@@ -428,7 +412,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
 
-      const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
+      const slugBase = normalizeUsernameForSlug(profile.name);
       const slug = `${slugBase}-${profile.id}`;
 
       onUserAdded?.(profile);
@@ -474,12 +458,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
           id="name"
           value={name}
           onChange={(e) => {
-            const input = e.target.value;
-
-            const filtered = input
-              .normalize("NFKC")
-              .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
-
+            const filtered = sanitizeUsernameInput(e.target.value);
             setName(filtered);
           }}
           className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
@@ -497,7 +476,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       >
         {nameConflict?.text
           ? nameConflict.text
-          : nameHelp || "Use only letters, numbers, underscores, or emojis. Spaces become underscores."}
+          : nameHelp || "Use letters, numbers, underscores, or dashes. Spaces become underscores."}
       </p>
       {addressConflict && (
         <p

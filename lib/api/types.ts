@@ -186,6 +186,14 @@ export interface CheckUsernameResponse {
   error?: string;
 }
 
+export interface CheckUsernameAvailabilityResponse {
+  ok: boolean;
+  exists: boolean;
+  verified_exists: boolean;
+  taken_by_other_verified: boolean;
+  error?: string;
+}
+
 /**
  * Link verification update
  */

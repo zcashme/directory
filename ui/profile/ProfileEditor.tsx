@@ -3,7 +3,7 @@ import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
-import { checkUsernameTakenByOtherVerifiedAction } from "@/lib/signup/createProfileAction";
+import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
@@ -17,6 +17,7 @@ import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
+import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
@@ -59,14 +60,6 @@ interface AvatarPrompt {
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const normalizeUsernameInput = (value: string) =>
-  (value || "")
-    .normalize("NFKC")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_")
-    .replace(/[^a-z0-9_-]/g, "");
 
 export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const {
@@ -165,6 +158,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   }, [profile.address_verified, profile.id]);
   const [usernameInput, setUsernameInput] = useState(form.name || "");
   const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
+  const [usernameTouched, setUsernameTouched] = useState(false);
   const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
 
   useEffect(() => {
@@ -172,28 +166,39 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   }, [form.name]);
 
   useEffect(() => {
+    setUsernameTouched(false);
+    setUsernameConflict(null);
+  }, [profile.id]);
+
+  useEffect(() => {
+    if (!usernameTouched) {
+      setUsernameConflict(null);
+      return;
+    }
+
     if (!isUsernameVerified(profile)) {
       setUsernameConflict(null);
       return;
     }
 
-    const candidate = normalizeUsernameInput(usernameInput);
-    const originalName = normalizeUsernameInput(originals.name);
+    const candidate = sanitizeUsernameInput(usernameInput);
+    const originalNameRaw = originals.name || "";
 
-    if (!candidate || candidate === originalName) {
+    if (!candidate || candidate === originalNameRaw) {
       setUsernameConflict(null);
-      if (form.name !== candidate) handleChange("name", candidate);
+      const nextValue = candidate || originalNameRaw;
+      if (form.name !== nextValue) handleChange("name", nextValue);
       return;
     }
 
     let cancelled = false;
     const timer = setTimeout(async () => {
-      const result = await checkUsernameTakenByOtherVerifiedAction(candidate, profile.id);
+      const result = await checkUsernameAvailabilityAction(candidate, profile.id);
       if (cancelled) return;
-      if (result.ok && result.verified) {
+      if (result.ok && result.taken_by_other_verified) {
         setUsernameConflict("That username is already used by another verified profile.");
-        if (form.name !== originalName) {
-          handleChange("name", originalName);
+        if (form.name !== originalNameRaw) {
+          handleChange("name", originalNameRaw);
         }
       } else {
         setUsernameConflict(null);
@@ -207,7 +212,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [usernameInput, profile.address_verified, profile.id, originals.name]);
+  }, [usernameInput, usernameTouched, profile.address_verified, profile.id, originals.name]);
 
   // Verification flow hook
   useVerificationFlow(profile.id, setShowRedirect);
@@ -313,6 +318,14 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setDeletedField("address", !deletedFields.address);
   };
 
+  const toggleNameDelete = () => {
+    const nextDeleted = !deletedFields.name;
+    setDeletedField("name", nextDeleted);
+    setUsernameTouched(false);
+    setUsernameConflict(null);
+    setUsernameInput(nextDeleted ? "" : originals.name);
+  };
+
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <RedirectModal isOpen={showRedirect} label={redirectLabel} />
@@ -391,9 +404,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           htmlFor="name"
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
+          pendingHint="⚠ Verify to remove your profile from Zcash.me."
+          pendingHintClassName="text-xs text-red-600 italic"
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
-          onDelete={() => setDeletedField("name", !deletedFields.name)}
+          onDelete={toggleNameDelete}
         >
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
@@ -409,7 +424,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                 if (usernameLockedSuffix) {
                   raw = raw.replace(new RegExp(escapeRegex(usernameLockedSuffix), "g"), "");
                 }
-                const val = normalizeUsernameInput(raw);
+                const val = sanitizeUsernameInput(raw);
+                setUsernameTouched(true);
                 setUsernameInput(val);
                 if (!isUsernameVerified(profile)) {
                   handleChange("name", val);

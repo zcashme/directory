@@ -35,6 +35,7 @@ interface ProfileFieldProps {
   helpText: string;
   hasPending?: boolean;
   pendingHint?: string;
+  pendingHintClassName?: string;
   isDeleted?: boolean;
   onDelete?: () => void;
   deleteDisabled?: boolean;
@@ -48,6 +49,7 @@ export default function ProfileField({
   helpText,
   hasPending = false,
   pendingHint = "Verify to apply changes",
+  pendingHintClassName = VERIFY_HINT_CLASS,
   isDeleted = false,
   onDelete,
   deleteDisabled = false,
@@ -62,7 +64,7 @@ export default function ProfileField({
             {label}
           </label>
           {hasPending && (
-            <span className={VERIFY_HINT_CLASS}>{pendingHint}</span>
+            <span className={pendingHintClassName}>{pendingHint}</span>
           )}
         </div>
 

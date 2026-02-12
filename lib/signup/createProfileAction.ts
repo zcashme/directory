@@ -1,15 +1,13 @@
 "use server";
 
 import { createProfile, insertProfileLinks, checkAddressTaken } from "@/lib/signup/createProfile";
-import { checkUsernameExists } from "@/lib/directory/searchProfiles";
 import {
-  checkUsernameIsVerified,
-  checkUsernameTakenByOtherVerified,
+  getUsernameAvailability,
 } from "@/lib/profile/profileQueries";
 import type {
   CreateProfileResponse,
   CheckAddressTakenResponse,
-  CheckUsernameResponse,
+  CheckUsernameAvailabilityResponse,
   CreateProfilePayload,
   ProfileLinkInput,
 } from "@/lib/api/types";
@@ -80,69 +78,36 @@ export async function checkAddressTakenAction(address: string): Promise<CheckAdd
 }
 
 /**
- * Server Action for checking if username exists
- * Used by AddUserForm component for real-time validation
+ * Server Action for checking username availability and verified ownership collisions.
  */
-export async function checkUsernameExistsForFormAction(username: string): Promise<CheckUsernameResponse> {
+export async function checkUsernameAvailabilityAction(
+  username: string,
+  currentProfileId?: number
+): Promise<CheckUsernameAvailabilityResponse> {
   try {
     if (!username || typeof username !== "string" || !username.trim()) {
-      return { ok: true, exists: false };
+      return {
+        ok: true,
+        exists: false,
+        verified_exists: false,
+        taken_by_other_verified: false,
+      };
     }
 
-    const exists = await checkUsernameExists(username.trim());
-    return { ok: true, exists };
+    const availability = await getUsernameAvailability(username, currentProfileId);
+    return {
+      ok: true,
+      exists: availability.exists,
+      verified_exists: availability.verifiedExists,
+      taken_by_other_verified: availability.takenByOtherVerified,
+    };
   } catch (error) {
     return {
       ok: false,
       error: String((error as Error)?.message || error),
       exists: false,
-    };
-  }
-}
-
-/**
- * Server Action for checking if username is verified
- * Used by AddUserForm component for real-time validation
- */
-export async function checkUsernameIsVerifiedAction(username: string): Promise<CheckUsernameResponse> {
-  try {
-    if (!username || typeof username !== "string" || !username.trim()) {
-      return { ok: true, verified: false };
-    }
-
-    const verified = await checkUsernameIsVerified(username.trim());
-    return { ok: true, verified };
-  } catch (error) {
-    return {
-      ok: false,
-      error: String((error as Error)?.message || error),
-      verified: false,
-    };
-  }
-}
-
-/**
- * Server Action for checking whether a username is already used by another verified profile.
- */
-export async function checkUsernameTakenByOtherVerifiedAction(
-  username: string,
-  currentProfileId?: number
-): Promise<CheckUsernameResponse> {
-  try {
-    if (!username || typeof username !== "string" || !username.trim()) {
-      return { ok: true, verified: false };
-    }
-
-    const verified = await checkUsernameTakenByOtherVerified(
-      username.trim(),
-      currentProfileId
-    );
-    return { ok: true, verified };
-  } catch (error) {
-    return {
-      ok: false,
-      error: String((error as Error)?.message || error),
-      verified: false,
+      verified_exists: false,
+      taken_by_other_verified: false,
     };
   }
 }

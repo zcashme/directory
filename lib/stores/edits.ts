@@ -153,6 +153,11 @@ function computePendingEdits(
       .filter((l) => l.id)
       .map((l) => [String(l.id), (l.url || '').trim()])
   );
+  const currentIdSet = new Set(
+    form.links
+      .filter((l) => l.id)
+      .map((l) => String(l.id))
+  );
 
   // Normalize verification tokens - if a +! token's URL no longer exists,
   // replace it with a new URL
@@ -197,6 +202,13 @@ function computePendingEdits(
       if (isNew && !isExplicitVerify) {
         effectTokens.push(`+${newUrl}`);
       }
+    }
+  }
+
+  // Any original link id missing from current form is a deletion.
+  for (const [id] of originalById) {
+    if (!currentIdSet.has(id)) {
+      effectTokens.push(`-${id}`);
     }
   }
 
