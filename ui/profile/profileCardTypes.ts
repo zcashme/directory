@@ -51,4 +51,5 @@ export interface ProfileCardProps {
   warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;
+  onShowQR?: () => void;
 }

@@ -1,18 +1,14 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
 // Stores
 import { useEditsStore } from "@/lib/stores/edits";
-import { useMessagingStore, useSwapStore, ProfileStoresProvider } from "@/lib/contexts/ProfileStoresContext";
 
 // Swap utilities
 import { getTokenId } from "@/lib/swap/utils";
-
-// Profile utilities
-import { getModeFromState } from "@/lib/profile/getModeFromState";
 
 // Server actions
 import { getSwapQuote, confirmSwap } from "@/lib/swap/oneClick";
@@ -67,31 +63,21 @@ export default function ProfilePage({
     amount: '',
   });
 
+  // Force show QR state
+  const [forceShowQR, setForceShowQR] = useState(false);
+
   // Granular subscriptions to prevent unnecessary re-renders
   const pendingEdits = useEditsStore(state => state.pendingEdits);
 
-  // Messaging store selectors
-  const mode = useMessagingStore(state => state.mode);
-  const showBack = useMessagingStore(state => state.showBack);
-  const setMode = useMessagingStore(state => state.setMode);
-  const ensureMessagingProfile = useMessagingStore(state => state.ensureProfile);
-
-  // Swap store selectors (only for originTokenId now)
-  const originTokenId = useSwapStore(state => state.originTokenId);
-  const setOriginTokenId = useSwapStore(state => state.setOriginTokenId);
-  const ensureSwapProfile = useSwapStore(state => state.ensureProfile);
+  // Local state
+  const [mode, setMode] = useState<'donate' | 'swap' | 'verification'>('donate');
+  const [originTokenId, setOriginTokenId] = useState<string | null>(null);
 
   // Extract local state values
   const swapAmount = swapForm.amount;
   const refundAddress = swapForm.refundAddress;
   const slippageTolerance = swapForm.slippageTolerance;
   const { quoteData, quotePreview, depositUri, statusKey, quoteStatus, swapError } = quoteState;
-
-  // Reset stores when switching to a different profile (synchronous, before paint)
-  useLayoutEffect(() => {
-    ensureMessagingProfile(initialProfile.address);
-    ensureSwapProfile(initialProfile.address, null);
-  }, [initialProfile.address, ensureMessagingProfile, ensureSwapProfile]);
 
   // Token selection
   const zecToken = tokens.find((t) =>
@@ -101,11 +87,16 @@ export default function ProfilePage({
   const selectedToken = tokens.find((t) => getTokenId(t) === originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
 
-  // Mode selection logic based on card flip state and token selection
+  // Mode selection logic based on token selection
   useEffect(() => {
-    const newMode = getModeFromState(showBack, originTokenId, zecTokenId);
-    setMode(newMode);
-  }, [showBack, originTokenId, zecTokenId, setMode]);
+    // Determine if user selected a non-ZEC token for swapping
+    const isNonZecToken =
+      originTokenId !== null &&
+      zecTokenId !== null &&
+      originTokenId !== zecTokenId;
+
+    setMode(isNonZecToken ? 'swap' : 'donate');
+  }, [originTokenId, zecTokenId]);
 
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
@@ -238,16 +229,24 @@ export default function ProfilePage({
     setOriginTokenId(zecTokenId);
   }, [zecTokenId, setOriginTokenId]);
 
+  const handleShowQR = useCallback(() => {
+    setForceShowQR(true);
+    setTimeout(() => {
+      const el = document.getElementById("zcash-feedback");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+  }, []);
+
   return (
-    <ProfileStoresProvider profileAddress={initialProfile.address}>
-      <div
-        className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen"
-        style={{ backgroundColor: 'var(--color-background)' }}
-      >
+    <div
+      className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
         <ProfileCard
           profile={initialProfile}
           fullView
           duplicateNameCount={duplicateNameCount}
+          onShowQR={handleShowQR}
         />
 
         <div id="zcash-feedback" className="border-t mt-10 pt-6">
@@ -288,7 +287,7 @@ export default function ProfilePage({
                 <div className="p-0 mt-4">
                   <MemoComposer
                     profile={initialProfile}
-                    forceShowQR={false}
+                    forceShowQR={forceShowQR}
                     asset={originSymbol}
                     assetOptions={tokens.map((token) => ({
                       id: getTokenId(token) ?? "",
@@ -310,6 +309,5 @@ export default function ProfilePage({
           </div>
         </div>
       </div>
-    </ProfileStoresProvider>
   );
 }

@@ -36,7 +36,8 @@ export default function ProfileCard({
   onSelect,
   warning,
   fullView = false,
-  duplicateNameCount = 0
+  duplicateNameCount = 0,
+  onShowQR
 }: ProfileCardProps) {
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -47,7 +48,6 @@ export default function ProfileCard({
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBack, setShowBack] = useState(false);
-  const [forceShowQR, setForceShowQR] = useState(false);
   const { pendingEdits, addLinkAuthToken } = useEditsStore();
   const { linksArray } = useProfileLinks({ profile });
 
@@ -420,14 +420,7 @@ export default function ProfileCard({
                 <div className="flex items-center gap-1 whitespace-nowrap">
                   {/* QR Button */}
                   <button
-                    onClick={() => {
-                      setForceShowQR(true);
-
-                      setTimeout(() => {
-                        const el = document.getElementById("zcash-feedback");
-                        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-                      }, 200);
-                    }}
+                    onClick={onShowQR}
                     className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
                     title="Show QR"
                   >
@@ -526,7 +519,6 @@ export default function ProfileCard({
               onClick={() => {
                 (window as any).skipZcashFeedbackScroll = true;
                 setShowBack(false);
-                setForceShowQR(false);
               }}
               title="Return to front"
               aria-label="Return to front"
