@@ -29,7 +29,7 @@ use zcash_client_backend::{
     },
 };
 use zcash_primitives::transaction::TxId;
-use zcash_keys::keys::UnifiedSpendingKey;
+use zcash_keys::keys::{UnifiedSpendingKey, UnifiedAddressRequest};
 use zcash_client_sqlite::{
     util::SystemClock,
     wallet::init::init_wallet_db,
@@ -357,8 +357,17 @@ impl ZVS {
         ))
     }
 
+    pub fn get_unified_address(&self) -> Result<String> {
+        let ufvk = self.usk.to_unified_full_viewing_key();
+
+        // Get unified address with all available receivers (Orchard + Sapling)
+        let (ua, _) = ufvk.default_address(UnifiedAddressRequest::AllAvailableKeys)?;
+
+        Ok(ua.encode(&MainNetwork))
+    }
+
     pub fn get_address(&self) -> Result<String> {
-        self.get_sapling_address()
+        self.get_unified_address()
     }
 
     /// Sync incrementally and return new memos.
