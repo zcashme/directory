@@ -91,15 +91,23 @@ export default function QrUriBlock({
       {/* QR block */}
       <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
         {showQR && (
-          <QRCodeSVG
-            ref={qrRef}
-            value={uri}
-            size={300}
-            includeMargin={true}
-            bgColor="transparent"
-            fgColor="#000000"
-            style={{ width: "min(300px, 100%)", height: "auto" }}
-          />
+          <motion.a
+            href={uri}
+            {...tapProps}
+            className="inline-block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            title="Open payment URI"
+            aria-label="Open payment URI"
+          >
+            <QRCodeSVG
+              ref={qrRef}
+              value={uri}
+              size={300}
+              includeMargin={true}
+              bgColor="transparent"
+              fgColor="#000000"
+              style={{ width: "min(300px, 100%)", height: "auto" }}
+            />
+          </motion.a>
         )}
       </div>
 
