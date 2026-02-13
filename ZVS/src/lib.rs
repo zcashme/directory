@@ -1,151 +1,369 @@
-//! ZVS - Stateless Zcash Verification Service
+//! ZVS - Zcash Verification Service
 //!
-//! Connects to lightwalletd, decrypts incoming memos.
+//! Connects to lightwalletd, detects incoming memos, and can send transactions.
+
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use anyhow::{anyhow, Result};
-use std::io::Cursor;
-use tonic::transport::Channel;
-use zcash_primitives::{
-    consensus::{BlockHeight, MainNetwork},
-    sapling::{
-        keys::PreparedIncomingViewingKey,
-        note::ExtractedNoteCommitment,
-        note_encryption::{try_sapling_compact_note_decryption, try_sapling_note_decryption},
+use tokio::sync::RwLock;
+use tracing::info;
+
+use zcash_client_backend::{
+    data_api::{
+        chain::ChainState,
+        wallet::{
+            create_proposed_transactions, propose_standard_transfer_to_address,
+            ConfirmationsPolicy, SpendingKeys,
+        },
+        Account as AccountTrait, AccountBirthday, AccountPurpose, WalletRead, WalletWrite,
     },
-    transaction::{components::sapling::CompactOutputDescription, Transaction},
-    zip32::sapling::ExtendedFullViewingKey,
+    fees::StandardFeeRule,
+    proto::service::{compact_tx_streamer_client::CompactTxStreamerClient, BlockId, ChainSpec},
+    wallet::OvkPolicy,
 };
-
-pub mod proto {
-    tonic::include_proto!("cash.z.wallet.sdk.rpc");
-}
-
-use proto::{
-    compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec, TxFilter,
+use zcash_primitives::block::BlockHash;
+use zcash_client_memory::{MemBlockCache, MemoryWalletDb};
+use zcash_keys::keys::UnifiedSpendingKey;
+use zcash_primitives::transaction::TxId;
+use zcash_protocol::{
+    consensus::{BlockHeight, MainNetwork},
+    memo::MemoBytes,
+    value::Zatoshis,
+    ShieldedProtocol,
 };
+use zcash_proofs::prover::LocalTxProver;
 
 /// Decrypted memo from blockchain
 #[derive(Debug, Clone)]
-pub struct Memo {
+pub struct ReceivedMemo {
     pub txid: String,
     pub height: u32,
     pub amount: u64,
-    pub text: String,
+    pub memo: String,
 }
 
-/// Decode bech32 viewing key
-fn decode_vk(key: &str) -> Result<ExtendedFullViewingKey> {
-    let (hrp, data, _) = bech32::decode(key).map_err(|e| anyhow!("bech32: {e}"))?;
-    if hrp != "zxviews" {
-        return Err(anyhow!("expected zxviews HRP, got {hrp}"));
-    }
-    let bytes: Vec<u8> =
-        bech32::FromBase32::from_base32(&data).map_err(|e| anyhow!("base32: {e}"))?;
-    ExtendedFullViewingKey::read(Cursor::new(bytes)).map_err(|e| anyhow!("parse fvk: {e}"))
+/// OTP entry for verification
+#[derive(Debug, Clone)]
+pub struct OtpEntry {
+    pub code: String,
+    pub user_address: String,
+    pub created_at: std::time::Instant,
 }
 
-/// Try compact decryption (detects payment, returns amount but no memo)
-fn try_compact_decrypt(
-    out: &proto::CompactSaplingOutput,
-    ivk: &PreparedIncomingViewingKey,
-    height: BlockHeight,
-) -> Option<u64> {
-    let epk_bytes: [u8; 32] = out.ephemeral_key.clone().try_into().ok()?;
-    let cmu: ExtractedNoteCommitment =
-        Option::from(ExtractedNoteCommitment::from_bytes(&out.cmu.clone().try_into().ok()?))?;
-
-    let compact = CompactOutputDescription {
-        ephemeral_key: epk_bytes.into(),
-        cmu,
-        enc_ciphertext: out.ciphertext.clone().try_into().ok()?,
-    };
-
-    let (note, _) = try_sapling_compact_note_decryption(&MainNetwork, height, ivk, &compact)?;
-    Some(note.value().inner())
-}
-
-/// Decrypt full transaction output to get memo
-fn decrypt_memo(
-    tx: &Transaction,
-    output_idx: usize,
-    ivk: &PreparedIncomingViewingKey,
-    height: BlockHeight,
-) -> Option<String> {
-    let output = tx.sapling_bundle()?.shielded_outputs().get(output_idx)?;
-    let (_, _, memo) = try_sapling_note_decryption(&MainNetwork, height, ivk, output)?;
-    let bytes = memo.as_slice();
-    let end = bytes.iter().position(|&b| b == 0).unwrap_or(bytes.len());
-    Some(String::from_utf8_lossy(&bytes[..end]).into())
-}
-
-/// ZVS instance
+/// ZVS - Zcash Verification Service
 pub struct ZVS {
-    client: CompactTxStreamerClient<Channel>,
-    ivk: PreparedIncomingViewingKey,
+    client: CompactTxStreamerClient<tonic::transport::Channel>,
+    wallet: Arc<RwLock<MemoryWalletDb<MainNetwork>>>,
+    block_cache: MemBlockCache,
+    usk: UnifiedSpendingKey,
+    prover: Option<LocalTxProver>,
+    pending_otps: HashMap<String, OtpEntry>,
 }
 
 impl ZVS {
-    pub async fn connect(url: &str, viewing_key: &str) -> Result<Self> {
-        let vk = decode_vk(viewing_key)?;
-        let ivk = PreparedIncomingViewingKey::new(&vk.fvk.vk.ivk());
-        let client = CompactTxStreamerClient::connect(url.to_owned()).await?;
-        Ok(Self { client, ivk })
-    }
+    /// Connect to lightwalletd and initialize wallet from seed
+    ///
+    /// # Arguments
+    /// * `url` - lightwalletd gRPC endpoint (e.g., "https://mainnet.lightwalletd.com:9067")
+    /// * `seed` - 32+ byte seed (from mnemonic)
+    /// * `birthday_height` - Block height when wallet was created (for efficient scanning)
+    pub async fn connect(url: &str, seed: &[u8], birthday_height: u32) -> Result<Self> {
+        info!("Connecting to lightwalletd at {}", url);
 
-    pub async fn height(&mut self) -> Result<u32> {
-        Ok(self.client.get_latest_block(ChainSpec {}).await?.into_inner().height as u32)
-    }
+        // Connect to lightwalletd
+        let mut client = CompactTxStreamerClient::connect(url.to_owned())
+            .await
+            .map_err(|e| anyhow!("Failed to connect to lightwalletd: {e}"))?;
 
-    /// Scan blocks and decrypt memos
-    pub async fn scan(&mut self, num_blocks: u32) -> Result<Vec<Memo>> {
-        let latest = self.height().await?;
-        let start = latest.saturating_sub(num_blocks);
-        self.scan_range(start, latest).await
-    }
+        // Derive spending key from seed
+        let usk = UnifiedSpendingKey::from_seed(&MainNetwork, seed, zip32::AccountId::ZERO)
+            .map_err(|e| anyhow!("Failed to derive spending key: {e:?}"))?;
 
-    /// Scan a specific block range and decrypt memos
-    pub async fn scan_range(&mut self, start: u32, end: u32) -> Result<Vec<Memo>> {
-        let range = BlockRange {
-            start: Some(BlockId { height: start as u64, hash: vec![] }),
-            end: Some(BlockId { height: end as u64, hash: vec![] }),
+        // Get the full viewing key
+        let ufvk = usk.to_unified_full_viewing_key();
+
+        // Create in-memory wallet
+        let mut wallet = MemoryWalletDb::new(MainNetwork, 100);
+        let block_cache = MemBlockCache::new();
+
+        // Fetch tree state from lightwalletd at birthday height - 1
+        let birthday = if birthday_height > 1 {
+            let tree_state = client
+                .get_tree_state(BlockId {
+                    height: (birthday_height - 1) as u64,
+                    hash: vec![],
+                })
+                .await
+                .map_err(|e| anyhow!("Failed to get tree state: {e}"))?
+                .into_inner();
+
+            AccountBirthday::from_treestate(tree_state, None)
+                .map_err(|_| anyhow!("Failed to create birthday from tree state"))?
+        } else {
+            // For very early blocks, use empty chain state
+            let chain_state = ChainState::empty(
+                BlockHeight::from_u32(0),
+                BlockHash([0; 32]),
+            );
+            AccountBirthday::from_parts(chain_state, None)
         };
-        let mut stream = self.client.get_block_range(range).await?.into_inner();
 
-        // Phase 1: Find candidates using compact decryption
-        let mut candidates: Vec<(Vec<u8>, u32, usize, u64)> = vec![];
-        while let Some(block) = stream.message().await? {
-            let h = BlockHeight::from_u32(block.height as u32);
-            for tx in &block.vtx {
-                for (idx, out) in tx.outputs.iter().enumerate() {
-                    if let Some(amount) = try_compact_decrypt(out, &self.ivk, h) {
-                        candidates.push((tx.hash.clone(), block.height as u32, idx, amount));
-                    }
-                }
-            }
-        }
-
-        // Phase 2: Fetch full transactions and decrypt memos
-        let mut memos = vec![];
-        for (txid, height, output_idx, amount) in candidates {
-            let resp = self.client.get_transaction(TxFilter { hash: txid.clone() }).await?;
-            let tx = Transaction::read(
-                &resp.into_inner().data[..],
-                zcash_primitives::consensus::BranchId::Nu5,
+        // Import account with the UFVK
+        let account = wallet
+            .import_account_ufvk(
+                "ZVS Admin",
+                &ufvk,
+                &birthday,
+                AccountPurpose::Spending { derivation: None },
+                None,
             )
-            .map_err(|e| anyhow!("parse tx: {e}"))?;
+            .map_err(|e| anyhow!("Failed to import account: {e:?}"))?;
 
-            if let Some(text) = decrypt_memo(&tx, output_idx, &self.ivk, BlockHeight::from_u32(height)) {
-                let mut txid_rev = txid;
-                txid_rev.reverse();
-                memos.push(Memo {
-                    txid: hex::encode(txid_rev),
-                    height,
-                    amount,
-                    text,
-                });
-            }
+        info!("Imported account: {:?}", account.id());
+
+        // Try to load prover (Sapling parameters)
+        let prover = LocalTxProver::with_default_location();
+        if prover.is_none() {
+            info!("Sapling parameters not found. Will download on first spend.");
         }
 
-        Ok(memos)
+        Ok(Self {
+            client,
+            wallet: Arc::new(RwLock::new(wallet)),
+            block_cache,
+            usk,
+            prover,
+            pending_otps: HashMap::new(),
+        })
+    }
+
+    /// Get current chain height
+    pub async fn height(&mut self) -> Result<u32> {
+        let response = self
+            .client
+            .get_latest_block(ChainSpec {})
+            .await
+            .map_err(|e| anyhow!("Failed to get latest block: {e}"))?;
+        Ok(response.into_inner().height as u32)
+    }
+
+    /// Sync wallet with the blockchain
+    pub async fn sync(&mut self) -> Result<()> {
+        info!("Starting sync...");
+
+        let mut wallet = self.wallet.write().await;
+
+        zcash_client_backend::sync::run(
+            &mut self.client,
+            &MainNetwork,
+            &self.block_cache,
+            &mut *wallet,
+            1000,
+        )
+        .await
+        .map_err(|e| anyhow!("Sync failed: {e:?}"))?;
+
+        info!("Sync complete");
+        Ok(())
+    }
+
+    /// Get wallet balance (in zatoshis)
+    pub async fn balance(&self) -> Result<u64> {
+        let wallet = self.wallet.read().await;
+        let policy = ConfirmationsPolicy::MIN;
+        let summary = wallet
+            .get_wallet_summary(policy)
+            .map_err(|e| anyhow!("Failed to get wallet summary: {e:?}"))?;
+
+        if let Some(summary) = summary {
+            for (_, balance) in summary.account_balances() {
+                return Ok(balance.sapling_balance().spendable_value().into_u64());
+            }
+        }
+        Ok(0)
+    }
+
+    /// Send ZEC with a memo
+    pub async fn send(&mut self, to_address: &str, amount: u64, memo: &str) -> Result<TxId> {
+        // Ensure prover is available
+        let prover = match &self.prover {
+            Some(p) => p,
+            None => {
+                info!("Downloading Sapling parameters...");
+                zcash_proofs::download_sapling_parameters(None)
+                    .map_err(|e| anyhow!("Failed to download parameters: {e}"))?;
+                self.prover = LocalTxProver::with_default_location();
+                self.prover
+                    .as_ref()
+                    .ok_or_else(|| anyhow!("Failed to load prover after download"))?
+            }
+        };
+
+        let amount = Zatoshis::from_u64(amount).map_err(|_| anyhow!("Invalid amount"))?;
+
+        let memo_bytes = MemoBytes::from_bytes(memo.as_bytes())
+            .map_err(|_| anyhow!("Memo too long (max 512 bytes)"))?;
+
+        let to = zcash_keys::address::Address::decode(&MainNetwork, to_address)
+            .ok_or_else(|| anyhow!("Invalid recipient address"))?;
+
+        let mut wallet = self.wallet.write().await;
+
+        // Get account ID
+        let account_ids = wallet
+            .get_account_ids()
+            .map_err(|e| anyhow!("Failed to get accounts: {e:?}"))?;
+        let account_id = account_ids
+            .first()
+            .ok_or_else(|| anyhow!("No accounts in wallet"))?;
+
+        // Create transaction proposal
+        let proposal = propose_standard_transfer_to_address::<_, _, zcash_client_memory::Error>(
+            &mut *wallet,
+            &MainNetwork,
+            StandardFeeRule::Zip317,
+            *account_id,
+            ConfirmationsPolicy::MIN,
+            &to,
+            amount,
+            Some(memo_bytes),
+            None,
+            ShieldedProtocol::Sapling,
+        )
+        .map_err(|e| anyhow!("Failed to create proposal: {e:?}"))?;
+
+        // Sign and create transaction
+        let spending_keys = SpendingKeys::new(self.usk.clone());
+
+        // Explicitly specify type parameters to help inference
+        use std::convert::Infallible;
+        use zcash_client_backend::wallet::NoteId;
+        use zcash_primitives::transaction::fees::zip317::FeeError;
+        use zcash_client_backend::fees::ChangeError;
+
+        let txids: nonempty::NonEmpty<TxId> = create_proposed_transactions::<
+            _,                           // DbT
+            _,                           // ParamsT
+            Infallible,                  // InputsErrT
+            _,                           // FeeRuleT
+            ChangeError<FeeError, NoteId>, // ChangeErrT
+            NoteId,                      // N
+        >(
+            &mut *wallet,
+            &MainNetwork,
+            prover,
+            prover,
+            &spending_keys,
+            OvkPolicy::Sender,
+            &proposal,
+        )
+        .map_err(|_| anyhow!("Failed to create transaction"))?;
+
+        let txid = txids.first().clone();
+        info!("Created transaction: {}", txid);
+
+        // Get transaction bytes before dropping wallet lock
+        let tx = wallet
+            .get_transaction(txid)
+            .map_err(|e| anyhow!("Failed to get transaction: {e:?}"))?
+            .ok_or_else(|| anyhow!("Transaction not found in wallet"))?;
+
+        let mut tx_bytes = Vec::new();
+        tx.write(&mut tx_bytes)
+            .map_err(|e| anyhow!("Failed to serialize transaction: {e}"))?;
+
+        // Drop wallet lock
+        drop(wallet);
+
+        // Broadcast transaction
+        self.broadcast_transaction(tx_bytes).await?;
+
+        Ok(txid)
+    }
+
+    /// Broadcast a transaction to the network
+    async fn broadcast_transaction(&mut self, tx_bytes: Vec<u8>) -> Result<()> {
+        use zcash_client_backend::proto::service::RawTransaction;
+
+        let response = self
+            .client
+            .send_transaction(RawTransaction {
+                data: tx_bytes,
+                height: 0,
+            })
+            .await
+            .map_err(|e| anyhow!("Failed to broadcast: {e}"))?;
+
+        let result = response.into_inner();
+        if result.error_code != 0 {
+            return Err(anyhow!("Broadcast failed: {}", result.error_message));
+        }
+
+        info!("Transaction broadcast successfully");
+        Ok(())
+    }
+
+    /// Generate a random 6-digit OTP
+    pub fn generate_otp(&mut self, session_id: &str, user_address: &str) -> String {
+        use rand::Rng;
+        let code: u32 = rand::thread_rng().gen_range(100000..999999);
+        let code_str = code.to_string();
+
+        self.pending_otps.insert(
+            session_id.to_string(),
+            OtpEntry {
+                code: code_str.clone(),
+                user_address: user_address.to_string(),
+                created_at: std::time::Instant::now(),
+            },
+        );
+
+        code_str
+    }
+
+    /// Verify an OTP
+    pub fn verify_otp(&mut self, session_id: &str, code: &str) -> bool {
+        if let Some(entry) = self.pending_otps.get(session_id) {
+            if entry.created_at.elapsed().as_secs() > 600 {
+                self.pending_otps.remove(session_id);
+                return false;
+            }
+            if entry.code == code {
+                self.pending_otps.remove(session_id);
+                return true;
+            }
+        }
+        false
+    }
+
+    /// Get the wallet's receiving address
+    pub async fn get_address(&self) -> Result<String> {
+        let wallet = self.wallet.read().await;
+
+        let account_ids = wallet
+            .get_account_ids()
+            .map_err(|e| anyhow!("Failed to get accounts: {e:?}"))?;
+        let account_id = account_ids
+            .first()
+            .ok_or_else(|| anyhow!("No accounts in wallet"))?;
+
+        let account = wallet
+            .get_account(*account_id)
+            .map_err(|e| anyhow!("Failed to get account: {e:?}"))?
+            .ok_or_else(|| anyhow!("Account not found"))?;
+
+        let ufvk = account
+            .ufvk()
+            .ok_or_else(|| anyhow!("No UFVK for account"))?;
+
+        let sapling_dfvk = ufvk.sapling().ok_or_else(|| anyhow!("No Sapling key"))?;
+
+        let (_, address) = sapling_dfvk.default_address();
+
+        Ok(zcash_keys::encoding::encode_payment_address(
+            zcash_protocol::constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
+            &address,
+        ))
     }
 }
