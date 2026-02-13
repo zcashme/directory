@@ -5,7 +5,7 @@ use orchard::keys::{FullViewingKey, PreparedIncomingViewingKey, SpendingKey};
 use orchard::note_encryption::CompactAction;
 use zcash_client_backend::proto::compact_formats::CompactOrchardAction;
 use zcash_client_backend::proto::service::{
-    compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec,
+    compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec, TxFilter,
 };
 
 #[derive(Debug, Clone)]
@@ -13,6 +13,12 @@ pub struct ReceivedMemo {
     pub txid: Vec<u8>,
     pub height: u32,
     pub memo: String,
+}
+
+struct DetectedNote {
+    txid: Vec<u8>,
+    height: u32,
+    action_idx: usize,
 }
 
 pub struct ZVS {
@@ -69,8 +75,9 @@ impl ZVS {
         info!("Scanning blocks {} to {}", start_height, end_height);
 
         let ivk = self.orchard_ivk();
-        let mut memos = Vec::new();
+        let mut detected: Vec<DetectedNote> = Vec::new();
 
+        // Phase 1: Scan compact blocks to find transactions with notes for us
         let range = BlockRange {
             start: Some(BlockId {
                 height: start_height as u64,
@@ -99,15 +106,38 @@ impl ZVS {
             }
 
             for tx in block.vtx {
-                for action in &tx.actions {
-                    if let Some(memo) = try_decrypt_orchard(&ivk, action) {
-                        info!("Found memo at height {}: {:?}", height, memo);
-                        memos.push(ReceivedMemo {
+                for (action_idx, action) in tx.actions.iter().enumerate() {
+                    if try_compact_decrypt(&ivk, action) {
+                        info!("Detected note at height {} action {}", height, action_idx);
+                        detected.push(DetectedNote {
                             txid: tx.hash.clone(),
                             height,
-                            memo,
+                            action_idx,
                         });
                     }
+                }
+            }
+        }
+
+        info!(
+            "Compact scan complete. Found {} notes, fetching full transactions...",
+            detected.len()
+        );
+
+        // Phase 2: Fetch full transactions and decrypt memos
+        let mut memos = Vec::new();
+
+        for note in detected {
+            match self.fetch_memo(&ivk, &note).await {
+                Ok(memo) => {
+                    memos.push(ReceivedMemo {
+                        txid: note.txid,
+                        height: note.height,
+                        memo,
+                    });
+                }
+                Err(e) => {
+                    info!("Failed to fetch memo for tx at height {}: {}", note.height, e);
                 }
             }
         }
@@ -115,38 +145,111 @@ impl ZVS {
         info!("Scan complete. Found {} memos", memos.len());
         Ok(memos)
     }
+
+    async fn fetch_memo(&mut self, ivk: &PreparedIncomingViewingKey, note: &DetectedNote) -> Result<String> {
+        // Fetch full transaction
+        let raw_tx = self
+            .client
+            .get_transaction(TxFilter {
+                block: None,
+                index: 0,
+                hash: note.txid.clone(),
+            })
+            .await
+            .map_err(|e| anyhow!("Failed to fetch transaction: {e}"))?
+            .into_inner();
+
+        // Parse the transaction
+        let tx = zcash_primitives::transaction::Transaction::read(
+            &raw_tx.data[..],
+            zcash_primitives::consensus::BranchId::Nu5,
+        )
+        .map_err(|e| anyhow!("Failed to parse transaction: {e}"))?;
+
+        // Get the Orchard bundle
+        let bundle = tx
+            .orchard_bundle()
+            .ok_or_else(|| anyhow!("Transaction has no Orchard bundle"))?;
+
+        // Get the specific action
+        let action = bundle
+            .actions()
+            .get(note.action_idx)
+            .ok_or_else(|| anyhow!("Action index out of bounds"))?;
+
+        // Full decryption with memo
+        let domain = orchard::note_encryption::OrchardDomain::for_action(action);
+
+        let (note_data, _recipient, memo) =
+            zcash_note_encryption::try_note_decryption(&domain, ivk, action)
+                .ok_or_else(|| anyhow!("Failed to decrypt note"))?;
+
+        info!("Decrypted note value: {}", note_data.value().inner());
+
+        // Convert memo bytes to string
+        let memo_str = extract_memo_text(&memo);
+
+        Ok(memo_str)
+    }
 }
 
-fn try_decrypt_orchard(
-    ivk: &PreparedIncomingViewingKey,
-    action: &CompactOrchardAction,
-) -> Option<String> {
+fn try_compact_decrypt(ivk: &PreparedIncomingViewingKey, action: &CompactOrchardAction) -> bool {
     use orchard::note_encryption::OrchardDomain;
     use zcash_note_encryption::try_compact_note_decryption;
 
-    // Parse compact action fields
-    let nullifier: [u8; 32] = action.nullifier.clone().try_into().ok()?;
-    let cmx: [u8; 32] = action.cmx.clone().try_into().ok()?;
-    let ephemeral_key: [u8; 32] = action.ephemeral_key.clone().try_into().ok()?;
-    let enc_ciphertext: [u8; 52] = action.ciphertext.clone().try_into().ok()?;
+    let nullifier: [u8; 32] = match action.nullifier.clone().try_into() {
+        Ok(n) => n,
+        Err(_) => return false,
+    };
+    let cmx: [u8; 32] = match action.cmx.clone().try_into() {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+    let ephemeral_key: [u8; 32] = match action.ephemeral_key.clone().try_into() {
+        Ok(e) => e,
+        Err(_) => return false,
+    };
+    let enc_ciphertext: [u8; 52] = match action.ciphertext.clone().try_into() {
+        Ok(c) => c,
+        Err(_) => return false,
+    };
+
+    let nf = match orchard::note::Nullifier::from_bytes(&nullifier).into() {
+        Some(n) => n,
+        None => return false,
+    };
+    let cmx_parsed = match orchard::note::ExtractedNoteCommitment::from_bytes(&cmx).into() {
+        Some(c) => c,
+        None => return false,
+    };
 
     let compact_action = CompactAction::from_parts(
-        orchard::note::Nullifier::from_bytes(&nullifier).unwrap(),
-        orchard::note::ExtractedNoteCommitment::from_bytes(&cmx).unwrap(),
+        nf,
+        cmx_parsed,
         zcash_note_encryption::EphemeralKeyBytes(ephemeral_key),
         enc_ciphertext,
     );
 
     let domain = OrchardDomain::for_compact_action(&compact_action);
 
-    // Try to decrypt
-    let (note, _recipient): (orchard::Note, orchard::Address) = try_compact_note_decryption(
-        &domain,
-        ivk,
-        &compact_action,
-    )?;
+    try_compact_note_decryption::<OrchardDomain, CompactAction>(&domain, ivk, &compact_action)
+        .is_some()
+}
 
-    // Compact blocks don't include full memo - only 52 bytes of ciphertext
-    // We detected a note for us, but need full tx for actual memo
-    Some(format!("[note found, value: {}]", note.value().inner()))
+fn extract_memo_text(memo_bytes: &[u8; 512]) -> String {
+    // Memo format: first byte indicates type
+    // 0xF6 = empty memo
+    // 0x00-0xF4 = UTF-8 text (first byte is part of text or indicates text follows)
+
+    if memo_bytes[0] == 0xF6 {
+        return String::new();
+    }
+
+    // Find the end of the text (null terminator or 0xF6 padding)
+    let end = memo_bytes
+        .iter()
+        .position(|&b| b == 0x00 || b == 0xF6)
+        .unwrap_or(512);
+
+    String::from_utf8_lossy(&memo_bytes[..end]).to_string()
 }
