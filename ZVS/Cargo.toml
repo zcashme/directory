@@ -22,7 +22,11 @@ prost = "0.14"
 zcash_client_backend = { version = "0.21", features = ["lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
 zcash_client_sqlite = "0.19"
 zcash_protocol = "0.7"
-zcash_proofs = "0.26"
+zcash_proofs = { version = "0.26", features = ["local-prover"] }
+zcash_keys = "0.12"
+zip32 = "0.2"
+secrecy = "0.8"
+rusqlite = "0.37"
 
 # TLS
 rustls = { version = "0.23", features = ["ring"] }

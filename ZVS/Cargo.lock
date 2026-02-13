@@ -3244,7 +3244,9 @@ dependencies = [
  "hex",
  "prost",
  "rand",
+ "rusqlite",
  "rustls",
+ "secrecy",
  "tokio",
  "tokio-stream",
  "tonic",
@@ -3252,6 +3254,8 @@ dependencies = [
  "tracing-subscriber",
  "zcash_client_backend",
  "zcash_client_sqlite",
+ "zcash_keys",
  "zcash_proofs",
  "zcash_protocol",
+ "zip32",
 ]

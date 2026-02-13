@@ -2,10 +2,15 @@ use std::collections::BTreeMap;
 use std::path::Path;
 
 use anyhow::{anyhow, Result};
+use secrecy::Secret;
 use tracing::info;
 
 use zcash_client_backend::{
-    data_api::chain::BlockSource,
+    data_api::{
+        chain::{scan_cached_blocks, BlockSource, ChainState},
+        wallet::ConfirmationsPolicy,
+        AccountBirthday, WalletRead, WalletWrite,
+    },
     proto::{
         compact_formats::CompactBlock,
         service::{
@@ -13,6 +18,13 @@ use zcash_client_backend::{
         },
     },
 };
+use zcash_keys::keys::UnifiedSpendingKey;
+use zcash_client_sqlite::{
+    util::SystemClock,
+    wallet::init::init_wallet_db,
+    AccountUuid, WalletDb,
+};
+use zcash_protocol::consensus::{BlockHeight, MainNetwork};
 
 /// In-memory block cache that implements BlockSource
 pub struct MemoryBlockSource {
@@ -33,6 +45,16 @@ impl MemoryBlockSource {
     pub fn len(&self) -> usize {
         self.blocks.len()
     }
+
+    pub fn is_empty(&self) -> bool {
+        self.blocks.is_empty()
+    }
+}
+
+impl Default for MemoryBlockSource {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl BlockSource for MemoryBlockSource {
@@ -40,14 +62,22 @@ impl BlockSource for MemoryBlockSource {
 
     fn with_blocks<F, DbErrT>(
         &self,
-        from_height: Option<zcash_protocol::consensus::BlockHeight>,
+        from_height: Option<BlockHeight>,
         limit: Option<usize>,
         mut with_row: F,
-    ) -> std::result::Result<(), zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>>
+    ) -> std::result::Result<
+        (),
+        zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>,
+    >
     where
-        F: FnMut(CompactBlock) -> std::result::Result<(), zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>>,
+        F: FnMut(
+            CompactBlock,
+        ) -> std::result::Result<
+            (),
+            zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>,
+        >,
     {
-        let start = from_height.map(|h| u32::from(h)).unwrap_or(0);
+        let start = from_height.map(u32::from).unwrap_or(0);
         let mut count = 0;
 
         for (_, block) in self.blocks.range(start..) {
@@ -64,14 +94,36 @@ impl BlockSource for MemoryBlockSource {
     }
 }
 
+/// Received memo from a scanned transaction
+#[derive(Debug, Clone)]
+pub struct ReceivedMemo {
+    pub txid_hex: String,
+    pub height: u32,
+    pub memo: String,
+    pub value: u64,
+}
+
+/// Account balance summary
+#[derive(Debug, Clone)]
+pub struct AccountBalance {
+    pub total: u64,
+    pub sapling_spendable: u64,
+    pub orchard_spendable: u64,
+}
+
+// Use the SystemClock from zcash_client_sqlite
+type WalletDbType = WalletDb<rusqlite::Connection, MainNetwork, SystemClock, rand::rngs::OsRng>;
+
 pub struct ZVS {
     client: CompactTxStreamerClient<tonic::transport::Channel>,
-    db_path: std::path::PathBuf,
-    seed: Vec<u8>,
+    wallet: WalletDbType,
+    account_id: AccountUuid,
+    usk: UnifiedSpendingKey,
     birthday_height: u32,
 }
 
 impl ZVS {
+    /// Connect to lightwalletd and initialize wallet
     pub async fn connect(
         url: &str,
         seed: &[u8],
@@ -80,23 +132,102 @@ impl ZVS {
     ) -> Result<Self> {
         info!("Connecting to lightwalletd at {}", url);
 
-        let client = CompactTxStreamerClient::connect(url.to_owned())
+        let mut client = CompactTxStreamerClient::connect(url.to_owned())
             .await
             .map_err(|e| anyhow!("Failed to connect to lightwalletd: {e}"))?;
 
         std::fs::create_dir_all(data_dir)?;
         let db_path = data_dir.join("wallet.db");
 
-        info!("Connected, data dir: {}", data_dir.display());
+        info!("Initializing wallet at {}", db_path.display());
+
+        // Initialize WalletDb with clock and rng
+        let mut wallet = WalletDb::for_path(
+            &db_path,
+            MainNetwork,
+            SystemClock,
+            rand::rngs::OsRng,
+        )
+        .map_err(|e| anyhow!("Failed to open wallet db: {e}"))?;
+
+        // Run migrations
+        init_wallet_db(&mut wallet, None)
+            .map_err(|e| anyhow!("Failed to initialize wallet db: {e:?}"))?;
+
+        // Check if account already exists
+        let accounts = wallet
+            .get_account_ids()
+            .map_err(|e| anyhow!("Failed to get accounts: {e}"))?;
+
+        let (account_id, usk) = if let Some(existing_id) = accounts.first() {
+            info!("Using existing account");
+            // Re-derive USK from seed for the existing account
+            let usk = zcash_keys::keys::UnifiedSpendingKey::from_seed(
+                &MainNetwork,
+                seed,
+                zip32::AccountId::ZERO,
+            )
+            .map_err(|e| anyhow!("Failed to derive spending key: {e:?}"))?;
+            (*existing_id, usk)
+        } else {
+            info!("Creating new account from seed");
+
+            // Get tree state for birthday
+            let birthday = Self::fetch_birthday(&mut client, birthday_height).await?;
+
+            // Create account using seed bytes wrapped in Secret
+            let seed_secret: Secret<Vec<u8>> = Secret::new(seed.to_vec());
+
+            let (account_id, usk) = wallet
+                .create_account("ZVS Admin", &seed_secret, &birthday, None)
+                .map_err(|e| anyhow!("Failed to create account: {e}"))?;
+
+            info!("Created account: {:?}", account_id);
+            (account_id, usk)
+        };
+
+        // Log Sapling address
+        let ufvk = usk.to_unified_full_viewing_key();
+        if let Some(sapling_dfvk) = ufvk.sapling() {
+            let (_, address) = sapling_dfvk.default_address();
+            let encoded = zcash_client_backend::encoding::encode_payment_address(
+                zcash_protocol::constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
+                &address,
+            );
+            info!("Sapling address: {}", encoded);
+        }
 
         Ok(Self {
             client,
-            db_path,
-            seed: seed.to_vec(),
+            wallet,
+            account_id,
+            usk,
             birthday_height,
         })
     }
 
+    /// Fetch account birthday from lightwalletd
+    async fn fetch_birthday(
+        client: &mut CompactTxStreamerClient<tonic::transport::Channel>,
+        height: u32,
+    ) -> Result<AccountBirthday> {
+        let prior_height = height.saturating_sub(1);
+        info!("Fetching tree state at height {}", prior_height);
+
+        let tree_state = client
+            .get_tree_state(BlockId {
+                height: prior_height as u64,
+                hash: vec![],
+            })
+            .await
+            .map_err(|e| anyhow!("Failed to get tree state: {e}"))?
+            .into_inner();
+
+        AccountBirthday::from_treestate(tree_state, None)
+            .map_err(|_| anyhow!("Failed to create birthday from tree state"))
+    }
+
+    /// Get the latest block height from lightwalletd
     pub async fn get_latest_height(&mut self) -> Result<u32> {
         let response = self
             .client
@@ -106,50 +237,165 @@ impl ZVS {
         Ok(response.into_inner().height as u32)
     }
 
+    /// Sync wallet: download blocks and scan for transactions
     pub async fn sync(&mut self) -> Result<()> {
-        let start = self.birthday_height;
-        let end = self.get_latest_height().await?;
+        let chain_tip = self.get_latest_height().await?;
 
-        info!("Downloading blocks {} to {}", start, end);
+        let scan_from = self
+            .wallet
+            .block_fully_scanned()
+            .map_err(|e| anyhow!("Failed to get scan progress: {e}"))?
+            .map(|meta| u32::from(meta.block_height()) + 1)
+            .unwrap_or(self.birthday_height);
 
-        // Download blocks into memory
-        let mut block_source = MemoryBlockSource::new();
-
-        let block_range = BlockRange {
-            start: Some(BlockId {
-                height: start as u64,
-                hash: vec![],
-            }),
-            end: Some(BlockId {
-                height: end as u64,
-                hash: vec![],
-            }),
-        };
-
-        let mut stream = self
-            .client
-            .get_block_range(block_range)
-            .await
-            .map_err(|e| anyhow!("Failed to get block range: {e}"))?
-            .into_inner();
-
-        use tokio_stream::StreamExt;
-        while let Some(block) = stream.next().await {
-            let block = block.map_err(|e| anyhow!("Stream error: {e}"))?;
-            let height = block.height as u32;
-
-            if height % 1000 == 0 {
-                info!("Downloaded block {}", height);
-            }
-
-            block_source.insert(height, block);
+        if scan_from > chain_tip {
+            info!("Wallet is up to date (tip: {})", chain_tip);
+            return Ok(());
         }
 
-        info!("Downloaded {} blocks, scanning...", block_source.len());
+        info!("Syncing from block {} to {}", scan_from, chain_tip);
 
-        // TODO: Initialize WalletDb and scan blocks
-        // For now just report success
-        info!("Sync complete");
+        const BATCH_SIZE: u32 = 1000;
+        let mut current = scan_from;
+
+        while current <= chain_tip {
+            let batch_end = std::cmp::min(current + BATCH_SIZE - 1, chain_tip);
+            info!("Downloading blocks {} to {}", current, batch_end);
+
+            let mut block_source = MemoryBlockSource::new();
+
+            let block_range = BlockRange {
+                start: Some(BlockId {
+                    height: current as u64,
+                    hash: vec![],
+                }),
+                end: Some(BlockId {
+                    height: batch_end as u64,
+                    hash: vec![],
+                }),
+            };
+
+            let mut stream = self
+                .client
+                .get_block_range(block_range)
+                .await
+                .map_err(|e| anyhow!("Failed to get block range: {e}"))?
+                .into_inner();
+
+            use tokio_stream::StreamExt;
+            while let Some(block) = stream.next().await {
+                let block = block.map_err(|e| anyhow!("Stream error: {e}"))?;
+                let height = block.height as u32;
+                block_source.insert(height, block);
+            }
+
+            info!("Downloaded {} blocks, scanning...", block_source.len());
+
+            // Get chain state for this batch
+            let from_height = BlockHeight::from_u32(current);
+            let chain_state = self.get_chain_state_at(current.saturating_sub(1)).await?;
+
+            // Scan the blocks
+            let scan_result = scan_cached_blocks(
+                &MainNetwork,
+                &block_source,
+                &mut self.wallet,
+                from_height,
+                &chain_state,
+                block_source.len(),
+            )
+            .map_err(|e| anyhow!("Scan error: {e}"))?;
+
+            info!(
+                "Scanned batch: {} sapling notes received",
+                scan_result.received_sapling_note_count()
+            );
+
+            current = batch_end + 1;
+        }
+
+        info!("Sync complete up to block {}", chain_tip);
         Ok(())
+    }
+
+    /// Get chain state at a specific height
+    async fn get_chain_state_at(&mut self, height: u32) -> Result<ChainState> {
+        let tree_state = self
+            .client
+            .get_tree_state(BlockId {
+                height: height as u64,
+                hash: vec![],
+            })
+            .await
+            .map_err(|e| anyhow!("Failed to get tree state: {e}"))?
+            .into_inner();
+
+        // Use AccountBirthday's chain_state method to get properly parsed chain state
+        let birthday = AccountBirthday::from_treestate(tree_state, None)
+            .map_err(|_| anyhow!("Failed to parse tree state"))?;
+
+        Ok(birthday.prior_chain_state().clone())
+    }
+
+    /// Get account balance
+    pub fn get_balance(&self) -> Result<AccountBalance> {
+        let summary = self
+            .wallet
+            .get_wallet_summary(ConfirmationsPolicy::default())
+            .map_err(|e| anyhow!("Failed to get wallet summary: {e}"))?
+            .ok_or_else(|| anyhow!("Wallet not synced - no summary available"))?;
+
+        let balance = summary
+            .account_balances()
+            .get(&self.account_id)
+            .ok_or_else(|| anyhow!("Account not found in wallet"))?;
+
+        Ok(AccountBalance {
+            total: u64::from(balance.total()),
+            sapling_spendable: u64::from(balance.sapling_balance().spendable_value()),
+            orchard_spendable: u64::from(balance.orchard_balance().spendable_value()),
+        })
+    }
+
+    /// Get the Sapling payment address for receiving
+    pub fn get_address(&self) -> Result<String> {
+        let ufvk = self.usk.to_unified_full_viewing_key();
+        let sapling_dfvk = ufvk
+            .sapling()
+            .ok_or_else(|| anyhow!("No Sapling key in UFVK"))?;
+        let (_, address) = sapling_dfvk.default_address();
+        Ok(zcash_client_backend::encoding::encode_payment_address(
+            zcash_protocol::constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
+            &address,
+        ))
+    }
+
+    /// Send ZEC with an OTP memo to a recipient
+    /// This is a placeholder - full implementation requires setting up transaction building
+    pub async fn send_otp(
+        &mut self,
+        _recipient_address: &str,
+        _amount_zats: u64,
+        _otp: &str,
+    ) -> Result<String> {
+        // TODO: Implement transaction sending
+        // This requires:
+        // 1. Input selection with GreedyInputSelector
+        // 2. Change strategy with SingleOutputChangeStrategy
+        // 3. propose_transfer to create proposal
+        // 4. LocalTxProver for proving
+        // 5. create_proposed_transactions to build tx
+        // 6. Broadcast via lightwalletd
+
+        Err(anyhow!("send_otp not yet fully implemented"))
+    }
+
+    /// Get received memos from scanned transactions
+    pub fn get_received_memos(&self) -> Result<Vec<ReceivedMemo>> {
+        // The wallet tracks received notes but memos need full tx data
+        // This is a simplified version - full implementation would query
+        // the received_notes table and fetch corresponding memos
+        info!("Querying received memos from wallet");
+        Ok(vec![])
     }
 }

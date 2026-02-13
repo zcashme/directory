@@ -34,8 +34,25 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut zvs = ZVS::connect(&url, &seed, birthday_height, &data_dir).await?;
 
+    // Show wallet address
+    match zvs.get_address() {
+        Ok(address) => println!("Wallet address: {}", address),
+        Err(e) => println!("Could not get address: {}", e),
+    }
+
     println!("Syncing...");
     zvs.sync().await?;
+
+    // Show balance after sync
+    match zvs.get_balance() {
+        Ok(balance) => {
+            println!("Balance:");
+            println!("  Total: {} zatoshis", balance.total);
+            println!("  Sapling spendable: {} zatoshis", balance.sapling_spendable);
+            println!("  Orchard spendable: {} zatoshis", balance.orchard_spendable);
+        }
+        Err(e) => println!("Could not get balance: {}", e),
+    }
 
     println!("Done!");
     Ok(())
