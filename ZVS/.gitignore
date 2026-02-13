@@ -1,3 +1,4 @@
 /target
 .env
 seed.txt
+zvs_data/
