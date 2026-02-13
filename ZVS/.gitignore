@@ -1,4 +1,14 @@
+# Build artifacts
 /target
+Cargo.lock
+
+# Environment and secrets
 .env
 seed.txt
+
+# Data directories
 zvs_data/
+
+# External dependencies
+zcashd-verification-service/
+lightwalletd/
