@@ -35,7 +35,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_env_filter(filter)
         .init();
 
-    let url = env::var("LIGHTWALLETD_URL").unwrap_or_else(|_| "https://zec.rocks:443".to_string());
+    let url = env::var("LIGHTWALLETD_URL").expect("LIGHTWALLETD_URL required");
     let seed_hex = env::var("SEED_HEX").expect("SEED_HEX required");
     let otp_secret_hex = env::var("OTP_SECRET").expect("OTP_SECRET required (hex-encoded)");
     let birthday_height: u32 = env::var("BIRTHDAY_HEIGHT")

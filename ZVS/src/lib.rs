@@ -23,7 +23,7 @@ use zcash_client_backend::{
         wallet::{create_proposed_transactions, input_selection::GreedyInputSelector, propose_transfer, ConfirmationsPolicy, SpendingKeys},
         AccountBirthday, WalletRead, WalletWrite,
     },
-    fees::{standard::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    fees::{standard::MultiOutputChangeStrategy, DustAction, DustOutputPolicy, SplitPolicy, StandardFeeRule},
     proto::{
         compact_formats::CompactBlock,
         service::{
@@ -653,7 +653,10 @@ impl ZVS {
 
         info!("Proposing transfer to {} for {} zatoshis...", to_address, amount.into_u64());
 
-        // Propose transfer with default confirmations policy
+        // ZIP-315 confirmations policy: controls when notes become spendable.
+        // Default: 3 confirmations for trusted outputs (own change), 10 for untrusted (external funds).
+        // With 75s blocks: ~4 min for change, ~12 min for received funds.
+        // Use ConfirmationsPolicy::new(1, 1) for faster spending if you trust your own wallet.
         let proposal = match propose_transfer::<_, _, _, _, Infallible>(
             &mut self.wallet,
             &MainNetwork,
