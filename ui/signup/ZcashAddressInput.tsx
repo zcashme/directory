@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcash/zcashUtils";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface ZcashAddressInputProps {
   value: string;
@@ -33,11 +34,7 @@ export default function ZcashAddressInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="zs1... or u1..."
-        className={`w-full rounded-2xl border px-3 py-2 text-sm font-mono outline-hidden bg-transparent ${
-          hasConflict || !isValid
-            ? "border-red-400 focus:border-red-500"
-            : "border-black/30 focus:border-blue-600"
-        }`}
+        className={`w-full rounded-2xl border px-3 py-2 text-sm font-mono outline-hidden bg-transparent ${withFieldBorderState("border-black/30", hasConflict || !isValid)}`}
         autoComplete="off"
       />
       <p className={`mt-1 text-xs ${isValid ? "text-green-600" : "text-gray-500"}`}>{help}</p>

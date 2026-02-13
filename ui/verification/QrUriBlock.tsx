@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
+import { INLINE_ACTION_BUTTON_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/styles/interactive";
 
 interface QrUriBlockProps {
   uri: string;
@@ -79,10 +80,10 @@ export default function QrUriBlock({
 
   const actionButtonClasses =
     actionButtonClassName ??
-    "flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap";
+    OUTLINE_ACTION_BUTTON_CLASSES;
   const hideButtonClasses =
     hideButtonClassName ??
-    "flex items-center gap-1 px-3 pl-0 py-2 text-md transition-all duration-200 text-gray-700 hover:text-blue-500 whitespace-nowrap";
+    INLINE_ACTION_BUTTON_CLASSES;
 
   return (
     <div className="flex flex-col items-center gap-4 mt-6 animate-fadeIn">

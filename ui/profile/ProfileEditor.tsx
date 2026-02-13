@@ -22,11 +22,12 @@ import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 const FIELD_CLASS =
-  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400";
+  `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_FIELD_CLASS =
-  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
+  `rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 appearance-none ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
@@ -467,7 +468,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                   input.setSelectionRange(baseLen, baseLen);
                 }
               }}
-              className={`${FIELD_CLASS} pl-[5.5rem] ${usernameConflict ? "border-red-400 focus:border-red-500" : ""}`}
+              className={`${FIELD_CLASS} pl-[5.5rem] ${usernameConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
             />
           </div>
           {usernameConflict && (
@@ -573,10 +574,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             value={form.profile_image_url}
             placeholder={originals.profile_image_url}
             onChange={(e) => handleChange("profile_image_url", e.target.value)}
-            className={`${FIELD_CLASS} font-mono ${imageUrlValid
-              ? "border-[#0a1126]/60 focus:border-blue-500"
-              : "border-red-400 focus:border-red-500"
-              }`}
+            className={`${FIELD_CLASS} font-mono ${imageUrlValid ? "" : withFieldBorderState("border-[#0a1126]/60", true)}`}
           />
           <div className="mt-2">
             <button
@@ -649,10 +647,10 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             rowConflict ? "border-red-400" : "border-[#0a1126]/60"
           }`;
           const rowSelectClass = `${LINK_FIELD_CLASS} ${
-            rowConflict ? "border-red-400 focus:border-red-500" : "border-[#0a1126]/60 focus:border-blue-500"
+            rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
           }`;
           const rowInputClass = `${LINK_FIELD_CLASS} ${
-            rowConflict ? "border-red-400 focus:border-red-500" : "border-[#0a1126]/60 focus:border-blue-500"
+            rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
           }`;
 
           const linkActions = (

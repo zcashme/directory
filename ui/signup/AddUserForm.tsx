@@ -33,6 +33,7 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/styles/fields";
 
 interface Referrer {
   id: number;
@@ -489,9 +490,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       </label>
       <div
         className={`flex items-center w-full rounded-2xl border overflow-hidden bg-transparent ${
-          nameConflict?.type === "error"
-            ? "border-red-400 focus-within:border-red-500"
-            : "border-black/30 focus-within:border-green-600"
+          withFieldFocusWithinBorderState("border-black/30", nameConflict?.type === "error")
         }`}
       >
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
@@ -540,7 +539,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         id="displayName"
         value={displayName}
         onChange={(e) => setDisplayName(e.target.value)}
-        className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-green-600 bg-transparent"
+        className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent ${withFieldBorderState("border-black/30")}`}
         placeholder="Enter display name"
         autoComplete="off"
       />
@@ -629,9 +628,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
       <div
         className={`relative flex items-center w-full rounded-2xl border overflow-visible bg-transparent ${
-          referrerConflict?.type === "error"
-            ? "border-red-400 focus-within:border-red-500"
-            : "border-black/30 focus-within:border-green-600"
+          withFieldFocusWithinBorderState("border-black/30", referrerConflict?.type === "error")
         }`}
       >
         <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>

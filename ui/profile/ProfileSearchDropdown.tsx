@@ -4,6 +4,7 @@ import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -92,7 +93,7 @@ export default function ProfileSearchDropdown({
   onUsernameAvailable,
   onClaimClick,
   showUsernameAvailability = true,
-  className = "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400",
+  className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
   ...props
 }: ProfileSearchDropdownProps) {
   const [show, setShow] = useState(false);

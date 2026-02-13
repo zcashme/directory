@@ -15,6 +15,7 @@ const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfir
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import { getTokenId } from "@/lib/swap/utils";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface SwapComposerProps {
   profile: Profile;
@@ -145,7 +146,7 @@ export default function SwapComposer({
         <textarea
           rows={3}
           disabled
-          placeholder={`Messaging is only available when sending Zcash to ${recipientName}`}
+          placeholder={`Messaging is only available when sending ZEC → ZEC to ${recipientName}`}
           className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 bg-gray-100 text-gray-400 cursor-not-allowed"
         />
 
@@ -276,12 +277,12 @@ export default function SwapComposer({
           <button
             type="button"
             onClick={() => setIsSlippageExpanded(!isSlippageExpanded)}
-            className="w-full px-4 py-3 flex items-center justify-center rounded-xl cursor-pointer"
+            className="group w-full px-4 py-3 flex items-center justify-center rounded-xl cursor-pointer transition-colors"
           >
-            <span className="text-sm text-gray-800">
+            <span className="text-sm text-gray-800 transition-colors group-hover:text-blue-600 group-active:text-blue-600">
               Slippage Tolerance ({slippageTolerance}%)
             </span>
-            <span className={`text-gray-600 transform transition ml-2 ${isSlippageExpanded ? 'rotate-180' : ''}`}>▼</span>
+            <span className={`text-gray-600 transform transition ml-2 group-hover:text-blue-600 group-active:text-blue-600 ${isSlippageExpanded ? 'rotate-180' : ''}`}>▼</span>
           </button>
 
           {/* Slippage Controls (Collapsible Content) */}
@@ -293,10 +294,10 @@ export default function SwapComposer({
                     key={option}
                     type="button"
                     onClick={() => handleSlippageChange(option)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors border ${
+                    className={`px-3 py-1.5 text-sm font-medium rounded-lg border transition-[border-color,border-width,color] duration-150 ${
                       slippageTolerance === option
-                        ? "bg-white border-gray-800 text-gray-900"
-                        : "bg-transparent border-gray-300 text-gray-600 hover:border-gray-500"
+                        ? "bg-white border-blue-600 border-2 text-blue-700"
+                        : "bg-transparent border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600 focus:border-blue-600 focus:border-2 focus:text-blue-600"
                     }`}
                   >
                     {option}%
@@ -326,7 +327,7 @@ export default function SwapComposer({
                       }
                     }}
                     placeholder="0.5"
-                    className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className={`w-16 px-2 py-1.5 text-sm border rounded-lg text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-300")}`}
                   />
                   <span className="text-sm text-gray-600">%</span>
                 </div>

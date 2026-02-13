@@ -6,6 +6,7 @@ import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface MemoCounterProps {
   text: string;
@@ -122,9 +123,9 @@ export default function MemoComposer({
               ? "Memos are not supported for transparent addresses"
               : `Write your message to ${recipientName} here...`
           }
-          className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 ${disabled
-              ? "bg-gray-100 text-gray-400 cursor-not-allowed"
-              : "focus:ring-1 focus:ring-blue-500 pl-8"
+          className={`border px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden ${disabled
+              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed"
+              : `${withFieldBorderState("border-gray-800")} pl-8`
             }`}
         />
 

@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
+import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/styles/interactive";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface Currency {
   symbol: string;
@@ -349,9 +351,9 @@ export default function AmountAndWallet({
                   }
                 }
               }}
-              className="border border-gray-800 px-3 rounded-xl w-full h-11
+              className={`border px-3 rounded-xl w-full h-11
                          text-md pr-16 text-gray-900
-                         pl-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                         pl-3 outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")}`}
             />
 
             {/* Right-side token selector */}
@@ -362,7 +364,7 @@ export default function AmountAndWallet({
                     type="button"
                     onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
                     {...tapProps}
-                    className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+                    className={`${INLINE_SELECTOR_TRIGGER_CLASSES} cursor-pointer`}
                   >
                     <span>{asset}</span>
                     <span>▼</span>
@@ -375,7 +377,7 @@ export default function AmountAndWallet({
                           value={tokenSearch}
                           onChange={(e) => setTokenSearch(e.target.value)}
                           placeholder="Search tokens..."
-                          className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
                           autoFocus
                         />
                       </div>
@@ -442,12 +444,12 @@ export default function AmountAndWallet({
                   isUsdOpen ? "gap-2" : "justify-center"
                 }`}
               >
-                <span
-                  className="text-gray-500 cursor-pointer flex-none hover:text-blue-600"
+                <motion.button
+                  type="button"
+                  {...tapProps}
+                  className={`${INLINE_SELECTOR_TRIGGER_CLASSES} flex-none`}
                   onClick={handleToggleUsd}
-                  role="button"
                   aria-label="Toggle currency details"
-                  tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -456,7 +458,7 @@ export default function AmountAndWallet({
                   }}
                 >
                   {fiatSymbol}
-                </span>
+                </motion.button>
                 {isUsdOpen && (
                   <>
                     <input
@@ -506,12 +508,11 @@ export default function AmountAndWallet({
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-900 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector relative">
-                      <span>{fiat}</span>
-                      <span
-                        className="cursor-pointer hover:text-blue-600"
-                        role="button"
+                      <motion.button
+                        type="button"
+                        {...tapProps}
+                        className={INLINE_SELECTOR_TRIGGER_CLASSES}
                         aria-label="Choose fiat currency"
-                        tabIndex={0}
                         onClick={handleToggleCurrency}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -520,8 +521,9 @@ export default function AmountAndWallet({
                           }
                         }}
                       >
+                        <span>{fiat}</span>
                         ▼
-                      </span>
+                      </motion.button>
                       {isCurrencyOpen && (
                         <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50">
                           <div className="p-2 border-b border-gray-800">
@@ -530,7 +532,7 @@ export default function AmountAndWallet({
                               value={fiatSearch}
                               onChange={(e) => setFiatSearch(e.target.value)}
                               placeholder="Search currencies..."
-                              className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
                               autoFocus
                             />
                           </div>
@@ -590,7 +592,7 @@ export default function AmountAndWallet({
           <motion.button
             onClick={openWallet}
             {...tapProps}
-            className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
+            className={OUTLINE_ACTION_BUTTON_CLASSES}
           >
             {openWalletLabel}
           </motion.button>
@@ -611,10 +613,11 @@ export default function AmountAndWallet({
             onFocus={() => setIsRefundFocused(true)}
             onBlur={() => setIsRefundFocused(false)}
             placeholder={`Paste your ${asset} refund address`}
-            className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500"
+            className={`w-full border px-3 py-2 rounded-xl text-md text-gray-900 outline-hidden ${withFieldBorderState("border-gray-800")}`}
           />
         </div>
       )}
     </div>
   );
 }
+

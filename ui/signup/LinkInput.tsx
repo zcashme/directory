@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { isValidUrl } from "@/lib/profile/validateUrl";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 const BASE_FIELD_CLASS =
   "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-hidden text-gray-800 placeholder-gray-400";
@@ -48,9 +49,7 @@ export default function LinkInput({
         className={`${BASE_FIELD_CLASS} ${
           readOnly
             ? "bg-gray-100 text-gray-500 cursor-not-allowed border-[#0a1126]/40"
-            : valid
-            ? "border-[#0a1126]/60 focus:border-blue-500"
-            : "border-red-400 focus:border-red-500"
+            : withFieldBorderState("border-[#0a1126]/60", !valid)
         } ${inputClassName}`}
       />
       {/* error message */}
