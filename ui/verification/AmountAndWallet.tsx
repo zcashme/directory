@@ -119,9 +119,9 @@ export default function AmountAndWallet({
   const tapProps = shouldReduceMotion
     ? {}
     : {
-        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
-        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
-      };
+      whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+      transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+    };
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "50%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
@@ -279,9 +279,8 @@ export default function AmountAndWallet({
     <div className="w-full max-w-full mb-2 min-w-0">
       <div className="w-full max-w-full min-w-0 flex items-center gap-3">
         <div
-          className={`relative flex items-stretch overflow-visible min-w-0 max-w-full ${
-            showOpenWallet ? "flex-1" : "w-full"
-          }`}
+          className={`relative flex items-stretch overflow-visible min-w-0 max-w-full ${showOpenWallet ? "flex-1" : "w-full"
+            }`}
         >
           {showUsdPill && (
             <>
@@ -359,7 +358,7 @@ export default function AmountAndWallet({
             {/* Right-side token selector */}
             <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
               {setAsset && assetOptions.length > 0 ? (
-                <div className="relative pointer-events-auto">
+                <div className="pointer-events-auto">
                   <motion.button
                     type="button"
                     onClick={() => setIsTokenDropdownOpen(!isTokenDropdownOpen)}
@@ -369,80 +368,78 @@ export default function AmountAndWallet({
                     <span>{asset}</span>
                     <span>▼</span>
                   </motion.button>
-                  {isTokenDropdownOpen && (
-                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto">
-                      <div className="p-2 border-b border-gray-800">
-                        <input
-                          type="text"
-                          value={tokenSearch}
-                          onChange={(e) => setTokenSearch(e.target.value)}
-                          placeholder="Search tokens..."
-                          className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                          autoFocus
-                        />
-                      </div>
-                      <div className="py-1">
-                        {assetOptions
-                          .filter(matchesTokenSearch)
-                          .map((token) => (
-                            <motion.button
-                              key={token.id}
-                              type="button"
-                              onClick={() => {
-                                setAsset(token.id);
-                                setIsTokenDropdownOpen(false);
-                                setTokenSearch("");
-                              }}
-                              {...tapProps}
-                              className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                asset === (token.symbol ?? token.ticker)
-                                  ? "bg-blue-50 font-semibold text-gray-900"
-                                  : "text-gray-700 hover:bg-gray-50"
-                              }`}
-                            >
-                              {token.logo && (
-                                <img
-                                  src={token.logo}
-                                  alt={token.symbol}
-                                  className="w-5 h-5 rounded-full flex-shrink-0"
-                                  onError={(e) => {
-                                    (e.target as HTMLImageElement).style.display = "none";
-                                  }}
-                                />
-                              )}
-                              <span className="flex-1 min-w-0">
-                                <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
-                                <div className="text-xs text-gray-500 truncate">{token.chain}</div>
-                              </span>
-                            </motion.button>
-                          ))}
-                        {assetOptions.filter(matchesTokenSearch).length === 0 && (
-                          <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                            No tokens found
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div className="select-none cursor-not-allowed">{asset}</div>
               )}
             </div>
+            {/* Token dropdown — positioned relative to the crypto pill container */}
+            {isTokenDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector">
+                <div className="p-2 border-b border-gray-800">
+                  <input
+                    type="text"
+                    value={tokenSearch}
+                    onChange={(e) => setTokenSearch(e.target.value)}
+                    placeholder="Search tokens..."
+                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
+                    autoFocus
+                  />
+                </div>
+                <div className="py-1">
+                  {assetOptions
+                    .filter(matchesTokenSearch)
+                    .map((token) => (
+                      <motion.button
+                        key={token.id}
+                        type="button"
+                        onClick={() => {
+                          setAsset(token.id);
+                          setIsTokenDropdownOpen(false);
+                          setTokenSearch("");
+                        }}
+                        {...tapProps}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${asset === (token.symbol ?? token.ticker)
+                          ? "bg-blue-50 font-semibold text-gray-900"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        {token.logo && (
+                          <img
+                            src={token.logo}
+                            alt={token.symbol}
+                            className="w-5 h-5 rounded-full flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <span className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
+                          <div className="text-xs text-gray-500 truncate">{token.chain}</div>
+                        </span>
+                      </motion.button>
+                    ))}
+                  {assetOptions.filter(matchesTokenSearch).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                      No tokens found
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {showUsdPill && (
             <div
-              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 max-w-full transition-[width] duration-200 box-border ${
-                isUsdOpen ? "px-3" : "px-3 justify-center"
-              }`}
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 min-w-0 max-w-full transition-[width] duration-200 box-border ${isUsdOpen ? "px-3" : "px-3 justify-center"
+                }`}
               style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >
               <div
-                className={`flex items-center w-full min-w-0 ${
-                  isUsdOpen ? "gap-2" : "justify-center"
-                }`}
+                className={`flex items-center w-full min-w-0 ${isUsdOpen ? "gap-2" : "justify-center"
+                  }`}
               >
                 <motion.button
                   type="button"
@@ -471,9 +468,9 @@ export default function AmountAndWallet({
                       onChange={(e) => {
                         const val = e.target.value;
                         if (val === "") {
-                        setUsdInput("");
-                        setPreferFiatValue(true);
-                        return;
+                          setUsdInput("");
+                          setPreferFiatValue(true);
+                          return;
                         }
 
                         // Only allow digits and a single decimal point
@@ -507,7 +504,7 @@ export default function AmountAndWallet({
                       }}
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-900 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
-                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector relative">
+                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector">
                       <motion.button
                         type="button"
                         {...tapProps}
@@ -524,66 +521,66 @@ export default function AmountAndWallet({
                         <span>{fiat}</span>
                         ▼
                       </motion.button>
-                      {isCurrencyOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50">
-                          <div className="p-2 border-b border-gray-800">
-                            <input
-                              type="text"
-                              value={fiatSearch}
-                              onChange={(e) => setFiatSearch(e.target.value)}
-                              placeholder="Search currencies..."
-                              className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                              autoFocus
-                            />
-                          </div>
-                          <div className="py-1 max-h-60 overflow-y-auto">
-                            {FIAT_TICKERS.filter((ticker) =>
-                              !fiatSearch ||
-                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
-                            ).map((ticker) => (
-                              <motion.button
-                                key={ticker}
-                                type="button"
-                                onClick={() => {
-                                  setFiat(ticker);
-                                  setIsCurrencyOpen(false);
-                                  setFiatSearch("");
-                                }}
-                                {...tapProps}
-                                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                  fiat === ticker
-                                    ? "bg-blue-50 font-semibold text-gray-900"
-                                    : "text-gray-700 hover:bg-gray-50"
-                                }`}
-                              >
-                                <span className="w-6 text-gray-600 flex-shrink-0">
-                                  {CURRENCIES[ticker]?.symbol || ""}
-                                </span>
-                                <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
-                                <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
-                                  {CURRENCIES[ticker]?.name || ""}
-                                </span>
-                              </motion.button>
-                            ))}
-                            {FIAT_TICKERS.filter((ticker) =>
-                              !fiatSearch ||
-                              ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                              CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
-                            ).length === 0 && (
-                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                                No currencies found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </>
                 )}
               </div>
+              {/* Fiat currency dropdown — positioned relative to the outer USD pill container */}
+              {isCurrencyOpen && (
+                <div className="absolute right-0 top-full mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50 fiat-selector">
+                  <div className="p-2 border-b border-gray-800">
+                    <input
+                      type="text"
+                      value={fiatSearch}
+                      onChange={(e) => setFiatSearch(e.target.value)}
+                      placeholder="Search currencies..."
+                      className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
+                      autoFocus
+                    />
+                  </div>
+                  <div className="py-1 max-h-60 overflow-y-auto">
+                    {FIAT_TICKERS.filter((ticker) =>
+                      !fiatSearch ||
+                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                    ).map((ticker) => (
+                      <motion.button
+                        key={ticker}
+                        type="button"
+                        onClick={() => {
+                          setFiat(ticker);
+                          setIsCurrencyOpen(false);
+                          setFiatSearch("");
+                        }}
+                        {...tapProps}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${fiat === ticker
+                          ? "bg-blue-50 font-semibold text-gray-900"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        <span className="w-6 text-gray-600 flex-shrink-0">
+                          {CURRENCIES[ticker]?.symbol || ""}
+                        </span>
+                        <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
+                        <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
+                          {CURRENCIES[ticker]?.name || ""}
+                        </span>
+                      </motion.button>
+                    ))}
+                    {FIAT_TICKERS.filter((ticker) =>
+                      !fiatSearch ||
+                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                    ).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                          No currencies found
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
