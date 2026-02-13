@@ -393,11 +393,8 @@ export default function AmountAndWallet({
                     <span>{asset}</span>
                     <span>▼</span>
                   </button>
-                  {isTokenDropdownOpen && tokenDropdownPos && createPortal(
-                    <div
-                      className="fixed w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] token-selector"
-                      style={{ top: tokenDropdownPos.top, left: tokenDropdownPos.left }}
-                    >
+                  {isTokenDropdownOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto">
                       <div className="p-2 border-b border-gray-800">
                         <input
                           type="text"
@@ -408,7 +405,7 @@ export default function AmountAndWallet({
                           autoFocus
                         />
                       </div>
-                      <div className="py-1 max-h-60 overflow-y-auto">
+                      <div className="py-1">
                         {assetOptions
                           .filter(matchesTokenSearch)
                           .map((token) => (
@@ -449,75 +446,19 @@ export default function AmountAndWallet({
                               </span>
                             </motion.button>
                           ))}
-                        {assetOptions.filter(matchesTokenSearch).length ===
-                          0 && (
+                        {assetOptions.filter(matchesTokenSearch).length === 0 && (
                           <div className="px-3 py-2 text-sm text-gray-500 text-center">
                             No tokens found
                           </div>
                         )}
                       </div>
-                    </div>,
-                    document.body
+                    </div>
                   )}
                 </div>
               ) : (
                 <div className="select-none cursor-not-allowed">{asset}</div>
               )}
             </div>
-            {/* Token dropdown — positioned relative to the crypto pill container */}
-            {isTokenDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector">
-                <div className="p-2 border-b border-gray-800">
-                  <input
-                    type="text"
-                    value={tokenSearch}
-                    onChange={(e) => setTokenSearch(e.target.value)}
-                    placeholder="Search tokens..."
-                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                  />
-                </div>
-                <div className="py-1">
-                  {assetOptions
-                    .filter(matchesTokenSearch)
-                    .map((token) => (
-                      <motion.button
-                        key={token.id}
-                        type="button"
-                        onClick={() => {
-                          setAsset?.(token.id);
-                          setIsTokenDropdownOpen(false);
-                          setTokenSearch("");
-                        }}
-                        {...tapProps}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${asset === (token.symbol ?? token.ticker)
-                          ? "bg-blue-50 font-semibold text-gray-900"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
-                      >
-                        {token.logo && (
-                          <img
-                            src={token.logo}
-                            alt={token.symbol}
-                            className="w-5 h-5 rounded-full flex-shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display = "none";
-                            }}
-                          />
-                        )}
-                        <span className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
-                          <div className="text-xs text-gray-500 truncate">{token.chain}</div>
-                        </span>
-                      </motion.button>
-                    ))}
-                  {assetOptions.filter(matchesTokenSearch).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                      No tokens found
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {showUsdPill && (
