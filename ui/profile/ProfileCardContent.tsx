@@ -20,6 +20,7 @@ export default function ProfileCardContent({
   linkVariant = "default",
   hideLinkBadges = false,
   className = "",
+  showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
 
@@ -94,7 +95,7 @@ export default function ProfileCardContent({
         <span className={`${s.name} font-bold text-gray-900 truncate max-w-full`}>
           {profile.display_name || profile.name}
         </span>
-        {isVerified && (
+        {isVerified && showDisplayNameVerifiedBadge && (
           <span className="flex-shrink-0 scale-[0.6] origin-center">
             <VerifiedBadge verified={true} />
           </span>
