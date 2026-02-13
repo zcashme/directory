@@ -2952,6 +2952,7 @@ dependencies = [
  "prost",
  "rand",
  "rustls",
+ "sapling-crypto",
  "tokio",
  "tokio-stream",
  "tonic",

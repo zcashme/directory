@@ -67,8 +67,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut zvs = ZVS::connect(&url, &seed, birthday_height).await?;
 
-    let address = zvs.get_address()?;
-    println!("Wallet address: {}", address);
+    let sapling_addr = zvs.get_sapling_address()?;
+    println!("Sapling address: {}", sapling_addr);
+
+    let orchard_addr = zvs.get_orchard_address()?;
+    println!("Orchard address: {}", orchard_addr);
     println!();
 
     let latest = zvs.get_latest_height().await?;
@@ -81,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!();
     println!("Found {} transactions with memos:", memos.len());
     for memo in &memos {
-        println!("  Height {}: {}", memo.height, memo.memo);
+        println!("  [{}] Height {}: {}", memo.pool, memo.height, memo.memo);
     }
 
     Ok(())
