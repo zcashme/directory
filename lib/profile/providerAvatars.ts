@@ -1,7 +1,7 @@
 // lib/social/providerAvatars.ts
 
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import { getSession } from "@/lib/supabase/auth";
 import type { Session } from "@supabase/supabase-js";
 

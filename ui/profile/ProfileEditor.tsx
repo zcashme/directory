@@ -16,7 +16,7 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";

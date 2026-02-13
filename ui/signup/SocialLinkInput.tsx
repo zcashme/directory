@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import HelpIcon from "@/ui/common/HelpIcon";
 import { Alert } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";

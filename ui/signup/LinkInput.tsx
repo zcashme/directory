@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import { Alert } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";
 
