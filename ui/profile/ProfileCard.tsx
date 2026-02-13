@@ -809,23 +809,24 @@ export default function ProfileCard({
                   e.stopPropagation();
                   setMenuOpen((prev) => !prev);
                 }}
+                aria-expanded={menuOpen}
                 {...tapProps}
                 className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 title="More options"
               >
-                ☰
+                <span
+                  aria-hidden="true"
+                  className={`inline-block transition-transform ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${menuOpen ? "rotate-90" : "rotate-0"}`}
+                >
+                  {"\u2630"}
+                </span>
               </motion.button>
 
               {/* Dropdown Menu */}
-              <AnimatePresence>
-                {menuOpen && (
-                  <motion.div
-                    initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.96, y: -6 }}
-                    animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
-                    exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.96, y: -6 }}
-                    transition={{ duration: shouldReduceMotion ? 0.1 : 0.16, ease: "easeOut" }}
-                    className="absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700"
-                  >
+              <div
+                aria-hidden={!menuOpen}
+                className={`absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700 transition-all ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${menuOpen ? "max-h-64 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"}`}
+              >
                     {!showStats ? (
                       <button
                         onClick={() => {
@@ -888,9 +889,7 @@ export default function ProfileCard({
                     >
                       ⛨ Enter Passcode
                     </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  </div>
 
             </div>
 
@@ -1125,6 +1124,7 @@ export default function ProfileCard({
                 <button
                   type="button"
                   onClick={() => setShowDetail(!showDetail)}
+                  aria-expanded={showDetail}
                   className={`ml-1 whitespace-nowrap hover:underline text-xs font-semibold ${warningConfig.tone === "positive"
                     ? "text-green-700"
                     : warningConfig.tone === "neutral"
@@ -1137,17 +1137,27 @@ export default function ProfileCard({
                   <span className="font-semibold">
                     {showDetail ? "Hide" : (warningConfig.toggleLabel || "Warnings")}
                   </span>{" "}
-                  <span aria-hidden="true">{showDetail ? "▲" : "▼"}</span>
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block transition-transform duration-300 ease-in-out ${showDetail ? "rotate-180" : "rotate-0"}`}
+                  >
+                    ▼
+                  </span>
                 </button>
               </div>
 
-              {showDetail && (
-                <div className="mt-1 text-xs space-y-1">
+              <div
+                aria-hidden={!showDetail}
+                className={`overflow-hidden transition-all ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${showDetail ? "max-h-40 opacity-100 mt-1" : "max-h-0 opacity-0 mt-0"}`}
+              >
+                <div
+                  className={`text-xs space-y-1 transition-transform ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${showDetail ? "translate-y-0" : "-translate-y-1"}`}
+                >
                   {warningConfig.details.map((line, index) => (
                     <div key={`${warningConfig.tone}-${index}`}>{line}</div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
