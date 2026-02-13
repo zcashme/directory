@@ -44,3 +44,8 @@ dotenvy = "0.15"
 hex = "0.4"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HMAC OTP generation
+hmac = "0.12"
+sha2 = "0.10"
+zcash_address = "0.10.1"

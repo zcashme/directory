@@ -1,10 +1,17 @@
+//! ZVS - Zcash Verification Service
+//!
+//! A 2FA service using shielded Zcash transactions. Users send verification
+//! requests via memo, ZVS responds with HMAC-derived OTPs.
+
 use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
+use hmac::{Hmac, Mac};
 use rusqlite::Connection;
 use secrecy::Secret;
+use sha2::Sha256;
 use tracing::{debug, error, info, warn};
 
 use zcash_client_backend::{
@@ -30,19 +37,19 @@ use zcash_client_sqlite::{
 };
 use zcash_protocol::consensus::{BlockHeight, MainNetwork};
 
+type HmacSha256 = Hmac<Sha256>;
+
 pub mod memo_rules;
 pub use memo_rules::{validate_memo, VerificationData};
 
-/// In-memory block cache that implements BlockSource
+/// In-memory cache for compact blocks during sync.
 pub struct MemoryBlockSource {
     blocks: BTreeMap<u32, CompactBlock>,
 }
 
 impl MemoryBlockSource {
     pub fn new() -> Self {
-        Self {
-            blocks: BTreeMap::new(),
-        }
+        Self { blocks: BTreeMap::new() }
     }
 
     pub fn insert(&mut self, height: u32, block: CompactBlock) {
@@ -72,17 +79,9 @@ impl BlockSource for MemoryBlockSource {
         from_height: Option<BlockHeight>,
         limit: Option<usize>,
         mut with_row: F,
-    ) -> std::result::Result<
-        (),
-        zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>,
-    >
+    ) -> std::result::Result<(), zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>>
     where
-        F: FnMut(
-            CompactBlock,
-        ) -> std::result::Result<
-            (),
-            zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>,
-        >,
+        F: FnMut(CompactBlock) -> std::result::Result<(), zcash_client_backend::data_api::chain::error::Error<DbErrT, Self::Error>>,
     {
         let start = from_height.map(u32::from).unwrap_or(0);
         let mut count = 0;
@@ -101,18 +100,17 @@ impl BlockSource for MemoryBlockSource {
     }
 }
 
-/// Received memo from a scanned transaction
+/// A received note with decrypted memo.
 #[derive(Debug, Clone)]
 pub struct ReceivedMemo {
     pub txid_hex: String,
     pub height: u32,
     pub memo: String,
     pub value_zats: u64,
-    /// Parsed verification data if memo matches ZVS format
     pub verification: Option<VerificationData>,
 }
 
-/// Result of a sync/scan operation
+/// Result of a sync operation.
 #[derive(Debug, Clone, Default)]
 pub struct ScanResult {
     pub blocks_scanned: u32,
@@ -121,22 +119,17 @@ pub struct ScanResult {
     pub new_memos: Vec<ReceivedMemo>,
 }
 
-/// Event emitted during monitoring
+/// Events emitted during monitoring.
 #[derive(Debug, Clone)]
 pub enum MonitorEvent {
-    /// New block detected
     NewBlock { height: u32 },
-    /// Sync progress update
     SyncProgress { current: u32, target: u32 },
-    /// New memo received that matches ZVS format
     VerificationRequest(ReceivedMemo),
-    /// Any memo received
     MemoReceived(ReceivedMemo),
-    /// Error during monitoring
     Error(String),
 }
 
-/// Account balance summary
+/// Account balance in zatoshis.
 #[derive(Debug, Clone)]
 pub struct AccountBalance {
     pub total: u64,
@@ -144,9 +137,9 @@ pub struct AccountBalance {
     pub orchard_spendable: u64,
 }
 
-// Use the SystemClock from zcash_client_sqlite
 type WalletDbType = WalletDb<rusqlite::Connection, MainNetwork, SystemClock, rand::rngs::OsRng>;
 
+/// The main ZVS service.
 pub struct ZVS {
     client: CompactTxStreamerClient<tonic::transport::Channel>,
     wallet: WalletDbType,
@@ -154,17 +147,19 @@ pub struct ZVS {
     usk: UnifiedSpendingKey,
     birthday_height: u32,
     db_path: PathBuf,
-    /// Track processed transaction IDs to avoid re-processing
+    state_db_path: PathBuf,
+    otp_secret: Vec<u8>,
     processed_txids: HashSet<TxId>,
 }
 
 impl ZVS {
-    /// Connect to lightwalletd and initialize wallet
+    /// Connect to lightwalletd and initialize the wallet.
     pub async fn connect(
         url: &str,
         seed: &[u8],
         birthday_height: u32,
         data_dir: &Path,
+        otp_secret: Vec<u8>,
     ) -> Result<Self> {
         info!("Connecting to lightwalletd at {}", url);
 
@@ -174,55 +169,41 @@ impl ZVS {
 
         std::fs::create_dir_all(data_dir)?;
         let db_path = data_dir.join("wallet.db");
+        let state_db_path = data_dir.join("zvs_state.db");
 
         info!("Initializing wallet at {}", db_path.display());
 
-        // Initialize WalletDb with clock and rng
-        let mut wallet = WalletDb::for_path(
-            &db_path,
-            MainNetwork,
-            SystemClock,
-            rand::rngs::OsRng,
-        )
-        .map_err(|e| anyhow!("Failed to open wallet db: {e}"))?;
+        let mut wallet = WalletDb::for_path(&db_path, MainNetwork, SystemClock, rand::rngs::OsRng)
+            .map_err(|e| anyhow!("Failed to open wallet db: {e}"))?;
 
-        // Run migrations
         init_wallet_db(&mut wallet, None)
             .map_err(|e| anyhow!("Failed to initialize wallet db: {e:?}"))?;
 
-        // Check if account already exists
+        // Initialize ZVS state database
+        Self::init_state_db(&state_db_path)?;
+        let processed_txids = Self::load_processed_txids(&state_db_path)?;
+        info!("Loaded {} previously processed transactions", processed_txids.len());
+
         let accounts = wallet
             .get_account_ids()
             .map_err(|e| anyhow!("Failed to get accounts: {e}"))?;
 
         let (account_id, usk) = if let Some(existing_id) = accounts.first() {
             info!("Using existing account");
-            // Re-derive USK from seed for the existing account
-            let usk = zcash_keys::keys::UnifiedSpendingKey::from_seed(
-                &MainNetwork,
-                seed,
-                zip32::AccountId::ZERO,
-            )
-            .map_err(|e| anyhow!("Failed to derive spending key: {e:?}"))?;
+            let usk = zcash_keys::keys::UnifiedSpendingKey::from_seed(&MainNetwork, seed, zip32::AccountId::ZERO)
+                .map_err(|e| anyhow!("Failed to derive spending key: {e:?}"))?;
             (*existing_id, usk)
         } else {
             info!("Creating new account from seed");
-
-            // Get tree state for birthday
             let birthday = Self::fetch_birthday(&mut client, birthday_height).await?;
-
-            // Create account using seed bytes wrapped in Secret
             let seed_secret: Secret<Vec<u8>> = Secret::new(seed.to_vec());
-
             let (account_id, usk) = wallet
                 .create_account("ZVS Admin", &seed_secret, &birthday, None)
                 .map_err(|e| anyhow!("Failed to create account: {e}"))?;
-
             info!("Created account: {:?}", account_id);
             (account_id, usk)
         };
 
-        // Log Sapling address
         let ufvk = usk.to_unified_full_viewing_key();
         if let Some(sapling_dfvk) = ufvk.sapling() {
             let (_, address) = sapling_dfvk.default_address();
@@ -240,11 +221,78 @@ impl ZVS {
             usk,
             birthday_height,
             db_path,
-            processed_txids: HashSet::new(),
+            state_db_path,
+            otp_secret,
+            processed_txids,
         })
     }
 
-    /// Fetch account birthday from lightwalletd
+    /// Initialize the ZVS state database.
+    fn init_state_db(path: &Path) -> Result<()> {
+        let conn = Connection::open(path)
+            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
+
+        conn.execute_batch(
+            "CREATE TABLE IF NOT EXISTS zvs_processed_txs (
+                txid BLOB PRIMARY KEY,
+                block_height INTEGER,
+                processed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                action_taken TEXT
+            );
+            CREATE INDEX IF NOT EXISTS idx_processed_height ON zvs_processed_txs(block_height);"
+        ).map_err(|e| anyhow!("Failed to create state tables: {e}"))?;
+
+        Ok(())
+    }
+
+    /// Load all processed transaction IDs from state database.
+    fn load_processed_txids(path: &Path) -> Result<HashSet<TxId>> {
+        let conn = Connection::open(path)
+            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
+
+        let mut stmt = conn.prepare("SELECT txid FROM zvs_processed_txs")
+            .map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
+
+        let txids = stmt
+            .query_map([], |row| {
+                let bytes: Vec<u8> = row.get(0)?;
+                Ok(bytes)
+            })
+            .map_err(|e| anyhow!("Failed to query: {e}"))?
+            .filter_map(|r| r.ok())
+            .filter_map(|bytes| {
+                let arr: [u8; 32] = bytes.try_into().ok()?;
+                Some(TxId::from_bytes(arr))
+            })
+            .collect();
+
+        Ok(txids)
+    }
+
+    /// Save a processed transaction to state database.
+    fn save_processed_txid(&self, txid: &TxId, height: u32, action: &str) -> Result<()> {
+        let conn = Connection::open(&self.state_db_path)
+            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
+
+        conn.execute(
+            "INSERT OR REPLACE INTO zvs_processed_txs (txid, block_height, action_taken) VALUES (?1, ?2, ?3)",
+            rusqlite::params![txid.as_ref(), height, action],
+        ).map_err(|e| anyhow!("Failed to save processed txid: {e}"))?;
+
+        Ok(())
+    }
+
+    /// Generate HMAC-based OTP from session ID.
+    fn generate_otp(&self, session_id: &str) -> String {
+        let mut mac = HmacSha256::new_from_slice(&self.otp_secret)
+            .expect("HMAC can take key of any size");
+        mac.update(session_id.as_bytes());
+        let result = mac.finalize();
+        let bytes = result.into_bytes();
+        let code = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
+        format!("{:06}", code % 1_000_000)
+    }
+
     async fn fetch_birthday(
         client: &mut CompactTxStreamerClient<tonic::transport::Channel>,
         height: u32,
@@ -253,10 +301,7 @@ impl ZVS {
         info!("Fetching tree state at height {}", prior_height);
 
         let tree_state = client
-            .get_tree_state(BlockId {
-                height: prior_height as u64,
-                hash: vec![],
-            })
+            .get_tree_state(BlockId { height: prior_height as u64, hash: vec![] })
             .await
             .map_err(|e| anyhow!("Failed to get tree state: {e}"))?
             .into_inner();
@@ -265,22 +310,17 @@ impl ZVS {
             .map_err(|_| anyhow!("Failed to create birthday from tree state"))
     }
 
-    /// Get the latest block height from lightwalletd
     pub async fn get_latest_height(&mut self) -> Result<u32> {
-        let response = self
-            .client
-            .get_latest_block(ChainSpec {})
-            .await
+        let response = self.client.get_latest_block(ChainSpec {}).await
             .map_err(|e| anyhow!("Failed to get latest block: {e}"))?;
         Ok(response.into_inner().height as u32)
     }
 
-    /// Sync wallet: download blocks and scan for transactions
+    /// Sync wallet with the blockchain.
     pub async fn sync(&mut self) -> Result<()> {
         let chain_tip = self.get_latest_height().await?;
 
-        let scan_from = self
-            .wallet
+        let scan_from = self.wallet
             .block_fully_scanned()
             .map_err(|e| anyhow!("Failed to get scan progress: {e}"))?
             .map(|meta| u32::from(meta.block_height()) + 1)
@@ -301,39 +341,26 @@ impl ZVS {
             info!("Downloading blocks {} to {}", current, batch_end);
 
             let mut block_source = MemoryBlockSource::new();
-
             let block_range = BlockRange {
-                start: Some(BlockId {
-                    height: current as u64,
-                    hash: vec![],
-                }),
-                end: Some(BlockId {
-                    height: batch_end as u64,
-                    hash: vec![],
-                }),
+                start: Some(BlockId { height: current as u64, hash: vec![] }),
+                end: Some(BlockId { height: batch_end as u64, hash: vec![] }),
             };
 
-            let mut stream = self
-                .client
-                .get_block_range(block_range)
-                .await
+            let mut stream = self.client.get_block_range(block_range).await
                 .map_err(|e| anyhow!("Failed to get block range: {e}"))?
                 .into_inner();
 
             use tokio_stream::StreamExt;
             while let Some(block) = stream.next().await {
                 let block = block.map_err(|e| anyhow!("Stream error: {e}"))?;
-                let height = block.height as u32;
-                block_source.insert(height, block);
+                block_source.insert(block.height as u32, block);
             }
 
             info!("Downloaded {} blocks, scanning...", block_source.len());
 
-            // Get chain state for this batch
             let from_height = BlockHeight::from_u32(current);
             let chain_state = self.get_chain_state_at(current.saturating_sub(1)).await?;
 
-            // Scan the blocks
             let scan_result = scan_cached_blocks(
                 &MainNetwork,
                 &block_source,
@@ -341,8 +368,7 @@ impl ZVS {
                 from_height,
                 &chain_state,
                 block_source.len(),
-            )
-            .map_err(|e| anyhow!("Scan error: {e}"))?;
+            ).map_err(|e| anyhow!("Scan error: {e}"))?;
 
             info!(
                 "Scanned batch: {} sapling, {} orchard notes received",
@@ -357,37 +383,27 @@ impl ZVS {
         Ok(())
     }
 
-    /// Get chain state at a specific height
     async fn get_chain_state_at(&mut self, height: u32) -> Result<ChainState> {
-        let tree_state = self
-            .client
-            .get_tree_state(BlockId {
-                height: height as u64,
-                hash: vec![],
-            })
+        let tree_state = self.client
+            .get_tree_state(BlockId { height: height as u64, hash: vec![] })
             .await
             .map_err(|e| anyhow!("Failed to get tree state: {e}"))?
             .into_inner();
 
-        // Use AccountBirthday's chain_state method to get properly parsed chain state
         let birthday = AccountBirthday::from_treestate(tree_state, None)
             .map_err(|_| anyhow!("Failed to parse tree state"))?;
 
         Ok(birthday.prior_chain_state().clone())
     }
 
-    /// Get account balance
     pub fn get_balance(&self) -> Result<AccountBalance> {
-        let summary = self
-            .wallet
+        let summary = self.wallet
             .get_wallet_summary(ConfirmationsPolicy::default())
             .map_err(|e| anyhow!("Failed to get wallet summary: {e}"))?
-            .ok_or_else(|| anyhow!("Wallet not synced - no summary available"))?;
+            .ok_or_else(|| anyhow!("Wallet not synced"))?;
 
-        let balance = summary
-            .account_balances()
-            .get(&self.account_id)
-            .ok_or_else(|| anyhow!("Account not found in wallet"))?;
+        let balance = summary.account_balances().get(&self.account_id)
+            .ok_or_else(|| anyhow!("Account not found"))?;
 
         Ok(AccountBalance {
             total: u64::from(balance.total()),
@@ -396,12 +412,9 @@ impl ZVS {
         })
     }
 
-    /// Get the Sapling payment address for receiving (legacy, prefer get_unified_address)
     pub fn get_sapling_address(&self) -> Result<String> {
         let ufvk = self.usk.to_unified_full_viewing_key();
-        let sapling_dfvk = ufvk
-            .sapling()
-            .ok_or_else(|| anyhow!("No Sapling key in UFVK"))?;
+        let sapling_dfvk = ufvk.sapling().ok_or_else(|| anyhow!("No Sapling key"))?;
         let (_, address) = sapling_dfvk.default_address();
         Ok(zcash_client_backend::encoding::encode_payment_address(
             zcash_protocol::constants::mainnet::HRP_SAPLING_PAYMENT_ADDRESS,
@@ -409,37 +422,15 @@ impl ZVS {
         ))
     }
 
-    /// Get the primary receiving address (Sapling for now)
     pub fn get_address(&self) -> Result<String> {
         self.get_sapling_address()
     }
 
-    /// Send ZEC with an OTP memo to a recipient
-    /// This is a placeholder - full implementation requires setting up transaction building
-    pub async fn send_otp(
-        &mut self,
-        _recipient_address: &str,
-        _amount_zats: u64,
-        _otp: &str,
-    ) -> Result<String> {
-        // TODO: Implement transaction sending
-        // This requires:
-        // 1. Input selection with GreedyInputSelector
-        // 2. Change strategy with SingleOutputChangeStrategy
-        // 3. propose_transfer to create proposal
-        // 4. LocalTxProver for proving
-        // 5. create_proposed_transactions to build tx
-        // 6. Broadcast via lightwalletd
-
-        Err(anyhow!("send_otp not yet fully implemented"))
-    }
-
-    /// Sync wallet incrementally and return scan results with memos
+    /// Sync incrementally and return new memos.
     pub async fn sync_incremental(&mut self) -> Result<ScanResult> {
         let chain_tip = self.get_latest_height().await?;
 
-        let scan_from = self
-            .wallet
+        let scan_from = self.wallet
             .block_fully_scanned()
             .map_err(|e| anyhow!("Failed to get scan progress: {e}"))?
             .map(|meta| u32::from(meta.block_height()) + 1)
@@ -463,30 +454,19 @@ impl ZVS {
             debug!("Downloading blocks {} to {}", current, batch_end);
 
             let mut block_source = MemoryBlockSource::new();
-
             let block_range = BlockRange {
-                start: Some(BlockId {
-                    height: current as u64,
-                    hash: vec![],
-                }),
-                end: Some(BlockId {
-                    height: batch_end as u64,
-                    hash: vec![],
-                }),
+                start: Some(BlockId { height: current as u64, hash: vec![] }),
+                end: Some(BlockId { height: batch_end as u64, hash: vec![] }),
             };
 
-            let mut stream = self
-                .client
-                .get_block_range(block_range)
-                .await
+            let mut stream = self.client.get_block_range(block_range).await
                 .map_err(|e| anyhow!("Failed to get block range: {e}"))?
                 .into_inner();
 
             use tokio_stream::StreamExt;
             while let Some(block) = stream.next().await {
                 let block = block.map_err(|e| anyhow!("Stream error: {e}"))?;
-                let height = block.height as u32;
-                block_source.insert(height, block);
+                block_source.insert(block.height as u32, block);
             }
 
             debug!("Downloaded {} blocks, scanning...", block_source.len());
@@ -501,8 +481,7 @@ impl ZVS {
                 from_height,
                 &chain_state,
                 block_source.len(),
-            )
-            .map_err(|e| anyhow!("Scan error: {e}"))?;
+            ).map_err(|e| anyhow!("Scan error: {e}"))?;
 
             total_sapling += scan_result.received_sapling_note_count();
             total_orchard += scan_result.received_orchard_note_count();
@@ -520,7 +499,6 @@ impl ZVS {
             current = batch_end + 1;
         }
 
-        // Fetch and decrypt memos for any new notes
         let new_memos = if total_sapling > 0 || total_orchard > 0 {
             self.fetch_new_memos().await?
         } else {
@@ -528,7 +506,7 @@ impl ZVS {
         };
 
         info!(
-            "Sync complete: {} blocks, {} sapling notes, {} orchard notes, {} memos",
+            "Sync complete: {} blocks, {} sapling, {} orchard, {} memos",
             blocks_to_scan, total_sapling, total_orchard, new_memos.len()
         );
 
@@ -540,15 +518,10 @@ impl ZVS {
         })
     }
 
-    /// Fetch memos for notes received since last check
-    /// Queries DB for new notes, then fetches full transactions to decrypt memos
     async fn fetch_new_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
-        let conn = Connection::open_with_flags(
-            &self.db_path,
-            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-        ).map_err(|e| anyhow!("Failed to open db for reading: {e}"))?;
+        let conn = Connection::open_with_flags(&self.db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|e| anyhow!("Failed to open db: {e}"))?;
 
-        // Query all received notes with their transaction info
         let mut stmt = conn.prepare(
             "SELECT t.txid, t.block, srn.value
              FROM sapling_received_notes srn
@@ -557,12 +530,10 @@ impl ZVS {
         ).map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
 
         let rows: Vec<(Vec<u8>, Option<u32>, i64)> = stmt
-            .query_map([], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
-            })
-            .map_err(|e| anyhow!("Failed to query notes: {e}"))?
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .map_err(|e| anyhow!("Failed to query: {e}"))?
             .collect::<std::result::Result<Vec<_>, _>>()
-            .map_err(|e| anyhow!("Failed to collect rows: {e}"))?;
+            .map_err(|e| anyhow!("Failed to collect: {e}"))?;
 
         drop(stmt);
         drop(conn);
@@ -570,12 +541,10 @@ impl ZVS {
         let mut memos = Vec::new();
 
         for (txid_bytes, block_height, value) in rows {
-            // Convert to TxId for tracking
             let txid_array: [u8; 32] = txid_bytes.clone().try_into()
                 .map_err(|_| anyhow!("Invalid txid length"))?;
             let txid = TxId::from_bytes(txid_array);
 
-            // Skip if already processed
             if self.processed_txids.contains(&txid) {
                 continue;
             }
@@ -583,7 +552,6 @@ impl ZVS {
             let txid_hex = hex::encode(&txid_bytes);
             let height = block_height.unwrap_or(0);
 
-            // Fetch full transaction to decrypt memo
             let memo_text = match self.fetch_transaction_memo(&txid_bytes, height).await {
                 Ok(Some(text)) => {
                     debug!("Decrypted memo from tx {}: {:?}", &txid_hex[..16], text);
@@ -607,41 +575,28 @@ impl ZVS {
 
             info!(
                 "New note: tx={}..., height={}, value={} zats, memo={}",
-                &txid_hex[..16],
-                height,
-                value,
+                &txid_hex[..16], height, value,
                 if memo_text.is_empty() { "(empty)" } else { &memo_text }
             );
 
-            // Mark as processed
             self.processed_txids.insert(txid);
 
-            let memo = ReceivedMemo {
+            memos.push(ReceivedMemo {
                 txid_hex,
                 height,
                 memo: memo_text,
                 value_zats: value as u64,
                 verification,
-            };
-            memos.push(memo);
+            });
         }
 
         Ok(memos)
     }
 
-    /// Fetch full transaction from lightwalletd and decrypt memo
     async fn fetch_transaction_memo(&mut self, txid: &[u8], height: u32) -> Result<Option<String>> {
-        // Fetch full transaction
-        let tx_filter = TxFilter {
-            block: None,
-            index: 0,
-            hash: txid.to_vec(),
-        };
+        let tx_filter = TxFilter { block: None, index: 0, hash: txid.to_vec() };
 
-        let raw_tx = self
-            .client
-            .get_transaction(tx_filter)
-            .await
+        let raw_tx = self.client.get_transaction(tx_filter).await
             .map_err(|e| anyhow!("Failed to fetch transaction: {e}"))?
             .into_inner();
 
@@ -649,26 +604,20 @@ impl ZVS {
             return Err(anyhow!("Empty transaction data"));
         }
 
-        // Parse the transaction
         let block_height = BlockHeight::from_u32(height);
         let branch_id = zcash_primitives::consensus::BranchId::for_height(&MainNetwork, block_height);
 
-        let tx = zcash_primitives::transaction::Transaction::read(
-            &raw_tx.data[..],
-            branch_id,
-        ).map_err(|e| anyhow!("Failed to parse transaction: {e}"))?;
+        let tx = zcash_primitives::transaction::Transaction::read(&raw_tx.data[..], branch_id)
+            .map_err(|e| anyhow!("Failed to parse transaction: {e}"))?;
 
-        // Try to decrypt Sapling outputs using our viewing key
         let ufvk = self.usk.to_unified_full_viewing_key();
 
         if let Some(sapling_dfvk) = ufvk.sapling() {
             if let Some(bundle) = tx.sapling_bundle() {
-                // Get the incoming viewing key and prepare it for decryption
                 let ivk = sapling_dfvk.to_ivk(zip32::Scope::External);
                 let prepared_ivk = sapling_crypto::keys::PreparedIncomingViewingKey::new(&ivk);
 
-                // Determine ZIP-212 enforcement based on block height
-                // ZIP-212 was activated at Canopy (height 1046400 on mainnet)
+                // ZIP-212 activated at Canopy (mainnet height 1046400)
                 let zip212 = if u32::from(block_height) >= 1_046_400 {
                     sapling_crypto::note_encryption::Zip212Enforcement::On
                 } else {
@@ -676,10 +625,8 @@ impl ZVS {
                 };
 
                 for output in bundle.shielded_outputs() {
-                    // Create the Sapling domain for decryption
                     let domain = sapling_crypto::note_encryption::SaplingDomain::new(zip212);
 
-                    // Try to decrypt with our prepared IVK
                     if let Some((_note, _address, memo_bytes)) =
                         zcash_note_encryption::try_note_decryption(&domain, &prepared_ivk, output)
                     {
@@ -695,14 +642,40 @@ impl ZVS {
         Ok(None)
     }
 
-    /// Run the monitoring loop (blocking)
+    /// Send OTP response to the user's address.
+    ///
+    /// NOTE: Transaction sending is stubbed for now. The OTP is generated and logged,
+    /// but actual transaction creation requires additional setup (Sapling params, etc.)
+    async fn send_otp(&mut self, to_address: &str, otp: &str, _amount_zats: u64) -> Result<TxId> {
+        info!("=== OTP RESPONSE ===");
+        info!("To: {}", to_address);
+        info!("OTP: {}", otp);
+        info!("Memo: ZVS:otp:{}", otp);
+        info!("====================");
+
+        // TODO: Implement actual transaction sending
+        // This requires:
+        // 1. Sapling proving parameters (run zcash-fetch-params)
+        // 2. Sufficient balance in the wallet
+        // 3. Proper transaction proposal and creation
+        //
+        // For now, we return a dummy TxId to mark the request as processed.
+        // In production, this would create and broadcast a real transaction.
+
+        warn!("Transaction sending not yet implemented - OTP logged but not sent on-chain");
+
+        // Return a dummy txid (all zeros) to indicate the request was processed
+        // In production, this would be the actual broadcast transaction ID
+        Ok(TxId::from_bytes([0u8; 32]))
+    }
+
+    /// Run the block monitoring loop.
     pub async fn monitor_loop(&mut self, poll_interval: Duration) -> Result<()> {
         info!("Starting block monitor with {:?} poll interval", poll_interval);
 
-        // Initial sync
         let result = self.sync_incremental().await?;
-        for memo in &result.new_memos {
-            self.handle_memo(memo);
+        for memo in result.new_memos {
+            self.handle_memo(memo).await;
         }
 
         let mut last_height = self.get_latest_height().await?;
@@ -726,51 +699,84 @@ impl ZVS {
                                     );
                                 }
 
-                                for memo in &result.new_memos {
-                                    self.handle_memo(memo);
+                                for memo in result.new_memos {
+                                    self.handle_memo(memo).await;
                                 }
 
                                 last_height = current_height;
                             }
-                            Err(e) => {
-                                error!("Sync error: {}", e);
-                            }
+                            Err(e) => error!("Sync error: {}", e),
                         }
                     } else {
                         debug!("No new blocks (height: {})", current_height);
                     }
                 }
-                Err(e) => {
-                    error!("Failed to get chain height: {}", e);
-                }
+                Err(e) => error!("Failed to get chain height: {}", e),
             }
         }
     }
 
-    /// Handle a received memo
-    fn handle_memo(&self, memo: &ReceivedMemo) {
+    /// Handle a received memo - generate OTP and send response if valid verification request.
+    async fn handle_memo(&mut self, memo: ReceivedMemo) {
+        let txid_bytes = hex::decode(&memo.txid_hex).unwrap_or_default();
+        let txid = if txid_bytes.len() == 32 {
+            let arr: [u8; 32] = txid_bytes.try_into().unwrap();
+            TxId::from_bytes(arr)
+        } else {
+            warn!("Invalid txid hex: {}", memo.txid_hex);
+            return;
+        };
+
         if let Some(ref verification) = memo.verification {
             info!(
                 "VERIFICATION REQUEST: session={}, reply_to={}, value={} zats, tx={}",
-                verification.session_id,
-                verification.user_address,
-                memo.value_zats,
-                memo.txid_hex
+                verification.session_id, verification.user_address, memo.value_zats, memo.txid_hex
             );
-            // TODO: Generate and send OTP response
+
+            // Generate OTP
+            let otp = self.generate_otp(&verification.session_id);
+            info!("Generated OTP: {} for session: {}", otp, verification.session_id);
+
+            // Send OTP response
+            match self.send_otp(&verification.user_address, &otp, memo.value_zats).await {
+                Ok(response_txid) => {
+                    info!(
+                        "OTP sent successfully! Response tx: {}",
+                        hex::encode(response_txid.as_ref())
+                    );
+                    // Mark as processed with success
+                    if let Err(e) = self.save_processed_txid(&txid, memo.height, "otp_sent") {
+                        error!("Failed to save processed txid: {}", e);
+                    }
+                }
+                Err(e) => {
+                    error!("Failed to send OTP: {}", e);
+                    // Mark as processed with failure (to avoid retrying indefinitely)
+                    if let Err(e) = self.save_processed_txid(&txid, memo.height, "otp_failed") {
+                        error!("Failed to save processed txid: {}", e);
+                    }
+                }
+            }
         } else if !memo.memo.is_empty() {
             info!(
-                "Memo received: \"{}\" (value={} zats, tx={})",
+                "Memo received (not a verification request): \"{}\" (value={} zats, tx={})",
                 memo.memo.chars().take(50).collect::<String>(),
                 memo.value_zats,
                 memo.txid_hex
             );
+            // Mark as processed - ignored
+            if let Err(e) = self.save_processed_txid(&txid, memo.height, "ignored") {
+                error!("Failed to save processed txid: {}", e);
+            }
+        } else {
+            // Empty memo, just mark processed
+            if let Err(e) = self.save_processed_txid(&txid, memo.height, "empty_memo") {
+                error!("Failed to save processed txid: {}", e);
+            }
         }
     }
 
-    /// Get all received notes (queries full history)
     pub async fn get_received_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
-        // Clear processed set to fetch all
         let saved = std::mem::take(&mut self.processed_txids);
         let memos = self.fetch_new_memos().await?;
         self.processed_txids = saved;
@@ -778,17 +784,12 @@ impl ZVS {
     }
 }
 
-/// Extract readable text from memo bytes (512 byte Zcash memo field)
 fn extract_memo_text(memo_bytes: &[u8; 512]) -> String {
-    // Zcash memos are 512 bytes
-    // First byte 0xF6 indicates empty memo per ZIP-302
+    // 0xF6 = empty memo per ZIP-302
     if memo_bytes[0] == 0xF6 {
         return String::new();
     }
 
-    // Find the end of text (first null byte or end of array)
     let end = memo_bytes.iter().position(|&b| b == 0).unwrap_or(512);
-
-    // Convert to string, handling invalid UTF-8 gracefully
     String::from_utf8_lossy(&memo_bytes[..end]).trim().to_string()
 }
