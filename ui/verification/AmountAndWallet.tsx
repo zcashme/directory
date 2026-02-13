@@ -383,7 +383,6 @@ export default function AmountAndWallet({
                     onChange={(e) => setTokenSearch(e.target.value)}
                     placeholder="Search tokens..."
                     className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                    autoFocus
                   />
                 </div>
                 <div className="py-1">
@@ -535,7 +534,6 @@ export default function AmountAndWallet({
                       onChange={(e) => setFiatSearch(e.target.value)}
                       placeholder="Search currencies..."
                       className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                      autoFocus
                     />
                   </div>
                   <div className="py-1 max-h-60 overflow-y-auto">
