@@ -93,7 +93,7 @@ export default function MemoComposer({
   };
 
   return (
-    <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
+    <div className="bg-transparent border-none shadow-none p-0 relative z-10">
 
 
 

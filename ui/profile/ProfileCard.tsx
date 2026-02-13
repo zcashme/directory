@@ -658,6 +658,17 @@ export default function ProfileCard({
     (profile?.rank_weekly ?? 0) > 0 ||
     (profile?.rank_monthly ?? 0) > 0 ||
     (profile?.rank_daily ?? 0) > 0;
+  // Keep content position stable while the avatar overlaps the card edge.
+  const avatarTopSpacerPx = 64;
+  const baseCardTopMarginPx = 64;
+  const avatarSizePx = 120;
+  const cardOffsetYPx = 7;
+  const topActionButtonsTopPx = 16;
+  const topActionButtonsHeightPx = 36;
+  // Align avatar bottom with the bottom edge of the top action buttons.
+  const avatarOverlapOffsetYPx = Math.round(
+    (avatarSizePx / 2) - (topActionButtonsTopPx + topActionButtonsHeightPx)
+  );
 
   useEffect(() => {
     if (warningDefaultExpanded === undefined) return;
@@ -773,16 +784,26 @@ export default function ProfileCard({
   }
 
   return (
-    <VerifiedCardWrapper
-      verifiedCount={
-        (profile.verified_links_count ?? 0) +
-        (profile.address_verified ? 1 : 0)
-      }
-      featured={!!profile.featured}
-      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
-      data-active-profile
-      data-address={profile.address}
+    <div
+      style={{
+        marginTop: `${baseCardTopMarginPx + cardOffsetYPx}px`,
+      }}
     >
+      <div
+        style={{
+          transform: `translateY(${avatarOverlapOffsetYPx}px)`,
+        }}
+      >
+        <VerifiedCardWrapper
+          verifiedCount={
+            (profile.verified_links_count ?? 0) +
+            (profile.address_verified ? 1 : 0)
+          }
+          featured={!!profile.featured}
+          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center max-w-lg"
+          data-active-profile
+          data-address={profile.address}
+        >
       <div
         className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""
           }`}
@@ -801,7 +822,10 @@ export default function ProfileCard({
           style={{ pointerEvents: "auto" }}
         >
           {/* Top buttons row (menu + share) */}
-          <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
+          <div
+            className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
+            style={{ top: `${topActionButtonsTopPx}px` }}
+          >
             {/* Menu button */}
             <div ref={menuContainerRef} className="relative">
               <motion.button
@@ -935,13 +959,23 @@ export default function ProfileCard({
             </motion.button>
           </div>
 
-          {/* Avatar */}
-          <ProfileAvatar
-            profile={profile}
-            size={80}
-            imageClassName="object-contain"
-            className="mx-auto shadow-xs flex items-center justify-center"
-          />
+          {/* Avatar: overlap the top edge so half sits above the card */}
+          <div
+            className="absolute left-1/2 top-0 z-20"
+            style={{
+              transform: `translate(-50%, calc(-50% - ${avatarOverlapOffsetYPx}px))`,
+            }}
+          >
+            <ProfileAvatar
+              profile={profile}
+              size={avatarSizePx}
+              imageClassName="object-contain"
+              className="mx-auto shadow-xs flex items-center justify-center"
+            />
+          </div>
+
+          {/* Spacer so content starts below the overlapping avatar */}
+          <div style={{ paddingTop: `${avatarTopSpacerPx}px` }} aria-hidden="true" />
 
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>
@@ -1213,7 +1247,9 @@ export default function ProfileCard({
           profile={profile}
         />
       )}
-    </VerifiedCardWrapper>
+        </VerifiedCardWrapper>
+      </div>
+    </div>
   );
 }
 

@@ -140,7 +140,7 @@ export default function SwapComposer({
   const [isSlippageExpanded, setIsSlippageExpanded] = useState(false);
 
   return (
-    <div className="bg-transparent border-none shadow-none p-0 -mt-4 relative z-10">
+    <div className="bg-transparent border-none shadow-none p-0 relative z-10">
       {/* DISABLED MEMO FIELD */}
       <div className="relative mb-2">
         <textarea
