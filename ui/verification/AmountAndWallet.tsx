@@ -394,7 +394,7 @@ export default function AmountAndWallet({
                         key={token.id}
                         type="button"
                         onClick={() => {
-                          setAsset(token.id);
+                          setAsset?.(token.id);
                           setIsTokenDropdownOpen(false);
                           setTokenSearch("");
                         }}
