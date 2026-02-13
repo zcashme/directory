@@ -14,33 +14,23 @@ name = "zvs"
 path = "src/main.rs"
 
 [dependencies]
-# Async runtime
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
-
-# gRPC - must match librustzcash
 tonic = { version = "0.14", features = ["channel"] }
 prost = "0.14"
 
-# Zcash - local librustzcash
-zcash_client_backend = { path = "librustzcash/zcash_client_backend", features = ["sync", "lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
-zcash_client_memory = { path = "librustzcash/zcash_client_memory" }
-zcash_primitives = { path = "librustzcash/zcash_primitives" }
-zcash_proofs = { path = "librustzcash/zcash_proofs", features = ["download-params"] }
-zcash_protocol = { path = "librustzcash/components/zcash_protocol" }
-zcash_keys = { path = "librustzcash/zcash_keys", features = ["sapling"] }
-
+zcash_client_backend = { version = "0.21", features = ["lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
+zcash_client_sqlite = "0.19"
+zcash_primitives = "0.26"
+zcash_protocol = "0.7"
+zcash_keys = { version = "0.12", features = ["sapling"] }
+rusqlite = "0.37"
 zip32 = "0.2"
 
-# TLS crypto provider
 rustls = { version = "0.23", features = ["ring"] }
 
-# Utils
 anyhow = "1"
 dotenvy = "0.15"
 hex = "0.4"
 rand = "0.8"
-nonempty = "0.11"
-secrecy = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-
