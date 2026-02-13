@@ -23,7 +23,7 @@ use zcash_client_backend::{
         wallet::{create_proposed_transactions, input_selection::GreedyInputSelector, propose_transfer, ConfirmationsPolicy, SpendingKeys},
         AccountBirthday, WalletRead, WalletWrite,
     },
-    fees::{standard::MultiOutputChangeStrategy, DustAction, DustOutputPolicy, SplitPolicy, StandardFeeRule},
+    fees::{standard::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
     proto::{
         compact_formats::CompactBlock,
         service::{
@@ -620,8 +620,9 @@ impl ZVS {
                 .map_err(|e| anyhow!("Invalid memo: {e}"))?
         );
 
-        // Minimum amount: 10000 zatoshis (0.0001 ZEC)
-        let amount = Zatoshis::from_u64(10_000)
+        // Minimum amount: 1000 zatoshis (0.00001 ZEC)
+        // Keep low to minimize total cost (send + fee)
+        let amount = Zatoshis::from_u64(1_000)
             .map_err(|_| anyhow!("Invalid amount"))?;
 
         // Create payment request
@@ -644,7 +645,7 @@ impl ZVS {
             None, // no memo for change
             ShieldedProtocol::Sapling,
             DustOutputPolicy::default(),
-            SplitPolicy::with_min_output_value(NonZeroUsize::new(1).unwrap(), Zatoshis::const_from_u64(10_000)),
+            SplitPolicy::with_min_output_value(NonZeroUsize::new(1).unwrap(), Zatoshis::const_from_u64(5_000)),
         );
         let input_selector = GreedyInputSelector::new();
 
