@@ -13,6 +13,7 @@ import type {
 const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfirmSuccess =>
   Boolean(data && data.ok === true && "deposit" in data);
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
+import HelpMessage from "@/ui/verification/HelpMessage";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import { getTokenId } from "@/lib/swap/utils";
 import { withFieldBorderState } from "@/ui/styles/fields";
@@ -287,23 +288,28 @@ export default function SwapComposer({
 
           {/* Slippage Controls (Collapsible Content) */}
           {isSlippageExpanded && (
-            <div className="px-4 pb-4 pt-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                {slippageOptions.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => handleSlippageChange(option)}
-                    className={`px-3 py-1.5 text-sm font-medium rounded-lg border transition-[border-color,border-width,color] duration-150 ${
-                      slippageTolerance === option
-                        ? "bg-white border-blue-600 border-2 text-blue-700"
-                        : "bg-transparent border-gray-300 text-gray-600 hover:border-blue-600 hover:text-blue-600 focus:border-blue-600 focus:border-2 focus:text-blue-600"
-                    }`}
-                  >
-                    {option}%
-                  </button>
-                ))}
-                <div className="flex items-center gap-1 ml-auto">
+            <div className="pb-4 pt-0">
+              <div className="flex w-full items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  {slippageOptions.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => handleSlippageChange(option)}
+                      className={`w-16 px-3 py-1.5 text-sm font-medium text-center rounded-lg border transition-[border-color,border-width,color] duration-150 ${
+                        slippageTolerance === option
+                          ? "bg-transparent border-blue-600 border-2 text-blue-700"
+                          : "bg-transparent border-gray-800 text-gray-600 hover:border-blue-600 hover:text-blue-600 focus:border-blue-600 focus:border-2 focus:text-blue-600"
+                      }`}
+                    >
+                      {option}%
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-sm text-black">⚙</span>
+                  <div className="relative w-16">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -327,9 +333,10 @@ export default function SwapComposer({
                       }
                     }}
                     placeholder="0.5"
-                    className={`w-16 px-2 py-1.5 text-sm border rounded-lg text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-300")}`}
+                    className={`w-full px-2 py-1.5 pr-5 text-sm text-center border rounded-lg text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
                   />
-                  <span className="text-sm text-gray-600">%</span>
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 pointer-events-none">%</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -337,13 +344,11 @@ export default function SwapComposer({
         </div>
       )}
 
-      {/* FOOTER */}
-      <div className="text-center text-sm text-gray-600 italic mt-4 mb-4">
-        Complete this transaction using your wallet.{" "}
-        <a href="#" className="text-blue-600 hover:text-blue-800 underline not-italic">
-          Help
-        </a>
-      </div>
+      {/* FOOTER HELP */}
+      <HelpMessage
+        className="mt-4 mb-4"
+        helpText='After your confirm quote, scan the QR code below. Alternatively, copy the deposit address and send from your wallet. Send the exact amount shown to complete the swap.'
+      />
     </div>
   );
 }
