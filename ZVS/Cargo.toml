@@ -14,25 +14,26 @@ name = "zvs"
 path = "src/main.rs"
 
 [dependencies]
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
 tonic = { version = "0.14", features = ["channel"] }
 prost = "0.14"
 
+# Core zcash dependencies - let these pull in compatible versions
 zcash_client_backend = { version = "0.21", features = ["lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
-zcash_primitives = "0.26"
+zcash_client_sqlite = "0.19"
 zcash_protocol = "0.7"
-zcash_keys = { version = "0.12", features = ["orchard", "sapling"] }
-sapling-crypto = "0.5"
-zcash_note_encryption = "0.4"
-orchard = "0.11"
-zip32 = "0.2"
+zcash_proofs = "0.26"
 
+# TLS
 rustls = { version = "0.23", features = ["ring"] }
 
+# Async
 tokio-stream = "0.1"
+
+# Utils
 anyhow = "1"
+rand = "0.8"
 dotenvy = "0.15"
 hex = "0.4"
-rand = "0.8"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
