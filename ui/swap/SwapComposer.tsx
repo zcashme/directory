@@ -146,7 +146,7 @@ export default function SwapComposer({
         <textarea
           rows={3}
           disabled
-          placeholder={`Messaging is only available when sending ZEC → ZEC to ${recipientName}`}
+          placeholder={`Messaging is only available when sending ZEC → ZEC`}
           className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 bg-gray-100 text-gray-400 cursor-not-allowed"
         />
 
