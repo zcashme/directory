@@ -3,7 +3,7 @@
 //! A 2FA service using shielded Zcash transactions. Users send verification
 //! requests via memo, ZVS responds with HMAC-derived OTPs.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
@@ -147,9 +147,7 @@ pub struct ZVS {
     usk: UnifiedSpendingKey,
     birthday_height: u32,
     db_path: PathBuf,
-    state_db_path: PathBuf,
     otp_secret: Vec<u8>,
-    processed_txids: HashSet<TxId>,
 }
 
 impl ZVS {
@@ -169,7 +167,6 @@ impl ZVS {
 
         std::fs::create_dir_all(data_dir)?;
         let db_path = data_dir.join("wallet.db");
-        let state_db_path = data_dir.join("zvs_state.db");
 
         info!("Initializing wallet at {}", db_path.display());
 
@@ -178,11 +175,6 @@ impl ZVS {
 
         init_wallet_db(&mut wallet, None)
             .map_err(|e| anyhow!("Failed to initialize wallet db: {e:?}"))?;
-
-        // Initialize ZVS state database
-        Self::init_state_db(&state_db_path)?;
-        let processed_txids = Self::load_processed_txids(&state_db_path)?;
-        info!("Loaded {} previously processed transactions", processed_txids.len());
 
         let accounts = wallet
             .get_account_ids()
@@ -221,65 +213,8 @@ impl ZVS {
             usk,
             birthday_height,
             db_path,
-            state_db_path,
             otp_secret,
-            processed_txids,
         })
-    }
-
-    /// Initialize the ZVS state database.
-    fn init_state_db(path: &Path) -> Result<()> {
-        let conn = Connection::open(path)
-            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
-
-        conn.execute_batch(
-            "CREATE TABLE IF NOT EXISTS zvs_processed_txs (
-                txid BLOB PRIMARY KEY,
-                block_height INTEGER,
-                processed_at TEXT DEFAULT CURRENT_TIMESTAMP,
-                action_taken TEXT
-            );
-            CREATE INDEX IF NOT EXISTS idx_processed_height ON zvs_processed_txs(block_height);"
-        ).map_err(|e| anyhow!("Failed to create state tables: {e}"))?;
-
-        Ok(())
-    }
-
-    /// Load all processed transaction IDs from state database.
-    fn load_processed_txids(path: &Path) -> Result<HashSet<TxId>> {
-        let conn = Connection::open(path)
-            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
-
-        let mut stmt = conn.prepare("SELECT txid FROM zvs_processed_txs")
-            .map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
-
-        let txids = stmt
-            .query_map([], |row| {
-                let bytes: Vec<u8> = row.get(0)?;
-                Ok(bytes)
-            })
-            .map_err(|e| anyhow!("Failed to query: {e}"))?
-            .filter_map(|r| r.ok())
-            .filter_map(|bytes| {
-                let arr: [u8; 32] = bytes.try_into().ok()?;
-                Some(TxId::from_bytes(arr))
-            })
-            .collect();
-
-        Ok(txids)
-    }
-
-    /// Save a processed transaction to state database.
-    fn save_processed_txid(&self, txid: &TxId, height: u32, action: &str) -> Result<()> {
-        let conn = Connection::open(&self.state_db_path)
-            .map_err(|e| anyhow!("Failed to open state db: {e}"))?;
-
-        conn.execute(
-            "INSERT OR REPLACE INTO zvs_processed_txs (txid, block_height, action_taken) VALUES (?1, ?2, ?3)",
-            rusqlite::params![txid.as_ref(), height, action],
-        ).map_err(|e| anyhow!("Failed to save processed txid: {e}"))?;
-
-        Ok(())
     }
 
     /// Generate HMAC-based OTP from session ID.
@@ -522,10 +457,16 @@ impl ZVS {
         let conn = Connection::open_with_flags(&self.db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
             .map_err(|e| anyhow!("Failed to open db: {e}"))?;
 
+        // Query received notes that we haven't responded to yet.
+        // The LEFT JOIN on sent_notes finds notes where we've sent a response
+        // containing the request txid in the memo (format: ZVS:otp:XXXXXX:req:TXID_PREFIX).
+        // Notes without a matching sent response will have sn.id IS NULL.
         let mut stmt = conn.prepare(
             "SELECT t.txid, t.block, srn.value
              FROM sapling_received_notes srn
              JOIN transactions t ON srn.transaction_id = t.id_tx
+             LEFT JOIN sent_notes sn ON sn.memo LIKE '%:req:' || substr(hex(t.txid), 1, 16) || '%'
+             WHERE sn.id IS NULL
              ORDER BY srn.id ASC"
         ).map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
 
@@ -541,14 +482,6 @@ impl ZVS {
         let mut memos = Vec::new();
 
         for (txid_bytes, block_height, value) in rows {
-            let txid_array: [u8; 32] = txid_bytes.clone().try_into()
-                .map_err(|_| anyhow!("Invalid txid length"))?;
-            let txid = TxId::from_bytes(txid_array);
-
-            if self.processed_txids.contains(&txid) {
-                continue;
-            }
-
             let txid_hex = hex::encode(&txid_bytes);
             let height = block_height.unwrap_or(0);
 
@@ -578,8 +511,6 @@ impl ZVS {
                 &txid_hex[..16], height, value,
                 if memo_text.is_empty() { "(empty)" } else { &memo_text }
             );
-
-            self.processed_txids.insert(txid);
 
             memos.push(ReceivedMemo {
                 txid_hex,
@@ -644,13 +575,24 @@ impl ZVS {
 
     /// Send OTP response to the user's address.
     ///
+    /// The response memo includes the request txid prefix for correlation:
+    /// `ZVS:otp:XXXXXX:req:TXID_PREFIX`
+    ///
+    /// This allows us to query sent_notes to find which requests we've already
+    /// responded to, eliminating the need for separate state tracking.
+    ///
     /// NOTE: Transaction sending is stubbed for now. The OTP is generated and logged,
     /// but actual transaction creation requires additional setup (Sapling params, etc.)
-    async fn send_otp(&mut self, to_address: &str, otp: &str, _amount_zats: u64) -> Result<TxId> {
+    async fn send_otp(&mut self, to_address: &str, otp: &str, _amount_zats: u64, request_txid_hex: &str) -> Result<TxId> {
+        // Include first 16 chars of request txid in memo for correlation
+        let txid_prefix = &request_txid_hex[..std::cmp::min(16, request_txid_hex.len())];
+        let memo = format!("ZVS:otp:{}:req:{}", otp, txid_prefix);
+
         info!("=== OTP RESPONSE ===");
         info!("To: {}", to_address);
         info!("OTP: {}", otp);
-        info!("Memo: ZVS:otp:{}", otp);
+        info!("Memo: {}", memo);
+        info!("Request txid: {}", request_txid_hex);
         info!("====================");
 
         // TODO: Implement actual transaction sending
@@ -659,8 +601,9 @@ impl ZVS {
         // 2. Sufficient balance in the wallet
         // 3. Proper transaction proposal and creation
         //
-        // For now, we return a dummy TxId to mark the request as processed.
-        // In production, this would create and broadcast a real transaction.
+        // When implemented, the sent transaction will be recorded in sent_notes
+        // with the memo containing the request txid prefix. This automatically
+        // marks the request as processed - no separate state tracking needed.
 
         warn!("Transaction sending not yet implemented - OTP logged but not sent on-chain");
 
@@ -718,15 +661,6 @@ impl ZVS {
 
     /// Handle a received memo - generate OTP and send response if valid verification request.
     async fn handle_memo(&mut self, memo: ReceivedMemo) {
-        let txid_bytes = hex::decode(&memo.txid_hex).unwrap_or_default();
-        let txid = if txid_bytes.len() == 32 {
-            let arr: [u8; 32] = txid_bytes.try_into().unwrap();
-            TxId::from_bytes(arr)
-        } else {
-            warn!("Invalid txid hex: {}", memo.txid_hex);
-            return;
-        };
-
         if let Some(ref verification) = memo.verification {
             info!(
                 "VERIFICATION REQUEST: session={}, reply_to={}, value={} zats, tx={}",
@@ -737,24 +671,16 @@ impl ZVS {
             let otp = self.generate_otp(&verification.session_id);
             info!("Generated OTP: {} for session: {}", otp, verification.session_id);
 
-            // Send OTP response
-            match self.send_otp(&verification.user_address, &otp, memo.value_zats).await {
+            // Send OTP response (includes request txid in memo for correlation)
+            match self.send_otp(&verification.user_address, &otp, memo.value_zats, &memo.txid_hex).await {
                 Ok(response_txid) => {
                     info!(
                         "OTP sent successfully! Response tx: {}",
                         hex::encode(response_txid.as_ref())
                     );
-                    // Mark as processed with success
-                    if let Err(e) = self.save_processed_txid(&txid, memo.height, "otp_sent") {
-                        error!("Failed to save processed txid: {}", e);
-                    }
                 }
                 Err(e) => {
                     error!("Failed to send OTP: {}", e);
-                    // Mark as processed with failure (to avoid retrying indefinitely)
-                    if let Err(e) = self.save_processed_txid(&txid, memo.height, "otp_failed") {
-                        error!("Failed to save processed txid: {}", e);
-                    }
                 }
             }
         } else if !memo.memo.is_empty() {
@@ -764,22 +690,68 @@ impl ZVS {
                 memo.value_zats,
                 memo.txid_hex
             );
-            // Mark as processed - ignored
-            if let Err(e) = self.save_processed_txid(&txid, memo.height, "ignored") {
-                error!("Failed to save processed txid: {}", e);
-            }
-        } else {
-            // Empty memo, just mark processed
-            if let Err(e) = self.save_processed_txid(&txid, memo.height, "empty_memo") {
-                error!("Failed to save processed txid: {}", e);
-            }
+            // Non-verification memos are simply logged; they'll be filtered out
+            // on future queries since they have no verification data.
         }
+        // Empty memos are silently ignored
     }
 
+    /// Get all received memos (for debugging/display purposes).
     pub async fn get_received_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
-        let saved = std::mem::take(&mut self.processed_txids);
-        let memos = self.fetch_new_memos().await?;
-        self.processed_txids = saved;
+        self.fetch_all_memos().await
+    }
+
+    /// Fetch all received memos regardless of processing state.
+    async fn fetch_all_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
+        let conn = Connection::open_with_flags(&self.db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|e| anyhow!("Failed to open db: {e}"))?;
+
+        let mut stmt = conn.prepare(
+            "SELECT t.txid, t.block, srn.value
+             FROM sapling_received_notes srn
+             JOIN transactions t ON srn.transaction_id = t.id_tx
+             ORDER BY srn.id ASC"
+        ).map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
+
+        let rows: Vec<(Vec<u8>, Option<u32>, i64)> = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?)))
+            .map_err(|e| anyhow!("Failed to query: {e}"))?
+            .collect::<std::result::Result<Vec<_>, _>>()
+            .map_err(|e| anyhow!("Failed to collect: {e}"))?;
+
+        drop(stmt);
+        drop(conn);
+
+        let mut memos = Vec::new();
+
+        for (txid_bytes, block_height, value) in rows {
+            let txid_hex = hex::encode(&txid_bytes);
+            let height = block_height.unwrap_or(0);
+
+            let memo_text = match self.fetch_transaction_memo(&txid_bytes, height).await {
+                Ok(Some(text)) => text,
+                Ok(None) => String::new(),
+                Err(e) => {
+                    warn!("Failed to fetch memo for tx {}: {}", &txid_hex[..16], e);
+                    String::new()
+                }
+            };
+
+            let verification = if !memo_text.is_empty() {
+                validate_memo(&memo_text)
+            } else {
+                None
+            };
+
+            memos.push(ReceivedMemo {
+                txid_hex,
+                height,
+                memo: memo_text,
+                value_zats: value as u64,
+                verification,
+            });
+        }
+
         Ok(memos)
     }
 }
