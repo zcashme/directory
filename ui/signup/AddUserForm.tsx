@@ -12,8 +12,7 @@ import {
   createProfileAction,
   insertProfileLinksAction,
   checkAddressTakenAction,
-  checkUsernameExistsForFormAction,
-  checkUsernameIsVerifiedAction,
+  checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
 import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -33,14 +32,9 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
 import { isValidUrl } from "@/lib/profile/validateUrl";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
+import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-
-
-const toSlugish = (s = "") =>
-  s
-    .normalize("NFKC")
-    .trim()
-    .replace(/\s+/g, "_");
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/styles/fields";
 
 interface Referrer {
   id: number;
@@ -76,6 +70,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
   const [address, setAddress] = useState("");
   const [addressHelp, setAddressHelp] = useState("");
   const [addressConflict, setAddressConflict] = useState<ConflictInfo | null>(null);
+  const [referrerConflict, setReferrerConflict] = useState<ConflictInfo | null>(null);
 
   const [referrer, setReferrer] = useState<Referrer | string>("");
 
@@ -114,7 +109,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       setNameConflict(null);
       setAddress("");
       setAddressHelp("");
+      setAddressConflict(null);
       setReferrer("");
+      setReferrerConflict(null);
 
       const fromEvent = (window as any).lastReferrer;
       if (fromEvent?.id && fromEvent?.name) {
@@ -142,18 +139,13 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
     let active = true;
 
     const checkName = async () => {
-      const trimmedName = name.trim();
-
-      const existsResult = await checkUsernameExistsForFormAction(trimmedName);
+      const trimmedName = sanitizeUsernameInput(name);
+      const availabilityResult = await checkUsernameAvailabilityAction(trimmedName);
 
       if (!active) return;
 
-      if (existsResult.ok && existsResult.exists) {
-        const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
-
-        if (!active) return;
-
-        if (verifiedResult.ok && verifiedResult.verified) {
+      if (availabilityResult.ok && availabilityResult.exists) {
+        if (availabilityResult.verified_exists) {
           setNameConflict({
             type: "error",
             text: "That name is already used by a verified profile.",
@@ -168,7 +160,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         setNameConflict(null);
       }
 
-      setNameHelp(`Shared as: Zcash.me/${toSlugish(trimmedName)}`);
+      setNameHelp(`Shared as: Zcash.me/${normalizeUsernameForSlug(trimmedName)}`);
     };
 
     const timer = setTimeout(checkName, 300);
@@ -246,6 +238,38 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       clearTimeout(timer);
     };
   }, [address]);
+
+  useEffect(() => {
+    if (typeof referrer === "object") {
+      setReferrerConflict(null);
+      return;
+    }
+
+    const query = (referrer || "").trim();
+    if (!query) {
+      setReferrerConflict(null);
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(async () => {
+      const result = await checkUsernameAvailabilityAction(query);
+      if (!active) return;
+      if (result.ok && !result.exists) {
+        setReferrerConflict({
+          type: "error",
+          text: "No matching username found. Select a valid referrer or clear this field.",
+        });
+      } else {
+        setReferrerConflict(null);
+      }
+    }, 300);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [referrer]);
 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
@@ -340,18 +364,14 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       return;
     }
 
-    const trimmedName = name.trim();
-    const usernameExistsResult = await checkUsernameExistsForFormAction(trimmedName);
+    const trimmedName = sanitizeUsernameInput(name);
+    const usernameAvailabilityResult = await checkUsernameAvailabilityAction(trimmedName);
 
-    if (usernameExistsResult.ok && usernameExistsResult.exists) {
-      const verifiedResult = await checkUsernameIsVerifiedAction(trimmedName);
-
-      if (verifiedResult.ok && verifiedResult.verified) {
-        setError(
-          'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
-        );
-        return;
-      }
+    if (usernameAvailabilityResult.ok && usernameAvailabilityResult.verified_exists) {
+      setError(
+        'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+      );
+      return;
     }
 
     const addr = address.trim().toLowerCase();
@@ -403,7 +423,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
     try {
       const profileResult = await createProfileAction({
-        name: name.trim(),
+        name: sanitizeUsernameInput(name),
         display_name: displayName.trim() || undefined,
         address: address.trim(),
         nearest_city_id: nearestCity?.id || undefined,
@@ -429,7 +449,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
 
 
-      const slugBase = profile.name.trim().toLowerCase().replace(/\s+/g, "_");
+      const slugBase = normalizeUsernameForSlug(profile.name);
       const slug = `${slugBase}-${profile.id}`;
 
       onUserAdded?.(profile);
@@ -466,27 +486,27 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepName = (
     <StepContainer stepKey="step-name" dir={dir}>
-      <FormField label="Username" htmlFor="name" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
-        <div className="flex items-center w-full rounded-2xl border border-black/30 overflow-hidden bg-transparent focus-within:border-green-600">
-          <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
-          <input
-            id="name"
-            value={name}
-            onChange={(e) => {
-              const input = e.target.value;
-
-              const filtered = input
-                .normalize("NFKC")
-                .replace(/[^\p{L}\p{N}_\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/gu, "");
-
-              setName(filtered);
-            }}
-            className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
-            placeholder="username"
-            autoComplete="off"
-          />
-        </div>
-      </FormField>
+      <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
+        Username
+      </label>
+      <div
+        className={`flex items-center w-full rounded-2xl border overflow-hidden bg-transparent ${
+          withFieldFocusWithinBorderState("border-black/30", nameConflict?.type === "error")
+        }`}
+      >
+        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+        <input
+          id="name"
+          value={name}
+          onChange={(e) => {
+            const filtered = sanitizeUsernameInput(e.target.value);
+            setName(filtered);
+          }}
+          className="flex-1 px-1 py-2 text-sm outline-hidden bg-transparent"
+          placeholder="username"
+          autoComplete="off"
+        />
+      </div>
       <p
         className={`mt-1 text-xs ${nameConflict?.type === "error"
           ? "text-red-600"
@@ -497,7 +517,7 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       >
         {nameConflict?.text
           ? nameConflict.text
-          : nameHelp || "Use only letters, numbers, underscores, or emojis. Spaces become underscores."}
+          : nameHelp || "Use letters, numbers, underscores, or dashes. Spaces become underscores."}
       </p>
       {addressConflict && (
         <p
@@ -513,19 +533,18 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
       )}
 
       {/* Display Name */}
-      <div className="mt-4">
-        <FormField label="Display Name" htmlFor="displayName" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
-          <input
-            id="displayName"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            className="w-full rounded-2xl border border-black/30 px-3 py-2 text-sm outline-hidden focus:border-green-600 bg-transparent"
-            placeholder="Enter display name"
-            autoComplete="off"
-          />
-        </FormField>
-        <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
-      </div>
+      <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
+        Display Name
+      </label>
+      <input
+        id="displayName"
+        value={displayName}
+        onChange={(e) => setDisplayName(e.target.value)}
+        className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent ${withFieldBorderState("border-black/30")}`}
+        placeholder="Enter display name"
+        autoComplete="off"
+      />
+      <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
 
     </StepContainer>
   );
@@ -534,7 +553,11 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepAddress = (
     <StepContainer stepKey="step-address" dir={dir}>
-      <ZcashAddressInput value={address} onChange={setAddress} />
+      <ZcashAddressInput
+        value={address}
+        onChange={setAddress}
+        hasConflict={addressConflict?.type === "error"}
+      />
       {(addressConflict || addressHelp) && (
         <p
           className={`mt-1 text-xs ${addressConflict?.type === "error"
@@ -595,23 +618,36 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepReferrer = (
     <StepContainer stepKey="step-ref" dir={dir}>
-      <FormField label="Referred by Zcash.me/" htmlFor="referrer" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
-        <div className="relative flex items-center w-full rounded-2xl border border-black/30 overflow-visible bg-transparent focus-within:border-green-600">
-          <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
-          <div className="relative flex-1">
-            <ProfileSearchDropdown
-              value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
-              onChange={(v) => setReferrer(v)}
-              placeholder="username"
-              showByDefault={false}
-              showUsernameAvailability={false}
-              className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
-            />
-          </div>
-        </div>
-      </FormField>
+      <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
+        Referred by Zcash.me/
+      </label>
 
-      <p className="mt-1 text-xs text-gray-500">Optional. Helps us reward members who refer new members.</p>
+      <div
+        className={`relative flex items-center w-full rounded-2xl border overflow-visible bg-transparent ${
+          withFieldFocusWithinBorderState("border-black/30", referrerConflict?.type === "error")
+        }`}
+      >
+        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+        <div className="relative flex-1">
+          <ProfileSearchDropdown
+            value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
+            onChange={(v) => {
+              setReferrer(v);
+              if (typeof v === "object") {
+                setReferrerConflict(null);
+              }
+            }}
+            placeholder="username"
+            showByDefault={false}
+            showUsernameAvailability={false}
+            className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
+          />
+        </div>
+      </div>
+
+      <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-500"}`}>
+        {referrerConflict?.text || "Optional. Helps us reward members who refer new members."}
+      </p>
     </StepContainer>
   );
 

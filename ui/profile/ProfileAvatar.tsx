@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { getProfileTrust, getRankType, getCircleClass } from "@/lib/profile/profileUtils";
 import type { Profile } from "@/lib/profile/types";
 
 interface ProfileAvatarProps {
@@ -16,20 +15,9 @@ export default function ProfileAvatar({
   size = 32,
   imageClassName = "object-cover",
   className = "",
-  blink = false,
-  lookAround = false,
+  blink = true,
+  lookAround = true,
 }: ProfileAvatarProps) {
-  const { isVerified } = getProfileTrust(profile);
-  const rankType = getRankType(profile);
-  const circleClass = getCircleClass(isVerified, rankType);
-
-  const gradientStyle = circleClass.includes("bg-linear-to-r")
-    ? {
-        backgroundSize: "200% 100%",
-        animation: "avatar-gradient-x 4s ease-in-out infinite alternate",
-      }
-    : {};
-
   const outerSize = size + 6;
 
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
@@ -92,8 +80,8 @@ export default function ProfileAvatar({
                 }
             `}</style>
       <div
-        className={`relative rounded-full overflow-hidden shrink-0 ${circleClass} ${className}`}
-        style={{ width: outerSize, height: outerSize, ...gradientStyle }}
+        className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-transparent ${className}`}
+        style={{ width: outerSize, height: outerSize }}
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
           {avatarUrl ? (

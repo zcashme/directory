@@ -1,4 +1,4 @@
-import type { MouseEvent } from "react";
+import type { CSSProperties, MouseEvent } from "react";
 import type { Profile, EnrichedProfileLink, ProfileTrustWarning } from "@/lib/profile/types";
 
 export type Variant = "default" | "mobile" | "compact";
@@ -10,9 +10,13 @@ export interface LinkRowClasses {
   leftLink: string;
   right: string;
   icon: string;
+  iconStyle?: CSSProperties;
   label: string;
+  labelStyle?: CSSProperties;
   domain: string;
+  domainStyle?: CSSProperties;
   copySize?: "xs" | "sm" | "md";
+  copyScale?: number;
   copyWrapper?: string;
 }
 

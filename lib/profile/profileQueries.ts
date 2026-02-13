@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
+import { normalizeUsernameForCompare } from "@/lib/profile/usernamePolicy";
 
 /**
  * Get total count of all profiles
@@ -18,28 +19,48 @@ export async function getProfileCount(): Promise<number> {
   return count || 0;
 }
 
-/**
- * Check if a username is verified (address_verified = true)
- * @param username - Username to check
- * @returns True if username exists AND is verified
- */
-export async function checkUsernameIsVerified(username: string): Promise<boolean> {
-  if (!username || !username.trim()) return false;
+export interface UsernameAvailability {
+  exists: boolean;
+  verifiedExists: boolean;
+  takenByOtherVerified: boolean;
+}
 
-  const supabase = createSupabaseServerClient();
-  if (!supabase) return false;
-
-  const { data, error } = await supabase
-    .from("zcasher_searchable")
-    .select("id, address_verified")
-    .ilike("name", username.trim())
-    .limit(1);
-
-  if (error || !data || data.length === 0) {
-    return false;
+export async function getUsernameAvailability(
+  username: string,
+  currentProfileId?: number
+): Promise<UsernameAvailability> {
+  if (!username || !username.trim()) {
+    return { exists: false, verifiedExists: false, takenByOtherVerified: false };
   }
 
-  return data[0].address_verified === true;
+  const supabase = createSupabaseServerClient();
+  if (!supabase) {
+    return { exists: false, verifiedExists: false, takenByOtherVerified: false };
+  }
+
+  const compareTarget = normalizeUsernameForCompare(username);
+  const { data, error } = await supabase
+    .from("zcasher_searchable")
+    .select("id,name,address_verified")
+    .ilike("name", username.trim());
+
+  if (error || !Array.isArray(data)) {
+    return { exists: false, verifiedExists: false, takenByOtherVerified: false };
+  }
+
+  const matches = data.filter((row: { name?: string }) =>
+    normalizeUsernameForCompare(row.name || "") === compareTarget
+  );
+  const exists = matches.length > 0;
+  const verifiedMatches = matches.filter((row: { address_verified?: boolean }) =>
+    row.address_verified === true
+  );
+  const verifiedExists = verifiedMatches.length > 0;
+  const takenByOtherVerified = verifiedMatches.some((row: { id?: number }) =>
+    typeof currentProfileId === "number" ? row.id !== currentProfileId : true
+  );
+
+  return { exists, verifiedExists, takenByOtherVerified };
 }
 
 /**

@@ -8,7 +8,7 @@ interface HelpMessageProps {
 
 export default function HelpMessage({
   introText = "Complete this transaction using your wallet.",
-  helpText = 'Scan the QR code below. Alternatively, copy the URI and paste it into the "To:" address field. Some wallets also allow you to tap the URI link or upload an image of the QR.',
+  helpText = 'Scan or tap QR code below. Alternatively, copy the URI and paste it into the "To:" address field. Some wallets also allow you to upload an image of the QR.',
   className = "",
 }: HelpMessageProps) {
   const [showHelp, setShowHelp] = useState(false);

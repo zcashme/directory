@@ -1,9 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { MouseEvent } from "react";
-import { isNewProfile, getProfileTrust, getWarningConfig, buildShareUrl } from "@/lib/profile/profileUtils";
-import CopyButton from "@/ui/common/buttons/CopyButton";
+import {
+  isNewProfile,
+  getProfileTrust,
+  getWarningConfig,
+  buildShareUrl,
+  getLastVerifiedLabel,
+  getUsernameWithDiscriminator
+} from "@/lib/profile/profileUtils";
+import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
@@ -20,7 +27,6 @@ import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import { useEditsStore } from "@/lib/stores/edits";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 
 import ProfileLinkRow from "./ProfileLinkRow";
@@ -30,6 +36,9 @@ import { formatUsername } from "./profileCardUtils";
 
 export type { ProfileCardTextScale } from "./profileCardTypes";
 
+const getDisplayName = (profile: Partial<Profile>) =>
+  profile.display_name || profile.name || "";
+
 export default function ProfileCard({
   profile,
   onSelect,
@@ -38,6 +47,7 @@ export default function ProfileCard({
   duplicateNameCount = 0,
   onShowQR
 }: ProfileCardProps) {
+  const menuContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
   const [authInfoOpen, setAuthInfoOpen] = useState(false);
@@ -63,7 +73,10 @@ export default function ProfileCard({
   const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
-  const warningConfig = getWarningConfig({ profile, warning: !!warning, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
+  const warningEnabled = warning !== null;
+  const warningConfig = getWarningConfig({ profile, warning: warningEnabled, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const warningDefaultExpanded = warningConfig?.defaultExpanded;
   const fullLinkRowClasses: LinkRowClasses = {
     row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
     left: "flex items-center gap-2 shrink-0",
@@ -80,11 +93,38 @@ export default function ProfileCard({
     (profile?.rank_weekly ?? 0) > 0 ||
     (profile?.rank_monthly ?? 0) > 0 ||
     (profile?.rank_daily ?? 0) > 0;
+  // Keep content position stable while the avatar overlaps the card edge.
+  const avatarTopSpacerPx = 64;
+  const baseCardTopMarginPx = 64;
+  const avatarSizePx = 120;
+  const cardOffsetYPx = 7;
+  const topActionButtonsTopPx = 16;
+  const topActionButtonsHeightPx = 36;
+  // Align avatar bottom with the bottom edge of the top action buttons.
+  const avatarOverlapOffsetYPx = Math.round(
+    (avatarSizePx / 2) - (topActionButtonsTopPx + topActionButtonsHeightPx)
+  );
 
   useEffect(() => {
-    if (!warningConfig) return;
-    setShowDetail(!!warningConfig.defaultExpanded);
-  }, [warningConfig?.summary, warningConfig?.toggleLabel, warningConfig?.tone, warningConfig?.defaultExpanded]);
+    if (warningDefaultExpanded === undefined) return;
+    setShowDetail(!!warningDefaultExpanded);
+  }, [warningDefaultExpanded]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const menuContainer = menuContainerRef.current;
+      if (!menuContainer) return;
+      if (menuContainer.contains(event.target as Node)) return;
+      setMenuOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [menuOpen]);
 
   const handleAuthBadgeClick = (event: MouseEvent, link: EnrichedProfileLink) => {
     event.stopPropagation();
@@ -134,7 +174,7 @@ export default function ProfileCard({
 
           <div className="flex flex-col grow overflow-hidden min-w-0">
             <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
-              <span className="truncate">{profile.display_name || profile.name}</span>
+              <span className="truncate">{getDisplayName(profile)}</span>
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
@@ -147,7 +187,7 @@ export default function ProfileCard({
               )}
             </span>
             <span className="text-xs font-medium text-gray-500 leading-tight">
-              /{formatUsername(profile.name)}
+              /{formatUsername(profile)}
             </span>
 
             <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
@@ -179,16 +219,26 @@ export default function ProfileCard({
   }
 
   return (
-    <VerifiedCardWrapper
-      verifiedCount={
-        (profile.verified_links_count ?? 0) +
-        (profile.address_verified ? 1 : 0)
-      }
-      featured={!!profile.featured}
-      className="relative mx-auto mt-3 mb-8 p-6 animate-fadeIn text-center max-w-lg"
-      data-active-profile
-      data-address={profile.address}
+    <div
+      style={{
+        marginTop: `${baseCardTopMarginPx + cardOffsetYPx}px`,
+      }}
     >
+      <div
+        style={{
+          transform: `translateY(${avatarOverlapOffsetYPx}px)`,
+        }}
+      >
+        <VerifiedCardWrapper
+          verifiedCount={
+            (profile.verified_links_count ?? 0) +
+            (profile.address_verified ? 1 : 0)
+          }
+          featured={!!profile.featured}
+          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center max-w-lg"
+          data-active-profile
+          data-address={profile.address}
+        >
       <div
         className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""
           }`}
@@ -207,73 +257,92 @@ export default function ProfileCard({
           style={{ pointerEvents: "auto" }}
         >
           {/* Top buttons row (menu + share) */}
-          <div className={`absolute top-4 left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}>
+          <div
+            className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
+            style={{ top: `${topActionButtonsTopPx}px` }}
+          >
             {/* Menu button */}
-            <div className="relative">
+            <div ref={menuContainerRef} className="relative">
               <motion.button
                 onClick={(e) => {
                   e.stopPropagation();
                   setMenuOpen((prev) => !prev);
                 }}
+                aria-expanded={menuOpen}
                 {...tapProps}
                 className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
                 title="More options"
               >
-                ☰
+                <span
+                  aria-hidden="true"
+                  className={`inline-block transition-transform ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${menuOpen ? "rotate-90" : "rotate-0"}`}
+                >
+                  {"\u2630"}
+                </span>
               </motion.button>
 
               {/* Dropdown Menu */}
-              {menuOpen && (
-                <div className="absolute left-0 mt-2 w-36 rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700">
-                  {!showStats ? (
+              <div
+                aria-hidden={!menuOpen}
+                className={`absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700 transition-all ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${menuOpen ? "max-h-64 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"}`}
+              >
+                    {!showStats ? (
+                      <button
+                        onClick={() => {
+                          if (!hasAwards) return; // ignore click if no awards
+                          setShowStats(true);
+                          setMenuOpen(false);
+                        }}
+                        disabled={!hasAwards}
+                        className={`w-full whitespace-nowrap text-left px-3 py-2 transition-colors ${hasAwards
+                          ? "hover:bg-blue-50 text-gray-800"
+                          : "text-gray-400 cursor-not-allowed opacity-60"
+                          }`}
+                      >
+                        ⭔ Show Awards
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setShowStats(false);
+                          setMenuOpen(false);
+                        }}
+                        className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
+                      >
+                        ⭔ Hide Awards
+                      </button>
+                    )}
+
                     <button
                       onClick={() => {
-                        if (!hasAwards) return; // ignore click if no awards
-                        setShowStats(true);
+                        setShowBack(true);
                         setMenuOpen(false);
                       }}
-                      disabled={!hasAwards}
-                      className={`w-full text-left px-4 py-2 transition-colors ${hasAwards
-                        ? "hover:bg-blue-50 text-gray-800"
-                        : "text-gray-400 cursor-not-allowed opacity-60"
-                        }`}
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
                     >
-                      ⭔ Show Awards
+                      ↺ Edit Profile
                     </button>
-                  ) : (
+
                     <button
                       onClick={() => {
-                        setShowStats(false);
                         setMenuOpen(false);
+                        // TODO: wire Verify Profile action once flow is defined.
                       }}
-                      className="w-full text-left px-4 py-2 hover:bg-blue-50"
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
                     >
-                      ⭔ Hide Awards
+                      ✓ Verify Profile
                     </button>
-                  )}
 
-                  <button
-                    onClick={() => {
-                      setShowBack(true);
-                      setMenuOpen(false);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                  >
-                    ↺ Edit Profile
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setMenuOpen(false);
-                      setIsOtpOpen(true);
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-blue-50"
-                  >
-                    ⛨ Enter Passcode
-                  </button>
-
-                </div>
-              )}
+                    <button
+                      onClick={() => {
+                        setMenuOpen(false);
+                        setIsOtpOpen(true);
+                      }}
+                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
+                    >
+                      ⛨ Enter Passcode
+                    </button>
+                  </div>
 
             </div>
 
@@ -285,7 +354,7 @@ export default function ProfileCard({
                 if (navigator.share) {
                   try {
                     await navigator.share({
-                      title: `${profile.display_name || profile.name} on Zcash.me`,
+                      title: `${getDisplayName(profile)} on Zcash.me`,
                       text: "Check out this Zcash profile:",
                       url: shareUrl,
                     });
@@ -299,7 +368,7 @@ export default function ProfileCard({
               }}
               {...tapProps}
               className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
-              title={`Share ${profile.display_name || profile.name}`}
+              title={`Share ${getDisplayName(profile)}`}
             >
               <img
                 src="/assets/icons/share.svg"
@@ -310,13 +379,23 @@ export default function ProfileCard({
             </motion.button>
           </div>
 
-          {/* Avatar */}
-          <ProfileAvatar
-            profile={profile}
-            size={80}
-            imageClassName="object-contain"
-            className="mx-auto shadow-xs flex items-center justify-center"
-          />
+          {/* Avatar: overlap the top edge so half sits above the card */}
+          <div
+            className="absolute left-1/2 top-0 z-20"
+            style={{
+              transform: `translate(-50%, calc(-50% - ${avatarOverlapOffsetYPx}px))`,
+            }}
+          >
+            <ProfileAvatar
+              profile={profile}
+              size={avatarSizePx}
+              imageClassName="object-contain"
+              className="mx-auto shadow-xs flex items-center justify-center"
+            />
+          </div>
+
+          {/* Spacer so content starts below the overlapping avatar */}
+          <div style={{ paddingTop: `${avatarTopSpacerPx}px` }} aria-hidden="true" />
 
           {/* Awards section (animated, appears when Show Awards is active) */}
           <AnimatePresence>
@@ -354,7 +433,7 @@ export default function ProfileCard({
           {/* Name & Username Layout */}
           <div className="mt-3 flex flex-col items-center">
             <h2 className="text-3xl font-black text-gray-900 leading-tight flex items-center justify-center gap-2">
-              {profile.display_name || profile.name}
+              {getDisplayName(profile)}
               {(profile.address_verified || (profile.verified_links_count ?? 0) > 0) && (
                 <VerifiedBadge
                   verified={true}
@@ -362,7 +441,7 @@ export default function ProfileCard({
               )}
             </h2>
             <div className="text-base font-medium text-gray-500 mt-1">
-              /{formatUsername(profile.name)}
+              /{formatUsername(profile)}
             </div>
           </div>
 
@@ -490,6 +569,7 @@ export default function ProfileCard({
                 <button
                   type="button"
                   onClick={() => setShowDetail(!showDetail)}
+                  aria-expanded={showDetail}
                   className={`ml-1 whitespace-nowrap hover:underline text-xs font-semibold ${warningConfig.tone === "positive"
                     ? "text-green-700"
                     : warningConfig.tone === "neutral"
@@ -502,17 +582,27 @@ export default function ProfileCard({
                   <span className="font-semibold">
                     {showDetail ? "Hide" : (warningConfig.toggleLabel || "Warnings")}
                   </span>{" "}
-                  <span aria-hidden="true">{showDetail ? "▲" : "▼"}</span>
+                  <span
+                    aria-hidden="true"
+                    className={`inline-block transition-transform duration-300 ease-in-out ${showDetail ? "rotate-180" : "rotate-0"}`}
+                  >
+                    ▼
+                  </span>
                 </button>
               </div>
 
-              {showDetail && (
-                <div className="mt-1 text-xs space-y-1">
+              <div
+                aria-hidden={!showDetail}
+                className={`overflow-hidden transition-all ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${showDetail ? "max-h-40 opacity-100 mt-1" : "max-h-0 opacity-0 mt-0"}`}
+              >
+                <div
+                  className={`text-xs space-y-1 transition-transform ${shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out"} ${showDetail ? "translate-y-0" : "-translate-y-1"}`}
+                >
                   {warningConfig.details.map((line, index) => (
                     <div key={`${warningConfig.tone}-${index}`}>{line}</div>
                   ))}
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>
@@ -564,7 +654,9 @@ export default function ProfileCard({
           profile={profile}
         />
       )}
-    </VerifiedCardWrapper>
+        </VerifiedCardWrapper>
+      </div>
+    </div>
   );
 }
 

@@ -30,6 +30,7 @@ export default function ProfilePage({
   tokens,
   duplicateNameCount
 }: ProfilePageProps) {
+  const feedbackGapPx = 32;
   const [isGettingQuote, setIsGettingQuote] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -249,16 +250,20 @@ export default function ProfilePage({
           onShowQR={handleShowQR}
         />
 
-        <div id="zcash-feedback" className="border-t mt-10 pt-6">
+        <div
+          id="zcash-feedback"
+          className="border-t"
+          style={{ marginTop: `${feedbackGapPx}px`, paddingTop: `${feedbackGapPx}px` }}
+        >
           <div className="w-full flex justify-center">
-            <div className="w-full max-w-xl mt-[-9px]">
+            <div className="w-full max-w-lg">
               {mode === "verification" ? (
                 <ProfileVerification
                   profile={initialProfile}
                   pendingEdits={pendingEdits}
                 />
               ) : mode === "swap" ? (
-                <div className="p-0 mt-4">
+                <div className="p-0">
                   <SwapComposer
                     profile={initialProfile}
                     tokenOptions={tokens}
@@ -280,11 +285,10 @@ export default function ProfilePage({
                     setSlippageTolerance={handleSwapFieldChange('slippage')}
                     getQuote={handleGetQuote}
                     confirmSwap={handleConfirmSwap}
-                    resetSwapState={handleResetSwapState}
                   />
                 </div>
               ) : (
-                <div className="p-0 mt-4">
+                <div className="p-0">
                   <MemoComposer
                     profile={initialProfile}
                     forceShowQR={forceShowQR}

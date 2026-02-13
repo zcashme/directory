@@ -3,6 +3,7 @@ import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
+import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
@@ -15,15 +16,19 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
+import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isUsernameVerified } from "@/lib/profile/profileUtils";
+import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import { Alert, Button } from "@/ui/common";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 const FIELD_CLASS =
-  "w-full rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400";
+  `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_FIELD_CLASS =
-  "rounded-2xl border border-[#0a1126]/60 px-3 py-2 text-sm bg-transparent outline-hidden focus:border-blue-500 text-gray-800 placeholder-gray-400 appearance-none";
+  `rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 appearance-none ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
@@ -55,6 +60,9 @@ interface AvatarPrompt {
   provider: string;
   url: string;
 }
+
+const escapeRegex = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const {
@@ -146,6 +154,83 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     }),
     [profile]
   );
+  const usernameLockedSuffix = useMemo(() => {
+    if (isUsernameVerified(profile)) return "";
+    if (typeof profile.id !== "number") return "";
+    return `-${profile.id}`;
+  }, [profile.address_verified, profile.id]);
+  const [usernameInput, setUsernameInput] = useState(form.name || "");
+  const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
+  const [usernameTouched, setUsernameTouched] = useState(false);
+  const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [lastValidUsername, setLastValidUsername] = useState(form.name || "");
+  const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
+
+  useEffect(() => {
+    setUsernameInput(form.name || "");
+  }, [form.name]);
+
+  useEffect(() => {
+    setUsernameTouched(false);
+    setUsernameConflict(null);
+    setUsernameStatus("idle");
+    setLastValidUsername(profile.name || "");
+  }, [profile.id]);
+
+  useEffect(() => {
+    if (!usernameTouched) {
+      setUsernameConflict(null);
+      setUsernameStatus("idle");
+      return;
+    }
+
+    const candidate = sanitizeUsernameInput(usernameInput);
+    const originalNameRaw = originals.name || "";
+
+    if (!candidate) {
+      setUsernameConflict(null);
+      setUsernameStatus("idle");
+      if (form.name !== "") handleChange("name", "");
+      return;
+    }
+
+    if (!candidate || candidate === originalNameRaw) {
+      setUsernameConflict(null);
+      setUsernameStatus("idle");
+      const nextValue = candidate || originalNameRaw;
+      if (form.name !== nextValue) {
+        handleChange("name", nextValue);
+      }
+      setLastValidUsername(nextValue);
+      return;
+    }
+
+    let cancelled = false;
+    setUsernameStatus("checking");
+    const timer = setTimeout(async () => {
+      const result = await checkUsernameAvailabilityAction(candidate, profile.id);
+      if (cancelled) return;
+      if (result.ok && result.taken_by_other_verified) {
+        setUsernameConflict("That username is already used by another verified profile.");
+        setUsernameStatus("taken");
+        if (form.name !== lastValidUsername) {
+          handleChange("name", lastValidUsername);
+        }
+      } else {
+        setUsernameConflict(null);
+        setUsernameStatus("available");
+        if (form.name !== candidate) {
+          handleChange("name", candidate);
+        }
+        setLastValidUsername(candidate);
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
   // Verification flow hook
   useVerificationFlow(profile.id, setShowRedirect);
@@ -251,6 +336,15 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setDeletedField("address", !deletedFields.address);
   };
 
+  const toggleNameDelete = () => {
+    const nextDeleted = !deletedFields.name;
+    setDeletedField("name", nextDeleted);
+    setUsernameTouched(false);
+    setUsernameConflict(null);
+    setUsernameStatus("idle");
+    setUsernameInput(nextDeleted ? "" : originals.name);
+  };
+
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <RedirectModal isOpen={showRedirect} label={redirectLabel} />
@@ -329,9 +423,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           htmlFor="name"
           helpText="Your unique handle on Zcash.me."
           hasPending={hasPendingField("name", "n")}
+          pendingHint={deletedFields.name ? "⚠ Verify to remove your profile from Zcash.me." : "Verify to apply changes"}
+          pendingHintClassName={deletedFields.name ? "text-xs text-red-600 italic" : undefined}
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
-          onDelete={() => setDeletedField("name", !deletedFields.name)}
+          onDelete={toggleNameDelete}
         >
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
@@ -340,20 +436,51 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             <input
               id="name"
               type="text"
-              value={form.name}
+              value={displayedUsername}
               placeholder={originals.name}
               onChange={(e) => {
-                const val = e.target.value
-                  .normalize("NFKC")
-                  .trim()
-                  .toLowerCase()
-                  .replace(/\s+/g, "_")
-                  .replace(/[^a-z0-9_-]/g, "");
-                handleChange("name", val);
+                let raw = e.target.value ?? "";
+                if (usernameLockedSuffix) {
+                  raw = raw.replace(new RegExp(escapeRegex(usernameLockedSuffix), "g"), "");
+                }
+                const val = sanitizeUsernameInput(raw);
+                setUsernameTouched(true);
+                setUsernameInput(val);
               }}
-              className={`${FIELD_CLASS} pl-[5.5rem]`}
+              onKeyDown={(e) => {
+                if (!usernameLockedSuffix) return;
+                const input = e.currentTarget;
+                const baseLen = form.name.length;
+                const start = input.selectionStart ?? 0;
+                const end = input.selectionEnd ?? 0;
+                const overlapsLockedSuffix = end > baseLen;
+                if ((e.key === "Backspace" || e.key === "Delete") && overlapsLockedSuffix) {
+                  e.preventDefault();
+                  input.setSelectionRange(Math.min(start, baseLen), Math.min(start, baseLen));
+                }
+              }}
+              onClick={(e) => {
+                if (!usernameLockedSuffix) return;
+                const input = e.currentTarget;
+                const baseLen = form.name.length;
+                const start = input.selectionStart ?? 0;
+                const end = input.selectionEnd ?? 0;
+                if (start > baseLen || end > baseLen) {
+                  input.setSelectionRange(baseLen, baseLen);
+                }
+              }}
+              className={`${FIELD_CLASS} pl-[5.5rem] ${usernameConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
             />
           </div>
+          {usernameConflict && (
+            <p className="mt-1 text-xs text-red-600">{usernameConflict}</p>
+          )}
+          {!usernameConflict && usernameTouched && usernameInput && usernameStatus === "checking" && (
+            <p className="mt-1 text-xs text-gray-500">Checking availability...</p>
+          )}
+          {!usernameConflict && usernameTouched && usernameInput && usernameStatus === "available" && (
+            <p className="mt-1 text-xs text-green-600">This name is available.</p>
+          )}
         </ProfileField>
 
         {/* DISPLAY NAME */}
@@ -448,10 +575,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             value={form.profile_image_url}
             placeholder={originals.profile_image_url}
             onChange={(e) => handleChange("profile_image_url", e.target.value)}
-            className={`${FIELD_CLASS} font-mono ${imageUrlValid
-              ? "border-[#0a1126]/60 focus:border-blue-500"
-              : "border-red-400 focus:border-red-500"
-              }`}
+            className={`${FIELD_CLASS} font-mono ${imageUrlValid ? "" : withFieldBorderState("border-[#0a1126]/60", true)}`}
           />
           <div className="mt-2">
             <Button
@@ -519,6 +643,18 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           const showDiscordAvatarAction = isVerified && isDiscord;
           const showXAvatarAction = isVerified && isX;
           const showGithubAvatarAction = isVerified && isGithub;
+          const rowConflict =
+            (!isVerified && row.valid === false) ||
+            (isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
+          const rowContainerClass = `${LINK_CONTAINER_CLASS} ${
+            rowConflict ? "border-red-400" : "border-[#0a1126]/60"
+          }`;
+          const rowSelectClass = `${LINK_FIELD_CLASS} ${
+            rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
+          }`;
+          const rowInputClass = `${LINK_FIELD_CLASS} ${
+            rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
+          }`;
 
           const linkActions = (
             <div className="flex items-center justify-between">
@@ -616,7 +752,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           return (
             <div key={row._uid} className="mb-2">
               {isVerified ? (
-                <div className={LINK_CONTAINER_CLASS}>
+                <div className={rowContainerClass}>
                   <LinkInput
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
@@ -632,9 +768,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                   value={row}
                   onChange={(v) => handleSocialLinkChange(row._uid, v)}
                   footer={linkActions}
-                  containerClassName={LINK_CONTAINER_CLASS}
-                  selectClassName={LINK_FIELD_CLASS}
-                  inputClassName={LINK_FIELD_CLASS}
+                  containerClassName={rowContainerClass}
+                  selectClassName={rowSelectClass}
+                  inputClassName={rowInputClass}
                 />
               )}
             </div>

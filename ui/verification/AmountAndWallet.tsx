@@ -4,6 +4,8 @@ import { useEffect, useState, useRef } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
+import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/styles/interactive";
+import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface Currency {
   symbol: string;
@@ -44,6 +46,7 @@ const CURRENCIES: Record<string, Currency> = {
   ZAR: { symbol: "R", name: "South African Rand" },
 };
 const FIAT_TICKERS = Object.keys(CURRENCIES);
+const FIAT_STATE_STORAGE_KEY = "zcashme.amountAndWallet.fiatState";
 
 const formatDecimal = (value: number, fallback = "") => {
   const num = Number(value);
@@ -82,7 +85,6 @@ interface AmountAndWalletProps {
   showRefund?: boolean;
   refundAddress?: string;
   setRefundAddress?: (_address: string) => void;
-  tokenBlockchain?: string;
 }
 
 export default function AmountAndWallet({
@@ -106,6 +108,7 @@ export default function AmountAndWallet({
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
+  const [isRefundFocused, setIsRefundFocused] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const [fiatSearch, setFiatSearch] = useState("");
   const [fiat, setFiat] = useState("USD");
@@ -117,12 +120,14 @@ export default function AmountAndWallet({
   const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const tokenButtonRef = useRef<HTMLButtonElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const [preferFiatValue, setPreferFiatValue] = useState(false);
+  const [fiatStateHydrated, setFiatStateHydrated] = useState(false);
   const tapProps = shouldReduceMotion
     ? {}
     : {
-        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
-        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
-      };
+      whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+      transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+    };
   const fiatSymbol = CURRENCIES[fiat]?.symbol || "$";
   const rightPillWidth = isUsdOpen ? "45%" : "2.5rem";
   const leftPillWidth = `calc(100% - ${rightPillWidth})`;
@@ -161,11 +166,11 @@ export default function AmountAndWallet({
   }, [rateRequested, fiat, asset]);
 
   useEffect(() => {
-    if (!rateFetched || !isUsdOpen || isTypingFiat) return;
+    if (!rateFetched || !isUsdOpen || isTypingFiat || preferFiatValue) return;
     const num = parseFloat(amount || "0");
     if (Number.isNaN(num)) return;
     setUsdInput(formatDecimal(num * rate));
-  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat]);
+  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat, preferFiatValue]);
 
   useEffect(() => {
     if (!isUsdOpen) {
@@ -173,6 +178,49 @@ export default function AmountAndWallet({
       setFiatSearch("");
     }
   }, [isUsdOpen]);
+
+  useEffect(() => {
+    if (!showUsdPill || typeof window === "undefined") return;
+    try {
+      const raw = window.sessionStorage.getItem(FIAT_STATE_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as {
+        usdInput?: string;
+        fiat?: string;
+        preferFiatValue?: boolean;
+        isUsdOpen?: boolean;
+      };
+      if (typeof parsed.usdInput === "string") setUsdInput(parsed.usdInput);
+      if (typeof parsed.fiat === "string" && FIAT_TICKERS.includes(parsed.fiat)) setFiat(parsed.fiat);
+      if (typeof parsed.preferFiatValue === "boolean") setPreferFiatValue(parsed.preferFiatValue);
+      if (parsed.isUsdOpen) {
+        setIsUsdOpen(true);
+        setRateRequested(true);
+      }
+    } catch {
+      // Ignore malformed session data.
+    } finally {
+      setFiatStateHydrated(true);
+    }
+  }, [showUsdPill]);
+
+  useEffect(() => {
+    if (!showUsdPill || typeof window === "undefined") return;
+    if (!fiatStateHydrated) return;
+    try {
+      window.sessionStorage.setItem(
+        FIAT_STATE_STORAGE_KEY,
+        JSON.stringify({
+          usdInput,
+          fiat,
+          preferFiatValue,
+          isUsdOpen,
+        })
+      );
+    } catch {
+      // Ignore storage errors.
+    }
+  }, [showUsdPill, fiatStateHydrated, usdInput, fiat, preferFiatValue, isUsdOpen]);
 
   // Close token dropdown when clicking outside
   useEffect(() => {
@@ -203,9 +251,20 @@ export default function AmountAndWallet({
   useEffect(() => {
     if (!rateRequested) return;
     setRateFetched(false);
-    setUsdInput("");
     void fetchRate(fiat, asset);
   }, [fiat, asset, rateRequested]);
+
+  useEffect(() => {
+    if (!rateFetched || !isUsdOpen || !preferFiatValue) return;
+    if (!usdInput || usdInput.endsWith(".")) return;
+    const num = parseFloat(usdInput);
+    if (!Number.isFinite(num)) return;
+    const clamped = clamp(num, 0, 1000000);
+    const cryptoAmount = rate > 0 ? clamped / rate : clamped;
+    const formatted = cryptoAmount.toFixed(8).replace(/\.?0+$/, "");
+    if (formatted === (amount || "")) return;
+    setAmount(formatted);
+  }, [rateFetched, isUsdOpen, preferFiatValue, usdInput, rate, amount, setAmount]);
 
   const handleToggleUsd = () => {
     if (!rateRequested) {
@@ -228,9 +287,13 @@ export default function AmountAndWallet({
   };
 
   return (
-    <div className="w-full mb-2">
-      <div className="flex items-center gap-3">
-        <div ref={inputContainerRef} className="relative flex flex-1 items-stretch">
+    <div className="w-full max-w-full mb-2 min-w-0">
+      <div className="w-full max-w-full min-w-0 flex items-center gap-3">
+        <div
+          ref={inputContainerRef}
+          className={`relative flex items-stretch overflow-visible min-w-0 max-w-full ${showOpenWallet ? "flex-1" : "w-full"
+            }`}
+        >
           {showUsdPill && (
             <>
               <div
@@ -282,6 +345,7 @@ export default function AmountAndWallet({
                 if (parts[1] && parts[1].length > 8) return;
 
                 setAmount(val);
+                setPreferFiatValue(false);
 
                 // Auto-open USD pill when typing a number if it's available
                 if (showUsdPill && !isUsdOpen && val && !rateRequested) {
@@ -298,9 +362,9 @@ export default function AmountAndWallet({
                   }
                 }
               }}
-              className="border border-gray-800 px-3 rounded-xl w-full h-11
+              className={`border px-3 rounded-xl w-full h-11
                          text-md pr-12 md:pr-16 text-gray-900
-                         pl-3 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                         pl-3 outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")}`}
             />
 
             {/* Right-side token selector */}
@@ -322,6 +386,7 @@ export default function AmountAndWallet({
                         });
                       }
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
+                      if (setAsset) setAsset?.(assetOptions[0]?.id ?? "");
                     }}
                     className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
                   >
@@ -399,27 +464,79 @@ export default function AmountAndWallet({
                 <div className="select-none cursor-not-allowed">{asset}</div>
               )}
             </div>
+            {/* Token dropdown — positioned relative to the crypto pill container */}
+            {isTokenDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-64 max-w-[calc(100vw-2rem)] max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector">
+                <div className="p-2 border-b border-gray-800">
+                  <input
+                    type="text"
+                    value={tokenSearch}
+                    onChange={(e) => setTokenSearch(e.target.value)}
+                    placeholder="Search tokens..."
+                    className={`w-full px-2 py-1.5 text-sm border rounded-lg bg-white text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
+                  />
+                </div>
+                <div className="py-1">
+                  {assetOptions
+                    .filter(matchesTokenSearch)
+                    .map((token) => (
+                      <motion.button
+                        key={token.id}
+                        type="button"
+                        onClick={() => {
+                          setAsset?.(token.id);
+                          setIsTokenDropdownOpen(false);
+                          setTokenSearch("");
+                        }}
+                        {...tapProps}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${asset === (token.symbol ?? token.ticker)
+                          ? "bg-blue-50 font-semibold text-gray-900"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        {token.logo && (
+                          <img
+                            src={token.logo}
+                            alt={token.symbol}
+                            className="w-5 h-5 rounded-full flex-shrink-0"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        )}
+                        <span className="flex-1 min-w-0">
+                          <div className="font-medium text-gray-800 truncate">{token.symbol}</div>
+                          <div className="text-xs text-gray-500 truncate">{token.chain}</div>
+                        </span>
+                      </motion.button>
+                    ))}
+                  {assetOptions.filter(matchesTokenSearch).length === 0 && (
+                    <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                      No tokens found
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {showUsdPill && (
             <div
-              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 overflow-visible min-w-0 max-w-full transition-[width] duration-200 box-border ${
-                isUsdOpen ? "px-3" : "px-3 justify-center"
-              }`}
+              className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 min-w-0 max-w-full transition-[width] duration-200 box-border ${isUsdOpen ? "px-3" : "px-3 justify-center"
+                }`}
               style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >
               <div
-                className={`flex items-center w-full min-w-0 ${
-                  isUsdOpen ? "gap-2" : "justify-center"
-                }`}
+                className={`flex items-center w-full min-w-0 ${isUsdOpen ? "gap-2" : "justify-center"
+                  }`}
               >
-                <span
-                  className="text-gray-500 cursor-pointer flex-none hover:text-blue-600"
+                <motion.button
+                  type="button"
+                  {...tapProps}
+                  className={`${INLINE_SELECTOR_TRIGGER_CLASSES} flex-none`}
                   onClick={handleToggleUsd}
-                  role="button"
                   aria-label="Toggle currency details"
-                  tabIndex={0}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" || e.key === " ") {
                       e.preventDefault();
@@ -428,7 +545,7 @@ export default function AmountAndWallet({
                   }}
                 >
                   {fiatSymbol}
-                </span>
+                </motion.button>
                 {isUsdOpen && (
                   <>
                     <input
@@ -442,6 +559,7 @@ export default function AmountAndWallet({
                         const val = e.target.value;
                         if (val === "") {
                           setUsdInput("");
+                          setPreferFiatValue(true);
                           return;
                         }
 
@@ -460,6 +578,7 @@ export default function AmountAndWallet({
                         if (parts[1] && parts[1].length > 2) return;
 
                         setUsdInput(val);
+                        setPreferFiatValue(true);
 
                         // Update crypto side only if we have a valid complete number
                         if (val && !val.endsWith(".")) {
@@ -478,13 +597,12 @@ export default function AmountAndWallet({
                       }}
                       className="min-w-0 flex-1 bg-transparent text-left tabular-nums text-gray-900 focus:outline-hidden disabled:opacity-60 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                     />
-                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector relative">
-                      <span>{fiat}</span>
-                      <span
-                        className="cursor-pointer hover:text-blue-600"
-                        role="button"
+                    <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector">
+                      <motion.button
+                        type="button"
+                        {...tapProps}
+                        className={INLINE_SELECTOR_TRIGGER_CLASSES}
                         aria-label="Choose fiat currency"
-                        tabIndex={0}
                         onClick={handleToggleCurrency}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ") {
@@ -493,8 +611,9 @@ export default function AmountAndWallet({
                           }
                         }}
                       >
+                        <span>{fiat}</span>
                         ▼
-                      </span>
+                      </motion.button>
                       {isCurrencyOpen && (
                         <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999]">
                           <div className="p-2 border-b border-gray-800">
@@ -571,6 +690,47 @@ export default function AmountAndWallet({
                   </>
                 )}
               </div>
+                      !fiatSearch ||
+                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                    ).map((ticker) => (
+                      <motion.button
+                        key={ticker}
+                        type="button"
+                        onClick={() => {
+                          setFiat(ticker);
+                          setIsCurrencyOpen(false);
+                          setFiatSearch("");
+                        }}
+                        {...tapProps}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${fiat === ticker
+                          ? "bg-blue-50 font-semibold text-gray-900"
+                          : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                      >
+                        <span className="w-6 text-gray-600 flex-shrink-0">
+                          {CURRENCIES[ticker]?.symbol || ""}
+                        </span>
+                        <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
+                        <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
+                          {CURRENCIES[ticker]?.name || ""}
+                        </span>
+                      </motion.button>
+                    ))}
+                    {FIAT_TICKERS.filter((ticker) =>
+                      !fiatSearch ||
+                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
+                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
+                    ).length === 0 && (
+                        <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                          No currencies found
+                        </div>
+                      )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -579,7 +739,7 @@ export default function AmountAndWallet({
           <motion.button
             onClick={openWallet}
             {...tapProps}
-            className="flex items-center gap-1 border rounded-xl px-3 py-2 text-md transition-all duration-200 border-gray-800 hover:border-blue-500 text-gray-700 whitespace-nowrap"
+            className={OUTLINE_ACTION_BUTTON_CLASSES}
           >
             {openWalletLabel}
           </motion.button>
@@ -588,20 +748,25 @@ export default function AmountAndWallet({
 
       {showRefund && (
         <div className="w-full mt-3">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Your {asset}{" "}
-            {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund
-            address
-          </label>
+          {isRefundFocused && (
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Your {asset}{" "}
+              {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund
+              address (in case {asset} → ZEC fails)
+            </label>
+          )}
           <input
             type="text"
             value={refundAddress}
             onChange={(e) => setRefundAddress?.(e.target.value)}
-            placeholder={`Paste your ${asset} address`}
-            className="w-full border border-gray-800 px-3 py-2 rounded-xl text-md text-gray-900 focus:ring-1 focus:ring-blue-500"
+            onFocus={() => setIsRefundFocused(true)}
+            onBlur={() => setIsRefundFocused(false)}
+            placeholder={`Paste your ${asset} refund address`}
+            className={`w-full border px-3 py-2 rounded-xl text-md text-gray-900 outline-hidden ${withFieldBorderState("border-gray-800")}`}
           />
         </div>
       )}
     </div>
   );
 }
+
