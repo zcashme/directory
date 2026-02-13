@@ -1,9 +1,15 @@
 //! ZVS CLI - Zcash Verification Service
+//!
+//! This service monitors the Zcash blockchain for verification requests sent to the
+//! admin wallet. When a valid verification memo is received, it responds with an OTP.
+
+mod memo_rules;
 
 use std::env;
 use std::time::Duration;
+use tracing::{info, warn, error};
 use tracing_subscriber::EnvFilter;
-use zvs::ZVS;
+use zvs::{ReceivedMemo, ZVS};
 
 fn print_usage() {
     eprintln!("Usage: zvs <lightwalletd_url> <seed_hex> <birthday_height>");
@@ -24,6 +30,14 @@ fn print_usage() {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Install rustls crypto provider (required for TLS connections)
+    rustls::crypto::ring::default_provider()
+        .install_default()
+        .expect("Failed to install rustls crypto provider");
+
+    // Load .env file if present
+    dotenvy::dotenv().ok();
+
     // Initialize tracing
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
@@ -92,6 +106,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("(Verification requests should be sent as memos to the wallet address above)");
     println!();
 
+    // Track the last processed height to avoid reprocessing memos
+    let mut last_processed_height = birthday_height;
+
     // Main loop - sync periodically and check for verification requests
     loop {
         tokio::time::sleep(Duration::from_secs(30)).await;
@@ -99,26 +116,92 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let height = match zvs.height().await {
             Ok(h) => h,
             Err(e) => {
-                eprintln!("Error fetching height: {}", e);
+                error!("Error fetching height: {}", e);
                 continue;
             }
         };
 
-        println!("[Block {}] Syncing...", height);
+        info!("[Block {}] Syncing...", height);
 
         if let Err(e) = zvs.sync().await {
-            eprintln!("Sync error: {}", e);
+            error!("Sync error: {}", e);
             continue;
         }
 
         let balance = zvs.balance().await.unwrap_or(0);
-        println!(
+        info!(
             "Balance: {} ZAT ({:.8} ZEC)",
             balance,
             balance as f64 / 100_000_000.0
         );
 
-        // TODO: Process incoming memos for verification requests
-        // For now, just show that we're running
+        // Process incoming memos for verification requests
+        match zvs.get_received_memos(last_processed_height).await {
+            Ok(memos) => {
+                if !memos.is_empty() {
+                    info!("Found {} memos to process", memos.len());
+                }
+                for memo in memos {
+                    process_verification_request(&mut zvs, &memo).await;
+                    // Update last processed height to avoid reprocessing
+                    if memo.height > last_processed_height {
+                        last_processed_height = memo.height;
+                    }
+                }
+            }
+            Err(e) => {
+                error!("Failed to get received memos: {}", e);
+            }
+        }
+    }
+}
+
+/// Process a single verification request from a received memo.
+///
+/// This function:
+/// 1. Validates the memo format using memo_rules
+/// 2. If valid, generates an OTP
+/// 3. Sends the OTP back to the user's address
+async fn process_verification_request(zvs: &mut ZVS, memo: &ReceivedMemo) {
+    info!(
+        "Received memo in tx {} at height {}: {}",
+        memo.txid, memo.height, memo.memo
+    );
+
+    // Validate the memo and extract verification data
+    let verification_data = match memo_rules::validate_memo(&memo.memo) {
+        Some(data) => data,
+        None => {
+            warn!("Invalid memo format, skipping: {}", memo.memo);
+            return;
+        }
+    };
+
+    info!(
+        "Valid verification request from {} (session: {})",
+        verification_data.user_address, verification_data.session_id
+    );
+
+    // Generate OTP for this session
+    let otp = zvs.generate_otp(&verification_data.session_id, &verification_data.user_address);
+    info!("Generated OTP {} for session {}", otp, verification_data.session_id);
+
+    // Send OTP back to user's address
+    // Amount: 1000 zatoshis (0.00001 ZEC) - minimal dust amount
+    let otp_memo = format!("ZVS-OTP:{}", otp);
+
+    match zvs.send(&verification_data.user_address, 1000, &otp_memo).await {
+        Ok(txid) => {
+            info!(
+                "Sent OTP to {} in tx {}",
+                verification_data.user_address, txid
+            );
+        }
+        Err(e) => {
+            error!(
+                "Failed to send OTP to {}: {}",
+                verification_data.user_address, e
+            );
+        }
     }
 }

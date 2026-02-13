@@ -31,8 +31,12 @@ zcash_keys = { path = "librustzcash/zcash_keys", features = ["sapling"] }
 
 zip32 = "0.2"
 
+# TLS crypto provider
+rustls = { version = "0.23", features = ["ring"] }
+
 # Utils
 anyhow = "1"
+dotenvy = "0.15"
 hex = "0.4"
 rand = "0.8"
 nonempty = "0.11"

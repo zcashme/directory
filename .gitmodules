@@ -1,0 +1,6 @@
+[submodule "ZVS/librustzcash"]
+	path = ZVS/librustzcash
+	url = https://github.com/zcash/librustzcash.git
+[submodule "ZVS/zingolib"]
+	path = ZVS/zingolib
+	url = https://github.com/zingolabs/zingolib.git
