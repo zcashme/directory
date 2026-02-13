@@ -4,7 +4,10 @@
 //! requests via memo, ZVS responds with HMAC-derived OTPs.
 
 use std::collections::BTreeMap;
+use std::convert::Infallible;
+use std::num::NonZeroUsize;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
@@ -17,17 +20,21 @@ use tracing::{debug, error, info, warn};
 use zcash_client_backend::{
     data_api::{
         chain::{scan_cached_blocks, BlockSource, ChainState},
-        wallet::ConfirmationsPolicy,
+        wallet::{create_proposed_transactions, input_selection::GreedyInputSelector, propose_transfer, ConfirmationsPolicy, SpendingKeys},
         AccountBirthday, WalletRead, WalletWrite,
     },
+    fees::{standard::MultiOutputChangeStrategy, DustOutputPolicy, SplitPolicy, StandardFeeRule},
     proto::{
         compact_formats::CompactBlock,
         service::{
             compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec,
-            TxFilter,
+            RawTransaction, TxFilter,
         },
     },
+    wallet::OvkPolicy,
+    zip321::{Payment, TransactionRequest},
 };
+use zcash_proofs::prover::LocalTxProver;
 use zcash_primitives::transaction::TxId;
 use zcash_keys::keys::{UnifiedSpendingKey, UnifiedAddressRequest};
 use zcash_client_sqlite::{
@@ -35,7 +42,13 @@ use zcash_client_sqlite::{
     wallet::init::init_wallet_db,
     AccountUuid, WalletDb,
 };
-use zcash_protocol::consensus::{BlockHeight, MainNetwork};
+use zcash_protocol::{
+    consensus::{BlockHeight, MainNetwork},
+    memo::MemoBytes,
+    value::Zatoshis,
+    ShieldedProtocol,
+};
+use zcash_address::ZcashAddress;
 
 type HmacSha256 = Hmac<Sha256>;
 
@@ -443,11 +456,7 @@ impl ZVS {
             current = batch_end + 1;
         }
 
-        let new_memos = if total_sapling > 0 || total_orchard > 0 {
-            self.fetch_new_memos().await?
-        } else {
-            vec![]
-        };
+        let new_memos = self.fetch_new_memos().await?;
 
         info!(
             "Sync complete: {} blocks, {} sapling, {} orchard, {} memos",
@@ -589,36 +598,135 @@ impl ZVS {
     ///
     /// This allows us to query sent_notes to find which requests we've already
     /// responded to, eliminating the need for separate state tracking.
-    ///
-    /// NOTE: Transaction sending is stubbed for now. The OTP is generated and logged,
-    /// but actual transaction creation requires additional setup (Sapling params, etc.)
     async fn send_otp(&mut self, to_address: &str, otp: &str, _amount_zats: u64, request_txid_hex: &str) -> Result<TxId> {
         // Include first 16 chars of request txid in memo for correlation
         let txid_prefix = &request_txid_hex[..std::cmp::min(16, request_txid_hex.len())];
-        let memo = format!("ZVS:otp:{}:req:{}", otp, txid_prefix);
+        let memo_text = format!("ZVS:otp:{}:req:{}", otp, txid_prefix);
 
         info!("=== OTP RESPONSE ===");
         info!("To: {}", to_address);
         info!("OTP: {}", otp);
-        info!("Memo: {}", memo);
+        info!("Memo: {}", memo_text);
         info!("Request txid: {}", request_txid_hex);
         info!("====================");
 
-        // TODO: Implement actual transaction sending
-        // This requires:
-        // 1. Sapling proving parameters (run zcash-fetch-params)
-        // 2. Sufficient balance in the wallet
-        // 3. Proper transaction proposal and creation
-        //
-        // When implemented, the sent transaction will be recorded in sent_notes
-        // with the memo containing the request txid prefix. This automatically
-        // marks the request as processed - no separate state tracking needed.
+        // Parse recipient address
+        let recipient: ZcashAddress = to_address.parse()
+            .map_err(|e| anyhow!("Invalid recipient address: {e}"))?;
 
-        warn!("Transaction sending not yet implemented - OTP logged but not sent on-chain");
+        // Create memo bytes
+        let memo = MemoBytes::from(
+            zcash_protocol::memo::Memo::from_str(&memo_text)
+                .map_err(|e| anyhow!("Invalid memo: {e}"))?
+        );
 
-        // Return a dummy txid (all zeros) to indicate the request was processed
-        // In production, this would be the actual broadcast transaction ID
-        Ok(TxId::from_bytes([0u8; 32]))
+        // Minimum amount: 10000 zatoshis (0.0001 ZEC)
+        let amount = Zatoshis::from_u64(10_000)
+            .map_err(|_| anyhow!("Invalid amount"))?;
+
+        // Create payment request
+        let payment = Payment::new(
+            recipient.into(),
+            amount,
+            Some(memo),
+            None, // label
+            None, // message
+            vec![], // other_params
+        ).ok_or_else(|| anyhow!("Failed to create payment"))?;
+
+        let request = TransactionRequest::new(vec![payment])
+            .map_err(|e| anyhow!("Failed to create transaction request: {e}"))?;
+
+        // Set up input selector with standard fee rule
+        // Use Sapling for change outputs (widely compatible)
+        let change_strategy = MultiOutputChangeStrategy::new(
+            StandardFeeRule::Zip317,
+            None, // no memo for change
+            ShieldedProtocol::Sapling,
+            DustOutputPolicy::default(),
+            SplitPolicy::with_min_output_value(NonZeroUsize::new(1).unwrap(), Zatoshis::const_from_u64(10_000)),
+        );
+        let input_selector = GreedyInputSelector::new();
+
+        // Get current chain height
+        let chain_tip = self.get_latest_height().await?;
+
+        info!("Proposing transfer to {} for {} zatoshis...", to_address, amount.into_u64());
+
+        // Propose transfer with default confirmations policy
+        let proposal = match propose_transfer::<_, _, _, _, Infallible>(
+            &mut self.wallet,
+            &MainNetwork,
+            self.account_id,
+            &input_selector,
+            &change_strategy,
+            request,
+            ConfirmationsPolicy::default(),
+        ) {
+            Ok(p) => p,
+            Err(e) => return Err(anyhow!("Failed to propose transfer: {:?}", e)),
+        };
+
+        info!("Proposal created, building transaction...");
+
+        // Load prover
+        let prover = LocalTxProver::with_default_location()
+            .ok_or_else(|| anyhow!("Sapling params not found. Run: ./fetch-params.sh"))?;
+
+        // Create transaction
+        let spending_keys = SpendingKeys::from_unified_spending_key(self.usk.clone());
+        let txids = match create_proposed_transactions::<_, _, Infallible, _, Infallible, _>(
+            &mut self.wallet,
+            &MainNetwork,
+            &prover,
+            &prover,
+            &spending_keys,
+            OvkPolicy::Sender,
+            &proposal,
+        ) {
+            Ok(t) => t,
+            Err(e) => return Err(anyhow!("Failed to create transaction: {:?}", e)),
+        };
+
+        // NonEmpty guarantees at least one element
+        let txid = txids.first();
+
+        info!("Transaction created: {}", hex::encode(txid.as_ref()));
+
+        // Fetch raw transaction from wallet db and broadcast
+        let raw_tx = self.fetch_raw_transaction(txid)?;
+
+        info!("Broadcasting transaction ({} bytes)...", raw_tx.len());
+
+        let response = self.client
+            .send_transaction(RawTransaction {
+                data: raw_tx,
+                height: chain_tip as u64,
+            })
+            .await
+            .map_err(|e| anyhow!("Failed to broadcast transaction: {e}"))?;
+
+        let send_response = response.into_inner();
+        if send_response.error_code != 0 {
+            return Err(anyhow!("Broadcast failed: {}", send_response.error_message));
+        }
+
+        info!("Transaction broadcast successfully!");
+        Ok(*txid)
+    }
+
+    /// Fetch raw transaction bytes from the wallet database.
+    fn fetch_raw_transaction(&self, txid: &TxId) -> Result<Vec<u8>> {
+        let conn = Connection::open_with_flags(&self.db_path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)
+            .map_err(|e| anyhow!("Failed to open db: {e}"))?;
+
+        let raw: Vec<u8> = conn.query_row(
+            "SELECT raw FROM transactions WHERE txid = ?",
+            [txid.as_ref()],
+            |row| row.get(0),
+        ).map_err(|e| anyhow!("Failed to fetch raw transaction: {e}"))?;
+
+        Ok(raw)
     }
 
     /// Run the block monitoring loop.
