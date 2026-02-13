@@ -16,8 +16,8 @@ export default function ProfileAvatar({
   size = 32,
   imageClassName = "object-cover",
   className = "",
-  blink = false,
-  lookAround = false,
+  blink = true,
+  lookAround = true,
 }: ProfileAvatarProps) {
   const { isVerified } = getProfileTrust(profile);
   const rankType = getRankType(profile);
