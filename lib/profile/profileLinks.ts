@@ -104,10 +104,17 @@ export const KNOWN_DOMAINS: Record<string, DomainConfig> = {
 export function extractDomain(url: string): string {
   try {
     const u = new URL(url);
-    return u.hostname.toLowerCase().replace(/^www\./, "");
+    // Decode to ensure consistent output between server/client
+    return decodeURIComponent(u.hostname).toLowerCase().replace(/^www\./, "");
   } catch {
     const withoutProtocol = url.replace(/^https?:\/\//i, "");
-    return withoutProtocol.split("/")[0].toLowerCase().replace(/^www\./, "");
+    const domain = withoutProtocol.split("/")[0].toLowerCase().replace(/^www\./, "");
+    // Decode any percent-encoded characters for consistency
+    try {
+      return decodeURIComponent(domain);
+    } catch {
+      return domain;
+    }
   }
 }
 

@@ -690,47 +690,6 @@ export default function AmountAndWallet({
                   </>
                 )}
               </div>
-                      !fiatSearch ||
-                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
-                    ).map((ticker) => (
-                      <motion.button
-                        key={ticker}
-                        type="button"
-                        onClick={() => {
-                          setFiat(ticker);
-                          setIsCurrencyOpen(false);
-                          setFiatSearch("");
-                        }}
-                        {...tapProps}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${fiat === ticker
-                          ? "bg-blue-50 font-semibold text-gray-900"
-                          : "text-gray-700 hover:bg-gray-50"
-                          }`}
-                      >
-                        <span className="w-6 text-gray-600 flex-shrink-0">
-                          {CURRENCIES[ticker]?.symbol || ""}
-                        </span>
-                        <span className="text-gray-800 font-medium flex-shrink-0">{ticker}</span>
-                        <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
-                          {CURRENCIES[ticker]?.name || ""}
-                        </span>
-                      </motion.button>
-                    ))}
-                    {FIAT_TICKERS.filter((ticker) =>
-                      !fiatSearch ||
-                      ticker.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                      CURRENCIES[ticker]?.name?.toLowerCase().includes(fiatSearch.toLowerCase()) ||
-                      CURRENCIES[ticker]?.symbol?.toLowerCase().includes(fiatSearch.toLowerCase())
-                    ).length === 0 && (
-                        <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                          No currencies found
-                        </div>
-                      )}
-                  </div>
-                </div>
-              )}
             </div>
           )}
         </div>

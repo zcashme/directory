@@ -203,6 +203,14 @@ export function validateUrl(): Validator {
 }
 
 /**
+ * Simple URL validation helper that returns { valid, reason }
+ */
+export function isValidUrl(url: string): { valid: boolean; reason: string | null } {
+  const result = validateUrl()(url);
+  return { valid: result.valid, reason: result.reason ?? null };
+}
+
+/**
  * Validates minimum length requirement
  *
  * @param min - Minimum number of characters required
