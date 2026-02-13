@@ -1,5 +1,3 @@
-mod memo_rules;
-
 use std::env;
 use tracing_subscriber::EnvFilter;
 use zvs::ZVS;
@@ -67,12 +65,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Connecting to: {}", url);
     println!("Birthday height: {}", birthday_height);
 
-    let zvs = ZVS::connect(&url, &seed, birthday_height).await?;
+    let mut zvs = ZVS::connect(&url, &seed, birthday_height).await?;
 
-    let address = zvs.get_address().await?;
+    let address = zvs.get_address()?;
     println!("Wallet address: {}", address);
     println!();
-    println!("Wallet initialized. Ready to build sync/send functionality.");
+
+    let latest = zvs.get_latest_height().await?;
+    println!("Latest block: {}", latest);
+    println!();
+
+    println!("Scanning for memos...");
+    let memos = zvs.scan_for_memos(None).await?;
+
+    println!();
+    println!("Found {} transactions with memos:", memos.len());
+    for memo in &memos {
+        println!("  Height {}: {}", memo.height, memo.memo);
+    }
 
     Ok(())
 }

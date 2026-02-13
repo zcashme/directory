@@ -19,15 +19,16 @@ tonic = { version = "0.14", features = ["channel"] }
 prost = "0.14"
 
 zcash_client_backend = { version = "0.21", features = ["lightwalletd-tonic", "lightwalletd-tonic-tls-webpki-roots", "lightwalletd-tonic-transport"] }
-zcash_client_sqlite = "0.19"
 zcash_primitives = "0.26"
 zcash_protocol = "0.7"
-zcash_keys = { version = "0.12", features = ["sapling"] }
-rusqlite = "0.37"
+zcash_keys = { version = "0.12", features = ["orchard"] }
+zcash_note_encryption = "0.4"
+orchard = "0.11"
 zip32 = "0.2"
 
 rustls = { version = "0.23", features = ["ring"] }
 
+tokio-stream = "0.1"
 anyhow = "1"
 dotenvy = "0.15"
 hex = "0.4"
