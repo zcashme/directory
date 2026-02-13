@@ -24,6 +24,9 @@ zcash_client_sqlite = { version = "0.19", features = ["orchard"] }
 zcash_protocol = "0.7"
 zcash_proofs = { version = "0.26", features = ["local-prover"] }
 zcash_keys = { version = "0.12", features = ["orchard", "sapling"] }
+zcash_primitives = "0.26"
+zcash_note_encryption = "0.4"
+sapling-crypto = "0.5"
 zip32 = "0.2"
 secrecy = "0.8"
 rusqlite = "0.37"

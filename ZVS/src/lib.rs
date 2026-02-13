@@ -1,11 +1,11 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use anyhow::{anyhow, Result};
 use rusqlite::Connection;
 use secrecy::Secret;
-use tracing::{debug, error, info};
+use tracing::{debug, error, info, warn};
 
 use zcash_client_backend::{
     data_api::{
@@ -17,9 +17,11 @@ use zcash_client_backend::{
         compact_formats::CompactBlock,
         service::{
             compact_tx_streamer_client::CompactTxStreamerClient, BlockId, BlockRange, ChainSpec,
+            TxFilter,
         },
     },
 };
+use zcash_primitives::transaction::TxId;
 use zcash_keys::keys::UnifiedSpendingKey;
 use zcash_client_sqlite::{
     util::SystemClock,
@@ -152,8 +154,8 @@ pub struct ZVS {
     usk: UnifiedSpendingKey,
     birthday_height: u32,
     db_path: PathBuf,
-    /// Track the last processed note ID to detect new notes
-    last_processed_note_id: i64,
+    /// Track processed transaction IDs to avoid re-processing
+    processed_txids: HashSet<TxId>,
 }
 
 impl ZVS {
@@ -231,9 +233,6 @@ impl ZVS {
             info!("Sapling address: {}", encoded);
         }
 
-        // Get initial note count
-        let last_note_id = Self::get_max_note_id(&db_path).unwrap_or(0);
-
         Ok(Self {
             client,
             wallet,
@@ -241,7 +240,7 @@ impl ZVS {
             usk,
             birthday_height,
             db_path,
-            last_processed_note_id: last_note_id,
+            processed_txids: HashSet::new(),
         })
     }
 
@@ -435,24 +434,6 @@ impl ZVS {
         Err(anyhow!("send_otp not yet fully implemented"))
     }
 
-    /// Get max note ID from the database
-    fn get_max_note_id(db_path: &Path) -> Result<i64> {
-        let conn = Connection::open_with_flags(
-            db_path,
-            rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
-        ).map_err(|e| anyhow!("Failed to open db for reading: {e}"))?;
-
-        let max_id: i64 = conn
-            .query_row(
-                "SELECT COALESCE(MAX(id), 0) FROM sapling_received_notes",
-                [],
-                |row| row.get(0),
-            )
-            .unwrap_or(0);
-
-        Ok(max_id)
-    }
-
     /// Sync wallet incrementally and return scan results with memos
     pub async fn sync_incremental(&mut self) -> Result<ScanResult> {
         let chain_tip = self.get_latest_height().await?;
@@ -539,9 +520,9 @@ impl ZVS {
             current = batch_end + 1;
         }
 
-        // Fetch info for any new notes
+        // Fetch and decrypt memos for any new notes
         let new_memos = if total_sapling > 0 || total_orchard > 0 {
-            self.fetch_new_memos()?
+            self.fetch_new_memos().await?
         } else {
             vec![]
         };
@@ -560,27 +541,24 @@ impl ZVS {
     }
 
     /// Fetch memos for notes received since last check
-    /// Note: zcash_client_sqlite doesn't store memos from compact blocks (they're truncated).
-    /// This queries note metadata; for full memos, we'd need to fetch full transactions.
-    fn fetch_new_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
+    /// Queries DB for new notes, then fetches full transactions to decrypt memos
+    async fn fetch_new_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
         let conn = Connection::open_with_flags(
             &self.db_path,
             rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY,
         ).map_err(|e| anyhow!("Failed to open db for reading: {e}"))?;
 
-        // Query new notes with their transaction info
-        // Note: compact blocks don't include full memos, but we track the notes
+        // Query all received notes with their transaction info
         let mut stmt = conn.prepare(
-            "SELECT srn.id, t.txid, t.block, srn.value
+            "SELECT t.txid, t.block, srn.value
              FROM sapling_received_notes srn
-             JOIN transactions t ON srn.tx = t.id_tx
-             WHERE srn.id > ?1
+             JOIN transactions t ON srn.transaction_id = t.id_tx
              ORDER BY srn.id ASC"
         ).map_err(|e| anyhow!("Failed to prepare query: {e}"))?;
 
-        let rows: Vec<(i64, Vec<u8>, Option<u32>, i64)> = stmt
-            .query_map([self.last_processed_note_id], |row| {
-                Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?))
+        let rows: Vec<(Vec<u8>, Option<u32>, i64)> = stmt
+            .query_map([], |row| {
+                Ok((row.get(0)?, row.get(1)?, row.get(2)?))
             })
             .map_err(|e| anyhow!("Failed to query notes: {e}"))?
             .collect::<std::result::Result<Vec<_>, _>>()
@@ -589,38 +567,132 @@ impl ZVS {
         drop(stmt);
         drop(conn);
 
-        if rows.is_empty() {
-            return Ok(vec![]);
-        }
-
         let mut memos = Vec::new();
-        let mut max_id = self.last_processed_note_id;
 
-        for (note_id, txid_bytes, block_height, value) in rows {
-            max_id = max_id.max(note_id);
+        for (txid_bytes, block_height, value) in rows {
+            // Convert to TxId for tracking
+            let txid_array: [u8; 32] = txid_bytes.clone().try_into()
+                .map_err(|_| anyhow!("Invalid txid length"))?;
+            let txid = TxId::from_bytes(txid_array);
+
+            // Skip if already processed
+            if self.processed_txids.contains(&txid) {
+                continue;
+            }
+
             let txid_hex = hex::encode(&txid_bytes);
             let height = block_height.unwrap_or(0);
 
-            // For now, we log received notes without memos
-            // Full memo extraction requires fetching full transactions
-            // which we'll implement when needed for verification responses
+            // Fetch full transaction to decrypt memo
+            let memo_text = match self.fetch_transaction_memo(&txid_bytes, height).await {
+                Ok(Some(text)) => {
+                    debug!("Decrypted memo from tx {}: {:?}", &txid_hex[..16], text);
+                    text
+                }
+                Ok(None) => {
+                    debug!("No memo in tx {}", &txid_hex[..16]);
+                    String::new()
+                }
+                Err(e) => {
+                    warn!("Failed to fetch memo for tx {}: {}", &txid_hex[..16], e);
+                    String::new()
+                }
+            };
+
+            let verification = if !memo_text.is_empty() {
+                validate_memo(&memo_text)
+            } else {
+                None
+            };
+
             info!(
-                "New note received: tx={}, height={}, value={} zats",
-                &txid_hex[..16], height, value
+                "New note: tx={}..., height={}, value={} zats, memo={}",
+                &txid_hex[..16],
+                height,
+                value,
+                if memo_text.is_empty() { "(empty)" } else { &memo_text }
             );
+
+            // Mark as processed
+            self.processed_txids.insert(txid);
 
             let memo = ReceivedMemo {
                 txid_hex,
                 height,
-                memo: String::new(), // Memo requires full tx fetch
+                memo: memo_text,
                 value_zats: value as u64,
-                verification: None,
+                verification,
             };
             memos.push(memo);
         }
 
-        self.last_processed_note_id = max_id;
         Ok(memos)
+    }
+
+    /// Fetch full transaction from lightwalletd and decrypt memo
+    async fn fetch_transaction_memo(&mut self, txid: &[u8], height: u32) -> Result<Option<String>> {
+        // Fetch full transaction
+        let tx_filter = TxFilter {
+            block: None,
+            index: 0,
+            hash: txid.to_vec(),
+        };
+
+        let raw_tx = self
+            .client
+            .get_transaction(tx_filter)
+            .await
+            .map_err(|e| anyhow!("Failed to fetch transaction: {e}"))?
+            .into_inner();
+
+        if raw_tx.data.is_empty() {
+            return Err(anyhow!("Empty transaction data"));
+        }
+
+        // Parse the transaction
+        let block_height = BlockHeight::from_u32(height);
+        let branch_id = zcash_primitives::consensus::BranchId::for_height(&MainNetwork, block_height);
+
+        let tx = zcash_primitives::transaction::Transaction::read(
+            &raw_tx.data[..],
+            branch_id,
+        ).map_err(|e| anyhow!("Failed to parse transaction: {e}"))?;
+
+        // Try to decrypt Sapling outputs using our viewing key
+        let ufvk = self.usk.to_unified_full_viewing_key();
+
+        if let Some(sapling_dfvk) = ufvk.sapling() {
+            if let Some(bundle) = tx.sapling_bundle() {
+                // Get the incoming viewing key and prepare it for decryption
+                let ivk = sapling_dfvk.to_ivk(zip32::Scope::External);
+                let prepared_ivk = sapling_crypto::keys::PreparedIncomingViewingKey::new(&ivk);
+
+                // Determine ZIP-212 enforcement based on block height
+                // ZIP-212 was activated at Canopy (height 1046400 on mainnet)
+                let zip212 = if u32::from(block_height) >= 1_046_400 {
+                    sapling_crypto::note_encryption::Zip212Enforcement::On
+                } else {
+                    sapling_crypto::note_encryption::Zip212Enforcement::Off
+                };
+
+                for output in bundle.shielded_outputs() {
+                    // Create the Sapling domain for decryption
+                    let domain = sapling_crypto::note_encryption::SaplingDomain::new(zip212);
+
+                    // Try to decrypt with our prepared IVK
+                    if let Some((_note, _address, memo_bytes)) =
+                        zcash_note_encryption::try_note_decryption(&domain, &prepared_ivk, output)
+                    {
+                        let memo_text = extract_memo_text(&memo_bytes);
+                        if !memo_text.is_empty() {
+                            return Ok(Some(memo_text));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(None)
     }
 
     /// Run the monitoring loop (blocking)
@@ -697,12 +769,26 @@ impl ZVS {
     }
 
     /// Get all received notes (queries full history)
-    pub fn get_received_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
-        // Reset to fetch all
-        let saved_id = self.last_processed_note_id;
-        self.last_processed_note_id = 0;
-        let memos = self.fetch_new_memos()?;
-        self.last_processed_note_id = saved_id;
+    pub async fn get_received_memos(&mut self) -> Result<Vec<ReceivedMemo>> {
+        // Clear processed set to fetch all
+        let saved = std::mem::take(&mut self.processed_txids);
+        let memos = self.fetch_new_memos().await?;
+        self.processed_txids = saved;
         Ok(memos)
     }
+}
+
+/// Extract readable text from memo bytes (512 byte Zcash memo field)
+fn extract_memo_text(memo_bytes: &[u8; 512]) -> String {
+    // Zcash memos are 512 bytes
+    // First byte 0xF6 indicates empty memo per ZIP-302
+    if memo_bytes[0] == 0xF6 {
+        return String::new();
+    }
+
+    // Find the end of text (first null byte or end of array)
+    let end = memo_bytes.iter().position(|&b| b == 0).unwrap_or(512);
+
+    // Convert to string, handling invalid UTF-8 gracefully
+    String::from_utf8_lossy(&memo_bytes[..end]).trim().to_string()
 }

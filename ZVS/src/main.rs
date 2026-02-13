@@ -131,7 +131,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Received Notes:");
             println!("===============");
 
-            match zvs.get_received_memos() {
+            match zvs.get_received_memos().await {
                 Ok(memos) => {
                     if memos.is_empty() {
                         println!("No memos found.");
