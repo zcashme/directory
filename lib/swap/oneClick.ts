@@ -53,7 +53,7 @@ function toToken(t: TokenResponse): Token {
 /**
  * Helper: Generate ISO deadline timestamp
  */
-function deadlineIso(minutes: number = 20): string {
+function deadlineIso(minutes: number = 60): string {
   return new Date(Date.now() + minutes * 60_000).toISOString();
 }
 
@@ -161,7 +161,7 @@ export async function getSwapQuote(params: {
       refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
       recipient: params.destAddress,
       recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
-      deadline: deadlineIso(20),
+      deadline: deadlineIso(),
       quoteWaitingTimeMs: 3000,
       appFees: [
         {
@@ -260,7 +260,7 @@ export async function confirmSwap(params: {
       refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
       recipient: params.destAddress,
       recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
-      deadline: deadlineIso(20),
+      deadline: deadlineIso(),
       quoteWaitingTimeMs: 3000,
       appFees: [
         {

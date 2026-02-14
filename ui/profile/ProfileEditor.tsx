@@ -16,12 +16,13 @@ import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
+import { Alert, Button } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";
 
 const FIELD_CLASS =
@@ -577,16 +578,16 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             className={`${FIELD_CLASS} font-mono ${imageUrlValid ? "" : withFieldBorderState("border-[#0a1126]/60", true)}`}
           />
           <div className="mt-2">
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="secondary"
               onClick={() => setAvatarPreviewOpen(true)}
-              className="text-xs px-2 py-1 border border-green-400 text-green-600 rounded hover:bg-green-50"
             >
               Preview Avatar
-            </button>
+            </Button>
           </div>
           {!imageUrlValid && imageUrlReason && (
-            <p className="text-xs text-red-600 mt-1">{imageUrlReason}</p>
+            <Alert variant="error" size="sm" message={imageUrlReason} className="mt-1" />
           )}
         </ProfileField>
 
@@ -602,17 +603,19 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 onClick={resetLinks}
-                className={`text-xs font-semibold underline ${JSON.stringify(form.links.map(l => ({ id: l.id, url: l.url }))) !==
+                variant="ghost"
+                size="xs"
+                className={`font-semibold underline ${JSON.stringify(form.links.map(l => ({ id: l.id, url: l.url }))) !==
                   JSON.stringify(originalLinks.map(l => ({ id: l.id, url: l.url })))
                   ? "text-green-700"
                   : "text-gray-500"
                   }`}
               >
                 Reset
-              </button>
+              </Button>
               <HelpIcon text="Authenticated links cannot be changed. Links can only be authenticated after verifying your address via OTP" />
             </div>
           </div>
@@ -657,48 +660,54 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 {!canVerify ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => { setAuthInfoLink(row); setAuthInfoOpen(true); }}
-                    className="text-xs px-2 py-1 border rounded text-blue-600 border-blue-400 hover:bg-blue-50"
+                    variant="primary"
+                    size="xs"
                   >
                     Authenticate
-                  </button>
+                  </Button>
                 ) : isVerified ? (
                   <div className="flex items-center gap-2">
-                    <button
+                    <Button
                       type="button"
                       disabled
-                      className="text-xs px-2 py-1 text-green-700 border border-green-400 rounded opacity-60 cursor-not-allowed"
+                      variant="primary"
+                      size="xs"
+                      className="!text-green-700 !border-green-400"
                     >
                       Authenticated
-                    </button>
+                    </Button>
                     {showDiscordAvatarAction && (
-                      <button
+                      <Button
                         type="button"
                         onClick={() => applyProviderAvatar("Discord", row.url, avatarCallbacks)}
-                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                        variant="primary"
+                        size="xs"
                       >
                         Use Discord Avatar
-                      </button>
+                      </Button>
                     )}
                     {showXAvatarAction && (
-                      <button
+                      <Button
                         type="button"
                         onClick={() => applyProviderAvatar("X", row.url, avatarCallbacks)}
-                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                        variant="primary"
+                        size="xs"
                       >
                         Use X Avatar
-                      </button>
+                      </Button>
                     )}
                     {showGithubAvatarAction && (
-                      <button
+                      <Button
                         type="button"
                         onClick={() => applyProviderAvatar("GitHub", row.url, avatarCallbacks)}
-                        className="text-xs px-2 py-1 text-blue-600 border border-blue-400 rounded hover:bg-blue-50"
+                        variant="primary"
+                        size="xs"
                       >
                         Use Github Avatar
-                      </button>
+                      </Button>
                     )}
                   </div>
                 ) : !canAuthenticate ? (
@@ -708,7 +717,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     </span>
                   ) : null
                 ) : (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => {
                       if (!token) return;
@@ -719,22 +728,24 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                         addLinkAuthToken(token);
                       }
                     }}
-                    className={`text-xs px-2 py-1 border rounded ${isPending || (showRedirect && isOAuthLink)
-                      ? "text-yellow-700 border-yellow-400 bg-yellow-50"
-                      : "text-green-600 border-green-400 hover:bg-green-50"
-                      }`}
+                    variant={isPending || (showRedirect && isOAuthLink) ? "secondary" : "primary"}
+                    size="xs"
+                    className={isPending || (showRedirect && isOAuthLink)
+                      ? "!text-yellow-700 !border-yellow-400 !bg-yellow-50"
+                      : "!text-green-600 !border-green-400 hover:!bg-green-50"}
                   >
                     {isPending || (showRedirect && isOAuthLink) ? "Pending" : "Authenticate"}
-                  </button>
+                  </Button>
                 )}
               </div>
-              <button
-                type="button"
+              <Button
+                size="sm"
+                variant="ghost"
                 onClick={() => removeLink(row._uid)}
-                className="text-xs text-red-600 hover:underline"
+                className="text-red-600 hover:text-red-700"
               >
                 ⌫ Delete
-              </button>
+              </Button>
             </div>
           );
 
@@ -766,13 +777,14 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           );
         })}
 
-        <button
-          type="button"
+        <Button
+          size="sm"
+          variant="ghost"
           onClick={addLink}
-          className="text-sm font-semibold text-blue-600 hover:underline mt-1"
+          className="font-semibold mt-1"
         >
           ＋ Add Link
-        </button>
+        </Button>
 
         {/* Footer */}
         <div className="mt-8 pt-4 border-t border-black/10">

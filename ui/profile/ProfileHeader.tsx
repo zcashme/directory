@@ -36,17 +36,27 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
 
   return (
     <>
-      <div className="sticky top-3 z-[1000] flex justify-center px-4">
-        <div className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
-          <motion.button
-            onClick={() => router.push("/")}
-            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, color: "#1e40af" }}
-            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
-            className="font-bold text-lg text-blue-700 hover:text-blue-800 active:text-blue-900 whitespace-nowrap cursor-pointer flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 rounded-md px-1"
-            aria-label="Go to home page"
-          >
-            Zcash.me/
-          </motion.button>
+      <div className="sticky top-3 z-[50] flex justify-center px-4">
+        <div className="flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            <button
+              onClick={() => {
+                // Check if we're on a subdomain (like swap.zcash.me)
+                const isSubdomain = window.location.hostname.includes('swap.');
+                if (isSubdomain) {
+                  // Redirect to main domain
+                  const mainDomain = window.location.hostname.replace('swap.', '');
+                  const port = window.location.port ? ':' + window.location.port : '';
+                  window.location.href = `${window.location.protocol}//${mainDomain}${port}/`;
+                } else {
+                  router.push("/");
+                }
+              }}
+              className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
+            >
+              Zcash.me/
+            </button>
+          </div>
 
           <div className="flex-1 min-w-0 relative flex items-center">
             <input
@@ -79,6 +89,42 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               </button>
             )}
 
+            {search && !suppressDropdown && (
+              <div className="absolute left-0 right-0 top-full mt-1 z-[9999]">
+                <ProfileSearchDropdown
+                  listOnly
+                  value={search}
+                  onChange={(v) => {
+                    if (typeof v === "object") {
+                      const slug = buildSlug(v as Profile);
+                      if (slug) {
+                        (window as any).lastSelectionWasExplicit = true;
+                        // Check if we're on a subdomain (like swap.zcash.me)
+                        const isSubdomain = window.location.hostname.includes('swap.');
+                        if (isSubdomain) {
+                          // Redirect to main domain
+                          const mainDomain = window.location.hostname.replace('swap.', '');
+                          const port = window.location.port ? ':' + window.location.port : '';
+                          window.location.href = `${window.location.protocol}//${mainDomain}${port}/${slug}`;
+                        } else {
+                          router.push(`/${slug}`);
+                        }
+                      }
+                    } else {
+                      setSearch(v);
+                    }
+                  }}
+                  onUsernameAvailable={(username) => {
+                    setAvailableUsername(username);
+                  }}
+                  onClaimClick={() => {
+                    setPrefillUsername(availableUsername);
+                    setIsJoinOpen(true);
+                  }}
+                  placeholder="search"
+                />
+              </div>
+            )}
           </div>
 
           <motion.button
@@ -96,31 +142,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             {availableUsername ? 'Claim' : 'Join'}
           </motion.button>
 
-          {search && !suppressDropdown && (
-            <ProfileSearchDropdown
-              listOnly
-              value={search}
-              onChange={(v) => {
-                if (typeof v === "object") {
-                  const slug = buildSlug(v as Profile);
-                  if (slug) {
-                    (window as any).lastSelectionWasExplicit = true;
-                    router.push(`/${slug}`);
-                  }
-                } else {
-                  setSearch(v);
-                }
-              }}
-              onUsernameAvailable={(username) => {
-                setAvailableUsername(username);
-              }}
-              onClaimClick={() => {
-                setPrefillUsername(availableUsername);
-                setIsJoinOpen(true);
-              }}
-              placeholder="search"
-            />
-          )}
         </div>
       </div>
 

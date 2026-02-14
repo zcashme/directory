@@ -1,12 +1,8 @@
 "use client";
 
-import ProfileHeader from "@/ui/profile/ProfileHeader";
-
 export default function StatsPage() {
   return (
-    <>
-      <ProfileHeader />
-      <div className="min-h-screen p-4 md:p-8 pt-12" style={{ backgroundColor: "var(--color-background)" }}>
+    <div className="min-h-screen p-4 md:p-8 pt-12" style={{ backgroundColor: "var(--color-background)" }}>
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
             <h1 className="text-2xl font-bold mb-2">Zcash Network Statistics</h1>
@@ -58,6 +54,5 @@ export default function StatsPage() {
           </div>
         </div>
       </div>
-    </>
   );
 }

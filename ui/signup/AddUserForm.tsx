@@ -18,6 +18,7 @@ import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
+import { FormField } from "@/ui/common";
 
 function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -28,7 +29,7 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
@@ -583,36 +584,31 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
 
   const StepCity = (
     <StepContainer stepKey="step-city" dir={dir}>
-      <label
-        htmlFor="nearest-city"
-        className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1"
-      >
-        Nearest City
-      </label>
+      <FormField label="Nearest City" htmlFor="nearest-city" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+        <div className="relative w-full">
+          <CitySearchDropdown
+            value={nearestCityInput}
+            onChange={(val) => {
+              if (typeof val === "string") {
+                setNearestCityInput(val);
+                setNearestCity(null);
+              } else {
+                setNearestCity(val);
 
-      <div className="relative w-full">
-        <CitySearchDropdown
-          value={nearestCityInput}
-          onChange={(val) => {
-            if (typeof val === "string") {
-              setNearestCityInput(val);
-              setNearestCity(null);
-            } else {
-              setNearestCity(val);
+                const pretty = [
+                  val.city_ascii || val.city,
+                  val.admin_name,
+                  val.country,
+                ].filter(Boolean).join(", ");
 
-              const pretty = [
-                val.city_ascii || val.city,
-                val.admin_name,
-                val.country,
-              ].filter(Boolean).join(", ");
+                setNearestCityInput(pretty);
 
-              setNearestCityInput(pretty);
-
-            }
-          }}
-          placeholder="Type to search city…"
-        />
-      </div>
+              }
+            }}
+            placeholder="Type to search city…"
+          />
+        </div>
+      </FormField>
 
       <p className="mt-1 text-xs text-gray-500">
         Optional. Helps Zcashers find other Zcashers around them.
@@ -648,7 +644,6 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
           />
         </div>
       </div>
-
 
       <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-500"}`}>
         {referrerConflict?.text || "Optional. Helps us reward members who refer new members."}

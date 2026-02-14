@@ -1,5 +1,3 @@
-// lib/social/usernames.ts
-
 export type SocialPlatform =
   | "X"
   | "GitHub"

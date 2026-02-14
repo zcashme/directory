@@ -21,7 +21,7 @@ export function proxy(request: NextRequest) {
 
   // Block direct access to app-specific routes
   if (!subdomain) {
-    if (url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/stats-app')) {
+    if (url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/leader-app')) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -42,6 +42,46 @@ export function proxy(request: NextRequest) {
       url.pathname = '/stats-app';
     } else if (!url.pathname.startsWith('/stats-app')) {
       url.pathname = `/stats-app${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // Handle donate subdomain - rewrite to /donate-app internally
+  if (subdomain === 'donate') {
+    if (url.pathname === '/') {
+      url.pathname = '/donate-app';
+    } else if (!url.pathname.startsWith('/donate-app')) {
+      url.pathname = `/donate-app${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // Handle thread subdomain - rewrite to /thread internally
+  if (subdomain === 'thread') {
+    if (url.pathname === '/') {
+      url.pathname = '/thread';
+    } else if (!url.pathname.startsWith('/thread')) {
+      url.pathname = `/thread${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // Handle swaps subdomain - rewrite to /swap-app internally
+  if (subdomain === 'swaps') {
+    if (url.pathname === '/') {
+      url.pathname = '/swap-app';
+    } else if (!url.pathname.startsWith('/swap-app')) {
+      url.pathname = `/swap-app${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // Handle leaders subdomain - rewrite to /leader-app internally
+  if (subdomain === 'leaders') {
+    if (url.pathname === '/') {
+      url.pathname = '/leader-app';
+    } else if (!url.pathname.startsWith('/leader-app')) {
+      url.pathname = `/leader-app${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }

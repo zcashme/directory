@@ -1,5 +1,4 @@
-﻿"use client";
-import { useState } from "react";
+"use client";
 import type { Profile } from "@/lib/profile/types";
 import type {
   SwapConfirmResponse,
@@ -15,8 +14,9 @@ const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfir
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
+import SwapQuoteDisplayComponent from "@/ui/swap/SwapQuoteDisplay";
+import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import { getTokenId } from "@/lib/swap/utils";
-import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface SwapComposerProps {
   profile: Profile;
@@ -129,16 +129,6 @@ export default function SwapComposer({
     });
   };
 
-  const handleSlippageChange = (value: string) => {
-    const numValue = parseFloat(value);
-    if (numValue >= 0 && numValue <= 100) {
-      setSlippageTolerance(value);
-    }
-  };
-
-  const slippageOptions = ["0.1", "0.5", "1", "2", "5"];
-
-  const [isSlippageExpanded, setIsSlippageExpanded] = useState(false);
 
   return (
     <div className="bg-transparent border-none shadow-none p-0 relative z-10">
@@ -173,44 +163,12 @@ export default function SwapComposer({
 
       {/* QUOTE PREVIEW DISPLAY (After "Get quote" succeeds) */}
       {quotePreview && (
-        <div className="mt-3 p-4 rounded-xl border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">You send</span>
-              <span className="text-md font-semibold text-gray-900">
-                {quotePreview.amountInFormatted} {quotePreview.fromSymbol}
-              </span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">{recipientName} receives</span>
-              <span className="text-md font-semibold text-gray-900">
-                {quotePreview.amountOutFormatted} {quotePreview.toSymbol}
-              </span>
-            </div>
-            {quotePreview.amountOutUsd && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Value</span>
-                <span className="text-sm text-gray-600">
-                  â‰ˆ ${parseFloat(quotePreview.amountOutUsd.toString()).toFixed(2)} USD
-                </span>
-              </div>
-            )}
-            {quotePreview.minAmountOut && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Minimum received</span>
-                <span className="text-sm text-gray-600">
-                  {quotePreview.minAmountOut} {quotePreview.toSymbol}
-                </span>
-              </div>
-            )}
-            {quotePreview.timeEstimate && (
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Estimated time</span>
-                <span className="text-sm text-gray-600">{quotePreview.timeEstimate}</span>
-              </div>
-            )}
-          </div>
-        </div>
+        <SwapQuoteDisplayComponent
+          quote={quotePreview}
+          recipientName={recipientName}
+          showAmounts={true}
+          className="mt-3"
+        />
       )}
 
       {/* SWAP DEPOSIT DISPLAY */}
@@ -244,14 +202,13 @@ export default function SwapComposer({
               void handleGetQuote();
             }}
             disabled={!canGetQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+            className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl transition-colors ${
               canGetQuote
-                ? "text-gray-800"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+                ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
             }`}
-            style={canGetQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
-            {isGettingQuote ? "Getting quote..." : "Get quote"}
+            {isGettingQuote ? "Getting quote..." : "Get a quote"}
           </button>
           <button
             type="button"
@@ -259,12 +216,11 @@ export default function SwapComposer({
               void handleConfirmQuote();
             }}
             disabled={!canConfirmQuote}
-            className={`flex-1 px-4 py-3 text-md font-medium border border-gray-800 rounded-xl transition-colors ${
+            className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl transition-colors ${
               canConfirmQuote
-                ? "text-gray-800"
-                : "bg-gray-100 text-gray-400 cursor-not-allowed border-gray-300"
+                ? "bg-green-600 hover:bg-green-700 text-white cursor-pointer"
+                : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
             }`}
-            style={canConfirmQuote ? { backgroundColor: 'var(--color-background)' } : undefined}
           >
             {isConfirming ? "Confirming..." : "Confirm quote"}
           </button>
@@ -273,74 +229,12 @@ export default function SwapComposer({
 
       {/* SWAP SETTINGS (Hidden after confirmation) */}
       {!statusKey?.depositAddress && (
-        <div className="mt-3 bg-transparent rounded-xl">
-          {/* Collapsible Header */}
-          <button
-            type="button"
-            onClick={() => setIsSlippageExpanded(!isSlippageExpanded)}
-            className="group w-full px-4 py-3 flex items-center justify-center rounded-xl cursor-pointer transition-colors"
-          >
-            <span className="text-sm text-gray-800 transition-colors group-hover:text-blue-600 group-active:text-blue-600">
-              Slippage Tolerance ({slippageTolerance}%)
-            </span>
-            <span className={`text-gray-600 transform transition ml-2 group-hover:text-blue-600 group-active:text-blue-600 ${isSlippageExpanded ? 'rotate-180' : ''}`}>▼</span>
-          </button>
-
-          {/* Slippage Controls (Collapsible Content) */}
-          {isSlippageExpanded && (
-            <div className="pb-4 pt-0">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  {slippageOptions.map((option) => (
-                    <button
-                      key={option}
-                      type="button"
-                      onClick={() => handleSlippageChange(option)}
-                      className={`w-16 px-3 py-1.5 text-sm font-medium text-center rounded-lg border transition-[border-color,border-width,color] duration-150 ${
-                        slippageTolerance === option
-                          ? "bg-transparent border-blue-600 border-2 text-blue-700"
-                          : "bg-transparent border-gray-800 text-gray-600 hover:border-blue-600 hover:text-blue-600 focus:border-blue-600 focus:border-2 focus:text-blue-600"
-                      }`}
-                    >
-                      {option}%
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-sm text-black">⚙</span>
-                  <div className="relative w-16">
-                  <input
-                    type="text"
-                    inputMode="decimal"
-                    value={slippageTolerance}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (value === "") {
-                        setSlippageTolerance("0.5");
-                        return;
-                      }
-                      if (!/^\d*\.?\d*$/.test(value)) return;
-                      const numValue = parseFloat(value);
-                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
-                        setSlippageTolerance(value);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const value = e.target.value.trim();
-                      if (!value || isNaN(parseFloat(value))) {
-                        setSlippageTolerance("0.5");
-                      }
-                    }}
-                    placeholder="0.5"
-                    className={`w-full px-2 py-1.5 pr-5 text-sm text-center border rounded-lg text-gray-900 placeholder-gray-500 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-                  />
-                  <span className="absolute right-2 top-1/2 -translate-y-1/2 text-sm text-gray-600 pointer-events-none">%</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+        <div className="mt-3">
+          <SwapSlippageControl
+            value={slippageTolerance}
+            onChange={setSlippageTolerance}
+            variant="collapsible"
+          />
         </div>
       )}
 

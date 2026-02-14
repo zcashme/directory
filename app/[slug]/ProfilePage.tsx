@@ -1,100 +1,115 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
-import type { Token } from "@/lib/swap/types";
+import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
 // Stores
 import { useEditsStore } from "@/lib/stores/edits";
-import { useMessagingStore } from "@/lib/stores/messaging";
-import { useSwapStore } from "@/lib/stores/swap";
 
 // Swap utilities
 import { getTokenId } from "@/lib/swap/utils";
 
 // Server actions
-import { getSwapTokens, getSwapQuote, confirmSwap } from "@/lib/swap/oneClick";
+import { getSwapQuote, confirmSwap } from "@/lib/swap/oneClick";
 
 // UI Components
 import ProfileCard from "@/ui/profile/ProfileCard";
-import ProfileHeader from "@/ui/profile/ProfileHeader";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 import SwapComposer from "@/ui/swap/SwapComposer";
 
 interface ProfilePageProps {
   initialProfile: Profile;
-  profileCount?: number;
+  tokens: Token[];
   duplicateNameCount?: number;
 }
 
 export default function ProfilePage({
   initialProfile,
-  profileCount,
+  tokens,
   duplicateNameCount
 }: ProfilePageProps) {
   const feedbackGapPx = 32;
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [isLoadingTokens, setIsLoadingTokens] = useState(false);
   const [isGettingQuote, setIsGettingQuote] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
-  const { pendingEdits } = useEditsStore();
-  const messaging = useMessagingStore();
-  const swap = useSwapStore();
-  const { mode, showBack, setMode } = messaging;
-  const ensureMessagingProfile = messaging.ensureProfile;
-  const ensureSwapProfile = swap.ensureProfile;
+  // Local swap form state (previously in global store)
+  const [swapForm, setSwapForm] = useState({
+    amount: '',
+    refundAddress: '',
+    slippageTolerance: '1',
+  });
 
-  // Reset stores when switching to a different profile (synchronous, before paint)
-  useLayoutEffect(() => {
-    ensureMessagingProfile(initialProfile.address);
-    ensureSwapProfile(initialProfile.address, null);
-  }, [initialProfile.address, ensureMessagingProfile, ensureSwapProfile]);
+  // Local quote state
+  const [quoteState, setQuoteState] = useState<{
+    quoteData: SwapContextQuoteData;
+    quotePreview: SwapQuoteDisplay | null;
+    depositUri: string;
+    statusKey: { depositAddress: string } | null;
+    quoteStatus: string;
+    swapError: string;
+  }>({
+    quoteData: null,
+    quotePreview: null,
+    depositUri: '',
+    statusKey: null,
+    quoteStatus: '',
+    swapError: '',
+  });
 
-  // Fetch tokens on mount
-  useEffect(() => {
-    setIsLoadingTokens(true);
-    getSwapTokens()
-      .then((result) => {
-        if ("tokens" in result) setTokens(result.tokens);
-      })
-      .finally(() => setIsLoadingTokens(false));
-  }, []);
+  // Local memo form state
+  const [memoForm, setMemoForm] = useState({
+    memo: '',
+    amount: '',
+  });
+
+  // Force show QR state
+  const [forceShowQR, setForceShowQR] = useState(false);
+
+  // Granular subscriptions to prevent unnecessary re-renders
+  const pendingEdits = useEditsStore(state => state.pendingEdits);
+
+  // Local state
+  const [mode, setMode] = useState<'donate' | 'swap' | 'verification'>('donate');
+  const [originTokenId, setOriginTokenId] = useState<string | null>(null);
+
+  // Extract local state values
+  const swapAmount = swapForm.amount;
+  const refundAddress = swapForm.refundAddress;
+  const slippageTolerance = swapForm.slippageTolerance;
+  const { quoteData, quotePreview, depositUri, statusKey, quoteStatus, swapError } = quoteState;
 
   // Token selection
   const zecToken = tokens.find((t) =>
     t.symbol.toUpperCase() === "ZEC" && t.blockchain.toLowerCase().includes("zec")
   );
   const zecTokenId = getTokenId(zecToken) ?? null;
-  const selectedToken = tokens.find((t) => getTokenId(t) === swap.originTokenId);
+  const selectedToken = tokens.find((t) => getTokenId(t) === originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
 
-  // Mode selection logic based on card flip state and token selection
+  // Mode selection logic based on token selection
   useEffect(() => {
-    if (showBack) {
-      // Card is flipped to back (edit profile) -> verification mode
-      setMode("verification");
-    } else {
-      // Card is on front -> determine mode based on token selection
-      const isNonZecToken = swap.originTokenId !== null &&
-        zecTokenId !== null &&
-        swap.originTokenId !== zecTokenId;
+    // Determine if user selected a non-ZEC token for swapping
+    const isNonZecToken =
+      originTokenId !== null &&
+      zecTokenId !== null &&
+      originTokenId !== zecTokenId;
 
-      if (isNonZecToken) {
-        setMode("swap");
-      } else {
-        setMode("memo");
-      }
-    }
-  }, [showBack, swap.originTokenId, zecTokenId, setMode]);
+    setMode(isNonZecToken ? 'swap' : 'donate');
+  }, [originTokenId, zecTokenId]);
 
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
-    swap.setOriginTokenId(tokenId);
-    swap.resetQuote();
-    swap.setSwapError("");
-  }, [swap]);
+    setOriginTokenId(tokenId);
+    setQuoteState(prev => ({
+      ...prev,
+      quoteData: null,
+      quotePreview: null,
+      quoteStatus: '',
+      swapError: '',
+    }));
+  }, [setOriginTokenId]);
 
   const handleGetQuote = useCallback(async (params: {
     amountIn: string;
@@ -105,34 +120,39 @@ export default function ProfilePage({
     slippage?: string;
   }) => {
     setIsGettingQuote(true);
-    swap.setQuoteStatus("Getting quote...");
-    swap.setSwapError("");
+    setQuoteState(prev => ({ ...prev, quoteStatus: "Getting quote...", swapError: "" }));
 
     try {
       const result = await getSwapQuote({
-        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        fromToken: params.fromToken ?? originTokenId ?? "",
         toToken: params.toToken ?? zecTokenId ?? "",
         amountIn: params.amountIn,
         destAddress: params.destAddress,
-        refundAddress: params.refund ?? swap.refundAddress,
-        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+        refundAddress: params.refund ?? swapForm.refundAddress,
+        slippageTolerance: params.slippage ?? swapForm.slippageTolerance,
         tokens,
       });
 
       if (result.ok) {
-        swap.setQuoteData(result);
-        swap.setQuotePreview(result.display);
-        swap.setQuoteStatus("");
+        setQuoteState(prev => ({
+          ...prev,
+          quoteData: result,
+          quotePreview: result.display,
+          quoteStatus: "",
+        }));
       } else {
-        swap.setSwapError(result.error);
-        swap.setQuoteStatus("");
+        setQuoteState(prev => ({
+          ...prev,
+          swapError: result.error,
+          quoteStatus: "",
+        }));
       }
 
       return result;
     } finally {
       setIsGettingQuote(false);
     }
-  }, [swap, zecTokenId, tokens]);
+  }, [originTokenId, zecTokenId, tokens, swapForm.refundAddress, swapForm.slippageTolerance]);
 
   const handleConfirmSwap = useCallback(async (params: {
     amountIn: string;
@@ -143,59 +163,74 @@ export default function ProfilePage({
     slippage?: string;
   }) => {
     setIsConfirming(true);
-    swap.setSwapError("");
+    setQuoteState(prev => ({ ...prev, swapError: "" }));
 
     try {
       const result = await confirmSwap({
-        fromToken: params.fromToken ?? swap.originTokenId ?? "",
+        fromToken: params.fromToken ?? originTokenId ?? "",
         toToken: params.toToken ?? zecTokenId ?? "",
         amountIn: params.amountIn,
         destAddress: params.destAddress,
-        refundAddress: params.refund ?? swap.refundAddress,
-        slippageTolerance: params.slippage ?? swap.slippageTolerance,
+        refundAddress: params.refund ?? swapForm.refundAddress,
+        slippageTolerance: params.slippage ?? swapForm.slippageTolerance,
         tokens,
       });
 
       if (result.ok) {
-        swap.setQuoteData(result);
-        swap.setDepositUri(result.paymentUri);
-        swap.setStatusKey(result.statusKey);
+        setQuoteState(prev => ({
+          ...prev,
+          quoteData: result,
+          depositUri: result.paymentUri,
+          statusKey: result.statusKey,
+        }));
       } else {
-        swap.setSwapError(result.error);
+        setQuoteState(prev => ({
+          ...prev,
+          swapError: result.error,
+        }));
       }
 
       return result;
     } finally {
       setIsConfirming(false);
     }
-  }, [swap, zecTokenId, tokens]);
+  }, [originTokenId, zecTokenId, tokens, swapForm.refundAddress, swapForm.slippageTolerance]);
 
   const handleSwapFieldChange = useCallback((field: 'amount' | 'refund' | 'slippage') => (value: string) => {
-    if (field === 'amount') swap.setSwapAmount(value);
-    else if (field === 'refund') swap.setRefundAddress(value);
-    else swap.setSlippageTolerance(value);
-    swap.resetQuote();
-  }, [swap]);
+    if (field === 'amount') {
+      setSwapForm(prev => ({ ...prev, amount: value }));
+    } else if (field === 'refund') {
+      setSwapForm(prev => ({ ...prev, refundAddress: value }));
+    } else {
+      setSwapForm(prev => ({ ...prev, slippageTolerance: value }));
+    }
+    // Reset quote when form changes
+    setQuoteState(prev => ({
+      ...prev,
+      quoteData: null,
+      quotePreview: null,
+      quoteStatus: '',
+    }));
+  }, []);
 
-  if (isLoadingTokens) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-gray-600">Loading...</div>
-      </div>
-    );
-  }
+  const handleShowQR = useCallback(() => {
+    setForceShowQR(true);
+    setTimeout(() => {
+      const el = document.getElementById("zcash-feedback");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 200);
+  }, []);
 
   return (
-    <>
-      <ProfileHeader profileCount={profileCount} />
-      <div
-        className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen overflow-x-hidden"
-        style={{ backgroundColor: 'var(--color-background)' }}
-      >
+    <div
+      className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen overflow-x-hidden"
+      style={{ backgroundColor: 'var(--color-background)' }}
+    >
         <ProfileCard
           profile={initialProfile}
           fullView
           duplicateNameCount={duplicateNameCount}
+          onShowQR={handleShowQR}
         />
 
         <div
@@ -216,17 +251,17 @@ export default function ProfilePage({
                     profile={initialProfile}
                     tokenOptions={tokens}
                     originSymbol={originSymbol}
-                    swapAmount={swap.swapAmount}
-                    refundAddress={swap.refundAddress}
-                    slippageTolerance={swap.slippageTolerance}
-                    quotePreview={swap.quotePreview}
-                    quoteData={swap.quoteData}
-                    depositUri={swap.depositUri}
-                    statusKey={swap.statusKey}
+                    swapAmount={swapAmount}
+                    refundAddress={refundAddress}
+                    slippageTolerance={slippageTolerance}
+                    quotePreview={quotePreview}
+                    quoteData={quoteData}
+                    depositUri={depositUri}
+                    statusKey={statusKey}
                     isGettingQuote={isGettingQuote}
                     isConfirming={isConfirming}
-                    quoteStatus={swap.quoteStatus}
-                    swapError={swap.swapError}
+                    quoteStatus={quoteStatus}
+                    swapError={swapError}
                     setToken={handleSetAsset}
                     setSwapAmount={handleSwapFieldChange('amount')}
                     setRefundAddress={handleSwapFieldChange('refund')}
@@ -239,7 +274,7 @@ export default function ProfilePage({
                 <div className="p-0">
                   <MemoComposer
                     profile={initialProfile}
-                    forceShowQR={false}
+                    forceShowQR={forceShowQR}
                     asset={originSymbol}
                     assetOptions={tokens.map((token) => ({
                       id: getTokenId(token) ?? "",
@@ -250,6 +285,10 @@ export default function ProfilePage({
                       decimals: token.decimals,
                     }))}
                     onSetAsset={handleSetAsset}
+                    memo={memoForm.memo}
+                    setMemo={(m) => setMemoForm(prev => ({ ...prev, memo: m }))}
+                    amount={memoForm.amount}
+                    setAmount={(a) => setMemoForm(prev => ({ ...prev, amount: a }))}
                   />
                 </div>
               )}
@@ -257,6 +296,5 @@ export default function ProfilePage({
           </div>
         </div>
       </div>
-    </>
   );
 }

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Profile } from '@/lib/profile/types';
-import { isValidUrl } from '@/lib/profile/validateUrl';
+import { isValidUrl } from '@/lib/validation/validators';
 
 export interface ParsedLink {
   id: number | null;

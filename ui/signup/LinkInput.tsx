@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
+import { Alert } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";
 
 const BASE_FIELD_CLASS =
@@ -54,7 +55,7 @@ export default function LinkInput({
       />
       {/* error message */}
       {showValidation && !valid && reason && (
-        <p className="text-xs text-red-600 mt-1">{reason}</p>
+        <Alert variant="error" size="sm" message={reason} className="mt-1" />
       )}
 
       {/* info-level message (tracking params, normalizable hints) */}

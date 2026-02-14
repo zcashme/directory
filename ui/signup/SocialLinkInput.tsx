@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/lib/profile/validateUrl";
+import { isValidUrl } from "@/lib/validation/validators";
 import HelpIcon from "@/ui/common/HelpIcon";
+import { Alert } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";
 
 const PLATFORM_OPTIONS = [
@@ -202,7 +203,7 @@ export default function SocialLinkInput({
       )}
 
       {!valid && reason && (
-        <p className="text-xs text-red-600 mt-1 ml-1">{reason}</p>
+        <Alert variant="error" size="sm" message={reason} className="mt-1 ml-1" />
       )}
 
       {footer && <div className="mt-2">{footer}</div>}
