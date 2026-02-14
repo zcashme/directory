@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -15,6 +15,7 @@ interface ProfileHeaderProps {
 
 export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
@@ -33,6 +34,11 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     setPrefillUsername(null);
     resetSearch();
   };
+
+  const isNsRoute = pathname === "/ns" || pathname?.startsWith("/ns/");
+  if (isNsRoute) {
+    return null;
+  }
 
   return (
     <>
