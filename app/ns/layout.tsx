@@ -13,5 +13,15 @@ interface NsLayoutProps {
 }
 
 export default function NsLayout({ children }: NsLayoutProps) {
-  return <>{children}</>;
+  return (
+    <>
+      <style>{`
+        /* Hide the root ProfileHeader only on /ns routes */
+        body > div.sticky.top-3.z-\\[50\\] {
+          display: none !important;
+        }
+      `}</style>
+      {children}
+    </>
+  );
 }
