@@ -44,7 +44,8 @@ export default function ProfileCard({
   warning,
   fullView = false,
   duplicateNameCount = 0,
-  onShowQR
+  onShowQR,
+  onEditorModeChange
 }: ProfileCardProps) {
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -108,6 +109,10 @@ export default function ProfileCard({
     if (warningDefaultExpanded === undefined) return;
     setShowDetail(!!warningDefaultExpanded);
   }, [warningDefaultExpanded]);
+
+  useEffect(() => {
+    onEditorModeChange?.(showBack);
+  }, [showBack, onEditorModeChange]);
 
   useEffect(() => {
     if (!menuOpen) return;

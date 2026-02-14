@@ -66,6 +66,7 @@ export default function ProfilePage({
 
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
+  const [isProfileEditing, setIsProfileEditing] = useState(false);
 
   // Granular subscriptions to prevent unnecessary re-renders
   const pendingEdits = useEditsStore(state => state.pendingEdits);
@@ -88,16 +89,14 @@ export default function ProfilePage({
   const selectedToken = tokens.find((t) => getTokenId(t) === originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
 
-  // Mode selection logic based on token selection
+  // Mode selection logic based strictly on profile card side
   useEffect(() => {
-    // Determine if user selected a non-ZEC token for swapping
-    const isNonZecToken =
-      originTokenId !== null &&
-      zecTokenId !== null &&
-      originTokenId !== zecTokenId;
-
-    setMode(isNonZecToken ? 'swap' : 'donate');
-  }, [originTokenId, zecTokenId]);
+    if (isProfileEditing) {
+      setMode('verification');
+      return;
+    }
+    setMode('donate');
+  }, [isProfileEditing]);
 
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
@@ -231,6 +230,7 @@ export default function ProfilePage({
           fullView
           duplicateNameCount={duplicateNameCount}
           onShowQR={handleShowQR}
+          onEditorModeChange={setIsProfileEditing}
         />
 
         <div

@@ -74,4 +74,5 @@ export interface ProfileCardProps {
   fullView?: boolean;
   duplicateNameCount?: number;
   onShowQR?: () => void;
+  onEditorModeChange?: (isEditorOpen: boolean) => void;
 }
