@@ -38,7 +38,7 @@ export default function NsHeader({
                 <span>{announcementConfig.message}</span>
                 <div className="flex items-center gap-2">
                   <a
-                    href="https://luma.com/f6h0hss9"
+                    href="https://luma.com/user/usr-ClRR7LI0lRpL5IW"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="border border-gray-900 bg-white px-3 py-1 text-[10px] font-semibold transition-transform duration-150 hover:scale-[1.04] rounded-none"

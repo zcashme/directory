@@ -58,9 +58,16 @@ interface AddUserFormProps {
   onClose: () => void;
   onUserAdded?: (_profile: Profile) => void;
   prefillUsername?: string | null;
+  isNsSignup?: boolean;
 }
 
-export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsername = null }: AddUserFormProps) {
+export default function AddUserForm({
+  isOpen,
+  onClose,
+  onUserAdded,
+  prefillUsername = null,
+  isNsSignup = false,
+}: AddUserFormProps) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
@@ -430,8 +437,9 @@ export default function AddUserForm({ isOpen, onClose, onUserAdded, prefillUsern
         nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || undefined,
         referred_by: typeof referrer === "object" ? referrer?.name || undefined : undefined,
         referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
+        is_ns: isNsSignup || undefined,
         created_at: new Date().toISOString(),
-      } as any);
+      });
 
       if (!profileResult.ok || !profileResult.data) {
         setError(profileResult.error || "Failed to create profile");

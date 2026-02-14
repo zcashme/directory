@@ -136,6 +136,10 @@ export interface CreateProfilePayload {
   avatar_url?: string;
   nearest_city_id?: number | null;
   nearest_city_name?: string;
+  referred_by?: string;
+  referred_by_zcasher_id?: number;
+  is_ns?: boolean;
+  created_at?: string;
 }
 
 /**

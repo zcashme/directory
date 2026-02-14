@@ -407,6 +407,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
 
       <AddUserForm
         isOpen={isJoinOpen}
+        isNsSignup
         onClose={() => setIsJoinOpen(false)}
         onUserAdded={(newProfile) => {
           addProfile(newProfile);
