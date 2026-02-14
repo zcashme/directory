@@ -3,6 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 export function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const url = request.nextUrl.clone();
+  const pathname = url.pathname;
+
+  // Canonicalize /ns route casing so /NS and /Ns resolve to /ns.
+  const nsPrefixMatch = pathname.match(/^\/ns(?=\/|$)/i);
+  if (nsPrefixMatch && !pathname.startsWith('/ns')) {
+    url.pathname = `/ns${pathname.slice(nsPrefixMatch[0].length)}`;
+    return NextResponse.redirect(url, 308);
+  }
 
   // Extract subdomain (handle both localhost and production domains)
   const parts = hostname.split('.');
