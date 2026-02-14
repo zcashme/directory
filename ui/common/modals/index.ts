@@ -67,3 +67,6 @@ export type { ModalFooterProps } from "./ModalFooter";
 // Pre-built dialogs
 export { default as ConfirmDialog } from "./ConfirmDialog";
 export type { ConfirmDialogProps } from "./ConfirmDialog";
+
+export { default as TutorialModal } from "./TutorialModal";
+export type { TutorialModalProps, TutorialStep } from "./TutorialModal";

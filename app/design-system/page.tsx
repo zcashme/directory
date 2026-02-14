@@ -27,6 +27,7 @@ import {
   ModalBody,
   ModalFooter,
   ConfirmDialog,
+  TutorialModal,
   // Other
   HelpIcon,
 } from "@/ui/common";
@@ -34,11 +35,72 @@ import {
 export default function DesignSystemPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const [dropdownValue, setDropdownValue] = useState("");
   const [checkboxChecked, setCheckboxChecked] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [selectValue, setSelectValue] = useState("");
   const [textAreaValue, setTextAreaValue] = useState("");
+
+  const tutorialSteps = [
+    {
+      id: "profile",
+      title: "Create your Zcash identity",
+      description:
+        "Start by choosing your handle and adding a short bio so other users can trust who they are interacting with.",
+      details: [
+        "Pick a username you will keep long-term.",
+        "Add one social link for easier verification.",
+        "Use a shielded address for better privacy defaults.",
+      ],
+      videoUrl: "https://www.youtube.com/embed/ysz5S6PUM-U",
+      videoTitle: "Profile setup walkthrough",
+      textContent: (
+        <p>
+          This is the first-run setup screen. Keep friction low and ask only for information needed to get users to
+          their first successful action.
+        </p>
+      ),
+    },
+    {
+      id: "discover",
+      title: "Find and follow trusted users",
+      description:
+        "Show how to search the directory, filter by location, and review verification badges before interacting.",
+      details: [
+        "Teach the meaning of profile badges.",
+        "Show how to open a profile and verify links.",
+        "Call out referral and community discovery features.",
+      ],
+      videoUrl: "https://www.youtube.com/embed/jNQXAC9IVRw",
+      videoTitle: "Directory walkthrough",
+      textContent: (
+        <p>
+          Prioritize one clear next action here: open one profile, review links, and complete one follow or contact
+          action.
+        </p>
+      ),
+    },
+    {
+      id: "send",
+      title: "Complete your first transfer",
+      description:
+        "End with a short walkthrough showing how to copy a destination, paste an amount, and confirm safely.",
+      details: [
+        "Confirm destination and amount before submit.",
+        "Explain what gets shared publicly vs privately.",
+        "Point users to support and recovery docs.",
+      ],
+      videoUrl: "https://www.youtube.com/embed/ScMzIvxBSi4",
+      videoTitle: "First transfer walkthrough",
+      textContent: (
+        <p>
+          The final step should create confidence. Keep copy practical and include one direct path to help if anything
+          feels unclear.
+        </p>
+      ),
+    },
+  ];
 
   return (
     <div className="min-h-screen py-12 px-4" style={{ backgroundColor: 'var(--color-background)' }}>
@@ -403,6 +465,9 @@ export default function DesignSystemPage() {
               <Button onClick={() => setConfirmOpen(true)} variant="danger">
                 Open Confirm Dialog
               </Button>
+              <Button onClick={() => setTutorialOpen(true)} variant="secondary">
+                Open Tutorial Modal
+              </Button>
             </div>
 
             <Modal isOpen={modalOpen} onClose={() => setModalOpen(false)}>
@@ -442,6 +507,16 @@ export default function DesignSystemPage() {
               title="Delete Item"
               message="Are you sure you want to delete this item? This action cannot be undone."
               variant="danger"
+            />
+
+            <TutorialModal
+              isOpen={tutorialOpen}
+              onClose={() => setTutorialOpen(false)}
+              title="Welcome to zcashme"
+              subtitle="A first-time user walkthrough with text and embedded video."
+              steps={tutorialSteps}
+              onSkip={() => setTutorialOpen(false)}
+              onComplete={() => setTutorialOpen(false)}
             />
           </Section>
 

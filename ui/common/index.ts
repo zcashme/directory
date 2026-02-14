@@ -90,6 +90,9 @@ export type { ModalFooterProps } from "./modals/ModalFooter";
 export { default as ConfirmDialog } from "./modals/ConfirmDialog";
 export type { ConfirmDialogProps } from "./modals/ConfirmDialog";
 
+export { default as TutorialModal } from "./modals/TutorialModal";
+export type { TutorialModalProps, TutorialStep } from "./modals/TutorialModal";
+
 // Animations
 export {
   fadeIn,
