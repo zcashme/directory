@@ -69,23 +69,25 @@ export async function fetchProfilesWithRanks(): Promise<Profile[]> {
       from += pageSize;
     }
 
-    const enriched: Profile[] = all.map((p): Profile => {
+    const enriched: Profile[] = all
+      .filter((p) => typeof p?.name === "string" && p.name.trim().length > 0)
+      .map((p): Profile => {
       const pid = String(p.id);
       const linkList = Array.isArray(p.links) ? p.links : [];
       const linkVerifiedCount = typeof p.verified_links_count === "number"
         ? p.verified_links_count
         : linkList.filter((l) => l.is_verified).length;
 
-      return {
-        ...p,
-        rank_alltime: rankAll.get(pid) ?? 0,
-        rank_weekly: rankWeek.get(pid) ?? 0,
-        rank_monthly: rankMonth.get(pid) ?? 0,
-        links: linkList,
-        verified_links_count: linkVerifiedCount,
-        last_verified_label: getLastVerifiedLabel(p),
-      };
-    });
+        return {
+          ...p,
+          rank_alltime: rankAll.get(pid) ?? 0,
+          rank_weekly: rankWeek.get(pid) ?? 0,
+          rank_monthly: rankMonth.get(pid) ?? 0,
+          links: linkList,
+          verified_links_count: linkVerifiedCount,
+          last_verified_label: getLastVerifiedLabel(p),
+        };
+      });
 
     return enriched;
   } catch {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { StaticImageData } from "next/image";
 
 import type { Profile, ProfileLink } from "@/lib/profile/types";
@@ -27,10 +27,17 @@ export default function useNsDirectory(initialProfiles: Profile[] | null): UseNs
   const { profiles, loading, addProfile } = useNsProfiles(initialProfiles, false);
   const [linksByProfileId, setLinksByProfileId] = useState<LinksByProfileId>({});
   const [linksError, setLinksError] = useState<string | null>(null);
+  const hasUsername = useCallback((profile: Partial<Profile> | null | undefined): profile is Profile => {
+    return typeof profile?.name === "string" && profile.name.trim().length > 0;
+  }, []);
+  const visibleProfiles = useMemo(
+    () => profiles.filter((profile) => hasUsername(profile)),
+    [profiles, hasUsername]
+  );
 
   useEffect(() => {
     let isActive = true;
-    const ids = profiles.map((profile: Profile) => profile.id);
+    const ids = visibleProfiles.map((profile: Profile) => profile.id);
     const idsWithValue = ids.filter((id): id is number => typeof id === "number");
     if (!idsWithValue.length) {
       setLinksByProfileId({});
@@ -62,12 +69,17 @@ export default function useNsDirectory(initialProfiles: Profile[] | null): UseNs
     return () => {
       isActive = false;
     };
-  }, [profiles]);
+  }, [visibleProfiles]);
+
+  const addProfileWithUsernameGuard = useCallback((profile: Profile) => {
+    if (!hasUsername(profile)) return;
+    addProfile(profile);
+  }, [addProfile, hasUsername]);
 
   return {
-    profiles,
+    profiles: visibleProfiles,
     loading,
-    addProfile,
+    addProfile: addProfileWithUsernameGuard,
     linksByProfileId,
     linksError,
   };

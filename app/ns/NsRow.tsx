@@ -53,7 +53,9 @@ export default function NsRow({
   const tagline = (profile as Profile & { tagline?: string }).tagline?.trim();
   const bioText = biography ?? tagline ?? "";
   const displayName = profile?.display_name ?? profile?.name ?? "Unnamed";
-  const profileSlug = normalizeSlug(displayName);
+  const profileUsername = (profile?.name || "").trim();
+  if (!profileUsername) return null;
+  const profileSlug = normalizeSlug(profileUsername);
 
   return (
     <div
@@ -96,7 +98,7 @@ export default function NsRow({
                 className="flex max-w-full items-baseline gap-0 text-left hover:underline"
               >
                 <span>Zcash.me/</span>
-                  <span>{displayName}</span>
+                  <span>{profileUsername}</span>
               </a>
             </div>
           </div>

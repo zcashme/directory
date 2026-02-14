@@ -102,7 +102,8 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     ? linksByProfileId[activeProfile.id] ?? []
     : [];
   const activeProfileName = activeProfile?.display_name ?? activeProfile?.name ?? "Unnamed";
-  const activeProfileSlug = normalizeSlug(activeProfileName);
+  const activeProfileUsername = (activeProfile?.name || "").trim();
+  const activeProfileSlug = normalizeSlug(activeProfileUsername);
 
 
   const showAnnouncement = announcementConfig.enabled && !isBannerDismissed;
@@ -329,7 +330,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                       className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
                     >
                       <span>Zcash.me/</span>
-                      <span>{activeProfileName}</span>
+                      <span>{activeProfileUsername}</span>
                     </a>
                     <SocialLinks
                       links={activeLinks}
