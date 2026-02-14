@@ -26,6 +26,7 @@ export default function ProfileLinkRow({
       src={resolveIconSrc(link.icon)}
       alt=""
       className={classes.icon}
+      style={classes.iconStyle}
       onError={(e) => {
         (e.target as HTMLImageElement).style.display = "none";
       }}
@@ -34,11 +35,14 @@ export default function ProfileLinkRow({
   const leftContent = (
     <>
       {icon}
-      <span className={classes.label}>{link.label}</span>
+      <span className={classes.label} style={classes.labelStyle}>{link.label}</span>
     </>
   );
   const copy = (text: string) => (
-    <div className={classes.copyWrapper}>
+    <div
+      className={classes.copyWrapper}
+      style={classes.copyScale ? { transform: `scale(${classes.copyScale})`, transformOrigin: "center right" } : undefined}
+    >
       <CopyButton text={text} {...copyProps} />
     </div>
   );
@@ -82,6 +86,7 @@ export default function ProfileLinkRow({
               rel="noopener noreferrer"
               onClick={handleLinkClick}
               className={`${classes.domain} hover:text-blue-600 transition-colors`}
+              style={classes.domainStyle}
             >
               {extractDomain(link.url || "")}
             </a>

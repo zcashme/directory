@@ -77,7 +77,7 @@ export default function CopyButton({
       onClick={handleCopy}
       title={copied ? copiedLabel : label}
       className={
-        `group flex items-center justify-center transition-all px-1 overflow-hidden ` +
+        `group flex items-center justify-center transition-all px-1 ` +
         (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-blue-600") +
         " " +
         sizeClasses[size] +
@@ -87,7 +87,7 @@ export default function CopyButton({
     >
       {copied ? copiedIcon : icon}
       <span
-        className="inline-block max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1"
+        className="inline-block overflow-hidden max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1"
       >
         {copied ? copiedLabel : label}
       </span>
