@@ -72,6 +72,7 @@ export default function AddUserForm({
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [bio, setBio] = useState("");
   const [nameHelp, setNameHelp] = useState("");
   const [nameConflict, setNameConflict] = useState<ConflictInfo | null>(null);
   const [address, setAddress] = useState("");
@@ -112,6 +113,7 @@ export default function AddUserForm({
       setDir(1);
       setName(prefillUsername || "");
       setDisplayName("");
+      setBio("");
       setNameHelp("");
       setNameConflict(null);
       setAddress("");
@@ -432,6 +434,7 @@ export default function AddUserForm({
       const profileResult = await createProfileAction({
         name: sanitizeUsernameInput(name),
         display_name: displayName.trim() || undefined,
+        bio: bio.trim() || undefined,
         address: address.trim(),
         nearest_city_id: nearestCity?.id || undefined,
         nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || undefined,
@@ -553,6 +556,17 @@ export default function AddUserForm({
         autoComplete="off"
       />
       <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
+
+      <label htmlFor="bio" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
+        Short Bio
+      </label>
+      <textarea
+        id="bio"
+        value={bio}
+        onChange={(e) => setBio(e.target.value)}
+        className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent min-h-[88px] resize-none ${withFieldBorderState("border-black/30")}`}
+        placeholder="Tell people what you are about"
+      />
 
     </StepContainer>
   );
@@ -691,6 +705,10 @@ export default function AddUserForm({
         <div>
           <span className="font-semibold text-gray-700">Display Name:</span>{" "}
           <span className="font-mono">{displayName || "—"}</span>
+        </div>
+        <div>
+          <span className="font-semibold text-gray-700">Short Bio:</span>{" "}
+          <span>{bio.trim() || "—"}</span>
         </div>
         <div>
           <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
