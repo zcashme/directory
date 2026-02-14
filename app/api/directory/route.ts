@@ -229,9 +229,12 @@ export async function GET(request: Request): Promise<Response> {
       tier: computeRankTier(profile, q),
     }));
 
-    // Sort by tier (ascending), then by username (ascending)
+    // Sort by tier (ascending), then verified status (verified first), then username (ascending)
     rankedProfiles.sort((a, b) => {
       if (a.tier !== b.tier) return a.tier - b.tier;
+      if (a.profile.address_verified !== b.profile.address_verified) {
+        return a.profile.address_verified ? -1 : 1;
+      }
       return a.profile.name.localeCompare(b.profile.name);
     });
 
