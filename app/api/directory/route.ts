@@ -107,16 +107,31 @@ const decodeCursor = (cursor: string): { name: string; id: number } | null => {
  */
 function computeRankTier(profile: DirectoryProfile, query: string): number {
   const q = query.toLowerCase();
+  const qNoSpace = q.replace(/\s+/g, "");
   const username = profile.name.toLowerCase();
+  const usernameNoSpace = username.replace(/\s+/g, "");
+  const displayName = (profile.display_name || "").toLowerCase();
+  const displayNameNoSpace = displayName.replace(/\s+/g, "");
+  const linkSearchText = (profile.link_search_text || "").toLowerCase();
+  const linkSearchTextNoSpace = linkSearchText.replace(/\s+/g, "");
 
-  // Tier 0: Username starts with query
-  if (username.startsWith(q)) return 0;
+  // Tier 0: Username starts with query (space-insensitive included)
+  if (username.startsWith(q) || (qNoSpace && usernameNoSpace.startsWith(qNoSpace))) return 0;
 
-  // Tier 1: Username contains query
-  if (username.includes(q)) return 1;
+  // Tier 1: Username contains query (space-insensitive included)
+  if (username.includes(q) || (qNoSpace && usernameNoSpace.includes(qNoSpace))) return 1;
+
+  // Tier 2: Display name starts with query
+  if (displayName.startsWith(q) || (qNoSpace && displayNameNoSpace.startsWith(qNoSpace))) return 2;
+
+  // Tier 3: Display name contains query
+  if (displayName.includes(q) || (qNoSpace && displayNameNoSpace.includes(qNoSpace))) return 3;
+
+  // Tier 4: Link search text contains query
+  if (linkSearchText.includes(q) || (qNoSpace && linkSearchTextNoSpace.includes(qNoSpace))) return 4;
 
   // Fallback (shouldn't happen if search filter worked correctly)
-  return 2;
+  return 5;
 }
 
 export async function OPTIONS(): Promise<Response> {
@@ -149,7 +164,7 @@ export async function GET(request: Request): Promise<Response> {
 
   // Build query - fetch more than needed for ranking, then slice
   // When ranking, we need to fetch extra to ensure we get enough after sorting
-  const fetchLimit = q ? Math.min(limit * 2, 200) : limit + 1;
+  const fetchLimit = q ? Math.min(Math.max(limit * 12, 60), 200) : limit + 1;
 
   let queryBuilder = supabase
     .from("zcasher_searchable")
@@ -162,9 +177,24 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   // Apply search filter if query provided
-  // Matches: usernames (contains), link handles/domains (contains)
+  // Matches: usernames, display names, and link handles/domains (contains)
+  // Also supports space-insensitive query matching (e.g. "save zcash" -> "savezcash")
   if (q) {
-    queryBuilder = queryBuilder.or(`name.ilike.%${q}%,link_search_text.ilike.%${q}%`);
+    const qNoSpace = q.replace(/\s+/g, "");
+    const rawClauses = [
+      `name.ilike.%${q}%`,
+      `display_name.ilike.%${q}%`,
+      `link_search_text.ilike.%${q}%`,
+    ];
+    const noSpaceClauses = qNoSpace && qNoSpace !== q
+      ? [
+          `name.ilike.%${qNoSpace}%`,
+          `display_name.ilike.%${qNoSpace}%`,
+          `link_search_text.ilike.%${qNoSpace}%`,
+        ]
+      : [];
+
+    queryBuilder = queryBuilder.or([...rawClauses, ...noSpaceClauses].join(","));
   }
 
   // Apply verified filter
