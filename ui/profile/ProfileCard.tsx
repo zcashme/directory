@@ -8,7 +8,6 @@ import {
   getWarningConfig,
   buildShareUrl,
   getLastVerifiedLabel,
-  getUsernameWithDiscriminator
 } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/profile/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -27,7 +26,7 @@ import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import { useEditsStore } from "@/lib/stores/edits";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import type { EnrichedProfileLink } from "@/lib/profile/types";
+import type { EnrichedProfileLink, Profile } from "@/lib/profile/types";
 
 import ProfileLinkRow from "./ProfileLinkRow";
 import RedirectModal from "./RedirectModal";

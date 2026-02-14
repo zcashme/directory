@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/styles/interactive";
@@ -85,6 +84,7 @@ interface AmountAndWalletProps {
   showRefund?: boolean;
   refundAddress?: string;
   setRefundAddress?: (_address: string) => void;
+  tokenBlockchain?: string;
 }
 
 export default function AmountAndWallet({
@@ -117,7 +117,7 @@ export default function AmountAndWallet({
   const [rateRequested, setRateRequested] = useState(false);
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
-  const [tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [_tokenDropdownPos, setTokenDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const tokenButtonRef = useRef<HTMLButtonElement>(null);
   const inputContainerRef = useRef<HTMLDivElement>(null);
   const [preferFiatValue, setPreferFiatValue] = useState(false);

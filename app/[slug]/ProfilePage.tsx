@@ -213,23 +213,6 @@ export default function ProfilePage({
     }));
   }, []);
 
-  const handleResetSwapState = useCallback(() => {
-    setSwapForm({
-      amount: '',
-      refundAddress: '',
-      slippageTolerance: '1',
-    });
-    setQuoteState({
-      quoteData: null,
-      quotePreview: null,
-      depositUri: '',
-      statusKey: null,
-      quoteStatus: '',
-      swapError: '',
-    });
-    setOriginTokenId(zecTokenId);
-  }, [zecTokenId, setOriginTokenId]);
-
   const handleShowQR = useCallback(() => {
     setForceShowQR(true);
     setTimeout(() => {

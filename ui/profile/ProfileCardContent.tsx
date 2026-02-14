@@ -103,7 +103,7 @@ export default function ProfileCardContent({
       </div>
 
       {/* Username */}
-      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>/{formatUsername(profile.name)}</p>
+      <p className={`mt-1 ${s.username} text-gray-600 relative z-10`}>/{formatUsername(profile)}</p>
 
       {/* Bio */}
       {showBio && profile.bio && profile.bio.trim() !== "" && (

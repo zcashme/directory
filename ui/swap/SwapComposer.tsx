@@ -17,7 +17,6 @@ import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import SwapQuoteDisplayComponent from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import { getTokenId } from "@/lib/swap/utils";
-import { withFieldBorderState } from "@/ui/styles/fields";
 
 interface SwapComposerProps {
   profile: Profile;
