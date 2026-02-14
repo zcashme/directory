@@ -118,15 +118,15 @@ export default function ProfileCardContent({
     verified: linkVariant === "simple" ? "Auth" : "Authenticated",
     unverified: linkVariant === "simple" ? "Not Auth" : "Not Authenticated",
   };
-  const copyButtonSize = variant === "compact" ? "md" : "sm";
+  const copyButtonSize = "xs";
   const linkRowClasses: LinkRowClasses = {
     row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`,
-    left: `flex items-center ${s.linkGap} shrink-0 min-w-0`,
+    left: `flex items-center ${s.linkGap} shrink-0 min-w-0 pl-0.5`,
     leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`,
     right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
     icon: `${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`,
     iconStyle: { transform: `scale(${scale.linkIcon})`, transformOrigin: "center center" },
-    label: `font-medium ${s.linkLabel} text-gray-800 truncate`,
+    label: `font-medium ${s.linkLabel} text-gray-800 truncate pl-0.5`,
     labelStyle: { fontSize: `${(basePx.linkLabel * scale.linkLabel).toFixed(1)}px` },
     domain: `flex-1 min-w-0 truncate text-right ${s.linkDomain}`,
     domainStyle: { fontSize: `${(basePx.linkDomain * scale.linkDomain).toFixed(1)}px` },
@@ -268,7 +268,7 @@ export default function ProfileCardContent({
       )}
 
       {/* View Profile Footer - Fixed at bottom */}
-      <div className={`mt-auto pt-3 pb-2 flex items-center justify-center`}>
+      <div className={`mt-auto pt-5 pb-2 flex items-center justify-center`}>
         <span
           className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1`}
           style={{ fontSize: `${(basePx.viewProfile * scale.viewProfile).toFixed(1)}px` }}
