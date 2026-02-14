@@ -101,6 +101,12 @@ export default function ProfilePage({
   // Handlers
   const handleSetAsset = useCallback((tokenId: string) => {
     setOriginTokenId(tokenId);
+    const token = tokens.find((t) => getTokenId(t) === tokenId);
+    const isZecSelection =
+      !token ||
+      (token.symbol.toUpperCase() === "ZEC" &&
+        token.blockchain.toLowerCase().includes("zec"));
+    setMode(isZecSelection ? "donate" : "swap");
     setQuoteState(prev => ({
       ...prev,
       quoteData: null,
@@ -108,7 +114,7 @@ export default function ProfilePage({
       quoteStatus: '',
       swapError: '',
     }));
-  }, [setOriginTokenId]);
+  }, [setOriginTokenId, tokens]);
 
   const handleGetQuote = useCallback(async (params: {
     amountIn: string;
