@@ -106,6 +106,7 @@ function FannedCard({
     const stackOffset = isActive ? -16 : stackIndex * 8;
     const stackScale = isActive ? 1.05 : 1 - stackIndex * 0.03;
     const stackRotation = stackIndex === 0 ? 0 : (stackIndex % 2 === 0 ? 2 : -2) * (stackIndex * 0.5);
+    const mobileZIndex = 60 - stackIndex;
 
     return (
       <div
@@ -114,10 +115,13 @@ function FannedCard({
         className="absolute cursor-pointer left-1/2"
         style={{
           transform: `translateX(-50%) translateY(${stackOffset}px) scale(${stackScale}) rotate(${isActive ? 0 : stackRotation}deg)`,
-          zIndex: isActive ? 50 : 20 - stackIndex,
-          transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease, z-index 0s",
+          zIndex: mobileZIndex,
+          transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
           opacity: isActive ? 1 : Math.max(0.4, 1 - stackIndex * 0.15),
           transformOrigin: "center center",
+          willChange: "transform",
+          backfaceVisibility: "hidden",
+          WebkitBackfaceVisibility: "hidden",
         }}
       >
         <FannedCardAvatar
@@ -133,7 +137,7 @@ function FannedCard({
             minHeight: '360px',
             maxHeight: '400px',
             transform: isActive ? "scale(1)" : "scale(0.98)",
-            transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+            transition: "transform 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
             boxShadow: isActive
               ? "0 25px 50px -12px rgba(34, 197, 94, 0.4), 0 10px 20px -5px rgba(0, 0, 0, 0.2)"
               : "0 5px 15px -5px rgba(0, 0, 0, 0.15)",
