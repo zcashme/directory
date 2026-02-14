@@ -266,7 +266,7 @@ export default function ProfileSearchDropdown({
       {(show || usernameAvailable) && keystrokeDebounced && (
         <div
           ref={listOnly ? dropdownRef : null}
-          className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full max-w-[calc(100vw-2rem)] min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
+          className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
         >
           {loading ? (
             <div className="px-3 py-2 text-sm text-gray-800 font-medium">
