@@ -306,10 +306,10 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                           setShareStatus("Copied");
                           setTimeout(() => setShareStatus(""), 1500);
                         }}
-                        className="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
+                        className="border border-gray-900 bg-transparent px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
                         disabled={!activeProfileSlug}
                       >
-                        {shareStatus ?? "Share"}
+                        {(shareStatus || "Share").toUpperCase()}
                       </button>
                       <button
                         type="button"

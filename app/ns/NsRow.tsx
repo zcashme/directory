@@ -163,7 +163,13 @@ export default function NsRow({
             Nearest City
           </div>
           {location === "-" ? (
-            <span className="text-xs text-gray-500">-</span>
+            <span
+              className="mt-1 inline-flex h-7 items-center border border-gray-900 bg-gray-100 px-2 py-1 text-sm leading-none rounded-none"
+              aria-label="No nearest city"
+              title="No nearest city"
+            >
+              🌐
+            </span>
           ) : (
             <span className="mt-1 inline-flex h-7 items-center gap-2 border border-gray-900 bg-gray-100 px-2 py-1 text-[10px] break-words rounded-none">
               {countryFlag ? (
