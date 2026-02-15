@@ -58,6 +58,22 @@ Each link can be verified independently:
 // Shows verification status per link
 ```
 
+## State Management
+
+### store.ts (Zustand)
+Profile editing state - colocated with components:
+```typescript
+import { useEditsStore } from "@/ui/profile/store";
+
+const { form, setForm, initializeForm } = useEditsStore();
+```
+
+State includes:
+- `form` - Current form values
+- `original` - Original values for diff
+- `deletedFields` - Track field deletions
+- `linkAuthTokens` - OAuth verification tokens
+
 ## Hooks
 
 ### useProfileLinks.ts

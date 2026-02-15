@@ -109,6 +109,7 @@ export interface PendingProfileChange {
   address?: string;
   c?: string;
   d?: string[];
+  [key: string]: string | string[] | undefined;
 }
 
 export interface PendingEdits {

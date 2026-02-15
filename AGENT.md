@@ -9,7 +9,7 @@ via blockchain transactions.
 - **Framework**: Next.js 16 (App Router) + React 19
 - **Language**: TypeScript 5.9
 - **Database**: Supabase (PostgreSQL)
-- **State**: Zustand (client) + React Query (server)
+- **State**: Zustand (colocated in `/ui/*/store.ts`) + React Query (server)
 - **Styling**: TailwindCSS 4
 - **Animations**: Framer Motion
 

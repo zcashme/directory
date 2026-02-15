@@ -10,7 +10,7 @@ import {
   getDiscordUsername,
   normalizeDiscordHandle,
 } from "@/lib/profile/providerAvatars";
-import { useEditsStore } from "@/lib/stores/edits";
+import { useEditsStore } from "@/ui/profile/store";
 
 interface LinkedInData {
   handle: string | null;

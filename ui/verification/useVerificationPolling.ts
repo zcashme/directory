@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { useMessagingStore } from "@/lib/stores/messaging";
+import { useMessagingStore } from "@/ui/verification/store";
 
 const VERIFY_API_BASE =
   process.env.NEXT_PUBLIC_VERIFY_API_URL ||

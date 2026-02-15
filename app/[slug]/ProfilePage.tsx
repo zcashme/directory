@@ -5,7 +5,7 @@ import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
 // Stores
-import { useEditsStore } from "@/lib/stores/edits";
+import { useEditsStore } from "@/ui/profile/store";
 
 // Swap utilities
 import { getTokenId } from "@/lib/swap/utils";

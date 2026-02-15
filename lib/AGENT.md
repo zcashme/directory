@@ -14,7 +14,6 @@ This is the brain of zcash.me - all business logic lives here.
 | `/verification` | OTP confirmation, link verification |
 | `/signup` | Profile creation server actions |
 | `/swap` | OneClick SDK integration, token types |
-| `/stores` | Zustand client state (swap, messaging, thread) |
 | `/validation` | Composable form validators |
 | `/leaderboard` | Referral commission calculations |
 | `/thread` | Discussion board actions |

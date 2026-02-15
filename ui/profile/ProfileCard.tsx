@@ -23,7 +23,7 @@ import {
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
-import { useEditsStore } from "@/lib/stores/edits";
+import { useEditsStore } from "@/ui/profile/store";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { EnrichedProfileLink, Profile } from "@/lib/profile/types";

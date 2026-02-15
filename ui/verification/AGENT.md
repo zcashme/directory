@@ -56,6 +56,22 @@ OTP is base64url encoded in the memo field:
 - `123456` → `MTIzNDU2`
 - Max 512 bytes in Zcash memo
 
+## State Management
+
+### store.ts (Zustand)
+Verification and messaging state - colocated with components:
+```typescript
+import { useMessagingStore } from "@/ui/verification/store";
+
+const { mode, setMode, verify, pollStatus } = useMessagingStore();
+```
+
+State includes:
+- `mode` - Current mode (verification, swap, memo)
+- `memo` / `amount` - Memo composition
+- `verify` - Verification request data
+- `poll*` - Polling status fields
+
 ## Hooks
 
 ### useOtpFlow.ts

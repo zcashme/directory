@@ -20,7 +20,7 @@ import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import useVerificationFlow from "@/ui/social/useVerificationFlow";
-import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
+import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import { Alert, Button } from "@/ui/common";
 import { withFieldBorderState } from "@/ui/styles/fields";

@@ -6,9 +6,6 @@ type OtpPhaseHistoryItem = {
 
 export type ProfileMode = "verification" | "swap" | "memo";
 
-/**
- * Messaging store - manages memo/message composition and verification state for Zcash
- */
 interface MessagingState {
   currentProfileAddress: string | null;
   mode: ProfileMode;
@@ -23,6 +20,7 @@ interface MessagingState {
     zId: number | null;
     requestId: string | null;
   };
+
   // Verification polling state
   verifyQrEnabled: boolean;
   pollStatus: string | null;
@@ -62,7 +60,7 @@ const initialVerifyState = {
   pollStatus: null,
   pollOtpStatus: null,
   pollOtpPhase: null,
-  pollOtpPhaseHistory: [],
+  pollOtpPhaseHistory: [] as OtpPhaseHistoryItem[],
   otpInlineSuccess: false,
   pollError: '',
   pollDebug: '',
@@ -92,13 +90,16 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       });
     }
   },
+
   setMode: (mode) =>
     set((state) => ({
       mode: typeof mode === 'function' ? mode(state.mode) : mode,
     })),
+
   setShowBack: (showBack) => set({ showBack }),
   setMemo: (memo) => set({ memo }),
   setAmount: (amount) => set({ amount }),
+
   setVerify: (verify) =>
     set((state) => ({
       verify: typeof verify === 'function' ? verify(state.verify) : verify,
@@ -112,14 +113,18 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   setPollOtpPhaseHistory: (history) => set({ pollOtpPhaseHistory: history }),
   setOtpInlineSuccess: (success) => set({ otpInlineSuccess: success }),
   setPollError: (error) => set({ pollError: error }),
+
   setPollDebug: (debug) =>
     set((state) => ({
       pollDebug: typeof debug === 'function' ? debug(state.pollDebug) : debug,
     })),
+
   setPollStartedAt: (startedAt) => set({ pollStartedAt: startedAt }),
   setPollElapsedMs: (elapsed) => set({ pollElapsedMs: elapsed }),
-  resetVerificationPolling: () => set((state) => ({
-    ...initialVerifyState,
-    verify: { ...state.verify, zId: null, requestId: null },
-  })),
+
+  resetVerificationPolling: () =>
+    set((state) => ({
+      ...initialVerifyState,
+      verify: { ...state.verify, zId: null, requestId: null },
+    })),
 }));
