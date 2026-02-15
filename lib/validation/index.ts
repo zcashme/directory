@@ -16,7 +16,3 @@ export {
   validateExactLength,
   composeValidators,
 } from './validators';
-
-// React hook exports
-export { useValidation, useValidationGroup } from './useValidation';
-export type { UseValidationOptions, UseValidationResult } from './useValidation';

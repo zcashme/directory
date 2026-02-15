@@ -29,22 +29,6 @@ range(min: number, max: number): (value: number) => ValidationResult
 compose(...validators): (value: any) => ValidationResult
 ```
 
-### useValidation.ts
-React hook for form validation state:
-
-```typescript
-function useValidation<T>(
-  value: T,
-  validators: Validator<T>[]
-): {
-  valid: boolean;
-  error?: string;
-  level?: 'error' | 'warning' | 'info';
-  touched: boolean;
-  setTouched: () => void;
-}
-```
-
 ## Usage Examples
 
 ```typescript
@@ -61,12 +45,6 @@ const validateUsername = compose(
     ? { valid: true }
     : { valid: false, reason: 'Invalid characters' }
 );
-
-// In React component
-const { valid, error } = useValidation(username, [
-  required,
-  minLength(3)
-]);
 ```
 
 ## Zcash-Specific Validators
