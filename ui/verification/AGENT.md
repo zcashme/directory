@@ -1,96 +1,81 @@
-# /ui/verification - OTP Verification UI
+# /ui/verification - ZVS Verification UI
 
 ## Purpose
-User interface for ZVS (Zcash Verification Service) based identity verification.
-Users prove Zcash address ownership via OTP flow.
+User interface for ZVS (Zcash Verification System) based identity verification.
+Users prove Zcash address ownership by sending a transaction with a deterministic OTP.
 
 ## ZVS Verification Flow
-1. User sends a transaction to ZVS address with their profile ID in memo
-2. ZVS replies with a 6-digit OTP via Zcash memo
-3. User enters OTP in the directory UI
-4. Backend validates OTP and updates Supabase
+1. User clicks "Generate QR" → creates session with memo `zvs/{session_id},{u-address}`
+2. Session stored in Supabase `verification_sessions` table
+3. User sends transaction to ZVS address with memo
+4. OTP is deterministically computed from memo using HMAC-SHA256
+5. User enters OTP in UI (inline or via modal)
+6. Backend verifies OTP, applies pending edits, deletes session
 
 ## Components
 
-### Main Flow
 | Component | File | Purpose |
 |-----------|------|---------|
-| `ProfileVerification` | ProfileVerification.tsx | Main verification container |
-| `OtpInput` | OtpInput.tsx | 6-digit code input |
-| `SubmitOtp` | SubmitOtp.tsx | Submit button with loading |
+| `ProfileVerification` | ProfileVerification.tsx | Main verification flow with QR + OTP input |
+| `SubmitOtp` | SubmitOtp.tsx | Modal for late OTP entry |
+| `OtpInput` | OtpInput.tsx | 6-digit code input field |
 | `QrUriBlock` | QrUriBlock.tsx | QR code with zcash: URI |
-| `AmountAndWallet` | AmountAndWallet.tsx | Transaction details |
-| `ProgressStep` | ProgressStep.tsx | Multi-step progress |
-| `HelpMessage` | HelpMessage.tsx | Contextual help |
-| `InlineOtpForm` | InlineOtpForm.tsx | Compact inline form |
+| `AmountAndWallet` | AmountAndWallet.tsx | Amount input + generate QR button |
+| `HelpMessage` | HelpMessage.tsx | Contextual help text |
 
 ## Verification Flow UI
 
 ```
 ┌─────────────────────────────────────┐
-│  Step 1: Send to ZVS address        │
+│  Generate QR                        │
 │  ┌─────────────┐                    │
 │  │   QR CODE   │  Amount: 0.003 ZEC │
-│  │             │  Memo: [profile_id]│
+│  │             │                    │
 │  └─────────────┘                    │
+│  Memo: zvs/1234567890123456,u1...   │
 ├─────────────────────────────────────┤
-│  Step 2: Receive OTP in wallet      │
-│  [Check your wallet for OTP...]     │
-├─────────────────────────────────────┤
-│  Step 3: Enter OTP                  │
+│  Enter OTP                          │
 │  ┌───┬───┬───┬───┬───┬───┐         │
-│  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │         │
+│  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ [Submit]│
 │  └───┴───┴───┴───┴───┴───┘         │
 └─────────────────────────────────────┘
 ```
 
-## Zcash Integration
+## Memo Format
+```
+zvs/{session_id},{user_address}
+```
+- `session_id`: 16 ASCII digits (randomly generated)
+- `user_address`: User's Zcash unified address
 
-### QR Code
-```typescript
-<QrUriBlock
-  address="u1..."
-  amount={0.003}
-  memo={profileId}
-/>
-// Generates: zcash:u1...?amount=0.003&memo=...
+Example:
+```
+zvs/2026021505421234,u1d9l0a8ldht9zcpkmppd8s9lpev724l5afh3dl9ds8...
 ```
 
 ## State Management
 
 ### store.ts (Zustand)
-Verification and messaging state - colocated with components:
 ```typescript
 import { useMessagingStore } from "@/ui/verification/store";
 
-const { mode, setMode, verify, pollStatus } = useMessagingStore();
+const {
+  verify,           // { amount, zId, sessionId, userAddress }
+  verifyQrEnabled,  // QR visible?
+  verificationError,
+  setVerify,
+  setVerifyQrEnabled,
+  resetVerification
+} = useMessagingStore();
 ```
 
-State includes:
-- `mode` - Current mode (verification, swap, memo)
-- `memo` / `amount` - Memo composition
-- `verify` - Verification request data
-- `poll*` - Polling status fields
+## Multiple Sessions
+- Users can have multiple active verification sessions
+- Each session has its own OTP (derived from unique memo)
+- Sessions expire after 24 hours
+- When OTP is entered, system finds the matching session and applies those edits
 
-## Hooks
-
-### useOtpFlow.ts
-Manages OTP generation and state.
-
-### useVerificationFlow.ts
-Full verification flow state machine.
-
-### useVerificationPolling.ts
-Polls server for transaction confirmation.
-
-## Testing Harness
-- Mock the verification API responses
-- Test OTP input validation
-- Simulate polling states
-- QR codes can be visually verified
-
-## Messages
-`otpMessages.ts` contains user-facing copy:
-- Error messages
-- Help text
-- Status updates
+## Late OTP Entry
+Users can enter OTP later via the "Enter Passcode" button in ProfileCard menu.
+The `SubmitOtp` modal calls `confirmOtpAction` which searches all active sessions
+for a matching OTP.

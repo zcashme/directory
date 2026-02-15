@@ -1,10 +1,13 @@
 import { create } from 'zustand';
 
-type OtpPhaseHistoryItem = {
-  phase?: string | null;
-};
-
 export type ProfileMode = "verification" | "swap" | "memo";
+
+interface VerifyState {
+  amount: string;
+  zId: number | null;
+  sessionId: string | null;
+  userAddress: string | null;
+}
 
 interface MessagingState {
   currentProfileAddress: string | null;
@@ -15,23 +18,11 @@ interface MessagingState {
   memo: string;
   amount: string;
 
-  verify: {
-    amount: string;
-    zId: number | null;
-    requestId: string | null;
-  };
+  verify: VerifyState;
 
-  // Verification polling state
+  // Verification state
   verifyQrEnabled: boolean;
-  pollStatus: string | null;
-  pollOtpStatus: string | null;
-  pollOtpPhase: string | null;
-  pollOtpPhaseHistory: OtpPhaseHistoryItem[];
-  otpInlineSuccess: boolean;
-  pollError: string;
-  pollDebug: string;
-  pollStartedAt: string | null;
-  pollElapsedMs: number;
+  verificationError: string;
 
   // Actions
   ensureProfile: (address: string) => void;
@@ -39,33 +30,24 @@ interface MessagingState {
   setShowBack: (showBack: boolean) => void;
   setMemo: (memo: string) => void;
   setAmount: (amount: string) => void;
-  setVerify: (verify: { amount: string; zId: number | null; requestId: string | null } | ((prev: { amount: string; zId: number | null; requestId: string | null }) => { amount: string; zId: number | null; requestId: string | null })) => void;
+  setVerify: (verify: VerifyState | ((prev: VerifyState) => VerifyState)) => void;
 
-  // Verification polling actions
+  // Verification actions
   setVerifyQrEnabled: (enabled: boolean) => void;
-  setPollStatus: (status: string | null) => void;
-  setPollOtpStatus: (status: string | null) => void;
-  setPollOtpPhase: (phase: string | null) => void;
-  setPollOtpPhaseHistory: (history: OtpPhaseHistoryItem[]) => void;
-  setOtpInlineSuccess: (success: boolean) => void;
-  setPollError: (error: string) => void;
-  setPollDebug: (debug: string | ((prev: string) => string)) => void;
-  setPollStartedAt: (startedAt: string | null) => void;
-  setPollElapsedMs: (elapsed: number) => void;
-  resetVerificationPolling: () => void;
+  setVerificationError: (error: string) => void;
+  resetVerification: () => void;
 }
 
-const initialVerifyState = {
+const initialVerifyState: VerifyState = {
+  amount: '0.003',
+  zId: null,
+  sessionId: null,
+  userAddress: null,
+};
+
+const initialVerificationState = {
   verifyQrEnabled: false,
-  pollStatus: null,
-  pollOtpStatus: null,
-  pollOtpPhase: null,
-  pollOtpPhaseHistory: [] as OtpPhaseHistoryItem[],
-  otpInlineSuccess: false,
-  pollError: '',
-  pollDebug: '',
-  pollStartedAt: null,
-  pollElapsedMs: 0,
+  verificationError: '',
 };
 
 export const useMessagingStore = create<MessagingState>((set, get) => ({
@@ -74,8 +56,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
   showBack: false,
   memo: '',
   amount: '',
-  verify: { amount: '0.003', zId: null, requestId: null },
-  ...initialVerifyState,
+  verify: { ...initialVerifyState },
+  ...initialVerificationState,
 
   ensureProfile: (address) => {
     if (get().currentProfileAddress !== address) {
@@ -85,8 +67,8 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
         showBack: false,
         memo: '',
         amount: '',
-        verify: { amount: '0.003', zId: null, requestId: null },
-        ...initialVerifyState,
+        verify: { ...initialVerifyState },
+        ...initialVerificationState,
       });
     }
   },
@@ -105,26 +87,13 @@ export const useMessagingStore = create<MessagingState>((set, get) => ({
       verify: typeof verify === 'function' ? verify(state.verify) : verify,
     })),
 
-  // Verification polling actions
+  // Verification actions
   setVerifyQrEnabled: (enabled) => set({ verifyQrEnabled: enabled }),
-  setPollStatus: (status) => set({ pollStatus: status }),
-  setPollOtpStatus: (status) => set({ pollOtpStatus: status }),
-  setPollOtpPhase: (phase) => set({ pollOtpPhase: phase }),
-  setPollOtpPhaseHistory: (history) => set({ pollOtpPhaseHistory: history }),
-  setOtpInlineSuccess: (success) => set({ otpInlineSuccess: success }),
-  setPollError: (error) => set({ pollError: error }),
+  setVerificationError: (error) => set({ verificationError: error }),
 
-  setPollDebug: (debug) =>
-    set((state) => ({
-      pollDebug: typeof debug === 'function' ? debug(state.pollDebug) : debug,
-    })),
-
-  setPollStartedAt: (startedAt) => set({ pollStartedAt: startedAt }),
-  setPollElapsedMs: (elapsed) => set({ pollElapsedMs: elapsed }),
-
-  resetVerificationPolling: () =>
-    set((state) => ({
-      ...initialVerifyState,
-      verify: { ...state.verify, zId: null, requestId: null },
-    })),
+  resetVerification: () =>
+    set({
+      verify: { ...initialVerifyState },
+      ...initialVerificationState,
+    }),
 }));

@@ -48,5 +48,5 @@ Social platform lookup (stub implementation).
 ```
 NEXT_PUBLIC_BASE_DOMAIN - zcash.me or localhost:3000
 NEXT_PUBLIC_SUPABASE_URL - Database URL
-NEXT_PUBLIC_VERIFY_API_URL - External verification service
+ZVS_SECRET_SEED - HMAC secret for OTP generation
 ```

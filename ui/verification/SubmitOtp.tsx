@@ -1,21 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import type { Profile } from "@/lib/profile/types";
-import { useOtpFlow, OtpStep } from "./useOtpFlow";
 import { OtpInput } from "./OtpInput";
 import Button from "@/ui/common/buttons/Button";
 
-// Helper Components
-interface XIconProps {
-  className?: string;
-}
-
-function XIcon(props: XIconProps) {
+function XIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={className}>
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
@@ -27,6 +21,8 @@ function shortAddr(a = "") {
   return a.slice(0, 6) + "..." + a.slice(-6);
 }
 
+type Step = "entry" | "checking" | "result";
+
 interface SubmitOtpProps {
   isOpen: boolean;
   onClose: () => void;
@@ -34,30 +30,52 @@ interface SubmitOtpProps {
 }
 
 export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) {
+  const [step, setStep] = useState<Step>("entry");
+  const [otp, setOtp] = useState("");
+  const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
-  const otpFlow = useOtpFlow(confirmOtpAction, {
-    onSuccess: () => {
-      // Success callback - could trigger refresh or other actions
-    },
-  });
+  const handleOtpChange = useCallback((value: string) => {
+    setOtp(value.replace(/\D/g, ""));
+  }, []);
 
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      otpFlow.reset();
-      setShowHelp(false);
-    }
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Handle OTP submission
-  async function handleSubmit() {
+  const handleSubmit = useCallback(async () => {
     const zid = profile?.id;
-    if (!zid) {
-      return;
+    if (!zid || !otp.trim()) return;
+
+    setStep("checking");
+
+    try {
+      // Call confirmOtpAction - it will find the matching session
+      const response = await confirmOtpAction(zid, otp.trim());
+
+      if (response.ok) {
+        setResult({ ok: true, message: "Verification successful! Your profile has been updated." });
+      } else {
+        setResult({ ok: false, message: response.error || "Verification failed." });
+      }
+      setStep("result");
+    } catch {
+      setResult({ ok: false, message: "An error occurred. Please try again." });
+      setStep("result");
     }
-    await otpFlow.submit(zid);
-  }
+  }, [profile?.id, otp]);
+
+  const handleReset = useCallback(() => {
+    setStep("entry");
+    setOtp("");
+    setResult(null);
+  }, []);
+
+  const handleClose = useCallback(() => {
+    handleReset();
+    onClose();
+  }, [handleReset, onClose]);
+
+  const handleSuccessClose = useCallback(() => {
+    onClose();
+    window.location.reload();
+  }, [onClose]);
 
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
@@ -66,25 +84,17 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
   const paddr = profile?.address ?? "(unknown)";
 
   return ReactDOM.createPortal(
-    <div
-      className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center
-                 pt-[10vh] sm:pt-0 overflow-y-auto"
-    >
+    <div className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs"
-        onClick={onClose}
+        onClick={handleClose}
       />
 
-      <div
-        className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl
-                   shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200"
-      >
-
+      <div className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
-          <h2 className="text-lg font-semibold text-gray-800">Paste your OTP</h2>
-
+          <h2 className="text-lg font-semibold text-gray-800">Enter Verification Code</h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
             aria-label="Close"
           >
@@ -92,71 +102,60 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
           </button>
         </div>
 
-        {/* Slide 0: OTP entry */}
-        {otpFlow.step === OtpStep.ENTRY && (
+        {step === "entry" && (
           <div className="px-5 py-4 space-y-4">
-            <div className="text-sm text-gray-700 leading-relaxed">
-              <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
-                <div><strong>Name:</strong> {pname}</div>
-                <div className="break-all">
-                  <strong>Address:</strong> {shortAddr(paddr)}
-                </div>
-              </div>
+            <div className="bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm">
+              <div><strong>Name:</strong> {pname}</div>
+              <div className="break-all"><strong>Address:</strong> {shortAddr(paddr)}</div>
             </div>
 
+            <p className="text-sm text-gray-600">
+              Enter the 6-digit code from your verification transaction.
+            </p>
+
             <OtpInput
-              value={otpFlow.otp}
-              onChange={otpFlow.setOtp}
+              value={otp}
+              onChange={handleOtpChange}
               onSubmit={handleSubmit}
-              id="otp"
-              label="One-time passcode (OTP)"
-              placeholder="Paste your OTP"
+              id="otp-modal"
+              label="Verification Code"
+              placeholder="Enter 6-digit code"
             />
           </div>
         )}
 
-        {/* Slide 1: Checking */}
-        {otpFlow.step === OtpStep.CHECKING && (
+        {step === "checking" && (
           <div className="px-5 py-10 text-center text-gray-700">
-            <div className="animate-pulse text-lg font-semibold">Checking your code...</div>
+            <div className="animate-pulse text-lg font-semibold">Verifying...</div>
             <p className="mt-2 text-sm">Please wait</p>
           </div>
         )}
 
-        {/* Slide 2: Result */}
-        {otpFlow.step === OtpStep.RESULT && (
-          <div className="px-5 py-10 text-center text-gray-700">
-            {otpFlow.status === "ok" ? (
+        {step === "result" && result && (
+          <div className="px-5 py-10 text-center">
+            {result.ok ? (
               <>
                 <div className="text-green-600 text-xl font-semibold">Success</div>
-                <p className="mt-2 text-sm">{otpFlow.message}</p>
+                <p className="mt-2 text-sm text-gray-700">{result.message}</p>
               </>
             ) : (
               <>
-                <div className="text-red-600 text-xl font-semibold">Authentication Failed</div>
-                <p className="mt-2 text-sm">{otpFlow.message}</p>
+                <div className="text-red-600 text-xl font-semibold">Failed</div>
+                <p className="mt-2 text-sm text-gray-700">{result.message}</p>
               </>
             )}
           </div>
         )}
 
-        {showHelp && otpFlow.step === OtpStep.ENTRY && (
-          <p className="mx-5 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 pt-2 leading-snug">
-            After sending your authentication request, receive an OTP within 24 hours.
-            Submit that OTP here to approve your changes.
-            If the OTPs match, your card is updated accordingly.
-          </p>
-        )}
-
-        {showHelp && otpFlow.step === OtpStep.RESULT && (
-          <p className="mx-5 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 pt-2 leading-snug">
-            Your code did not match the records.
-            Make sure you entered the most recent OTP you received.
+        {showHelp && step === "entry" && (
+          <p className="mx-5 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
+            After sending your verification transaction, you received a 6-digit code.
+            Enter it here to apply your pending profile changes.
+            Codes expire after 24 hours.
           </p>
         )}
 
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-black/10">
-
           <button
             type="button"
             onClick={() => setShowHelp(!showHelp)}
@@ -166,55 +165,29 @@ export default function SubmitOtp({ isOpen, onClose, profile }: SubmitOtpProps) 
           </button>
 
           <div className="flex items-center gap-3">
-            {otpFlow.step === OtpStep.ENTRY && (
+            {step === "entry" && (
               <>
-                <Button
-                  onClick={onClose}
-                  variant="secondary"
-                  size="lg"
-                >
-                  Cancel
-                </Button>
-
-                <Button
-                  onClick={() => {
-                    void handleSubmit();
-                  }}
-                  disabled={!otpFlow.otp.trim()}
-                  variant="primary"
-                  size="lg"
-                >
-                  Submit OTP
+                <Button onClick={handleClose} variant="secondary" size="lg">Cancel</Button>
+                <Button onClick={handleSubmit} disabled={!otp.trim()} variant="primary" size="lg">
+                  Verify
                 </Button>
               </>
             )}
 
-            {otpFlow.step === OtpStep.RESULT && otpFlow.status === "ok" && (
-              <Button
-                onClick={() => {
-                  onClose();
-                  window.location.reload();
-                }}
-                variant="primary"
-                size="lg"
-                className="text-green-700 hover:border-green-600 hover:bg-green-50"
-              >
+            {step === "result" && result?.ok && (
+              <Button onClick={handleSuccessClose} variant="primary" size="lg">
                 Close
               </Button>
             )}
 
-            {otpFlow.step === OtpStep.RESULT && otpFlow.status !== "ok" && (
-              <Button
-                onClick={onClose}
-                variant="primary"
-                size="lg"
-              >
-                Close
-              </Button>
+            {step === "result" && !result?.ok && (
+              <>
+                <Button onClick={handleReset} variant="secondary" size="lg">Try Again</Button>
+                <Button onClick={handleClose} variant="primary" size="lg">Close</Button>
+              </>
             )}
           </div>
         </div>
-
       </div>
     </div>,
     document.body

@@ -30,27 +30,22 @@ via blockchain transactions.
 | `zs1` | Sapling | High | Acceptable |
 | `t1`/`t3` | Transparent | None | Warn user |
 
-### Verification Flow
-1. Generate 6-digit OTP
-2. User sends 0.0001 ZEC with OTP in memo
-3. External service scans blockchain
-4. Profile marked verified
+### Verification Flow (ZVS)
+1. User generates QR → creates session with memo `zvs/{session_id},{u-address}`
+2. User sends 0.003 ZEC to ZVS address with memo
+3. OTP computed deterministically from memo (HMAC-SHA256)
+4. User enters OTP → pending edits applied, profile verified
 
 ### Key Utilities
 - `/lib/zcash/zcashUtils.ts` - Address validation, URI building
 - `/lib/verification/` - OTP confirmation logic
 - `/lib/swap/` - OneClick SDK for cross-chain swaps
 
-## Testing Harnesses
-- **No automated tests** - Use `/app/design-system` for visual testing
-- Pure functions in `/lib/` are easily unit testable
-- Mock Supabase and external APIs for integration tests
-
 ## Environment Variables
 ```
 NEXT_PUBLIC_SUPABASE_URL      - Database URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY - Public DB key
-NEXT_PUBLIC_VERIFY_API_URL    - Verification service
+ZVS_SECRET_SEED               - HMAC secret for OTP generation
 NEXT_PUBLIC_BASE_DOMAIN       - zcash.me or localhost
 ONECLICK_API_KEY              - Defuse swap API
 API_KEY                       - Server-side API auth
