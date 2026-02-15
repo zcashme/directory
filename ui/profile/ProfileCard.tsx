@@ -9,7 +9,7 @@ import {
   buildShareUrl,
   getLastVerifiedLabel,
 } from "@/lib/profile/profileUtils";
-import CopyButton from "@/ui/profile/CopyButton";
+import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
