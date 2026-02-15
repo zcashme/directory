@@ -43,7 +43,7 @@ import {
   deleteVerificationSession
 } from "./verificationSessionAction";
 
-// Create new session (multiple per user allowed)
+// Create or replace session (one per user - upserts on zcasher_id)
 await createVerificationSession(zcasherId, sessionId, memo, pendingEdits);
 
 // Get all active sessions for user
@@ -72,7 +72,7 @@ Marks individual social links as verified (separate OAuth flow).
 ```sql
 CREATE TABLE verification_sessions (
   id SERIAL PRIMARY KEY,
-  zcasher_id INTEGER NOT NULL,
+  zcasher_id INTEGER NOT NULL UNIQUE,  -- One session per profile
   session_id TEXT UNIQUE NOT NULL,
   memo TEXT NOT NULL,
   pending_edits JSONB DEFAULT '{}',
@@ -106,7 +106,7 @@ zvs/2026021505421234,u1d9l0a8ldht9zcpkmppd8s9lpev724l5afh3dl9ds8rt09aunghcx7xtnk
 - OTP is deterministic (HMAC-SHA256) - same memo always produces same OTP
 - Sessions expire after 24 hours
 - Secret seed stored in `ZVS_SECRET_SEED` env var
-- Multiple sessions per user allowed (last-write-wins for conflicting edits)
+- One session per user (upsert replaces existing session)
 
 ## Flow Diagram
 ```

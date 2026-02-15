@@ -26,8 +26,9 @@ export interface GetSessionsResult {
 }
 
 /**
- * Create a new verification session
- * Multiple sessions per user are allowed - each has its own OTP
+ * Create or replace verification session for a user
+ * Only one session per user is allowed - upserts on zcasher_id
+ * If a locked session exists (attempts_remaining = 0), reject until expiry
  * Sessions expire after 24 hours
  */
 export async function createVerificationSession(
@@ -42,19 +43,39 @@ export async function createVerificationSession(
       return { ok: false, error: "Database connection unavailable" };
     }
 
+    // Check for locked session (attempts exhausted but not expired)
+    const { data: existingSession } = await supabase
+      .from("verification_sessions")
+      .select("attempts_remaining, expires_at")
+      .eq("zcasher_id", zcasherId)
+      .gt("expires_at", new Date().toISOString())
+      .single();
+
+    if (existingSession && existingSession.attempts_remaining <= 0) {
+      return {
+        ok: false,
+        error: "Too many failed attempts. Please try again later.",
+      };
+    }
+
     // Session expires after 24 hours
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
 
     const { data, error } = await supabase
       .from("verification_sessions")
-      .insert({
-        zcasher_id: zcasherId,
-        session_id: sessionId,
-        memo,
-        pending_edits: pendingEdits || {},
-        attempts_remaining: 3,
-        expires_at: expiresAt,
-      })
+      .upsert(
+        {
+          zcasher_id: zcasherId,
+          session_id: sessionId,
+          memo,
+          pending_edits: pendingEdits || {},
+          attempts_remaining: 3,
+          expires_at: expiresAt,
+        },
+        {
+          onConflict: "zcasher_id",
+        }
+      )
       .select()
       .single();
 

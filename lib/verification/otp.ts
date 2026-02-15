@@ -5,8 +5,19 @@
  * This allows both the sender and receiver to independently compute the same OTP.
  */
 
-// TODO: Replace with actual secret seed (will be provided)
-const ZVS_SECRET_SEED = process.env.ZVS_SECRET_SEED || 'PLACEHOLDER_SEED_REPLACE_ME';
+function getSecretSeed(): string {
+  const seed = process.env.ZVS_SECRET_SEED;
+  if (!seed) {
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('ZVS_SECRET_SEED environment variable is required in production');
+    }
+    // Allow development with placeholder - OTPs will not be secure
+    return 'DEV_PLACEHOLDER_SEED';
+  }
+  return seed;
+}
+
+const ZVS_SECRET_SEED = getSecretSeed();
 
 /**
  * Convert Uint8Array to hex string

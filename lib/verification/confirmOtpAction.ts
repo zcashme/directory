@@ -4,6 +4,7 @@ import { verifyOtp } from "@/lib/verification/otp";
 import {
   getVerificationSessions,
   deleteVerificationSession,
+  decrementSessionAttempts,
   type VerificationSession,
 } from "@/lib/verification/verificationSessionAction";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
@@ -79,17 +80,32 @@ export async function confirmOtpAction(
       };
     }
 
+    // With one session per user, we have exactly one session
+    const session = sessions[0];
+
+    // Check if attempts remaining before trying
+    if (session.attempts_remaining <= 0) {
+      return {
+        ok: false,
+        error: "Too many failed attempts. Please generate a new QR code.",
+        data: { status: "locked" },
+      };
+    }
+
     // Find which session matches this OTP
     const matchingSession = await findMatchingSession(sessions, otp.trim());
 
     if (!matchingSession) {
-      // OTP didn't match any session - decrement attempts on all sessions
-      // (or we could track which session they're trying to verify... but we don't know)
-      // For now, just return invalid without decrementing
+      // OTP didn't match - decrement attempts
+      const decrementResult = await decrementSessionAttempts(session.session_id);
+      const attemptsLeft = decrementResult.ok ? decrementResult.attemptsRemaining : 0;
+
       return {
         ok: false,
-        error: "Invalid verification code. Please check and try again.",
-        data: { status: "invalid" },
+        error: attemptsLeft > 0
+          ? `Invalid code. ${attemptsLeft} attempt${attemptsLeft === 1 ? "" : "s"} remaining.`
+          : "Too many failed attempts. Please generate a new QR code.",
+        data: { status: "invalid", attemptsRemaining: attemptsLeft },
       };
     }
 
