@@ -12,3 +12,10 @@ export type { CopyButtonProps } from "./CopyButton";
 
 export { default as IconButton } from "./IconButton";
 export type { IconButtonProps } from "./IconButton";
+
+// Style utilities
+export {
+  INLINE_SELECTOR_TRIGGER_CLASSES,
+  OUTLINE_ACTION_BUTTON_CLASSES,
+  INLINE_ACTION_BUTTON_CLASSES,
+} from "./styles";

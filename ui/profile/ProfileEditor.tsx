@@ -22,7 +22,7 @@ import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import { Alert, Button } from "@/ui/common";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState } from "@/ui/common/forms";
 
 const FIELD_CLASS =
   `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;

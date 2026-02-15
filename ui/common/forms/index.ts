@@ -52,3 +52,13 @@ export type { CheckboxProps } from "./Checkbox";
 
 export { default as FormField } from "./FormField";
 export type { FormFieldProps } from "./FormField";
+
+// Style utilities
+export {
+  FIELD_FOCUS_INTERACTION_CLASSES,
+  FIELD_ERROR_INTERACTION_CLASSES,
+  FIELD_FOCUS_WITHIN_INTERACTION_CLASSES,
+  FIELD_FOCUS_WITHIN_ERROR_INTERACTION_CLASSES,
+  withFieldBorderState,
+  withFieldFocusWithinBorderState,
+} from "./styles";

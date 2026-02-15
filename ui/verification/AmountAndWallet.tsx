@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
-import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/styles/interactive";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons";
+import { withFieldBorderState } from "@/ui/common/forms";
 
 interface Currency {
   symbol: string;

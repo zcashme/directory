@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { searchCitiesAction } from "@/lib/directory/searchCitiesAction";
 import type { City } from "@/lib/directory/types";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState } from "@/ui/common/forms";
 
 type CityWithFullLabel = City & { fullLabel?: string };
 

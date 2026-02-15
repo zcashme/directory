@@ -34,7 +34,7 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms";
 
 interface Referrer {
   id: number;

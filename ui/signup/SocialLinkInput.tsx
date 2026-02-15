@@ -4,7 +4,7 @@ import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { isValidUrl } from "@/lib/validation/validators";
 import HelpIcon from "@/ui/common/HelpIcon";
 import { Alert } from "@/ui/common";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState } from "@/ui/common/forms";
 
 const PLATFORM_OPTIONS = [
   { key: "X", label: "X (Twitter)" },
