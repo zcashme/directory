@@ -56,7 +56,11 @@ Core design system components. Building blocks for all UI in zcash.me.
 
 ## Usage Pattern
 ```typescript
-import { Button, Input, Modal, Card } from '@/ui/common';
+// Direct imports - no barrel exports
+import Button from '@/ui/common/buttons/Button';
+import Input from '@/ui/common/forms/Input';
+import Modal from '@/ui/common/modals/Modal';
+import Card from '@/ui/common/layout/Card';
 
 <Card>
   <Input placeholder="Username" />
@@ -75,7 +79,9 @@ Visit `/app/design-system` to see all components rendered.
 Good for visual regression testing.
 
 ## Adding Components
-1. Create `ComponentName.tsx`
-2. Export from `index.ts`
+1. Create `ComponentName.tsx` in appropriate subdirectory
+2. Use default export
 3. Add example to design-system page
 4. Keep API minimal - props over config
+
+Note: This design system uses direct imports (no barrel exports) for better tree-shaking and build performance.

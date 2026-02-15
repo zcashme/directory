@@ -1,6 +1,6 @@
 "use client";
 
-import { FormField } from "@/ui/common";
+import FormField from "@/ui/common/forms/FormField";
 
 interface SwapAddressInputProps {
   label: string;

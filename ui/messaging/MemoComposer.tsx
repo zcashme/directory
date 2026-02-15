@@ -5,7 +5,7 @@ import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { withFieldBorderState } from "@/ui/common/forms";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 interface MemoCounterProps {
   text: string;

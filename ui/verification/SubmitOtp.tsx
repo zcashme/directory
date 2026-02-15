@@ -6,7 +6,7 @@ import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import type { Profile } from "@/lib/profile/types";
 import { useOtpFlow, OtpStep } from "./useOtpFlow";
 import { OtpInput } from "./OtpInput";
-import { Button } from "@/ui/common";
+import Button from "@/ui/common/buttons/Button";
 
 // Helper Components
 interface XIconProps {

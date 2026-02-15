@@ -2,7 +2,8 @@
 
 import { Board } from '@/lib/thread/types';
 import { useState } from 'react';
-import { Button, Card } from '@/ui/common';
+import Button from '@/ui/common/buttons/Button';
+import Card from '@/ui/common/layout/Card';
 
 interface BoardSelectorProps {
   boards: Board[];

@@ -18,7 +18,7 @@ import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
-import { FormField } from "@/ui/common";
+import FormField from "@/ui/common/forms/FormField";
 
 function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -34,7 +34,7 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms";
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
 
 interface Referrer {
   id: number;

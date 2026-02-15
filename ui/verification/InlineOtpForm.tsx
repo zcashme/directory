@@ -4,7 +4,8 @@ import { useOtpFlow, OtpStep } from "./useOtpFlow";
 import { OtpInput } from "./OtpInput";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import type { Profile } from "@/lib/profile/types";
-import { Button, FormField } from "@/ui/common";
+import Button from "@/ui/common/buttons/Button";
+import FormField from "@/ui/common/forms/FormField";
 
 interface SuccessData {
   status: string;

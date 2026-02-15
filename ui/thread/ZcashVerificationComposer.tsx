@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Card, Button, Input } from '@/ui/common';
+import Card from '@/ui/common/layout/Card';
+import Button from '@/ui/common/buttons/Button';
+import Input from '@/ui/common/forms/Input';
 import { OtpInput } from '@/ui/verification/OtpInput';
 
 interface ZcashVerificationComposerProps {

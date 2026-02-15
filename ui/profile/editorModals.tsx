@@ -1,4 +1,9 @@
-import { Button, Modal, ModalBody, ModalHeader, ModalFooter, Spinner } from "@/ui/common";
+import Button from "@/ui/common/buttons/Button";
+import Modal from "@/ui/common/modals/Modal";
+import ModalBody from "@/ui/common/modals/ModalBody";
+import ModalHeader from "@/ui/common/modals/ModalHeader";
+import ModalFooter from "@/ui/common/modals/ModalFooter";
+import Spinner from "@/ui/common/feedback/Spinner";
 
 interface RedirectModalProps {
   isOpen: boolean;

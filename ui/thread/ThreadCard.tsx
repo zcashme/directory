@@ -3,7 +3,8 @@
 import Image from 'next/image';
 import { ThreadMessage } from '@/lib/thread/types';
 import { formatDistanceToNow } from '@/lib/thread/utils';
-import { Card, Badge } from '@/ui/common';
+import Card from '@/ui/common/layout/Card';
+import Badge from '@/ui/common/feedback/Badge';
 
 interface ThreadCardProps {
   message: ThreadMessage;

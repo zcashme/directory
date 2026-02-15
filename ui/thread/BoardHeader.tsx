@@ -2,7 +2,7 @@
 
 import { Board } from '@/lib/thread/types';
 import { formatDistanceToNow } from '@/lib/thread/utils';
-import { Card } from '@/ui/common';
+import Card from '@/ui/common/layout/Card';
 
 interface BoardHeaderProps {
   board: Board;

@@ -1,4 +1,8 @@
-import { Modal, ModalHeader, ModalBody, ModalFooter, Button } from "@/ui/common";
+import Modal from "@/ui/common/modals/Modal";
+import ModalHeader from "@/ui/common/modals/ModalHeader";
+import ModalBody from "@/ui/common/modals/ModalBody";
+import ModalFooter from "@/ui/common/modals/ModalFooter";
+import Button from "@/ui/common/buttons/Button";
 
 interface AuthExplainerModalProps {
   isOpen: boolean;
