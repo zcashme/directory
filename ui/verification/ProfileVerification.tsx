@@ -4,9 +4,10 @@ import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { OtpInput } from "@/ui/verification/OtpInput";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { generateSessionId, buildZvsMemo } from "@/lib/verification/session";
+import { buildZvsMemo } from "@/lib/verification/session";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import { createVerificationSession } from "@/lib/verification/verificationSessionAction";
+import { useEditsStore } from "@/ui/profile/store";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 
@@ -22,9 +23,12 @@ interface ProfileVerificationProps {
 export default function ProfileVerification({
   profile,
 }: ProfileVerificationProps) {
-  // Local state - no longer using global store for this component
+  // Session ID from edits store - regenerates on "Generate QR" click
+  const sessionId = useEditsStore((state) => state.sessionId);
+  const regenerateSessionId = useEditsStore((state) => state.regenerateSessionId);
+
+  // Local UI state
   const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
-  const [sessionId, setSessionId] = useState<string | null>(null);
   const [qrVisible, setQrVisible] = useState(false);
   const [otpInputVisible, setOtpInputVisible] = useState(false);
   const [otp, setOtp] = useState("");
@@ -59,20 +63,17 @@ export default function ProfileVerification({
     };
   }, [amount, memo]);
 
-  // Generate QR - creates session locally, shows QR (no Supabase yet)
-  // TODO: Add UI warning if user already has an active session/QR.
-  // Regenerating QR creates a new OTP, invalidating any pending transaction.
+  // Generate QR - regenerates sessionId and shows QR (no Supabase yet)
   const handleGenerateQr = useCallback(() => {
     if (!validAmount || !userAddress) return;
 
-    const newSessionId = generateSessionId();
-    setSessionId(newSessionId);
+    regenerateSessionId(); // New sessionId for current edits
     setQrVisible(true);
     setOtpInputVisible(false);
     setOtp("");
     setOtpResult(null);
     setError("");
-  }, [validAmount, userAddress]);
+  }, [validAmount, userAddress, regenerateSessionId]);
 
   // Enter OTP - creates session in Supabase, shows OTP input
   const handleEnterOtp = useCallback(async () => {
@@ -177,7 +178,7 @@ export default function ProfileVerification({
       {qrVisible && verifyUri && (
         <div className="border-t border-black/10 mt-4 pt-4">
           {/* Memo Display */}
-          <div className="relative group w-full mb-4">
+          <div className="relative group w-full mb-3">
             <div className="block px-3 py-2 bg-gray-800 rounded-t-xl text-center">
               <span className="block text-[12px] text-gray-200">
                 Memo (do not modify)

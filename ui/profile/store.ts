@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import type { Profile } from '@/lib/profile/types';
+import { generateSessionId } from '@/lib/verification/session';
 
 export interface ParsedLink {
   id: number | null;
@@ -44,6 +45,7 @@ interface EditsState {
   original: FormState;
   deletedFields: DeletedFields;
   linkAuthTokens: string[];
+  sessionId: string;
 
   setForm: (form: FormState | ((prev: FormState) => FormState)) => void;
   updateField: (field: keyof FormState, value: any) => void;
@@ -51,6 +53,7 @@ interface EditsState {
   initializeForm: (profile: Profile, links: ParsedLink[]) => void;
   addLinkAuthToken: (token: string) => void;
   removeLinkAuthToken: (token: string) => void;
+  regenerateSessionId: () => void;
   reset: () => void;
 }
 
@@ -79,6 +82,7 @@ export const useEditsStore = create<EditsState>((set) => ({
   original: emptyForm,
   deletedFields: emptyDeletedFields,
   linkAuthTokens: [],
+  sessionId: generateSessionId(),
 
   setForm: (form) =>
     set((state) => ({
@@ -141,6 +145,7 @@ export const useEditsStore = create<EditsState>((set) => ({
       },
       deletedFields: emptyDeletedFields,
       linkAuthTokens: [],
+      sessionId: generateSessionId(),
     }),
 
   addLinkAuthToken: (token) =>
@@ -155,11 +160,15 @@ export const useEditsStore = create<EditsState>((set) => ({
       linkAuthTokens: state.linkAuthTokens.filter((t) => t !== token),
     })),
 
+  regenerateSessionId: () =>
+    set({ sessionId: generateSessionId() }),
+
   reset: () =>
     set({
       form: emptyForm,
       original: emptyForm,
       deletedFields: emptyDeletedFields,
       linkAuthTokens: [],
+      sessionId: generateSessionId(),
     }),
 }));
