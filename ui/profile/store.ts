@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { Profile, PendingEdits } from '@/lib/profile/types';
+import type { Profile } from '@/lib/profile/types';
 
 export interface ParsedLink {
   id: number | null;
@@ -44,7 +44,6 @@ interface EditsState {
   original: FormState;
   deletedFields: DeletedFields;
   linkAuthTokens: string[];
-  pendingEdits: PendingEdits;
 
   setForm: (form: FormState | ((prev: FormState) => FormState)) => void;
   updateField: (field: keyof FormState, value: any) => void;
@@ -52,7 +51,6 @@ interface EditsState {
   initializeForm: (profile: Profile, links: ParsedLink[]) => void;
   addLinkAuthToken: (token: string) => void;
   removeLinkAuthToken: (token: string) => void;
-  setPendingEdits: (edits: PendingEdits) => void;
   reset: () => void;
 }
 
@@ -81,7 +79,6 @@ export const useEditsStore = create<EditsState>((set) => ({
   original: emptyForm,
   deletedFields: emptyDeletedFields,
   linkAuthTokens: [],
-  pendingEdits: {},
 
   setForm: (form) =>
     set((state) => ({
@@ -144,7 +141,6 @@ export const useEditsStore = create<EditsState>((set) => ({
       },
       deletedFields: emptyDeletedFields,
       linkAuthTokens: [],
-      pendingEdits: {},
     }),
 
   addLinkAuthToken: (token) =>
@@ -159,14 +155,11 @@ export const useEditsStore = create<EditsState>((set) => ({
       linkAuthTokens: state.linkAuthTokens.filter((t) => t !== token),
     })),
 
-  setPendingEdits: (edits) => set({ pendingEdits: edits }),
-
   reset: () =>
     set({
       form: emptyForm,
       original: emptyForm,
       deletedFields: emptyDeletedFields,
       linkAuthTokens: [],
-      pendingEdits: {},
     }),
 }));

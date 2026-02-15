@@ -1,10 +1,6 @@
 import { supabase } from "@/lib/supabase/supabase-client";
 import { buildSlug } from "@/lib/profile/profileUtils";
-import type {
-  Profile,
-  ProfileLink,
-  PendingEdits,
-} from "@/lib/profile/types";
+import type { Profile, ProfileLink } from "@/lib/profile/types";
 
 interface AuthProvider {
   key: "twitter" | "linkedin_oidc" | "github" | "discord";
@@ -70,9 +66,6 @@ export const getLinkAuthToken = (link: Partial<ProfileLink> | null | undefined):
   const trimmed = (link.url || "").trim();
   return trimmed ? `+!${trimmed}` : null;
 };
-
-export const isLinkAuthPending = (pendingEdits: PendingEdits | null | undefined, token: string | null): boolean =>
-  Array.isArray(pendingEdits?.l) && !!token && pendingEdits.l.includes(token);
 
 interface StartOAuthParams {
   providerKey: string;

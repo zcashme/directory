@@ -70,9 +70,11 @@ const { form, setForm, initializeForm } = useEditsStore();
 
 State includes:
 - `form` - Current form values
-- `original` - Original values for diff
+- `original` - Original values for comparison
 - `deletedFields` - Track field deletions
 - `linkAuthTokens` - OAuth verification tokens
+
+Note: Profile edits are submitted directly to the backend after OTP verification via ZVS (Zcash Verification Service). The old `pendingEdits` system that encoded changes in the Zcash memo has been removed.
 
 ## Hooks
 

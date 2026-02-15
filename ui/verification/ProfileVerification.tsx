@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Profile, PendingEdits } from "@/lib/profile/types";
+import type { Profile } from "@/lib/profile/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import InlineOtpForm from "@/ui/verification/InlineOtpForm";
-import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
+import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 
 import useVerificationPolling from "@/ui/verification/useVerificationPolling";
 import ProgressStep from "@/ui/verification/ProgressStep";
@@ -19,12 +19,10 @@ const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
 
 interface ProfileVerificationProps {
   profile: Profile;
-  pendingEdits: PendingEdits;
 }
 
 export default function ProfileVerification({
   profile,
-  pendingEdits,
 }: ProfileVerificationProps) {
   const verify = useMessagingStore(state => state.verify);
   const verifyQrEnabled = useMessagingStore(state => state.verifyQrEnabled);
@@ -36,17 +34,12 @@ export default function ProfileVerification({
   const setVerifyQrEnabled = useMessagingStore(state => state.setVerifyQrEnabled);
   const resetVerificationPolling = useMessagingStore(state => state.resetVerificationPolling);
 
-  // Compute verification memo reactively from pending edits
+  // Simple memo with profile ID for ZVS verification
   const memo = useMemo(() => {
     const zId = verify.zId ?? profile.id ?? null;
     if (!zId) return "";
-
-    const profileEdits = pendingEdits.profile ?? {};
-    const linkTokens = pendingEdits.l ?? [];
-    const hasEdits = Object.keys(profileEdits).length > 0 || linkTokens.length > 0;
-    const profileDiff = hasEdits ? { ...profileEdits, l: linkTokens } : {};
-    return buildZcashEditMemo(profileDiff, String(zId), verify.requestId ?? null);
-  }, [profile.id, verify.zId, verify.requestId, pendingEdits]);
+    return String(zId);
+  }, [profile.id, verify.zId]);
 
   const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
 
@@ -66,46 +59,9 @@ export default function ProfileVerification({
     handleInlineOtpSuccess,
   } = useVerificationPolling();
 
-  const explainerText = useMemo(() => {
-    const profileEdits = pendingEdits?.profile ?? {};
-    const deleted = Array.isArray(profileEdits?.d) ? profileEdits.d : [];
-    const changedFields: string[] = [];
-
-    const hasField = (key: string, token: string) =>
-      Boolean(profileEdits?.[key as keyof typeof profileEdits]) || deleted.includes(token);
-
-    if (hasField("name", "n")) changedFields.push("username");
-    if (hasField("display_name", "h")) changedFields.push("display name");
-    if (hasField("bio", "b")) changedFields.push("bio");
-    if (hasField("profile_image_url", "i"))
-      changedFields.push("profile image");
-    if (profileEdits?.c) changedFields.push("nearest city");
-
-    const hasLinks =
-      Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
-    if (hasLinks) changedFields.push("links");
-
-    if (hasField("address", "a")) changedFields.push("address");
-
-    if (changedFields.length === 0) {
-      return "Waiting for edits, if any.";
-    }
-
-    const last = changedFields[changedFields.length - 1];
-    const prefix = changedFields.slice(0, -1);
-    const list =
-      changedFields.length === 1
-        ? last
-        : changedFields.length === 2
-          ? `${prefix[0]} and ${last}`
-          : `${prefix.join(", ")}, and ${last}`;
-
-    return `Contains requested changes to ${list}.`;
-  }, [pendingEdits]);
-
   useEffect(() => {
     resetVerificationPolling();
-  }, [pendingEdits, resetVerificationPolling]);
+  }, [resetVerificationPolling]);
 
   const { validAmount, error, verifyUri } = useMemo(() => {
     const cleaned = (amount ?? "").trim();
@@ -115,7 +71,7 @@ export default function ProfileVerification({
     const uri = buildZcashUri(
       SIGNIN_ADDR,
       raw,
-      memo && memo !== "N/A" ? memo : ""
+      memo
     );
     return {
       validAmount: validMin,
@@ -166,11 +122,11 @@ export default function ProfileVerification({
           </h3>
         </div>
 
-        {/* Memo Editor */}
+        {/* Memo Display */}
         <div className="relative group w-full mb-1">
           <div className="block -mx-0 -mt-0 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
             <span className="block text-[12px] text-gray-200">
-              {explainerText}
+              Send to verify your address ownership
             </span>
           </div>
           <textarea
@@ -188,7 +144,7 @@ export default function ProfileVerification({
               resize-none
               cursor-default
             "
-            style={{ minHeight: "6rem", lineHeight: "1.35" }}
+            style={{ minHeight: "3rem", lineHeight: "1.35" }}
           />
         </div>
 

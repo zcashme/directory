@@ -8,7 +8,6 @@ import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
-  isLinkAuthPending,
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
@@ -31,7 +30,6 @@ const LINK_FIELD_CLASS =
   `rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 appearance-none ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
-const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
 
 interface CharCounterProps {
   text: string;
@@ -68,22 +66,12 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const {
     form,
     deletedFields,
-    pendingEdits,
     setForm,
     updateField,
     setDeletedField,
     initializeForm,
     addLinkAuthToken,
-    removeLinkAuthToken,
   } = useEditsStore();
-  const pendingProfileEdits = pendingEdits?.profile || {};
-  const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
-    ? pendingProfileEdits.d
-    : [];
-  const hasPendingField = (key: string, token: string) =>
-    Boolean(pendingProfileEdits?.[key]) || pendingDeleted.includes(token);
-  const hasPendingLinks =
-    Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("X.com");
   const [avatarPrompt, setAvatarPrompt] = useState<AvatarPrompt | null>(null);
@@ -246,8 +234,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
   const authInfoProvider = authInfoLink ? getAuthProviderForUrl(authInfoLink.url) : null;
   const authInfoToken = authInfoLink ? getLinkAuthToken(authInfoLink) : null;
-  const authInfoPending =
-    authInfoToken && isLinkAuthPending(pendingEdits, authInfoToken);
 
   // Profile field diffs and link tokens are now auto-computed in the store
 
@@ -351,7 +337,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       <AuthExplainerModal
         isOpen={authInfoOpen && !!authInfoLink}
         canAuthenticate={!!profile.address_verified}
-        authPending={!!authInfoPending}
+        authPending={false}
         authRedirectOpen={showRedirect}
         providerLabel={authInfoProvider?.label}
         onClose={() => { setAuthInfoOpen(false); setAuthInfoLink(null); }}
@@ -359,7 +345,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           if (!authInfoLink) return;
           if (!profile.address_verified) return;
           if (authInfoProvider) { startOAuth(authInfoProvider.key, authInfoLink.url); return; }
-          if (!authInfoToken || authInfoPending) return;
+          if (!authInfoToken) return;
           addLinkAuthToken(authInfoToken);
           setAuthInfoOpen(false);
         }}
@@ -396,8 +382,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Zcash Address"
           htmlFor="addr"
           helpText="Your Zcash address where verification codes are sent."
-          hasPending={hasPendingField("address", "a")}
-          pendingHint="Verify to apply edits"
           isDeleted={deletedFields.address}
           deleteDisabled={!profile.address_verified}
           onDelete={toggleAddress}
@@ -422,9 +406,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Username"
           htmlFor="name"
           helpText="Your unique handle on Zcash.me."
-          hasPending={hasPendingField("name", "n")}
-          pendingHint={deletedFields.name ? "⚠ Verify to remove your profile from Zcash.me." : "Verify to apply changes"}
-          pendingHintClassName={deletedFields.name ? "text-xs text-red-600 italic" : undefined}
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
           onDelete={toggleNameDelete}
@@ -488,7 +469,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Display Name"
           htmlFor="display_name"
           helpText="Your public display name."
-          hasPending={hasPendingField("display_name", "h")}
           isDeleted={deletedFields.display_name}
           deleteDisabled={!originals.display_name}
           onDelete={() => setDeletedField("display_name", !deletedFields.display_name)}
@@ -508,7 +488,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Biography"
           htmlFor="bio"
           helpText="Your current story arc in 100 characters or less."
-          hasPending={hasPendingField("bio", "b")}
           isDeleted={deletedFields.bio}
           deleteDisabled={!originals.bio}
           onDelete={() => setDeletedField("bio", !deletedFields.bio)}
@@ -531,7 +510,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         <ProfileField
           label="Nearest City"
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
-          hasPending={!!pendingProfileEdits?.c}
           isDeleted={deletedFields.nearest_city}
           deleteDisabled={!profile.nearest_city_id}
           onDelete={() => {
@@ -564,7 +542,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Profile Image URL"
           htmlFor="pimg"
           helpText="Link to PNG or JPG. Search 'free image link host'."
-          hasPending={hasPendingField("profile_image_url", "i")}
           isDeleted={deletedFields.profile_image_url}
           deleteDisabled={!originals.profile_image_url}
           onDelete={() => setDeletedField("profile_image_url", !deletedFields.profile_image_url)}
@@ -596,11 +573,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
               <label className="block font-semibold text-gray-700">Links</label>
-              {hasPendingLinks && (
-                <span className={VERIFY_HINT_CLASS}>
-                  Verify to apply changes
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -639,7 +611,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           const isDiscord = authProvider?.key === "discord";
 
           const token = getLinkAuthToken(row);
-          const isPending = token && isLinkAuthPending(pendingEdits, token);
           const showDiscordAvatarAction = isVerified && isDiscord;
           const showXAvatarAction = isVerified && isX;
           const showGithubAvatarAction = isVerified && isGithub;
@@ -722,19 +693,15 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     onClick={() => {
                       if (!token) return;
                       if (authProvider) { startOAuth(authProvider.key, row.url); return; }
-                      if (isPending) {
-                        removeLinkAuthToken(token);
-                      } else {
-                        addLinkAuthToken(token);
-                      }
+                      addLinkAuthToken(token);
                     }}
-                    variant={isPending || (showRedirect && isOAuthLink) ? "secondary" : "primary"}
+                    variant={(showRedirect && isOAuthLink) ? "secondary" : "primary"}
                     size="xs"
-                    className={isPending || (showRedirect && isOAuthLink)
+                    className={(showRedirect && isOAuthLink)
                       ? "!text-yellow-700 !border-yellow-400 !bg-yellow-50"
                       : "!text-green-600 !border-green-400 hover:!bg-green-50"}
                   >
-                    {isPending || (showRedirect && isOAuthLink) ? "Pending" : "Authenticate"}
+                    {(showRedirect && isOAuthLink) ? "Redirecting..." : "Authenticate"}
                   </Button>
                 )}
               </div>

@@ -1,8 +1,14 @@
 # /ui/verification - OTP Verification UI
 
 ## Purpose
-User interface for blockchain-based identity verification. Users prove
-Zcash address ownership by sending a transaction with an OTP in the memo.
+User interface for ZVS (Zcash Verification Service) based identity verification.
+Users prove Zcash address ownership via OTP flow.
+
+## ZVS Verification Flow
+1. User sends a transaction to ZVS address with their profile ID in memo
+2. ZVS replies with a 6-digit OTP via Zcash memo
+3. User enters OTP in the directory UI
+4. Backend validates OTP and updates Supabase
 
 ## Components
 
@@ -22,20 +28,19 @@ Zcash address ownership by sending a transaction with an OTP in the memo.
 
 ```
 ┌─────────────────────────────────────┐
-│  Step 1: Enter OTP                  │
+│  Step 1: Send to ZVS address        │
+│  ┌─────────────┐                    │
+│  │   QR CODE   │  Amount: 0.003 ZEC │
+│  │             │  Memo: [profile_id]│
+│  └─────────────┘                    │
+├─────────────────────────────────────┤
+│  Step 2: Receive OTP in wallet      │
+│  [Check your wallet for OTP...]     │
+├─────────────────────────────────────┤
+│  Step 3: Enter OTP                  │
 │  ┌───┬───┬───┬───┬───┬───┐         │
 │  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │         │
 │  └───┴───┴───┴───┴───┴───┘         │
-├─────────────────────────────────────┤
-│  Step 2: Scan QR or Copy URI        │
-│  ┌─────────────┐                    │
-│  │   QR CODE   │  Amount: 0.0001 ZEC│
-│  │             │  Memo: [OTP]       │
-│  └─────────────┘                    │
-├─────────────────────────────────────┤
-│  Step 3: Send & Confirm             │
-│  [Waiting for transaction...]       │
-│  ████████░░░░░░░░ Polling...        │
 └─────────────────────────────────────┘
 ```
 
@@ -45,16 +50,11 @@ Zcash address ownership by sending a transaction with an OTP in the memo.
 ```typescript
 <QrUriBlock
   address="u1..."
-  amount={0.0001}
-  memo={otp}
+  amount={0.003}
+  memo={profileId}
 />
-// Generates: zcash:u1...?amount=0.0001&memo=MTIzNDU2
+// Generates: zcash:u1...?amount=0.003&memo=...
 ```
-
-### Memo Encoding
-OTP is base64url encoded in the memo field:
-- `123456` → `MTIzNDU2`
-- Max 512 bytes in Zcash memo
 
 ## State Management
 

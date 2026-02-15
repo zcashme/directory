@@ -19,7 +19,6 @@ import useProfileLinks from "@/ui/profile/useProfileLinks";
 import {
   getAuthProviderForUrl,
   getLinkAuthToken,
-  isLinkAuthPending,
   startOAuthVerification,
 } from "@/lib/profile/accountAuthFlow";
 import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
@@ -58,7 +57,7 @@ export default function ProfileCard({
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBack, setShowBack] = useState(false);
-  const { pendingEdits, addLinkAuthToken } = useEditsStore();
+  const { addLinkAuthToken } = useEditsStore();
   const { linksArray } = useProfileLinks({ profile });
   const tapProps = shouldReduceMotion
     ? {}
@@ -70,7 +69,6 @@ export default function ProfileCard({
   const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
   const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
   const authToken = authLink ? getLinkAuthToken(authLink) : null;
-  const authPending = authToken && isLinkAuthPending(pendingEdits, authToken);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
   // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
@@ -150,7 +148,7 @@ export default function ProfileCard({
       });
       return;
     }
-    if (!authToken || authPending) return;
+    if (!authToken) return;
     addLinkAuthToken(authToken);
     setAuthInfoOpen(false);
   };
@@ -641,7 +639,7 @@ export default function ProfileCard({
       <AuthExplainerModal
         isOpen={authInfoOpen && !!authLink}
         canAuthenticate={canAuthenticateLinks}
-        authPending={!!authPending}
+        authPending={false}
         authRedirectOpen={authRedirectOpen}
         providerLabel={selectedAuthProvider?.label}
         onClose={() => {
