@@ -1,6 +1,7 @@
 "use server";
 
 import { verifyOtp } from "@/lib/verification/otp";
+import { parseZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse } from "@/lib/api/types";
 
@@ -55,13 +56,47 @@ export async function confirmOtpAction(
       };
     }
 
-    // OTP is valid - mark profile as verified
+    // Parse memo to extract the address
+    const parsed = parseZvsMemo(memo.trim());
+    if (!parsed) {
+      return {
+        ok: false,
+        error: "Invalid memo format.",
+        data: { status: "invalid" },
+      };
+    }
+
+    // OTP is valid - verify address matches profile
     const supabase = createSupabaseServerClient();
     if (!supabase) {
       return {
         ok: false,
         error: "Database connection unavailable",
         data: { status: "error" },
+      };
+    }
+
+    // Fetch profile to verify address matches
+    const { data: profile, error: fetchError } = await supabase
+      .from("zcasher")
+      .select("address")
+      .eq("id", profileId)
+      .single();
+
+    if (fetchError || !profile) {
+      return {
+        ok: false,
+        error: "Profile not found",
+        data: { status: "error" },
+      };
+    }
+
+    // Verify the address in the memo matches the profile's address
+    if (parsed.userAddress !== profile.address) {
+      return {
+        ok: false,
+        error: "Address mismatch. The verification memo does not match this profile.",
+        data: { status: "invalid" },
       };
     }
 
