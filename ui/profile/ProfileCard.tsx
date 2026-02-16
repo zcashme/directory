@@ -15,7 +15,7 @@ import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
-import SubmitOtp from "@/ui/verification/SubmitOtp";
+import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { EnrichedProfileLink, Profile } from "@/lib/profile/types";
 
@@ -39,7 +39,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
-  const [isOtpOpen, setIsOtpOpen] = useState(false);
+  const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -165,15 +165,13 @@ export default function ProfileCard({
             </div>
           </div>
         </div>
-        {
-          isOtpOpen && (
-            <SubmitOtp
-              isOpen={isOtpOpen}
-              onClose={() => setIsOtpOpen(false)}
-              profile={profile}
-            />
-          )
-        }
+        {isVerifyOpen && (
+          <VerifyProfileModal
+            isOpen={isVerifyOpen}
+            onClose={() => setIsVerifyOpen(false)}
+            profile={profile}
+          />
+        )}
       </VerifiedCardWrapper >
 
     );
@@ -287,21 +285,11 @@ export default function ProfileCard({
                     <button
                       onClick={() => {
                         setMenuOpen(false);
-                        // TODO: wire Verify Profile action once flow is defined.
+                        setIsVerifyOpen(true);
                       }}
                       className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
                     >
                       ✓ Verify Profile
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setMenuOpen(false);
-                        setIsOtpOpen(true);
-                      }}
-                      className="w-full whitespace-nowrap text-left px-3 py-2 hover:bg-blue-50"
-                    >
-                      ⛨ Enter Passcode
                     </button>
                   </div>
 
@@ -593,10 +581,10 @@ export default function ProfileCard({
 
       </div>
 
-      {isOtpOpen && (
-        <SubmitOtp
-          isOpen={isOtpOpen}
-          onClose={() => setIsOtpOpen(false)}
+      {isVerifyOpen && (
+        <VerifyProfileModal
+          isOpen={isVerifyOpen}
+          onClose={() => setIsVerifyOpen(false)}
           profile={profile}
         />
       )}
