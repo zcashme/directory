@@ -51,7 +51,8 @@ export async function generateOtp(memo: string): Promise<string> {
   const sessionId = parsed.sessionId;
 
   const encoder = new TextEncoder();
-  const keyData = getSecretSeedBytes();
+  // Use .slice() to get a Uint8Array backed by ArrayBuffer (not ArrayBufferLike)
+  const keyData = getSecretSeedBytes().slice();
   const messageData = encoder.encode(sessionId);
 
   // Import the secret key for HMAC
