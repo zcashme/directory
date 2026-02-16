@@ -119,6 +119,37 @@ export default function ProfileVerification({
         </h3>
       </div>
 
+      {/* Memo Display - shown after generation */}
+      {currentMemo && (
+        <div className="relative group w-full mb-3">
+          <div className="block px-3 py-2 bg-gray-800 rounded-t-xl text-center">
+            <span className="block text-[12px] text-gray-200">
+              Memo (do not modify)
+            </span>
+          </div>
+          <textarea
+            value={currentMemo}
+            readOnly
+            rows={4}
+            className="
+              w-full
+              border border-[#000000]/90
+              border-t-0
+              rounded-b-xl
+              px-3 py-2
+              text-[12px]
+              bg-gray-50
+              text-gray-800
+              font-mono
+              resize-none
+              cursor-default
+              break-all
+              overflow-y-auto
+            "
+          />
+        </div>
+      )}
+
       {/* Amount + Generate QR */}
       <div className="mt-3 w-full">
         <AmountAndWallet
@@ -147,35 +178,6 @@ export default function ProfileVerification({
       {/* QR Code Display */}
       {qrVisible && currentUri && (
         <div className="border-t border-black/10 mt-4 pt-4">
-          {/* Memo Display */}
-          <div className="relative group w-full mb-3">
-            <div className="block px-3 py-2 bg-gray-800 rounded-t-xl text-center">
-              <span className="block text-[12px] text-gray-200">
-                Memo (do not modify)
-              </span>
-            </div>
-            <textarea
-              value={currentMemo}
-              readOnly
-              rows={4}
-              className="
-                w-full
-                border border-[#000000]/90
-                border-t-0
-                rounded-b-xl
-                px-3 py-2
-                text-[12px]
-                bg-gray-50
-                text-gray-800
-                font-mono
-                resize-none
-                cursor-default
-                break-all
-                overflow-y-auto
-              "
-            />
-          </div>
-
           {/* QR Code */}
           <div className="flex justify-center mb-4">
             <QrUriBlock uri={currentUri} profileName="verification" />
