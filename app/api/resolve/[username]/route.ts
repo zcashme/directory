@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { createSupabaseServerClient } from "../../../../lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "../../../../lib/api/guard";
+import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
+import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
 
 interface ZcasherProfile {
   id: number;

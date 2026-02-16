@@ -1,5 +1,5 @@
-import { lookupSocialAddress } from "../../../lib/profile/social-lookup";
-import { enforceApiGuard, withCacheHeaders } from "../../../lib/api/guard";
+import { lookupSocialAddress } from "@/lib/profile/social-lookup";
+import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
 
 export async function GET(request: Request): Promise<Response> {
   const guard = await enforceApiGuard(request, { cacheSeconds: 300 });
