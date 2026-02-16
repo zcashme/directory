@@ -45,8 +45,6 @@ function CharCounter({ text }: CharCounterProps) {
   );
 }
 
-// Removed - now using store.setDeletedField directly
-
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
@@ -133,19 +131,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     });
   }, [profile, links]);
 
-  // Initialize form from profile and links
+  // Initialize form from profile and links (only when profile ID changes)
   useEffect(() => {
     initializeForm(profile, originalLinks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id]); // Only re-initialize if profile ID changes
-
-  // Update links when originalLinks changes (e.g., after verification)
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      links: originalLinks.map((l) => ({ ...l })),
-    }));
-  }, [originalLinks, setForm]);
-
 
   const [imageUrlValid, setImageUrlValid] = useState(true);
   const [imageUrlReason, setImageUrlReason] = useState<string | null>(null);
@@ -263,9 +253,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     }
   };
 
-  // Profile field diffs and link tokens are now auto-computed in the store
-
-  // Handlers
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
@@ -318,7 +305,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       ...prev,
       links: prev.links.filter((l) => l._uid !== uid)
     }));
-    // Note: Deletion token (-{id}) is automatically computed by the store
   };
 
   const resetLinks = () => {
@@ -332,7 +318,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
               _uid: crypto.randomUUID(),
             } as ParsedLink],
     }));
-    // Note: Link tokens are automatically recomputed by the store
   };
 
   const toggleAddress = (e?: MouseEvent<HTMLButtonElement>) => {
