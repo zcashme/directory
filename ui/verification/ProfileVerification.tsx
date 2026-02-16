@@ -1,12 +1,11 @@
-import { useMemo, useState, useCallback, useEffect } from "react";
+import { useMemo, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { OtpInput } from "@/ui/verification/OtpInput";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { buildZvsMemo } from "@/lib/verification/session";
+import { buildZvsMemo, generateSessionId } from "@/lib/verification/session";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
-import { createVerificationSession, getVerificationSessions } from "@/lib/verification/verificationSessionAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 
@@ -27,42 +26,14 @@ export default function ProfileVerification({
   const [qrVisible, setQrVisible] = useState(false);
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  // Track the memo that was saved to DB (use this for display, not the live memo)
-  const [savedMemo, setSavedMemo] = useState("");
-  const [savedUri, setSavedUri] = useState("");
-
-  // Track if there's an existing pending session
-  const [hasPendingSession, setHasPendingSession] = useState(false);
-  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  // Track the current memo (in React state only - no DB persistence)
+  const [currentMemo, setCurrentMemo] = useState("");
+  const [currentUri, setCurrentUri] = useState("");
 
   const userAddress = profile?.address ?? "";
-
-  // Check for existing pending session on mount
-  useEffect(() => {
-    async function checkPendingSession() {
-      if (!profile?.id) {
-        setIsCheckingSession(false);
-        return;
-      }
-
-      try {
-        const result = await getVerificationSessions(profile.id);
-        if (result.ok && result.sessions && result.sessions.length > 0) {
-          setHasPendingSession(true);
-        }
-      } catch {
-        // Ignore errors, just don't show the notice
-      } finally {
-        setIsCheckingSession(false);
-      }
-    }
-
-    checkPendingSession();
-  }, [profile?.id]);
 
   // Validate amount
   const { validAmount, amountError } = useMemo(() => {
@@ -79,60 +50,34 @@ export default function ProfileVerification({
     };
   }, [amount]);
 
-  // Generate QR - creates session in DB first, then shows QR
-  const handleGenerateQr = useCallback(async () => {
+  // Generate QR - creates memo in React state (no DB persistence)
+  const handleGenerateQr = useCallback(() => {
     if (!validAmount || !userAddress) return;
 
-    setIsGenerating(true);
     setError("");
     setOtpResult(null);
     setOtp("");
 
-    try {
-      // Generate new session ID
-      const { generateSessionId } = await import("@/lib/verification/session");
-      const newSessionId = generateSessionId();
-      const newMemo = buildZvsMemo(newSessionId, userAddress);
+    // Generate new session ID and memo
+    const newSessionId = generateSessionId();
+    const newMemo = buildZvsMemo(newSessionId, userAddress);
+    const newUri = buildZcashUri(SIGNIN_ADDR, amount.replace(/[^\d.]/g, ""), newMemo);
 
-      // Create session in database BEFORE showing QR
-      const result = await createVerificationSession(
-        profile.id,
-        newSessionId,
-        newMemo,
-        {} // TODO: Wire up pending_edits from ProfileEditor store when edit flow is implemented
-      );
-
-      if (!result.ok) {
-        setError(result.error || "Failed to create verification session");
-        setIsGenerating(false);
-        return;
-      }
-
-      // Update the store with the session ID we actually saved
-      // Note: We need to set this manually since we generated it outside the store
-      // For now, we'll save the memo/uri that was persisted and display those
-      const newUri = buildZcashUri(SIGNIN_ADDR, amount.replace(/[^\d.]/g, ""), newMemo);
-      setSavedMemo(newMemo);
-      setSavedUri(newUri);
-      setQrVisible(true);
-      setHasPendingSession(false); // New session replaces old one
-    } catch (err) {
-      setError("Failed to create session. Please try again.");
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [validAmount, userAddress, profile.id, amount]);
+    setCurrentMemo(newMemo);
+    setCurrentUri(newUri);
+    setQrVisible(true);
+  }, [validAmount, userAddress, amount]);
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
-    if (!otp.trim() || !profile.id) return;
+    if (!otp.trim() || !profile.id || !currentMemo) return;
 
     setIsSubmitting(true);
     setOtpResult(null);
     setError("");
 
     try {
-      const response = await confirmOtpAction(profile.id, otp.trim());
+      const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo);
 
       if (response.ok) {
         setOtpResult({ ok: true, message: "Verification successful! Refreshing..." });
@@ -150,7 +95,7 @@ export default function ProfileVerification({
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id]);
+  }, [otp, profile.id, currentMemo]);
 
   // Handle OTP input change - strip non-digits
   const handleOtpChange = useCallback((value: string) => {
@@ -174,25 +119,13 @@ export default function ProfileVerification({
         </h3>
       </div>
 
-      {/* Pending session notice */}
-      {hasPendingSession && !qrVisible && !isCheckingSession && (
-        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
-          <p className="font-medium">You have a pending verification session.</p>
-          <p className="mt-1 text-blue-700">
-            If you already sent a payment, use the "I Have a Code" tab to enter your OTP.
-            Otherwise, click Generate QR to start fresh.
-          </p>
-        </div>
-      )}
-
       {/* Amount + Generate QR */}
       <div className="mt-3 w-full">
         <AmountAndWallet
           amount={amount}
           setAmount={setAmount}
           openWallet={handleGenerateQr}
-          openWalletLabel={isGenerating ? "Creating..." : "Generate QR"}
-          disabled={isGenerating}
+          openWalletLabel="Generate QR"
         />
         {!validAmount && amountError && (
           <Alert variant="error" size="sm" message={amountError} className="mt-1" />
@@ -211,8 +144,8 @@ export default function ProfileVerification({
         <Alert variant="error" size="sm" message={error} className="mt-2" />
       )}
 
-      {/* QR Code Display - shows after session saved to DB */}
-      {qrVisible && savedUri && (
+      {/* QR Code Display */}
+      {qrVisible && currentUri && (
         <div className="border-t border-black/10 mt-4 pt-4">
           {/* Memo Display */}
           <div className="relative group w-full mb-3">
@@ -222,7 +155,7 @@ export default function ProfileVerification({
               </span>
             </div>
             <textarea
-              value={savedMemo}
+              value={currentMemo}
               readOnly
               rows={4}
               className="
@@ -245,7 +178,7 @@ export default function ProfileVerification({
 
           {/* QR Code */}
           <div className="flex justify-center mb-4">
-            <QrUriBlock uri={savedUri} profileName="verification" />
+            <QrUriBlock uri={currentUri} profileName="verification" />
           </div>
 
           {/* OTP Entry Section - shown immediately with QR */}

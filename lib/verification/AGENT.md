@@ -6,11 +6,11 @@ by sending a transaction with a specific memo, then entering a deterministic OTP
 
 ## How Verification Works
 
-1. **Generate Session** - Create unique session_id, build memo, store in Supabase
+1. **Generate QR** - Create unique session_id, build memo (stored in React state only)
 2. **User sends transaction** - To ZVS address with memo in format `zvs/{session_id},{u-address}`
-3. **OTP computed** - Deterministically from memo using HMAC-SHA256
-4. **User enters OTP** - System finds matching session, applies pending edits
-5. **Session deleted** - After successful verification
+3. **Backend wallet receives tx** - Decrypts memo, computes OTP, sends ZEC back with OTP in memo
+4. **User enters OTP** - Client sends memo + OTP to server for verification
+5. **Profile verified** - Server recomputes OTP from memo, marks profile as verified
 
 ## Key Files
 
@@ -32,62 +32,22 @@ import { generateOtp, verifyOtp } from "./otp";
 const otp = await generateOtp(memo);  // 6-digit string
 const isValid = await verifyOtp(memo, userInput);  // boolean
 ```
-Requires `ZVS_SECRET_SEED` environment variable.
-
-### verificationSessionAction.ts
-Supabase CRUD for verification sessions.
-```typescript
-import {
-  createVerificationSession,
-  getVerificationSessions,
-  deleteVerificationSession
-} from "./verificationSessionAction";
-
-// Create or replace session (one per user - upserts on zcasher_id)
-await createVerificationSession(zcasherId, sessionId, memo, pendingEdits);
-
-// Get all active sessions for user
-const { sessions } = await getVerificationSessions(zcasherId);
-
-// Delete after successful verification
-await deleteVerificationSession(sessionId);
-```
+Requires `ZVS_SECRET_SEED` environment variable (throws in production if missing).
 
 ### confirmOtpAction.ts
-Main server action for OTP verification.
+Main server action for OTP verification (stateless - no DB sessions).
 ```typescript
 'use server'
 import { confirmOtpAction } from "./confirmOtpAction";
 
-const result = await confirmOtpAction(zcasherId, otp);
-// Finds matching session, applies edits, returns { ok, data, error }
+// Client passes memo from React state + OTP from user input
+const result = await confirmOtpAction(zcasherId, otp, memo);
+// Verifies OTP matches memo, marks profile as verified
+// Returns { ok, data, error }
 ```
 
 ### updateLinkVerificationAction.ts
 Marks individual social links as verified (separate OAuth flow).
-
-## Database Schema
-
-### verification_sessions table
-```sql
-CREATE TABLE verification_sessions (
-  id SERIAL PRIMARY KEY,
-  zcasher_id INTEGER NOT NULL UNIQUE,  -- One session per profile
-  session_id TEXT UNIQUE NOT NULL,
-  memo TEXT NOT NULL,
-  pending_edits JSONB DEFAULT '{}',
-  attempts_remaining INTEGER DEFAULT 3,
-  expires_at TIMESTAMPTZ NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
-```
-
-### Required Supabase RPC
-```sql
--- apply_pending_edits_sql(in_zcasher_id, in_session_id, in_pending_edits)
--- Applies pending_edits to the zcasher profile
--- Marks address as verified
-```
 
 ## Memo Format
 ```
@@ -104,9 +64,9 @@ zvs/2026021505421234,u1d9l0a8ldht9zcpkmppd8s9lpev724l5afh3dl9ds8rt09aunghcx7xtnk
 
 ## Security Notes
 - OTP is deterministic (HMAC-SHA256) - same memo always produces same OTP
-- Sessions expire after 24 hours
-- Secret seed stored in `ZVS_SECRET_SEED` env var
-- One session per user (upsert replaces existing session)
+- Secret seed stored in `ZVS_SECRET_SEED` env var (required in production)
+- No server-side session storage - memo lives in client React state only
+- If user refreshes/navigates away, they must generate a new QR and send again
 
 ## Flow Diagram
 ```
@@ -114,19 +74,19 @@ User clicks "Generate QR"
          ↓
     generateSessionId() → buildZvsMemo()
          ↓
-    createVerificationSession() → Supabase
+    Store memo in React state (NO database)
          ↓
     Display QR with zcash: URI
          ↓
     User sends transaction with memo
          ↓
-    User enters OTP (computed from memo)
+    Backend wallet receives tx, computes OTP, sends back
          ↓
-    confirmOtpAction()
+    User sees OTP in wallet, enters it
          ↓
-    getVerificationSessions() → find matching OTP
+    confirmOtpAction(zcasherId, otp, memo)
          ↓
-    apply_pending_edits_sql() → update profile
+    Server verifies: generateOtp(memo) === otp
          ↓
-    deleteVerificationSession() → cleanup
+    Update zcasher.verified = true
 ```

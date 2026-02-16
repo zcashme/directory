@@ -230,7 +230,7 @@ export const expandCollapse: Variants = {
  * </AnimatePresence>
  * ```
  *
- * @see ui/verification/SubmitOtp.tsx for modal implementation (uses Tailwind animate-in)
+ * @see ui/verification/VerifyProfileModal.tsx for modal implementation (uses Tailwind animate-in)
  */
 export const modalVariant: Variants = {
   initial: { scale: 0.95, opacity: 0 },

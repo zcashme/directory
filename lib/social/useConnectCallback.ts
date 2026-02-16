@@ -70,10 +70,6 @@ export function useConnectCallback({
     const handle = provider.getHandle(identityData);
 
     if (!handle) {
-      console.error(
-        `[useConnectCallback] No handle found for ${provider.key}:`,
-        identityData
-      );
       onError?.(`Could not get handle from ${provider.label}`);
       cleanUrl();
       return;
