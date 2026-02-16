@@ -6,7 +6,6 @@
 import { useEffect, useCallback } from "react";
 import { getSession } from "@/lib/supabase/auth";
 import { getProviderByKey } from "./providers";
-import { verifyLinkAction } from "./verifyLinkAction";
 
 export interface ConnectedLink {
   url: string;
@@ -79,15 +78,7 @@ export function useConnectCallback({
     const username = provider.getUsername?.(identityData) ?? handle;
     const avatarUrl = provider.getAvatarUrl?.(identityData) ?? null;
 
-    // Save to database
-    const result = await verifyLinkAction(profileId, url);
-    if (!result.ok) {
-      onError?.(result.error || "Failed to save link");
-      cleanUrl();
-      return;
-    }
-
-    // Notify caller
+    // Notify caller - link goes to local state, written to DB after OTP verification
     onConnected?.({
       url,
       provider: provider.key,

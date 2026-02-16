@@ -123,7 +123,6 @@ async function fetchRateFromProvider(fiat: string, asset: string): Promise<Excha
  * @returns Promise with exchange rate data
  */
 export async function getRateAction(fiat: string = "USD", asset: string = "ZEC"): Promise<ExchangeRate> {
-  console.log("[SERVER ACTION] getRateAction called with fiat=", fiat, "asset=", asset);
   try {
     const fiatUpper = (fiat || "USD").toUpperCase();
     const assetUpper = (asset || "ZEC").toUpperCase();

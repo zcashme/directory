@@ -67,6 +67,98 @@ function toBasisPoints(value: number | string | null | undefined, defaultBps: nu
   return Math.max(0, Math.min(10_000, bps));
 }
 
+// ============================================================================
+// Shared swap parameter validation and request building
+// ============================================================================
+
+interface SwapParams {
+  fromToken: string;
+  toToken: string;
+  amountIn: string;
+  destAddress: string;
+  refundAddress: string;
+  slippageTolerance?: number | string;
+  tokens: Token[];
+}
+
+interface ValidatedSwapParams {
+  originToken: Token;
+  destToken: Token;
+  amountBase: string;
+}
+
+type SwapValidationResult =
+  | { ok: true; params: ValidatedSwapParams }
+  | { ok: false; error: string; retryable: boolean };
+
+/**
+ * Validate swap parameters and resolve tokens
+ */
+function validateSwapParams(params: SwapParams): SwapValidationResult {
+  if (!OpenAPI.TOKEN) {
+    return { ok: false, error: "1Click API key not configured", retryable: false };
+  }
+
+  if (!params.fromToken || !params.toToken || !params.amountIn || !params.destAddress || !params.refundAddress) {
+    return { ok: false, error: "Missing required fields", retryable: false };
+  }
+
+  const originToken = findToken(params.tokens, params.fromToken);
+  const destToken = findToken(params.tokens, params.toToken);
+
+  if (!originToken) {
+    return { ok: false, error: "From token not found", retryable: false };
+  }
+  if (!destToken) {
+    return { ok: false, error: "To token not found", retryable: false };
+  }
+
+  const amountBase = toBaseUnits(params.amountIn, originToken.decimals);
+  if (!amountBase) {
+    return { ok: false, error: "Amount must be greater than 0", retryable: false };
+  }
+
+  return {
+    ok: true,
+    params: { originToken, destToken, amountBase },
+  };
+}
+
+/**
+ * Build a QuoteRequest object
+ */
+function buildQuoteRequest(
+  params: SwapParams,
+  validated: ValidatedSwapParams,
+  isDryRun: boolean
+): QuoteRequest {
+  return {
+    dry: isDryRun,
+    swapType: QuoteRequest.swapType.EXACT_INPUT,
+    slippageTolerance: toBasisPoints(params.slippageTolerance, 100),
+    originAsset: params.fromToken,
+    depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
+    destinationAsset: params.toToken,
+    amount: validated.amountBase,
+    refundTo: params.refundAddress,
+    refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
+    recipient: params.destAddress,
+    recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
+    deadline: deadlineIso(),
+    quoteWaitingTimeMs: 3000,
+    appFees: [
+      {
+        recipient: "zcash-me.near",
+        fee: 150,
+      },
+    ],
+  };
+}
+
+// ============================================================================
+// Public API
+// ============================================================================
+
 /**
  * Fetch available swap tokens
  */
@@ -115,62 +207,16 @@ export async function getSwapTokens(): Promise<{ tokens: Token[] } | { error: st
 /**
  * Get swap quote (dry run - no deposit address generated)
  */
-export async function getSwapQuote(params: {
-  fromToken: string;
-  toToken: string;
-  amountIn: string;
-  destAddress: string;
-  refundAddress: string;
-  slippageTolerance?: number | string;
-  tokens: Token[];
-}): Promise<SwapQuoteResponse> {
-  if (!OpenAPI.TOKEN) {
-    return { ok: false, error: "1Click API key not configured", retryable: false };
+export async function getSwapQuote(params: SwapParams): Promise<SwapQuoteResponse> {
+  const validation = validateSwapParams(params);
+  if (!validation.ok) {
+    return validation;
   }
 
-  // Validate inputs
-  if (!params.fromToken || !params.toToken || !params.amountIn || !params.destAddress || !params.refundAddress) {
-    return { ok: false, error: "Missing required fields", retryable: false };
-  }
-
-  const originToken = findToken(params.tokens, params.fromToken);
-  const destToken = findToken(params.tokens, params.toToken);
-
-  if (!originToken) {
-    return { ok: false, error: "From token not found", retryable: false };
-  }
-  if (!destToken) {
-    return { ok: false, error: "To token not found", retryable: false };
-  }
-
-  const amountBase = toBaseUnits(params.amountIn, originToken.decimals);
-  if (!amountBase) {
-    return { ok: false, error: "Amount must be greater than 0", retryable: false };
-  }
+  const { originToken, destToken } = validation.params;
 
   try {
-    const request: QuoteRequest = {
-      dry: true, // Dry run - no deposit address
-      swapType: QuoteRequest.swapType.EXACT_INPUT,
-      slippageTolerance: toBasisPoints(params.slippageTolerance, 100),
-      originAsset: params.fromToken,
-      depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
-      destinationAsset: params.toToken,
-      amount: amountBase,
-      refundTo: params.refundAddress,
-      refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
-      recipient: params.destAddress,
-      recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
-      deadline: deadlineIso(),
-      quoteWaitingTimeMs: 3000,
-      appFees: [
-        {
-          recipient: "zcash-me.near",
-          fee: 150,
-        },
-      ],
-    };
-
+    const request = buildQuoteRequest(params, validation.params, true);
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
 
     // Format minAmountOut from base units to decimal
@@ -214,62 +260,16 @@ export async function getSwapQuote(params: {
 /**
  * Confirm swap and get deposit address (dry=false)
  */
-export async function confirmSwap(params: {
-  fromToken: string;
-  toToken: string;
-  amountIn: string;
-  destAddress: string;
-  refundAddress: string;
-  slippageTolerance?: number | string;
-  tokens: Token[];
-}): Promise<SwapConfirmResponse> {
-  if (!OpenAPI.TOKEN) {
-    return { ok: false, error: "1Click API key not configured", retryable: false };
+export async function confirmSwap(params: SwapParams): Promise<SwapConfirmResponse> {
+  const validation = validateSwapParams(params);
+  if (!validation.ok) {
+    return validation;
   }
 
-  // Validate inputs
-  if (!params.fromToken || !params.toToken || !params.amountIn || !params.destAddress || !params.refundAddress) {
-    return { ok: false, error: "Missing required fields", retryable: false };
-  }
-
-  const originToken = findToken(params.tokens, params.fromToken);
-  const destToken = findToken(params.tokens, params.toToken);
-
-  if (!originToken) {
-    return { ok: false, error: "From token not found", retryable: false };
-  }
-  if (!destToken) {
-    return { ok: false, error: "To token not found", retryable: false };
-  }
-
-  const amountBase = toBaseUnits(params.amountIn, originToken.decimals);
-  if (!amountBase) {
-    return { ok: false, error: "Amount must be greater than 0", retryable: false };
-  }
+  const { originToken, amountBase } = validation.params;
 
   try {
-    const request: QuoteRequest = {
-      dry: false, // Real swap - generates deposit address
-      swapType: QuoteRequest.swapType.EXACT_INPUT,
-      slippageTolerance: toBasisPoints(params.slippageTolerance, 100),
-      originAsset: params.fromToken,
-      depositType: QuoteRequest.depositType.ORIGIN_CHAIN,
-      destinationAsset: params.toToken,
-      amount: amountBase,
-      refundTo: params.refundAddress,
-      refundType: QuoteRequest.refundType.ORIGIN_CHAIN,
-      recipient: params.destAddress,
-      recipientType: QuoteRequest.recipientType.DESTINATION_CHAIN,
-      deadline: deadlineIso(),
-      quoteWaitingTimeMs: 3000,
-      appFees: [
-        {
-          recipient: "zcash-me.near",
-          fee: 150,
-        },
-      ],
-    };
-
+    const request = buildQuoteRequest(params, validation.params, false);
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
 
     if (!response.quote.depositAddress) {

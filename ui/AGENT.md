@@ -53,11 +53,6 @@ Use `'use client'` only when component needs:
 - Privacy warnings for transparent addresses
 - Unified address (u1...) shown prominently
 
-## Testing Harness
-- Manual testing via `/app/design-system` route
-- Components are stateless where possible
-- Props-based API for easy snapshot testing
-
 ## Adding Components
 1. Create in appropriate feature folder
 2. Export from folder's `index.ts`
