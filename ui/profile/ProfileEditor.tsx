@@ -1,29 +1,26 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
-import {
-  getAuthProviderForUrl,
-  getLinkAuthToken,
-  startOAuthVerification,
-} from "@/lib/profile/accountAuthFlow";
-import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
-import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
 import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
-import useVerificationFlow from "@/ui/social/useVerificationFlow";
 import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
+import { PROVIDERS } from "@/lib/social/providers";
+import { connectSocial } from "@/lib/social/connect";
+import { useConnectCallback } from "@/lib/social/useConnectCallback";
+import { parseSocialUrl, isValidImageUrl } from "@/lib/social/utils";
+import { applyProviderAvatar, detectProviderFromUrl } from "@/lib/social/avatars";
 
 const FIELD_CLASS =
   `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;
@@ -71,19 +68,45 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     updateField,
     setDeletedField,
     initializeForm,
-    addLinkAuthToken,
   } = useEditsStore();
   const [showRedirect, setShowRedirect] = useState(false);
-  const [redirectLabel, setRedirectLabel] = useState("X.com");
+  const [redirectLabel, setRedirectLabel] = useState("");
   const [avatarPrompt, setAvatarPrompt] = useState<AvatarPrompt | null>(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
-  const [authInfoOpen, setAuthInfoOpen] = useState(false);
-  const [authInfoLink, setAuthInfoLink] = useState<ParsedLink | null>(null);
-  const providerKeyByLabel: Record<string, string> = {
-    Discord: "discord",
-    X: "twitter",
-    GitHub: "github",
-  };
+
+  // Handle OAuth callback when returning from provider
+  const handleConnected = useCallback((link: { url: string; provider: string; handle: string }) => {
+    setShowRedirect(false);
+    // Add the verified link to the form
+    setForm((prev) => ({
+      ...prev,
+      links: [
+        ...prev.links.filter((l) => l.url !== link.url),
+        {
+          id: null,
+          url: link.url,
+          platform: link.provider === "twitter" ? "X" : link.provider,
+          username: link.handle,
+          otherUrl: "",
+          valid: true,
+          reason: null,
+          is_verified: true,
+          _uid: crypto.randomUUID(),
+        } as ParsedLink,
+      ],
+    }));
+  }, [setForm]);
+
+  const handleConnectError = useCallback((error: string) => {
+    setShowRedirect(false);
+    alert(`Connection failed: ${error}`);
+  }, []);
+
+  useConnectCallback({
+    profileId: profile.id,
+    onConnected: handleConnected,
+    onError: handleConnectError,
+  });
 
   // Display value for city search input (local UI state)
   const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name || "");
@@ -221,20 +244,24 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     };
   }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
-  // Verification flow hook
-  useVerificationFlow(profile.id, setShowRedirect);
+  // Start OAuth connection for a provider
+  const startConnect = async (providerKey: string) => {
+    const provider = PROVIDERS[providerKey];
+    if (!provider) return;
 
-  const startOAuth = (providerKey: string, url: string) =>
-    startOAuthVerification({
-      providerKey,
-      profile,
-      url,
-      setShowRedirect,
-      setRedirectLabel,
-    });
+    setShowRedirect(true);
+    setRedirectLabel(provider.label);
 
-  const authInfoProvider = authInfoLink ? getAuthProviderForUrl(authInfoLink.url) : null;
-  const authInfoToken = authInfoLink ? getLinkAuthToken(authInfoLink) : null;
+    try {
+      await connectSocial(providerKey, {
+        profileId: profile.id,
+        returnPath: window.location.pathname,
+      });
+    } catch (error) {
+      setShowRedirect(false);
+      alert(`Failed to connect: ${(error as Error).message}`);
+    }
+  };
 
   // Profile field diffs and link tokens are now auto-computed in the store
 
@@ -335,22 +362,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <RedirectModal isOpen={showRedirect} label={redirectLabel} />
-      <AuthExplainerModal
-        isOpen={authInfoOpen && !!authInfoLink}
-        canAuthenticate={!!profile.address_verified}
-        authPending={false}
-        authRedirectOpen={showRedirect}
-        providerLabel={authInfoProvider?.label}
-        onClose={() => { setAuthInfoOpen(false); setAuthInfoLink(null); }}
-        onAuthenticate={() => {
-          if (!authInfoLink) return;
-          if (!profile.address_verified) return;
-          if (authInfoProvider) { startOAuth(authInfoProvider.key, authInfoLink.url); return; }
-          if (!authInfoToken) return;
-          addLinkAuthToken(authInfoToken);
-          setAuthInfoOpen(false);
-        }}
-      />
       <AvatarPreviewModal
         isOpen={avatarPreviewOpen}
         src={(form.profile_image_url || originals.profile_image_url || "").trim()}
@@ -362,11 +373,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         onLater={() => setAvatarPrompt(null)}
         onReauth={() => {
           if (!avatarPrompt?.url) return;
-          const provider = avatarPrompt.provider;
-          const url = avatarPrompt.url;
+          const providerKey = detectProviderFromUrl(avatarPrompt.url);
           setAvatarPrompt(null);
-          const providerKey = providerKeyByLabel[provider];
-          if (providerKey) startOAuth(providerKey, url);
+          if (providerKey) startConnect(providerKey);
         }}
       />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
@@ -597,24 +606,10 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) || {} as ParsedLink;
           const isVerified = !!row.is_verified;
-          const canVerify = !!profile.address_verified;
-          const isExistingLink = !!row.id;
-          const originalUrl = (original?.url || "").trim();
           const currentUrl = (row.url || "").trim();
-          const hasLinkInput = currentUrl.length > 0;
-          const isUnchangedLink = !isExistingLink || currentUrl === originalUrl;
-          const canAuthenticate =
-            canVerify && isExistingLink && !isVerified && isUnchangedLink;
-          const authProvider = getAuthProviderForUrl(row.url);
-          const isOAuthLink = !!authProvider;
-          const isX = authProvider?.key === "twitter";
-          const isGithub = authProvider?.key === "github";
-          const isDiscord = authProvider?.key === "discord";
+          const providerKey = detectProviderFromUrl(currentUrl);
+          const isOAuthProvider = !!providerKey && !!PROVIDERS[providerKey];
 
-          const token = getLinkAuthToken(row);
-          const showDiscordAvatarAction = isVerified && isDiscord;
-          const showXAvatarAction = isVerified && isX;
-          const showGithubAvatarAction = isVerified && isGithub;
           const rowConflict =
             (!isVerified && row.valid === false) ||
             (isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
@@ -631,16 +626,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           const linkActions = (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {!canVerify ? (
-                  <Button
-                    type="button"
-                    onClick={() => { setAuthInfoLink(row); setAuthInfoOpen(true); }}
-                    variant="primary"
-                    size="xs"
-                  >
-                    Authenticate
-                  </Button>
-                ) : isVerified ? (
+                {isVerified ? (
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
@@ -649,62 +635,20 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                       size="xs"
                       className="!text-green-700 !border-green-400"
                     >
-                      Authenticated
+                      Verified
                     </Button>
-                    {showDiscordAvatarAction && (
+                    {isOAuthProvider && (
                       <Button
                         type="button"
-                        onClick={() => applyProviderAvatar("Discord", row.url, avatarCallbacks)}
+                        onClick={() => applyProviderAvatar(providerKey!, row.url, avatarCallbacks)}
                         variant="primary"
                         size="xs"
                       >
-                        Use Discord Avatar
-                      </Button>
-                    )}
-                    {showXAvatarAction && (
-                      <Button
-                        type="button"
-                        onClick={() => applyProviderAvatar("X", row.url, avatarCallbacks)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use X Avatar
-                      </Button>
-                    )}
-                    {showGithubAvatarAction && (
-                      <Button
-                        type="button"
-                        onClick={() => applyProviderAvatar("GitHub", row.url, avatarCallbacks)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use Github Avatar
+                        Use Avatar
                       </Button>
                     )}
                   </div>
-                ) : !canAuthenticate ? (
-                  hasLinkInput ? (
-                    <span className="text-xs text-gray-500 italic">
-                      Apply edits to enable authentication
-                    </span>
-                  ) : null
-                ) : (
-                  <Button
-                    type="button"
-                    onClick={() => {
-                      if (!token) return;
-                      if (authProvider) { startOAuth(authProvider.key, row.url); return; }
-                      addLinkAuthToken(token);
-                    }}
-                    variant={(showRedirect && isOAuthLink) ? "secondary" : "primary"}
-                    size="xs"
-                    className={(showRedirect && isOAuthLink)
-                      ? "!text-yellow-700 !border-yellow-400 !bg-yellow-50"
-                      : "!text-green-600 !border-green-400 hover:!bg-green-50"}
-                  >
-                    {(showRedirect && isOAuthLink) ? "Redirecting..." : "Authenticate"}
-                  </Button>
-                )}
+                ) : null}
               </div>
               <Button
                 size="sm"
@@ -753,6 +697,27 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         >
           ＋ Add Link
         </Button>
+
+        {/* Connect Social Accounts */}
+        {profile.address_verified && (
+          <div className="mt-4 pt-4 border-t border-black/10">
+            <p className="text-xs text-gray-500 mb-2">Connect & verify social accounts:</p>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(PROVIDERS).map(([key, provider]) => (
+                <Button
+                  key={key}
+                  type="button"
+                  onClick={() => startConnect(key)}
+                  variant="secondary"
+                  size="xs"
+                  disabled={showRedirect}
+                >
+                  {provider.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="mt-8 pt-4 border-t border-black/10">

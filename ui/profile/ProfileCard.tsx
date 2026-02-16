@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { MouseEvent } from "react";
 import {
   isNewProfile,
   getProfileTrust,
@@ -16,19 +15,11 @@ import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
-import {
-  getAuthProviderForUrl,
-  getLinkAuthToken,
-  startOAuthVerification,
-} from "@/lib/profile/accountAuthFlow";
-import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
-import { useEditsStore } from "@/ui/profile/store";
 import SubmitOtp from "@/ui/verification/SubmitOtp";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { EnrichedProfileLink, Profile } from "@/lib/profile/types";
 
 import ProfileLinkRow from "./ProfileLinkRow";
-import RedirectModal from "./RedirectModal";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
 import { formatUsername } from "./profileCardUtils";
 
@@ -49,15 +40,10 @@ export default function ProfileCard({
   const menuContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
   const [isOtpOpen, setIsOtpOpen] = useState(false);
-  const [authInfoOpen, setAuthInfoOpen] = useState(false);
-  const [authLink, setAuthLink] = useState<EnrichedProfileLink | null>(null);
-  const [authRedirectOpen, setAuthRedirectOpen] = useState(false);
-  const [authRedirectLabel, setAuthRedirectLabel] = useState("X.com");
   const [showStats, setShowStats] = useState(false);
   const [showDetail, setShowDetail] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [showBack, setShowBack] = useState(false);
-  const { addLinkAuthToken } = useEditsStore();
   const { linksArray } = useProfileLinks({ profile });
   const tapProps = shouldReduceMotion
     ? {}
@@ -66,9 +52,7 @@ export default function ProfileCard({
         transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
       };
 
-  const { verifiedAddress, verifiedLinks, canAuthenticateLinks } = getProfileTrust(profile);
-  const selectedAuthProvider = authLink ? getAuthProviderForUrl(authLink.url) : null;
-  const authToken = authLink ? getLinkAuthToken(authLink) : null;
+  const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
   // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
@@ -127,31 +111,6 @@ export default function ProfileCard({
       document.removeEventListener("pointerdown", handlePointerDown);
     };
   }, [menuOpen]);
-
-  const handleAuthBadgeClick = (event: MouseEvent, link: EnrichedProfileLink) => {
-    event.stopPropagation();
-    if (!link || link.is_verified) return;
-    setAuthLink(link);
-    setAuthInfoOpen(true);
-  };
-
-  const handleAuthenticateLink = () => {
-    if (!authLink) return;
-    if (!canAuthenticateLinks) return;
-    if (selectedAuthProvider) {
-      startOAuthVerification({
-        providerKey: selectedAuthProvider.key,
-        profile,
-        url: authLink.url,
-        setShowRedirect: setAuthRedirectOpen,
-        setRedirectLabel: setAuthRedirectLabel,
-      });
-      return;
-    }
-    if (!authToken) return;
-    addLinkAuthToken(authToken);
-    setAuthInfoOpen(false);
-  };
 
   if (!fullView) {
     return (
@@ -542,7 +501,6 @@ export default function ProfileCard({
                       key={link.id || link.url}
                       link={link}
                       classes={fullLinkRowClasses}
-                      badgeOnClick={handleAuthBadgeClick}
                     />
                   ))
                 ) : (
@@ -634,20 +592,6 @@ export default function ProfileCard({
         </div>
 
       </div>
-
-      <RedirectModal isOpen={authRedirectOpen} label={authRedirectLabel} />
-      <AuthExplainerModal
-        isOpen={authInfoOpen && !!authLink}
-        canAuthenticate={canAuthenticateLinks}
-        authPending={false}
-        authRedirectOpen={authRedirectOpen}
-        providerLabel={selectedAuthProvider?.label}
-        onClose={() => {
-          setAuthInfoOpen(false);
-          setAuthLink(null);
-        }}
-        onAuthenticate={handleAuthenticateLink}
-      />
 
       {isOtpOpen && (
         <SubmitOtp
