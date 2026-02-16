@@ -1,5 +1,6 @@
 import { useMemo, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
+import type { ProfileEditsPayload } from "@/lib/api/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { OtpInput } from "@/ui/verification/OtpInput";
@@ -8,6 +9,7 @@ import { buildZvsMemo, generateSessionId } from "@/lib/verification/session";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
+import { useEditsStore } from "@/ui/profile/store";
 
 const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 
@@ -21,6 +23,69 @@ interface ProfileVerificationProps {
 export default function ProfileVerification({
   profile,
 }: ProfileVerificationProps) {
+  // Get edits from store
+  const { form, original } = useEditsStore();
+
+  // Build edits payload from store (only include changed fields)
+  const buildEditsPayload = useCallback((): ProfileEditsPayload | undefined => {
+    const edits: ProfileEditsPayload = {};
+    let hasChanges = false;
+
+    // Compare scalar fields
+    if (form.name !== original.name) {
+      edits.name = form.name;
+      hasChanges = true;
+    }
+    if (form.display_name !== original.display_name) {
+      edits.display_name = form.display_name;
+      hasChanges = true;
+    }
+    if (form.bio !== original.bio) {
+      edits.bio = form.bio;
+      hasChanges = true;
+    }
+    if (form.profile_image_url !== original.profile_image_url) {
+      edits.profile_image_url = form.profile_image_url;
+      hasChanges = true;
+    }
+    if (form.nearest_city_id !== original.nearest_city_id) {
+      edits.nearest_city_id = form.nearest_city_id;
+      hasChanges = true;
+    }
+
+    // Handle links - compare by id and url
+    const formLinkIds = new Set(form.links.map((l) => l.id));
+    const linkEdits: ProfileEditsPayload["links"] = [];
+
+    // Find deleted links (in original but not in form)
+    for (const origLink of original.links) {
+      if (origLink.id && !formLinkIds.has(origLink.id)) {
+        linkEdits.push({ id: origLink.id, url: origLink.url, _delete: true });
+      }
+    }
+
+    // Find new and updated links
+    for (const formLink of form.links) {
+      if (!formLink.id) {
+        // New link
+        linkEdits.push({ url: formLink.url, label: formLink.label });
+      } else {
+        // Check if updated
+        const origLink = original.links.find((l) => l.id === formLink.id);
+        if (origLink && (origLink.url !== formLink.url || origLink.label !== formLink.label)) {
+          linkEdits.push({ id: formLink.id, url: formLink.url, label: formLink.label });
+        }
+      }
+    }
+
+    if (linkEdits.length > 0) {
+      edits.links = linkEdits;
+      hasChanges = true;
+    }
+
+    return hasChanges ? edits : undefined;
+  }, [form, original]);
+
   // Local UI state
   const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
   const [qrVisible, setQrVisible] = useState(false);
@@ -77,10 +142,15 @@ export default function ProfileVerification({
     setError("");
 
     try {
-      const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo);
+      // Build edits payload from store
+      const edits = buildEditsPayload();
+      const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo, edits);
 
       if (response.ok) {
-        setOtpResult({ ok: true, message: "Verification successful! Refreshing..." });
+        const message = edits
+          ? "Verification successful! Changes saved. Refreshing..."
+          : "Verification successful! Refreshing...";
+        setOtpResult({ ok: true, message });
         setTimeout(() => {
           window.location.reload();
         }, 1000);
@@ -95,7 +165,7 @@ export default function ProfileVerification({
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id, currentMemo]);
+  }, [otp, profile.id, currentMemo, buildEditsPayload]);
 
   // Handle OTP input change - strip non-digits
   const handleOtpChange = useCallback((value: string) => {

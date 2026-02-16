@@ -213,6 +213,28 @@ export interface LinkVerificationUpdate {
 }
 
 /**
+ * Profile edits payload for saving after OTP verification
+ */
+export interface ProfileEditsPayload {
+  name?: string;
+  display_name?: string;
+  bio?: string;
+  profile_image_url?: string;
+  nearest_city_id?: number | null;
+  links?: ProfileLinkEdit[];
+}
+
+/**
+ * Profile link edit (for insert/update/delete)
+ */
+export interface ProfileLinkEdit {
+  id?: number | null;
+  url: string;
+  label?: string;
+  _delete?: boolean;
+}
+
+/**
  * Exchange rate response
  */
 export interface ExchangeRate {

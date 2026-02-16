@@ -3,7 +3,7 @@
 import { verifyOtp } from "@/lib/verification/otp";
 import { parseZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import type { ConfirmOtpResponse } from "@/lib/api/types";
+import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 
 /**
  * Server Action for confirming OTP using HMAC-SHA256 verification
@@ -11,12 +11,13 @@ import type { ConfirmOtpResponse } from "@/lib/api/types";
  * Stateless flow:
  * 1. Client sends memo (from React state) and OTP (from user input)
  * 2. Server verifies OTP matches the memo using HMAC
- * 3. If valid, mark profile as verified
+ * 3. If valid, mark profile as verified and apply any pending edits
  */
 export async function confirmOtpAction(
   zcasherId: number | string,
   otp: string,
-  memo: string
+  memo: string,
+  edits?: ProfileEditsPayload
 ): Promise<ConfirmOtpResponse> {
   try {
     // Validate inputs
@@ -100,10 +101,24 @@ export async function confirmOtpAction(
       };
     }
 
-    // Update profile verification status
+    // Build profile update payload
+    const profileUpdate: Record<string, unknown> = {
+      address_verified: true,
+    };
+
+    // Apply profile edits if provided
+    if (edits) {
+      if (edits.name !== undefined) profileUpdate.name = edits.name;
+      if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
+      if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
+      if (edits.profile_image_url !== undefined) profileUpdate.profile_image_url = edits.profile_image_url;
+      if (edits.nearest_city_id !== undefined) profileUpdate.nearest_city_id = edits.nearest_city_id;
+    }
+
+    // Update profile
     const { error } = await supabase
       .from("zcasher")
-      .update({ verified: true })
+      .update(profileUpdate)
       .eq("id", profileId);
 
     if (error) {
@@ -112,6 +127,38 @@ export async function confirmOtpAction(
         error: error.message || "Failed to verify profile",
         data: { status: "error" },
       };
+    }
+
+    // Handle link edits if provided
+    if (edits?.links && edits.links.length > 0) {
+      for (const link of edits.links) {
+        if (link._delete && link.id) {
+          // Delete existing link
+          await supabase
+            .from("zcasher_links")
+            .delete()
+            .eq("id", link.id)
+            .eq("zcasher_id", profileId);
+        } else if (link.id) {
+          // Update existing link
+          await supabase
+            .from("zcasher_links")
+            .update({
+              url: link.url,
+              label: link.label || null,
+            })
+            .eq("id", link.id)
+            .eq("zcasher_id", profileId);
+        } else if (!link._delete) {
+          // Insert new link
+          await supabase.from("zcasher_links").insert({
+            zcasher_id: profileId,
+            url: link.url,
+            label: link.label || null,
+            is_verified: false,
+          });
+        }
+      }
     }
 
     return {
