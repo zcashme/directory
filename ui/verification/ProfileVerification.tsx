@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import type { Profile } from "@/lib/profile/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
@@ -6,8 +6,7 @@ import { OtpInput } from "@/ui/verification/OtpInput";
 import { buildZcashUri } from "@/lib/zcash/zcashUtils";
 import { buildZvsMemo } from "@/lib/verification/session";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
-import { createVerificationSession } from "@/lib/verification/verificationSessionAction";
-import { useEditsStore } from "@/ui/profile/store";
+import { createVerificationSession, getVerificationSessions } from "@/lib/verification/verificationSessionAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 
@@ -23,85 +22,106 @@ interface ProfileVerificationProps {
 export default function ProfileVerification({
   profile,
 }: ProfileVerificationProps) {
-  // Session ID from edits store - regenerates on "Generate QR" click
-  const sessionId = useEditsStore((state) => state.sessionId);
-  const regenerateSessionId = useEditsStore((state) => state.regenerateSessionId);
-
   // Local UI state
   const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
   const [qrVisible, setQrVisible] = useState(false);
-  const [otpInputVisible, setOtpInputVisible] = useState(false);
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCreatingSession, setIsCreatingSession] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
 
+  // Track the memo that was saved to DB (use this for display, not the live memo)
+  const [savedMemo, setSavedMemo] = useState("");
+  const [savedUri, setSavedUri] = useState("");
+
+  // Track if there's an existing pending session
+  const [hasPendingSession, setHasPendingSession] = useState(false);
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+
   const userAddress = profile?.address ?? "";
 
-  // Build the memo from session_id and user address
-  const memo = useMemo(() => {
-    if (!sessionId || !userAddress) return "";
-    return buildZvsMemo(sessionId, userAddress);
-  }, [sessionId, userAddress]);
+  // Check for existing pending session on mount
+  useEffect(() => {
+    async function checkPendingSession() {
+      if (!profile?.id) {
+        setIsCheckingSession(false);
+        return;
+      }
 
-  // Validate amount and build URI
-  const { validAmount, amountError, verifyUri } = useMemo(() => {
+      try {
+        const result = await getVerificationSessions(profile.id);
+        if (result.ok && result.sessions && result.sessions.length > 0) {
+          setHasPendingSession(true);
+        }
+      } catch {
+        // Ignore errors, just don't show the notice
+      } finally {
+        setIsCheckingSession(false);
+      }
+    }
+
+    checkPendingSession();
+  }, [profile?.id]);
+
+  // Validate amount
+  const { validAmount, amountError } = useMemo(() => {
     const cleaned = (amount ?? "").trim();
     const raw = cleaned.replace(/[^\d.]/g, "");
     const num = parseFloat(raw);
     const validMin = !Number.isNaN(num) && num >= MIN_SIGNIN_AMOUNT;
-
-    const uri = memo ? buildZcashUri(SIGNIN_ADDR, raw, memo) : "";
 
     return {
       validAmount: validMin,
       amountError: validMin
         ? ""
         : `Authentication requires at least ${MIN_SIGNIN_AMOUNT} ZEC`,
-      verifyUri: uri,
     };
-  }, [amount, memo]);
+  }, [amount]);
 
-  // Generate QR - regenerates sessionId and shows QR (no Supabase yet)
-  const handleGenerateQr = useCallback(() => {
+  // Generate QR - creates session in DB first, then shows QR
+  const handleGenerateQr = useCallback(async () => {
     if (!validAmount || !userAddress) return;
 
-    regenerateSessionId(); // New sessionId for current edits
-    setQrVisible(true);
-    setOtpInputVisible(false);
-    setOtp("");
+    setIsGenerating(true);
+    setError("");
     setOtpResult(null);
-    setError("");
-  }, [validAmount, userAddress, regenerateSessionId]);
-
-  // Enter OTP - creates session in Supabase, shows OTP input
-  const handleEnterOtp = useCallback(async () => {
-    if (!sessionId || !userAddress) return;
-
-    setIsCreatingSession(true);
-    setError("");
+    setOtp("");
 
     try {
+      // Generate new session ID
+      const { generateSessionId } = await import("@/lib/verification/session");
+      const newSessionId = generateSessionId();
+      const newMemo = buildZvsMemo(newSessionId, userAddress);
+
+      // Create session in database BEFORE showing QR
       const result = await createVerificationSession(
         profile.id,
-        sessionId,
-        memo,
+        newSessionId,
+        newMemo,
         {} // TODO: Wire up pending_edits from ProfileEditor store when edit flow is implemented
       );
 
       if (!result.ok) {
         setError(result.error || "Failed to create verification session");
+        setIsGenerating(false);
         return;
       }
 
-      setOtpInputVisible(true);
+      // Update the store with the session ID we actually saved
+      // Note: We need to set this manually since we generated it outside the store
+      // For now, we'll save the memo/uri that was persisted and display those
+      const newUri = buildZcashUri(SIGNIN_ADDR, amount.replace(/[^\d.]/g, ""), newMemo);
+      setSavedMemo(newMemo);
+      setSavedUri(newUri);
+      setQrVisible(true);
+      setHasPendingSession(false); // New session replaces old one
     } catch (err) {
       setError("Failed to create session. Please try again.");
     } finally {
-      setIsCreatingSession(false);
+      setIsGenerating(false);
     }
-  }, [sessionId, userAddress, profile.id, memo]);
+  }, [validAmount, userAddress, profile.id, amount]);
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
@@ -154,13 +174,25 @@ export default function ProfileVerification({
         </h3>
       </div>
 
+      {/* Pending session notice */}
+      {hasPendingSession && !qrVisible && !isCheckingSession && (
+        <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-800">
+          <p className="font-medium">You have a pending verification session.</p>
+          <p className="mt-1 text-blue-700">
+            If you already sent a payment, use the "I Have a Code" tab to enter your OTP.
+            Otherwise, click Generate QR to start fresh.
+          </p>
+        </div>
+      )}
+
       {/* Amount + Generate QR */}
       <div className="mt-3 w-full">
         <AmountAndWallet
           amount={amount}
           setAmount={setAmount}
           openWallet={handleGenerateQr}
-          openWalletLabel="Generate QR"
+          openWalletLabel={isGenerating ? "Creating..." : "Generate QR"}
+          disabled={isGenerating}
         />
         {!validAmount && amountError && (
           <Alert variant="error" size="sm" message={amountError} className="mt-1" />
@@ -174,8 +206,13 @@ export default function ProfileVerification({
         </p>
       </div>
 
-      {/* QR Code Display - shows after Generate QR clicked */}
-      {qrVisible && verifyUri && (
+      {/* Error display (for session creation errors) */}
+      {error && !qrVisible && (
+        <Alert variant="error" size="sm" message={error} className="mt-2" />
+      )}
+
+      {/* QR Code Display - shows after session saved to DB */}
+      {qrVisible && savedUri && (
         <div className="border-t border-black/10 mt-4 pt-4">
           {/* Memo Display */}
           <div className="relative group w-full mb-3">
@@ -185,7 +222,7 @@ export default function ProfileVerification({
               </span>
             </div>
             <textarea
-              value={memo}
+              value={savedMemo}
               readOnly
               rows={4}
               className="
@@ -208,77 +245,56 @@ export default function ProfileVerification({
 
           {/* QR Code */}
           <div className="flex justify-center mb-4">
-            <QrUriBlock uri={verifyUri} profileName="verification" />
+            <QrUriBlock uri={savedUri} profileName="verification" />
           </div>
 
-          {/* Enter OTP Button - creates session in Supabase */}
-          {!otpInputVisible && (
-            <div className="mt-4">
+          {/* OTP Entry Section - shown immediately with QR */}
+          <div className="mt-4 border border-black/10 rounded-xl p-4 bg-white/80">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
+              Enter your 6-digit verification code
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              After sending the transaction, enter the code you receive in your wallet.
+            </p>
+
+            <div className="flex gap-2">
+              <OtpInput
+                id="verification-otp"
+                value={otp}
+                onChange={handleOtpChange}
+                onSubmit={handleSubmitOtp}
+                placeholder="Enter 6-digit code"
+                hideLabel={true}
+                className="flex-1"
+                disabled={isSubmitting}
+              />
               <Button
                 type="button"
-                onClick={handleEnterOtp}
+                onClick={handleSubmitOtp}
                 variant="primary"
-                size="lg"
-                className="w-full"
-                disabled={isCreatingSession}
+                size="md"
+                disabled={!otp.trim() || isSubmitting}
               >
-                {isCreatingSession ? "Creating session..." : "Enter OTP"}
+                {isSubmitting ? "Verifying..." : "Submit"}
               </Button>
-              <p className="text-xs text-gray-500 text-center mt-2">
-                Click after sending the transaction and receiving your code
-              </p>
             </div>
-          )}
 
-          {/* OTP Entry Section - shows after Enter OTP clicked */}
-          {otpInputVisible && (
-            <div className="mt-4 border border-black/10 rounded-xl p-4 bg-white/80">
-              <div className="text-sm font-semibold text-gray-700 mb-2">
-                Enter your 6-digit verification code
+            {/* Result message */}
+            {otpResult && (
+              <div
+                className={`mt-3 text-sm font-semibold ${
+                  otpResult.ok ? "text-green-700" : "text-red-600"
+                }`}
+              >
+                {otpResult.message}
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                Enter the code you received in your wallet.
-              </p>
+            )}
 
-              <div className="flex gap-2">
-                <OtpInput
-                  id="verification-otp"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  onSubmit={handleSubmitOtp}
-                  placeholder="Enter 6-digit code"
-                  hideLabel={true}
-                  className="flex-1"
-                  disabled={isSubmitting}
-                />
-                <Button
-                  type="button"
-                  onClick={handleSubmitOtp}
-                  variant="primary"
-                  size="md"
-                  disabled={!otp.trim() || isSubmitting}
-                >
-                  {isSubmitting ? "Verifying..." : "Submit"}
-                </Button>
-              </div>
-
-              {/* Result message */}
-              {otpResult && (
-                <div
-                  className={`mt-3 text-sm font-semibold ${
-                    otpResult.ok ? "text-green-700" : "text-red-600"
-                  }`}
-                >
-                  {otpResult.message}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Error display */}
-          {error && (
-            <Alert variant="error" size="sm" message={error} className="mt-2" />
-          )}
+            {/* Error display */}
+            {error && (
+              <Alert variant="error" size="sm" message={error} className="mt-2" />
+            )}
+          </div>
         </div>
       )}
     </div>

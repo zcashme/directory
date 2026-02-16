@@ -134,7 +134,7 @@ export default function VerifyProfileModal({ isOpen, onClose, profile }: VerifyP
               {otpStep === "entry" && (
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600">
-                    Enter the 6-digit code from your verification transaction.
+                    Enter the 6-digit code from an existing verification transaction.
                   </p>
 
                   <OtpInput

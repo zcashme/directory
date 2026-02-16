@@ -74,6 +74,7 @@ interface AmountAndWalletProps {
   openWalletLabel?: string;
   showOpenWallet?: boolean;
   showUsdPill?: boolean;
+  disabled?: boolean;
 
   // Token selector props (optional)
   asset?: string;
@@ -94,6 +95,7 @@ export default function AmountAndWallet({
   openWalletLabel = "Open in Wallet",
   showOpenWallet = true,
   showUsdPill = false,
+  disabled = false,
   // Token selector props (optional)
   asset = "ZEC",
   assetOptions = [],
@@ -637,8 +639,9 @@ export default function AmountAndWallet({
         {showOpenWallet && (
           <motion.button
             onClick={openWallet}
+            disabled={disabled}
             {...tapProps}
-            className={OUTLINE_ACTION_BUTTON_CLASSES}
+            className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${disabled ? "opacity-60 cursor-not-allowed" : ""}`}
           >
             {openWalletLabel}
           </motion.button>
