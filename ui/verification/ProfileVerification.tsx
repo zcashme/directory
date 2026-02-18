@@ -28,6 +28,9 @@ export default function ProfileVerification({
 
   // Build edits payload from store (only include changed fields)
   const buildEditsPayload = useCallback((): ProfileEditsPayload | undefined => {
+    console.log("[buildEditsPayload] form:", JSON.stringify({ name: form.name, display_name: form.display_name, bio: form.bio, nearest_city_id: form.nearest_city_id, nearest_city_name: form.nearest_city_name, linksCount: form.links.length }));
+    console.log("[buildEditsPayload] original:", JSON.stringify({ name: original.name, display_name: original.display_name, bio: original.bio, nearest_city_id: original.nearest_city_id, nearest_city_name: original.nearest_city_name, linksCount: original.links.length }));
+
     const edits: ProfileEditsPayload = {};
     let hasChanges = false;
 
@@ -50,6 +53,7 @@ export default function ProfileVerification({
     }
     if (form.nearest_city_id !== original.nearest_city_id) {
       edits.nearest_city_id = form.nearest_city_id;
+      edits.nearest_city_name = form.nearest_city_name;
       hasChanges = true;
     }
 
@@ -128,6 +132,10 @@ export default function ProfileVerification({
     const newMemo = buildZvsMemo(newSessionId, userAddress);
     const newUri = buildZcashUri(SIGNIN_ADDR, amount.replace(/[^\d.]/g, ""), newMemo);
 
+    console.log("[QR Generate] sessionId:", newSessionId);
+    console.log("[QR Generate] memo:", newMemo);
+    console.log("[QR Generate] uri:", newUri);
+
     setCurrentMemo(newMemo);
     setCurrentUri(newUri);
     setQrVisible(true);
@@ -137,6 +145,10 @@ export default function ProfileVerification({
   const handleSubmitOtp = useCallback(async () => {
     if (!otp.trim() || !profile.id || !currentMemo) return;
 
+    console.log("[OTP Submit] profileId:", profile.id);
+    console.log("[OTP Submit] otp:", otp.trim());
+    console.log("[OTP Submit] memo:", currentMemo);
+
     setIsSubmitting(true);
     setOtpResult(null);
     setError("");
@@ -144,7 +156,9 @@ export default function ProfileVerification({
     try {
       // Build edits payload from store
       const edits = buildEditsPayload();
+      console.log("[OTP Submit] edits payload:", edits);
       const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo, edits);
+      console.log("[OTP Submit] server response:", response);
 
       if (response.ok) {
         const message = edits
@@ -161,6 +175,7 @@ export default function ProfileVerification({
         });
       }
     } catch (err) {
+      console.error("[OTP Submit] error:", err);
       setOtpResult({ ok: false, message: "An error occurred. Please try again." });
     } finally {
       setIsSubmitting(false);

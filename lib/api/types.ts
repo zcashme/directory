@@ -221,6 +221,7 @@ export interface ProfileEditsPayload {
   bio?: string;
   profile_image_url?: string;
   nearest_city_id?: number | null;
+  nearest_city_name?: string;
   links?: ProfileLinkEdit[];
 }
 
