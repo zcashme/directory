@@ -29,12 +29,6 @@ The primary UI for the zcash.me identity system.
 |-----------|------|---------|
 | `ProfileSearchDropdown` | ProfileSearchDropdown.tsx | Search results dropdown |
 
-### Modals
-| Component | File | Purpose |
-|-----------|------|---------|
-| `AuthExplainerModal` | AuthExplainerModal.tsx | Explains verification |
-| `RedirectModal` | RedirectModal.tsx | External link warning |
-
 ## Zcash-Specific Features
 
 ### Address Display
@@ -72,8 +66,6 @@ State includes:
 - `form` - Current form values
 - `original` - Original values for comparison
 - `deletedFields` - Track field deletions
-- `linkAuthTokens` - OAuth verification tokens
-
 Note: Profile edits are submitted directly to the backend after OTP verification via ZVS (Zcash Verification Service). The old `pendingEdits` system that encoded changes in the Zcash memo has been removed.
 
 ## Hooks
@@ -83,9 +75,6 @@ Manages link state for editing:
 - Add/remove links
 - Reorder links
 - Track verification status
-
-### useProfileEvents.ts
-Analytics and event tracking for profile interactions.
 
 ## Testing Harness
 - Components receive profile data via props
