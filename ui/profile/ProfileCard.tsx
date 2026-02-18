@@ -30,8 +30,6 @@ const getDisplayName = (profile: Partial<Profile>) =>
 
 export default function ProfileCard({
   profile,
-  onSelect,
-  warning,
   fullView = false,
   duplicateNameCount = 0,
   onShowQR,
@@ -55,9 +53,7 @@ export default function ProfileCard({
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? (Array.isArray(linksArray) ? linksArray.length : 0);
   const hasDuplicateNames = duplicateNameCount > 1;
-  // Default to showing trust warnings unless caller explicitly disables via `warning={null}`.
-  const warningEnabled = warning !== null;
-  const warningConfig = getWarningConfig({ profile, warning: warningEnabled, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
+  const warningConfig = getWarningConfig({ profile, warning: true, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames });
   const warningDefaultExpanded = warningConfig?.defaultExpanded;
   const fullLinkRowClasses: LinkRowClasses = {
     row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
@@ -118,7 +114,6 @@ export default function ProfileCard({
         verifiedCount={profile.verified_links_count ?? 0}
         featured={!!profile.featured}
         onClick={() => {
-          onSelect?.(profile);
           requestAnimationFrame(() =>
             window.scrollTo({ top: 0, behavior: "smooth" })
           );

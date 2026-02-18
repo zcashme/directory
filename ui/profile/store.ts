@@ -44,16 +44,12 @@ interface EditsState {
   form: FormState;
   original: FormState;
   deletedFields: DeletedFields;
-  linkAuthTokens: string[];
   sessionId: string;
 
   setForm: (form: FormState | ((prev: FormState) => FormState)) => void;
   updateField: (field: keyof FormState, value: any) => void;
   setDeletedField: (field: keyof DeletedFields, value: boolean) => void;
   initializeForm: (profile: Profile, links: ParsedLink[]) => void;
-  addLinkAuthToken: (token: string) => void;
-  removeLinkAuthToken: (token: string) => void;
-  regenerateSessionId: () => void;
   reset: () => void;
 }
 
@@ -81,7 +77,6 @@ export const useEditsStore = create<EditsState>((set) => ({
   form: emptyForm,
   original: emptyForm,
   deletedFields: emptyDeletedFields,
-  linkAuthTokens: [],
   sessionId: generateSessionId(),
 
   setForm: (form) =>
@@ -144,31 +139,14 @@ export const useEditsStore = create<EditsState>((set) => ({
         nearest_city_name: profile.nearest_city_name || '',
       },
       deletedFields: emptyDeletedFields,
-      linkAuthTokens: [],
       sessionId: generateSessionId(),
     }),
-
-  addLinkAuthToken: (token) =>
-    set((state) => ({
-      linkAuthTokens: state.linkAuthTokens.includes(token)
-        ? state.linkAuthTokens
-        : [...state.linkAuthTokens, token],
-    })),
-
-  removeLinkAuthToken: (token) =>
-    set((state) => ({
-      linkAuthTokens: state.linkAuthTokens.filter((t) => t !== token),
-    })),
-
-  regenerateSessionId: () =>
-    set({ sessionId: generateSessionId() }),
 
   reset: () =>
     set({
       form: emptyForm,
       original: emptyForm,
       deletedFields: emptyDeletedFields,
-      linkAuthTokens: [],
       sessionId: generateSessionId(),
     }),
 }));

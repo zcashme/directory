@@ -1,7 +1,7 @@
-import type { CSSProperties, MouseEvent } from "react";
-import type { Profile, EnrichedProfileLink, ProfileTrustWarning } from "@/lib/profile/types";
+import type { CSSProperties } from "react";
+import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
-export type Variant = "default" | "mobile" | "compact";
+export type Variant = "default" | "mobile";
 export type LinkVariant = "default" | "simple";
 
 export interface LinkRowClasses {
@@ -25,7 +25,6 @@ export interface ProfileLinkRowProps {
   classes: LinkRowClasses;
   hideBadge?: boolean;
   badgeLabels?: { verified: string; unverified: string };
-  badgeOnClick?: (event: MouseEvent, link: EnrichedProfileLink) => void;
   stopPropagation?: boolean;
 }
 
@@ -69,8 +68,6 @@ export interface RedirectModalProps {
 
 export interface ProfileCardProps {
   profile: Profile;
-  onSelect?: (profile: Profile) => void;
-  warning?: ProfileTrustWarning | null;
   fullView?: boolean;
   duplicateNameCount?: number;
   onShowQR?: () => void;
