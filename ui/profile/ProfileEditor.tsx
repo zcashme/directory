@@ -100,6 +100,7 @@ function CharCounter({ text }: CharCounterProps) {
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
+  onAuthenticateLink?: (link: EnrichedProfileLink) => void;
 }
 
 async function fetchAvatarUrl(url: string): Promise<string | null> {
@@ -119,7 +120,7 @@ async function fetchAvatarUrl(url: string): Promise<string | null> {
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
+export default function ProfileEditor({ profile, links, onAuthenticateLink }: ProfileEditorProps) {
   const {
     form,
     deletedFields,
@@ -577,6 +578,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
+          const enrichedOriginal = (links ?? []).find((o) => o.id === row.id);
           const isVerified = !!row.is_verified;
           const currentUrl = (row.url ?? "").trim();
           const providerKey = detectProviderFromUrl(currentUrl);
@@ -607,7 +609,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                       size="xs"
                       className="!text-green-700 !border-green-400"
                     >
-                      Verified
+                      Authenticated
                     </Button>
                     {isOAuthProvider && (
                       <Button
@@ -620,6 +622,15 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                       </Button>
                     )}
                   </div>
+                ) : row.id !== null && onAuthenticateLink && enrichedOriginal ? (
+                  <Button
+                    type="button"
+                    variant="primary"
+                    size="xs"
+                    onClick={() => onAuthenticateLink(enrichedOriginal)}
+                  >
+                    Authenticate
+                  </Button>
                 ) : null}
               </div>
               <Button
