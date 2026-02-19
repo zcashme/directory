@@ -48,7 +48,7 @@ export async function upsertVerifiedLink(
 
   // Only address-verified profiles can authenticate social links
   const { data: profile, error: profileError } = await supabase
-    .from("zcashers")
+    .from("zcasher")
     .select("address_verified")
     .eq("id", profileId)
     .single();
@@ -79,7 +79,7 @@ export async function upsertVerifiedLink(
   } else {
     const { error } = await supabase
       .from("zcasher_links")
-      .insert({ zcasher_id: profileId, url: verifiedUrl, is_verified: true, platform, created_at: new Date().toISOString() });
+      .insert({ zcasher_id: profileId, url: verifiedUrl, label: "", is_verified: true, platform, created_at: new Date().toISOString() });
     if (error) return { ok: false, error: error.message };
   }
 

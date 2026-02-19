@@ -185,7 +185,6 @@ export async function confirmOtpAction(
     }
 
     if (linkErrors.length > 0) {
-      console.error("[confirmOtpAction] link errors:", linkErrors);
       return {
         ok: false,
         error: `Verified, but link updates failed: ${linkErrors.join("; ")}`,
