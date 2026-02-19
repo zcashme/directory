@@ -69,7 +69,7 @@ interface ZcashValidationResult {
 }
 
 export function validateZcashAddress(address: string = ""): ZcashValidationResult {
-  const a = (address || "").trim();
+  const a = (address ?? "").trim();
   if (!a) return { valid: false, type: "none", reason: "empty" };
   if (isViewingKey(a)) return { valid: false, type: "viewing_key", reason: "viewing_key" };
   if (isTex(a)) return { valid: true, type: "tex", reason: "tex_disallowed" };

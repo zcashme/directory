@@ -69,7 +69,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
 
   // Display value for city search input (local UI state)
-  const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name || "");
+  const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name ?? "");
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -110,11 +110,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
   const originals = useMemo(
     () => ({
-      address: profile.address || "",
-      name: profile.name || "",
-      display_name: profile.display_name || "",
-      bio: profile.bio || "",
-      profile_image_url: profile.profile_image_url || "",
+      address: profile.address ?? "",
+      name: profile.name ?? "",
+      display_name: profile.display_name ?? "",
+      bio: profile.bio ?? "",
+      profile_image_url: profile.profile_image_url ?? "",
     }),
     [profile]
   );
@@ -123,22 +123,22 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     if (typeof profile.id !== "number") return "";
     return `-${profile.id}`;
   }, [profile.address_verified, profile.id]);
-  const [usernameInput, setUsernameInput] = useState(form.name || "");
+  const [usernameInput, setUsernameInput] = useState(form.name ?? "");
   const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [lastValidUsername, setLastValidUsername] = useState(form.name || "");
+  const [lastValidUsername, setLastValidUsername] = useState(form.name ?? "");
   const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
 
   useEffect(() => {
-    setUsernameInput(form.name || "");
+    setUsernameInput(form.name ?? "");
   }, [form.name]);
 
   useEffect(() => {
     setUsernameTouched(false);
     setUsernameConflict(null);
     setUsernameStatus("idle");
-    setLastValidUsername(profile.name || "");
+    setLastValidUsername(profile.name ?? "");
   }, [profile.id]);
 
   useEffect(() => {
@@ -149,7 +149,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     }
 
     const candidate = sanitizeUsernameInput(usernameInput);
-    const originalNameRaw = originals.name || "";
+    const originalNameRaw = originals.name ?? "";
 
     if (!candidate) {
       setUsernameConflict(null);
@@ -220,8 +220,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const handleSocialLinkChange = (uid: string, value: any) => {
     const nextUrl =
       value.platform === "Other"
-        ? (value.otherUrl || "").trim()
-        : buildSocialUrl(value.platform, (value.username || "").trim()) || "";
+        ? (value.otherUrl ?? "").trim()
+        : buildSocialUrl(value.platform, (value.username ?? "").trim()) ?? "";
     setForm((prev) => ({
       ...prev,
       links: prev.links.map((l) =>
@@ -291,12 +291,12 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <AvatarPreviewModal
         isOpen={avatarPreviewOpen}
-        src={(form.profile_image_url || originals.profile_image_url || "").trim()}
+        src={(form.profile_image_url ?? originals.profile_image_url ?? "").trim()}
         onClose={() => setAvatarPreviewOpen(false)}
       />
       <AvatarReauthModal
         isOpen={!!avatarPrompt}
-        providerLabel={avatarPrompt?.provider || ""}
+        providerLabel={avatarPrompt?.provider ?? ""}
         onLater={() => setAvatarPrompt(null)}
         onReauth={() => setAvatarPrompt(null)}
       />
@@ -409,7 +409,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             id="display_name"
             type="text"
             value={form.display_name}
-            placeholder={originals.display_name || "Enter display name"}
+            placeholder={originals.display_name ?? "Enter display name"}
             onChange={(e) => handleChange("display_name", e.target.value)}
             className={FIELD_CLASS}
           />
@@ -460,8 +460,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
               if (typeof val === "string") {
                 setNearestCityDisplay(val);
               } else {
-                setNearestCityDisplay(val.fullLabel || "");
-                updateField('nearest_city_name', val.fullLabel || "");
+                setNearestCityDisplay(val.fullLabel ?? "");
+                updateField('nearest_city_name', val.fullLabel ?? "");
               }
             }}
           />
@@ -524,9 +524,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         </div>
 
         {form.links.map((row) => {
-          const original = originalLinks.find((o) => o.id === row.id) || {} as ParsedLink;
+          const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
           const isVerified = !!row.is_verified;
-          const currentUrl = (row.url || "").trim();
+          const currentUrl = (row.url ?? "").trim();
           const providerKey = detectProviderFromUrl(currentUrl);
           const isOAuthProvider = !!providerKey && !!PROVIDERS[providerKey];
 
@@ -589,7 +589,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
                     readOnly={true}
-                    placeholder={original?.url || "example.com"}
+                    placeholder={original?.url ?? "example.com"}
                     showValidation={false}
                     inputClassName="border-0 px-0 py-0 bg-transparent"
                   />

@@ -92,6 +92,6 @@ export function buildSocialUrl(platform: SocialPlatform, username: string): stri
   const config = PLATFORMS[platform];
   if (!config) return null;
 
-  const prefix = config.prefix || "";
+  const prefix = config.prefix ?? "";
   return `${config.base}${prefix}${username}`;
 }

@@ -16,10 +16,10 @@ export const PROVIDERS: Record<string, Provider> = {
     label: "X / Twitter",
     buildUrl: (handle) => `https://x.com/${handle}`,
     getHandle: (data) =>
-      (data?.username as string) ||
-      (data?.screen_name as string) ||
-      (data?.user_name as string) ||
-      (data?.preferred_username as string) ||
+      (data?.username as string) ??
+      (data?.screen_name as string) ??
+      (data?.user_name as string) ??
+      (data?.preferred_username as string) ??
       null,
     getAvatarUrl: (data) => {
       const url = data?.profile_image_url_https as string | undefined;
@@ -34,14 +34,14 @@ export const PROVIDERS: Record<string, Provider> = {
     key: "github",
     label: "GitHub",
     buildUrl: (handle) => `https://github.com/${handle}`,
-    getHandle: (data) => (data?.login as string) || null,
-    getAvatarUrl: (data) => (data?.avatar_url as string) || null,
+    getHandle: (data) => (data?.user_name as string) ?? null,
+    getAvatarUrl: (data) => (data?.avatar_url as string) ?? null,
   },
   discord: {
     key: "discord",
     label: "Discord",
     buildUrl: (id) => `https://discord.com/users/${id}`,
-    getHandle: (data) => (data?.id as string) || null,
+    getHandle: (data) => (data?.id as string) ?? null,
     getUsername: (data) => {
       const username = data?.username as string | undefined;
       const discriminator = data?.discriminator as string | undefined;
@@ -63,8 +63,8 @@ export const PROVIDERS: Record<string, Provider> = {
     label: "LinkedIn",
     buildUrl: (handle) => `https://linkedin.com/in/${handle}`,
     getHandle: (data) =>
-      (data?.vanityName as string) ||
-      (data?.preferred_username as string) ||
+      (data?.vanityName as string) ??
+      (data?.preferred_username as string) ??
       null,
   },
 } as const;
@@ -72,5 +72,5 @@ export const PROVIDERS: Record<string, Provider> = {
 export type ProviderKey = keyof typeof PROVIDERS;
 
 export function getProviderByKey(key: string): Provider | null {
-  return PROVIDERS[key] || Object.values(PROVIDERS).find((p) => p.key === key) || null;
+  return PROVIDERS[key] ?? Object.values(PROVIDERS).find((p) => p.key === key) ?? null;
 }
