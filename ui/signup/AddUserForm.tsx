@@ -413,7 +413,8 @@ export default function AddUserForm({
           if (!url || !res.valid) return null;
           return {
             url,
-            label: toPrettyDomain(url)
+            label: toPrettyDomain(url),
+            platform: "Other",
           };
         }
         if (!l.username) return null;
@@ -424,9 +425,9 @@ export default function AddUserForm({
           l.platform === "Discord"
             ? l.username.trim()
             : normalizeSocialUsername(l.username.trim(), l.platform as SocialPlatform);
-        return { url, label };
+        return { url, label, platform: l.platform };
       })
-      .filter(Boolean) as { url: string; label: string }[];
+      .filter(Boolean) as { url: string; label: string; platform: string }[];
 
     setIsLoading(true);
 

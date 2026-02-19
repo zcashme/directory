@@ -100,7 +100,7 @@ function CharCounter({ text }: CharCounterProps) {
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
-  onAuthenticateLink?: (link: EnrichedProfileLink) => void;
+  onAuthenticateLink?: (link: { url: string }) => void;
 }
 
 async function fetchAvatarUrl(url: string): Promise<string | null> {
@@ -578,7 +578,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
 
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
-          const enrichedOriginal = (links ?? []).find((o) => o.id === row.id);
           const isVerified = !!row.is_verified;
           const currentUrl = (row.url ?? "").trim();
           const providerKey = detectProviderFromUrl(currentUrl);
@@ -622,12 +621,12 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
                       </Button>
                     )}
                   </div>
-                ) : row.id !== null && onAuthenticateLink && enrichedOriginal ? (
+                ) : row.id !== null && onAuthenticateLink ? (
                   <Button
                     type="button"
                     variant="primary"
                     size="xs"
-                    onClick={() => onAuthenticateLink(enrichedOriginal)}
+                    onClick={() => onAuthenticateLink({ url: row.url })}
                   >
                     Authenticate
                   </Button>
