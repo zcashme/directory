@@ -1,5 +1,4 @@
 import type { Profile, ProfileLink } from "@/lib/profile/types";
-import type { City } from "@/lib/directory/types";
 import type { Token } from "@/lib/swap/types";
 
 /**
@@ -63,11 +62,6 @@ export interface DirectoryResponse {
   next_cursor: string | null;
 }
 
-
-/**
- * Search cities response
- */
-export type SearchCitiesResponse = APIResponse<City[]>;
 
 /**
  * Swap tokens response

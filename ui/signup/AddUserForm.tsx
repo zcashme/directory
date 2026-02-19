@@ -4,7 +4,7 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import type { Profile } from "@/lib/profile/types";
-import type { City } from "@/lib/directory/types";
+import type { City } from "@/lib/directory/searchCitiesAction";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import { useState, useEffect, useRef } from "react";
 import type { SVGProps, FormEvent } from "react";
