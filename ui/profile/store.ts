@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import type { Profile } from '@/lib/profile/types';
-import { generateSessionId } from '@/lib/verification/session';
 
 export interface ParsedLink {
   id: number | null;
@@ -12,7 +11,7 @@ export interface ParsedLink {
   is_verified: boolean;
   verification_expires_at?: string;
   _uid: string;
-  platform?: "X" | "GitHub" | "Instagram" | "Discord";
+  platform?: "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram" | "Other";
   otherUrl?: string;
   label?: string;
   icon?: string;
@@ -75,7 +74,7 @@ export const useEditsStore = create<EditsState>((set) => ({
   form: emptyForm,
   original: emptyForm,
   deletedFields: emptyDeletedFields,
-  sessionId: generateSessionId(),
+  sessionId: crypto.randomUUID(),
 
   setForm: (form) =>
     set((state) => ({
@@ -133,7 +132,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         nearest_city_name: profile.nearest_city_name ?? '',
       },
       deletedFields: emptyDeletedFields,
-      sessionId: generateSessionId(),
+      sessionId: crypto.randomUUID(),
     }),
 
   reset: () =>
@@ -141,6 +140,6 @@ export const useEditsStore = create<EditsState>((set) => ({
       form: emptyForm,
       original: emptyForm,
       deletedFields: emptyDeletedFields,
-      sessionId: generateSessionId(),
+      sessionId: crypto.randomUUID(),
     }),
 }));

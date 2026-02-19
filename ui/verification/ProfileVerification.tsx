@@ -4,14 +4,11 @@ import type { ProfileEditsPayload } from "@/lib/api/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { OtpInput } from "@/ui/verification/OtpInput";
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
-import { buildZvsMemo, generateSessionId } from "@/lib/verification/session";
+import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { useEditsStore } from "@/ui/profile/store";
-
-const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
 
 const MIN_SIGNIN_AMOUNT = 0.001;
 const DEFAULT_SIGNIN_AMOUNT = "0.003";
@@ -60,7 +57,7 @@ export default function ProfileVerification({
     // Find deleted links (in original but not in form)
     for (const origLink of original.links) {
       if (origLink.id && !formLinkIds.has(origLink.id)) {
-        linkEdits.push({ id: origLink.id, url: origLink.url, _delete: true });
+        linkEdits.push({ id: origLink.id, url: origLink.url, platform: origLink.platform, _delete: true });
       }
     }
 
@@ -68,12 +65,12 @@ export default function ProfileVerification({
     for (const formLink of form.links) {
       if (!formLink.id) {
         // New link
-        linkEdits.push({ url: formLink.url, label: formLink.label });
+        linkEdits.push({ url: formLink.url, label: formLink.label, platform: formLink.platform });
       } else {
         // Check if updated
         const origLink = original.links.find((l) => l.id === formLink.id);
         if (origLink && (origLink.url !== formLink.url || origLink.label !== formLink.label)) {
-          linkEdits.push({ id: formLink.id, url: formLink.url, label: formLink.label });
+          linkEdits.push({ id: formLink.id, url: formLink.url, label: formLink.label, platform: formLink.platform });
         }
       }
     }
@@ -90,15 +87,14 @@ export default function ProfileVerification({
   const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
   const [qrVisible, setQrVisible] = useState(false);
   const [otp, setOtp] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
 
-  // Track the current memo (in React state only - no DB persistence)
+  // Memo + URI returned from the server
   const [currentMemo, setCurrentMemo] = useState("");
   const [currentUri, setCurrentUri] = useState("");
-
-  const userAddress = profile?.address ?? "";
 
   // Validate amount
   const { validAmount, amountError } = useMemo(() => {
@@ -115,23 +111,34 @@ export default function ProfileVerification({
     };
   }, [amount]);
 
-  // Generate QR - creates memo in React state (no DB persistence)
-  const handleGenerateQr = useCallback(() => {
-    if (!validAmount || !userAddress) return;
+  // Generate QR — calls the server to create memo + URI
+  const handleGenerateQr = useCallback(async () => {
+    if (!validAmount || !profile?.id) return;
 
     setError("");
     setOtpResult(null);
     setOtp("");
+    setIsGenerating(true);
 
-    // Generate new session ID and memo
-    const newSessionId = generateSessionId();
-    const newMemo = buildZvsMemo(newSessionId, userAddress);
-    const newUri = buildZcashUri(SIGNIN_ADDR, amount.replace(/[^\d.]/g, ""), newMemo);
+    try {
+      const result = await generateMemoAction(
+        profile.id,
+        amount.replace(/[^\d.]/g, "")
+      );
 
-    setCurrentMemo(newMemo);
-    setCurrentUri(newUri);
-    setQrVisible(true);
-  }, [validAmount, userAddress, amount]);
+      if (result.ok && result.memo && result.uri) {
+        setCurrentMemo(result.memo);
+        setCurrentUri(result.uri);
+        setQrVisible(true);
+      } else {
+        setError(result.error ?? "Failed to generate QR code.");
+      }
+    } catch {
+      setError("Failed to generate QR code. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [validAmount, profile?.id, amount]);
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
@@ -155,12 +162,20 @@ export default function ProfileVerification({
           window.location.reload();
         }, 1000);
       } else {
+        // Check if the memo was exhausted and a new one was issued
+        const data = response.data as Record<string, unknown> | undefined;
+        if (data?.status === "exhausted" && data.newMemo && data.newUri) {
+          setCurrentMemo(data.newMemo as string);
+          setCurrentUri(data.newUri as string);
+          setOtp("");
+        }
+
         setOtpResult({
           ok: false,
           message: response.error || "Invalid verification code.",
         });
       }
-    } catch (err) {
+    } catch {
       setOtpResult({ ok: false, message: "An error occurred. Please try again." });
     } finally {
       setIsSubmitting(false);
@@ -226,7 +241,8 @@ export default function ProfileVerification({
           amount={amount}
           setAmount={setAmount}
           openWallet={handleGenerateQr}
-          openWalletLabel="Generate QR"
+          openWalletLabel={isGenerating ? "Generating..." : "Generate QR"}
+          disabled={isGenerating}
         />
         {!validAmount && amountError && (
           <Alert variant="error" size="sm" message={amountError} className="mt-1" />
@@ -240,7 +256,7 @@ export default function ProfileVerification({
         </p>
       </div>
 
-      {/* Error display (for session creation errors) */}
+      {/* Error display (for memo generation errors) */}
       {error && !qrVisible && (
         <Alert variant="error" size="sm" message={error} className="mt-2" />
       )}

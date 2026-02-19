@@ -2,16 +2,19 @@
 
 import { verifyOtp } from "@/lib/verification/otp";
 import { parseZvsMemo } from "@/lib/verification/session";
+import { getMemoEntry, recordFailure, removeMemo, getMaxAttempts } from "@/lib/verification/memoStore";
+import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
+import { derivePlatform } from "@/lib/profile/profileLinks";
 
 /**
- * Server Action for confirming OTP using HMAC-SHA256 verification
+ * Server Action for confirming OTP using HMAC-SHA256 verification.
  *
- * Stateless flow:
- * 1. Client sends memo (from React state) and OTP (from user input)
- * 2. Server verifies OTP matches the memo using HMAC
- * 3. If valid, mark profile as verified and apply any pending edits
+ * The memo must have been issued by generateMemoAction (exists in the
+ * in-memory store). Each memo allows at most 5 OTP attempts — after
+ * which the server invalidates it and returns a fresh memo + URI so
+ * the client can restart without a page reload.
  */
 export async function confirmOtpAction(
   zcasherId: number | string,
@@ -20,13 +23,9 @@ export async function confirmOtpAction(
   edits?: ProfileEditsPayload
 ): Promise<ConfirmOtpResponse> {
   try {
-    // Validate inputs
+    // --- Input validation ---------------------------------------------------
     if (!zcasherId || !otp || typeof otp !== "string" || !otp.trim()) {
-      return {
-        ok: false,
-        error: "Invalid input",
-        data: { status: "invalid" },
-      };
+      return { ok: false, error: "Invalid input", data: { status: "invalid" } };
     }
 
     if (!memo || typeof memo !== "string" || !memo.trim()) {
@@ -37,28 +36,59 @@ export async function confirmOtpAction(
       };
     }
 
-    const profileId = typeof zcasherId === "string" ? parseInt(zcasherId, 10) : zcasherId;
+    const profileId =
+      typeof zcasherId === "string" ? parseInt(zcasherId, 10) : zcasherId;
     if (isNaN(profileId)) {
+      return { ok: false, error: "Invalid profile ID", data: { status: "invalid" } };
+    }
+
+    const trimmedMemo = memo.trim();
+
+    // --- Check memo was server-issued ---------------------------------------
+    const entry = getMemoEntry(trimmedMemo);
+    if (!entry) {
       return {
         ok: false,
-        error: "Invalid profile ID",
+        error: "Memo expired or not recognised. Please generate a new QR code.",
         data: { status: "invalid" },
       };
     }
 
-    // Verify OTP matches the memo
-    const isValid = await verifyOtp(memo.trim(), otp.trim());
+    // --- Verify OTP ---------------------------------------------------------
+    const isValid = await verifyOtp(trimmedMemo, otp.trim());
 
     if (!isValid) {
+      // Record the failed attempt; check if exhausted
+      const exhausted = recordFailure(trimmedMemo);
+
+      if (exhausted) {
+        // Generate a fresh memo + URI for the same profile & amount
+        const fresh = await generateMemoAction(profileId, entry.amount);
+
+        return {
+          ok: false,
+          error: `Too many attempts. A new QR code has been generated — please send a new transaction.`,
+          data: {
+            status: "exhausted",
+            newMemo: fresh.ok ? fresh.memo : undefined,
+            newUri: fresh.ok ? fresh.uri : undefined,
+          },
+        };
+      }
+
+      const remaining = getMaxAttempts() - entry.attempts - 1;
       return {
         ok: false,
-        error: "Invalid verification code. Please try again.",
+        error: `Invalid verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
         data: { status: "invalid" },
       };
     }
 
-    // Parse memo to extract the address
-    const parsed = parseZvsMemo(memo.trim());
+    // --- OTP valid — proceed with verification ------------------------------
+    removeMemo(trimmedMemo);
+
+    // Parse memo to extract address
+    const parsed = parseZvsMemo(trimmedMemo);
     if (!parsed) {
       return {
         ok: false,
@@ -67,7 +97,6 @@ export async function confirmOtpAction(
       };
     }
 
-    // OTP is valid - verify address matches profile
     const supabase = createSupabaseServerClient();
     if (!supabase) {
       return {
@@ -77,7 +106,7 @@ export async function confirmOtpAction(
       };
     }
 
-    // Fetch profile to verify address matches
+    // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
       .select("address")
@@ -85,14 +114,9 @@ export async function confirmOtpAction(
       .single();
 
     if (fetchError || !profile) {
-      return {
-        ok: false,
-        error: "Profile not found",
-        data: { status: "error" },
-      };
+      return { ok: false, error: "Profile not found", data: { status: "error" } };
     }
 
-    // Verify the address in the memo matches the profile's address
     if (parsed.userAddress !== profile.address) {
       return {
         ok: false,
@@ -101,12 +125,9 @@ export async function confirmOtpAction(
       };
     }
 
-    // Build profile update payload
-    const profileUpdate: Record<string, unknown> = {
-      address_verified: true,
-    };
+    // --- Apply profile update -----------------------------------------------
+    const profileUpdate: Record<string, unknown> = { address_verified: true };
 
-    // Apply profile edits if provided
     if (edits) {
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
@@ -115,7 +136,6 @@ export async function confirmOtpAction(
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }
 
-    // Update profile
     const { error } = await supabase
       .from("zcasher")
       .update(profileUpdate)
@@ -129,42 +149,38 @@ export async function confirmOtpAction(
       };
     }
 
-    // Handle link edits if provided
+    // --- Apply link edits ---------------------------------------------------
     if (edits?.links && edits.links.length > 0) {
       for (const link of edits.links) {
         if (link._delete && link.id) {
-          // Delete existing link
           await supabase
             .from("zcasher_links")
             .delete()
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
         } else if (link.id) {
-          // Update existing link
           await supabase
             .from("zcasher_links")
             .update({
               url: link.url,
               label: link.label || null,
+              platform: link.platform ?? derivePlatform(link.url),
             })
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
         } else if (!link._delete) {
-          // Insert new link
           await supabase.from("zcasher_links").insert({
             zcasher_id: profileId,
             url: link.url,
             label: link.label || null,
+            platform: link.platform ?? derivePlatform(link.url),
             is_verified: false,
           });
         }
       }
     }
 
-    return {
-      ok: true,
-      data: { status: "verified" },
-    };
+    return { ok: true, data: { status: "verified" } };
   } catch (error) {
     return {
       ok: false,
