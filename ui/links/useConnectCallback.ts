@@ -1,6 +1,6 @@
 "use client";
 
-// lib/social/useConnectCallback.ts
+// ui/links/useConnectCallback.ts
 // Handles OAuth callback via onAuthStateChange + sessionStorage
 
 import { useEffect } from "react";

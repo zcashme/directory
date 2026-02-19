@@ -1,6 +1,6 @@
 "use server";
 
-// lib/social/verifyLink.ts
+// ui/links/verifyLink.ts
 // Server action: auto-persist a verified social link
 // Validates the OAuth session server-side before marking a link as verified.
 

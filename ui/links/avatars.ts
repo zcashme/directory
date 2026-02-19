@@ -1,4 +1,4 @@
-// lib/social/avatars.ts
+// ui/links/avatars.ts
 // Avatar fetching from social providers
 
 import { getSession } from "@/lib/supabase/auth";

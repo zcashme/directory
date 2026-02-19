@@ -3,7 +3,7 @@
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { extractDomain, isDiscordLink } from "@/lib/profile/profileLinks";
-import { detectProviderFromUrl } from "@/lib/social/avatars";
+import { detectProviderFromUrl } from "@/ui/links/avatars";
 import type { ProfileLinkRowProps } from "./profileCardTypes";
 import { resolveIconSrc } from "./profileCardUtils";
 

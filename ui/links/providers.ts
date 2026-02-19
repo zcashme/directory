@@ -1,4 +1,4 @@
-// lib/social/providers.ts
+// ui/links/providers.ts
 // Single source of truth for OAuth providers and handle extraction
 
 export interface Provider {

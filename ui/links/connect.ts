@@ -1,4 +1,4 @@
-// lib/social/connect.ts
+// ui/links/connect.ts
 // Initiates OAuth flow for social verification
 
 import { supabase } from "@/lib/supabase/supabase-client";

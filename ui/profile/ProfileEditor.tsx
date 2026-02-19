@@ -17,8 +17,8 @@ import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
-import { PROVIDERS } from "@/lib/social/providers";
-import { applyProviderAvatar, detectProviderFromUrl } from "@/lib/social/avatars";
+import { PROVIDERS } from "@/ui/links/providers";
+import { applyProviderAvatar, detectProviderFromUrl } from "@/ui/links/avatars";
 
 function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
   const trimmed = (rawUrl || "").trim();

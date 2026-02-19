@@ -1,4 +1,4 @@
-# /lib/social - Social OAuth Verification
+# /ui/links - Social OAuth Verification
 
 ## Purpose
 OAuth-based social link verification. Users connect social accounts (X, GitHub, Discord, LinkedIn)
