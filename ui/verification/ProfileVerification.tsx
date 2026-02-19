@@ -48,8 +48,7 @@ export default function ProfileVerification({
       edits.profile_image_url = form.profile_image_url;
       hasChanges = true;
     }
-    if (form.nearest_city_id !== original.nearest_city_id) {
-      edits.nearest_city_id = form.nearest_city_id;
+    if (form.nearest_city_name !== original.nearest_city_name) {
       edits.nearest_city_name = form.nearest_city_name;
       hasChanges = true;
     }

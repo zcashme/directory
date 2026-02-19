@@ -13,7 +13,6 @@ export interface Profile {
   bio?: string;
   address: string;
   address_verified: boolean;
-  nearest_city_id?: number | null;
   nearest_city_name?: string;
   avatar_url?: string;
   profile_image_url?: string;

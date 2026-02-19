@@ -27,7 +27,6 @@ export interface FormState {
   bio: string;
   profile_image_url: string;
   links: ParsedLink[];
-  nearest_city_id: number | null;
   nearest_city_name: string;
 }
 
@@ -60,7 +59,6 @@ const emptyForm: FormState = {
   bio: '',
   profile_image_url: '',
   links: [],
-  nearest_city_id: null,
   nearest_city_name: '',
 };
 
@@ -96,10 +94,8 @@ export const useEditsStore = create<EditsState>((set) => ({
 
       if (field === 'nearest_city') {
         if (value) {
-          newForm.nearest_city_id = null;
           newForm.nearest_city_name = '';
         } else {
-          newForm.nearest_city_id = state.original.nearest_city_id;
           newForm.nearest_city_name = state.original.nearest_city_name;
         }
       } else {
@@ -125,7 +121,6 @@ export const useEditsStore = create<EditsState>((set) => ({
         bio: profile.bio || '',
         profile_image_url: profile.profile_image_url || '',
         links: links || [],
-        nearest_city_id: profile.nearest_city_id || null,
         nearest_city_name: profile.nearest_city_name || '',
       },
       original: {
@@ -135,7 +130,6 @@ export const useEditsStore = create<EditsState>((set) => ({
         bio: profile.bio || '',
         profile_image_url: profile.profile_image_url || '',
         links: links || [],
-        nearest_city_id: profile.nearest_city_id || null,
         nearest_city_name: profile.nearest_city_name || '',
       },
       deletedFields: emptyDeletedFields,

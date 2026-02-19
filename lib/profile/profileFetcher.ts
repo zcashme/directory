@@ -100,9 +100,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
   type LinksResult = { data: Array<{ id: number; label?: string; url: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
 
-  type CityResult = { data: { city: string; country: string } | null; error: unknown };
-
-  const [alltime, weekly, monthly, links, city]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult, CityResult] = await Promise.all([
+  const [alltime, weekly, monthly, links]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult] = await Promise.all([
     supabase
       .from("referrer_ranked_alltime")
       .select("rank_alltime")
@@ -126,14 +124,6 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
       .select("id,label,url,is_verified,zcasher_id")
       .eq("zcasher_id", profile.id)
       .order("id", { ascending: true }),
-    profile.nearest_city_id
-      ? supabase
-          .from("worldcities")
-          .select("city,country")
-          .eq("id", profile.nearest_city_id)
-          .limit(1)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
   ]);
 
   const ranks: RankData = {
@@ -141,11 +131,6 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
     rank_weekly: weekly?.data?.rank_weekly || 0,
     rank_monthly: monthly?.data?.rank_monthly || 0,
   };
-
-  // Resolve city name from worldcities if the view didn't provide it
-  if (!profile.nearest_city_name && city?.data) {
-    profile.nearest_city_name = `${city.data.city}, ${city.data.country}`;
-  }
 
   // Attach links to profile
   profile.links = links?.data || [];

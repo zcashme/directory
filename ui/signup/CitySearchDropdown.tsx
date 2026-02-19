@@ -62,7 +62,7 @@ export default function CitySearchDropdown({
           {results.length > 0 ? (
             results.map((c) => (
               <div
-                key={c.id}
+                key={`${c.city_ascii}-${c.admin_name}-${c.country}`}
                 onClick={() => {
                   onChange({
                     ...c,

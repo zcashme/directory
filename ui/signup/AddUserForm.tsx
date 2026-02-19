@@ -436,8 +436,9 @@ export default function AddUserForm({
         display_name: displayName.trim() || undefined,
         bio: bio.trim() || undefined,
         address: address.trim(),
-        nearest_city_id: nearestCity?.id || undefined,
-        nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || undefined,
+        nearest_city_name: nearestCity
+          ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
+          : undefined,
         referred_by: typeof referrer === "object" ? referrer?.name || undefined : undefined,
         referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
         is_ns: isNsSignup || undefined,

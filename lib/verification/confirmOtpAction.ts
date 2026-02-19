@@ -112,7 +112,6 @@ export async function confirmOtpAction(
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
       if (edits.profile_image_url !== undefined) profileUpdate.profile_image_url = edits.profile_image_url;
-      if (edits.nearest_city_id !== undefined) profileUpdate.nearest_city_id = edits.nearest_city_id;
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }
 
