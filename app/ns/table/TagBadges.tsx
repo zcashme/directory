@@ -1,7 +1,7 @@
  "use client";
 import type { StaticImageData } from "next/image";
-import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
-import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
+import coreIcon from "../assets/network-state-plus-flag-avatar-logo-core-team.png";
+import longTermIcon from "../assets/network-state-plus-flag-avatar-logo-long-term.png";
 
 interface TagBadgesProps {
   tags?: string[];

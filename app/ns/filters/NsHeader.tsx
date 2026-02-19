@@ -1,5 +1,5 @@
 "use client";
-import znsFlag from "./assets/zns-flag.png";
+import znsFlag from "../assets/zns-flag.png";
 
 interface AnnouncementConfig {
   message: string;

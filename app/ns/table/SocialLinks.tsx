@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import type { StaticImageData } from "next/image";
-import type { EnrichedLink } from "./useNsDirectory";
-import type { UnverifiedLinkData } from "./types";
+import type { EnrichedLink } from "../hooks/useNsDirectory";
+import type { UnverifiedLinkData } from "../types";
 import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle } from "@/lib/profile/profileLinks";
 
 interface SocialLinksProps {

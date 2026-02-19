@@ -1,8 +1,8 @@
 "use client";
 import React from "react";
 import type { Profile } from "@/lib/profile/types";
-import type { EnrichedLink } from "./useNsDirectory";
-import type { UnverifiedLinkData } from "./types";
+import type { EnrichedLink } from "../hooks/useNsDirectory";
+import type { UnverifiedLinkData } from "../types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
@@ -12,7 +12,7 @@ import {
   getProfileLocation,
   getProfileTags,
   normalizeSlug,
-} from "./directoryNsUtils";
+} from "../shared/directoryNsUtils";
 
 interface NsRowProps {
   profile: Profile;

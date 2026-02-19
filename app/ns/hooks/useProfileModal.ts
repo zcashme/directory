@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
-import type { UnverifiedLinkData } from "./types";
+import type { UnverifiedLinkData } from "../types";
 
 interface UseProfileModalReturn {
   activeProfile: Profile | null;

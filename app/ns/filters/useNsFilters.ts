@@ -10,7 +10,7 @@ import {
   isNsProfile,
   isTruthyFlag,
   isVerifiedProfile,
-} from "./directoryNsUtils";
+} from "../shared/directoryNsUtils";
 
 interface FilterState {
   verified: boolean;

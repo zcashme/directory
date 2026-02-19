@@ -1,10 +1,10 @@
 "use client";
 import type { StaticImageData } from "next/image";
-import allIcon from "./assets/network-state-plus-flag-avatar-logo-black.png";
-import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
-import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
+import allIcon from "../assets/network-state-plus-flag-avatar-logo-black.png";
+import coreIcon from "../assets/network-state-plus-flag-avatar-logo-core-team.png";
+import longTermIcon from "../assets/network-state-plus-flag-avatar-logo-long-term.png";
 import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
-import { FILTER_BASE, FILTER_CONTENT } from "./directoryNsStyles";
+import { FILTER_BASE, FILTER_CONTENT } from "../shared/directoryNsStyles";
 
 const getFilterButtonClass = (active: boolean, activeClass: string, hoverClass: string): string => {
   const scopedHoverClass = hoverClass.replace(/hover:/g, "md:hover:");

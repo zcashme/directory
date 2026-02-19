@@ -6,7 +6,7 @@ import {
   isNsProfile,
   isTruthyFlag,
   isVerifiedProfile,
-} from "./directoryNsUtils";
+} from "../shared/directoryNsUtils";
 
 interface NsCounts {
   nsCount: number;

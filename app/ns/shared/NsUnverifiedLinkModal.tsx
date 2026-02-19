@@ -1,6 +1,6 @@
 "use client";
 import CopyButton from "@/ui/common/buttons/CopyButton";
-import type { UnverifiedLinkData } from "./types";
+import type { UnverifiedLinkData } from "../types";
 
 interface NsUnverifiedLinkModalProps {
   unverifiedLink: UnverifiedLinkData | null;

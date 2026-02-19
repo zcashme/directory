@@ -1,10 +1,10 @@
 "use client";
 import { useMemo } from "react";
 import type { Profile } from "@/lib/profile/types";
-import type { LinksByProfileId } from "./useNsDirectory";
-import type { UnverifiedLinkData } from "./types";
+import type { LinksByProfileId } from "../hooks/useNsDirectory";
+import type { UnverifiedLinkData } from "../types";
 
-import LoadingDots from "./LoadingDots";
+import LoadingDots from "../shared/LoadingDots";
 import NsRow from "./NsRow";
 
 interface NsTableProps {
