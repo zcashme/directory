@@ -17,7 +17,8 @@ const PROVIDER_TO_PLATFORM: Record<string, string> = {
 export async function upsertVerifiedLink(
   profileId: number,
   url: string,
-  accessToken: string
+  accessToken: string,
+  username?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createSupabaseServerClient();
   if (!supabase) return { ok: false, error: "Supabase client not available" };
@@ -58,28 +59,43 @@ export async function upsertVerifiedLink(
 
   // Use the canonical URL built from the OAuth handle (not the client-provided URL)
   const verifiedUrl = provider.buildUrl(oauthHandle);
+  const platform = PROVIDER_TO_PLATFORM[providerKey] ?? "Other";
 
-  const { data: existing, error: findError } = await supabase
+  // First try exact URL match, then fall back to any link from the same platform
+  const { data: exactMatch } = await supabase
     .from("zcasher_links")
     .select("id")
     .eq("zcasher_id", profileId)
     .eq("url", verifiedUrl)
     .maybeSingle();
 
-  if (findError) return { ok: false, error: findError.message };
+  let existingId = exactMatch?.id ?? null;
 
-  const platform = PROVIDER_TO_PLATFORM[providerKey] ?? "Other";
+  if (!existingId) {
+    // Find any existing link from the same platform for this profile
+    // (e.g. user added discord.com/users/professorshaw but OAuth gives the numeric ID)
+    const { data: platformMatch } = await supabase
+      .from("zcasher_links")
+      .select("id")
+      .eq("zcasher_id", profileId)
+      .eq("platform", platform)
+      .maybeSingle();
+    existingId = platformMatch?.id ?? null;
+  }
 
-  if (existing) {
+  // Use the OAuth username as the display label (e.g. "professorshaw" instead of numeric ID)
+  const label = username || provider.getUsername?.(identityData) || "";
+
+  if (existingId) {
     const { error } = await supabase
       .from("zcasher_links")
-      .update({ is_verified: true, platform, updated_at: new Date().toISOString() })
-      .eq("id", existing.id);
+      .update({ url: verifiedUrl, label, is_verified: true, platform, updated_at: new Date().toISOString() })
+      .eq("id", existingId);
     if (error) return { ok: false, error: error.message };
   } else {
     const { error } = await supabase
       .from("zcasher_links")
-      .insert({ zcasher_id: profileId, url: verifiedUrl, label: "", is_verified: true, platform, created_at: new Date().toISOString() });
+      .insert({ zcasher_id: profileId, url: verifiedUrl, label, is_verified: true, platform, created_at: new Date().toISOString() });
     if (error) return { ok: false, error: error.message };
   }
 

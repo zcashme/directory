@@ -6,7 +6,7 @@
 import { useEffect } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { getProviderByKey } from "./providers";
-import { getPendingConnect } from "./connect";
+import { getPendingConnect, clearPendingConnect } from "./connect";
 
 export interface ConnectedLink {
   url: string;
@@ -31,12 +31,10 @@ export function useConnectCallback({
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log("[useConnectCallback] auth event:", event);
         const pending = getPendingConnect();
-        console.log("[useConnectCallback] pending:", pending);
-        if (!pending) { console.log("[useConnectCallback] no pending connect, skipping"); return; }
-        if (pending.profileId !== profileId) { console.log("[useConnectCallback] profileId mismatch:", pending.profileId, "vs", profileId); return; }
-        if (!session) { console.log("[useConnectCallback] no session"); return; }
+        if (!pending) return;
+        if (pending.profileId !== profileId) return;
+        if (!session) return;
 
         const provider = getProviderByKey(pending.provider);
         if (!provider) {
@@ -44,7 +42,6 @@ export function useConnectCallback({
           return;
         }
 
-        console.log("[useConnectCallback] identities:", session.user.identities?.map(i => i.provider));
         const identity = session.user.identities?.find(
           (i) => i.provider === provider.key
         );
@@ -54,9 +51,7 @@ export function useConnectCallback({
         }
 
         const data = identity.identity_data as Record<string, unknown>;
-        console.log("[useConnectCallback] identity_data keys:", Object.keys(data));
         const handle = provider.getHandle(data);
-        console.log("[useConnectCallback] handle:", handle);
         if (!handle) {
           onError?.(`Could not get handle from ${provider.label}`);
           return;
@@ -70,7 +65,7 @@ export function useConnectCallback({
           avatarUrl: provider.getAvatarUrl?.(data) ?? null,
           accessToken: session.access_token,
         };
-        console.log("[useConnectCallback] success:", result);
+        clearPendingConnect();
         onConnected?.(result);
       }
     );

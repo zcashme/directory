@@ -41,18 +41,15 @@ export const PROVIDERS: Record<string, Provider> = {
     key: "discord",
     label: "Discord",
     buildUrl: (id) => `https://discord.com/users/${id}`,
-    getHandle: (data) => (data?.id as string) ?? null,
+    getHandle: (data) => (data?.sub as string) ?? (data?.provider_id as string) ?? (data?.id as string) ?? null,
     getUsername: (data) => {
-      const username = data?.username as string | undefined;
-      const discriminator = data?.discriminator as string | undefined;
-      if (!username) return null;
-      if (discriminator && discriminator !== "0") {
-        return `${username}#${discriminator}`;
-      }
-      return username;
+      // Supabase maps Discord username to full_name (not "username")
+      // name includes discriminator: "professorshaw#0"
+      // full_name is clean: "professorshaw"
+      return (data?.full_name as string) ?? null;
     },
     getAvatarUrl: (data) => {
-      const id = data?.id as string | undefined;
+      const id = (data?.sub as string) ?? (data?.provider_id as string) ?? (data?.id as string);
       const avatar = data?.avatar as string | undefined;
       if (!id || !avatar) return null;
       return `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=4096`;

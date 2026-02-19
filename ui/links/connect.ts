@@ -14,8 +14,11 @@ export interface PendingConnect {
 export function getPendingConnect(): PendingConnect | null {
   const raw = sessionStorage.getItem(PENDING_CONNECT_KEY);
   if (!raw) return null;
-  sessionStorage.removeItem(PENDING_CONNECT_KEY);
   return JSON.parse(raw);
+}
+
+export function clearPendingConnect(): void {
+  sessionStorage.removeItem(PENDING_CONNECT_KEY);
 }
 
 export async function connectSocial(
@@ -25,7 +28,6 @@ export async function connectSocial(
   if (!PROVIDERS[provider]) throw new Error(`Unknown provider: ${provider}`);
 
   const pending = { provider, profileId };
-  console.log("[connectSocial] storing pending:", pending);
   sessionStorage.setItem(PENDING_CONNECT_KEY, JSON.stringify(pending));
 
   const { error } = await supabase.auth.signInWithOAuth({
