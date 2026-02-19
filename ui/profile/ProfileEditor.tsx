@@ -2,7 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
+import { buildSocialUrl, normalizeSocialUsername, HOSTS } from "@/lib/profile/usernameNormalizer";
+import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
@@ -17,8 +18,62 @@ import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 import { PROVIDERS } from "@/lib/social/providers";
-import { parseSocialUrl, isValidImageUrl } from "@/lib/social/utils";
 import { applyProviderAvatar, detectProviderFromUrl } from "@/lib/social/avatars";
+
+function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return null;
+  const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    for (const [platform, hosts] of Object.entries(HOSTS)) {
+      if ((hosts as string[]).includes(host)) return platform;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function parseSocialUrl(rawUrl: string | null | undefined): {
+  platform: string;
+  username: string;
+  otherUrl: string;
+} {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return { platform: "X", username: "", otherUrl: "" };
+  const platform = detectPlatformFromUrl(trimmed);
+  if (!platform) return { platform: "Other", username: "", otherUrl: trimmed };
+  return {
+    platform,
+    username: normalizeSocialUsername(trimmed, platform as SocialPlatform),
+    otherUrl: "",
+  };
+}
+
+function isValidImageUrl(url: string | null | undefined): {
+  valid: boolean;
+  reason: string | null;
+} {
+  if (!url) return { valid: true, reason: null };
+  const trimmed = url.trim();
+  const { valid } = isValidUrl(trimmed);
+  if (!valid) return { valid: false, reason: "Invalid URL format" };
+  const hasImageExt = /\.(png|jpg)(\?.*)?$/i.test(trimmed);
+  let isGithubAvatar = false;
+  if (!hasImageExt) {
+    try {
+      const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+      const u = new URL(normalized);
+      isGithubAvatar = u.hostname.toLowerCase() === "avatars.githubusercontent.com";
+    } catch {
+      isGithubAvatar = false;
+    }
+  }
+  if (!hasImageExt && !isGithubAvatar) return { valid: false, reason: "Image URL must end in .png or .jpg" };
+  return { valid: true, reason: null };
+}
 
 const FIELD_CLASS =
   `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;

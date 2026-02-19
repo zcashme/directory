@@ -4,37 +4,40 @@
 import { supabase } from "@/lib/supabase/supabase-client";
 import { PROVIDERS, ProviderKey } from "./providers";
 
-export interface ConnectOptions {
+const PENDING_CONNECT_KEY = "pendingConnect";
+
+export interface PendingConnect {
+  provider: ProviderKey;
   profileId: number;
-  returnPath: string;
 }
 
-/**
- * Start OAuth flow to connect a social account.
- * User will be redirected to the provider, then back to returnPath with ?connect=provider&pid=profileId
- */
+export function getPendingConnect(): PendingConnect | null {
+  const raw = sessionStorage.getItem(PENDING_CONNECT_KEY);
+  if (!raw) return null;
+  sessionStorage.removeItem(PENDING_CONNECT_KEY);
+  return JSON.parse(raw);
+}
+
 export async function connectSocial(
   provider: ProviderKey,
-  options: ConnectOptions
+  { profileId, returnPath }: { profileId: number; returnPath: string }
 ): Promise<void> {
-  const providerConfig = PROVIDERS[provider];
-  if (!providerConfig) {
-    throw new Error(`Unknown provider: ${provider}`);
-  }
+  if (!PROVIDERS[provider]) throw new Error(`Unknown provider: ${provider}`);
 
-  const redirectUrl = new URL(options.returnPath, window.location.origin);
-  redirectUrl.searchParams.set("connect", provider);
-  redirectUrl.searchParams.set("pid", String(options.profileId));
+  const pending = { provider, profileId };
+  console.log("[connectSocial] storing pending:", pending);
+  sessionStorage.setItem(PENDING_CONNECT_KEY, JSON.stringify(pending));
 
   const { error } = await supabase.auth.signInWithOAuth({
-    provider: providerConfig.key as any,
+    provider: PROVIDERS[provider].key as any,
     options: {
-      redirectTo: redirectUrl.toString(),
+      redirectTo: new URL(returnPath, window.location.origin).toString(),
       skipBrowserRedirect: false,
     },
   });
 
   if (error) {
+    sessionStorage.removeItem(PENDING_CONNECT_KEY);
     throw error;
   }
 }

@@ -152,6 +152,7 @@ export type CreateProfileResponse = APIResponse<Profile>;
 export interface ProfileLinkInput {
   label: string;
   url: string;
+  platform?: string;
 }
 
 /**
@@ -230,6 +231,7 @@ export interface ProfileLinkEdit {
   id?: number | null;
   url: string;
   label?: string;
+  platform?: string;
   _delete?: boolean;
 }
 

@@ -132,7 +132,7 @@ export const getLinkLabel = (url: string = ""): string => {
 
 type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram";
 
-const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
+export const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "x.com": "X",
   "twitter.com": "X",
   "github.com": "GitHub",
@@ -149,6 +149,15 @@ const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "t.me": "Telegram",
   "telegram.me": "Telegram",
 } as const;
+
+/**
+ * Derive the platform label from a URL using PLATFORM_BY_DOMAIN.
+ * Returns "Other" if the domain is not recognized.
+ */
+export function derivePlatform(url: string): string {
+  const domain = extractDomain(url);
+  return PLATFORM_BY_DOMAIN[domain] ?? "Other";
+}
 
 export const getSocialHandle = (url: string = ""): string => {
   const trimmed = (url ?? "").trim();
@@ -204,6 +213,10 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
       normalizedLabel.startsWith(`${normalizedDomain}/`) ||
       normalizedLabel.startsWith(`www.${normalizedDomain}/`));
 
+  // Use stored platform when available and not "Other", otherwise derive from URL
+  const storedPlatform = link.platform && link.platform !== "Other" ? link.platform : null;
+  const platform = storedPlatform ?? PLATFORM_BY_DOMAIN[domain] ?? null;
+
   if (KNOWN_DOMAINS[domain]) {
     return {
       ...link,
@@ -211,6 +224,7 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
       icon: KNOWN_DOMAINS[domain].icon,
       domain,
       handle,
+      platform,
     };
   }
 
@@ -223,6 +237,7 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
     icon: FALLBACK_ICON,
     domain,
     handle,
+    platform,
   };
 }
 

@@ -67,6 +67,7 @@ export interface ProfileLink {
   id?: number | null;
   url: string;
   label?: string;
+  platform?: string | null;
   is_verified: boolean;
   verification_expires_at?: string;
   zcasher_id?: number;
@@ -80,7 +81,7 @@ export interface EnrichedProfileLink extends ProfileLink {
   label: string;
   domain?: string;
   handle?: string;
-  platform?: "X" | "GitHub" | "Instagram" | "Discord" | null;
+  platform?: string | null;
 }
 
 /**

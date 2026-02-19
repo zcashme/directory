@@ -138,7 +138,7 @@ zcasher_links {
 
 ## Security Notes
 
-- **ZVS Required**: Server checks `profile.verified` before allowing link verification
+- **Wallet-Profile Verification Required**: Server checks `profile.verified` before allowing link verification
 - **OAuth via Supabase**: Token exchange handled by Supabase Auth, no tokens stored in app
 - **Identity Extraction**: Handle extracted from `session.user.identities[]` after OAuth
 - **No Client Trust**: Link verification always validated server-side, never trust client claims

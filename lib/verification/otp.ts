@@ -13,13 +13,8 @@ import { parseZvsMemo } from './session';
 function getSecretSeedBytes(): Uint8Array {
   const seed = process.env.ZVS_SECRET_SEED;
   if (!seed) {
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('ZVS_SECRET_SEED environment variable is required in production');
-    }
-    // Allow development with placeholder - OTPs will not be secure
-    return new TextEncoder().encode('DEV_PLACEHOLDER_SEED');
+    throw new Error('ZVS_SECRET_SEED environment variable is required');
   }
-  // Hex-decode the secret (ZVS does: hex::decode(&otp_secret))
   return hexToBytes(seed);
 }
 

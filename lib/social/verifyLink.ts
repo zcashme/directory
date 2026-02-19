@@ -8,6 +8,13 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { detectProviderFromUrl, extractHandleFromUrl } from "./avatars";
 import { getProviderByKey } from "./providers";
 
+const PROVIDER_TO_PLATFORM: Record<string, string> = {
+  twitter: "X",
+  github: "GitHub",
+  discord: "Discord",
+  linkedin_oidc: "LinkedIn",
+};
+
 export async function upsertVerifiedLink(
   profileId: number,
   url: string,
@@ -62,16 +69,18 @@ export async function upsertVerifiedLink(
 
   if (findError) return { ok: false, error: findError.message };
 
+  const platform = PROVIDER_TO_PLATFORM[providerKey] ?? "Other";
+
   if (existing) {
     const { error } = await supabase
       .from("zcasher_links")
-      .update({ is_verified: true, updated_at: new Date().toISOString() })
+      .update({ is_verified: true, platform, updated_at: new Date().toISOString() })
       .eq("id", existing.id);
     if (error) return { ok: false, error: error.message };
   } else {
     const { error } = await supabase
       .from("zcasher_links")
-      .insert({ zcasher_id: profileId, url: verifiedUrl, is_verified: true, created_at: new Date().toISOString() });
+      .insert({ zcasher_id: profileId, url: verifiedUrl, is_verified: true, platform, created_at: new Date().toISOString() });
     if (error) return { ok: false, error: error.message };
   }
 

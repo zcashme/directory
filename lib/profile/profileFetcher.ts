@@ -98,7 +98,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   type RankResult = { data: { rank_alltime?: number } | null; error: unknown };
   type WeeklyRankResult = { data: { rank_weekly?: number } | null; error: unknown };
   type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
-  type LinksResult = { data: Array<{ id: number; label?: string; url: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
+  type LinksResult = { data: Array<{ id: number; label?: string; url: string; platform?: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
 
   const [alltime, weekly, monthly, links]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult] = await Promise.all([
     supabase
@@ -121,7 +121,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
       .maybeSingle(),
     supabase
       .from("zcasher_links")
-      .select("id,label,url,is_verified,zcasher_id")
+      .select("id,label,url,platform,is_verified,zcasher_id")
       .eq("zcasher_id", profile.id)
       .order("id", { ascending: true }),
   ]);

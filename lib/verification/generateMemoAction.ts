@@ -10,7 +10,6 @@ const SIGNIN_ADDR =
 
 const MIN_AMOUNT = 0.001;
 
-export { SIGNIN_ADDR };
 
 interface GenerateMemoResult {
   ok: boolean;

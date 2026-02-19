@@ -18,6 +18,7 @@ interface ZcasherLink {
   id: number;
   label: string;
   url: string;
+  platform?: string;
   is_verified: boolean;
 }
 
@@ -73,7 +74,7 @@ export async function GET(
 
   const { data: links, error: linksError } = await supabase
     .from("zcasher_links")
-    .select("id,label,url,is_verified")
+    .select("id,label,url,platform,is_verified")
     .eq("zcasher_id", typedProfile.id);
 
   if (linksError) {
