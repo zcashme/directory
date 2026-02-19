@@ -1,11 +1,17 @@
 'use server';
 
-import { ThreadMessage, Board, GetMessagesResponse, PostMessageResponse, GetBoardsResponse, CreateBoardResponse } from '@/lib/thread/types';
+import { ThreadMessage, Board } from '@/lib/thread/types';
+
+interface ActionResponse<T> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
 
 /**
  * Fetch all boards
  */
-export async function fetchBoardsAction(): Promise<GetBoardsResponse> {
+export async function fetchBoardsAction(): Promise<ActionResponse<Board[]>> {
   try {
     // TODO: Replace with actual API call to fetch boards from database
     const boards: Board[] = [];
@@ -30,7 +36,7 @@ export async function fetchMessagesAction(
   boardId: string,
   limit: number = 20,
   offset: number = 0
-): Promise<GetMessagesResponse> {
+): Promise<ActionResponse<ThreadMessage[]>> {
   try {
     // TODO: Replace with actual API call to fetch messages from database
     // Query should filter by boardId and paginate results with limit and offset
@@ -61,7 +67,7 @@ export async function postMessageAction(
   boardId: string,
   walletAddress?: string,
   otpToken?: string
-): Promise<PostMessageResponse> {
+): Promise<ActionResponse<ThreadMessage>> {
   try {
     if (!content.trim()) {
       return {
@@ -130,7 +136,7 @@ export async function createBoardAction(
   description: string,
   walletAddress?: string,
   otpToken?: string
-): Promise<CreateBoardResponse> {
+): Promise<ActionResponse<Board>> {
   try {
     if (!name.trim()) {
       return {
@@ -186,28 +192,6 @@ export async function createBoardAction(
     return {
       success: false,
       error: 'Failed to create board',
-    };
-  }
-}
-
-/**
- * Get board details
- */
-export async function getBoardAction(boardId: string): Promise<{ success: boolean; data?: Board; error?: string }> {
-  try {
-    // TODO: Replace with actual API call to fetch board from database
-    // Should fetch by boardId with member count and stats
-    void boardId;
-
-    return {
-      success: false,
-      error: 'Board not found',
-    };
-  } catch (error) {
-    console.error('Failed to get board:', error);
-    return {
-      success: false,
-      error: 'Failed to get board',
     };
   }
 }
