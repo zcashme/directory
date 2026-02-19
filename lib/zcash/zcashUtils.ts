@@ -112,7 +112,7 @@ export function buildZcashUri(address: string, amount: string = "0", memo: strin
   return params.length ? `${base}?${params.join("&")}` : base;
 }
 
-export function toBase64Url(text: string): string {
+function toBase64Url(text: string): string {
   try {
     return btoa(unescape(encodeURIComponent(text)))
       .replace(/\+/g, "-")
@@ -121,54 +121,4 @@ export function toBase64Url(text: string): string {
   } catch {
     return "";
   }
-}
-
-// Memo encoding
-
-interface ProfileForMemo {
-  name?: string;
-  display_name?: string;
-  bio?: string;
-  profile_image_url?: string;
-  links?: string[];
-  address?: string;
-  [key: string]: unknown;
-}
-
-export function buildZcashEditMemo(profile: ProfileForMemo = {}, zId: string = "?", requestId: string | null = null): string {
-  const fieldMap: Record<string, string> = {
-    name: "n",
-    display_name: "h",
-    bio: "b",
-    profile_image_url: "i",
-    links: "l",
-  };
-
-  const clean = Object.fromEntries(
-    Object.entries(profile).filter(([, v]) => {
-      if (Array.isArray(v)) return v.some((x) => x && x.trim() !== "");
-      return v !== "" && v !== null && v !== undefined;
-    })
-  );
-
-  const includeAddress = "address" in clean && typeof clean.address === "string" && clean.address.trim() !== "";
-
-  const compactPairs = Object.entries(clean)
-    .filter(([k]) => k !== "address")
-    .map(([key, value]) => {
-      const shortKey = fieldMap[key] || key;
-      if (Array.isArray(value)) {
-        return `${shortKey}:[${value
-          .filter((x) => x && x.trim() !== "")
-          .map((x) => `"${x}"`)
-          .join(",")}]`;
-      }
-      return `${shortKey}:"${value}"`;
-    });
-
-  const requestIdPart = requestId ? `,rid:${requestId}` : "";
-
-  return compactPairs.length > 0 || includeAddress || requestId
-    ? `{z:${zId}${requestIdPart}${includeAddress ? `,a:"${(clean.address as string).trim()}"` : ""}${compactPairs.length ? `,${compactPairs.join(",")}` : ""}}`
-    : `{z:${zId}}`;
 }
