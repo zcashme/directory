@@ -72,7 +72,7 @@ export default function ProfileCard({
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
 
-  const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
+  const handleVerifyClick = useCallback(async (link: { url: string }) => {
     if (!profile.address_verified) return;
     const providerKey = detectProviderFromUrl(link.url || "");
     if (!providerKey || !PROVIDERS[providerKey]) return;
