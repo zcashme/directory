@@ -610,6 +610,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
                     >
                       Authenticated
                     </Button>
+                    {/* TODO: re-enable avatar buttons later
                     {isOAuthProvider && (
                       <Button
                         type="button"
@@ -620,6 +621,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
                         Use Avatar
                       </Button>
                     )}
+                    */}
                   </div>
                 ) : row.id !== null && onAuthenticateLink ? (
                   <Button
