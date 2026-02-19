@@ -8,20 +8,20 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import HelpMessage from "@/ui/verification/HelpMessage";
-import InlineCopyButton from "./InlineCopyButton";
-import SocialLinks from "./SocialLinks";
-import TagBadges from "./TagBadges";
-import NsFilters from "./NsFilters";
-import NsHeader from "./NsHeader";
-import NsLocationFilterModal from "./NsLocationFilterModal";
-import NsTable from "./NsTable";
-import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
-import useFlightPaths from "./useFlightPaths";
-import useNsCounts from "./useNsCounts";
-import useNsDirectory, { type EnrichedLink } from "./useNsDirectory";
-import useNsFilters from "./useNsFilters";
-import useProfileModal from "./useProfileModal";
-import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
+import InlineCopyButton from "./table/InlineCopyButton";
+import SocialLinks from "./table/SocialLinks";
+import TagBadges from "./table/TagBadges";
+import NsFilters from "./filters/NsFilters";
+import NsHeader from "./filters/NsHeader";
+import NsLocationFilterModal from "./filters/NsLocationFilterModal";
+import NsTable from "./table/NsTable";
+import NsUnverifiedLinkModal from "./shared/NsUnverifiedLinkModal";
+import useFlightPaths from "./hooks/useFlightPaths";
+import useNsCounts from "./filters/useNsCounts";
+import useNsDirectory, { type EnrichedLink } from "./hooks/useNsDirectory";
+import useNsFilters from "./filters/useNsFilters";
+import useProfileModal from "./hooks/useProfileModal";
+import { getProfileTags, normalizeSlug } from "./shared/directoryNsUtils";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
   // Local state

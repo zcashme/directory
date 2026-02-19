@@ -1,19 +1,29 @@
 "use server";
 
-import { searchCities } from "@/lib/directory/searchCities";
-import type { SearchCitiesResponse } from "@/lib/api/types";
+import cityTimezones from "city-timezones";
+import type { APIResponse } from "@/lib/api/types";
 
-/**
- * Server Action for searching cities
- * Used by CitySearchDropdown component
- */
-export async function searchCitiesAction(query: string): Promise<SearchCitiesResponse> {
+export interface City {
+  city: string;
+  city_ascii: string;
+  admin_name: string;
+  country: string;
+}
+
+export async function searchCitiesAction(query: string): Promise<APIResponse<City[]>> {
   try {
     if (!query || typeof query !== "string" || query.trim().length < 2) {
       return { ok: true, data: [] };
     }
 
-    const data = await searchCities(query.trim());
+    const results = cityTimezones.findFromCityStateProvince(query.trim());
+    const data: City[] = results.slice(0, 20).map((r: any) => ({
+      city: r.city,
+      city_ascii: r.city,
+      admin_name: r.province || "",
+      country: r.country,
+    }));
+
     return { ok: true, data };
   } catch (error) {
     return { ok: false, error: String((error as Error)?.message || error), data: [] };

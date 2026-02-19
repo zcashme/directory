@@ -8,7 +8,7 @@ import type { Variants } from 'framer-motion'
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { fadeIn } from '@/ui/common/animations'
+ * import { fadeIn } from '@/ui/common/animations/transitions'
  *
  * <motion.div
  *   variants={fadeIn}
@@ -35,7 +35,7 @@ export const fadeIn: Variants = {
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { scaleIn } from '@/ui/common/animations'
+ * import { scaleIn } from '@/ui/common/animations/transitions'
  *
  * <motion.div
  *   variants={scaleIn}
@@ -62,7 +62,7 @@ export const scaleIn: Variants = {
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { slideIn } from '@/ui/common/animations'
+ * import { slideIn } from '@/ui/common/animations/transitions'
  *
  * // In a step-based wizard
  * const [step, setStep] = useState(0)
@@ -110,7 +110,7 @@ export const slideIn: Variants = {
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { slideUp } from '@/ui/common/animations'
+ * import { slideUp } from '@/ui/common/animations/transitions'
  *
  * <motion.div
  *   variants={slideUp}
@@ -137,7 +137,7 @@ export const slideUp: Variants = {
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { slideDown } from '@/ui/common/animations'
+ * import { slideDown } from '@/ui/common/animations/transitions'
  *
  * <motion.div
  *   variants={slideDown}
@@ -164,7 +164,7 @@ export const slideDown: Variants = {
  * @example
  * ```tsx
  * import { motion, AnimatePresence } from 'framer-motion'
- * import { expandCollapse } from '@/ui/common/animations'
+ * import { expandCollapse } from '@/ui/common/animations/transitions'
  *
  * const [isOpen, setIsOpen] = useState(false)
  *
@@ -199,7 +199,7 @@ export const expandCollapse: Variants = {
  * @example
  * ```tsx
  * import { motion, AnimatePresence } from 'framer-motion'
- * import { modalVariant, backdropVariant } from '@/ui/common/animations'
+ * import { modalVariant, backdropVariant } from '@/ui/common/animations/transitions'
  *
  * const [isOpen, setIsOpen] = useState(false)
  *
@@ -230,7 +230,7 @@ export const expandCollapse: Variants = {
  * </AnimatePresence>
  * ```
  *
- * @see ui/verification/SubmitOtp.tsx for modal implementation (uses Tailwind animate-in)
+ * @see ui/verification/VerifyProfileModal.tsx for modal implementation (uses Tailwind animate-in)
  */
 export const modalVariant: Variants = {
   initial: { scale: 0.95, opacity: 0 },
@@ -247,7 +247,7 @@ export const modalVariant: Variants = {
  * @example
  * ```tsx
  * import { motion } from 'framer-motion'
- * import { backdropVariant } from '@/ui/common/animations'
+ * import { backdropVariant } from '@/ui/common/animations/transitions'
  *
  * <motion.div
  *   variants={backdropVariant}

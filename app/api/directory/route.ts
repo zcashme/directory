@@ -18,6 +18,7 @@ interface ZcasherLink {
   id: number;
   label: string;
   url: string;
+  platform?: string;
   is_verified: boolean;
   zcasher_id: number;
 }
@@ -26,6 +27,7 @@ interface LinkOutput {
   id: number;
   label: string;
   url: string;
+  platform?: string;
   is_verified: boolean;
 }
 
@@ -272,7 +274,7 @@ export async function GET(request: Request): Promise<Response> {
   if (profileIds.length > 0) {
     const { data: links, error: linksError } = await supabase
       .from("zcasher_links")
-      .select("id,label,url,is_verified,zcasher_id")
+      .select("id,label,url,platform,is_verified,zcasher_id")
       .in("zcasher_id", profileIds);
 
     if (linksError) {
@@ -293,10 +295,10 @@ export async function GET(request: Request): Promise<Response> {
     const profileLinks = linksMap.get(p.id) || [];
     const authenticated_links: LinkOutput[] = profileLinks
       .filter((l) => l.is_verified)
-      .map((l) => ({ id: l.id, label: l.label, url: l.url, is_verified: l.is_verified }));
+      .map((l) => ({ id: l.id, label: l.label, url: l.url, platform: l.platform, is_verified: l.is_verified }));
     const unauthenticated_links: LinkOutput[] = profileLinks
       .filter((l) => !l.is_verified)
-      .map((l) => ({ id: l.id, label: l.label, url: l.url, is_verified: l.is_verified }));
+      .map((l) => ({ id: l.id, label: l.label, url: l.url, platform: l.platform, is_verified: l.is_verified }));
 
     return {
       id: p.id,

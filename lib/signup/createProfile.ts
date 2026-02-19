@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { Profile } from "@/lib/profile/types";
 import type { CreateProfilePayload, ProfileLinkInput } from "@/lib/api/types";
+import { derivePlatform } from "@/lib/profile/profileLinks";
 
 export async function checkAddressTaken(address: string): Promise<boolean> {
   const supabase = createSupabaseServerClient();
@@ -37,6 +38,7 @@ export async function insertProfileLinks(zcasherId: number, links: ProfileLinkIn
       zcasher_id: zcasherId,
       label: entry.label,
       url: entry.url,
+      platform: entry.platform ?? derivePlatform(entry.url),
       is_verified: false,
     }]);
   }

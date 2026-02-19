@@ -4,7 +4,7 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import type { Profile } from "@/lib/profile/types";
-import type { City } from "@/lib/directory/types";
+import type { City } from "@/lib/directory/searchCitiesAction";
 import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
 import { useState, useEffect, useRef } from "react";
 import type { SVGProps, FormEvent } from "react";
@@ -18,7 +18,7 @@ import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
-import { FormField } from "@/ui/common";
+import FormField from "@/ui/common/forms/FormField";
 
 function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -34,7 +34,7 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
 
 interface Referrer {
   id: number;
@@ -436,8 +436,9 @@ export default function AddUserForm({
         display_name: displayName.trim() || undefined,
         bio: bio.trim() || undefined,
         address: address.trim(),
-        nearest_city_id: nearestCity?.id || undefined,
-        nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || undefined,
+        nearest_city_name: nearestCity
+          ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
+          : undefined,
         referred_by: typeof referrer === "object" ? referrer?.name || undefined : undefined,
         referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
         is_ns: isNsSignup || undefined,

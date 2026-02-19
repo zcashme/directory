@@ -2,7 +2,7 @@
 
 import { Board } from '@/lib/thread/types';
 import { useRouter, usePathname } from 'next/navigation';
-import { Button } from '@/ui/common';
+import Button from '@/ui/common/buttons/Button';
 
 interface SidebarNavProps {
   boards: Board[];

@@ -1,9 +1,9 @@
 "use client";
 
-import type { MouseEvent } from "react";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
-import { extractDomain, isDiscordLink } from "@/lib/profile/profileLinks";
+import { extractDomain } from "@/lib/profile/profileLinks";
+import { detectProviderFromUrl } from "@/ui/links/providers";
 import type { ProfileLinkRowProps } from "./profileCardTypes";
 import { resolveIconSrc } from "./profileCardUtils";
 
@@ -12,14 +12,13 @@ export default function ProfileLinkRow({
   classes,
   hideBadge = false,
   badgeLabels = { verified: "Authenticated", unverified: "Not Authenticated" },
-  badgeOnClick,
   stopPropagation = false,
+  onVerifyClick,
 }: ProfileLinkRowProps) {
-  const isDiscord = isDiscordLink(link.url || "");
+  const isDiscord = link.platform === "Discord";
+  const canVerify = !link.is_verified && !!detectProviderFromUrl(link.url || "");
   const canLinkLeft = !(isDiscord && !link.is_verified);
-  const handleLinkClick = stopPropagation ? (event: MouseEvent) => event.stopPropagation() : undefined;
-  const badgeClick =
-    badgeOnClick && !link.is_verified ? (event: MouseEvent) => badgeOnClick(event, link) : undefined;
+  const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
   const copyProps = { label: "Copy", copiedLabel: "Copied", size: classes.copySize };
   const icon = (
     <img
@@ -68,7 +67,7 @@ export default function ProfileLinkRow({
             verified={link.is_verified}
             verifiedLabel={badgeLabels.verified}
             unverifiedLabel={badgeLabels.unverified}
-            onClick={badgeClick}
+            onClick={canVerify && onVerifyClick ? () => onVerifyClick(link) : undefined}
           />
         )}
       </div>

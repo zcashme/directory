@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { searchCitiesAction } from "@/lib/directory/searchCitiesAction";
-import type { City } from "@/lib/directory/types";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import type { City } from "@/lib/directory/searchCitiesAction";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 type CityWithFullLabel = City & { fullLabel?: string };
 
@@ -62,7 +62,7 @@ export default function CitySearchDropdown({
           {results.length > 0 ? (
             results.map((c) => (
               <div
-                key={c.id}
+                key={`${c.city_ascii}-${c.admin_name}-${c.country}`}
                 onClick={() => {
                   onChange({
                     ...c,

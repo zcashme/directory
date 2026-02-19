@@ -21,7 +21,7 @@ export async function getProfileLinksBatchAction(zcasherIds: number[]): Promise<
 
     const { data, error } = await supabase
       .from("zcasher_links")
-      .select("id,label,url,is_verified,zcasher_id")
+      .select("id,label,url,platform,is_verified,zcasher_id")
       .in("zcasher_id", zcasherIds);
 
     if (error) {

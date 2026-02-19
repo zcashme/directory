@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { isValidUrl } from "@/lib/validation/validators";
-import { Alert } from "@/ui/common";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import Alert from "@/ui/common/feedback/Alert";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 const BASE_FIELD_CLASS =
   "w-full rounded-2xl border px-3 py-1.5 text-sm font-mono bg-transparent outline-hidden text-gray-800 placeholder-gray-400";

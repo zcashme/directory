@@ -14,7 +14,7 @@ export default function useNsProfiles(
 ): UseNsProfilesReturn {
   const hasInitial = initialProfiles !== null;
 
-  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles || []);
+  const [profiles, setProfiles] = useState<Profile[]>(initialProfiles ?? []);
   const [loading, setLoading] = useState(!hasInitial);
 
   useEffect(() => {
@@ -54,10 +54,10 @@ export default function useNsProfiles(
       address_verified: false,
       verified_links_count: 0,
       ...newProfile,
-      id: newProfile.id || 0,
-      name: newProfile.name || "",
-      address: newProfile.address || "",
-      links: newProfile.links || [],
+      id: newProfile.id ?? 0,
+      name: newProfile.name ?? "",
+      address: newProfile.address ?? "",
+      links: newProfile.links ?? [],
     };
 
     setProfiles((prev) => [...prev, enriched]);

@@ -216,19 +216,19 @@ export async function getLeaderboardAction(
 
     // Build referrer names map
     const referrerNames = new Map<number, string>(
-      (referrers || []).map((r) => [r.id, r.name || `User ${r.id}`])
+      (referrers ?? []).map((r) => [r.id, r.name ?? `User ${r.id}`])
     );
 
     // Build verified links count map
     const verifiedLinksMap = new Map<number, number>();
     const pendingLinksMap = new Map<number, number>();
 
-    for (const link of allLinks || []) {
+    for (const link of allLinks ?? []) {
       const id = link.zcasher_id;
       if (link.is_verified) {
-        verifiedLinksMap.set(id, (verifiedLinksMap.get(id) || 0) + 1);
+        verifiedLinksMap.set(id, (verifiedLinksMap.get(id) ?? 0) + 1);
       } else if (link.pending_verif) {
-        pendingLinksMap.set(id, (pendingLinksMap.get(id) || 0) + 1);
+        pendingLinksMap.set(id, (pendingLinksMap.get(id) ?? 0) + 1);
       }
     }
 
@@ -261,11 +261,11 @@ export async function getLeaderboardAction(
         }
       }
 
-      const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) || 0;
-      const referrerPendingLinks = pendingLinksMap.get(referrerId) || 0;
+      const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) ?? 0;
+      const referrerPendingLinks = pendingLinksMap.get(referrerId) ?? 0;
 
-      const current = referrerStats.get(referrerId) || {
-        name: referrerNames.get(referrerId) || `User ${referrerId}`,
+      const current = referrerStats.get(referrerId) ?? {
+        name: referrerNames.get(referrerId) ?? `User ${referrerId}`,
         total: 0,
         verified: 0,
         unverified: 0,

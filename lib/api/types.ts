@@ -1,5 +1,4 @@
 import type { Profile, ProfileLink } from "@/lib/profile/types";
-import type { City } from "@/lib/directory/types";
 import type { Token } from "@/lib/swap/types";
 
 /**
@@ -63,11 +62,6 @@ export interface DirectoryResponse {
   next_cursor: string | null;
 }
 
-
-/**
- * Search cities response
- */
-export type SearchCitiesResponse = APIResponse<City[]>;
 
 /**
  * Swap tokens response
@@ -134,7 +128,6 @@ export interface CreateProfilePayload {
   bio?: string;
   address: string;
   avatar_url?: string;
-  nearest_city_id?: number | null;
   nearest_city_name?: string;
   referred_by?: string;
   referred_by_zcasher_id?: number;
@@ -153,6 +146,7 @@ export type CreateProfileResponse = APIResponse<Profile>;
 export interface ProfileLinkInput {
   label: string;
   url: string;
+  platform?: string;
 }
 
 /**
@@ -210,6 +204,29 @@ export interface LinkVerificationUpdate {
     verification_expires_at?: string | null;
     [key: string]: unknown;
   };
+}
+
+/**
+ * Profile edits payload for saving after OTP verification
+ */
+export interface ProfileEditsPayload {
+  name?: string;
+  display_name?: string;
+  bio?: string;
+  profile_image_url?: string;
+  nearest_city_name?: string;
+  links?: ProfileLinkEdit[];
+}
+
+/**
+ * Profile link edit (for insert/update/delete)
+ */
+export interface ProfileLinkEdit {
+  id?: number | null;
+  url: string;
+  label?: string;
+  platform?: string;
+  _delete?: boolean;
 }
 
 /**
