@@ -9,7 +9,7 @@ import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
 import { AvatarPreviewModal } from "@/ui/profile/editorModals";
-import { isValidUrl } from "@/lib/validation/validators";
+import { isValidUrl } from "@/lib/profile/urlValidation";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";

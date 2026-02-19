@@ -29,7 +29,7 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-import { isValidUrl } from "@/lib/validation/validators";
+import { isValidUrl } from "@/lib/profile/urlValidation";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
