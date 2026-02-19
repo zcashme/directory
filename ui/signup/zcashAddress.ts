@@ -1,4 +1,4 @@
-// Zcash address validation, URI construction, and memo encoding utilities.
+// Zcash address validation and hints for the signup flow.
 
 import { bech32, bech32m } from "bech32";
 import bs58check from "bs58check";
@@ -99,26 +99,4 @@ export function getZcashAddressHint(address: string = ""): string {
   if (res.type === "unified") return "Looks good — valid Unified address ✓";
 
   return "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…).";
-}
-
-// Wallet URI utilities
-
-export function buildZcashUri(address: string, amount: string = "0", memo: string = ""): string {
-  if (!address) return "";
-  const base = `zcash:${address}`;
-  const params: string[] = [];
-  if (amount && Number(amount) > 0) params.push(`amount=${amount}`);
-  if (memo) params.push(`memo=${toBase64Url(memo)}`);
-  return params.length ? `${base}?${params.join("&")}` : base;
-}
-
-function toBase64Url(text: string): string {
-  try {
-    return btoa(unescape(encodeURIComponent(text)))
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=+$/, "");
-  } catch {
-    return "";
-  }
 }

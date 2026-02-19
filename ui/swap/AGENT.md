@@ -39,7 +39,7 @@ Allows users to receive any token and convert to ZEC.
 ### Destination Address
 - Must be valid Zcash address
 - Unified addresses (u1...) preferred
-- Validates using `/lib/zcash/zcashUtils.ts`
+- Validates using `/ui/signup/zcashAddress.ts`
 
 ### Privacy Note
 - Swap deposits are on public chains (ETH, etc.)

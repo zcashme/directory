@@ -33,7 +33,7 @@ async function createProfile(data: ProfileInput): Promise<Profile>
 
 ## Validation Steps
 1. **Username** - Policy check via `/lib/profile/usernamePolicy.ts`
-2. **Address** - Zcash validation via `/lib/zcash/zcashUtils.ts`
+2. **Address** - Zcash validation via `/ui/signup/zcashAddress.ts`
 3. **Uniqueness** - Check username not taken
 4. **Links** - Validate URLs/handles
 
@@ -89,4 +89,4 @@ if (links.length > 0) {
 ## Related Files
 - `/ui/signup/` - Form components
 - `/lib/profile/usernamePolicy.ts` - Validation rules
-- `/lib/zcash/zcashUtils.ts` - Address validation
+- `/ui/signup/zcashAddress.ts` - Address validation

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { validateZcashAddress, getZcashAddressHint } from "@/lib/zcash/zcashUtils";
+import { validateZcashAddress, getZcashAddressHint } from "./zcashAddress";
 import FormField from "@/ui/common/forms/FormField";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 

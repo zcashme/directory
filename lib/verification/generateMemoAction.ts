@@ -1,7 +1,23 @@
 "use server";
 
 import { generateSessionId, buildZvsMemo } from "@/lib/verification/session";
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
+function toBase64Url(text: string): string {
+  try {
+    return btoa(unescape(encodeURIComponent(text)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+  } catch { return ""; }
+}
+
+function buildZcashUri(address: string, amount: string = "0", memo: string = ""): string {
+  if (!address) return "";
+  const base = `zcash:${address}`;
+  const params: string[] = [];
+  if (amount && Number(amount) > 0) params.push(`amount=${amount}`);
+  if (memo) params.push(`memo=${toBase64Url(memo)}`);
+  return params.length ? `${base}?${params.join("&")}` : base;
+}
 import { registerMemo } from "@/lib/verification/memoStore";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 

@@ -30,7 +30,7 @@ export function useConnectCallback({
 }: UseConnectCallbackOptions): void {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         const pending = getPendingConnect();
         if (!pending) return;
         if (pending.profileId !== profileId) return;

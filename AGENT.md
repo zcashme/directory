@@ -37,7 +37,7 @@ via blockchain transactions.
 4. User enters OTP → pending edits applied, profile verified
 
 ### Key Utilities
-- `/lib/zcash/zcashUtils.ts` - Address validation, URI building
+- `/ui/signup/zcashAddress.ts` - Address validation (URI building inlined in consumers)
 - `/lib/verification/` - OTP confirmation logic
 - `/lib/swap/` - OneClick SDK for cross-chain swaps
 
