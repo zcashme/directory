@@ -32,21 +32,10 @@ Social platform lookup (stub implementation).
 - Profile pages display Zcash unified addresses (u1...) prominently
 - QR codes encode `zcash:` URIs with memo for verification
 - Swap routes handle ZEC as primary currency with cross-chain support
-
-## Testing Harness
-- No automated tests in /app
-- Use `/design-system` route for manual component testing
-- API routes use rate limiting via `/lib/api/guard.ts`
-
+- 
 ## Adding New Pages
 1. Create folder under `/app/[route-name]`
 2. Add `page.tsx` with default export
 3. Use server components by default, `'use client'` only when needed
 4. Import UI from `/ui/*`, logic from `/lib/*`
-
-## Environment Variables
-```
-NEXT_PUBLIC_BASE_DOMAIN - zcash.me or localhost:3000
-NEXT_PUBLIC_SUPABASE_URL - Database URL
-ZVS_SECRET_SEED - HMAC secret for OTP generation
-```
+`

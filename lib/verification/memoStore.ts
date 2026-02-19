@@ -2,8 +2,7 @@
  * In-memory store for server-issued verification memos.
  *
  * Tracks which memos the server has generated and how many OTP
- * attempts have been made against each. Memos not in this store
- * are rejected — preventing client-crafted memo brute-force attacks.
+ * attempts have been made against each.
  */
 
 interface MemoEntry {
@@ -19,7 +18,11 @@ const MAX_ATTEMPTS = 5;
 const MEMO_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 /** Register a newly generated memo as valid. */
-export function registerMemo(memo: string, profileId: number, amount: string): void {
+export function registerMemo(
+  memo: string,
+  profileId: number,
+  amount: string,
+): void {
   cleanup();
   store.set(memo, { attempts: 0, createdAt: Date.now(), profileId, amount });
 }

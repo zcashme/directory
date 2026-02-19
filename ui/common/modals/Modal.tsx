@@ -114,7 +114,7 @@ export default function Modal({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              className="absolute inset-0 bg-black/50 backdrop-blur-xs"
+              className="absolute inset-0 bg-black/50"
               onClick={handleBackdropClick}
             />
 
@@ -125,7 +125,7 @@ export default function Modal({
               exit={{ opacity: 0, scale: 0.95 }}
               transition={{ duration: 0.2 }}
               className={`
-                relative w-full bg-white/85 backdrop-blur-md rounded-2xl
+                relative w-full bg-white rounded-2xl
                 shadow-xl border border-black/30
                 ${SIZE_CLASSES[size]}
                 ${className}

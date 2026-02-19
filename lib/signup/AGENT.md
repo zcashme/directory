@@ -58,9 +58,11 @@ if (links.length > 0) {
   await supabase
     .from('zcasher_links')
     .insert(links.map(l => ({
-      profile_id: profile.id,
-      provider: l.provider,
-      value: l.value
+      zcasher_id: profile.id,
+      url: l.url,
+      label: l.label,
+      platform: l.platform,
+      is_verified: false
     })));
 }
 ```

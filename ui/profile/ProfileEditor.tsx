@@ -17,7 +17,6 @@ import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
-import { PROVIDERS, detectProviderFromUrl, extractHandleFromUrl } from "@/ui/links/providers";
 
 function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
   const trimmed = (rawUrl || "").trim();
@@ -103,19 +102,6 @@ interface ProfileEditorProps {
   onAuthenticateLink?: (link: { url: string }) => void;
 }
 
-async function fetchAvatarUrl(url: string): Promise<string | null> {
-  const handle = extractHandleFromUrl(url);
-  if (!handle) return null;
-  const providerKey = detectProviderFromUrl(url);
-  switch (providerKey) {
-    case "github":
-      return `https://github.com/${encodeURIComponent(handle)}.png`;
-    case "twitter":
-      return `https://unavatar.io/x/${encodeURIComponent(handle)}`;
-    default:
-      return null;
-  }
-}
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -262,12 +248,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
-  const applyAvatar = async (url: string) => {
-    const avatarUrl = await fetchAvatarUrl(url);
-    if (!avatarUrl) return;
-    setDeletedField("profile_image_url", false);
-    handleChange("profile_image_url", avatarUrl);
-  };
 
   const handleLinkChange = (uid: string, value: string) => {
     setForm((prev) => ({
@@ -580,8 +560,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
           const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
           const isVerified = !!row.is_verified;
           const currentUrl = (row.url ?? "").trim();
-          const providerKey = detectProviderFromUrl(currentUrl);
-          const isOAuthProvider = !!providerKey && !!PROVIDERS[providerKey];
 
           const rowConflict =
             (!isVerified && row.valid === false) ||
@@ -610,18 +588,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
                     >
                       Authenticated
                     </Button>
-                    {/* TODO: re-enable avatar buttons later
-                    {isOAuthProvider && (
-                      <Button
-                        type="button"
-                        onClick={() => applyAvatar(row.url)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use Avatar
-                      </Button>
-                    )}
-                    */}
                   </div>
                 ) : row.id !== null && onAuthenticateLink ? (
                   <Button

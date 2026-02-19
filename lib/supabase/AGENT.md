@@ -50,11 +50,12 @@ SUPABASE_SERVICE_KEY         - Service role key (server only)
 ### zcasher_links (Profile Links)
 | Column | Type | Purpose |
 |--------|------|---------|
-| id | uuid | Primary key |
-| profile_id | uuid | FK to zcasher |
-| provider | text | Platform name |
-| value | text | Handle or URL |
-| verified | boolean | Link verified |
+| id | integer | Primary key (serial) |
+| zcasher_id | integer | FK to zcasher(id) |
+| url | text | Full URL |
+| label | text | Optional display label (e.g. Discord username) |
+| platform | text | Platform name ("X", "GitHub", "Discord", etc.) |
+| is_verified | boolean | Whether the link is verified via OAuth |
 
 ### zcasher_searchable (Search Index)
 Denormalized view for fast search queries.

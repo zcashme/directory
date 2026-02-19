@@ -22,11 +22,13 @@ interface Profile {
 }
 
 interface ProfileLink {
-  id: string;
-  provider: string;       // 'twitter', 'github', etc.
-  value: string;          // handle or URL
-  verified: boolean;
-  verified_at?: string;
+  id?: number | null;
+  url: string;                        // full URL
+  label?: string;                     // optional display label
+  platform?: string | null;           // "X", "GitHub", "Discord", etc.
+  is_verified: boolean;               // verified via OAuth
+  verification_expires_at?: string;
+  zcasher_id?: number;                // FK to zcasher(id)
 }
 ```
 
