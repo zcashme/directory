@@ -150,34 +150,47 @@ export async function confirmOtpAction(
     }
 
     // --- Apply link edits ---------------------------------------------------
+    const linkErrors: string[] = [];
     if (edits?.links && edits.links.length > 0) {
       for (const link of edits.links) {
         if (link._delete && link.id) {
-          await supabase
+          const { error: delErr } = await supabase
             .from("zcasher_links")
             .delete()
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
+          if (delErr) linkErrors.push(`delete link ${link.id}: ${delErr.message}`);
         } else if (link.id) {
-          await supabase
+          const { error: updErr } = await supabase
             .from("zcasher_links")
             .update({
               url: link.url,
-              label: link.label || null,
+              label: link.label || "",
               platform: link.platform ?? derivePlatform(link.url),
             })
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
+          if (updErr) linkErrors.push(`update link ${link.id}: ${updErr.message}`);
         } else if (!link._delete) {
-          await supabase.from("zcasher_links").insert({
+          const { error: insErr } = await supabase.from("zcasher_links").insert({
             zcasher_id: profileId,
             url: link.url,
-            label: link.label || null,
+            label: link.label || "",
             platform: link.platform ?? derivePlatform(link.url),
             is_verified: false,
           });
+          if (insErr) linkErrors.push(`insert link: ${insErr.message}`);
         }
       }
+    }
+
+    if (linkErrors.length > 0) {
+      console.error("[confirmOtpAction] link errors:", linkErrors);
+      return {
+        ok: false,
+        error: `Verified, but link updates failed: ${linkErrors.join("; ")}`,
+        data: { status: "verified" },
+      };
     }
 
     return { ok: true, data: { status: "verified" } };
