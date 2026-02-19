@@ -14,7 +14,7 @@ This is the brain of zcash.me - all business logic lives here.
 | `/verification` | OTP confirmation, link verification |
 | `/signup` | Profile creation server actions |
 | `/swap` | OneClick SDK integration, token types |
-| `/validation` | Composable form validators |
+| `/profile/urlValidation.ts` | URL validation (isValidUrl, normalizeUrl) |
 | `/leaderboard` | Referral commission calculations |
 | `/thread` | Discussion board actions |
 | `/supabase` | Database client initialization |
@@ -31,7 +31,7 @@ This is the brain of zcash.me - all business logic lives here.
 ### Utilities
 - `validateZcashAddress()` - Full validation with type detection
 - `buildZcashUri()` - Construct zcash: payment URIs
-- `buildZcashEditMemo()` - Encode profile edits in memo
+- `isValidUrl()` - URL validation with security checks
 
 ## Zcash Address Types Supported
 - **Unified (u1...)** - Recommended, privacy-preserving
@@ -42,7 +42,7 @@ This is the brain of zcash.me - all business logic lives here.
 ## Testing Harness
 - No unit tests currently
 - Server actions can be tested via API routes
-- Validators are pure functions - easy to unit test
+- URL validation is a pure function - easy to unit test
 
 ## Database Access
 All DB queries go through Supabase client in `/lib/supabase/`.

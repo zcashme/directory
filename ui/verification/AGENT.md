@@ -65,19 +65,9 @@ const [otp, setOtp] = useState("");                   // User's OTP input
 const [isGenerating, setIsGenerating] = useState(false); // Server call in progress?
 ```
 
-### store.ts (Zustand) - for cross-component state
-```typescript
-import { useMessagingStore } from "@/ui/verification/store";
-
-const {
-  verify,           // { amount, zId, sessionId, userAddress }
-  verifyQrEnabled,  // QR visible?
-  verificationError,
-  setVerify,
-  setVerifyQrEnabled,
-  resetVerification
-} = useMessagingStore();
-```
+### State
+All verification state is managed locally via React `useState` inside `ProfileVerification`.
+Cross-component state for profile edits lives in `/ui/profile/store.ts` (`useEditsStore`).
 
 ## Exhaustion Handling
 When the server returns `status: "exhausted"` with `newMemo` + `newUri`:

@@ -34,16 +34,6 @@ buildZcashUri(address: string, amount?: number, memo?: string): string
 
 Used for QR codes and wallet deep links. Memo is base64url encoded.
 
-### Edit Memo Encoding
-
-```typescript
-buildZcashEditMemo(otp: string, edits: ProfileEdits): string
-// Returns compact JSON for blockchain memo field (max 512 bytes)
-```
-
-Format: `{"otp":"123456","edits":{"name":"Alice"}}`
-Must fit in Zcash memo field - keep edits minimal.
-
 ### Helper: getZcashAddressHint()
 Returns user-friendly guidance for each address type.
 Used in UI to educate users about privacy implications.

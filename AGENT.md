@@ -61,7 +61,7 @@ API_KEY                       - Server-side API auth
 
 ### Add New Profile Field
 1. Update types in `/lib/profile/types.ts`
-2. Add validation in `/lib/validation/`
+2. Add validation in `/lib/profile/urlValidation.ts` or colocate with feature
 3. Update UI in `/ui/profile/` or `/ui/signup/`
 4. Update server action if needed
 

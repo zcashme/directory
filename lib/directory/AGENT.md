@@ -6,32 +6,12 @@ Powers the main search functionality and featured profiles.
 
 ## Key Files
 
-### searchProfiles.ts
-Profile search with ranking:
+### searchCitiesAction.ts
+Geographic filtering (server action):
 ```typescript
-async function searchProfiles(query: string, options?: {
-  limit?: number;       // Default: 25
-  cursor?: string;      // Pagination
-  verifiedOnly?: boolean;
-}): Promise<{
-  results: Profile[];
-  nextCursor?: string;
-  exists: boolean;
-}>
+async function searchCitiesAction(query: string): Promise<City[]>
 ```
-
-**Ranking Logic:**
-1. Username starts with query (highest)
-2. Username contains query
-3. Display name matches
-4. Link text contains query
-
-### searchCities.ts
-Geographic filtering:
-```typescript
-async function searchCities(query: string): Promise<City[]>
-```
-Used for location-based profile discovery.
+Used for location-based profile discovery. Inlines city-timezones lookup.
 
 ### fetchFeaturedProfiles.server.ts
 Homepage featured profiles:
