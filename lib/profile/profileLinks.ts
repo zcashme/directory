@@ -159,14 +159,12 @@ export function derivePlatform(url: string): string {
   return PLATFORM_BY_DOMAIN[domain] ?? "Other";
 }
 
-export const getSocialHandle = (url: string = ""): string => {
+export const getSocialHandle = (url: string = "", platform?: string | null): string => {
   const trimmed = (url ?? "").trim();
   if (!trimmed) return "";
 
-  const domain = extractDomain(trimmed);
-  const platform = PLATFORM_BY_DOMAIN[domain] ?? null;
-  if (platform) {
-    return normalizeSocialUsername(trimmed, platform);
+  if (platform && platform !== "Other") {
+    return normalizeSocialUsername(trimmed, platform as import("@/lib/profile/usernameNormalizer").SocialPlatform);
   }
 
   const cleaned = trimmed.split("#")[0].split("?")[0].replace(/\/+$/, "");
@@ -175,17 +173,15 @@ export const getSocialHandle = (url: string = ""): string => {
   return decodeURIComponent(last);
 };
 
-export const isDiscordLink = (url: string = ""): boolean =>
-  /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(
-    url ?? ""
-  );
+export const isDiscordLink = (platform?: string | null): boolean =>
+  platform === "Discord";
 
 export const getSocialDisplay = (link: ProfileLink): string => {
   if (!link) return "";
-  if (isDiscordLink(link.url) && link.is_verified && link.label) {
+  if (link.platform === "Discord" && link.is_verified && link.label) {
     return link.label;
   }
-  return getSocialHandle(link.url ?? "");
+  return getSocialHandle(link.url ?? "", link.platform);
 };
 
 
@@ -195,7 +191,7 @@ export const getSocialDisplay = (link: ProfileLink): string => {
 export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   const domain = extractDomain(link.url);
   const dbLabel = (link.label ?? "").trim();
-  const handle = getSocialHandle(link.url ?? "");
+  const handle = getSocialHandle(link.url ?? "", link.platform);
   const normalizedDomain = (domain ?? "").toLowerCase();
   const normalizedHandle = (handle ?? "").toLowerCase();
   const normalizedLabel = dbLabel.toLowerCase();
@@ -213,9 +209,7 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
       normalizedLabel.startsWith(`${normalizedDomain}/`) ||
       normalizedLabel.startsWith(`www.${normalizedDomain}/`));
 
-  // Use stored platform when available and not "Other", otherwise derive from URL
-  const storedPlatform = link.platform && link.platform !== "Other" ? link.platform : null;
-  const platform = storedPlatform ?? PLATFORM_BY_DOMAIN[domain] ?? null;
+  const platform = link.platform ?? null;
 
   if (KNOWN_DOMAINS[domain]) {
     return {

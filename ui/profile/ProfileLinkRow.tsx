@@ -2,7 +2,7 @@
 
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
-import { extractDomain, isDiscordLink } from "@/lib/profile/profileLinks";
+import { extractDomain } from "@/lib/profile/profileLinks";
 import { detectProviderFromUrl } from "@/ui/links/providers";
 import type { ProfileLinkRowProps } from "./profileCardTypes";
 import { resolveIconSrc } from "./profileCardUtils";
@@ -15,7 +15,7 @@ export default function ProfileLinkRow({
   stopPropagation = false,
   onVerifyClick,
 }: ProfileLinkRowProps) {
-  const isDiscord = isDiscordLink(link.url || "");
+  const isDiscord = link.platform === "Discord";
   const canVerify = !link.is_verified && !!detectProviderFromUrl(link.url || "");
   const canLinkLeft = !(isDiscord && !link.is_verified);
   const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
