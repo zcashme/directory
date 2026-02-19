@@ -5,8 +5,7 @@
 // Validates the OAuth session server-side before marking a link as verified.
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { detectProviderFromUrl, extractHandleFromUrl } from "./avatars";
-import { getProviderByKey } from "./providers";
+import { getProviderByKey, detectProviderFromUrl, extractHandleFromUrl } from "./providers";
 
 const PROVIDER_TO_PLATFORM: Record<string, string> = {
   twitter: "X",

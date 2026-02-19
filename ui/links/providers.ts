@@ -74,3 +74,40 @@ export type ProviderKey = keyof typeof PROVIDERS;
 export function getProviderByKey(key: string): Provider | null {
   return PROVIDERS[key] ?? Object.values(PROVIDERS).find((p) => p.key === key) ?? null;
 }
+
+/**
+ * Detect provider key from a URL.
+ */
+export function detectProviderFromUrl(url: string): string | null {
+  const normalized = url.toLowerCase();
+  if (/(?:x\.com|twitter\.com)\//.test(normalized)) return "twitter";
+  if (/github\.com\//.test(normalized)) return "github";
+  if (/(?:discord\.com|discordapp\.com)\/users\//.test(normalized)) return "discord";
+  if (/linkedin\.com\/in\//.test(normalized)) return "linkedin_oidc";
+  return null;
+}
+
+/**
+ * Extract handle from a social URL.
+ */
+export function extractHandleFromUrl(url: string): string | null {
+  const normalized = url.replace(/\/$/, "");
+
+  // Twitter/X
+  let m = normalized.match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
+  if (m) return m[1];
+
+  // GitHub
+  m = normalized.match(/github\.com\/([^/?#]+)/i);
+  if (m) return m[1];
+
+  // Discord
+  m = normalized.match(/(?:discord\.com|discordapp\.com)\/users\/([^/?#]+)/i);
+  if (m) return decodeURIComponent(m[1]);
+
+  // LinkedIn
+  m = normalized.match(/linkedin\.com\/in\/([^/?#]+)/i);
+  if (m) return m[1];
+
+  return null;
+}

@@ -1,8 +1,6 @@
 import Button from "@/ui/common/buttons/Button";
 import Modal from "@/ui/common/modals/Modal";
 import ModalBody from "@/ui/common/modals/ModalBody";
-import ModalHeader from "@/ui/common/modals/ModalHeader";
-import ModalFooter from "@/ui/common/modals/ModalFooter";
 import Spinner from "@/ui/common/feedback/Spinner";
 
 interface RedirectModalProps {
@@ -28,34 +26,6 @@ export function RedirectModal({ isOpen, label }: RedirectModalProps) {
           Please authorize on the next page...
         </p>
       </ModalBody>
-    </Modal>
-  );
-}
-
-interface AvatarReauthModalProps {
-  isOpen: boolean;
-  providerLabel: string;
-  onReauth: () => void;
-  onLater: () => void;
-}
-
-export function AvatarReauthModal({ isOpen, providerLabel, onReauth, onLater }: AvatarReauthModalProps) {
-  return (
-    <Modal isOpen={isOpen} onClose={onLater} size="sm">
-      <ModalHeader title="Avatar not available" />
-      <ModalBody>
-        <p className="text-sm text-gray-600">
-          Please reauthenticate {providerLabel} to fetch your avatar, or do this later.
-        </p>
-      </ModalBody>
-      <ModalFooter>
-        <Button variant="secondary" size="xs" onClick={onLater}>
-          Later
-        </Button>
-        <Button variant="primary" size="xs" onClick={onReauth}>
-          Reauthenticate
-        </Button>
-      </ModalFooter>
     </Modal>
   );
 }

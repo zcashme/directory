@@ -15,7 +15,7 @@ import { RedirectModal } from "@/ui/profile/editorModals";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
 import { upsertVerifiedLink } from "@/ui/links/verifyLink";
-import { detectProviderFromUrl } from "@/ui/links/avatars";
+import { detectProviderFromUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import ProfileCardListView from "./ProfileCardListView";

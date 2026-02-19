@@ -52,12 +52,10 @@ Verified links are persisted immediately on OAuth callback via `upsertVerifiedLi
 
 | File | Purpose |
 |------|---------|
-| `providers.ts` | Provider configs (handle extraction, URL building) |
+| `providers.ts` | Provider configs, handle extraction, URL building, `detectProviderFromUrl`, `extractHandleFromUrl` |
 | `connect.ts` | Initiates OAuth via Supabase |
 | `useConnectCallback.ts` | Client hook for handling OAuth redirect (consumed by `ProfileCard`) |
-| `verifyLink.ts` | Database upsert operations |
-| `avatars.ts` | Avatar URL utilities |
-| `utils.ts` | Shared helpers |
+| `verifyLink.ts` | Server action: validates OAuth identity server-side, upserts verified link with `platform` column |
 
 ## Supported Providers
 
@@ -71,14 +69,27 @@ Verified links are persisted immediately on OAuth callback via `upsertVerifiedLi
 ## Provider Configuration
 
 ```typescript
-import { PROVIDERS, getProviderByKey } from "./providers";
+import { PROVIDERS, getProviderByKey, detectProviderFromUrl, extractHandleFromUrl } from "./providers";
 
 const twitter = PROVIDERS.twitter;
 twitter.getHandle(identityData);    // Extract handle from OAuth response
 twitter.buildUrl(handle);           // Build profile URL
 twitter.getAvatarUrl?.(identityData); // Extract avatar (optional)
 twitter.getUsername?.(identityData);  // Extract display name (optional)
+
+detectProviderFromUrl(url);         // URL → provider key (e.g. "twitter")
+extractHandleFromUrl(url);          // URL → handle string
 ```
+
+## Avatar Fetching ("Use Avatar" button)
+
+Avatar fetching is handled inline in `ProfileEditor` via public APIs — no OAuth session required:
+- **GitHub**: `https://github.com/{handle}.png`
+- **X / Twitter**: `https://unavatar.io/x/{handle}`
+- **Discord / LinkedIn**: Not supported (no public avatar API)
+
+The button appears on verified links in the profile editor. It extracts the handle from
+the link URL and sets `profile_image_url` directly.
 
 ## Flow Diagram
 
@@ -116,7 +127,8 @@ twitter.getUsername?.(identityData);  // Extract display name (optional)
 ┌─────────────────────────────────────────────────────────────┐
 │  4. PERSIST IMMEDIATELY                                     │
 │     → upsertVerifiedLink(profileId, url) server action      │
-│     → INSERT/UPDATE zcasher_links SET is_verified = true    │
+│     → INSERT/UPDATE zcasher_links SET is_verified = true,   │
+│       platform = derived from provider key                  │
 │     → Update local linksArray state                         │
 │     → router.refresh() to sync server state                 │
 └─────────────────────────────────────────────────────────────┘
@@ -129,6 +141,7 @@ zcasher_links {
   id           SERIAL PRIMARY KEY
   zcasher_id   INTEGER REFERENCES zcasher(id)
   url          TEXT NOT NULL
+  platform     TEXT  -- "X", "GitHub", "Discord", "LinkedIn", "Other"
   is_verified  BOOLEAN DEFAULT false
   label        TEXT  -- optional, used for Discord usernames
   created_at   TIMESTAMP
@@ -138,7 +151,7 @@ zcasher_links {
 
 ## Security Notes
 
-- **Wallet-Profile Verification Required**: Server checks `profile.verified` before allowing link verification
+- **Wallet-Profile Verification Required**: Server checks `profile.address_verified` before allowing link verification
 - **OAuth via Supabase**: Token exchange handled by Supabase Auth, no tokens stored in app
 - **Identity Extraction**: Handle extracted from `session.user.identities[]` after OAuth
 - **No Client Trust**: Link verification always validated server-side, never trust client claims
@@ -157,4 +170,6 @@ zcasher_links {
 
 2. Enable provider in Supabase Auth dashboard
 
-3. Update `detectProviderFromUrl` in `avatars.ts` to match the new provider's URLs
+3. Update `detectProviderFromUrl` in `providers.ts` to match the new provider's URLs
+
+4. Optionally add avatar support in `ProfileEditor.fetchAvatarUrl()` if a public avatar API exists

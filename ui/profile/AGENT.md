@@ -22,7 +22,7 @@ The primary UI for the zcash.me identity system.
 |-----------|------|---------|
 | `ProfileEditor` | ProfileEditor.tsx | Full profile edit interface |
 | `ProfileField` | ProfileField.tsx | Single editable field |
-| `editorModals` | editorModals.tsx | Confirmation dialogs |
+| `editorModals` | editorModals.tsx | `RedirectModal` (OAuth redirect spinner), `AvatarPreviewModal` |
 
 ### Search
 | Component | File | Purpose |

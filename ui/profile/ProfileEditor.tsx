@@ -8,7 +8,7 @@ import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileActio
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
-import { AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
+import { AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
@@ -17,8 +17,7 @@ import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
-import { PROVIDERS } from "@/ui/links/providers";
-import { applyProviderAvatar, detectProviderFromUrl } from "@/ui/links/avatars";
+import { PROVIDERS, detectProviderFromUrl, extractHandleFromUrl } from "@/ui/links/providers";
 
 function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
   const trimmed = (rawUrl || "").trim();
@@ -103,9 +102,18 @@ interface ProfileEditorProps {
   links?: EnrichedProfileLink[];
 }
 
-interface AvatarPrompt {
-  provider: string;
-  url: string;
+async function fetchAvatarUrl(url: string): Promise<string | null> {
+  const handle = extractHandleFromUrl(url);
+  if (!handle) return null;
+  const providerKey = detectProviderFromUrl(url);
+  switch (providerKey) {
+    case "github":
+      return `https://github.com/${encodeURIComponent(handle)}.png`;
+    case "twitter":
+      return `https://unavatar.io/x/${encodeURIComponent(handle)}`;
+    default:
+      return null;
+  }
 }
 
 const escapeRegex = (value: string) =>
@@ -120,7 +128,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setDeletedField,
     initializeForm,
   } = useEditsStore();
-  const [avatarPrompt, setAvatarPrompt] = useState<AvatarPrompt | null>(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
 
   // Display value for city search input (local UI state)
@@ -254,15 +261,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
-  const avatarCallbacks = {
-    setAvatarPrompt,
-    setDeletedFields: (fn: (prev: Record<string, boolean>) => Record<string, boolean>) => {
-      const newFields = fn(deletedFields as unknown as Record<string, boolean>);
-      Object.entries(newFields).forEach(([key, value]) => {
-        setDeletedField(key as keyof typeof deletedFields, value);
-      });
-    },
-    handleChange
+  const applyAvatar = async (url: string) => {
+    const avatarUrl = await fetchAvatarUrl(url);
+    if (!avatarUrl) return;
+    setDeletedField("profile_image_url", false);
+    handleChange("profile_image_url", avatarUrl);
   };
 
   const handleLinkChange = (uid: string, value: string) => {
@@ -348,12 +351,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         isOpen={avatarPreviewOpen}
         src={(form.profile_image_url ?? originals.profile_image_url ?? "").trim()}
         onClose={() => setAvatarPreviewOpen(false)}
-      />
-      <AvatarReauthModal
-        isOpen={!!avatarPrompt}
-        providerLabel={avatarPrompt?.provider ?? ""}
-        onLater={() => setAvatarPrompt(null)}
-        onReauth={() => setAvatarPrompt(null)}
       />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
 
@@ -615,7 +612,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     {isOAuthProvider && (
                       <Button
                         type="button"
-                        onClick={() => applyProviderAvatar(providerKey!, row.url, avatarCallbacks)}
+                        onClick={() => applyAvatar(row.url)}
                         variant="primary"
                         size="xs"
                       >
