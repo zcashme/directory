@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -10,6 +11,13 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
+import { RedirectModal } from "@/ui/profile/editorModals";
+import { connectSocial } from "@/lib/social/connect";
+import { useConnectCallback } from "@/lib/social/useConnectCallback";
+import { upsertVerifiedLink } from "@/lib/social/verifyLink";
+import { detectProviderFromUrl } from "@/lib/social/avatars";
+import { PROVIDERS } from "@/lib/social/providers";
+import { enrichLink } from "@/lib/profile/profileLinks";
 import ProfileCardListView from "./ProfileCardListView";
 import ProfileCardActions from "./ProfileCardActions";
 import ProfileCardWarning from "./ProfileCardWarning";
@@ -49,10 +57,13 @@ export default function ProfileCard({
   onShowQR,
   onEditorModeChange,
 }: ProfileCardProps) {
+  const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
-  const { linksArray } = useProfileLinks({ profile });
+  const [showRedirect, setShowRedirect] = useState(false);
+  const [redirectLabel, setRedirectLabel] = useState("");
+  const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? linksArray.length;
@@ -60,6 +71,46 @@ export default function ProfileCard({
   const hasAwards = RANK_PERIODS.some((p) => (profile[`rank_${p}`] ?? 0) > 0);
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+
+  const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
+    const providerKey = detectProviderFromUrl(link.url || "");
+    if (!providerKey || !PROVIDERS[providerKey]) return;
+
+    setShowRedirect(true);
+    setRedirectLabel(PROVIDERS[providerKey].label);
+
+    try {
+      await connectSocial(providerKey, {
+        profileId: profile.id,
+        returnPath: window.location.pathname,
+      });
+    } catch {
+      setShowRedirect(false);
+    }
+  }, [profile.id]);
+
+  const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string }) => {
+    setShowRedirect(false);
+    const result = await upsertVerifiedLink(profile.id, link.url);
+    if (result.ok) {
+      setLinksArray((prev) =>
+        prev.map((l) =>
+          l.url === link.url ? enrichLink({ ...l, is_verified: true }) : l
+        )
+      );
+      router.refresh();
+    }
+  }, [profile.id, setLinksArray, router]);
+
+  const handleConnectError = useCallback(() => {
+    setShowRedirect(false);
+  }, []);
+
+  useConnectCallback({
+    profileId: profile.id,
+    onConnected: handleConnected,
+    onError: handleConnectError,
+  });
 
   useEffect(() => { onEditorModeChange?.(showBack); }, [showBack, onEditorModeChange]);
 
@@ -175,7 +226,7 @@ export default function ProfileCard({
                 <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
                   <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                     {linksArray.length > 0
-                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={LINK_ROW_CLASSES} />)
+                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={LINK_ROW_CLASSES} onVerifyClick={handleVerifyClick} />)
                       : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                   </div>
                 </div>
@@ -203,6 +254,7 @@ export default function ProfileCard({
           </div>
 
           {isVerifyOpen && <VerifyProfileModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} profile={profile} />}
+          <RedirectModal isOpen={showRedirect} label={redirectLabel} />
         </VerifiedCardWrapper>
       </div>
     </div>

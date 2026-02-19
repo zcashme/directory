@@ -3,6 +3,7 @@
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { extractDomain, isDiscordLink } from "@/lib/profile/profileLinks";
+import { detectProviderFromUrl } from "@/lib/social/avatars";
 import type { ProfileLinkRowProps } from "./profileCardTypes";
 import { resolveIconSrc } from "./profileCardUtils";
 
@@ -12,8 +13,10 @@ export default function ProfileLinkRow({
   hideBadge = false,
   badgeLabels = { verified: "Authenticated", unverified: "Not Authenticated" },
   stopPropagation = false,
+  onVerifyClick,
 }: ProfileLinkRowProps) {
   const isDiscord = isDiscordLink(link.url || "");
+  const canVerify = !link.is_verified && !!detectProviderFromUrl(link.url || "");
   const canLinkLeft = !(isDiscord && !link.is_verified);
   const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
   const copyProps = { label: "Copy", copiedLabel: "Copied", size: classes.copySize };
@@ -64,6 +67,7 @@ export default function ProfileLinkRow({
             verified={link.is_verified}
             verifiedLabel={badgeLabels.verified}
             unverifiedLabel={badgeLabels.unverified}
+            onClick={canVerify && onVerifyClick ? () => onVerifyClick(link) : undefined}
           />
         )}
       </div>

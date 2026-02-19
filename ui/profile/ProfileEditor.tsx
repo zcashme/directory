@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
@@ -7,7 +7,7 @@ import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileActio
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
-import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
+import { AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { isValidUrl } from "@/lib/validation/validators";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
@@ -17,8 +17,6 @@ import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 import { PROVIDERS } from "@/lib/social/providers";
-import { connectSocial } from "@/lib/social/connect";
-import { useConnectCallback } from "@/lib/social/useConnectCallback";
 import { parseSocialUrl, isValidImageUrl } from "@/lib/social/utils";
 import { applyProviderAvatar, detectProviderFromUrl } from "@/lib/social/avatars";
 
@@ -67,44 +65,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     setDeletedField,
     initializeForm,
   } = useEditsStore();
-  const [showRedirect, setShowRedirect] = useState(false);
-  const [redirectLabel, setRedirectLabel] = useState("");
   const [avatarPrompt, setAvatarPrompt] = useState<AvatarPrompt | null>(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
-
-  // Handle OAuth callback when returning from provider
-  const handleConnected = useCallback((link: { url: string; provider: string; handle: string }) => {
-    setShowRedirect(false);
-    // Add the verified link to the form
-    setForm((prev) => ({
-      ...prev,
-      links: [
-        ...prev.links.filter((l) => l.url !== link.url),
-        {
-          id: null,
-          url: link.url,
-          platform: link.provider === "twitter" ? "X" : link.provider,
-          username: link.handle,
-          otherUrl: "",
-          valid: true,
-          reason: null,
-          is_verified: true,
-          _uid: crypto.randomUUID(),
-        } as ParsedLink,
-      ],
-    }));
-  }, [setForm]);
-
-  const handleConnectError = useCallback((error: string) => {
-    setShowRedirect(false);
-    alert(`Connection failed: ${error}`);
-  }, []);
-
-  useConnectCallback({
-    profileId: profile.id,
-    onConnected: handleConnected,
-    onError: handleConnectError,
-  });
 
   // Display value for city search input (local UI state)
   const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name || "");
@@ -234,25 +196,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     };
   }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
-  // Start OAuth connection for a provider
-  const startConnect = async (providerKey: string) => {
-    const provider = PROVIDERS[providerKey];
-    if (!provider) return;
-
-    setShowRedirect(true);
-    setRedirectLabel(provider.label);
-
-    try {
-      await connectSocial(providerKey, {
-        profileId: profile.id,
-        returnPath: window.location.pathname,
-      });
-    } catch (error) {
-      setShowRedirect(false);
-      alert(`Failed to connect: ${(error as Error).message}`);
-    }
-  };
-
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
@@ -346,7 +289,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
-      <RedirectModal isOpen={showRedirect} label={redirectLabel} />
       <AvatarPreviewModal
         isOpen={avatarPreviewOpen}
         src={(form.profile_image_url || originals.profile_image_url || "").trim()}
@@ -356,12 +298,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         isOpen={!!avatarPrompt}
         providerLabel={avatarPrompt?.provider || ""}
         onLater={() => setAvatarPrompt(null)}
-        onReauth={() => {
-          if (!avatarPrompt?.url) return;
-          const providerKey = detectProviderFromUrl(avatarPrompt.url);
-          setAvatarPrompt(null);
-          if (providerKey) startConnect(providerKey);
-        }}
+        onReauth={() => setAvatarPrompt(null)}
       />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
 
@@ -506,7 +443,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Nearest City"
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
           isDeleted={deletedFields.nearest_city}
-          deleteDisabled={!profile.nearest_city_id}
+          deleteDisabled={!profile.nearest_city_name}
           onDelete={() => {
             setDeletedField('nearest_city', !deletedFields.nearest_city);
             setNearestCityDisplay("");
@@ -515,17 +452,15 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           <CitySearchDropdown
             value={nearestCityDisplay}
             placeholder={
-              !deletedFields.nearest_city && form.nearest_city_id && nearestCityDisplay === ""
+              !deletedFields.nearest_city && form.nearest_city_name && nearestCityDisplay === ""
                 ? form.nearest_city_name
                 : "Search nearest city…"
             }
             onChange={(val) => {
               if (typeof val === "string") {
                 setNearestCityDisplay(val);
-                updateField('nearest_city_id', null);
               } else {
                 setNearestCityDisplay(val.fullLabel || "");
-                updateField('nearest_city_id', val.id);
                 updateField('nearest_city_name', val.fullLabel || "");
               }
             }}
@@ -682,27 +617,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         >
           ＋ Add Link
         </Button>
-
-        {/* Connect Social Accounts */}
-        {profile.address_verified && (
-          <div className="mt-4 pt-4 border-t border-black/10">
-            <p className="text-xs text-gray-500 mb-2">Connect & verify social accounts:</p>
-            <div className="flex flex-wrap gap-2">
-              {Object.entries(PROVIDERS).map(([key, provider]) => (
-                <Button
-                  key={key}
-                  type="button"
-                  onClick={() => startConnect(key)}
-                  variant="secondary"
-                  size="xs"
-                  disabled={showRedirect}
-                >
-                  {provider.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Footer */}
         <div className="mt-8 pt-4 border-t border-black/10">

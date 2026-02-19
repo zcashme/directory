@@ -14,45 +14,39 @@ See `/lib/verification/AGENT.md` for the ZVS flow.
 ## OAuth Flow
 
 ### 1. Initiation
-User clicks "Connect X" button in profile editor.
+User clicks the gray "Not Authenticated" badge on a social link in the **profile card front**.
 
 ```typescript
 import { connectSocial } from "./connect";
 
 await connectSocial("twitter", {
   profileId: 123,
-  returnPath: "/profile/edit"
+  returnPath: window.location.pathname
 });
 // → Redirects to X OAuth consent screen
-// → On success, returns to: /profile/edit?connect=twitter&pid=123
+// → On success, returns to same page
 ```
 
 ### 2. Callback Handling
-After OAuth redirect, extract identity from Supabase session.
+After OAuth redirect, `ProfileCard` handles the callback via `useConnectCallback`.
 
 ```typescript
 import { useConnectCallback } from "./useConnectCallback";
 
 useConnectCallback({
   profileId: 123,
-  onConnected: (link) => {
+  onConnected: async (link) => {
     // link = { url, provider, handle, username, avatarUrl }
-    // Add to local form state (NOT persisted yet)
+    // Immediately persist via upsertVerifiedLink server action
+    await upsertVerifiedLink(profileId, link.url);
+    // Update local state + router.refresh()
   },
   onError: (error) => console.error(error)
 });
 ```
 
 ### 3. Persistence
-When user saves profile, verified links are written to database.
-
-```typescript
-import { verifyLinkAction } from "./verifyLinkAction";
-
-const result = await verifyLinkAction(profileId, "https://x.com/handle");
-// Server checks: profile.verified === true (ZVS completed)
-// Then: upserts to zcasher_links with is_verified = true
-```
+Verified links are persisted immediately on OAuth callback via `upsertVerifiedLink` server action — no OTP save required.
 
 ## Key Files
 
@@ -60,8 +54,7 @@ const result = await verifyLinkAction(profileId, "https://x.com/handle");
 |------|---------|
 | `providers.ts` | Provider configs (handle extraction, URL building) |
 | `connect.ts` | Initiates OAuth via Supabase |
-| `useConnectCallback.ts` | Client hook for handling OAuth redirect |
-| `verifyLinkAction.ts` | Server action to persist verified link |
+| `useConnectCallback.ts` | Client hook for handling OAuth redirect (consumed by `ProfileCard`) |
 | `verifyLink.ts` | Database upsert operations |
 | `avatars.ts` | Avatar URL utilities |
 | `utils.ts` | Shared helpers |
@@ -96,44 +89,36 @@ twitter.getUsername?.(identityData);  // Extract display name (optional)
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  1. INITIATE                                                │
-│     connectSocial("twitter", { profileId, returnPath })     │
+│  1. INITIATE (from ProfileCard front)                       │
+│     User clicks gray "Not Authenticated" badge on a link    │
+│     → detectProviderFromUrl(link.url) → provider key        │
+│     → connectSocial(provider, { profileId, returnPath })    │
 │     → supabase.auth.signInWithOAuth()                       │
-│     → Redirect to X consent screen                          │
+│     → Redirect to provider consent screen                   │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
 │  2. USER AUTHORIZES                                         │
-│     User grants permission on X                             │
-│     → X redirects back with auth code                       │
+│     User grants permission on provider                      │
+│     → Provider redirects back with auth code                │
 │     → Supabase exchanges for token, creates session         │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  3. CALLBACK                                                │
-│     URL: /profile/edit?connect=twitter&pid=123              │
-│     useConnectCallback() detects params                     │
-│     → getSession() from Supabase                            │
-│     → Find twitter identity in session.user.identities[]   │
-│     → provider.getHandle(identity_data) → "@handle"         │
-│     → provider.buildUrl(handle) → "https://x.com/handle"    │
+│  3. CALLBACK (in ProfileCard)                               │
+│     useConnectCallback() detects auth state change          │
+│     → Find provider identity in session.user.identities[]  │
+│     → provider.getHandle(identity_data) → handle            │
+│     → provider.buildUrl(handle) → canonical URL             │
 │     → onConnected({ url, provider, handle, ... })           │
-│     → Clean URL (remove ?connect&pid)                       │
 └─────────────────────────────────────────────────────────────┘
                             ↓
 ┌─────────────────────────────────────────────────────────────┐
-│  4. LOCAL STATE                                             │
-│     Link added to form.links[] in React state               │
-│     NOT persisted to database yet                           │
-│     User continues editing profile                          │
-└─────────────────────────────────────────────────────────────┘
-                            ↓
-┌─────────────────────────────────────────────────────────────┐
-│  5. SAVE PROFILE                                            │
-│     verifyLinkAction(profileId, url)                        │
-│     → Server checks: profile.verified === true              │
-│     → upsertVerifiedLink(profileId, url)                    │
+│  4. PERSIST IMMEDIATELY                                     │
+│     → upsertVerifiedLink(profileId, url) server action      │
 │     → INSERT/UPDATE zcasher_links SET is_verified = true    │
+│     → Update local linksArray state                         │
+│     → router.refresh() to sync server state                 │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -153,7 +138,7 @@ zcasher_links {
 
 ## Security Notes
 
-- **ZVS Required**: `verifyLinkAction` checks `profile.verified` server-side before allowing link verification
+- **ZVS Required**: Server checks `profile.verified` before allowing link verification
 - **OAuth via Supabase**: Token exchange handled by Supabase Auth, no tokens stored in app
 - **Identity Extraction**: Handle extracted from `session.user.identities[]` after OAuth
 - **No Client Trust**: Link verification always validated server-side, never trust client claims
@@ -172,4 +157,4 @@ zcasher_links {
 
 2. Enable provider in Supabase Auth dashboard
 
-3. Update UI to show new provider button in profile editor
+3. Update `detectProviderFromUrl` in `avatars.ts` to match the new provider's URLs

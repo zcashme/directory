@@ -26,6 +26,7 @@ export interface ProfileLinkRowProps {
   hideBadge?: boolean;
   badgeLabels?: { verified: string; unverified: string };
   stopPropagation?: boolean;
+  onVerifyClick?: (link: EnrichedProfileLink) => void;
 }
 
 export interface ProfileCardTextScale {
