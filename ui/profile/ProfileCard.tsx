@@ -73,6 +73,7 @@ export default function ProfileCard({
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
 
   const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
+    if (!profile.address_verified) return;
     const providerKey = detectProviderFromUrl(link.url || "");
     if (!providerKey || !PROVIDERS[providerKey]) return;
 
@@ -226,7 +227,7 @@ export default function ProfileCard({
                 <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
                   <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                     {linksArray.length > 0
-                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={LINK_ROW_CLASSES} onVerifyClick={handleVerifyClick} />)
+                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={LINK_ROW_CLASSES} onVerifyClick={profile.address_verified ? handleVerifyClick : undefined} />)
                       : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                   </div>
                 </div>

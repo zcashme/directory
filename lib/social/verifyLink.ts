@@ -1,28 +1,27 @@
+"use server";
+
 // lib/social/verifyLink.ts
-// Database operations for social link verification
+// Server action: auto-persist a verified social link
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 
-interface VerifyLinkResult {
-  ok: boolean;
-  error?: string;
-}
-
-/**
- * Add or update a verified social link for a profile.
- * If a link with the same URL exists, mark it verified.
- * If not, create a new verified link.
- */
 export async function upsertVerifiedLink(
   profileId: number,
   url: string
-): Promise<VerifyLinkResult> {
+): Promise<{ ok: boolean; error?: string }> {
   const supabase = createSupabaseServerClient();
-  if (!supabase) {
-    return { ok: false, error: "Supabase client not available" };
-  }
+  if (!supabase) return { ok: false, error: "Supabase client not available" };
 
-  // Try to update existing link first
+  // Only address-verified profiles can authenticate social links
+  const { data: profile, error: profileError } = await supabase
+    .from("zcashers")
+    .select("address_verified")
+    .eq("id", profileId)
+    .single();
+
+  if (profileError) return { ok: false, error: profileError.message };
+  if (!profile?.address_verified) return { ok: false, error: "Address must be verified first" };
+
   const { data: existing, error: findError } = await supabase
     .from("zcasher_links")
     .select("id")
@@ -30,37 +29,19 @@ export async function upsertVerifiedLink(
     .eq("url", url)
     .maybeSingle();
 
-  if (findError) {
-    return { ok: false, error: findError.message };
-  }
+  if (findError) return { ok: false, error: findError.message };
 
   if (existing) {
-    // Update existing link
-    const { error: updateError } = await supabase
+    const { error } = await supabase
       .from("zcasher_links")
-      .update({
-        is_verified: true,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ is_verified: true, updated_at: new Date().toISOString() })
       .eq("id", existing.id);
-
-    if (updateError) {
-      return { ok: false, error: updateError.message };
-    }
+    if (error) return { ok: false, error: error.message };
   } else {
-    // Insert new verified link
-    const { error: insertError } = await supabase
+    const { error } = await supabase
       .from("zcasher_links")
-      .insert({
-        zcasher_id: profileId,
-        url,
-        is_verified: true,
-        created_at: new Date().toISOString(),
-      });
-
-    if (insertError) {
-      return { ok: false, error: insertError.message };
-    }
+      .insert({ zcasher_id: profileId, url, is_verified: true, created_at: new Date().toISOString() });
+    if (error) return { ok: false, error: error.message };
   }
 
   return { ok: true };
