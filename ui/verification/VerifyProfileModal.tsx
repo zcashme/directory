@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import ReactDOM from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import ProfileVerification from "./ProfileVerification";
@@ -21,6 +21,7 @@ interface VerifyProfileModalProps {
 }
 
 export default function VerifyProfileModal({ isOpen, onClose, profile }: VerifyProfileModalProps) {
+  const [generateQrTrigger] = useState(1);
   const handleClose = useCallback(() => {
     onClose();
   }, [onClose]);
@@ -51,7 +52,10 @@ export default function VerifyProfileModal({ isOpen, onClose, profile }: VerifyP
         {/* Content */}
         <div className="px-5 py-4">
           {profile && (
-            <ProfileVerification profile={profile as Profile} />
+            <ProfileVerification
+              profile={profile as Profile}
+              generateQrTrigger={generateQrTrigger}
+            />
           )}
         </div>
       </div>
