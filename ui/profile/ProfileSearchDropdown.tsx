@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from "react";
-import type { RefObject } from "react";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -98,7 +97,7 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
   const previousResultsRef = useRef<Profile[]>([]);
@@ -225,13 +224,10 @@ export default function ProfileSearchDropdown({
     if (!show) return;
 
     const handleClickOutside = (event: MouseEvent) => {
-      if (!dropdownRef.current) return;
-      // Check if click is outside the dropdown
-      if (!dropdownRef.current.contains(event.target as Node)) {
-        const inputElement = (event.target as HTMLElement).closest('input');
-        if (!inputElement || (inputElement as HTMLInputElement).value !== value) {
-          setShow(false);
-        }
+      if (!containerRef.current) return;
+      // Keep the menu open when clicking inside input or result list.
+      if (!containerRef.current.contains(event.target as Node)) {
+        setShow(false);
       }
     };
 
@@ -240,11 +236,10 @@ export default function ProfileSearchDropdown({
   }, [show, value]);
 
   return (
-    <>
+    <div ref={containerRef}>
       {/* Input only if NOT list-only */}
       {!listOnly && (
         <input
-          ref={dropdownRef as RefObject<HTMLInputElement>}
           value={value}
           onChange={(e) => {
             onChange(e.target.value);
@@ -263,7 +258,6 @@ export default function ProfileSearchDropdown({
       {/* Dropdown menu */}
       {(show || usernameAvailable) && keystrokeDebounced && (
         <div
-          ref={listOnly ? dropdownRef : null}
           className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
         >
           {loading ? (
@@ -335,6 +329,6 @@ export default function ProfileSearchDropdown({
           )}
         </div>
       )}
-    </>
+    </div>
   );
 }
