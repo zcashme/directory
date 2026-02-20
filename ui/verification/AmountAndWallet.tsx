@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
@@ -46,6 +46,16 @@ const CURRENCIES: Record<string, Currency> = {
 };
 const FIAT_TICKERS = Object.keys(CURRENCIES);
 const FIAT_STATE_STORAGE_KEY = "zcashme.amountAndWallet.fiatState";
+const ALLOWED_BASE_LAYER_PARTS = new Set([
+  "btc",
+  "bitcoin",
+  "eth",
+  "ethereum",
+  "sol",
+  "solana",
+  "zec",
+  "zcash",
+]);
 
 const formatDecimal = (value: number, fallback = "") => {
   const num = Number(value);
@@ -63,6 +73,22 @@ interface TokenOption {
   logo?: string;
   chain?: string;
 }
+
+const isAllowedTokenBaseLayer = (token: TokenOption) => {
+  const rawChain = (token.chain ?? "").toLowerCase().trim();
+  if (!rawChain) return false;
+
+  const normalized = rawChain.replace(/[_/.\-]+/g, " ");
+  const parts = normalized.split(/\s+/).filter(Boolean);
+  if (parts.some((part) => ALLOWED_BASE_LAYER_PARTS.has(part))) return true;
+
+  return (
+    rawChain.includes("bitcoin") ||
+    rawChain.includes("ethereum") ||
+    rawChain.includes("solana") ||
+    rawChain.includes("zcash")
+  );
+};
 
 interface AmountAndWalletProps {
   // Required props
@@ -128,6 +154,10 @@ export default function AmountAndWallet({
   const [currencyDropdownPlacement, setCurrencyDropdownPlacement] = useState<"top" | "bottom">("bottom");
   const [preferFiatValue, setPreferFiatValue] = useState(false);
   const [fiatStateHydrated, setFiatStateHydrated] = useState(false);
+  const [highlightedTokenIndex, setHighlightedTokenIndex] = useState(-1);
+  const [highlightedFiatIndex, setHighlightedFiatIndex] = useState(-1);
+  const tokenOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const fiatOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -351,6 +381,156 @@ export default function AmountAndWallet({
     return false;
   };
 
+  const filteredTokenOptions = useMemo(
+    () => assetOptions.filter(isAllowedTokenBaseLayer).filter(matchesTokenSearch),
+    [assetOptions, tokenSearch], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  const filteredFiatTickers = useMemo(() => {
+    const search = fiatSearch.toLowerCase();
+    return FIAT_TICKERS.filter(
+      (ticker) =>
+        !search ||
+        ticker.toLowerCase().includes(search) ||
+        CURRENCIES[ticker]?.name?.toLowerCase().includes(search) ||
+        CURRENCIES[ticker]?.symbol?.toLowerCase().includes(search),
+    );
+  }, [fiatSearch]);
+
+  const getCurrentTokenIndex = () =>
+    filteredTokenOptions.findIndex(
+      (token) => asset === (token.symbol ?? token.ticker),
+    );
+
+  const selectTokenAtIndex = (index: number) => {
+    const next = filteredTokenOptions[index];
+    if (!next || !setAsset) return;
+    setAsset(next.id);
+    setIsTokenDropdownOpen(false);
+    setTokenSearch("");
+  };
+
+  const selectFiatAtIndex = (index: number) => {
+    const next = filteredFiatTickers[index];
+    if (!next) return;
+    setFiat(next);
+    setIsCurrencyOpen(false);
+    setFiatSearch("");
+  };
+
+  const handleTokenDropdownKeyDown = (e: ReactKeyboardEvent) => {
+    if (!setAsset || assetOptions.length === 0) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setIsTokenDropdownOpen(false);
+      setTokenSearch("");
+      return;
+    }
+
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+
+    if (e.key === "Enter" || e.key === " ") {
+      if (!isTokenDropdownOpen) {
+        setIsTokenDropdownOpen(true);
+        return;
+      }
+      if (e.key === "Enter" && highlightedTokenIndex >= 0) {
+        selectTokenAtIndex(highlightedTokenIndex);
+      }
+      return;
+    }
+
+    if (!isTokenDropdownOpen) {
+      setIsTokenDropdownOpen(true);
+      return;
+    }
+
+    if (filteredTokenOptions.length === 0) return;
+    const delta = e.key === "ArrowDown" ? 1 : -1;
+    setHighlightedTokenIndex((prev) => {
+      const base = prev >= 0 ? prev : Math.max(getCurrentTokenIndex(), 0);
+      return (base + delta + filteredTokenOptions.length) % filteredTokenOptions.length;
+    });
+  };
+
+  const handleFiatDropdownKeyDown = (e: ReactKeyboardEvent) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setIsCurrencyOpen(false);
+      setFiatSearch("");
+      return;
+    }
+
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp" && e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+
+    if (e.key === "Enter" || e.key === " ") {
+      if (!isCurrencyOpen) {
+        setIsCurrencyOpen(true);
+        return;
+      }
+      if (e.key === "Enter" && highlightedFiatIndex >= 0) {
+        selectFiatAtIndex(highlightedFiatIndex);
+      }
+      return;
+    }
+
+    if (!isCurrencyOpen) {
+      setIsCurrencyOpen(true);
+      return;
+    }
+
+    if (filteredFiatTickers.length === 0) return;
+    const delta = e.key === "ArrowDown" ? 1 : -1;
+    setHighlightedFiatIndex((prev) => {
+      const selectedIndex = filteredFiatTickers.findIndex((ticker) => ticker === fiat);
+      const base = prev >= 0 ? prev : Math.max(selectedIndex, 0);
+      return (base + delta + filteredFiatTickers.length) % filteredFiatTickers.length;
+    });
+  };
+
+  useEffect(() => {
+    tokenOptionRefs.current = [];
+    if (!isTokenDropdownOpen || filteredTokenOptions.length === 0) {
+      setHighlightedTokenIndex(-1);
+      return;
+    }
+
+    setHighlightedTokenIndex((prev) => {
+      if (prev >= 0 && prev < filteredTokenOptions.length) return prev;
+      const selectedIndex = getCurrentTokenIndex();
+      return selectedIndex >= 0 ? selectedIndex : 0;
+    });
+  }, [isTokenDropdownOpen, filteredTokenOptions, asset]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!isTokenDropdownOpen || highlightedTokenIndex < 0) return;
+    const el = tokenOptionRefs.current[highlightedTokenIndex];
+    el?.scrollIntoView({ block: "nearest" });
+  }, [isTokenDropdownOpen, highlightedTokenIndex]);
+
+  useEffect(() => {
+    fiatOptionRefs.current = [];
+    if (!isCurrencyOpen || filteredFiatTickers.length === 0) {
+      setHighlightedFiatIndex(-1);
+      return;
+    }
+
+    setHighlightedFiatIndex((prev) => {
+      if (prev >= 0 && prev < filteredFiatTickers.length) return prev;
+      const selectedIndex = filteredFiatTickers.findIndex((ticker) => ticker === fiat);
+      return selectedIndex >= 0 ? selectedIndex : 0;
+    });
+  }, [isCurrencyOpen, filteredFiatTickers, fiat]);
+
+  useEffect(() => {
+    if (!isCurrencyOpen || highlightedFiatIndex < 0) return;
+    const el = fiatOptionRefs.current[highlightedFiatIndex];
+    el?.scrollIntoView({ block: "nearest" });
+  }, [isCurrencyOpen, highlightedFiatIndex]);
+
   const getDropdownMotion = (placement: "top" | "bottom") => {
     const yOffset = placement === "top" ? 8 : -8;
     return {
@@ -455,6 +635,7 @@ export default function AmountAndWallet({
                     onClick={() => {
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
                     }}
+                    onKeyDown={handleTokenDropdownKeyDown}
                     className="flex items-center gap-1 hover:text-[var(--color-brand-blue)] cursor-pointer"
                   >
                     <span>{asset}</span>
@@ -477,6 +658,7 @@ export default function AmountAndWallet({
               {setAsset && assetOptions.length > 0 && isTokenDropdownOpen && (
                 <motion.div
                   {...getDropdownMotion(tokenDropdownPlacement)}
+                  onKeyDown={handleTokenDropdownKeyDown}
                   className={`absolute left-0 max-h-72 overflow-hidden bg-[var(--color-background)] border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector ${
                     tokenDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                   }`}
@@ -488,27 +670,35 @@ export default function AmountAndWallet({
                         type="text"
                         value={tokenSearch}
                         onChange={(e) => setTokenSearch(e.target.value)}
+                        onKeyDown={handleTokenDropdownKeyDown}
                         placeholder="Search tokens..."
                         className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                       />
                     </div>
                   )}
                   <div className="py-1 max-h-60 overflow-y-auto">
-                    {assetOptions
-                      .filter(matchesTokenSearch)
-                      .map((token) => (
+                    {filteredTokenOptions
+                      .map((token, tokenIndex) => {
+                        const isRowActive = highlightedTokenIndex === tokenIndex;
+                        const isSelectedToken = asset === (token.symbol ?? token.ticker);
+                        return (
                         <motion.button
                           key={token.id}
+                          ref={(el) => {
+                            tokenOptionRefs.current[tokenIndex] = el;
+                          }}
                           type="button"
                           onClick={() => {
                             setAsset(token.id);
                             setIsTokenDropdownOpen(false);
                             setTokenSearch("");
                           }}
+                          onMouseEnter={() => setHighlightedTokenIndex(tokenIndex)}
+                          onFocus={() => setHighlightedTokenIndex(tokenIndex)}
                           {...tapProps}
                           className={`group w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                            asset === (token.symbol ?? token.ticker)
-                              ? "bg-[var(--color-brand-blue)] font-semibold text-white"
+                            isRowActive
+                              ? "bg-[var(--color-brand-blue)]/90 text-white"
                               : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
                           }`}
                         >
@@ -527,9 +717,11 @@ export default function AmountAndWallet({
                             <div className="flex items-center gap-2 min-w-0">
                               <span
                                 className={`font-semibold truncate ${
-                                  asset === (token.symbol ?? token.ticker)
+                                  isRowActive
                                     ? "text-white"
-                                    : "text-gray-800 group-hover:text-white"
+                                    : isSelectedToken
+                                      ? "text-gray-900"
+                                      : "text-gray-800 group-hover:text-white"
                                 }`}
                               >
                                 {token.symbol}
@@ -537,7 +729,7 @@ export default function AmountAndWallet({
                               {token.chain && (
                                 <span
                                   className={`ml-auto text-xs text-right truncate font-medium ${
-                                    asset === (token.symbol ?? token.ticker)
+                                    isRowActive
                                       ? "text-[var(--color-brand-blue)]/25"
                                       : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
                                   }`}
@@ -548,8 +740,8 @@ export default function AmountAndWallet({
                             </div>
                           </span>
                         </motion.button>
-                      ))}
-                    {assetOptions.filter(matchesTokenSearch).length === 0 && (
+                      )})}
+                    {filteredTokenOptions.length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-500 text-center">
                         No tokens found
                       </div>
@@ -561,6 +753,7 @@ export default function AmountAndWallet({
                         type="text"
                         value={tokenSearch}
                         onChange={(e) => setTokenSearch(e.target.value)}
+                        onKeyDown={handleTokenDropdownKeyDown}
                         placeholder="Search tokens..."
                         className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                       />
@@ -656,12 +849,7 @@ export default function AmountAndWallet({
                         className={INLINE_SELECTOR_TRIGGER_CLASSES}
                         aria-label="Choose fiat currency"
                         onClick={handleToggleCurrency}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleToggleCurrency();
-                          }
-                        }}
+                        onKeyDown={handleFiatDropdownKeyDown}
                       >
                         <span>{fiat}</span>
                         <span
@@ -678,6 +866,7 @@ export default function AmountAndWallet({
                         {isCurrencyOpen && (
                           <motion.div
                             {...getDropdownMotion(currencyDropdownPlacement)}
+                            onKeyDown={handleFiatDropdownKeyDown}
                             className={`absolute right-0 w-64 max-h-72 overflow-hidden bg-[var(--color-background)] border border-gray-800 rounded-xl shadow-lg z-[9999] ${
                               currencyDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                             }`}
@@ -688,76 +877,69 @@ export default function AmountAndWallet({
                                 type="text"
                                 value={fiatSearch}
                                 onChange={(e) => setFiatSearch(e.target.value)}
+                                onKeyDown={handleFiatDropdownKeyDown}
                                 placeholder="Search currencies..."
                                 className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                               />
                             </div>
                           )}
                             <div className="py-1 max-h-60 overflow-y-auto">
-                              {FIAT_TICKERS.filter(
-                                (ticker) =>
-                                  !fiatSearch ||
-                                  ticker
-                                    .toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()) ||
-                                  CURRENCIES[ticker]?.name
-                                    ?.toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()) ||
-                                  CURRENCIES[ticker]?.symbol
-                                    ?.toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()),
-                              ).map((ticker) => (
+                              {filteredFiatTickers.map((ticker, fiatIndex) => {
+                                const isRowActive = highlightedFiatIndex === fiatIndex;
+                                const isSelectedFiat = fiat === ticker;
+                                return (
                                 <motion.button
                                   key={ticker}
+                                  ref={(el) => {
+                                    fiatOptionRefs.current[fiatIndex] = el;
+                                  }}
                                   type="button"
                                   onClick={() => {
                                     setFiat(ticker);
                                     setIsCurrencyOpen(false);
                                     setFiatSearch("");
                                   }}
+                                  onMouseEnter={() => setHighlightedFiatIndex(fiatIndex)}
+                                  onFocus={() => setHighlightedFiatIndex(fiatIndex)}
                                   {...tapProps}
                                   className={`group w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                    fiat === ticker
-                                      ? "bg-[var(--color-brand-blue)] font-semibold text-white"
+                                    isRowActive
+                                      ? "bg-[var(--color-brand-blue)]/90 text-white"
                                       : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
                                   }`}
                                 >
                                   <span
                                   className={`w-6 flex-shrink-0 ${
-                                      fiat === ticker ? "text-[var(--color-brand-blue)]/25" : "text-gray-600 group-hover:text-[var(--color-brand-blue)]/25"
+                                      isRowActive
+                                        ? "text-[var(--color-brand-blue)]/25"
+                                        : "text-gray-600 group-hover:text-[var(--color-brand-blue)]/25"
                                     }`}
                                   >
                                     {CURRENCIES[ticker]?.symbol || ""}
                                   </span>
                                   <span
                                     className={`font-medium flex-shrink-0 ${
-                                      fiat === ticker ? "text-white" : "text-gray-800 group-hover:text-white"
+                                      isRowActive
+                                        ? "text-white"
+                                        : isSelectedFiat
+                                          ? "text-gray-900"
+                                          : "text-gray-800 group-hover:text-white"
                                     }`}
                                   >
                                     {ticker}
                                   </span>
                                   <span
                                     className={`ml-auto text-xs text-right truncate flex-1 min-w-0 ${
-                                      fiat === ticker ? "text-[var(--color-brand-blue)]/25" : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
+                                      isRowActive
+                                        ? "text-[var(--color-brand-blue)]/25"
+                                        : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
                                     }`}
                                   >
                                     {CURRENCIES[ticker]?.name || ""}
                                   </span>
                                 </motion.button>
-                              ))}
-                              {FIAT_TICKERS.filter(
-                                (ticker) =>
-                                  !fiatSearch ||
-                                  ticker
-                                    .toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()) ||
-                                  CURRENCIES[ticker]?.name
-                                    ?.toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()) ||
-                                  CURRENCIES[ticker]?.symbol
-                                    ?.toLowerCase()
-                                    .includes(fiatSearch.toLowerCase()),
-                              ).length === 0 && (
+                              )})}
+                              {filteredFiatTickers.length === 0 && (
                                 <div className="px-3 py-2 text-sm text-gray-500 text-center">
                                   No currencies found
                                 </div>
@@ -769,6 +951,7 @@ export default function AmountAndWallet({
                                 type="text"
                                 value={fiatSearch}
                                 onChange={(e) => setFiatSearch(e.target.value)}
+                                onKeyDown={handleFiatDropdownKeyDown}
                                 placeholder="Search currencies..."
                                 className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                               />

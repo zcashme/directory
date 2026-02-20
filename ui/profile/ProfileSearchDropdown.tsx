@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -97,6 +97,7 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
@@ -235,6 +236,89 @@ export default function ProfileSearchDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [show, value]);
 
+  useEffect(() => {
+    const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
+    if (totalSelectable === 0 || loading) {
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    setHighlightedIndex((prev) => {
+      if (prev >= 0 && prev < totalSelectable) return prev;
+      return 0;
+    });
+  }, [usernameAvailable, results, loading]);
+
+  const selectHighlighted = useCallback((index: number) => {
+    if (index < 0 || loading) return;
+    const hasAvailabilityRow = Boolean(usernameAvailable);
+
+    if (hasAvailabilityRow && index === 0) {
+      onClaimClick?.();
+      return;
+    }
+
+    const resultIndex = hasAvailabilityRow ? index - 1 : index;
+    const selected = results[resultIndex];
+    if (!selected) return;
+    onChange(selected);
+    setShow(false);
+  }, [loading, usernameAvailable, results, onClaimClick, onChange]);
+
+  useEffect(() => {
+    if (!listOnly) return;
+    if (!(show || usernameAvailable) || !keystrokeDebounced) return;
+
+    const onDocumentKeyDown = (e: KeyboardEvent) => {
+      const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
+      if (!totalSelectable || loading) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          e.stopPropagation();
+          setShow(false);
+        }
+        return;
+      }
+
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        e.stopPropagation();
+        const delta = e.key === "ArrowDown" ? 1 : -1;
+        setHighlightedIndex((prev) => {
+          const start = prev >= 0 ? prev : 0;
+          return (start + delta + totalSelectable) % totalSelectable;
+        });
+        return;
+      }
+
+      if (e.key === "Enter") {
+        e.preventDefault();
+        e.stopPropagation();
+        const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+        selectHighlighted(indexToSelect);
+        return;
+      }
+
+      if (e.key === "Escape") {
+        e.preventDefault();
+        e.stopPropagation();
+        setShow(false);
+      }
+    };
+
+    document.addEventListener("keydown", onDocumentKeyDown, true);
+    return () => document.removeEventListener("keydown", onDocumentKeyDown, true);
+  }, [
+    listOnly,
+    show,
+    usernameAvailable,
+    keystrokeDebounced,
+    results,
+    loading,
+    highlightedIndex,
+    selectHighlighted,
+  ]);
+
   return (
     <div ref={containerRef}>
       {/* Input only if NOT list-only */}
@@ -244,6 +328,35 @@ export default function ProfileSearchDropdown({
           onChange={(e) => {
             onChange(e.target.value);
             setShow(true);
+          }}
+          onKeyDown={(e) => {
+            const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
+            if (!totalSelectable || loading) {
+              if (e.key === "Escape") setShow(false);
+              return;
+            }
+
+            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+              e.preventDefault();
+              setShow(true);
+              const delta = e.key === "ArrowDown" ? 1 : -1;
+              setHighlightedIndex((prev) => {
+                const start = prev >= 0 ? prev : 0;
+                return (start + delta + totalSelectable) % totalSelectable;
+              });
+              return;
+            }
+
+            if (e.key === "Enter") {
+              e.preventDefault();
+              const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
+              selectHighlighted(indexToSelect);
+              return;
+            }
+
+            if (e.key === "Escape") {
+              setShow(false);
+            }
           }}
           placeholder={placeholder}
           autoComplete="off"
@@ -272,7 +385,12 @@ export default function ProfileSearchDropdown({
                   onClick={() => {
                     onClaimClick?.();
                   }}
-                  className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 bg-green-50/50 cursor-pointer hover:bg-green-100/50 transition-colors"
+                  onMouseEnter={() => setHighlightedIndex(0)}
+                  className={`px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors ${
+                    highlightedIndex === 0
+                      ? "bg-green-100/60"
+                      : "bg-green-50/50 hover:bg-green-100/50"
+                  }`}
                 >
                   <span>
                     <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
@@ -282,14 +400,22 @@ export default function ProfileSearchDropdown({
 
               {/* Show search results */}
               {results.length > 0 ? (
-                results.map((p) => (
+                results.map((p, resultIndex) => (
                   <div
                     key={`${p.name}-${p.id}`}
                     onClick={() => {
                       onChange(p);
                       setShow(false);
                     }}
-                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold hover:bg-gray-100 transition-colors"
+                    onMouseEnter={() =>
+                      setHighlightedIndex((usernameAvailable ? 1 : 0) + resultIndex)
+                    }
+                    className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors ${
+                      highlightedIndex ===
+                      (usernameAvailable ? 1 : 0) + resultIndex
+                        ? "bg-gray-100"
+                        : "hover:bg-gray-100"
+                    }`}
                   >
                     {/* Avatar */}
                     <div>
