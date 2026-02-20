@@ -126,7 +126,7 @@ export default function ProfilePage({
       .filter((token): token is {
         id: string;
         symbol: string;
-        logo?: string;
+        logo: string | undefined;
         chain: string;
         baseLayer: BaseLayerKey;
       } => Boolean(token && token.id && token.symbol));
