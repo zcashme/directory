@@ -10,6 +10,26 @@ interface ProfileAvatarProps {
   lookAround?: boolean;
 }
 
+// Random eye positions the smiley can glance toward
+const EYE_OFFSETS = [
+  { x: -2, y: 0 },
+  { x: 0, y: 0 },
+  { x: 2, y: 0 },
+  { x: -2, y: -2 },
+  { x: 2, y: -2 },
+];
+
+function pickRandom(offsets: typeof EYE_OFFSETS, current: { x: number; y: number }) {
+  let next = current;
+  while (next.x === current.x && next.y === current.y && offsets.length > 1) {
+    next = offsets[Math.floor(Math.random() * offsets.length)];
+  }
+  return next;
+}
+
+/**
+ * Profile avatar — shows user image, or a blinking/glancing smiley SVG fallback.
+ */
 export default function ProfileAvatar({
   profile,
   size = 32,
@@ -18,67 +38,40 @@ export default function ProfileAvatar({
   blink = true,
   lookAround = true,
 }: ProfileAvatarProps) {
-  const outerSize = size + 6;
-
+  const outerSize = size + 6; // border + padding
+  const avatarUrl = (profile.profile_image_url || profile.avatar_url)?.trim() || "";
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
-  const avatarUrl =
-    (profile.profile_image_url || profile.avatar_url)?.trim() || "";
 
+  // Randomly shift eyes every 5-9s when no avatar image is set
   useEffect(() => {
-    const shouldAnimate = lookAround && !avatarUrl;
-    if (!shouldAnimate) {
+    if (!lookAround || avatarUrl) {
       setEyeOffset({ x: 0, y: 0 });
       return;
     }
 
-    const offsets = [
-      { x: -2, y: 0 },
-      { x: 0, y: 0 },
-      { x: 2, y: 0 },
-      { x: -2, y: -2 },
-      { x: 2, y: -2 },
-    ];
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-
+    let timeoutId: ReturnType<typeof setTimeout>;
     const schedule = () => {
-      const delay = 5000 + Math.floor(Math.random() * 4000);
+      const delay = 5000 + Math.random() * 4000;
       timeoutId = setTimeout(() => {
-        setEyeOffset((prev) => {
-          let next = prev;
-          while (next.x === prev.x && next.y === prev.y && offsets.length > 1) {
-            next = offsets[Math.floor(Math.random() * offsets.length)];
-          }
-          return next;
-        });
+        setEyeOffset((prev) => pickRandom(EYE_OFFSETS, prev));
         schedule();
       }, delay);
     };
-
     schedule();
-    return () => {
-      if (timeoutId) clearTimeout(timeoutId);
-    };
+
+    return () => clearTimeout(timeoutId);
   }, [lookAround, avatarUrl]);
 
   return (
     <>
+      {/* Blink keyframe: eyes squish briefly every 5s */}
       <style>{`
-                @keyframes avatar-gradient-x {
-                    0% { background-position: 0% 50%; }
-                    100% { background-position: 100% 50%; }
-                }
-                @keyframes avatar-blink {
-                    0%, 92%, 100% { transform: scaleY(1); }
-                    94%, 96% { transform: scaleY(0.1); }
-                }
-                .avatar-eyes {
-                    transform-origin: center;
-                    transform-box: fill-box;
-                }
-                .avatar-blink {
-                    animation: avatar-blink 5s infinite;
-                }
-            `}</style>
+        @keyframes avatar-blink {
+          0%, 92%, 100% { transform: scaleY(1); }
+          94%, 96% { transform: scaleY(0.1); }
+        }
+      `}</style>
+
       <div
         className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-transparent ${className}`}
         style={{ width: outerSize, height: outerSize }}
@@ -93,9 +86,13 @@ export default function ProfileAvatar({
               referrerPolicy="no-referrer"
             />
           ) : (
+            /* Smiley face fallback: two eyes + curved mouth */
             <svg viewBox="0 0 64 64" aria-hidden="true" className="w-full h-full">
               <g transform={`translate(${eyeOffset.x} ${eyeOffset.y})`}>
-                <g className={`avatar-eyes ${blink ? "avatar-blink" : ""}`}>
+                <g
+                  style={{ transformOrigin: "center", transformBox: "fill-box" as any }}
+                  className={blink ? "animate-[avatar-blink_5s_infinite]" : ""}
+                >
                   <circle cx="24" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
                   <circle cx="40" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
                 </g>

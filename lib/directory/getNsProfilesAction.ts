@@ -48,13 +48,13 @@ export async function getNsProfilesAction(): Promise<GetNsProfilesResponse> {
     const toKey = (v: number | string): string => String(v);
 
     const rankAll = new Map<string, number>(
-      (lbAll as RankRow[] || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_alltime || 0])
+      ((lbAll as RankRow[]) ?? []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_alltime ?? 0])
     );
     const rankWeek = new Map<string, number>(
-      (lbWeek as RankRow[] || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_weekly || 0])
+      ((lbWeek as RankRow[]) ?? []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_weekly ?? 0])
     );
     const rankMonth = new Map<string, number>(
-      (lbMonth as RankRow[] || []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_monthly || 0])
+      ((lbMonth as RankRow[]) ?? []).map((r) => [toKey(r.referred_by_zcasher_id), r.rank_monthly ?? 0])
     );
 
     // Fetch all profiles with pagination
@@ -74,8 +74,8 @@ export async function getNsProfilesAction(): Promise<GetNsProfilesResponse> {
         break;
       }
 
-      all = all.concat(data || []);
-      total = count || total;
+      all = all.concat(data ?? []);
+      total = count ?? total;
 
       if (!data?.length || all.length >= total) break;
       from += pageSize;
@@ -91,9 +91,9 @@ export async function getNsProfilesAction(): Promise<GetNsProfilesResponse> {
 
       return {
         ...p,
-        rank_alltime: rankAll.get(pid) || 0,
-        rank_weekly: rankWeek.get(pid) || 0,
-        rank_monthly: rankMonth.get(pid) || 0,
+        rank_alltime: rankAll.get(pid) ?? 0,
+        rank_weekly: rankWeek.get(pid) ?? 0,
+        rank_monthly: rankMonth.get(pid) ?? 0,
         links: linkList,
         verified_links_count: linkVerifiedCount,
       };

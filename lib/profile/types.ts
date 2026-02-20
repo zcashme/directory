@@ -13,7 +13,6 @@ export interface Profile {
   bio?: string;
   address: string;
   address_verified: boolean;
-  nearest_city_id?: number | null;
   nearest_city_name?: string;
   avatar_url?: string;
   profile_image_url?: string;
@@ -68,6 +67,7 @@ export interface ProfileLink {
   id?: number | null;
   url: string;
   label?: string;
+  platform?: string | null;
   is_verified: boolean;
   verification_expires_at?: string;
   zcasher_id?: number;
@@ -81,7 +81,7 @@ export interface EnrichedProfileLink extends ProfileLink {
   label: string;
   domain?: string;
   handle?: string;
-  platform?: "X" | "GitHub" | "Instagram" | "Discord" | null;
+  platform?: string | null;
 }
 
 /**
@@ -99,21 +99,6 @@ export interface LinkVerificationPayload {
   is_verified: boolean;
   verification_expires_at?: string | null;
   [key: string]: unknown;
-}
-
-export interface PendingProfileChange {
-  name?: string;
-  display_name?: string;
-  bio?: string;
-  profile_image_url?: string;
-  address?: string;
-  c?: string;
-  d?: string[];
-}
-
-export interface PendingEdits {
-  profile?: PendingProfileChange;
-  l?: string[];
 }
 
 /**

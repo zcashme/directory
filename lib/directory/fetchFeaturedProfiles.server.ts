@@ -30,7 +30,7 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
   if (profileIds.length > 0) {
     const { data: linksData } = await supabase
       .from("zcasher_links")
-      .select("id,label,url,is_verified,zcasher_id")
+      .select("id,label,url,platform,is_verified,zcasher_id")
       .in("zcasher_id", profileIds)
       .order("id", { ascending: true });
 

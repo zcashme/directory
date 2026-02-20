@@ -2,28 +2,76 @@ import { useState, useEffect, useMemo } from "react";
 import type { MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { buildSocialUrl } from "@/lib/profile/usernameNormalizer";
+import { buildSocialUrl, normalizeSocialUsername, HOSTS } from "@/lib/profile/usernameNormalizer";
+import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
-import {
-  getAuthProviderForUrl,
-  getLinkAuthToken,
-  isLinkAuthPending,
-  startOAuthVerification,
-} from "@/lib/profile/accountAuthFlow";
-import AuthExplainerModal from "@/ui/profile/AuthExplainerModal";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField from "@/ui/profile/ProfileField";
-import { RedirectModal, AvatarReauthModal, AvatarPreviewModal } from "@/ui/profile/editorModals";
-import { parseSocialUrl, isValidImageUrl, applyProviderAvatar } from "@/lib/profile/providerAvatars";
-import { isValidUrl } from "@/lib/validation/validators";
+import { AvatarPreviewModal } from "@/ui/profile/editorModals";
+import { isValidUrl } from "@/lib/profile/urlValidation";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
-import useVerificationFlow from "@/ui/social/useVerificationFlow";
-import { useEditsStore, type ParsedLink, type FormState } from "@/lib/stores/edits";
+import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
-import { Alert, Button } from "@/ui/common";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import Alert from "@/ui/common/feedback/Alert";
+import Button from "@/ui/common/buttons/Button";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
+
+function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return null;
+  const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const url = new URL(normalized);
+    const host = url.hostname.toLowerCase();
+    for (const [platform, hosts] of Object.entries(HOSTS)) {
+      if ((hosts as string[]).includes(host)) return platform;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function parseSocialUrl(rawUrl: string | null | undefined): {
+  platform: string;
+  username: string;
+  otherUrl: string;
+} {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return { platform: "X", username: "", otherUrl: "" };
+  const platform = detectPlatformFromUrl(trimmed);
+  if (!platform) return { platform: "Other", username: "", otherUrl: trimmed };
+  return {
+    platform,
+    username: normalizeSocialUsername(trimmed, platform as SocialPlatform),
+    otherUrl: "",
+  };
+}
+
+function isValidImageUrl(url: string | null | undefined): {
+  valid: boolean;
+  reason: string | null;
+} {
+  if (!url) return { valid: true, reason: null };
+  const trimmed = url.trim();
+  const { valid } = isValidUrl(trimmed);
+  if (!valid) return { valid: false, reason: "Invalid URL format" };
+  const hasImageExt = /\.(png|jpg)(\?.*)?$/i.test(trimmed);
+  let isGithubAvatar = false;
+  if (!hasImageExt) {
+    try {
+      const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+      const u = new URL(normalized);
+      isGithubAvatar = u.hostname.toLowerCase() === "avatars.githubusercontent.com";
+    } catch {
+      isGithubAvatar = false;
+    }
+  }
+  if (!hasImageExt && !isGithubAvatar) return { valid: false, reason: "Image URL must end in .png or .jpg" };
+  return { valid: true, reason: null };
+}
 
 const FIELD_CLASS =
   `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;
@@ -31,7 +79,6 @@ const LINK_FIELD_CLASS =
   `rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 appearance-none ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
-const VERIFY_HINT_CLASS = "text-xs text-gray-500 italic";
 
 interface CharCounterProps {
   text: string;
@@ -49,55 +96,29 @@ function CharCounter({ text }: CharCounterProps) {
   );
 }
 
-// Removed - now using store.setDeletedField directly
-
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
+  onAuthenticateLink?: (link: { url: string }) => void;
 }
 
-interface AvatarPrompt {
-  provider: string;
-  url: string;
-}
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
+export default function ProfileEditor({ profile, links, onAuthenticateLink }: ProfileEditorProps) {
   const {
     form,
     deletedFields,
-    pendingEdits,
     setForm,
     updateField,
     setDeletedField,
     initializeForm,
-    addLinkAuthToken,
-    removeLinkAuthToken,
   } = useEditsStore();
-  const pendingProfileEdits = pendingEdits?.profile || {};
-  const pendingDeleted = Array.isArray(pendingProfileEdits?.d)
-    ? pendingProfileEdits.d
-    : [];
-  const hasPendingField = (key: string, token: string) =>
-    Boolean(pendingProfileEdits?.[key]) || pendingDeleted.includes(token);
-  const hasPendingLinks =
-    Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
-  const [showRedirect, setShowRedirect] = useState(false);
-  const [redirectLabel, setRedirectLabel] = useState("X.com");
-  const [avatarPrompt, setAvatarPrompt] = useState<AvatarPrompt | null>(null);
   const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
-  const [authInfoOpen, setAuthInfoOpen] = useState(false);
-  const [authInfoLink, setAuthInfoLink] = useState<ParsedLink | null>(null);
-  const providerKeyByLabel: Record<string, string> = {
-    Discord: "discord",
-    X: "twitter",
-    GitHub: "github",
-  };
 
   // Display value for city search input (local UI state)
-  const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name || "");
+  const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name ?? "");
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -121,19 +142,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     });
   }, [profile, links]);
 
-  // Initialize form from profile and links
+  // Initialize form from profile and links (only when profile ID changes)
   useEffect(() => {
     initializeForm(profile, originalLinks);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id]); // Only re-initialize if profile ID changes
-
-  // Update links when originalLinks changes (e.g., after verification)
-  useEffect(() => {
-    setForm((prev) => ({
-      ...prev,
-      links: originalLinks.map((l) => ({ ...l })),
-    }));
-  }, [originalLinks, setForm]);
-
 
   const [imageUrlValid, setImageUrlValid] = useState(true);
   const [imageUrlReason, setImageUrlReason] = useState<string | null>(null);
@@ -146,11 +159,11 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
   const originals = useMemo(
     () => ({
-      address: profile.address || "",
-      name: profile.name || "",
-      display_name: profile.display_name || "",
-      bio: profile.bio || "",
-      profile_image_url: profile.profile_image_url || "",
+      address: profile.address ?? "",
+      name: profile.name ?? "",
+      display_name: profile.display_name ?? "",
+      bio: profile.bio ?? "",
+      profile_image_url: profile.profile_image_url ?? "",
     }),
     [profile]
   );
@@ -159,22 +172,22 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     if (typeof profile.id !== "number") return "";
     return `-${profile.id}`;
   }, [profile.address_verified, profile.id]);
-  const [usernameInput, setUsernameInput] = useState(form.name || "");
+  const [usernameInput, setUsernameInput] = useState(form.name ?? "");
   const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
   const [usernameTouched, setUsernameTouched] = useState(false);
   const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-  const [lastValidUsername, setLastValidUsername] = useState(form.name || "");
+  const [lastValidUsername, setLastValidUsername] = useState(form.name ?? "");
   const displayedUsername = `${usernameInput}${usernameLockedSuffix}`;
 
   useEffect(() => {
-    setUsernameInput(form.name || "");
+    setUsernameInput(form.name ?? "");
   }, [form.name]);
 
   useEffect(() => {
     setUsernameTouched(false);
     setUsernameConflict(null);
     setUsernameStatus("idle");
-    setLastValidUsername(profile.name || "");
+    setLastValidUsername(profile.name ?? "");
   }, [profile.id]);
 
   useEffect(() => {
@@ -185,7 +198,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     }
 
     const candidate = sanitizeUsernameInput(usernameInput);
-    const originalNameRaw = originals.name || "";
+    const originalNameRaw = originals.name ?? "";
 
     if (!candidate) {
       setUsernameConflict(null);
@@ -232,39 +245,9 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
     };
   }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
-  // Verification flow hook
-  useVerificationFlow(profile.id, setShowRedirect);
-
-  const startOAuth = (providerKey: string, url: string) =>
-    startOAuthVerification({
-      providerKey,
-      profile,
-      url,
-      setShowRedirect,
-      setRedirectLabel,
-    });
-
-  const authInfoProvider = authInfoLink ? getAuthProviderForUrl(authInfoLink.url) : null;
-  const authInfoToken = authInfoLink ? getLinkAuthToken(authInfoLink) : null;
-  const authInfoPending =
-    authInfoToken && isLinkAuthPending(pendingEdits, authInfoToken);
-
-  // Profile field diffs and link tokens are now auto-computed in the store
-
-  // Handlers
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
-  const avatarCallbacks = {
-    setAvatarPrompt,
-    setDeletedFields: (fn: (prev: Record<string, boolean>) => Record<string, boolean>) => {
-      const newFields = fn(deletedFields as unknown as Record<string, boolean>);
-      Object.entries(newFields).forEach(([key, value]) => {
-        setDeletedField(key as keyof typeof deletedFields, value);
-      });
-    },
-    handleChange
-  };
 
   const handleLinkChange = (uid: string, value: string) => {
     setForm((prev) => ({
@@ -276,8 +259,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
   const handleSocialLinkChange = (uid: string, value: any) => {
     const nextUrl =
       value.platform === "Other"
-        ? (value.otherUrl || "").trim()
-        : buildSocialUrl(value.platform, (value.username || "").trim()) || "";
+        ? (value.otherUrl ?? "").trim()
+        : buildSocialUrl(value.platform, (value.username ?? "").trim()) ?? "";
     setForm((prev) => ({
       ...prev,
       links: prev.links.map((l) =>
@@ -304,7 +287,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
       ...prev,
       links: prev.links.filter((l) => l._uid !== uid)
     }));
-    // Note: Deletion token (-{id}) is automatically computed by the store
   };
 
   const resetLinks = () => {
@@ -318,7 +300,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
               _uid: crypto.randomUUID(),
             } as ParsedLink],
     }));
-    // Note: Link tokens are automatically recomputed by the store
   };
 
   const toggleAddress = (e?: MouseEvent<HTMLButtonElement>) => {
@@ -347,40 +328,10 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
 
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
-      <RedirectModal isOpen={showRedirect} label={redirectLabel} />
-      <AuthExplainerModal
-        isOpen={authInfoOpen && !!authInfoLink}
-        canAuthenticate={!!profile.address_verified}
-        authPending={!!authInfoPending}
-        authRedirectOpen={showRedirect}
-        providerLabel={authInfoProvider?.label}
-        onClose={() => { setAuthInfoOpen(false); setAuthInfoLink(null); }}
-        onAuthenticate={() => {
-          if (!authInfoLink) return;
-          if (!profile.address_verified) return;
-          if (authInfoProvider) { startOAuth(authInfoProvider.key, authInfoLink.url); return; }
-          if (!authInfoToken || authInfoPending) return;
-          addLinkAuthToken(authInfoToken);
-          setAuthInfoOpen(false);
-        }}
-      />
       <AvatarPreviewModal
         isOpen={avatarPreviewOpen}
-        src={(form.profile_image_url || originals.profile_image_url || "").trim()}
+        src={(form.profile_image_url ?? originals.profile_image_url ?? "").trim()}
         onClose={() => setAvatarPreviewOpen(false)}
-      />
-      <AvatarReauthModal
-        isOpen={!!avatarPrompt}
-        providerLabel={avatarPrompt?.provider || ""}
-        onLater={() => setAvatarPrompt(null)}
-        onReauth={() => {
-          if (!avatarPrompt?.url) return;
-          const provider = avatarPrompt.provider;
-          const url = avatarPrompt.url;
-          setAvatarPrompt(null);
-          const providerKey = providerKeyByLabel[provider];
-          if (providerKey) startOAuth(providerKey, url);
-        }}
       />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
 
@@ -396,8 +347,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Zcash Address"
           htmlFor="addr"
           helpText="Your Zcash address where verification codes are sent."
-          hasPending={hasPendingField("address", "a")}
-          pendingHint="Verify to apply edits"
           isDeleted={deletedFields.address}
           deleteDisabled={!profile.address_verified}
           onDelete={toggleAddress}
@@ -422,9 +371,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Username"
           htmlFor="name"
           helpText="Your unique handle on Zcash.me."
-          hasPending={hasPendingField("name", "n")}
-          pendingHint={deletedFields.name ? "⚠ Verify to remove your profile from Zcash.me." : "Verify to apply changes"}
-          pendingHintClassName={deletedFields.name ? "text-xs text-red-600 italic" : undefined}
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
           onDelete={toggleNameDelete}
@@ -488,7 +434,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Display Name"
           htmlFor="display_name"
           helpText="Your public display name."
-          hasPending={hasPendingField("display_name", "h")}
           isDeleted={deletedFields.display_name}
           deleteDisabled={!originals.display_name}
           onDelete={() => setDeletedField("display_name", !deletedFields.display_name)}
@@ -497,7 +442,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
             id="display_name"
             type="text"
             value={form.display_name}
-            placeholder={originals.display_name || "Enter display name"}
+            placeholder={originals.display_name ?? "Enter display name"}
             onChange={(e) => handleChange("display_name", e.target.value)}
             className={FIELD_CLASS}
           />
@@ -508,7 +453,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Biography"
           htmlFor="bio"
           helpText="Your current story arc in 100 characters or less."
-          hasPending={hasPendingField("bio", "b")}
           isDeleted={deletedFields.bio}
           deleteDisabled={!originals.bio}
           onDelete={() => setDeletedField("bio", !deletedFields.bio)}
@@ -531,9 +475,8 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         <ProfileField
           label="Nearest City"
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
-          hasPending={!!pendingProfileEdits?.c}
           isDeleted={deletedFields.nearest_city}
-          deleteDisabled={!profile.nearest_city_id}
+          deleteDisabled={!profile.nearest_city_name}
           onDelete={() => {
             setDeletedField('nearest_city', !deletedFields.nearest_city);
             setNearestCityDisplay("");
@@ -542,18 +485,16 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           <CitySearchDropdown
             value={nearestCityDisplay}
             placeholder={
-              !deletedFields.nearest_city && form.nearest_city_id && nearestCityDisplay === ""
+              !deletedFields.nearest_city && form.nearest_city_name && nearestCityDisplay === ""
                 ? form.nearest_city_name
                 : "Search nearest city…"
             }
             onChange={(val) => {
               if (typeof val === "string") {
                 setNearestCityDisplay(val);
-                updateField('nearest_city_id', null);
               } else {
-                setNearestCityDisplay(val.fullLabel || "");
-                updateField('nearest_city_id', val.id);
-                updateField('nearest_city_name', val.fullLabel || "");
+                setNearestCityDisplay(val.fullLabel ?? "");
+                updateField('nearest_city_name', val.fullLabel ?? "");
               }
             }}
           />
@@ -564,7 +505,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           label="Profile Image URL"
           htmlFor="pimg"
           helpText="Link to PNG or JPG. Search 'free image link host'."
-          hasPending={hasPendingField("profile_image_url", "i")}
           isDeleted={deletedFields.profile_image_url}
           deleteDisabled={!originals.profile_image_url}
           onDelete={() => setDeletedField("profile_image_url", !deletedFields.profile_image_url)}
@@ -596,11 +536,6 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           <div className="flex justify-between items-center mb-1">
             <div className="flex items-center gap-2">
               <label className="block font-semibold text-gray-700">Links</label>
-              {hasPendingLinks && (
-                <span className={VERIFY_HINT_CLASS}>
-                  Verify to apply changes
-                </span>
-              )}
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -622,27 +557,10 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
         </div>
 
         {form.links.map((row) => {
-          const original = originalLinks.find((o) => o.id === row.id) || {} as ParsedLink;
+          const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
           const isVerified = !!row.is_verified;
-          const canVerify = !!profile.address_verified;
-          const isExistingLink = !!row.id;
-          const originalUrl = (original?.url || "").trim();
-          const currentUrl = (row.url || "").trim();
-          const hasLinkInput = currentUrl.length > 0;
-          const isUnchangedLink = !isExistingLink || currentUrl === originalUrl;
-          const canAuthenticate =
-            canVerify && isExistingLink && !isVerified && isUnchangedLink;
-          const authProvider = getAuthProviderForUrl(row.url);
-          const isOAuthLink = !!authProvider;
-          const isX = authProvider?.key === "twitter";
-          const isGithub = authProvider?.key === "github";
-          const isDiscord = authProvider?.key === "discord";
+          const currentUrl = (row.url ?? "").trim();
 
-          const token = getLinkAuthToken(row);
-          const isPending = token && isLinkAuthPending(pendingEdits, token);
-          const showDiscordAvatarAction = isVerified && isDiscord;
-          const showXAvatarAction = isVerified && isX;
-          const showGithubAvatarAction = isVerified && isGithub;
           const rowConflict =
             (!isVerified && row.valid === false) ||
             (isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
@@ -659,16 +577,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
           const linkActions = (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                {!canVerify ? (
-                  <Button
-                    type="button"
-                    onClick={() => { setAuthInfoLink(row); setAuthInfoOpen(true); }}
-                    variant="primary"
-                    size="xs"
-                  >
-                    Authenticate
-                  </Button>
-                ) : isVerified ? (
+                {isVerified ? (
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
@@ -679,64 +588,17 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     >
                       Authenticated
                     </Button>
-                    {showDiscordAvatarAction && (
-                      <Button
-                        type="button"
-                        onClick={() => applyProviderAvatar("Discord", row.url, avatarCallbacks)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use Discord Avatar
-                      </Button>
-                    )}
-                    {showXAvatarAction && (
-                      <Button
-                        type="button"
-                        onClick={() => applyProviderAvatar("X", row.url, avatarCallbacks)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use X Avatar
-                      </Button>
-                    )}
-                    {showGithubAvatarAction && (
-                      <Button
-                        type="button"
-                        onClick={() => applyProviderAvatar("GitHub", row.url, avatarCallbacks)}
-                        variant="primary"
-                        size="xs"
-                      >
-                        Use Github Avatar
-                      </Button>
-                    )}
                   </div>
-                ) : !canAuthenticate ? (
-                  hasLinkInput ? (
-                    <span className="text-xs text-gray-500 italic">
-                      Apply edits to enable authentication
-                    </span>
-                  ) : null
-                ) : (
+                ) : row.id !== null && onAuthenticateLink ? (
                   <Button
                     type="button"
-                    onClick={() => {
-                      if (!token) return;
-                      if (authProvider) { startOAuth(authProvider.key, row.url); return; }
-                      if (isPending) {
-                        removeLinkAuthToken(token);
-                      } else {
-                        addLinkAuthToken(token);
-                      }
-                    }}
-                    variant={isPending || (showRedirect && isOAuthLink) ? "secondary" : "primary"}
+                    variant="primary"
                     size="xs"
-                    className={isPending || (showRedirect && isOAuthLink)
-                      ? "!text-yellow-700 !border-yellow-400 !bg-yellow-50"
-                      : "!text-green-600 !border-green-400 hover:!bg-green-50"}
+                    onClick={() => onAuthenticateLink({ url: row.url })}
                   >
-                    {isPending || (showRedirect && isOAuthLink) ? "Pending" : "Authenticate"}
+                    Authenticate
                   </Button>
-                )}
+                ) : null}
               </div>
               <Button
                 size="sm"
@@ -757,7 +619,7 @@ export default function ProfileEditor({ profile, links }: ProfileEditorProps) {
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
                     readOnly={true}
-                    placeholder={original?.url || "example.com"}
+                    placeholder={original?.url ?? "example.com"}
                     showValidation={false}
                     inputClassName="border-0 px-0 py-0 bg-transparent"
                   />

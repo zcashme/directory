@@ -1,335 +1,323 @@
-import { useEffect, useMemo, useState } from "react";
-import type { Profile, PendingEdits } from "@/lib/profile/types";
+import { useMemo, useState, useCallback } from "react";
+import type { Profile } from "@/lib/profile/types";
+import type { ProfileEditsPayload } from "@/lib/api/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
-
-import SubmitOtp from "@/ui/verification/SubmitOtp";
-import InlineOtpForm from "@/ui/verification/InlineOtpForm";
-import { buildZcashUri, buildZcashEditMemo } from "@/lib/zcash/zcashUtils";
-
-import useVerificationPolling from "@/ui/verification/useVerificationPolling";
-import ProgressStep from "@/ui/verification/ProgressStep";
-import { useMessagingStore } from "@/lib/stores/messaging";
-import { Alert } from "@/ui/common";
-
-const SIGNIN_ADDR = "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we";
+import { OtpInput } from "@/ui/verification/OtpInput";
+import { generateMemoAction } from "@/lib/verification/generateMemoAction";
+import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
+import Alert from "@/ui/common/feedback/Alert";
+import Button from "@/ui/common/buttons/Button";
+import { useEditsStore } from "@/ui/profile/store";
 
 const MIN_SIGNIN_AMOUNT = 0.001;
-const DEFAULT_SIGNIN_AMOUNT = (MIN_SIGNIN_AMOUNT * 3).toFixed(3);
+const DEFAULT_SIGNIN_AMOUNT = "0.003";
 
 interface ProfileVerificationProps {
   profile: Profile;
-  pendingEdits: PendingEdits;
 }
 
 export default function ProfileVerification({
   profile,
-  pendingEdits,
 }: ProfileVerificationProps) {
-  const verify = useMessagingStore(state => state.verify);
-  const verifyQrEnabled = useMessagingStore(state => state.verifyQrEnabled);
-  const pollStatus = useMessagingStore(state => state.pollStatus);
-  const pollOtpPhase = useMessagingStore(state => state.pollOtpPhase);
-  const otpInlineSuccess = useMessagingStore(state => state.otpInlineSuccess);
-  const pollDebug = useMessagingStore(state => state.pollDebug);
-  const setVerify = useMessagingStore(state => state.setVerify);
-  const setVerifyQrEnabled = useMessagingStore(state => state.setVerifyQrEnabled);
-  const resetVerificationPolling = useMessagingStore(state => state.resetVerificationPolling);
+  // Get edits from store
+  const { form, original } = useEditsStore();
 
-  // Compute verification memo reactively from pending edits
-  const memo = useMemo(() => {
-    const zId = verify.zId ?? profile.id ?? null;
-    if (!zId) return "";
+  // Build edits payload from store (only include changed fields)
+  const buildEditsPayload = useCallback((): ProfileEditsPayload | undefined => {
+    const edits: ProfileEditsPayload = {};
+    let hasChanges = false;
 
-    const profileEdits = pendingEdits.profile ?? {};
-    const linkTokens = pendingEdits.l ?? [];
-    const hasEdits = Object.keys(profileEdits).length > 0 || linkTokens.length > 0;
-    const profileDiff = hasEdits ? { ...profileEdits, l: linkTokens } : {};
-    return buildZcashEditMemo(profileDiff, String(zId), verify.requestId ?? null);
-  }, [profile.id, verify.zId, verify.requestId, pendingEdits]);
-
-  const amount = verify?.amount ?? DEFAULT_SIGNIN_AMOUNT;
-
-  const [isOtpOpen, setIsOtpOpen] = useState(false);
-  const [showFooterHelp, setShowFooterHelp] = useState(false);
-
-  const {
-    startPolling,
-    progressSteps,
-    progressState,
-    progressPercent,
-    progressBarClass,
-    statusLine,
-    otpPhaseSteps,
-    showOtpPhaseLine,
-    progressExplainer,
-    handleInlineOtpSuccess,
-  } = useVerificationPolling();
-
-  const explainerText = useMemo(() => {
-    const profileEdits = pendingEdits?.profile ?? {};
-    const deleted = Array.isArray(profileEdits?.d) ? profileEdits.d : [];
-    const changedFields: string[] = [];
-
-    const hasField = (key: string, token: string) =>
-      Boolean(profileEdits?.[key as keyof typeof profileEdits]) || deleted.includes(token);
-
-    if (hasField("name", "n")) changedFields.push("username");
-    if (hasField("display_name", "h")) changedFields.push("display name");
-    if (hasField("bio", "b")) changedFields.push("bio");
-    if (hasField("profile_image_url", "i"))
-      changedFields.push("profile image");
-    if (profileEdits?.c) changedFields.push("nearest city");
-
-    const hasLinks =
-      Array.isArray(pendingEdits?.l) && pendingEdits.l.length > 0;
-    if (hasLinks) changedFields.push("links");
-
-    if (hasField("address", "a")) changedFields.push("address");
-
-    if (changedFields.length === 0) {
-      return "Waiting for edits, if any.";
+    // Compare scalar fields
+    if (form.name !== original.name) {
+      edits.name = form.name;
+      hasChanges = true;
+    }
+    if (form.display_name !== original.display_name) {
+      edits.display_name = form.display_name;
+      hasChanges = true;
+    }
+    if (form.bio !== original.bio) {
+      edits.bio = form.bio;
+      hasChanges = true;
+    }
+    if (form.profile_image_url !== original.profile_image_url) {
+      edits.profile_image_url = form.profile_image_url;
+      hasChanges = true;
+    }
+    if (form.nearest_city_name !== original.nearest_city_name) {
+      edits.nearest_city_name = form.nearest_city_name;
+      hasChanges = true;
     }
 
-    const last = changedFields[changedFields.length - 1];
-    const prefix = changedFields.slice(0, -1);
-    const list =
-      changedFields.length === 1
-        ? last
-        : changedFields.length === 2
-          ? `${prefix[0]} and ${last}`
-          : `${prefix.join(", ")}, and ${last}`;
+    // Handle links - compare by id and url
+    const formLinkIds = new Set(form.links.map((l) => l.id));
+    const linkEdits: ProfileEditsPayload["links"] = [];
 
-    return `Contains requested changes to ${list}.`;
-  }, [pendingEdits]);
+    // Find deleted links (in original but not in form)
+    for (const origLink of original.links) {
+      if (origLink.id && !formLinkIds.has(origLink.id)) {
+        linkEdits.push({ id: origLink.id, url: origLink.url, platform: origLink.platform, _delete: true });
+      }
+    }
 
-  useEffect(() => {
-    resetVerificationPolling();
-  }, [pendingEdits, resetVerificationPolling]);
+    // Find new and updated links
+    for (const formLink of form.links) {
+      if (!formLink.id) {
+        // New link
+        linkEdits.push({ url: formLink.url, label: formLink.label, platform: formLink.platform });
+      } else {
+        // Check if updated
+        const origLink = original.links.find((l) => l.id === formLink.id);
+        if (origLink && (origLink.url !== formLink.url || origLink.label !== formLink.label)) {
+          linkEdits.push({ id: formLink.id, url: formLink.url, label: formLink.label, platform: formLink.platform });
+        }
+      }
+    }
 
-  const { validAmount, error, verifyUri } = useMemo(() => {
+    if (linkEdits.length > 0) {
+      edits.links = linkEdits;
+      hasChanges = true;
+    }
+
+    return hasChanges ? edits : undefined;
+  }, [form, original]);
+
+  // Local UI state
+  const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
+  const [qrVisible, setQrVisible] = useState(false);
+  const [otp, setOtp] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
+  const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
+
+  // Memo + URI returned from the server
+  const [currentMemo, setCurrentMemo] = useState("");
+  const [currentUri, setCurrentUri] = useState("");
+
+  // Validate amount
+  const { validAmount, amountError } = useMemo(() => {
     const cleaned = (amount ?? "").trim();
     const raw = cleaned.replace(/[^\d.]/g, "");
     const num = parseFloat(raw);
     const validMin = !Number.isNaN(num) && num >= MIN_SIGNIN_AMOUNT;
-    const uri = buildZcashUri(
-      SIGNIN_ADDR,
-      raw,
-      memo && memo !== "N/A" ? memo : ""
-    );
+
     return {
       validAmount: validMin,
-      error: validMin
+      amountError: validMin
         ? ""
         : `Authentication requires at least ${MIN_SIGNIN_AMOUNT} ZEC`,
-      verifyUri: uri
     };
-  }, [amount, memo]);
+  }, [amount]);
 
-  useEffect(() => {
-    if (pollStatus === "matched") setShowFooterHelp(false);
-  }, [pollStatus]);
+  // Generate QR — calls the server to create memo + URI
+  const handleGenerateQr = useCallback(async () => {
+    if (!validAmount || !profile?.id) return;
 
-  const handleGenerateQr = () => {
-    if (!verifyUri || error) return;
-    const zid = verify?.zId ?? profile?.id;
-    if (!zid) return;
-    setVerifyQrEnabled(true);
-    void startPolling(String(zid));
-  };
+    setError("");
+    setOtpResult(null);
+    setOtp("");
+    setIsGenerating(true);
 
-  const handleCopyDebug = () => {
-    if (!pollDebug) return;
-    void navigator.clipboard.writeText(pollDebug).catch(() => {});
-  };
+    try {
+      const result = await generateMemoAction(
+        profile.id,
+        amount.replace(/[^\d.]/g, "")
+      );
+
+      if (result.ok && result.memo && result.uri) {
+        setCurrentMemo(result.memo);
+        setCurrentUri(result.uri);
+        setQrVisible(true);
+      } else {
+        setError(result.error ?? "Failed to generate QR code.");
+      }
+    } catch {
+      setError("Failed to generate QR code. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [validAmount, profile?.id, amount]);
+
+  // Handle OTP submission
+  const handleSubmitOtp = useCallback(async () => {
+    if (!otp.trim() || !profile.id || !currentMemo) return;
+
+    setIsSubmitting(true);
+    setOtpResult(null);
+    setError("");
+
+    try {
+      // Build edits payload from store
+      const edits = buildEditsPayload();
+      const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo, edits);
+
+      if (response.ok) {
+        const message = edits
+          ? "Verification successful! Changes saved. Refreshing..."
+          : "Verification successful! Refreshing...";
+        setOtpResult({ ok: true, message });
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        // Check if the memo was exhausted and a new one was issued
+        const data = response.data as Record<string, unknown> | undefined;
+        if (data?.status === "exhausted" && data.newMemo && data.newUri) {
+          setCurrentMemo(data.newMemo as string);
+          setCurrentUri(data.newUri as string);
+          setOtp("");
+        }
+
+        setOtpResult({
+          ok: false,
+          message: response.error || "Invalid verification code.",
+        });
+      }
+    } catch {
+      setOtpResult({ ok: false, message: "An error occurred. Please try again." });
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [otp, profile.id, currentMemo, buildEditsPayload]);
+
+  // Handle OTP input change - strip non-digits
+  const handleOtpChange = useCallback((value: string) => {
+    setOtp(value.replace(/\D/g, ""));
+  }, []);
 
   return (
-    <>
-      <div className="bg-transparent border-none shadow-none p-0 mt-1">
-
-
-        {/* Header */}
-        <div className="text-left mb-2">
-          <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-
-            <span>
-              To verify, send from {" "}
-              <span
-                className="text-blue-600 cursor-pointer"
-                onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-              >
-                {profile?.name ?? "Your profile"}
-              </span>
+    <div className="bg-transparent border-none shadow-none p-0 mt-1">
+      {/* Header */}
+      <div className="text-left mb-2">
+        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
+          <span>
+            To verify, send from{" "}
+            <span
+              className="text-blue-600 cursor-pointer"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              {profile?.name ?? "Your profile"}
             </span>
+          </span>
+        </h3>
+      </div>
 
-            {/* removed amount requirement + help from header */}
-          </h3>
-        </div>
-
-        {/* Memo Editor */}
-        <div className="relative group w-full mb-1">
-          <div className="block -mx-0 -mt-0 mb-2 px-3 py-2 bg-gray-800 border-b border-black/30 rounded-t-xl text-center">
+      {/* Memo Display - shown after generation */}
+      {currentMemo && (
+        <div className="relative group w-full mb-3">
+          <div className="block px-3 py-2 bg-gray-800 rounded-t-xl text-center">
             <span className="block text-[12px] text-gray-200">
-              {explainerText}
+              Memo (do not modify)
             </span>
           </div>
           <textarea
-            value={memo ?? ""}
+            value={currentMemo}
             readOnly
+            rows={4}
             className="
               w-full
               border border-[#000000]/90
+              border-t-0
               rounded-b-xl
               px-3 py-2
-              text-[14px]
+              text-[12px]
               bg-gray-50
               text-gray-800
               font-mono
               resize-none
               cursor-default
+              break-all
+              overflow-y-auto
             "
-            style={{ minHeight: "6rem", lineHeight: "1.35" }}
           />
         </div>
+      )}
 
-        {/* Amount + Wallet */}
-        <div className="mt-3 w-full">
-          <AmountAndWallet
-            amount={amount}
-            setAmount={(amount) => setVerify((prev) => ({ ...prev, amount }))}
-            openWallet={handleGenerateQr}
-            openWalletLabel="Generate QR"
-          />
-          {!validAmount && error && (
-            <Alert variant="error" size="sm" message={error} className="mt-1" />
-          )}
-        </div>
-
-        {showFooterHelp && (
-          <p className="mx-1 mt-2 mb-3 text-sm text-gray-600 bg-gray-50 border border-gray-200 rounded-lg p-3 leading-snug">
-            You must open and send this message from your wallet. Once received, we will reply with a 6-digit OTP.
-            {" "}
-            <button
-              type="button"
-              onClick={() => setIsOtpOpen(true)}
-              className="font-semibold text-blue-600 underline cursor-pointer"
-            >
-              Enter the OTP
-            </button>
-            {" "}
-            before it expires to complete verification and apply your edits.
-          </p>
+      {/* Amount + Generate QR */}
+      <div className="mt-3 w-full">
+        <AmountAndWallet
+          amount={amount}
+          setAmount={setAmount}
+          openWallet={handleGenerateQr}
+          openWalletLabel={isGenerating ? "Generating..." : "Generate QR"}
+          disabled={isGenerating}
+        />
+        {!validAmount && amountError && (
+          <Alert variant="error" size="sm" message={amountError} className="mt-1" />
         )}
-        {/* Requirement line under help, above QR divider */}
-        <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
-          <p className="text-[12px] text-gray-600 italic m-0">
-            Include at least {MIN_SIGNIN_AMOUNT} ZEC — Do not modify message
-          </p>
-
-          <button
-            type="button"
-            onClick={() => setShowFooterHelp(!showFooterHelp)}
-            className="text-[12px] font-semibold text-blue-600 underline m-0"
-          >
-            {showFooterHelp ? "Hide help" : "Help"}
-          </button>
-        </div>
-
-        {/* Divider + centered QR/URI (matches Draft EXACTLY) */}
-        <div className="border-t border-black/10 mt-4 pt-4">
-          {verifyUri && !error && verifyQrEnabled && verify?.requestId && (
-            <div className="-mt-2 flex justify-center">
-              <QrUriBlock
-                uri={verifyUri}
-                profileName="verification"
-              />
-            </div>
-          )}
-          {verifyQrEnabled && (
-            <div className="mt-3 text-center text-xs text-gray-600">
-              {statusLine}
-            </div>
-          )}
-          {verifyQrEnabled && (
-            <div className="mt-3">
-              <div className="h-2 w-full rounded-full bg-black/10 overflow-hidden">
-                <div
-                  className={`h-full ${progressBarClass} transition-all duration-300`}
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              <div className="mt-2 text-xs text-gray-600 text-center">
-                {progressSteps.map((step, idx) => (
-                  <ProgressStep
-                    key={step.key}
-                    isLast={idx === progressSteps.length - 1}
-                    isCurrent={progressState.currentIndex === idx}
-                    showCheckmark={idx < progressState.doneCount}
-                    label={step.label}
-                    className={progressState.currentIndex === idx ? "font-bold text-blue-700" : ""}
-                  />
-                ))}
-              </div>
-              {showOtpPhaseLine && (
-                <div className="mt-1 text-xs text-gray-500 text-center">
-                  {otpPhaseSteps.map((step, idx) => (
-                    <ProgressStep
-                      key={step.phase}
-                      isLast={idx === otpPhaseSteps.length - 1}
-                      isCurrent={step.isCurrent}
-                      showCheckmark={step.showGreenCheck}
-                      showFailed={!step.showGreenCheck && step.isCurrent && step.failed}
-                      label={step.phase}
-                      className={step.isCurrent ? "font-bold text-blue-700" : ""}
-                    />
-                  ))}
-                </div>
-              )}
-              {(pollOtpPhase ?? "").toLowerCase() === "sent" && (
-                <div className="mt-2 text-xs text-green-700 text-center font-semibold">
-                  OTP sent, check your wallet for your one-time passcode
-                </div>
-              )}
-              {verifyQrEnabled && (
-                <div className="mt-1 text-xs text-gray-500 text-center italic">
-                  {progressExplainer}
-                </div>
-              )}
-              {(pollOtpPhase ?? "").toLowerCase() === "sent" && !otpInlineSuccess && (
-                <InlineOtpForm profile={profile} onSuccess={handleInlineOtpSuccess} />
-              )}
-            </div>
-          )}
-          {verifyQrEnabled && pollDebug && (
-            <div className="mt-2">
-              <div className="mb-1 flex justify-end">
-                <button
-                  type="button"
-                  className="text-xs font-semibold text-blue-600 underline"
-                  onClick={handleCopyDebug}
-                >
-                  Copy
-                </button>
-              </div>
-              <textarea
-                className="w-full text-xs border border-black/10 rounded-lg p-2 text-gray-700"
-                rows={4}
-                readOnly
-                value={pollDebug}
-              />
-            </div>
-          )}
-        </div>
       </div>
 
-      {/* OTP Modal */}
-      {isOtpOpen && (
-        <SubmitOtp
-          isOpen={isOtpOpen}
-          onClose={() => setIsOtpOpen(false)}
-          profile={profile}
-        />
+      {/* Requirement line */}
+      <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
+        <p className="text-[12px] text-gray-600 italic m-0">
+          Include at least {MIN_SIGNIN_AMOUNT} ZEC
+        </p>
+      </div>
+
+      {/* Error display (for memo generation errors) */}
+      {error && !qrVisible && (
+        <Alert variant="error" size="sm" message={error} className="mt-2" />
       )}
-    </>
+
+      {/* QR Code Display */}
+      {qrVisible && currentUri && (
+        <div className="border-t border-black/10 mt-4 pt-4">
+          {/* QR Code */}
+          <div className="flex justify-center mb-4">
+            <QrUriBlock uri={currentUri} profileName="verification" />
+          </div>
+
+          {/* OTP Entry Section - shown immediately with QR */}
+          <div className="mt-4 border border-black/10 rounded-xl p-4 bg-white/80">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
+              Enter your 6-digit verification code
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              After sending the transaction, enter the code you receive in your wallet.
+            </p>
+
+            <div className="flex gap-2">
+              <OtpInput
+                id="verification-otp"
+                value={otp}
+                onChange={handleOtpChange}
+                onSubmit={handleSubmitOtp}
+                placeholder="Enter 6-digit code"
+                hideLabel={true}
+                className="flex-1"
+                disabled={isSubmitting}
+              />
+              <Button
+                type="button"
+                onClick={handleSubmitOtp}
+                variant="primary"
+                size="md"
+                disabled={!otp.trim() || isSubmitting}
+              >
+                {isSubmitting ? "Verifying..." : "Submit"}
+              </Button>
+            </div>
+
+            {/* Result message */}
+            {otpResult && (
+              <div
+                className={`mt-3 text-sm font-semibold ${
+                  otpResult.ok ? "text-green-700" : "text-red-600"
+                }`}
+              >
+                {otpResult.message}
+              </div>
+            )}
+
+            {/* Error display */}
+            {error && (
+              <Alert variant="error" size="sm" message={error} className="mt-2" />
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

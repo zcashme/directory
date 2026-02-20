@@ -119,20 +119,20 @@ export function extractDomain(url: string): string {
 }
 
 export const getLinkIcon = (url: string = ""): StaticImageData => {
-  const domain = extractDomain(url || "");
+  const domain = extractDomain(url ?? "");
   const entry = KNOWN_DOMAINS[domain];
-  return entry?.icon || FALLBACK_ICON;
+  return entry?.icon ?? FALLBACK_ICON;
 };
 
 export const getLinkLabel = (url: string = ""): string => {
-  const domain = extractDomain(url || "");
+  const domain = extractDomain(url ?? "");
   const entry = KNOWN_DOMAINS[domain];
-  return entry?.label || domain || "Link";
+  return entry?.label ?? domain ?? "Link";
 };
 
 type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram";
 
-const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
+export const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "x.com": "X",
   "twitter.com": "X",
   "github.com": "GitHub",
@@ -150,33 +150,38 @@ const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "telegram.me": "Telegram",
 } as const;
 
-export const getSocialHandle = (url: string = ""): string => {
-  const trimmed = (url || "").trim();
+/**
+ * Derive the platform label from a URL using PLATFORM_BY_DOMAIN.
+ * Returns "Other" if the domain is not recognized.
+ */
+export function derivePlatform(url: string): string {
+  const domain = extractDomain(url);
+  return PLATFORM_BY_DOMAIN[domain] ?? "Other";
+}
+
+export const getSocialHandle = (url: string = "", platform?: string | null): string => {
+  const trimmed = (url ?? "").trim();
   if (!trimmed) return "";
 
-  const domain = extractDomain(trimmed);
-  const platform = PLATFORM_BY_DOMAIN[domain] || null;
-  if (platform) {
-    return normalizeSocialUsername(trimmed, platform);
+  if (platform && platform !== "Other") {
+    return normalizeSocialUsername(trimmed, platform as import("@/lib/profile/usernameNormalizer").SocialPlatform);
   }
 
   const cleaned = trimmed.split("#")[0].split("?")[0].replace(/\/+$/, "");
   const parts = cleaned.split("/");
-  const last = parts[parts.length - 1] || "";
+  const last = parts[parts.length - 1] ?? "";
   return decodeURIComponent(last);
 };
 
-export const isDiscordLink = (url: string = ""): boolean =>
-  /^(https?:\/\/)?(www\.)?(discord\.com|discordapp\.com|discord\.gg)\//i.test(
-    url || ""
-  );
+export const isDiscordLink = (platform?: string | null): boolean =>
+  platform === "Discord";
 
 export const getSocialDisplay = (link: ProfileLink): string => {
   if (!link) return "";
-  if (isDiscordLink(link.url) && link.is_verified && link.label) {
+  if (link.platform === "Discord" && link.is_verified && link.label) {
     return link.label;
   }
-  return getSocialHandle(link.url || "");
+  return getSocialHandle(link.url ?? "", link.platform);
 };
 
 
@@ -185,15 +190,15 @@ export const getSocialDisplay = (link: ProfileLink): string => {
  */
 export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   const domain = extractDomain(link.url);
-  const dbLabel = (link.label || "").trim();
-  const handle = getSocialHandle(link.url || "");
-  const normalizedDomain = (domain || "").toLowerCase();
-  const normalizedHandle = (handle || "").toLowerCase();
+  const dbLabel = (link.label ?? "").trim();
+  const handle = getSocialHandle(link.url ?? "", link.platform);
+  const normalizedDomain = (domain ?? "").toLowerCase();
+  const normalizedHandle = (handle ?? "").toLowerCase();
   const normalizedLabel = dbLabel.toLowerCase();
   const isHandleDomain =
     normalizedHandle === normalizedDomain ||
     normalizedHandle === `www.${normalizedDomain}`;
-  const domainLabel = (KNOWN_DOMAINS[domain]?.label || "").toLowerCase();
+  const domainLabel = (KNOWN_DOMAINS[domain]?.label ?? "").toLowerCase();
   const shouldUseHandle =
     !!handle &&
     !isHandleDomain &&
@@ -204,25 +209,29 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
       normalizedLabel.startsWith(`${normalizedDomain}/`) ||
       normalizedLabel.startsWith(`www.${normalizedDomain}/`));
 
+  const platform = link.platform ?? null;
+
   if (KNOWN_DOMAINS[domain]) {
     return {
       ...link,
-      label: (shouldUseHandle ? handle : dbLabel) || KNOWN_DOMAINS[domain].label,
+      label: (shouldUseHandle ? handle : dbLabel) ?? KNOWN_DOMAINS[domain].label,
       icon: KNOWN_DOMAINS[domain].icon,
       domain,
       handle,
+      platform,
     };
   }
 
   return {
     ...link,
     label:
-      (shouldUseHandle ? handle : dbLabel) ||
-      domain ||
+      (shouldUseHandle ? handle : dbLabel) ??
+      domain ??
       "Unknown",
     icon: FALLBACK_ICON,
     domain,
     handle,
+    platform,
   };
 }
 

@@ -1,36 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import {
-  // Buttons
-  Button,
-  CopyButton,
-  IconButton,
-  // Layout
-  Card,
-  Section,
-  Divider,
-  // Feedback
-  Badge,
-  Spinner,
-  Alert,
-  // Forms
-  Input,
-  TextArea,
-  Select,
-  Checkbox,
-  FormField,
-  Dropdown,
-  // Modals
-  Modal,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ConfirmDialog,
-  TutorialModal,
-  // Other
-  HelpIcon,
-} from "@/ui/common";
+// Buttons
+import Button from "@/ui/common/buttons/Button";
+import CopyButton from "@/ui/common/buttons/CopyButton";
+import IconButton from "@/ui/common/buttons/IconButton";
+// Layout
+import Card from "@/ui/common/layout/Card";
+import Section from "@/ui/common/layout/Section";
+import Divider from "@/ui/common/layout/Divider";
+// Feedback
+import Badge from "@/ui/common/feedback/Badge";
+import Spinner from "@/ui/common/feedback/Spinner";
+import Alert from "@/ui/common/feedback/Alert";
+// Forms
+import Input from "@/ui/common/forms/Input";
+import TextArea from "@/ui/common/forms/TextArea";
+import Select from "@/ui/common/forms/Select";
+import Checkbox from "@/ui/common/forms/Checkbox";
+import FormField from "@/ui/common/forms/FormField";
+import Dropdown from "@/ui/common/forms/Dropdown";
+// Modals
+import Modal from "@/ui/common/modals/Modal";
+import ModalHeader from "@/ui/common/modals/ModalHeader";
+import ModalBody from "@/ui/common/modals/ModalBody";
+import ModalFooter from "@/ui/common/modals/ModalFooter";
+import ConfirmDialog from "@/ui/common/modals/ConfirmDialog";
+import TutorialModal from "@/ui/common/modals/TutorialModal";
+// Other
+import HelpIcon from "@/ui/common/HelpIcon";
 
 export default function DesignSystemPage() {
   const [modalOpen, setModalOpen] = useState(false);

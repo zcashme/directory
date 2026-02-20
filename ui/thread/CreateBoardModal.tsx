@@ -1,7 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Modal, ModalHeader, ModalBody, ModalFooter, FormField, Button, Input, TextArea } from '@/ui/common';
+import Modal from '@/ui/common/modals/Modal';
+import ModalHeader from '@/ui/common/modals/ModalHeader';
+import ModalBody from '@/ui/common/modals/ModalBody';
+import ModalFooter from '@/ui/common/modals/ModalFooter';
+import FormField from '@/ui/common/forms/FormField';
+import Button from '@/ui/common/buttons/Button';
+import Input from '@/ui/common/forms/Input';
+import TextArea from '@/ui/common/forms/TextArea';
 
 interface CreateBoardModalProps {
   isOpen: boolean;

@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
-import { isValidUrl } from "@/lib/validation/validators";
+import { isValidUrl, normalizeUrl } from "@/lib/profile/urlValidation";
 import HelpIcon from "@/ui/common/HelpIcon";
-import { Alert } from "@/ui/common";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import Alert from "@/ui/common/feedback/Alert";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 const PLATFORM_OPTIONS = [
   { key: "X", label: "X (Twitter)" },
@@ -49,7 +49,7 @@ function deriveState(value: SocialLinkValue): DerivedState {
       : "";
 
   const preview = isOther
-    ? otherUrl.trim()
+    ? (otherUrl.trim() ? normalizeUrl(otherUrl.trim()) : "")
     : previewOverride || discordPreview || buildSocialUrl(platform, username) || "";
 
   if (isOther) {

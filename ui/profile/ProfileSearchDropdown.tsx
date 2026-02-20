@@ -4,7 +4,7 @@ import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
-import { withFieldBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -76,10 +76,8 @@ interface ProfileSearchDropdownProps {
   listOnly?: boolean;
   showByDefault?: boolean;
   onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
-  onResultsChange?: (results: Profile[]) => void; // eslint-disable-line no-unused-vars
   onClaimClick?: () => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
-  selectedIndex?: number;
   className?: string;
   [key: string]: unknown;
 }

@@ -16,7 +16,7 @@ export async function getProfileCount(): Promise<number> {
     return 0;
   }
 
-  return count || 0;
+  return count ?? 0;
 }
 
 export interface UsernameAvailability {
@@ -49,7 +49,7 @@ export async function getUsernameAvailability(
   }
 
   const matches = data.filter((row: { name?: string }) =>
-    normalizeUsernameForCompare(row.name || "") === compareTarget
+    normalizeUsernameForCompare(row.name ?? "") === compareTarget
   );
   const exists = matches.length > 0;
   const verifiedMatches = matches.filter((row: { address_verified?: boolean }) =>
@@ -83,5 +83,5 @@ export async function getDuplicateNameCount(name: string): Promise<number> {
     return 0;
   }
 
-  return count || 0;
+  return count ?? 0;
 }

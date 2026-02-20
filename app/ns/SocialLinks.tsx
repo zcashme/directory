@@ -3,7 +3,7 @@ import React from "react";
 import type { StaticImageData } from "next/image";
 import type { EnrichedLink } from "./useNsDirectory";
 import type { UnverifiedLinkData } from "./types";
-import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle, isDiscordLink } from "@/lib/profile/profileLinks";
+import { FALLBACK_ICON, getLinkLabel, getSocialDisplay, getSocialHandle } from "@/lib/profile/profileLinks";
 
 interface SocialLinksProps {
   links?: EnrichedLink[];
@@ -35,7 +35,7 @@ export default function SocialLinks({
   return (
     <div className={className}>
       {links.map((link) => {
-        const isDiscord = isDiscordLink(link.url);
+        const isDiscord = link.platform === "Discord";
         const isVerified = Boolean(link.is_verified);
         const displayHandle = getSocialDisplay(link);
         const title = link.domainLabel ?? getLinkLabel(link.url);
@@ -50,7 +50,7 @@ export default function SocialLinks({
                 onUnverifiedClick?.({
                   url: link.url,
                   label: link.label ?? "",
-                  display: getSocialHandle(link.url),
+                  display: getSocialHandle(link.url, link.platform),
                   isDiscord,
                 });
               }}

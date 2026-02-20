@@ -4,8 +4,6 @@ import { useEffect, useState, useCallback } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
-// Stores
-import { useEditsStore } from "@/lib/stores/edits";
 
 // Swap utilities
 import { getTokenId } from "@/lib/swap/utils";
@@ -67,9 +65,6 @@ export default function ProfilePage({
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
-
-  // Granular subscriptions to prevent unnecessary re-renders
-  const pendingEdits = useEditsStore(state => state.pendingEdits);
 
   // Local state
   const [mode, setMode] = useState<'donate' | 'swap' | 'verification'>('donate');
@@ -249,7 +244,6 @@ export default function ProfilePage({
               {mode === "verification" ? (
                 <ProfileVerification
                   profile={initialProfile}
-                  pendingEdits={pendingEdits}
                 />
               ) : mode === "swap" ? (
                 <div className="p-0">

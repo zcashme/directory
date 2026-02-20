@@ -107,7 +107,7 @@ export default function VerifiedBadge({
       }}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]${onClick ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
       <div className="flex items-center justify-center gap-0 group-hover/badge:gap-1 transition-[gap] duration-300">

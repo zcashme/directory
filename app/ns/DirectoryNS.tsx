@@ -3,7 +3,23 @@ import { useEffect, useMemo, useState } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
-import { buildZcashUri } from "@/lib/zcash/zcashUtils";
+function toBase64Url(text: string): string {
+  try {
+    return btoa(unescape(encodeURIComponent(text)))
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+  } catch { return ""; }
+}
+
+function buildZcashUri(address: string, amount: string = "0", memo: string = ""): string {
+  if (!address) return "";
+  const base = `zcash:${address}`;
+  const params: string[] = [];
+  if (amount && Number(amount) > 0) params.push(`amount=${amount}`);
+  if (memo) params.push(`memo=${toBase64Url(memo)}`);
+  return params.length ? `${base}?${params.join("&")}` : base;
+}
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";

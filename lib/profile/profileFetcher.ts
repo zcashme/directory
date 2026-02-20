@@ -17,9 +17,9 @@ interface RankData {
 
 const mergeRanks = (profile: Profile, ranks: RankData): Profile => ({
   ...profile,
-  rank_alltime: ranks.rank_alltime || 0,
-  rank_weekly: ranks.rank_weekly || 0,
-  rank_monthly: ranks.rank_monthly || 0,
+  rank_alltime: ranks.rank_alltime ?? 0,
+  rank_weekly: ranks.rank_weekly ?? 0,
+  rank_monthly: ranks.rank_monthly ?? 0,
 });
 
 async function findProfileByName(supabase: any, name: string): Promise<Profile | null> {
@@ -30,9 +30,9 @@ async function findProfileByName(supabase: any, name: string): Promise<Profile |
     .or(`name.ilike.${nameAsSpace},name.ilike.${name}`)
     .limit(20);
 
-  const candidates = data || [];
+  const candidates = data ?? [];
   const matching = candidates.filter(
-    (p: Profile) => normalize(p.name || "") === normalize(name)
+    (p: Profile) => normalize(p.name ?? "") === normalize(name)
   );
 
   if (!matching.length) return null;
@@ -47,7 +47,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   const supabase = createSupabaseServerClient();
   if (!supabase) return null;
 
-  const slug = decodeURIComponent(rawSlug || "").trim().toLowerCase();
+  const slug = decodeURIComponent(rawSlug ?? "").trim().toLowerCase();
   if (!slug) return null;
 
   let profile: Profile | null = null;
@@ -77,7 +77,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
         .maybeSingle();
 
       // Validate that the username matches the discriminator
-      if (data && normalize(data.name || "") === normalize(username)) {
+      if (data && normalize(data.name ?? "") === normalize(username)) {
         profile = data;
       } else {
         // If discriminator doesn't exist or username doesn't match, fall back to username search
@@ -98,7 +98,7 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   type RankResult = { data: { rank_alltime?: number } | null; error: unknown };
   type WeeklyRankResult = { data: { rank_weekly?: number } | null; error: unknown };
   type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
-  type LinksResult = { data: Array<{ id: number; label?: string; url: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
+  type LinksResult = { data: Array<{ id: number; label?: string; url: string; platform?: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
 
   const [alltime, weekly, monthly, links]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult] = await Promise.all([
     supabase
@@ -121,19 +121,19 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
       .maybeSingle(),
     supabase
       .from("zcasher_links")
-      .select("id,label,url,is_verified,zcasher_id")
+      .select("id,label,url,platform,is_verified,zcasher_id")
       .eq("zcasher_id", profile.id)
       .order("id", { ascending: true }),
   ]);
 
   const ranks: RankData = {
-    rank_alltime: alltime?.data?.rank_alltime || 0,
-    rank_weekly: weekly?.data?.rank_weekly || 0,
-    rank_monthly: monthly?.data?.rank_monthly || 0,
+    rank_alltime: alltime?.data?.rank_alltime ?? 0,
+    rank_weekly: weekly?.data?.rank_weekly ?? 0,
+    rank_monthly: monthly?.data?.rank_monthly ?? 0,
   };
 
   // Attach links to profile
-  profile.links = links?.data || [];
+  profile.links = links?.data ?? [];
 
   return mergeRanks(profile, ranks);
 }

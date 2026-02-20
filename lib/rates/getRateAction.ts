@@ -50,17 +50,17 @@ const providersForFiat = (fiat: string, asset: string = "ZEC"): Provider[] => {
     {
       name: "Coinbase",
       url: `https://api.coinbase.com/v2/prices/${mapping.coinbase}-${fiatUpper}/spot`,
-      parse: (data: unknown) => parseFloat((data as { data?: { amount?: string } })?.data?.amount || ""),
+      parse: (data: unknown) => parseFloat((data as { data?: { amount?: string } })?.data?.amount ?? ""),
     },
     {
       name: "CoinGecko",
       url: `https://api.coingecko.com/api/v3/simple/price?ids=${mapping.coingecko}&vs_currencies=${fiatLower}`,
-      parse: (data: unknown) => parseFloat((data as Record<string, Record<string, string>>)?.[mapping.coingecko]?.[fiatLower] || ""),
+      parse: (data: unknown) => parseFloat((data as Record<string, Record<string, string>>)?.[mapping.coingecko]?.[fiatLower] ?? ""),
     },
     {
       name: "CryptoCompare",
       url: `https://min-api.cryptocompare.com/data/price?fsym=${mapping.cryptocompare}&tsyms=${fiatUpper}`,
-      parse: (data: unknown) => parseFloat((data as Record<string, string>)?.[fiatUpper] || ""),
+      parse: (data: unknown) => parseFloat((data as Record<string, string>)?.[fiatUpper] ?? ""),
     },
   ];
 };
@@ -123,10 +123,9 @@ async function fetchRateFromProvider(fiat: string, asset: string): Promise<Excha
  * @returns Promise with exchange rate data
  */
 export async function getRateAction(fiat: string = "USD", asset: string = "ZEC"): Promise<ExchangeRate> {
-  console.log("[SERVER ACTION] getRateAction called with fiat=", fiat, "asset=", asset);
   try {
-    const fiatUpper = (fiat || "USD").toUpperCase();
-    const assetUpper = (asset || "ZEC").toUpperCase();
+    const fiatUpper = (fiat ?? "USD").toUpperCase();
+    const assetUpper = (asset ?? "ZEC").toUpperCase();
 
     // Fetch rate - caching handled by Next.js fetch cache with revalidate: 10
     const result = await fetchRateFromProvider(fiatUpper, assetUpper);
@@ -136,8 +135,8 @@ export async function getRateAction(fiat: string = "USD", asset: string = "ZEC")
       ok: false,
       rate: undefined,
       source: undefined,
-      fiat: (fiat || "USD").toUpperCase(),
-      asset: (asset || "ZEC").toUpperCase(),
+      fiat: (fiat ?? "USD").toUpperCase(),
+      asset: (asset ?? "ZEC").toUpperCase(),
       error: String((e as Error)?.message || e),
     };
   }

@@ -4,8 +4,8 @@ import ZcashAddressInput from "@/ui/signup/ZcashAddressInput";
 import { createPortal } from "react-dom";
 
 import type { Profile } from "@/lib/profile/types";
-import type { City } from "@/lib/directory/types";
-import { validateZcashAddress } from "@/lib/zcash/zcashUtils";
+import type { City } from "@/lib/directory/searchCitiesAction";
+import { validateZcashAddress } from "./zcashAddress";
 import { useState, useEffect, useRef } from "react";
 import type { SVGProps, FormEvent } from "react";
 import {
@@ -18,7 +18,7 @@ import { AnimatePresence } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
-import { FormField } from "@/ui/common";
+import FormField from "@/ui/common/forms/FormField";
 
 function XIcon(props: SVGProps<SVGSVGElement>) {
   return (
@@ -29,12 +29,12 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-import { isValidUrl } from "@/lib/validation/validators";
+import { isValidUrl } from "@/lib/profile/urlValidation";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
-import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/styles/fields";
+import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
 
 interface Referrer {
   id: number;
@@ -413,7 +413,8 @@ export default function AddUserForm({
           if (!url || !res.valid) return null;
           return {
             url,
-            label: toPrettyDomain(url)
+            label: toPrettyDomain(url),
+            platform: "Other",
           };
         }
         if (!l.username) return null;
@@ -424,9 +425,9 @@ export default function AddUserForm({
           l.platform === "Discord"
             ? l.username.trim()
             : normalizeSocialUsername(l.username.trim(), l.platform as SocialPlatform);
-        return { url, label };
+        return { url, label, platform: l.platform };
       })
-      .filter(Boolean) as { url: string; label: string }[];
+      .filter(Boolean) as { url: string; label: string; platform: string }[];
 
     setIsLoading(true);
 
@@ -436,8 +437,9 @@ export default function AddUserForm({
         display_name: displayName.trim() || undefined,
         bio: bio.trim() || undefined,
         address: address.trim(),
-        nearest_city_id: nearestCity?.id || undefined,
-        nearest_city_name: nearestCity?.city_ascii || nearestCity?.city || undefined,
+        nearest_city_name: nearestCity
+          ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
+          : undefined,
         referred_by: typeof referrer === "object" ? referrer?.name || undefined : undefined,
         referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
         is_ns: isNsSignup || undefined,

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import type { TextareaHTMLAttributes } from "react";
+import { useFieldValidation } from "./useFieldValidation";
+import FieldMessages from "./FieldMessages";
 
 /**
  * Multi-line text input component with validation states and sizing options.
@@ -99,39 +100,16 @@ export default function TextArea({
   disabled = false,
   ...props
 }: TextAreaProps) {
-  const [validationState, setValidationState] = useState<{
-    valid: boolean;
-    reason: string | null;
-  }>({ valid: true, reason: null });
-
-  useEffect(() => {
-    if (!validate || !value) {
-      setValidationState({ valid: true, reason: null });
-      return;
-    }
-    const result = validate(value.trim());
-    setValidationState({
-      valid: result.valid,
-      reason: result.reason || null,
-    });
-  }, [value, validate]);
-
-  const hasError = error || (showValidation && !validationState.valid);
-  const hasInfo = !hasError && validationState.valid && validationState.reason;
-  const displayMessage = errorMessage || validationState.reason || infoMessage;
-
-  const getBorderClass = () => {
-    if (readOnly || disabled) {
-      return "border-black/40 bg-gray-100 text-gray-500 cursor-not-allowed";
-    }
-    if (hasError) {
-      return "border-red-400 focus:border-red-500";
-    }
-    if (hasInfo) {
-      return "border-blue-400 focus:border-blue-500";
-    }
-    return "border-black/30 focus:border-blue-600";
-  };
+  const { hasError, hasInfo, displayMessage, getBorderClass } = useFieldValidation({
+    value,
+    error,
+    errorMessage,
+    infoMessage,
+    validate,
+    showValidation,
+    readOnly,
+    disabled,
+  });
 
   return (
     <div className="w-full">
@@ -155,36 +133,14 @@ export default function TextArea({
         {...props}
       />
 
-      {/* Error message */}
-      {showValidation && hasError && displayMessage && (
-        <p
-          id={`${props.id}-message`}
-          className="text-xs text-red-600 mt-1"
-          role="alert"
-        >
-          {displayMessage}
-        </p>
-      )}
-
-      {/* Info message */}
-      {showValidation && hasInfo && displayMessage && (
-        <p
-          id={`${props.id}-message`}
-          className="text-xs text-blue-600 mt-1"
-        >
-          {displayMessage}
-        </p>
-      )}
-
-      {/* Static info message */}
-      {!hasError && !hasInfo && infoMessage && (
-        <p
-          id={`${props.id}-message`}
-          className="text-xs text-gray-500 mt-1"
-        >
-          {infoMessage}
-        </p>
-      )}
+      <FieldMessages
+        id={props.id}
+        showValidation={showValidation}
+        hasError={hasError}
+        hasInfo={hasInfo}
+        displayMessage={displayMessage}
+        infoMessage={infoMessage}
+      />
     </div>
   );
 }
