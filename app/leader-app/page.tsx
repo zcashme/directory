@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { Spinner, Badge } from "@/ui/common";
+import Spinner from "@/ui/common/feedback/Spinner";
+import Badge from "@/ui/common/feedback/Badge";
 import {
   getLeaderboardAction,
   type Period,
