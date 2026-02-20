@@ -11,19 +11,20 @@ const ELIGIBILITY_WINDOW_WEEKS = 4; // R = weeks after signup to verify for elig
 const REWARD_DURATION_MONTHS = 12; // T = months rewards are paid after verification
 
 // Base Commission
-const BASE_COMMISSION_RATE = 0.05; // Base X% = 5% commission
-const VERIFICATION_FEE = 1.0; // Fixed fee per verification (in USD or ZEC)
+const BASE_COMMISSION_RATE = 0.3; // Base X% = 30% commission
+const VERIFICATION_FEE_ZEC = 0.001; // Fixed fee per verification (in ZEC)
 
-// Verified Links Multiplier (Option A: Linear Increment)
-const COMMISSION_DELTA_PER_LINK = 0.005; // 0.5% increase per verified link
-const MAX_COMMISSION_RATE = 0.15; // Cap at 15%
+// Authenticated Links Multiplier (Option A: Linear Increment)
+const COMMISSION_DELTA_PER_LINK = 0.05; // 5% increase per authenticated link
+const MAX_COMMISSION_RATE = 0.5; // Cap at 50%
 
 // Alternative: Tiered Structure (Option B) - uncomment to use
 // const COMMISSION_TIERS = [
-//   { minLinks: 0, rate: 0.05 },   // 0 links: 5%
-//   { minLinks: 1, rate: 0.06 },   // 1-2 links: 6%
-//   { minLinks: 3, rate: 0.08 },   // 3-5 links: 8%
-//   { minLinks: 6, rate: 0.10 },   // 6+ links: 10%
+//   { minLinks: 0, rate: 0.30 },   // 0 links: 30%
+//   { minLinks: 1, rate: 0.35 },   // 1 links: 35%
+//   { minLinks: 2, rate: 0.40 },   // 2 links: 40%
+//   { minLinks: 3, rate: 0.45 },   // 3 links: 45%
+//   { minLinks: 4, rate: 0.50 },   // 4+ links: 50%
 // ];
 
 // ============================================
@@ -37,7 +38,10 @@ export type CommissionTier = "base" | "bronze" | "silver" | "gold" | "platinum";
 export interface LeaderboardEntry {
   rank: number;
   referrerId: number;
+  referrerUsername: string;
+  referrerDisplayName: string;
   referrerName: string;
+  referrerProfileImageUrl: string | null;
   // Referral Performance
   totalReferrals: number;
   verifiedReferrals: number;
@@ -73,7 +77,7 @@ export interface LeaderboardResponse {
     baseCommissionRate: number;
     commissionDeltaPerLink: number;
     maxCommissionRate: number;
-    verificationFee: number;
+    verificationFeeZec: number;
   };
 }
 
@@ -119,8 +123,8 @@ function monthsBetween(start: Date, end: Date): number {
 }
 
 /**
- * Calculate commission rate based on verified links count
- * Uses linear increment model: base_rate + (verified_links * delta)
+ * Calculate commission rate based on authenticated links count
+ * Uses linear increment model: base_rate + (authenticated_links * delta)
  */
 function calculateCommissionRate(verifiedLinksCount: number): number {
   const rate = BASE_COMMISSION_RATE + verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
@@ -143,7 +147,9 @@ function getCommissionTier(verifiedLinksCount: number): CommissionTier {
 // ============================================
 
 interface ReferralStats {
-  name: string;
+  username: string;
+  displayName: string;
+  profileImageUrl: string | null;
   total: number;
   verified: number;
   unverified: number;
@@ -176,7 +182,7 @@ export async function getLeaderboardAction(
     baseCommissionRate: BASE_COMMISSION_RATE,
     commissionDeltaPerLink: COMMISSION_DELTA_PER_LINK,
     maxCommissionRate: MAX_COMMISSION_RATE,
-    verificationFee: VERIFICATION_FEE,
+    verificationFeeZec: VERIFICATION_FEE_ZEC,
   };
 
   try {
@@ -205,18 +211,42 @@ export async function getLeaderboardAction(
     // Get unique referrer IDs
     const referrerIds = [...new Set(users.map((u) => u.referred_by_zcasher_id).filter(Boolean))];
 
-    // Fetch referrer names and their links in parallel
-    const [{ data: referrers }, { data: allLinks }] = await Promise.all([
-      supabase.from("zcasher").select("id, name").in("id", referrerIds),
-      supabase
-        .from("zcasher_links")
-        .select("zcasher_id, is_verified, pending_verif")
-        .in("zcasher_id", referrerIds),
-    ]);
+    // Fetch referrer identities and links (display_name is optional with fallback)
+    const linksPromise = supabase
+      .from("zcasher_links")
+      .select("zcasher_id, is_verified, pending_verif")
+      .in("zcasher_id", referrerIds);
 
-    // Build referrer names map
-    const referrerNames = new Map<number, string>(
-      (referrers ?? []).map((r) => [r.id, r.name ?? `User ${r.id}`])
+    const referrersWithDisplay = await supabase
+      .from("zcasher")
+      .select("id, name, display_name, profile_image_url")
+      .in("id", referrerIds);
+
+    let referrers = referrersWithDisplay.data as
+      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null }>
+      | null;
+
+    if (referrersWithDisplay.error) {
+      const referrersFallback = await supabase
+        .from("zcasher")
+        .select("id, name, profile_image_url")
+        .in("id", referrerIds);
+      referrers = (referrersFallback.data as Array<{ id: number; name: string | null; profile_image_url?: string | null }> | null)
+        ?.map((r) => ({ ...r, display_name: null })) ?? null;
+    }
+
+    const { data: allLinks } = await linksPromise;
+
+    // Build referrer identity map
+    const referrerIdentity = new Map<number, { username: string; displayName: string; profileImageUrl: string | null }>(
+      (referrers || []).map((r) => [
+        r.id,
+        {
+          username: r.name || `user${r.id}`,
+          displayName: r.display_name || r.name || `User ${r.id}`,
+          profileImageUrl: r.profile_image_url || null,
+        },
+      ])
     );
 
     // Build verified links count map
@@ -261,11 +291,14 @@ export async function getLeaderboardAction(
         }
       }
 
-      const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) ?? 0;
-      const referrerPendingLinks = pendingLinksMap.get(referrerId) ?? 0;
+      const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) || 0;
+      const referrerPendingLinks = pendingLinksMap.get(referrerId) || 0;
+      const identity = referrerIdentity.get(referrerId);
 
-      const current = referrerStats.get(referrerId) ?? {
-        name: referrerNames.get(referrerId) ?? `User ${referrerId}`,
+      const current = referrerStats.get(referrerId) || {
+        username: identity?.username || `user${referrerId}`,
+        displayName: identity?.displayName || `User ${referrerId}`,
+        profileImageUrl: identity?.profileImageUrl || null,
         total: 0,
         verified: 0,
         unverified: 0,
@@ -341,11 +374,11 @@ export async function getLeaderboardAction(
         let totalRewardsRemaining = 0;
 
         for (const referral of stats.eligibleReferrals) {
-          const monthlyReward = VERIFICATION_FEE * referral.lockedCommissionRate;
+          const monthlyReward = VERIFICATION_FEE_ZEC * referral.lockedCommissionRate;
 
           if (referral.isActive) {
             currentMonthlyPayout += monthlyReward;
-            totalRecurringRevenue += VERIFICATION_FEE;
+            totalRecurringRevenue += VERIFICATION_FEE_ZEC;
           }
 
           const monthsElapsed = Math.min(
@@ -363,7 +396,10 @@ export async function getLeaderboardAction(
         return {
           rank: 0,
           referrerId,
-          referrerName: stats.name,
+          referrerUsername: stats.username,
+          referrerDisplayName: stats.displayName,
+          referrerName: stats.username,
+          referrerProfileImageUrl: stats.profileImageUrl,
           totalReferrals: stats.total,
           verifiedReferrals: stats.verified,
           unverifiedReferrals: stats.unverified,

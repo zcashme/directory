@@ -84,14 +84,15 @@ export default function TutorialModal({
             <h2 className="mt-1 text-2xl font-semibold text-gray-900">{title}</h2>
             <p className="mt-1 text-sm text-gray-600">{subtitle}</p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Close tutorial"
-            className="h-9 w-9 shrink-0 rounded-full border border-black/15 text-gray-700 transition-colors hover:bg-gray-100"
+          <Button
+            variant="ghost"
+            onClick={() => {
+              onSkip?.();
+              onClose();
+            }}
           >
-            X
-          </button>
+            Skip
+          </Button>
         </div>
       </div>
 
@@ -122,50 +123,42 @@ export default function TutorialModal({
             </div>
 
             <div className="mt-auto border-t border-black/10 pt-4">
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                {steps.map((stepItem, index) => (
-                  <button
-                    key={stepItem.id}
-                    type="button"
-                    className={`h-2.5 w-2.5 rounded-full transition-all ${
-                      index === clampedIndex ? "bg-green-600 w-6" : "bg-black/20 hover:bg-black/35"
-                    }`}
-                    onClick={() => setStepIndex(index)}
-                    aria-label={`Go to step ${index + 1}`}
-                  />
-                ))}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => {
-                    onSkip?.();
-                    onClose();
-                  }}
-                >
-                  Skip
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={() => setStepIndex((prev) => Math.max(0, prev - 1))}
-                  disabled={isFirstStep}
-                >
-                  Back
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={() => {
-                    if (isLastStep) {
-                      onComplete?.();
-                      onClose();
-                      return;
-                    }
-                    setStepIndex((prev) => Math.min(totalSteps - 1, prev + 1));
-                  }}
-                >
-                  {isLastStep ? "Finish" : "Next"}
-                </Button>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  {steps.map((stepItem, index) => (
+                    <button
+                      key={stepItem.id}
+                      type="button"
+                      className={`h-2.5 w-2.5 rounded-full transition-all ${
+                        index === clampedIndex ? "bg-green-600 w-6" : "bg-black/20 hover:bg-black/35"
+                      }`}
+                      onClick={() => setStepIndex(index)}
+                      aria-label={`Go to step ${index + 1}`}
+                    />
+                  ))}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="secondary"
+                    onClick={() => setStepIndex((prev) => Math.max(0, prev - 1))}
+                    disabled={isFirstStep}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      if (isLastStep) {
+                        onComplete?.();
+                        onClose();
+                        return;
+                      }
+                      setStepIndex((prev) => Math.min(totalSteps - 1, prev + 1));
+                    }}
+                  >
+                    {isLastStep ? "Finish" : "Next"}
+                  </Button>
+                </div>
               </div>
             </div>
           </section>
