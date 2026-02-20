@@ -97,6 +97,17 @@ export default function ProfilePage({
   // Handlers
   const handleGenerateVerificationQr = useCallback(() => {
     setVerificationGenerateQrTrigger((prev) => prev + 1);
+    const scrollToVerification = () => {
+      const el = document.getElementById("zcash-feedback");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
+    setTimeout(() => {
+      scrollToVerification();
+      setTimeout(scrollToVerification, 250);
+      setTimeout(scrollToVerification, 500);
+    }, 500);
   }, []);
 
   const handleSetAsset = useCallback((tokenId: string) => {

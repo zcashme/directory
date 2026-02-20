@@ -96,7 +96,7 @@ export default function ProfileVerification({
   // Memo + URI returned from the server
   const [currentMemo, setCurrentMemo] = useState("");
   const [currentUri, setCurrentUri] = useState("");
-  const lastGenerateTriggerRef = useRef(0);
+  const lastGenerateTriggerRef = useRef(generateQrTrigger);
 
   // Generate QR - calls the server to create memo + URI
   const handleGenerateQr = useCallback(async () => {
