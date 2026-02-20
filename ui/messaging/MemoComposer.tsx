@@ -27,15 +27,85 @@ interface MemoCounterProps {
   text: string;
 }
 
-function MemoCounter({ text }: MemoCounterProps) {
+interface MemoLeftIconProps {
+  text: string;
+}
+
+function MemoLeftIcon({ text }: MemoLeftIconProps) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
-  const over = bytes > 512;
-  const diff = over ? bytes - 512 : 512 - bytes;
+  const showCircle = bytes > 128;
+
+  if (!showCircle) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
+        <path
+          d="M3 11L4 8L9.5 2.5C9.9 2.1 10.5 2.1 10.9 2.5L11.5 3.1C11.9 3.5 11.9 4.1 11.5 4.5L6 10L3 11Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  const remaining = Math.max(0, 512 - bytes);
+  const remainingRatio = remaining / 512;
+  const overBytes = Math.max(0, bytes - 512);
+  const overRatio = Math.min(1, overBytes / 512);
+  const radius = 6;
+  const circumference = 2 * Math.PI * radius;
+  const isOverLimit = overBytes > 0;
+  const dashOffset = isOverLimit
+    ? circumference * (1 - overRatio)
+    : circumference * (1 - remainingRatio);
+  const strokeColor = isOverLimit ? "rgb(220, 38, 38)" : "var(--color-brand-blue)";
+  const ringTransform = isOverLimit ? "scaleX(-1) rotate(-90deg)" : "rotate(-90deg)";
 
   return (
-    <span className={`absolute bottom-3 right-3 text-md ${over ? "text-red-600" : "text-gray-400"}`}>
-      {over ? `Over by ${diff} bytes` : `${diff} bytes left`}
-    </span>
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke="rgba(156, 163, 175, 0.35)"
+        strokeWidth="2"
+      />
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={dashOffset}
+        className="transition-[stroke-dashoffset] duration-200 ease-out"
+        style={{
+          transform: ringTransform,
+          transformOrigin: "50% 50%",
+          transformBox: "fill-box",
+        }}
+      />
+    </svg>
+  );
+}
+
+function MemoCounter({ text }: MemoCounterProps) {
+  const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
+  const remaining = 512 - bytes;
+  const showRemaining = remaining <= 20;
+
+  return (
+    <>
+      {showRemaining && (
+        <span className={`absolute bottom-3 right-3 text-xs ${remaining < 0 ? "text-red-600" : "text-gray-500"}`}>
+          {remaining < 0 ? `Over by ${Math.abs(remaining)} bytes` : `${remaining} bytes remaining`}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -123,8 +193,8 @@ export default function MemoComposer({
       {/* MEMO FIELD */}
       <div className="relative mb-2">
         {!disabled && (
-          <div className="absolute left-3 top-2 pointer-events-none text-gray-500 text-md">
-            ✎
+          <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
+            <MemoLeftIcon text={memo} />
           </div>
         )}
 
@@ -147,8 +217,8 @@ export default function MemoComposer({
               : `Write your message to ${recipientName} here...`
           }
           className={`border px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden ${disabled
-              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed"
-              : `${withFieldBorderState("border-gray-800")} pl-8`
+              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed pb-8"
+              : `${withFieldBorderState("border-gray-800")} pl-8 pb-8`
             }`}
         />
 
@@ -166,9 +236,17 @@ export default function MemoComposer({
         {memo && !disabled && (
           <button
             onClick={() => setMemo("")}
-            className="absolute right-3 top-1 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 h-5 w-5 leading-none flex items-center justify-center"
           >
-            ⌫
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+              <path
+                d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
           </button>
         )}
 
@@ -207,3 +285,6 @@ export default function MemoComposer({
     </div>
   );
 }
+
+
+
