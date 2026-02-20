@@ -7,7 +7,7 @@ import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
-import ProfileField from "@/ui/profile/ProfileField";
+import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
 import { AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { isValidUrl } from "@/lib/profile/urlValidation";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
@@ -320,6 +320,12 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
 
   const toggleNameDelete = () => {
     const nextDeleted = !deletedFields.name;
+    if (nextDeleted) {
+      const confirmed = window.confirm(
+        "Careful! Verifying this change (deleting usermame) will remove your profile data from Zcash.me. This action cannot be undone."
+      );
+      if (!confirmed) return;
+    }
     setDeletedField("name", nextDeleted);
     setUsernameTouched(false);
     setUsernameConflict(null);
@@ -335,14 +341,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         onClose={() => setAvatarPreviewOpen(false)}
       />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
-
-        {/* Header */}
-        <div className="px-1 pb-3 mb-4 border-b border-black/10">
-          <h2 className="text-base font-semibold text-gray-800 text-center">
-            Edit {profile.name}
-          </h2>
-        </div>
-
         {/* ZCASH ADDRESS */}
         <ProfileField
           label="Zcash Address"
@@ -601,14 +599,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
                   </Button>
                 ) : null}
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => removeLink(row._uid)}
-                className="text-red-600 hover:text-red-700"
-              >
-                ⌫ Delete
-              </Button>
+              <DeleteActionButton onClick={() => removeLink(row._uid)} />
             </div>
           );
 
@@ -657,6 +648,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               variant="secondary"
               size="md"
               onClick={onGenerateQr}
+              className="hover:border-blue-600 hover:text-blue-600"
             >
               Start Verification
             </Button>

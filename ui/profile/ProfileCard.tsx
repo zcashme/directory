@@ -157,8 +157,8 @@ export default function ProfileCard({
 
               {/* Avatar */}
               <div
-                className={`absolute left-1/2 top-0 z-20 transition-opacity duration-150 ${showBack ? "opacity-0 pointer-events-none" : "opacity-100"}`}
-                style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))`, visibility: showBack ? "hidden" : "visible" }}
+                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
+                style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))` }}
                 aria-hidden={showBack}
               >
                 <ProfileAvatar profile={profile} size={AVATAR_SIZE} imageClassName="object-contain" className="mx-auto shadow-xs flex items-center justify-center" />
@@ -250,6 +250,19 @@ export default function ProfileCard({
               className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""} bg-white rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
               style={{ pointerEvents: showBack ? "auto" : "none" }}
             >
+              <div
+                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 ${showBack ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px)) scaleX(-1)` }}
+                aria-hidden={!showBack}
+              >
+                <ProfileAvatar
+                  profile={profile}
+                  size={AVATAR_SIZE}
+                  imageClassName="object-contain"
+                  className="mx-auto shadow-xs flex items-center justify-center"
+                />
+              </div>
+              <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
               <div className="absolute top-4 left-4 z-10">
                 <button
                   onClick={() => { (window as any).skipZcashFeedbackScroll = true; setShowBack(false); }}
