@@ -73,7 +73,7 @@ export default function ProfileAvatar({
       `}</style>
 
       <div
-        className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-transparent ${className}`}
+        className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)] ${className}`}
         style={{ width: outerSize, height: outerSize }}
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">

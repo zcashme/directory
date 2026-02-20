@@ -27,8 +27,8 @@ function FannedCardAvatar({ profile, size, isHighlighted, verifiedBadgeScale = 1
   const isVerified = !!(profile.address_verified || (profile.verified_links_count ?? 0) > 0);
   return (
     <div className={`absolute ${size === 80 ? "-top-10" : "-top-12"} left-1/2 -translate-x-1/2 z-20`}>
-      <div className="relative rounded-full border border-black p-0.5 bg-transparent" style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}>
-        <div className="[&>div]:!bg-transparent [&>div]:!border-0">
+      <div className="relative rounded-full border border-black p-0.5 bg-[var(--color-background)]" style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}>
+        <div className="[&>div]:!bg-[var(--color-background)] [&>div]:!border-0">
           <ProfileAvatar profile={profile} size={size} imageClassName="object-cover" className="shadow-lg" />
         </div>
         {isVerified && (

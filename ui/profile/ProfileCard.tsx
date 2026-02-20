@@ -36,6 +36,7 @@ const CARD_OFFSET_Y = 7;
 const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
+const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 
@@ -152,6 +153,13 @@ export default function ProfileCard({
           data-active-profile
           data-address={profile.address}
         >
+          {/* Hide top border segment behind overlapping transparent avatars */}
+          <div
+            className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full bg-[var(--color-background)]"
+            style={{ width: `${AVATAR_BORDER_MASK_WIDTH}px` }}
+            aria-hidden
+          />
+
           {/* Flip container */}
           <div
             className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""}`}
