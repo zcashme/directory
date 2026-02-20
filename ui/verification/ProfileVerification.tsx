@@ -252,7 +252,7 @@ export default function ProfileVerification({
       {/* Requirement line */}
       <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
         <p className="text-[12px] text-gray-600 italic m-0">
-          Include at least {MIN_SIGNIN_AMOUNT} ZEC
+          Include minimum 0.002 ZEC. Do not change the message before sending.
         </p>
       </div>
 
