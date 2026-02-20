@@ -186,6 +186,8 @@ export default function ProfileVerification({
     setShowOtpEntry(true);
   }, []);
 
+  const showQrSection = qrVisible && !!currentUri;
+
   return (
     <div className="bg-transparent border-none shadow-none p-0 mt-1">
       {/* Error display (for memo generation errors) */}
@@ -194,90 +196,92 @@ export default function ProfileVerification({
       )}
 
       {/* QR Code Display */}
-      {qrVisible && currentUri && (
-        <div className="mt-1 pt-1">
-          {!showOtpEntry && (
-            <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-2">
-              <p className="text-[12px] text-gray-600 italic m-0">
-                Include minimum of 0.002 ZEC. Do not modify memo.
-              </p>
-            </div>
-          )}
+      <div
+        className={`overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${
+          showQrSection ? "mt-1 pt-1 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        {!showOtpEntry && (
+          <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-2">
+            <p className="text-[12px] text-gray-600 italic m-0">
+              Include minimum of 0.002 ZEC. Do not modify memo.
+            </p>
+          </div>
+        )}
 
-          {!showOtpEntry && (
-            <div className="flex justify-center mb-4">
-              <QrUriBlock
-                uri={currentUri}
-                profileName="verification"
-                qrHintText="Scan or Tap QR"
-                compactTopSpacing
+        {!showOtpEntry && (
+          <div className="flex justify-center mb-4">
+            <QrUriBlock
+              uri={currentUri}
+              profileName="verification"
+              qrHintText="Scan or Tap QR"
+              compactTopSpacing
+            />
+          </div>
+        )}
+
+        {!showOtpEntry && (
+          <div className="flex justify-center mt-2">
+            <button
+              type="button"
+              onClick={handleSentIt}
+              disabled={isGenerating}
+              className={`${OUTLINE_ACTION_BUTTON_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              I Sent It!
+            </button>
+          </div>
+        )}
+
+        {showOtpEntry && (
+          <div className="mt-2 border border-black/10 rounded-xl p-4 bg-white/80">
+            <div className="text-sm font-semibold text-gray-700 mb-2">
+              Enter your 6-digit verification code
+            </div>
+            <p className="text-xs text-gray-500 mb-3">
+              After sending the transaction, enter the code you receive in your wallet.
+            </p>
+
+            <div className="flex gap-2">
+              <OtpInput
+                id="verification-otp"
+                value={otp}
+                onChange={handleOtpChange}
+                onSubmit={handleSubmitOtp}
+                placeholder="Enter 6-digit code"
+                hideLabel={true}
+                className="flex-1"
+                disabled={isSubmitting}
               />
-            </div>
-          )}
-
-          {!showOtpEntry && (
-            <div className="flex justify-center mt-2">
-              <button
+              <Button
                 type="button"
-                onClick={handleSentIt}
-                disabled={isGenerating}
-                className={`${OUTLINE_ACTION_BUTTON_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
+                onClick={handleSubmitOtp}
+                variant="primary"
+                size="md"
+                disabled={!otp.trim() || isSubmitting}
               >
-                I Sent It!
-              </button>
+                {isSubmitting ? "Verifying..." : "Submit"}
+              </Button>
             </div>
-          )}
 
-          {showOtpEntry && (
-            <div className="mt-2 border border-black/10 rounded-xl p-4 bg-white/80">
-              <div className="text-sm font-semibold text-gray-700 mb-2">
-                Enter your 6-digit verification code
+            {/* Result message */}
+            {otpResult && (
+              <div
+                className={`mt-3 text-sm font-semibold ${
+                  otpResult.ok ? "text-green-700" : "text-red-600"
+                }`}
+              >
+                {otpResult.message}
               </div>
-              <p className="text-xs text-gray-500 mb-3">
-                After sending the transaction, enter the code you receive in your wallet.
-              </p>
+            )}
 
-              <div className="flex gap-2">
-                <OtpInput
-                  id="verification-otp"
-                  value={otp}
-                  onChange={handleOtpChange}
-                  onSubmit={handleSubmitOtp}
-                  placeholder="Enter 6-digit code"
-                  hideLabel={true}
-                  className="flex-1"
-                  disabled={isSubmitting}
-                />
-                <Button
-                  type="button"
-                  onClick={handleSubmitOtp}
-                  variant="primary"
-                  size="md"
-                  disabled={!otp.trim() || isSubmitting}
-                >
-                  {isSubmitting ? "Verifying..." : "Submit"}
-                </Button>
-              </div>
-
-              {/* Result message */}
-              {otpResult && (
-                <div
-                  className={`mt-3 text-sm font-semibold ${
-                    otpResult.ok ? "text-green-700" : "text-red-600"
-                  }`}
-                >
-                  {otpResult.message}
-                </div>
-              )}
-
-              {/* Error display */}
-              {error && (
-                <Alert variant="error" size="sm" message={error} className="mt-2" />
-              )}
-            </div>
-          )}
-        </div>
-      )}
+            {/* Error display */}
+            {error && (
+              <Alert variant="error" size="sm" message={error} className="mt-2" />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
