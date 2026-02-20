@@ -147,7 +147,7 @@ export default function FormField({
 
       {/* Info message */}
       {!error && infoMessage && (
-        <p className="text-xs text-blue-600 mt-1">
+        <p className="text-xs text-[var(--color-brand-blue)] mt-1">
           {infoMessage}
         </p>
       )}

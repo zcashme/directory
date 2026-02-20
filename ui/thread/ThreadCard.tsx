@@ -28,7 +28,7 @@ export function ThreadCard({ message }: ThreadCardProps) {
               className="rounded-full flex-shrink-0 object-cover"
             />
           ) : (
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[var(--color-brand-blue)]/40 to-[var(--color-brand-blue)] flex items-center justify-center flex-shrink-0">
               <span className="text-xs font-semibold text-white">
                 {message.username.charAt(0).toUpperCase()}
               </span>

@@ -21,6 +21,7 @@
   --color-accent-green-dark: #15803d;
   --color-border: #d1d5db;
   --color-border-light: #e5e7eb;
+  --color-brand-blue: #1d4ed8;
 }
 
 html,
@@ -312,7 +313,7 @@ body {
   100% { background-position: 200% 0; }
 }
 .link-tray-shimmer {
-  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(59,130,246,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
+  background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(29,78,216,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
   background-size: 200% 100%;
   animation: link-tray-shimmer 1.2s ease-in-out infinite;
 }

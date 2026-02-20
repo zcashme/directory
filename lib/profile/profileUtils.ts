@@ -148,14 +148,14 @@ export function getCircleClass(isVerified: boolean, rankType: RankType): string 
   }
   if (rankType) {
     const map: Record<string, string> = {
-      alltime: "bg-linear-to-r from-blue-500 to-red-500",
-      weekly: "bg-linear-to-r from-blue-500 to-orange-500",
-      monthly: "bg-linear-to-r from-blue-500 to-red-500",
-      daily: "bg-linear-to-r from-blue-500 to-cyan-500",
+      alltime: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-red-500",
+      weekly: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-orange-500",
+      monthly: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-red-500",
+      daily: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-cyan-500",
     };
-    return map[rankType] || "bg-blue-500";
+    return map[rankType] || "bg-[var(--color-brand-blue)]/55";
   }
-  return "bg-blue-500";
+  return "bg-[var(--color-brand-blue)]/55";
 }
 
 /**

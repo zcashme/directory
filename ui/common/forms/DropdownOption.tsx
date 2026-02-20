@@ -76,7 +76,7 @@ export default function DropdownOptionComponent<T = string>({
           option.disabled
             ? "opacity-50 cursor-not-allowed"
             : isSelected
-            ? "bg-blue-50 text-blue-700"
+            ? "bg-[var(--color-brand-blue)]/10 text-[var(--color-brand-blue)]"
             : "text-gray-700 hover:bg-gray-100"
         }`}
       >
@@ -95,7 +95,7 @@ export default function DropdownOptionComponent<T = string>({
         option.disabled
           ? "opacity-50 cursor-not-allowed"
           : isSelected
-          ? "bg-blue-50 text-blue-700"
+          ? "bg-[var(--color-brand-blue)]/10 text-[var(--color-brand-blue)]"
           : "text-gray-700 hover:bg-gray-100"
       }`}
     >

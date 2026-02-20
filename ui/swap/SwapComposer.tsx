@@ -204,7 +204,7 @@ export default function SwapComposer({
             disabled={!canGetQuote}
             className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl transition-colors ${
               canGetQuote
-                ? "bg-blue-600 hover:bg-blue-700 text-white cursor-pointer"
+                ? "bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/90 text-white cursor-pointer"
                 : "bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-300"
             }`}
           >

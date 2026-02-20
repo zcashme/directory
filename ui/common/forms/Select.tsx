@@ -108,7 +108,7 @@ export default function Select({
     if (hasError) {
       return "border-red-400 focus:border-red-500";
     }
-    return "border-black/30 focus:border-blue-600";
+    return "border-black/30 focus:border-[var(--color-brand-blue)]";
   };
 
   return (

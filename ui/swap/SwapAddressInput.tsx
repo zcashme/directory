@@ -38,7 +38,7 @@ export default function SwapAddressInput({
             flex-1 px-2 py-1.5 rounded-lg
             border border-gray-300
             text-sm text-gray-900 placeholder-gray-500
-            focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+            focus:outline-none focus:border-[var(--color-brand-blue)] focus:ring-1 focus:ring-[var(--color-brand-blue)]
             transition-colors
             ${disabled ? "opacity-50 cursor-not-allowed bg-gray-50" : ""}
           `}

@@ -98,7 +98,7 @@ export default function QrUriBlock({
           <motion.a
             href={uri}
             {...tapProps}
-            className="inline-block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            className="inline-block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
             title="Open payment URI"
             aria-label="Open payment URI"
           >
@@ -184,7 +184,7 @@ export default function QrUriBlock({
             href={uri}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full max-w-full text-center text-blue-600 underline break-all text-sm"
+            className="w-full max-w-full text-center text-[var(--color-brand-blue)] underline break-all text-sm"
           >
             {uri}
           </a>

@@ -20,7 +20,7 @@ export default function HelpMessage({
         <button
           type="button"
           onClick={() => setShowHelp((prev) => !prev)}
-          className="text-[12px] font-semibold text-blue-600 underline m-0"
+          className="text-[12px] font-semibold text-[var(--color-brand-blue)] underline m-0"
         >
           {showHelp ? "Hide help" : "Help"}
         </button>

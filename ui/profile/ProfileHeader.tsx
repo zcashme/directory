@@ -58,7 +58,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                   router.push("/");
                 }
               }}
-              className="font-bold text-lg text-blue-700 hover:text-blue-800 whitespace-nowrap cursor-pointer"
+              className="font-bold text-lg text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] whitespace-nowrap cursor-pointer"
             >
               Zcash.me/
             </button>

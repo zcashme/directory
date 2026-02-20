@@ -40,7 +40,7 @@ export function BoardSelector({ boards, currentBoardId, onBoardSelect }: BoardSe
                 onClick={() => handleSelect(board.id)}
                 className={`w-full text-left px-4 py-3 text-sm transition ${
                   currentBoardId === board.id
-                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    ? 'bg-[var(--color-brand-blue)]/10 text-[var(--color-brand-blue)] font-medium'
                     : 'text-gray-900 hover:bg-gray-50'
                 }`}
               >

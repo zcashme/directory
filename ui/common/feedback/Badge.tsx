@@ -48,7 +48,7 @@ const VARIANT_CLASSES = {
   success: "text-green-800 bg-gradient-to-r from-green-100 to-green-200 border-green-300",
   warning: "text-yellow-800 bg-gradient-to-r from-yellow-100 to-yellow-200 border-yellow-300",
   error: "text-red-800 bg-gradient-to-r from-red-100 to-red-200 border-red-300",
-  info: "text-blue-800 bg-gradient-to-r from-blue-100 to-blue-200 border-blue-300",
+  info: "text-[var(--color-brand-blue)] bg-gradient-to-r from-[var(--color-brand-blue)]/15 to-[var(--color-brand-blue)]/25 border-[var(--color-brand-blue)]/40",
   neutral: "text-gray-800 bg-gradient-to-r from-gray-100 to-gray-200 border-gray-300",
 };
 

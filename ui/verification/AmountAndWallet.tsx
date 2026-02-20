@@ -455,7 +455,7 @@ export default function AmountAndWallet({
                     onClick={() => {
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
                     }}
-                    className="flex items-center gap-1 hover:text-blue-600 cursor-pointer"
+                    className="flex items-center gap-1 hover:text-[var(--color-brand-blue)] cursor-pointer"
                   >
                     <span>{asset}</span>
                     <span
@@ -477,7 +477,7 @@ export default function AmountAndWallet({
               {setAsset && assetOptions.length > 0 && isTokenDropdownOpen && (
                 <motion.div
                   {...getDropdownMotion(tokenDropdownPlacement)}
-                  className={`absolute left-0 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector ${
+                  className={`absolute left-0 max-h-72 overflow-hidden bg-[var(--color-background)] border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector ${
                     tokenDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                   }`}
                   style={{ width: tokenDropdownWidth ? `${tokenDropdownWidth}px` : "16rem" }}
@@ -489,7 +489,7 @@ export default function AmountAndWallet({
                         value={tokenSearch}
                         onChange={(e) => setTokenSearch(e.target.value)}
                         placeholder="Search tokens..."
-                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                       />
                     </div>
                   )}
@@ -506,10 +506,10 @@ export default function AmountAndWallet({
                             setTokenSearch("");
                           }}
                           {...tapProps}
-                          className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                          className={`group w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                             asset === (token.symbol ?? token.ticker)
-                              ? "bg-blue-50 font-semibold text-gray-900"
-                              : "text-gray-700 hover:bg-gray-50"
+                              ? "bg-[var(--color-brand-blue)] font-semibold text-white"
+                              : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
                           }`}
                         >
                           {token.logo && (
@@ -525,11 +525,23 @@ export default function AmountAndWallet({
                           )}
                           <span className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 min-w-0">
-                              <span className="text-gray-800 font-semibold truncate">
+                              <span
+                                className={`font-semibold truncate ${
+                                  asset === (token.symbol ?? token.ticker)
+                                    ? "text-white"
+                                    : "text-gray-800 group-hover:text-white"
+                                }`}
+                              >
                                 {token.symbol}
                               </span>
                               {token.chain && (
-                                <span className="ml-auto text-xs text-gray-500 text-right truncate font-medium">
+                                <span
+                                  className={`ml-auto text-xs text-right truncate font-medium ${
+                                    asset === (token.symbol ?? token.ticker)
+                                      ? "text-[var(--color-brand-blue)]/25"
+                                      : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
+                                  }`}
+                                >
                                   {token.chain}
                                 </span>
                               )}
@@ -550,7 +562,7 @@ export default function AmountAndWallet({
                         value={tokenSearch}
                         onChange={(e) => setTokenSearch(e.target.value)}
                         placeholder="Search tokens..."
-                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                       />
                     </div>
                   )}
@@ -666,7 +678,7 @@ export default function AmountAndWallet({
                         {isCurrencyOpen && (
                           <motion.div
                             {...getDropdownMotion(currencyDropdownPlacement)}
-                            className={`absolute right-0 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] ${
+                            className={`absolute right-0 w-64 max-h-72 overflow-hidden bg-[var(--color-background)] border border-gray-800 rounded-xl shadow-lg z-[9999] ${
                               currencyDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                             }`}
                           >
@@ -677,7 +689,7 @@ export default function AmountAndWallet({
                                 value={fiatSearch}
                                 onChange={(e) => setFiatSearch(e.target.value)}
                                 placeholder="Search currencies..."
-                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                               />
                             </div>
                           )}
@@ -704,19 +716,31 @@ export default function AmountAndWallet({
                                     setFiatSearch("");
                                   }}
                                   {...tapProps}
-                                  className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                  className={`group w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
                                     fiat === ticker
-                                      ? "bg-blue-50 font-semibold text-gray-900"
-                                      : "text-gray-700 hover:bg-gray-50"
+                                      ? "bg-[var(--color-brand-blue)] font-semibold text-white"
+                                      : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
                                   }`}
                                 >
-                                  <span className="w-6 text-gray-600 flex-shrink-0">
+                                  <span
+                                  className={`w-6 flex-shrink-0 ${
+                                      fiat === ticker ? "text-[var(--color-brand-blue)]/25" : "text-gray-600 group-hover:text-[var(--color-brand-blue)]/25"
+                                    }`}
+                                  >
                                     {CURRENCIES[ticker]?.symbol || ""}
                                   </span>
-                                  <span className="text-gray-800 font-medium flex-shrink-0">
+                                  <span
+                                    className={`font-medium flex-shrink-0 ${
+                                      fiat === ticker ? "text-white" : "text-gray-800 group-hover:text-white"
+                                    }`}
+                                  >
                                     {ticker}
                                   </span>
-                                  <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
+                                  <span
+                                    className={`ml-auto text-xs text-right truncate flex-1 min-w-0 ${
+                                      fiat === ticker ? "text-[var(--color-brand-blue)]/25" : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
+                                    }`}
+                                  >
                                     {CURRENCIES[ticker]?.name || ""}
                                   </span>
                                 </motion.button>
@@ -746,7 +770,7 @@ export default function AmountAndWallet({
                                 value={fiatSearch}
                                 onChange={(e) => setFiatSearch(e.target.value)}
                                 placeholder="Search currencies..."
-                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-[var(--color-brand-blue)] focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
                               />
                             </div>
                           )}

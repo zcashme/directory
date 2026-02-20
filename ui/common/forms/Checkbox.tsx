@@ -124,9 +124,9 @@ export default function Checkbox({
             ? "border-gray-300 bg-gray-100 cursor-not-allowed"
             : hasError
             ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200"
-            : "border-black/30 focus:border-blue-600 focus:ring-2 focus:ring-blue-200"
+            : "border-black/30 focus:border-[var(--color-brand-blue)] focus:ring-2 focus:ring-[var(--color-brand-blue)]"
         }
-        ${checked && !disabled ? "bg-blue-600 border-blue-600" : "bg-transparent"}
+        ${checked && !disabled ? "bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)]" : "bg-transparent"}
         ${inputClassName}
       `.trim().replace(/\s+/g, " ")}
       aria-invalid={hasError}

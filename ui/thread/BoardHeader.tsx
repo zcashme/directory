@@ -29,7 +29,7 @@ export function BoardHeader({ board }: BoardHeaderProps) {
         {/* Stats */}
         <div className="flex items-center gap-4 text-xs text-gray-600 pt-2">
           <span className="flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-blue-700"></span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-brand-blue)]"></span>
             {board.member_count || 0} member{board.member_count !== 1 ? 's' : ''}
           </span>
           <span>Created {createdDate}</span>

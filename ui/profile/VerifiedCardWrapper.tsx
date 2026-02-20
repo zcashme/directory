@@ -1,10 +1,11 @@
-import type { ReactNode } from "react";
+import type { ReactNode, CSSProperties } from "react";
 
 interface VerifiedCardWrapperProps {
   verifiedCount?: number;
   featured?: boolean;
   onClick?: () => void;
   className?: string;
+  style?: CSSProperties;
   children: ReactNode;
 }
 
@@ -13,6 +14,7 @@ export default function VerifiedCardWrapper({
   featured = false,
   onClick,
   className = "",
+  style,
   children,
 }: VerifiedCardWrapperProps) {
   const baseStyle =
@@ -32,7 +34,7 @@ export default function VerifiedCardWrapper({
       "border-green-400 bg-green-50/60 hover:bg-green-50 hover:shadow-[0_0_10px_rgba(34,197,94,0.25)]";
   } else if (verifiedCount === 1) {
     tierStyle =
-      "border-blue-300 bg-blue-50/60 hover:bg-blue-50 hover:shadow-[0_0_8px_rgba(59,130,246,0.25)]";
+      "border-[var(--color-brand-blue)]/40 bg-[var(--color-brand-blue)]/12 hover:bg-[var(--color-brand-blue)]/10 hover:shadow-[0_0_8px_rgba(29,78,216,0.25)]";
   } else {
     tierStyle =
       "border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)]";
@@ -42,6 +44,7 @@ export default function VerifiedCardWrapper({
     <div
       onClick={onClick}
       className={`${baseStyle} ${tierStyle} verified-card-hover ${className}`}
+      style={style}
     >
       {/* Animated gradient shimmer for top-tier verified */}
       {verifiedCount >= 3 && !featured && (

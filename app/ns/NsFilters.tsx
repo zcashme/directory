@@ -36,7 +36,7 @@ export default function NsFilters({
         <button
           type="button"
           onClick={clearFilters}
-          className={getFilterButtonClass(!anyFilterActive, "bg-blue-300", "hover:bg-blue-200")}
+          className={getFilterButtonClass(!anyFilterActive, "bg-[var(--color-brand-blue)]/30", "hover:bg-[var(--color-brand-blue)]/20")}
         >
           <span className={FILTER_CONTENT}>
             <img src={resolveIconSrc(allIcon)} alt="All" className="h-4 w-auto" />

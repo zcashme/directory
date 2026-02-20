@@ -31,10 +31,10 @@ export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEl
 }
 
 const VARIANT_CLASSES = {
-  primary: "border-black/30 text-blue-700 hover:border-blue-600 hover:bg-blue-50",
+  primary: "border-black/30 text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10",
   secondary: "border-black/30 text-gray-700 hover:bg-gray-100",
   danger: "border-red-400 text-red-600 hover:bg-red-50",
-  ghost: "border-transparent text-gray-600 hover:text-blue-600",
+  ghost: "border-transparent text-gray-600 hover:text-[var(--color-brand-blue)]",
 };
 
 const SIZE_CLASSES = {

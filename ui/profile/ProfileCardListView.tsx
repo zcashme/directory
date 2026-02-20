@@ -28,7 +28,7 @@ export default function ProfileCardListView({ profile }: ProfileCardListViewProp
       <div className="flex items-center gap-4 w-full">
         <ProfileAvatar profile={profile} size={45} imageClassName="object-contain" className="shadow-xs" />
         <div className="flex flex-col grow overflow-hidden min-w-0">
-          <span className="font-semibold text-blue-700 leading-tight truncate flex items-center gap-2">
+          <span className="font-semibold text-[var(--color-brand-blue)] leading-tight truncate flex items-center gap-2">
             <span className="truncate">{displayName}</span>
             {isVerified && <VerifiedBadge verified />}
             {isNewProfile(profile) && (

@@ -122,7 +122,7 @@ export default function ProfileCardContent({
   const linkRowClasses: LinkRowClasses = {
     row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`,
     left: `flex items-center ${s.linkGap} shrink-0 min-w-0 pl-0.5`,
-    leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-blue-600 transition-colors min-w-0`,
+    leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-[var(--color-brand-blue)] transition-colors min-w-0`,
     right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
     icon: `${s.linkIcon} rounded-xs opacity-80 flex-shrink-0`,
     iconStyle: { transform: `scale(${scale.linkIcon})`, transformOrigin: "center center" },
@@ -212,7 +212,7 @@ export default function ProfileCardContent({
               <div className="flex items-center gap-1 whitespace-nowrap">
                 <button
                   onClick={onQRClick}
-                  className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden"
+                  className="group flex items-center justify-center text-gray-500 hover:text-[var(--color-brand-blue)] transition-all px-1 overflow-hidden"
                   title="Show QR"
                 >
                   ▣

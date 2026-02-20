@@ -45,7 +45,7 @@ export default function ProfileCardActions({
     <button
       onClick={() => { onClick(); setMenuOpen(false); }}
       disabled={disabled}
-      className={`w-full whitespace-nowrap text-left px-3 py-2 transition-colors ${disabled ? "text-gray-400 cursor-not-allowed opacity-60" : "hover:bg-blue-50 text-gray-800"}`}
+      className={`w-full whitespace-nowrap text-left px-3 py-2 transition-colors ${disabled ? "text-gray-400 cursor-not-allowed opacity-60" : "hover:bg-[var(--color-brand-blue)]/10 text-gray-800"}`}
     >
       {label}
     </button>
@@ -59,7 +59,7 @@ export default function ProfileCardActions({
           onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
           aria-expanded={menuOpen}
           {...tapProps}
-          className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+          className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10 transition-all"
           title="More options"
         >
           <span aria-hidden className={`inline-block transition-transform ${dur} ${menuOpen ? "rotate-90" : "rotate-0"}`}>{"\u2630"}</span>
@@ -85,7 +85,7 @@ export default function ProfileCardActions({
           alert("Profile link copied to clipboard!");
         }}
         {...tapProps}
-        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-blue-600 hover:border-blue-400 hover:bg-blue-50 transition-all"
+        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10 transition-all"
         title={`Share ${displayName}`}
       >
         <img src="/assets/icons/share.svg" alt="Share" className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity" aria-hidden />

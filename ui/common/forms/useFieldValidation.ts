@@ -71,9 +71,9 @@ export function useFieldValidation({
       return "border-red-400 focus:border-red-500";
     }
     if (hasInfo) {
-      return "border-blue-400 focus:border-blue-500";
+      return "border-[var(--color-brand-blue)] focus:border-[var(--color-brand-blue)]";
     }
-    return "border-black/30 focus:border-blue-600";
+    return "border-black/30 focus:border-[var(--color-brand-blue)]";
   };
 
   return {

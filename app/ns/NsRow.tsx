@@ -130,7 +130,7 @@ export default function NsRow({
                   }}
                   className={`flex items-center gap-1 px-1 text-xs transition-colors ${
                     addressValue
-                      ? "text-gray-500 hover:text-blue-600"
+                      ? "text-gray-500 hover:text-[var(--color-brand-blue)]"
                       : "cursor-not-allowed text-gray-300"
                   }`}
                   title="Show QR"

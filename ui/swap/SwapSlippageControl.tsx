@@ -52,7 +52,7 @@ export default function SwapSlippageControl({
           value={value}
           onChange={(e) => handleInputChange(e.target.value)}
           onBlur={(e) => handleBlur(e.target.value)}
-          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg text-center focus:outline-none focus:border-blue-500"
+          className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg text-center focus:outline-none focus:border-[var(--color-brand-blue)]"
         />
         <span className="text-sm text-gray-600">%</span>
         <button
@@ -121,7 +121,7 @@ export default function SwapSlippageControl({
                 onChange={(e) => handleInputChange(e.target.value)}
                 onBlur={(e) => handleBlur(e.target.value)}
                 placeholder="0.5"
-                className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-16 px-2 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
               />
               <span className="text-sm text-gray-600">%</span>
             </div>

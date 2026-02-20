@@ -42,7 +42,7 @@ const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 const LINK_ROW_CLASSES: LinkRowClasses = {
   row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
   left: "flex items-center gap-2 shrink-0",
-  leftLink: "flex items-center gap-2 shrink-0 hover:text-blue-600 transition-colors",
+  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] transition-colors",
   right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1",
   icon: "w-4 h-4 rounded-xs opacity-80",
   label: "font-medium text-gray-800 whitespace-nowrap",
@@ -57,6 +57,7 @@ export default function ProfileCard({
   onShowQR,
   onEditorModeChange,
   onGenerateVerificationQr,
+  cardWidthPx,
 }: ProfileCardProps) {
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
@@ -64,6 +65,7 @@ export default function ProfileCard({
   const [showBack, setShowBack] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
+  const [isDesktop, setIsDesktop] = useState(false);
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
@@ -75,6 +77,15 @@ export default function ProfileCard({
   });
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const resolvedCardWidth = isDesktop && Number.isFinite(cardWidthPx)
+    ? Math.min(760, Math.max(320, Math.round(cardWidthPx ?? 0)))
+    : null;
+  const actionInsetPx = resolvedCardWidth
+    ? Math.min(24, Math.max(10, Math.round(resolvedCardWidth * 0.03)))
+    : 16;
+  const linkTrayMaxWidthPx = resolvedCardWidth
+    ? Math.max(240, Math.round(resolvedCardWidth - 56))
+    : 448;
 
   const handleVerifyClick = useCallback(async (link: { url: string }) => {
     if (!profile.address_verified) return;
@@ -118,6 +129,12 @@ export default function ProfileCard({
   });
 
   useEffect(() => { onEditorModeChange?.(showBack); }, [showBack, onEditorModeChange]);
+  useEffect(() => {
+    const updateViewport = () => setIsDesktop(window.innerWidth >= 768);
+    updateViewport();
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
 
   if (!fullView) return <ProfileCardListView profile={profile} />;
 
@@ -127,7 +144,11 @@ export default function ProfileCard({
         <VerifiedCardWrapper
           verifiedCount={(profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)}
           featured={!!profile.featured}
-          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center max-w-lg"
+          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center w-full"
+          style={{
+            width: resolvedCardWidth ? `${resolvedCardWidth}px` : undefined,
+            maxWidth: "100%",
+          }}
           data-active-profile
           data-address={profile.address}
         >
@@ -143,7 +164,11 @@ export default function ProfileCard({
               {/* Actions row */}
               <div
                 className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
-                style={{ top: `${ACTION_BUTTONS_TOP}px` }}
+                style={{
+                  top: `${ACTION_BUTTONS_TOP}px`,
+                  left: `${actionInsetPx}px`,
+                  right: `${actionInsetPx}px`,
+                }}
               >
                 <ProfileCardActions
                   profile={profile}
@@ -219,7 +244,7 @@ export default function ProfileCard({
                       {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
                     </span>
                     <div className="flex items-center gap-1 whitespace-nowrap">
-                      <button onClick={onShowQR} className="group flex items-center justify-center text-gray-500 hover:text-blue-600 transition-all px-1 overflow-hidden" title="Show QR">
+                      <button onClick={onShowQR} className="group flex items-center justify-center text-gray-500 hover:text-[var(--color-brand-blue)] transition-all px-1 overflow-hidden" title="Show QR">
                         ▣<span className="inline-block max-w-0 group-hover:max-w-[60px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">QR</span>
                       </button>
                       <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
@@ -231,7 +256,10 @@ export default function ProfileCard({
               )}
 
               {/* Links */}
-              <div className="relative flex flex-col items-center w-full max-w-md mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0">
+              <div
+                className="relative flex flex-col items-center w-full mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
+                style={{ maxWidth: `${linkTrayMaxWidthPx}px` }}
+              >
                 <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
                   <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                     {linksArray.length > 0
@@ -268,7 +296,7 @@ export default function ProfileCard({
                   onClick={() => { (window as any).skipZcashFeedbackScroll = true; setShowBack(false); }}
                   title="Return to front"
                   aria-label="Return to front"
-                  className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
+                  className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--color-brand-blue)] text-white text-sm hover:bg-[var(--color-brand-blue)]/90 transition-all shadow-md"
                 >↺</button>
               </div>
               <ProfileEditor

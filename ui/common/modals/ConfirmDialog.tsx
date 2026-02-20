@@ -115,7 +115,7 @@ export default function ConfirmDialog({
       case "warning":
         return "text-yellow-600";
       case "info":
-        return "text-blue-600";
+        return "text-[var(--color-brand-blue)]";
       case "primary":
       default:
         return "text-gray-800";

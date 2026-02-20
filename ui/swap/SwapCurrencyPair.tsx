@@ -3,11 +3,11 @@ import { memo } from "react";
 const TOKEN_COLORS: Record<string, string> = {
   ZEC: "bg-yellow-400",
   BTC: "bg-orange-400",
-  ETH: "bg-blue-400",
-  USDC: "bg-blue-300",
+  ETH: "bg-[var(--color-brand-blue)]/40",
+  USDC: "bg-[var(--color-brand-blue)]/30",
   USDT: "bg-green-400",
   SOL: "bg-purple-400",
-  ARB: "bg-blue-500",
+  ARB: "bg-[var(--color-brand-blue)]/55",
   NEAR: "bg-gray-700",
 };
 

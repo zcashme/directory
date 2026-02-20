@@ -27,7 +27,7 @@ export default function InlineCopyButton({ text }: InlineCopyButtonProps) {
       }}
       title={copied ? "Copied" : "Copy"}
       className={`flex items-center gap-1 px-1 text-xs transition-colors ${
-        copied ? "text-green-600" : "text-gray-500 hover:text-blue-600"
+        copied ? "text-green-600" : "text-gray-500 hover:text-[var(--color-brand-blue)]"
       }`}
     >
       {copied ? (

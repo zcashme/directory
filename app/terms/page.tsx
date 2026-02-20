@@ -11,7 +11,7 @@ export default function TermsPage() {
     <div className="min-h-screen bg-[#f6efe6] text-gray-900">
       <div className="max-w-3xl mx-auto p-6">
         <div className="mb-6">
-          <Link href="/" className="text-blue-600 hover:underline">&larr; Back to Home</Link>
+          <Link href="/" className="text-[var(--color-brand-blue)] hover:underline">&larr; Back to Home</Link>
         </div>
         <h1 className="text-3xl font-bold mb-4 text-gray-900">Terms of Service</h1>
         <p className="mb-2 text-sm text-gray-600">Effective Date: February 4, 2026</p>

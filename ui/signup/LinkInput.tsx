@@ -60,7 +60,7 @@ export default function LinkInput({
 
       {/* info-level message (tracking params, normalizable hints) */}
       {showValidation && valid && reason && (
-        <p className="text-xs text-blue-600 mt-1">{reason}</p>
+        <p className="text-xs text-[var(--color-brand-blue)] mt-1">{reason}</p>
       )}
     </div>
   );

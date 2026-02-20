@@ -648,7 +648,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               variant="secondary"
               size="md"
               onClick={onGenerateQr}
-              className="hover:border-blue-600 hover:text-blue-600"
+              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
             >
               Start Verification
             </Button>

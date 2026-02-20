@@ -72,7 +72,7 @@ export function SidebarNav({
                 onClick={() => handleBoardSelect(board.id)}
                 className={`w-full text-left px-3 py-2 rounded text-sm transition ${
                   isActiveBoard(board.id)
-                    ? 'bg-blue-100 border-l-4 border-blue-700 text-blue-700 font-medium'
+                    ? 'bg-[var(--color-brand-blue)]/15 border-l-4 border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] font-medium'
                     : 'text-gray-900 hover:bg-gray-100'
                 }`}
               >

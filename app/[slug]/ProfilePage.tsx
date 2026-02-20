@@ -24,6 +24,11 @@ interface ProfilePageProps {
 }
 
 type BaseLayerKey = "zec" | "btc" | "eth" | "sol";
+const COMPOSER_MAX_WIDTH_PX = 512;
+const PROFILE_CARD_DESKTOP_WIDTH_RATIO = 460 / COMPOSER_MAX_WIDTH_PX;
+const PROFILE_CARD_DESKTOP_WIDTH_PX = Math.round(
+  COMPOSER_MAX_WIDTH_PX * PROFILE_CARD_DESKTOP_WIDTH_RATIO
+);
 
 const BASE_LAYER_LABELS: Record<BaseLayerKey, string> = {
   zec: "Zcash",
@@ -310,6 +315,7 @@ export default function ProfilePage({
           onShowQR={handleShowQR}
           onEditorModeChange={setIsProfileEditing}
           onGenerateVerificationQr={handleGenerateVerificationQr}
+          cardWidthPx={PROFILE_CARD_DESKTOP_WIDTH_PX}
         />
 
         <div
@@ -318,7 +324,7 @@ export default function ProfilePage({
           style={{ marginTop: `${feedbackGapPx}px`, paddingTop: `${feedbackGapPx}px` }}
         >
           <div className="w-full flex justify-center">
-            <div className="w-full max-w-lg">
+            <div className="w-full" style={{ maxWidth: `${COMPOSER_MAX_WIDTH_PX}px` }}>
               {mode === "verification" ? (
                 <ProfileVerification
                   profile={initialProfile}

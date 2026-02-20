@@ -104,7 +104,7 @@ export function ThreadComposer({
           onKeyDown={handleKeyDown}
           onBlur={emoji.close}
           placeholder={`Write your message here... (Cmd+Enter to post)`}
-          className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pl-8 text-gray-700 focus:ring-1 focus:ring-blue-500 ${
+          className={`border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pl-8 text-gray-700 focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
             disabled || isSubmitting ? "bg-gray-100 text-gray-400 cursor-not-allowed" : ""
           }`}
         />

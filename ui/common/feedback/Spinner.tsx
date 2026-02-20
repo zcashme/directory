@@ -30,7 +30,7 @@ const SIZE_CLASSES = {
 
 const COLOR_CLASSES = {
   gray: "border-gray-300 border-t-gray-600",
-  blue: "border-blue-300 border-t-blue-600",
+  blue: "border-[var(--color-brand-blue)]/35 border-t-[var(--color-brand-blue)]",
   green: "border-green-300 border-t-green-600",
   red: "border-red-300 border-t-red-600",
 };

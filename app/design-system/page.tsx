@@ -632,8 +632,8 @@ export default function DesignSystemPage() {
               the section header. Collapsible sections are great for organizing
               large amounts of content.
             </p>
-            <div className="mt-4 p-4 bg-blue-50 rounded">
-              <p className="text-sm text-blue-800">
+            <div className="mt-4 p-4 bg-[var(--color-brand-blue)]/10 rounded">
+              <p className="text-sm text-[var(--color-brand-blue)]">
                 You can put any content inside collapsible sections, including
                 forms, cards, and more.
               </p>

@@ -78,7 +78,7 @@ export default function CopyButton({
       title={copied ? copiedLabel : label}
       className={
         `group flex items-center justify-center transition-all px-1 ` +
-        (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-blue-600") +
+        (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-[var(--color-brand-blue)]") +
         " " +
         sizeClasses[size] +
         " " +

@@ -72,7 +72,7 @@ export default function Section({
         {collapsible ? (
           <button
             onClick={handleToggle}
-            className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+            className="flex items-center gap-2 text-sm font-semibold text-gray-900 hover:text-[var(--color-brand-blue)] transition-colors"
             type="button"
           >
             <span className={`transition-transform ${isOpen ? "rotate-90" : ""}`}>

@@ -308,7 +308,7 @@ export default function LeaderboardPage() {
     { id: "totalReferrers", label: "Total Referrers", value: entries.length },
     { id: "totalReferrals", label: "Total Referrals", value: totalReferrals },
     { id: "verified", label: "Verified", value: totalVerified, valueClassName: "text-green-600" },
-    { id: "eligible", label: "Eligible", value: totalEligible, valueClassName: "text-blue-600" },
+    { id: "eligible", label: "Eligible", value: totalEligible, valueClassName: "text-[var(--color-brand-blue)]" },
     { id: "activeRewards", label: "Active Rewards", value: totalActiveRewards, valueClassName: "text-purple-600" },
     { id: "totalEarned", label: "Total Earned (ZEC)", value: formatZec(totalEarned), valueClassName: "text-green-700" },
   ];
@@ -389,7 +389,7 @@ export default function LeaderboardPage() {
               <button
                 type="button"
                 onClick={() => setIsPeriodDropdownOpen((open) => !open)}
-                className="relative w-full rounded-xl border border-gray-800 bg-transparent px-3 py-2 text-sm font-normal text-gray-900 hover:border-blue-600 hover:text-blue-600 transition-colors"
+                className="relative w-full rounded-xl border border-gray-800 bg-transparent px-3 py-2 text-sm font-normal text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] transition-colors"
                 aria-haspopup="listbox"
                 aria-expanded={isPeriodDropdownOpen}
               >
@@ -421,7 +421,7 @@ export default function LeaderboardPage() {
                       }}
                       className={`w-full px-3 py-2 text-center text-sm transition-colors ${
                         period === periodOption.value
-                          ? "bg-blue-50 font-normal text-gray-900"
+                          ? "bg-[var(--color-brand-blue)]/10 font-normal text-gray-900"
                           : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
@@ -447,10 +447,10 @@ export default function LeaderboardPage() {
                 key={stat.id}
                 type="button"
                 onClick={() => setSelectedSummaryStatId(stat.id)}
-                className="group text-left border border-gray-800 rounded-xl p-4 transition-colors duration-150 bg-transparent hover:border-blue-600 hover:text-blue-600 active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
+                className="group text-left border border-gray-800 rounded-xl p-4 transition-colors duration-150 bg-transparent hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
               >
-                <p className="text-sm text-gray-600 mb-1 transition-colors group-hover:text-blue-600">{stat.label}</p>
-                <p className={`text-2xl font-bold transition-colors group-hover:text-blue-600 ${stat.valueClassName || ""}`}>{stat.value}</p>
+                <p className="text-sm text-gray-600 mb-1 transition-colors group-hover:text-[var(--color-brand-blue)]">{stat.label}</p>
+                <p className={`text-2xl font-bold transition-colors group-hover:text-[var(--color-brand-blue)] ${stat.valueClassName || ""}`}>{stat.value}</p>
               </button>
             ))}
           </div>
@@ -580,7 +580,7 @@ export default function LeaderboardPage() {
                 <button
                   type="button"
                   onClick={() => setVisibleRowsCount((prev) => Math.max(ROWS_PER_PAGE, prev - ROWS_PER_PAGE))}
-                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-blue-600 hover:text-blue-600"
+                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
                 >
                   Show less
                 </button>
@@ -589,7 +589,7 @@ export default function LeaderboardPage() {
                 <button
                   type="button"
                   onClick={() => setVisibleRowsCount((prev) => Math.min(prev + ROWS_PER_PAGE, entries.length))}
-                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-blue-600 hover:text-blue-600"
+                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
                 >
                   Show more
                 </button>
@@ -732,7 +732,7 @@ export default function LeaderboardPage() {
             <button
               type="button"
               onClick={() => setShowAssumptionDetails((open) => !open)}
-              className="mt-2 text-blue-700 underline underline-offset-2 hover:text-blue-900"
+              className="mt-2 text-[var(--color-brand-blue)] underline underline-offset-2 hover:text-[var(--color-brand-blue)]"
             >
               {showAssumptionDetails ? "Hide column descriptions/calculations" : "Show column descriptions/calculations"}
             </button>
@@ -843,10 +843,10 @@ function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
             handleRowToggle();
           }
         }}
-        className={`grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-y border-transparent border-b-gray-100 bg-transparent hover:border-t-blue-600 hover:border-l-transparent hover:border-r-transparent transition-colors text-xs sm:text-sm md:text-base min-w-[642px] cursor-pointer ${
+        className={`grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-y border-transparent border-b-gray-100 bg-transparent hover:border-t-[var(--color-brand-blue)] hover:border-l-transparent hover:border-r-transparent transition-colors text-xs sm:text-sm md:text-base min-w-[642px] cursor-pointer ${
           expanded || (isCollapsing && !showRowBottomOnCollapse)
             ? "border-b-transparent hover:border-b-transparent"
-            : "hover:border-b-blue-600"
+            : "hover:border-b-[var(--color-brand-blue)]"
         }`}
         aria-expanded={expanded}
       >
@@ -890,7 +890,7 @@ function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
 
       <div className="px-2 py-3 text-right font-medium">{entry.totalReferrals}</div>
       <div className="px-2 py-3 text-right font-medium text-green-600">{entry.verifiedReferrals}</div>
-      <div className="px-2 py-3 text-right font-medium text-blue-600">{entry.eligibleCount}</div>
+      <div className="px-2 py-3 text-right font-medium text-[var(--color-brand-blue)]">{entry.eligibleCount}</div>
       <div className="px-2 py-3 text-right font-medium text-purple-600">{entry.activeRewardsCount}</div>
       <div className="pl-2 pr-4 md:pr-5 py-3 text-right font-medium text-green-700">{formatZats(entry.totalEarnedToDate)}</div>
       </div>
@@ -905,7 +905,7 @@ function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
       >
         {expanded && (
         <motion.div
-          className="min-w-[642px] overflow-hidden border-b border-gray-100 bg-gray-50 group-hover:border-b-blue-600 transition-colors"
+          className="min-w-[642px] overflow-hidden border-b border-gray-100 bg-gray-50 group-hover:border-b-[var(--color-brand-blue)] transition-colors"
           initial={{ height: 0 }}
           animate={{ height: "auto" }}
           exit={{ height: 0 }}

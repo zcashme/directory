@@ -25,8 +25,8 @@ const STATUS_CONFIG = {
   FAILED: { color: "bg-red-100 text-red-700", label: "Failed" },
   REFUNDED: { color: "bg-red-100 text-red-700", label: "Refunded" },
   INCOMPLETE_DEPOSIT: { color: "bg-red-100 text-red-700", label: "Incomplete" },
-  PROCESSING: { color: "bg-blue-100 text-blue-700", label: "Processing" },
-  PENDING_DEPOSIT: { color: "bg-blue-100 text-blue-700", label: "Pending" },
+  PROCESSING: { color: "bg-[var(--color-brand-blue)]/15 text-[var(--color-brand-blue)]", label: "Processing" },
+  PENDING_DEPOSIT: { color: "bg-[var(--color-brand-blue)]/15 text-[var(--color-brand-blue)]", label: "Pending" },
 } as const;
 
 function SwapStatusDisplay({
@@ -784,7 +784,7 @@ export default function SwapAppClient({
                     e.preventDefault();
                     setIsStatus(true);
                   }}
-                  className="text-blue-600 hover:text-blue-800 underline"
+                  className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] underline"
                 >
                   Check Swap
                 </a>

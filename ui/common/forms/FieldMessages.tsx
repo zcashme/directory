@@ -31,7 +31,7 @@ export default function FieldMessages({
 
       {/* Info message */}
       {showValidation && hasInfo && displayMessage && (
-        <p id={messageId} className="text-xs text-blue-600 mt-1">
+        <p id={messageId} className="text-xs text-[var(--color-brand-blue)] mt-1">
           {displayMessage}
         </p>
       )}
