@@ -56,6 +56,7 @@ export default function ProfileCard({
   duplicateNameCount = 0,
   onShowQR,
   onEditorModeChange,
+  onGenerateVerificationQr,
 }: ProfileCardProps) {
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
@@ -254,7 +255,12 @@ export default function ProfileCard({
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-blue-600 text-white text-sm hover:bg-blue-700 transition-all shadow-md"
                 >↺</button>
               </div>
-              <ProfileEditor profile={profile} links={linksArray} onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined} />
+              <ProfileEditor
+                profile={profile}
+                links={linksArray}
+                onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
+                onGenerateQr={onGenerateVerificationQr}
+              />
             </div>
           </div>
 

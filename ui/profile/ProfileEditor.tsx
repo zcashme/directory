@@ -100,13 +100,14 @@ interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
   onAuthenticateLink?: (link: { url: string }) => void;
+  onGenerateQr?: () => void;
 }
 
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export default function ProfileEditor({ profile, links, onAuthenticateLink }: ProfileEditorProps) {
+export default function ProfileEditor({ profile, links, onAuthenticateLink, onGenerateQr }: ProfileEditorProps) {
   const {
     form,
     deletedFields,
@@ -650,11 +651,16 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink }: Pr
 
         {/* Footer */}
         <div className="mt-8 pt-4 border-t border-black/10">
-          <p className="text-sm text-gray-400 text-center">
-            <span className="inline-flex items-center gap-1">
-              <span className="font-semibold">Verify address to apply edits</span>
-            </span>
-          </p>
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={onGenerateQr}
+            >
+              Start Verification
+            </Button>
+          </div>
         </div>
 
       </div>

@@ -73,4 +73,5 @@ export interface ProfileCardProps {
   duplicateNameCount?: number;
   onShowQR?: () => void;
   onEditorModeChange?: (isEditorOpen: boolean) => void;
+  onGenerateVerificationQr?: () => void;
 }

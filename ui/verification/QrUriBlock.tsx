@@ -6,6 +6,8 @@ import { INLINE_ACTION_BUTTON_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/u
 interface QrUriBlockProps {
   uri: string;
   profileName?: string;
+  qrHintText?: string;
+  compactTopSpacing?: boolean;
   forceShowQR?: boolean;
   forceShowURI?: boolean;
   defaultShowQR?: boolean;
@@ -17,10 +19,12 @@ interface QrUriBlockProps {
 export default function QrUriBlock({
   uri,
   profileName,
+  qrHintText,
+  compactTopSpacing = false,
   forceShowQR,
   forceShowURI,
   defaultShowQR = true,
-  defaultShowURI = true,
+  defaultShowURI = false,
   actionButtonClassName,
   hideButtonClassName,
 }: QrUriBlockProps) {
@@ -86,7 +90,7 @@ export default function QrUriBlock({
     INLINE_ACTION_BUTTON_CLASSES;
 
   return (
-    <div className="flex flex-col items-center gap-4 mt-6 animate-fadeIn">
+    <div className={`flex flex-col items-center gap-4 ${compactTopSpacing ? "mt-0" : "mt-6"} animate-fadeIn`}>
 
       {/* QR block */}
       <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
@@ -108,6 +112,11 @@ export default function QrUriBlock({
               style={{ width: "min(300px, 100%)", height: "auto" }}
             />
           </motion.a>
+        )}
+        {showQR && qrHintText && (
+          <p className="text-center text-xs text-gray-600">
+            {qrHintText}
+          </p>
         )}
       </div>
 

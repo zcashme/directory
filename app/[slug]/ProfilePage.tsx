@@ -65,6 +65,7 @@ export default function ProfilePage({
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [verificationGenerateQrTrigger, setVerificationGenerateQrTrigger] = useState(0);
 
   // Local state
   const [mode, setMode] = useState<'donate' | 'swap' | 'verification'>('donate');
@@ -94,6 +95,10 @@ export default function ProfilePage({
   }, [isProfileEditing]);
 
   // Handlers
+  const handleGenerateVerificationQr = useCallback(() => {
+    setVerificationGenerateQrTrigger((prev) => prev + 1);
+  }, []);
+
   const handleSetAsset = useCallback((tokenId: string) => {
     setOriginTokenId(tokenId);
     const token = tokens.find((t) => getTokenId(t) === tokenId);
@@ -232,6 +237,7 @@ export default function ProfilePage({
           duplicateNameCount={duplicateNameCount}
           onShowQR={handleShowQR}
           onEditorModeChange={setIsProfileEditing}
+          onGenerateVerificationQr={handleGenerateVerificationQr}
         />
 
         <div
@@ -244,6 +250,7 @@ export default function ProfilePage({
               {mode === "verification" ? (
                 <ProfileVerification
                   profile={initialProfile}
+                  generateQrTrigger={verificationGenerateQrTrigger}
                 />
               ) : mode === "swap" ? (
                 <div className="p-0">

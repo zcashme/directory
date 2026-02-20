@@ -1,24 +1,25 @@
-import { useMemo, useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { ProfileEditsPayload } from "@/lib/api/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
-import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import { OtpInput } from "@/ui/verification/OtpInput";
 import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
+import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
 
-const MIN_SIGNIN_AMOUNT = 0.001;
-const DEFAULT_SIGNIN_AMOUNT = "0.003";
+const QR_AMOUNT_ZEC = "0.004";
 
 interface ProfileVerificationProps {
   profile: Profile;
+  generateQrTrigger?: number;
 }
 
 export default function ProfileVerification({
   profile,
+  generateQrTrigger = 0,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original } = useEditsStore();
@@ -84,8 +85,8 @@ export default function ProfileVerification({
   }, [form, original]);
 
   // Local UI state
-  const [amount, setAmount] = useState(DEFAULT_SIGNIN_AMOUNT);
   const [qrVisible, setQrVisible] = useState(false);
+  const [showOtpEntry, setShowOtpEntry] = useState(false);
   const [otp, setOtp] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -95,41 +96,26 @@ export default function ProfileVerification({
   // Memo + URI returned from the server
   const [currentMemo, setCurrentMemo] = useState("");
   const [currentUri, setCurrentUri] = useState("");
+  const lastGenerateTriggerRef = useRef(0);
 
-  // Validate amount
-  const { validAmount, amountError } = useMemo(() => {
-    const cleaned = (amount ?? "").trim();
-    const raw = cleaned.replace(/[^\d.]/g, "");
-    const num = parseFloat(raw);
-    const validMin = !Number.isNaN(num) && num >= MIN_SIGNIN_AMOUNT;
-
-    return {
-      validAmount: validMin,
-      amountError: validMin
-        ? ""
-        : `Authentication requires at least ${MIN_SIGNIN_AMOUNT} ZEC`,
-    };
-  }, [amount]);
-
-  // Generate QR — calls the server to create memo + URI
+  // Generate QR - calls the server to create memo + URI
   const handleGenerateQr = useCallback(async () => {
-    if (!validAmount || !profile?.id) return;
+    if (!profile?.id) return;
 
     setError("");
     setOtpResult(null);
     setOtp("");
+    setShowOtpEntry(false);
     setIsGenerating(true);
 
     try {
-      const result = await generateMemoAction(
-        profile.id,
-        amount.replace(/[^\d.]/g, "")
-      );
+      const result = await generateMemoAction(profile.id, QR_AMOUNT_ZEC);
 
       if (result.ok && result.memo && result.uri) {
         setCurrentMemo(result.memo);
         setCurrentUri(result.uri);
         setQrVisible(true);
+        setShowOtpEntry(false);
       } else {
         setError(result.error ?? "Failed to generate QR code.");
       }
@@ -138,7 +124,15 @@ export default function ProfileVerification({
     } finally {
       setIsGenerating(false);
     }
-  }, [validAmount, profile?.id, amount]);
+  }, [profile?.id]);
+
+  useEffect(() => {
+    if (!generateQrTrigger) return;
+    if (lastGenerateTriggerRef.current === generateQrTrigger) return;
+
+    lastGenerateTriggerRef.current = generateQrTrigger;
+    void handleGenerateQr();
+  }, [generateQrTrigger, handleGenerateQr]);
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
@@ -168,6 +162,7 @@ export default function ProfileVerification({
           setCurrentMemo(data.newMemo as string);
           setCurrentUri(data.newUri as string);
           setOtp("");
+          setShowOtpEntry(false);
         }
 
         setOtpResult({
@@ -187,75 +182,12 @@ export default function ProfileVerification({
     setOtp(value.replace(/\D/g, ""));
   }, []);
 
+  const handleSentIt = useCallback(() => {
+    setShowOtpEntry(true);
+  }, []);
+
   return (
     <div className="bg-transparent border-none shadow-none p-0 mt-1">
-      {/* Header */}
-      <div className="text-left mb-2">
-        <h3 className="font-semibold text-gray-800 flex items-center gap-2">
-          <span>
-            To verify, send from{" "}
-            <span
-              className="text-blue-600 cursor-pointer"
-              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            >
-              {profile?.name ?? "Your profile"}
-            </span>
-          </span>
-        </h3>
-      </div>
-
-      {/* Memo Display - shown after generation */}
-      {currentMemo && (
-        <div className="relative group w-full mb-3">
-          <div className="block px-3 py-2 bg-gray-800 rounded-t-xl text-center">
-            <span className="block text-[12px] text-gray-200">
-              Memo (do not modify)
-            </span>
-          </div>
-          <textarea
-            value={currentMemo}
-            readOnly
-            rows={4}
-            className="
-              w-full
-              border border-[#000000]/90
-              border-t-0
-              rounded-b-xl
-              px-3 py-2
-              text-[12px]
-              bg-gray-50
-              text-gray-800
-              font-mono
-              resize-none
-              cursor-default
-              break-all
-              overflow-y-auto
-            "
-          />
-        </div>
-      )}
-
-      {/* Amount + Generate QR */}
-      <div className="mt-3 w-full">
-        <AmountAndWallet
-          amount={amount}
-          setAmount={setAmount}
-          openWallet={handleGenerateQr}
-          openWalletLabel={isGenerating ? "Generating..." : "Generate QR"}
-          disabled={isGenerating}
-        />
-        {!validAmount && amountError && (
-          <Alert variant="error" size="sm" message={amountError} className="mt-1" />
-        )}
-      </div>
-
-      {/* Requirement line */}
-      <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-4">
-        <p className="text-[12px] text-gray-600 italic m-0">
-          Include minimum 0.002 ZEC. Do not change the message before sending.
-        </p>
-      </div>
-
       {/* Error display (for memo generation errors) */}
       {error && !qrVisible && (
         <Alert variant="error" size="sm" message={error} className="mt-2" />
@@ -263,59 +195,87 @@ export default function ProfileVerification({
 
       {/* QR Code Display */}
       {qrVisible && currentUri && (
-        <div className="border-t border-black/10 mt-4 pt-4">
-          {/* QR Code */}
-          <div className="flex justify-center mb-4">
-            <QrUriBlock uri={currentUri} profileName="verification" />
-          </div>
-
-          {/* OTP Entry Section - shown immediately with QR */}
-          <div className="mt-4 border border-black/10 rounded-xl p-4 bg-white/80">
-            <div className="text-sm font-semibold text-gray-700 mb-2">
-              Enter your 6-digit verification code
+        <div className="mt-1 pt-1">
+          {!showOtpEntry && (
+            <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-2">
+              <p className="text-[12px] text-gray-600 italic m-0">
+                Include minimum of 0.002 ZEC. Do not modify memo.
+              </p>
             </div>
-            <p className="text-xs text-gray-500 mb-3">
-              After sending the transaction, enter the code you receive in your wallet.
-            </p>
+          )}
 
-            <div className="flex gap-2">
-              <OtpInput
-                id="verification-otp"
-                value={otp}
-                onChange={handleOtpChange}
-                onSubmit={handleSubmitOtp}
-                placeholder="Enter 6-digit code"
-                hideLabel={true}
-                className="flex-1"
-                disabled={isSubmitting}
+          {!showOtpEntry && (
+            <div className="flex justify-center mb-4">
+              <QrUriBlock
+                uri={currentUri}
+                profileName="verification"
+                qrHintText="Scan or Tap QR"
+                compactTopSpacing
               />
-              <Button
-                type="button"
-                onClick={handleSubmitOtp}
-                variant="primary"
-                size="md"
-                disabled={!otp.trim() || isSubmitting}
-              >
-                {isSubmitting ? "Verifying..." : "Submit"}
-              </Button>
             </div>
+          )}
 
-            {/* Result message */}
-            {otpResult && (
-              <div
-                className={`mt-3 text-sm font-semibold ${
-                  otpResult.ok ? "text-green-700" : "text-red-600"
-                }`}
+          {!showOtpEntry && (
+            <div className="flex justify-center mt-2">
+              <button
+                type="button"
+                onClick={handleSentIt}
+                disabled={isGenerating}
+                className={`${OUTLINE_ACTION_BUTTON_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                {otpResult.message}
-              </div>
-            )}
+                I Sent It!
+              </button>
+            </div>
+          )}
 
-            {/* Error display */}
-            {error && (
-              <Alert variant="error" size="sm" message={error} className="mt-2" />
-            )}
-          </div>
+          {showOtpEntry && (
+            <div className="mt-2 border border-black/10 rounded-xl p-4 bg-white/80">
+              <div className="text-sm font-semibold text-gray-700 mb-2">
+                Enter your 6-digit verification code
+              </div>
+              <p className="text-xs text-gray-500 mb-3">
+                After sending the transaction, enter the code you receive in your wallet.
+              </p>
+
+              <div className="flex gap-2">
+                <OtpInput
+                  id="verification-otp"
+                  value={otp}
+                  onChange={handleOtpChange}
+                  onSubmit={handleSubmitOtp}
+                  placeholder="Enter 6-digit code"
+                  hideLabel={true}
+                  className="flex-1"
+                  disabled={isSubmitting}
+                />
+                <Button
+                  type="button"
+                  onClick={handleSubmitOtp}
+                  variant="primary"
+                  size="md"
+                  disabled={!otp.trim() || isSubmitting}
+                >
+                  {isSubmitting ? "Verifying..." : "Submit"}
+                </Button>
+              </div>
+
+              {/* Result message */}
+              {otpResult && (
+                <div
+                  className={`mt-3 text-sm font-semibold ${
+                    otpResult.ok ? "text-green-700" : "text-red-600"
+                  }`}
+                >
+                  {otpResult.message}
+                </div>
+              )}
+
+              {/* Error display */}
+              {error && (
+                <Alert variant="error" size="sm" message={error} className="mt-2" />
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
