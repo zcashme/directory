@@ -72,7 +72,6 @@ export default function AddUserForm({
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
-  const [bio, setBio] = useState("");
   const [nameHelp, setNameHelp] = useState("");
   const [nameConflict, setNameConflict] = useState<ConflictInfo | null>(null);
   const [address, setAddress] = useState("");
@@ -113,7 +112,6 @@ export default function AddUserForm({
       setDir(1);
       setName(prefillUsername || "");
       setDisplayName("");
-      setBio("");
       setNameHelp("");
       setNameConflict(null);
       setAddress("");
@@ -435,7 +433,6 @@ export default function AddUserForm({
       const profileResult = await createProfileAction({
         name: sanitizeUsernameInput(name),
         display_name: displayName.trim() || undefined,
-        bio: bio.trim() || undefined,
         address: address.trim(),
         nearest_city_name: nearestCity
           ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
@@ -559,6 +556,8 @@ export default function AddUserForm({
       />
       <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
 
+      {/* Short Bio disabled during signup */}
+      {/*
       <label htmlFor="bio" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
         Short Bio
       </label>
@@ -569,6 +568,7 @@ export default function AddUserForm({
         className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent min-h-[88px] resize-none ${withFieldBorderState("border-black/30")}`}
         placeholder="Tell people what you are about"
       />
+      */}
 
     </StepContainer>
   );
@@ -708,10 +708,7 @@ export default function AddUserForm({
           <span className="font-semibold text-gray-700">Display Name:</span>{" "}
           <span className="font-mono">{displayName || "—"}</span>
         </div>
-        <div>
-          <span className="font-semibold text-gray-700">Short Bio:</span>{" "}
-          <span>{bio.trim() || "—"}</span>
-        </div>
+        {/* Short Bio disabled during signup */}
         <div>
           <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
           <span className="font-mono break-all">{address || "—"}</span>
