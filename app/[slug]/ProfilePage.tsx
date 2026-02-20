@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
@@ -21,6 +21,31 @@ interface ProfilePageProps {
   initialProfile: Profile;
   tokens: Token[];
   duplicateNameCount?: number;
+}
+
+type BaseLayerKey = "zec" | "btc" | "eth" | "sol";
+
+const BASE_LAYER_LABELS: Record<BaseLayerKey, string> = {
+  zec: "Zcash",
+  btc: "Bitcoin",
+  eth: "Ethereum",
+  sol: "Solana",
+};
+
+const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
+  zec: 0,
+  btc: 1,
+  eth: 2,
+  sol: 3,
+};
+
+function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
+  const chain = (blockchain ?? "").toLowerCase();
+  if (chain.includes("zec") || chain.includes("zcash")) return "zec";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "btc";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "eth";
+  if (chain.includes("sol") || chain.includes("solana")) return "sol";
+  return null;
 }
 
 export default function ProfilePage({
@@ -84,6 +109,42 @@ export default function ProfilePage({
   const zecTokenId = getTokenId(zecToken) ?? null;
   const selectedToken = tokens.find((t) => getTokenId(t) === originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
+  const memoAssetOptions = useMemo(() => {
+    const allowed = tokens
+      .map((token) => {
+        const baseLayer = getBaseLayerKey(token.blockchain);
+        if (!baseLayer) return null;
+
+        return {
+          id: getTokenId(token) ?? "",
+          symbol: token.symbol,
+          logo: token.logo,
+          chain: BASE_LAYER_LABELS[baseLayer],
+          baseLayer,
+        };
+      })
+      .filter((token): token is {
+        id: string;
+        symbol: string;
+        logo?: string;
+        chain: string;
+        baseLayer: BaseLayerKey;
+      } => Boolean(token && token.id && token.symbol));
+
+    return allowed.sort((a, b) => {
+      const aSymbol = a.symbol.toUpperCase();
+      const bSymbol = b.symbol.toUpperCase();
+
+      if (aSymbol === "ZEC" && bSymbol !== "ZEC") return -1;
+      if (bSymbol === "ZEC" && aSymbol !== "ZEC") return 1;
+
+      const layerDiff =
+        BASE_LAYER_SORT_ORDER[a.baseLayer] - BASE_LAYER_SORT_ORDER[b.baseLayer];
+      if (layerDiff !== 0) return layerDiff;
+
+      return aSymbol.localeCompare(bSymbol);
+    });
+  }, [tokens]);
 
   // Mode selection logic based strictly on profile card side
   useEffect(() => {
@@ -294,14 +355,7 @@ export default function ProfilePage({
                     profile={initialProfile}
                     forceShowQR={forceShowQR}
                     asset={originSymbol}
-                    assetOptions={tokens.map((token) => ({
-                      id: getTokenId(token) ?? "",
-                      symbol: token.symbol,
-                      label: `${token.symbol} - ${token.blockchain}`,
-                      logo: token.logo,
-                      chain: token.blockchain,
-                      decimals: token.decimals,
-                    }))}
+                    assetOptions={memoAssetOptions}
                     onSetAsset={handleSetAsset}
                     memo={memoForm.memo}
                     setMemo={(m) => setMemoForm(prev => ({ ...prev, memo: m }))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
@@ -110,6 +110,8 @@ export default function AmountAndWallet({
   const [isUsdOpen, setIsUsdOpen] = useState(false);
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const [isTokenDropdownOpen, setIsTokenDropdownOpen] = useState(false);
+  const [tokenDropdownPlacement, setTokenDropdownPlacement] = useState<"top" | "bottom">("bottom");
+  const [tokenDropdownWidth, setTokenDropdownWidth] = useState<number | null>(null);
   const [isRefundFocused, setIsRefundFocused] = useState(false);
   const [tokenSearch, setTokenSearch] = useState("");
   const [fiatSearch, setFiatSearch] = useState("");
@@ -120,6 +122,10 @@ export default function AmountAndWallet({
   const [usdInput, setUsdInput] = useState("");
   const [isTypingFiat, setIsTypingFiat] = useState(false);
   const inputContainerRef = useRef<HTMLDivElement>(null);
+  const amountFieldRef = useRef<HTMLDivElement>(null);
+  const tokenTriggerRef = useRef<HTMLButtonElement>(null);
+  const fiatTriggerRef = useRef<HTMLButtonElement>(null);
+  const [currencyDropdownPlacement, setCurrencyDropdownPlacement] = useState<"top" | "bottom">("bottom");
   const [preferFiatValue, setPreferFiatValue] = useState(false);
   const [fiatStateHydrated, setFiatStateHydrated] = useState(false);
   const tapProps = shouldReduceMotion
@@ -278,12 +284,83 @@ export default function AmountAndWallet({
     setIsCurrencyOpen((prev) => !prev);
   };
 
+  const choosePlacement = (
+    triggerEl: HTMLElement | null,
+    preferredMenuHeight = 288
+  ): "top" | "bottom" => {
+    if (!triggerEl || typeof window === "undefined") return "bottom";
+    const rect = triggerEl.getBoundingClientRect();
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const spaceBelow = Math.max(0, viewportHeight - rect.bottom);
+    const spaceAbove = Math.max(0, rect.top);
+
+    if (spaceBelow >= preferredMenuHeight && spaceAbove >= preferredMenuHeight) {
+      return "bottom";
+    }
+    if (spaceAbove > spaceBelow) return "top";
+    return "bottom";
+  };
+
+  useEffect(() => {
+    if (!isTokenDropdownOpen) return;
+
+    const updatePlacement = () => {
+      setTokenDropdownPlacement(choosePlacement(tokenTriggerRef.current, 288));
+      if (!isUsdOpen && tokenTriggerRef.current && amountFieldRef.current) {
+        const triggerRect = tokenTriggerRef.current.getBoundingClientRect();
+        const fieldRect = amountFieldRef.current.getBoundingClientRect();
+        const measuredWidth = Math.max(180, Math.round(triggerRect.right - fieldRect.left));
+        setTokenDropdownWidth(measuredWidth);
+      } else {
+        setTokenDropdownWidth(null);
+      }
+    };
+
+    updatePlacement();
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
+    };
+  }, [isTokenDropdownOpen, isUsdOpen]);
+
+  useEffect(() => {
+    if (!isCurrencyOpen) return;
+
+    const updatePlacement = () => {
+      setCurrencyDropdownPlacement(choosePlacement(fiatTriggerRef.current, 288));
+    };
+
+    updatePlacement();
+    window.addEventListener("resize", updatePlacement);
+    window.addEventListener("scroll", updatePlacement, true);
+
+    return () => {
+      window.removeEventListener("resize", updatePlacement);
+      window.removeEventListener("scroll", updatePlacement, true);
+    };
+  }, [isCurrencyOpen]);
+
   const matchesTokenSearch = (token: TokenOption) => {
     if (!tokenSearch) return true;
     const term = tokenSearch.toLowerCase();
     if (token.symbol?.toLowerCase().includes(term)) return true;
     if (token.label?.toLowerCase().includes(term)) return true;
     return false;
+  };
+
+  const getDropdownMotion = (placement: "top" | "bottom") => {
+    const yOffset = placement === "top" ? 8 : -8;
+    return {
+      initial: { opacity: 0, y: yOffset, scale: 0.98 },
+      animate: { opacity: 1, y: 0, scale: 1 },
+      exit: { opacity: 0, y: yOffset, scale: 0.98 },
+      transition: shouldReduceMotion
+        ? { duration: 0.08 }
+        : { duration: 0.18, ease: "easeOut" as const },
+    };
   };
 
   return (
@@ -314,6 +391,7 @@ export default function AmountAndWallet({
           )}
 
           <div
+            ref={amountFieldRef}
             className="relative min-w-0 max-w-full transition-[width] duration-200 box-border"
             style={showUsdPill ? { width: leftPillWidth } : { width: "100%" }}
           >
@@ -372,6 +450,7 @@ export default function AmountAndWallet({
               {setAsset && assetOptions.length > 0 ? (
                 <div className="pointer-events-auto">
                   <button
+                    ref={tokenTriggerRef}
                     type="button"
                     onClick={() => {
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
@@ -394,65 +473,90 @@ export default function AmountAndWallet({
                 <div className="select-none cursor-not-allowed">{asset}</div>
               )}
             </div>
-            {setAsset && assetOptions.length > 0 && isTokenDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-64 max-h-72 overflow-y-auto bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector">
-                <div className="p-2 border-b border-gray-800">
-                  <input
-                    type="text"
-                    value={tokenSearch}
-                    onChange={(e) => setTokenSearch(e.target.value)}
-                    placeholder="Search tokens..."
-                    className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div className="py-1">
-                  {assetOptions
-                    .filter(matchesTokenSearch)
-                    .map((token) => (
-                      <motion.button
-                        key={token.id}
-                        type="button"
-                        onClick={() => {
-                          setAsset(token.id);
-                          setIsTokenDropdownOpen(false);
-                          setTokenSearch("");
-                        }}
-                        {...tapProps}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                          asset === (token.symbol ?? token.ticker)
-                            ? "bg-blue-50 font-semibold text-gray-900"
-                            : "text-gray-700 hover:bg-gray-50"
-                        }`}
-                      >
-                        {token.logo && (
-                          <img
-                            src={token.logo}
-                            alt={token.symbol}
-                            className="w-5 h-5 rounded-full flex-shrink-0"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.display =
-                                "none";
-                            }}
-                          />
-                        )}
-                        <span className="flex-1 min-w-0">
-                          <div className="font-medium text-gray-800 truncate">
-                            {token.symbol}
-                          </div>
-                          <div className="text-xs text-gray-500 truncate">
-                            {token.chain}
-                          </div>
-                        </span>
-                      </motion.button>
-                    ))}
-                  {assetOptions.filter(matchesTokenSearch).length === 0 && (
-                    <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                      No tokens found
+            <AnimatePresence>
+              {setAsset && assetOptions.length > 0 && isTokenDropdownOpen && (
+                <motion.div
+                  {...getDropdownMotion(tokenDropdownPlacement)}
+                  className={`absolute left-0 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-50 pointer-events-auto token-selector ${
+                    tokenDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
+                  }`}
+                  style={{ width: tokenDropdownWidth ? `${tokenDropdownWidth}px` : "16rem" }}
+                >
+                  {tokenDropdownPlacement === "bottom" && (
+                    <div className="p-2 border-b border-gray-800">
+                      <input
+                        type="text"
+                        value={tokenSearch}
+                        onChange={(e) => setTokenSearch(e.target.value)}
+                        placeholder="Search tokens..."
+                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
                     </div>
                   )}
-                </div>
-              </div>
-            )}
+                  <div className="py-1 max-h-60 overflow-y-auto">
+                    {assetOptions
+                      .filter(matchesTokenSearch)
+                      .map((token) => (
+                        <motion.button
+                          key={token.id}
+                          type="button"
+                          onClick={() => {
+                            setAsset(token.id);
+                            setIsTokenDropdownOpen(false);
+                            setTokenSearch("");
+                          }}
+                          {...tapProps}
+                          className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                            asset === (token.symbol ?? token.ticker)
+                              ? "bg-blue-50 font-semibold text-gray-900"
+                              : "text-gray-700 hover:bg-gray-50"
+                          }`}
+                        >
+                          {token.logo && (
+                            <img
+                              src={token.logo}
+                              alt={token.symbol}
+                              className="w-5 h-5 rounded-full flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display =
+                                  "none";
+                              }}
+                            />
+                          )}
+                          <span className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="text-gray-800 font-semibold truncate">
+                                {token.symbol}
+                              </span>
+                              {token.chain && (
+                                <span className="ml-auto text-xs text-gray-500 text-right truncate font-medium">
+                                  {token.chain}
+                                </span>
+                              )}
+                            </div>
+                          </span>
+                        </motion.button>
+                      ))}
+                    {assetOptions.filter(matchesTokenSearch).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                        No tokens found
+                      </div>
+                    )}
+                  </div>
+                  {tokenDropdownPlacement === "top" && (
+                    <div className="p-2 border-t border-gray-800">
+                      <input
+                        type="text"
+                        value={tokenSearch}
+                        onChange={(e) => setTokenSearch(e.target.value)}
+                        placeholder="Search tokens..."
+                        className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {showUsdPill && (
@@ -534,6 +638,7 @@ export default function AmountAndWallet({
                     />
                     <div className="ml-2 flex items-center gap-1 text-gray-500 shrink-0 fiat-selector">
                       <motion.button
+                        ref={fiatTriggerRef}
                         type="button"
                         {...tapProps}
                         className={INLINE_SELECTOR_TRIGGER_CLASSES}
@@ -557,77 +662,97 @@ export default function AmountAndWallet({
                           ▼
                         </span>
                       </motion.button>
-                      {isCurrencyOpen && (
-                        <div className="absolute right-0 top-full mt-1 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999]">
-                          <div className="p-2 border-b border-gray-800">
-                            <input
-                              type="text"
-                              value={fiatSearch}
-                              onChange={(e) => setFiatSearch(e.target.value)}
-                              placeholder="Search currencies..."
-                              className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                            />
-                          </div>
-                          <div className="py-1 max-h-60 overflow-y-auto">
-                            {FIAT_TICKERS.filter(
-                              (ticker) =>
-                                !fiatSearch ||
-                                ticker
-                                  .toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()) ||
-                                CURRENCIES[ticker]?.name
-                                  ?.toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()) ||
-                                CURRENCIES[ticker]?.symbol
-                                  ?.toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()),
-                            ).map((ticker) => (
-                              <motion.button
-                                key={ticker}
-                                type="button"
-                                onClick={() => {
-                                  setFiat(ticker);
-                                  setIsCurrencyOpen(false);
-                                  setFiatSearch("");
-                                }}
-                                {...tapProps}
-                                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
-                                  fiat === ticker
-                                    ? "bg-blue-50 font-semibold text-gray-900"
-                                    : "text-gray-700 hover:bg-gray-50"
-                                }`}
-                              >
-                                <span className="w-6 text-gray-600 flex-shrink-0">
-                                  {CURRENCIES[ticker]?.symbol || ""}
-                                </span>
-                                <span className="text-gray-800 font-medium flex-shrink-0">
-                                  {ticker}
-                                </span>
-                                <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
-                                  {CURRENCIES[ticker]?.name || ""}
-                                </span>
-                              </motion.button>
-                            ))}
-                            {FIAT_TICKERS.filter(
-                              (ticker) =>
-                                !fiatSearch ||
-                                ticker
-                                  .toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()) ||
-                                CURRENCIES[ticker]?.name
-                                  ?.toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()) ||
-                                CURRENCIES[ticker]?.symbol
-                                  ?.toLowerCase()
-                                  .includes(fiatSearch.toLowerCase()),
-                            ).length === 0 && (
-                              <div className="px-3 py-2 text-sm text-gray-500 text-center">
-                                No currencies found
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                      <AnimatePresence>
+                        {isCurrencyOpen && (
+                          <motion.div
+                            {...getDropdownMotion(currencyDropdownPlacement)}
+                            className={`absolute right-0 w-64 max-h-72 overflow-hidden bg-white border border-gray-800 rounded-xl shadow-lg z-[9999] ${
+                              currencyDropdownPlacement === "top" ? "bottom-full mb-1" : "top-full mt-1"
+                            }`}
+                          >
+                            {currencyDropdownPlacement === "bottom" && (
+                              <div className="p-2 border-b border-gray-800">
+                                <input
+                                type="text"
+                                value={fiatSearch}
+                                onChange={(e) => setFiatSearch(e.target.value)}
+                                placeholder="Search currencies..."
+                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          )}
+                            <div className="py-1 max-h-60 overflow-y-auto">
+                              {FIAT_TICKERS.filter(
+                                (ticker) =>
+                                  !fiatSearch ||
+                                  ticker
+                                    .toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()) ||
+                                  CURRENCIES[ticker]?.name
+                                    ?.toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()) ||
+                                  CURRENCIES[ticker]?.symbol
+                                    ?.toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()),
+                              ).map((ticker) => (
+                                <motion.button
+                                  key={ticker}
+                                  type="button"
+                                  onClick={() => {
+                                    setFiat(ticker);
+                                    setIsCurrencyOpen(false);
+                                    setFiatSearch("");
+                                  }}
+                                  {...tapProps}
+                                  className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 transition-colors ${
+                                    fiat === ticker
+                                      ? "bg-blue-50 font-semibold text-gray-900"
+                                      : "text-gray-700 hover:bg-gray-50"
+                                  }`}
+                                >
+                                  <span className="w-6 text-gray-600 flex-shrink-0">
+                                    {CURRENCIES[ticker]?.symbol || ""}
+                                  </span>
+                                  <span className="text-gray-800 font-medium flex-shrink-0">
+                                    {ticker}
+                                  </span>
+                                  <span className="ml-auto text-xs text-gray-500 text-right truncate flex-1 min-w-0">
+                                    {CURRENCIES[ticker]?.name || ""}
+                                  </span>
+                                </motion.button>
+                              ))}
+                              {FIAT_TICKERS.filter(
+                                (ticker) =>
+                                  !fiatSearch ||
+                                  ticker
+                                    .toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()) ||
+                                  CURRENCIES[ticker]?.name
+                                    ?.toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()) ||
+                                  CURRENCIES[ticker]?.symbol
+                                    ?.toLowerCase()
+                                    .includes(fiatSearch.toLowerCase()),
+                              ).length === 0 && (
+                                <div className="px-3 py-2 text-sm text-gray-500 text-center">
+                                  No currencies found
+                                </div>
+                              )}
+                            </div>
+                            {currencyDropdownPlacement === "top" && (
+                              <div className="p-2 border-t border-gray-800">
+                                <input
+                                type="text"
+                                value={fiatSearch}
+                                onChange={(e) => setFiatSearch(e.target.value)}
+                                placeholder="Search currencies..."
+                                className="w-full px-2 py-1.5 text-sm border border-gray-800 rounded-lg bg-white text-gray-900 placeholder-gray-500 hover:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              />
+                            </div>
+                          )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   </>
                 )}
