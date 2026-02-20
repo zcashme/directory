@@ -8,7 +8,7 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import type { Profile } from "@/lib/profile/types";
 import { formatUsername } from "./profileCardUtils";
 
-const RANK_PERIODS = ["alltime", "weekly", "monthly", "daily"] as const;
+const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 
 interface ProfileCardListViewProps {
   profile: Profile;
@@ -44,7 +44,10 @@ export default function ProfileCardListView({ profile }: ProfileCardListViewProp
 }
 
 function RankBadges({ profile }: { profile: Profile }) {
-  const hasAwards = RANK_PERIODS.some((p) => (profile[`rank_${p}`] ?? 0) > 0);
+  const hasAwards = RANK_PERIODS.some((p) => {
+    const rank = profile[`rank_${p}`] ?? 0;
+    return rank > 0 && rank <= 10;
+  });
   if (!hasAwards) return null;
 
   return (

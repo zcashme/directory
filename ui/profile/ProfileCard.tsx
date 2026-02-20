@@ -37,7 +37,7 @@ const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
 
-const RANK_PERIODS = ["alltime", "weekly", "monthly", "daily"] as const;
+const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
   row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
@@ -69,7 +69,10 @@ export default function ProfileCard({
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? linksArray.length;
   const warningConfig = getWarningConfig({ profile, warning: true, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames: duplicateNameCount > 1 });
-  const hasAwards = RANK_PERIODS.some((p) => (profile[`rank_${p}`] ?? 0) > 0);
+  const hasAwards = RANK_PERIODS.some((p) => {
+    const rank = profile[`rank_${p}`] ?? 0;
+    return rank > 0 && rank <= 10;
+  });
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
 
