@@ -152,7 +152,11 @@ export default function ProfileCard({
               </div>
 
               {/* Avatar */}
-              <div className="absolute left-1/2 top-0 z-20" style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))` }}>
+              <div
+                className={`absolute left-1/2 top-0 z-20 transition-opacity duration-150 ${showBack ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+                style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))`, visibility: showBack ? "hidden" : "visible" }}
+                aria-hidden={showBack}
+              >
                 <ProfileAvatar profile={profile} size={AVATAR_SIZE} imageClassName="object-contain" className="mx-auto shadow-xs flex items-center justify-center" />
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
