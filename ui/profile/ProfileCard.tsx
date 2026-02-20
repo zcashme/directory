@@ -66,7 +66,6 @@ export default function ProfileCard({
   const [showBack, setShowBack] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
-  const [isDesktop, setIsDesktop] = useState(false);
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
@@ -78,7 +77,7 @@ export default function ProfileCard({
   });
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-  const resolvedCardWidth = isDesktop && Number.isFinite(cardWidthPx)
+  const resolvedCardWidth = Number.isFinite(cardWidthPx)
     ? Math.min(760, Math.max(320, Math.round(cardWidthPx ?? 0)))
     : null;
   const actionInsetPx = resolvedCardWidth
@@ -130,12 +129,6 @@ export default function ProfileCard({
   });
 
   useEffect(() => { onEditorModeChange?.(showBack); }, [showBack, onEditorModeChange]);
-  useEffect(() => {
-    const updateViewport = () => setIsDesktop(window.innerWidth >= 768);
-    updateViewport();
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
-  }, []);
 
   if (!fullView) return <ProfileCardListView profile={profile} />;
 
