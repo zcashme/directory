@@ -16,6 +16,7 @@ import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
+import { validateZcashAddress } from "@/ui/signup/zcashAddress";
 
 function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
   const trimmed = (rawUrl || "").trim();
@@ -303,6 +304,29 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
     setAvatarUploadError(null);
   };
 
+  const addressValidation = validateZcashAddress(form.address.trim());
+  const addressReadyForVerification =
+    !!form.address.trim() &&
+    addressValidation.valid &&
+    addressValidation.type !== "tex" &&
+    addressValidation.type !== "transparent";
+
+  const getAddressFieldError = () => {
+    if (!form.address.trim()) return "Zcash Address is required to start verification.";
+    if (!addressValidation.valid) return "Enter a valid Zcash address.";
+    if (addressValidation.type === "tex") return "TEX addresses are not supported for verification. Use a z- or u-address.";
+    if (addressValidation.type === "transparent") return "Transparent addresses are not supported for verification. Use a z- or u-address.";
+    return null;
+  };
+  const addressFieldError = getAddressFieldError();
+
+  const handleStartVerification = () => {
+    if (!addressReadyForVerification) {
+      return;
+    }
+    onGenerateQr?.();
+  };
+
   const handleAvatarFileSelection = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -463,7 +487,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         <ProfileField
           label="Profile Image"
           htmlFor="pimg"
-          helpText="New images are applied only after OTP verification. Deleting marks the image for removal, and it is removed after OTP verification."
+          helpText="New images are applied only after OTP verification. Deleting marks the image for removal."
           isDeleted={deletedFields.profile_image_url}
           deleteDisabled={!originals.profile_image_url}
           onDelete={toggleProfileImageDelete}
@@ -541,7 +565,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         <ProfileField
           label="Zcash Address"
           htmlFor="addr"
-          helpText="Your Zcash address where verification codes are sent."
+          helpText="One-time passcodes are sent to your current address on file, not to a newly requested address change."
           isDeleted={deletedFields.address}
           deleteDisabled={!profile.address_verified}
           onDelete={toggleAddress}
@@ -559,6 +583,9 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
             onChange={(e) => handleChange("address", e.target.value)}
             className={`${FIELD_CLASS} font-mono`}
           />
+          {addressFieldError && (
+            <p className="mt-1 text-xs text-red-600">{addressFieldError}</p>
+          )}
         </ProfileField>
 
         {/* USERNAME */}
@@ -812,7 +839,8 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               type="button"
               variant="secondary"
               size="md"
-              onClick={onGenerateQr}
+              onClick={handleStartVerification}
+              disabled={!addressReadyForVerification}
               className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
             >
               Start Verification
