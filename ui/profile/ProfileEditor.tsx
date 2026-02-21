@@ -459,6 +459,84 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <div className="w-full max-w-xl bg-transparent overflow-visible">
+        {/* PROFILE IMAGE URL */}
+        <ProfileField
+          label="Profile Image"
+          htmlFor="pimg"
+          helpText="New images are applied only after OTP verification. Deleting marks the image for removal, and it is removed after OTP verification."
+          isDeleted={deletedFields.profile_image_url}
+          deleteDisabled={!originals.profile_image_url}
+          onDelete={toggleProfileImageDelete}
+        >
+          <input
+            id="pimg"
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+            className="hidden"
+            onChange={handleAvatarFileSelection}
+          />
+          <div className="mt-2 flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={handleAvatarUploadClick}
+              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+            >
+              Upload
+            </Button>
+            {pendingAvatarUpload ? (
+              <span className="text-xs text-gray-700">
+                Pending: <span className="font-mono">{pendingAvatarUpload.fileName}</span> ({Math.round(pendingAvatarUpload.sizeBytes / 1024)} KB, {pendingAvatarUpload.width} x {pendingAvatarUpload.height}). This will upload after OTP verification.
+              </span>
+            ) : (
+              <span className="text-xs text-gray-600">
+                Requirements: JPG, PNG, or non-animated GIF, max 2 MB (recommended 400 x 400).
+              </span>
+            )}
+          </div>
+          {pendingAvatarUpload && pendingAvatarPreviewSrc && (
+            <div className="mt-3 relative w-full max-w-[240px] rounded-xl border border-gray-300 bg-white/70 p-3">
+              <button
+                type="button"
+                onClick={handlePendingAvatarRemove}
+                aria-label="Remove pending upload"
+                title="Remove pending upload"
+                className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full border border-gray-300 bg-white/90 text-gray-700 text-sm leading-none hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+              >
+                X
+              </button>
+              <div className="w-full flex items-center justify-center">
+                <div
+                  className="relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)]"
+                  style={{ width: "126px", height: "126px" }}
+                >
+                  <div className="absolute inset-[2px] rounded-full overflow-hidden">
+                    <img
+                      src={pendingAvatarPreviewSrc}
+                      alt={profile.display_name || profile.name || "Profile image preview"}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {deletedFields.profile_image_url && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Profile image is marked for deletion and will be removed from your profile and storage after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
+          {avatarUploadError && (
+            <Alert variant="error" size="sm" message={avatarUploadError} className="mt-1" />
+          )}
+        </ProfileField>
+
         {/* ZCASH ADDRESS */}
         <ProfileField
           label="Zcash Address"
@@ -615,80 +693,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               }
             }}
           />
-        </ProfileField>
-
-        {/* PROFILE IMAGE URL */}
-        <ProfileField
-          label="Profile Image"
-          htmlFor="pimg"
-          helpText="Upload JPG/PNG/non-animated GIF (max 2 MB, recommended 400 x 400)."
-          isDeleted={deletedFields.profile_image_url}
-          deleteDisabled={!originals.profile_image_url}
-          onDelete={toggleProfileImageDelete}
-        >
-          <input
-            id="pimg"
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
-            className="hidden"
-            onChange={handleAvatarFileSelection}
-          />
-          <div className="mt-2 flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="secondary"
-              onClick={handleAvatarUploadClick}
-              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-            >
-              Upload
-            </Button>
-            {pendingAvatarUpload && (
-              <span className="text-xs text-gray-700">
-                Pending: <span className="font-mono">{pendingAvatarUpload.fileName}</span> ({Math.round(pendingAvatarUpload.sizeBytes / 1024)} KB, {pendingAvatarUpload.width} x {pendingAvatarUpload.height}). This will upload after OTP verification.
-              </span>
-            )}
-          </div>
-          {pendingAvatarUpload && pendingAvatarPreviewSrc && (
-            <div className="mt-3 relative w-full max-w-[240px] rounded-xl border border-gray-300 bg-white/70 p-3">
-              <button
-                type="button"
-                onClick={handlePendingAvatarRemove}
-                aria-label="Remove pending upload"
-                title="Remove pending upload"
-                className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full border border-gray-300 bg-white/90 text-gray-700 text-sm leading-none hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-              >
-                X
-              </button>
-              <div className="w-full flex items-center justify-center">
-                <div
-                  className="relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)]"
-                  style={{ width: "126px", height: "126px" }}
-                >
-                  <div className="absolute inset-[2px] rounded-full overflow-hidden">
-                    <img
-                      src={pendingAvatarPreviewSrc}
-                      alt={profile.display_name || profile.name || "Profile image preview"}
-                      className="w-full h-full object-contain"
-                      loading="lazy"
-                      referrerPolicy="no-referrer"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-          {deletedFields.profile_image_url && (
-            <Alert
-              variant="error"
-              size="sm"
-              message="Profile image is marked for deletion and will be removed from your profile and storage after OTP verification. Reset to undo."
-              className="mt-1"
-            />
-          )}
-          {avatarUploadError && (
-            <Alert variant="error" size="sm" message={avatarUploadError} className="mt-1" />
-          )}
         </ProfileField>
 
         {/* Links */}
