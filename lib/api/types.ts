@@ -214,8 +214,20 @@ export interface ProfileEditsPayload {
   display_name?: string;
   bio?: string;
   profile_image_url?: string;
+  remove_profile_image?: boolean;
   nearest_city_name?: string;
+  avatar_upload?: AvatarUploadPayload;
   links?: ProfileLinkEdit[];
+}
+
+export interface AvatarUploadPayload {
+  fileName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/gif";
+  extension: "jpg" | "png" | "gif";
+  base64Data: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
 }
 
 /**

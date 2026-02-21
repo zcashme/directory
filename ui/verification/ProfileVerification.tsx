@@ -22,7 +22,7 @@ export default function ProfileVerification({
   generateQrTrigger = 0,
 }: ProfileVerificationProps) {
   // Get edits from store
-  const { form, original } = useEditsStore();
+  const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
 
   // Build edits payload from store (only include changed fields)
   const buildEditsPayload = useCallback((): ProfileEditsPayload | undefined => {
@@ -42,12 +42,19 @@ export default function ProfileVerification({
       edits.bio = form.bio;
       hasChanges = true;
     }
-    if (form.profile_image_url !== original.profile_image_url) {
+    if (deletedFields.profile_image_url) {
+      edits.remove_profile_image = true;
+      hasChanges = true;
+    } else if (!pendingAvatarUpload && form.profile_image_url !== original.profile_image_url) {
       edits.profile_image_url = form.profile_image_url;
       hasChanges = true;
     }
     if (form.nearest_city_name !== original.nearest_city_name) {
       edits.nearest_city_name = form.nearest_city_name;
+      hasChanges = true;
+    }
+    if (pendingAvatarUpload) {
+      edits.avatar_upload = pendingAvatarUpload;
       hasChanges = true;
     }
 
@@ -82,7 +89,7 @@ export default function ProfileVerification({
     }
 
     return hasChanges ? edits : undefined;
-  }, [form, original]);
+  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload]);
 
   // Local UI state
   const [qrVisible, setQrVisible] = useState(false);
@@ -148,6 +155,17 @@ export default function ProfileVerification({
       const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo, edits);
 
       if (response.ok) {
+        const responseData = response.data as Record<string, unknown> | undefined;
+        const nextProfileImageUrl =
+          typeof responseData?.profile_image_url === "string"
+            ? responseData.profile_image_url
+            : responseData?.profile_image_url === null
+              ? ""
+              : null;
+        if (nextProfileImageUrl !== null) {
+          updateField("profile_image_url", nextProfileImageUrl);
+          clearPendingAvatarUpload();
+        }
         const message = edits
           ? "Verification successful! Changes saved. Refreshing..."
           : "Verification successful! Refreshing...";
@@ -175,7 +193,7 @@ export default function ProfileVerification({
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id, currentMemo, buildEditsPayload]);
+  }, [otp, profile.id, currentMemo, buildEditsPayload, clearPendingAvatarUpload, updateField]);
 
   // Handle OTP input change - strip non-digits
   const handleOtpChange = useCallback((value: string) => {

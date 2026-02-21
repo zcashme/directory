@@ -29,6 +29,16 @@ export interface FormState {
   nearest_city_name: string;
 }
 
+export interface PendingAvatarUpload {
+  fileName: string;
+  mimeType: "image/jpeg" | "image/png" | "image/gif";
+  extension: "jpg" | "png" | "gif";
+  base64Data: string;
+  sizeBytes: number;
+  width: number;
+  height: number;
+}
+
 interface DeletedFields {
   address: boolean;
   name: boolean;
@@ -42,11 +52,14 @@ interface EditsState {
   form: FormState;
   original: FormState;
   deletedFields: DeletedFields;
+  pendingAvatarUpload: PendingAvatarUpload | null;
   sessionId: string;
 
   setForm: (form: FormState | ((prev: FormState) => FormState)) => void;
   updateField: (field: keyof FormState, value: any) => void;
   setDeletedField: (field: keyof DeletedFields, value: boolean) => void;
+  setPendingAvatarUpload: (upload: PendingAvatarUpload | null) => void;
+  clearPendingAvatarUpload: () => void;
   initializeForm: (profile: Profile, links: ParsedLink[]) => void;
   reset: () => void;
 }
@@ -74,6 +87,7 @@ export const useEditsStore = create<EditsState>((set) => ({
   form: emptyForm,
   original: emptyForm,
   deletedFields: emptyDeletedFields,
+  pendingAvatarUpload: null,
   sessionId: crypto.randomUUID(),
 
   setForm: (form) =>
@@ -111,6 +125,16 @@ export const useEditsStore = create<EditsState>((set) => ({
       };
     }),
 
+  setPendingAvatarUpload: (upload) =>
+    set({
+      pendingAvatarUpload: upload,
+    }),
+
+  clearPendingAvatarUpload: () =>
+    set({
+      pendingAvatarUpload: null,
+    }),
+
   initializeForm: (profile, links) =>
     set({
       form: {
@@ -132,6 +156,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         nearest_city_name: profile.nearest_city_name ?? '',
       },
       deletedFields: emptyDeletedFields,
+      pendingAvatarUpload: null,
       sessionId: crypto.randomUUID(),
     }),
 
@@ -140,6 +165,7 @@ export const useEditsStore = create<EditsState>((set) => ({
       form: emptyForm,
       original: emptyForm,
       deletedFields: emptyDeletedFields,
+      pendingAvatarUpload: null,
       sessionId: crypto.randomUUID(),
     }),
 }));

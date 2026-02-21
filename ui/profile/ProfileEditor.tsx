@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo } from "react";
-import type { MouseEvent } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
 import LinkInput from "@/ui/signup/LinkInput";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl, normalizeSocialUsername, HOSTS } from "@/lib/profile/usernameNormalizer";
@@ -8,7 +8,6 @@ import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileActio
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
-import { AvatarPreviewModal } from "@/ui/profile/editorModals";
 import { isValidUrl } from "@/lib/profile/urlValidation";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
@@ -50,35 +49,81 @@ function parseSocialUrl(rawUrl: string | null | undefined): {
   };
 }
 
-function isValidImageUrl(url: string | null | undefined): {
-  valid: boolean;
-  reason: string | null;
-} {
-  if (!url) return { valid: true, reason: null };
-  const trimmed = url.trim();
-  const { valid } = isValidUrl(trimmed);
-  if (!valid) return { valid: false, reason: "Invalid URL format" };
-  const hasImageExt = /\.(png|jpg)(\?.*)?$/i.test(trimmed);
-  let isGithubAvatar = false;
-  if (!hasImageExt) {
-    try {
-      const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
-      const u = new URL(normalized);
-      isGithubAvatar = u.hostname.toLowerCase() === "avatars.githubusercontent.com";
-    } catch {
-      isGithubAvatar = false;
-    }
-  }
-  if (!hasImageExt && !isGithubAvatar) return { valid: false, reason: "Image URL must end in .png or .jpg" };
-  return { valid: true, reason: null };
-}
-
 const FIELD_CLASS =
   `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_FIELD_CLASS =
   `rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 appearance-none ${withFieldBorderState("border-[#0a1126]/60")}`;
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
+const MAX_AVATAR_FILE_SIZE_BYTES = 2 * 1024 * 1024;
+const SUPPORTED_AVATAR_MIME_TYPES = ["image/jpeg", "image/png", "image/gif"] as const;
+
+function parseDataUrl(dataUrl: string): { mimeType: string; base64Data: string } | null {
+  const match = /^data:([^;]+);base64,(.+)$/i.exec(dataUrl);
+  if (!match) return null;
+  return { mimeType: match[1].toLowerCase(), base64Data: match[2] };
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("Failed to read file."));
+    };
+    reader.onerror = () => reject(new Error("Failed to read file."));
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageDimensions(file: File): Promise<{ width: number; height: number }> {
+  return new Promise((resolve, reject) => {
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const result = { width: img.naturalWidth, height: img.naturalHeight };
+      URL.revokeObjectURL(objectUrl);
+      resolve(result);
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("Unable to read image dimensions."));
+    };
+    img.src = objectUrl;
+  });
+}
+
+function isAnimatedGif(buffer: ArrayBuffer): boolean {
+  const bytes = new Uint8Array(buffer);
+  if (bytes.length < 13) return false;
+  if (
+    bytes[0] !== 0x47 || bytes[1] !== 0x49 || bytes[2] !== 0x46 ||
+    bytes[3] !== 0x38 || (bytes[4] !== 0x37 && bytes[4] !== 0x39) || bytes[5] !== 0x61
+  ) {
+    return false;
+  }
+
+  let frameCount = 0;
+  for (let i = 13; i < bytes.length; i += 1) {
+    const b = bytes[i];
+    if (b === 0x2c) {
+      frameCount += 1;
+      if (frameCount > 1) return true;
+      continue;
+    }
+    if (b === 0x21) {
+      i += 1;
+      while (i < bytes.length) {
+        const blockSize = bytes[i];
+        if (blockSize === 0) break;
+        i += blockSize + 1;
+      }
+      continue;
+    }
+    if (b === 0x3b) break;
+  }
+  return false;
+}
 
 interface CharCounterProps {
   text: string;
@@ -111,12 +156,20 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
   const {
     form,
     deletedFields,
+    pendingAvatarUpload,
     setForm,
     updateField,
     setDeletedField,
+    setPendingAvatarUpload,
+    clearPendingAvatarUpload,
     initializeForm,
   } = useEditsStore();
-  const [avatarPreviewOpen, setAvatarPreviewOpen] = useState(false);
+  const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const pendingAvatarPreviewSrc = useMemo(() => {
+    if (!pendingAvatarUpload) return "";
+    return `data:${pendingAvatarUpload.mimeType};base64,${pendingAvatarUpload.base64Data}`;
+  }, [pendingAvatarUpload]);
 
   // Display value for city search input (local UI state)
   const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name ?? "");
@@ -148,15 +201,6 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
     initializeForm(profile, originalLinks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id]); // Only re-initialize if profile ID changes
-
-  const [imageUrlValid, setImageUrlValid] = useState(true);
-  const [imageUrlReason, setImageUrlReason] = useState<string | null>(null);
-
-  useEffect(() => {
-    const { valid, reason } = isValidImageUrl(form.profile_image_url);
-    setImageUrlValid(valid);
-    setImageUrlReason(reason);
-  }, [form.profile_image_url]);
 
   const originals = useMemo(
     () => ({
@@ -249,6 +293,76 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
   const handleChange = (field: string, value: string) =>
     updateField(field as keyof FormState, value);
 
+  const handleAvatarUploadClick = () => {
+    setAvatarUploadError(null);
+    fileInputRef.current?.click();
+  };
+
+  const handlePendingAvatarRemove = () => {
+    clearPendingAvatarUpload();
+    setAvatarUploadError(null);
+  };
+
+  const handleAvatarFileSelection = async (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setAvatarUploadError(null);
+    if (deletedFields.profile_image_url) {
+      setDeletedField("profile_image_url", false);
+    }
+
+    const type = (file.type || "").toLowerCase();
+    if (!SUPPORTED_AVATAR_MIME_TYPES.includes(type as (typeof SUPPORTED_AVATAR_MIME_TYPES)[number])) {
+      setAvatarUploadError("Unsupported format. Use JPG, PNG, or non-animated GIF.");
+      e.target.value = "";
+      return;
+    }
+
+    if (file.size > MAX_AVATAR_FILE_SIZE_BYTES) {
+      setAvatarUploadError("File too large. Maximum size is 2 MB.");
+      e.target.value = "";
+      return;
+    }
+
+    try {
+      const [dimensions, dataUrl] = await Promise.all([
+        loadImageDimensions(file),
+        readFileAsDataUrl(file),
+      ]);
+      const parsed = parseDataUrl(dataUrl);
+      if (!parsed) {
+        setAvatarUploadError("Could not parse selected image.");
+        e.target.value = "";
+        return;
+      }
+
+      if (type === "image/gif") {
+        const buffer = await file.arrayBuffer();
+        if (isAnimatedGif(buffer)) {
+          setAvatarUploadError("Animated GIFs are not supported. Please upload a non-animated GIF.");
+          e.target.value = "";
+          return;
+        }
+      }
+
+      const extension = type === "image/png" ? "png" : type === "image/gif" ? "gif" : "jpg";
+      setPendingAvatarUpload({
+        fileName: file.name,
+        mimeType: type as "image/jpeg" | "image/png" | "image/gif",
+        extension,
+        base64Data: parsed.base64Data,
+        sizeBytes: file.size,
+        width: dimensions.width,
+        height: dimensions.height,
+      });
+    } catch {
+      setAvatarUploadError("Failed to validate image. Please choose a different file.");
+    } finally {
+      e.target.value = "";
+    }
+  };
+
 
   const handleLinkChange = (uid: string, value: string) => {
     setForm((prev) => ({
@@ -333,13 +447,17 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
     setUsernameInput(nextDeleted ? "" : originals.name);
   };
 
+  const toggleProfileImageDelete = () => {
+    const nextDeleted = !deletedFields.profile_image_url;
+    if (nextDeleted) {
+      clearPendingAvatarUpload();
+      setAvatarUploadError(null);
+    }
+    setDeletedField("profile_image_url", nextDeleted);
+  };
+
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
-      <AvatarPreviewModal
-        isOpen={avatarPreviewOpen}
-        src={(form.profile_image_url ?? originals.profile_image_url ?? "").trim()}
-        onClose={() => setAvatarPreviewOpen(false)}
-      />
       <div className="w-full max-w-xl bg-transparent overflow-visible">
         {/* ZCASH ADDRESS */}
         <ProfileField
@@ -501,32 +619,75 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
 
         {/* PROFILE IMAGE URL */}
         <ProfileField
-          label="Profile Image URL"
+          label="Profile Image"
           htmlFor="pimg"
-          helpText="Link to PNG or JPG. Search 'free image link host'."
+          helpText="Upload JPG/PNG/non-animated GIF (max 2 MB, recommended 400 x 400)."
           isDeleted={deletedFields.profile_image_url}
           deleteDisabled={!originals.profile_image_url}
-          onDelete={() => setDeletedField("profile_image_url", !deletedFields.profile_image_url)}
+          onDelete={toggleProfileImageDelete}
         >
           <input
             id="pimg"
-            type="url"
-            value={form.profile_image_url}
-            placeholder={originals.profile_image_url}
-            onChange={(e) => handleChange("profile_image_url", e.target.value)}
-            className={`${FIELD_CLASS} font-mono ${imageUrlValid ? "" : withFieldBorderState("border-[#0a1126]/60", true)}`}
+            ref={fileInputRef}
+            type="file"
+            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+            className="hidden"
+            onChange={handleAvatarFileSelection}
           />
-          <div className="mt-2">
+          <div className="mt-2 flex items-center gap-2">
             <Button
               size="sm"
               variant="secondary"
-              onClick={() => setAvatarPreviewOpen(true)}
+              onClick={handleAvatarUploadClick}
+              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
             >
-              Preview Avatar
+              Upload
             </Button>
+            {pendingAvatarUpload && (
+              <span className="text-xs text-gray-700">
+                Pending: <span className="font-mono">{pendingAvatarUpload.fileName}</span> ({Math.round(pendingAvatarUpload.sizeBytes / 1024)} KB, {pendingAvatarUpload.width} x {pendingAvatarUpload.height}). This will upload after OTP verification.
+              </span>
+            )}
           </div>
-          {!imageUrlValid && imageUrlReason && (
-            <Alert variant="error" size="sm" message={imageUrlReason} className="mt-1" />
+          {pendingAvatarUpload && pendingAvatarPreviewSrc && (
+            <div className="mt-3 relative w-full max-w-[240px] rounded-xl border border-gray-300 bg-white/70 p-3">
+              <button
+                type="button"
+                onClick={handlePendingAvatarRemove}
+                aria-label="Remove pending upload"
+                title="Remove pending upload"
+                className="absolute top-1 right-1 z-10 w-6 h-6 rounded-full border border-gray-300 bg-white/90 text-gray-700 text-sm leading-none hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+              >
+                X
+              </button>
+              <div className="w-full flex items-center justify-center">
+                <div
+                  className="relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)]"
+                  style={{ width: "126px", height: "126px" }}
+                >
+                  <div className="absolute inset-[2px] rounded-full overflow-hidden">
+                    <img
+                      src={pendingAvatarPreviewSrc}
+                      alt={profile.display_name || profile.name || "Profile image preview"}
+                      className="w-full h-full object-contain"
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          {deletedFields.profile_image_url && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Profile image is marked for deletion and will be removed from your profile and storage after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
+          {avatarUploadError && (
+            <Alert variant="error" size="sm" message={avatarUploadError} className="mt-1" />
           )}
         </ProfileField>
 

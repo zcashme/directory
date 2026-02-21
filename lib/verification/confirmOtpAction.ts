@@ -8,6 +8,62 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 
+const AVATAR_BUCKET = "zcashme";
+const AVATAR_FOLDER = "avatar_uploads";
+const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
+const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif"]);
+const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png", "gif"]);
+
+function withCacheVersion(url: string): string {
+  try {
+    const parsed = new URL(url);
+    parsed.searchParams.set("v", Date.now().toString());
+    return parsed.toString();
+  } catch {
+    const separator = url.includes("?") ? "&" : "?";
+    return `${url}${separator}v=${Date.now()}`;
+  }
+}
+
+function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
+  try {
+    const normalized = base64Data.replace(/\s+/g, "");
+    const buffer = Buffer.from(normalized, "base64");
+    if (!buffer || buffer.length === 0) return null;
+    return new Uint8Array(buffer);
+  } catch {
+    return null;
+  }
+}
+
+async function removeExistingAvatarVariants(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  profileId: number
+): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Supabase client not available." };
+  const prefix = `${profileId}_avatar`;
+  const { data: files, error: listError } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .list(AVATAR_FOLDER, { limit: 200, search: prefix });
+
+  if (listError) {
+    return { ok: false, error: listError.message || "Failed to list existing avatars." };
+  }
+
+  const targets = (files || [])
+    .map((f) => f.name)
+    .filter((name) => name.toLowerCase() === prefix.toLowerCase() || new RegExp(`^${prefix}\\.[^./]+$`, "i").test(name))
+    .map((name) => `${AVATAR_FOLDER}/${name}`);
+
+  if (targets.length === 0) return { ok: true };
+
+  const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove(targets);
+  if (removeError) {
+    return { ok: false, error: removeError.message || "Failed to remove previous avatar." };
+  }
+  return { ok: true };
+}
+
 /**
  * Server Action for confirming OTP using HMAC-SHA256 verification.
  *
@@ -127,12 +183,95 @@ export async function confirmOtpAction(
 
     // --- Apply profile update -----------------------------------------------
     const profileUpdate: Record<string, unknown> = { address_verified: true };
+    let uploadedAvatarUrl: string | null = null;
+    const removeProfileImage = edits?.remove_profile_image === true;
+
+    if (removeProfileImage && edits?.avatar_upload) {
+      return {
+        ok: false,
+        error: "Cannot delete and upload a profile image in the same verification.",
+        data: { status: "invalid" },
+      };
+    }
+
+    if (removeProfileImage) {
+      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      if (!removeExisting.ok) {
+        return {
+          ok: false,
+          error: removeExisting.error || "Failed to delete profile image.",
+          data: { status: "error" },
+        };
+      }
+      profileUpdate.profile_image_url = null;
+    }
+
+    if (!removeProfileImage && edits?.avatar_upload) {
+      const { mimeType, extension, base64Data, sizeBytes, width, height } = edits.avatar_upload;
+      const normalizedMimeType = (mimeType || "").toLowerCase();
+      const normalizedExtension = (extension || "").toLowerCase();
+
+      if (!ALLOWED_AVATAR_MIME_TYPES.has(normalizedMimeType)) {
+        return { ok: false, error: "Unsupported avatar format.", data: { status: "invalid" } };
+      }
+      if (!ALLOWED_AVATAR_EXTENSIONS.has(normalizedExtension)) {
+        return { ok: false, error: "Unsupported avatar file extension.", data: { status: "invalid" } };
+      }
+      if (!Number.isFinite(sizeBytes) || sizeBytes <= 0 || sizeBytes > MAX_AVATAR_SIZE_BYTES) {
+        return { ok: false, error: "Avatar file exceeds the 2 MB limit.", data: { status: "invalid" } };
+      }
+      if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return { ok: false, error: "Invalid avatar dimensions.", data: { status: "invalid" } };
+      }
+
+      const fileBytes = decodeBase64ToBytes(base64Data);
+      if (!fileBytes) {
+        return { ok: false, error: "Could not decode avatar image.", data: { status: "invalid" } };
+      }
+      if (fileBytes.byteLength > MAX_AVATAR_SIZE_BYTES) {
+        return { ok: false, error: "Avatar file exceeds the 2 MB limit.", data: { status: "invalid" } };
+      }
+
+      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      if (!removeExisting.ok) {
+        return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
+      }
+
+      const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar`;
+      const { error: uploadError } = await supabase.storage
+        .from(AVATAR_BUCKET)
+        .upload(avatarPath, fileBytes, {
+          contentType: normalizedMimeType,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        return {
+          ok: false,
+          error: uploadError.message || "Failed to upload avatar image.",
+          data: { status: "error" },
+        };
+      }
+
+      const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+      uploadedAvatarUrl = publicData?.publicUrl || null;
+      if (!uploadedAvatarUrl) {
+        return {
+          ok: false,
+          error: "Avatar uploaded, but public URL generation failed.",
+          data: { status: "error" },
+        };
+      }
+      profileUpdate.profile_image_url = withCacheVersion(uploadedAvatarUrl);
+    }
 
     if (edits) {
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
-      if (edits.profile_image_url !== undefined) profileUpdate.profile_image_url = edits.profile_image_url;
+      if (!removeProfileImage && !uploadedAvatarUrl && edits.profile_image_url !== undefined) {
+        profileUpdate.profile_image_url = edits.profile_image_url;
+      }
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }
 
@@ -192,7 +331,18 @@ export async function confirmOtpAction(
       };
     }
 
-    return { ok: true, data: { status: "verified" } };
+    return {
+      ok: true,
+      data: {
+        status: "verified",
+        profile_image_url:
+          typeof profileUpdate.profile_image_url === "string"
+            ? profileUpdate.profile_image_url
+            : profileUpdate.profile_image_url === null
+              ? null
+              : undefined,
+      },
+    };
   } catch (error) {
     return {
       ok: false,
