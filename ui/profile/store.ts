@@ -4,6 +4,7 @@ import type { Profile } from '@/lib/profile/types';
 export interface ParsedLink {
   id: number | null;
   url: string;
+  _delete?: boolean;
   username?: string;
   previewUrl?: string;
   valid: boolean;

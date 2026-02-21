@@ -130,14 +130,80 @@ interface CharCounterProps {
   text: string;
 }
 
+function BioLeftIcon({ text }: CharCounterProps) {
+  const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
+  const showCircle = bytes > 25;
+
+  if (!showCircle) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
+        <path
+          d="M3 11L4 8L9.5 2.5C9.9 2.1 10.5 2.1 10.9 2.5L11.5 3.1C11.9 3.5 11.9 4.1 11.5 4.5L6 10L3 11Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  const remaining = Math.max(0, 100 - bytes);
+  const remainingRatio = remaining / 100;
+  const overBytes = Math.max(0, bytes - 100);
+  const overRatio = Math.min(1, overBytes / 100);
+  const radius = 6;
+  const circumference = 2 * Math.PI * radius;
+  const isOverLimit = overBytes > 0;
+  const dashOffset = isOverLimit
+    ? circumference * (1 - overRatio)
+    : circumference * (1 - remainingRatio);
+  const strokeColor = isOverLimit ? "rgb(220, 38, 38)" : "var(--color-brand-blue)";
+  const ringTransform = isOverLimit ? "scaleX(-1) rotate(-90deg)" : "rotate(-90deg)";
+
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke="rgba(156, 163, 175, 0.35)"
+        strokeWidth="2"
+      />
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke={strokeColor}
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={dashOffset}
+        className="transition-[stroke-dashoffset] duration-200 ease-out"
+        style={{
+          transform: ringTransform,
+          transformOrigin: "50% 50%",
+          transformBox: "fill-box",
+        }}
+      />
+    </svg>
+  );
+}
+
 function CharCounter({ text }: CharCounterProps) {
-  const remaining = 100 - text.length;
-  const over = remaining < 0;
+  const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
+  const remaining = 100 - bytes;
+  const showRemaining = remaining <= 20;
+
+  if (!showRemaining) return null;
+
   return (
     <span
-      className={`absolute bottom-2 right-2 text-xs ${over ? "text-red-600" : "text-gray-400"}`}
+      className={`absolute bottom-3 right-3 text-xs ${remaining < 0 ? "text-red-600" : "text-gray-500"}`}
     >
-      {over ? `-${-remaining} chars` : `+${remaining} chars`}
+      {remaining < 0 ? `Over by ${Math.abs(remaining)} bytes` : `${remaining} bytes remaining`}
     </span>
   );
 }
@@ -291,8 +357,23 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
     };
   }, [usernameInput, usernameTouched, profile.id, originals.name, form.name, lastValidUsername]);
 
-  const handleChange = (field: string, value: string) =>
+  const handleChange = (field: string, value: string) => {
+    const trimmed = value.trim();
+    if (trimmed) {
+      if (field === "name" && deletedFields.name) {
+        setDeletedField("name", false);
+      } else if (field === "display_name" && deletedFields.display_name) {
+        setDeletedField("display_name", false);
+      } else if (field === "bio" && deletedFields.bio) {
+        setDeletedField("bio", false);
+      } else if (field === "address" && deletedFields.address) {
+        setDeletedField("address", false);
+      } else if (field === "nearest_city_name" && deletedFields.nearest_city) {
+        setDeletedField("nearest_city", false);
+      }
+    }
     updateField(field as keyof FormState, value);
+  };
 
   const handleAvatarUploadClick = () => {
     setAvatarUploadError(null);
@@ -414,7 +495,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
       links: [
         ...prev.links,
         {
-          id: null, url: "", platform: "X" as const, username: "", otherUrl: "",
+          id: null, url: "", _delete: false, platform: "X" as const, username: "", otherUrl: "",
           valid: true, reason: null, is_verified: false,
           _uid: crypto.randomUUID(),
         },
@@ -422,10 +503,20 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
     }));
 
   const removeLink = (uid: string) => {
-    setForm((prev) => ({
-      ...prev,
-      links: prev.links.filter((l) => l._uid !== uid)
-    }));
+    setForm((prev) => {
+      const target = prev.links.find((l) => l._uid === uid);
+      if (!target) return prev;
+      if (target.id === null) {
+        return {
+          ...prev,
+          links: prev.links.filter((l) => l._uid !== uid),
+        };
+      }
+      return {
+        ...prev,
+        links: prev.links.map((l) => (l._uid === uid ? { ...l, _delete: !l._delete } : l)),
+      };
+    });
   };
 
   const resetLinks = () => {
@@ -435,14 +526,15 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         originalLinks.length > 0
           ? originalLinks.map((l) => ({ ...l }))
           : [{
-              id: null, url: "", is_verified: false,
+              id: null, url: "", _delete: false, is_verified: false,
               _uid: crypto.randomUUID(),
             } as ParsedLink],
     }));
   };
 
   const toggleAddress = (e?: MouseEvent<HTMLButtonElement>) => {
-    if (!profile.address_verified && e) {
+    const nextDeleted = !deletedFields.address;
+    if (nextDeleted && !profile.address_verified && e) {
       const btn = e.currentTarget;
       const popup = e.currentTarget.nextElementSibling as HTMLElement;
       btn.classList.remove("shake");
@@ -453,7 +545,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
       (popup as any)._timer = setTimeout(() => { popup.classList.remove("show"); }, 3000);
       return;
     }
-    setDeletedField("address", !deletedFields.address);
+    setDeletedField("address", nextDeleted);
   };
 
   const toggleNameDelete = () => {
@@ -478,6 +570,12 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
       setAvatarUploadError(null);
     }
     setDeletedField("profile_image_url", nextDeleted);
+  };
+
+  const toggleNearestCityDelete = () => {
+    const nextDeleted = !deletedFields.nearest_city;
+    setDeletedField("nearest_city", nextDeleted);
+    setNearestCityDisplay(nextDeleted ? "" : (profile.nearest_city_name ?? ""));
   };
 
   return (
@@ -567,7 +665,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
           htmlFor="addr"
           helpText="One-time passcodes are sent to your current address on file, not to a newly requested address change."
           isDeleted={deletedFields.address}
-          deleteDisabled={!profile.address_verified}
+          deleteDisabled={!profile.address_verified && !deletedFields.address}
           onDelete={toggleAddress}
           deletePopup={
             <div className="absolute fade-popup z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
@@ -640,6 +738,14 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               className={`${FIELD_CLASS} pl-[5.5rem] ${usernameConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
             />
           </div>
+          {deletedFields.name && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Your profile is marked for deletion and will be removed from Zcash.me after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
           {usernameConflict && (
             <p className="mt-1 text-xs text-red-600">{usernameConflict}</p>
           )}
@@ -664,10 +770,18 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
             id="display_name"
             type="text"
             value={form.display_name}
-            placeholder={originals.display_name ?? "Enter display name"}
+            placeholder={deletedFields.display_name ? "" : (originals.display_name ?? "Enter display name")}
             onChange={(e) => handleChange("display_name", e.target.value)}
             className={FIELD_CLASS}
           />
+          {deletedFields.display_name && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Display name is marked for deletion and will be removed from your profile after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
         </ProfileField>
 
         {/* BIOGRAPHY */}
@@ -680,17 +794,28 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
           onDelete={() => setDeletedField("bio", !deletedFields.bio)}
         >
           <div className="relative">
+            <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
+              <BioLeftIcon text={form.bio} />
+            </div>
             <textarea
               id="bio"
               rows={3}
               maxLength={100}
               value={form.bio}
-              placeholder={originals.bio}
+              placeholder={deletedFields.bio ? "" : originals.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
-              className={`${FIELD_CLASS} resize-none overflow-hidden pr-8 pb-6 relative text-left whitespace-pre-wrap break-words`}
+              className={`${FIELD_CLASS} resize-none overflow-hidden pl-8 pr-8 pb-8 pt-2.5 relative text-left whitespace-pre-wrap break-words`}
             />
             <CharCounter text={form.bio} />
           </div>
+          {deletedFields.bio && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Biography is marked for deletion and will be removed from your profile after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
         </ProfileField>
 
         {/* NEAREST CITY */}
@@ -699,27 +824,40 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
           helpText="Select the city closest to you. This helps with regional discovery and relevance."
           isDeleted={deletedFields.nearest_city}
           deleteDisabled={!profile.nearest_city_name}
-          onDelete={() => {
-            setDeletedField('nearest_city', !deletedFields.nearest_city);
-            setNearestCityDisplay("");
-          }}
+          onDelete={toggleNearestCityDelete}
         >
           <CitySearchDropdown
             value={nearestCityDisplay}
             placeholder={
               !deletedFields.nearest_city && form.nearest_city_name && nearestCityDisplay === ""
                 ? form.nearest_city_name
-                : "Search nearest city…"
+                : deletedFields.nearest_city
+                  ? ""
+                  : "Search nearest city..."
             }
             onChange={(val) => {
               if (typeof val === "string") {
+                if (deletedFields.nearest_city && val.trim()) {
+                  setDeletedField("nearest_city", false);
+                }
                 setNearestCityDisplay(val);
               } else {
+                if (deletedFields.nearest_city && (val.fullLabel ?? "").trim()) {
+                  setDeletedField("nearest_city", false);
+                }
                 setNearestCityDisplay(val.fullLabel ?? "");
                 updateField('nearest_city_name', val.fullLabel ?? "");
               }
             }}
           />
+          {deletedFields.nearest_city && (
+            <Alert
+              variant="error"
+              size="sm"
+              message="Nearest city is marked for deletion and will be removed from your profile after OTP verification. Reset to undo."
+              className="mt-1"
+            />
+          )}
         </ProfileField>
 
         {/* Links */}
@@ -734,8 +872,8 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
                 onClick={resetLinks}
                 variant="ghost"
                 size="xs"
-                className={`font-semibold underline ${JSON.stringify(form.links.map(l => ({ id: l.id, url: l.url }))) !==
-                  JSON.stringify(originalLinks.map(l => ({ id: l.id, url: l.url })))
+                className={`font-semibold underline ${JSON.stringify(form.links.map(l => ({ id: l.id, url: l.url, _delete: !!l._delete }))) !==
+                  JSON.stringify(originalLinks.map(l => ({ id: l.id, url: l.url, _delete: !!l._delete })))
                   ? "text-green-700"
                   : "text-gray-500"
                   }`}
@@ -750,13 +888,14 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         {form.links.map((row) => {
           const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
           const isVerified = !!row.is_verified;
+          const isMarkedForDeletion = row.id !== null && !!row._delete;
           const currentUrl = (row.url ?? "").trim();
 
           const rowConflict =
-            (!isVerified && row.valid === false) ||
-            (isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
+            (!isMarkedForDeletion && !isVerified && row.valid === false) ||
+            (!isMarkedForDeletion && isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid);
           const rowContainerClass = `${LINK_CONTAINER_CLASS} ${
-            rowConflict ? "border-red-400" : "border-[#0a1126]/60"
+            rowConflict || isMarkedForDeletion ? "border-red-400" : "border-[#0a1126]/60"
           }`;
           const rowSelectClass = `${LINK_FIELD_CLASS} ${
             rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
@@ -780,7 +919,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
                       Authenticated
                     </Button>
                   </div>
-                ) : row.id !== null && onAuthenticateLink ? (
+                ) : row.id !== null && onAuthenticateLink && !isMarkedForDeletion ? (
                   <Button
                     type="button"
                     variant="primary"
@@ -791,13 +930,31 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
                   </Button>
                 ) : null}
               </div>
-              <DeleteActionButton onClick={() => removeLink(row._uid)} />
+              <DeleteActionButton onClick={() => removeLink(row._uid)} isDeleted={isMarkedForDeletion} />
             </div>
           );
 
           return (
             <div key={row._uid} className="mb-2">
-              {isVerified ? (
+              {isMarkedForDeletion ? (
+                <div className={rowContainerClass}>
+                  <LinkInput
+                    value={row.url}
+                    onChange={(v) => handleLinkChange(row._uid, v)}
+                    readOnly={true}
+                    placeholder={original?.url ?? "example.com"}
+                    showValidation={false}
+                    inputClassName="border-0 px-0 py-0 bg-transparent"
+                  />
+                  <Alert
+                    variant="error"
+                    size="sm"
+                    message="This link is marked for deletion and will be removed from your profile after OTP verification. Reset to undo."
+                    className="mt-1"
+                  />
+                  <div className="mt-2">{linkActions}</div>
+                </div>
+              ) : isVerified ? (
                 <div className={rowContainerClass}>
                   <LinkInput
                     value={row.url}

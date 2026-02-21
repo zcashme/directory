@@ -59,18 +59,22 @@ export default function ProfileVerification({
     }
 
     // Handle links - compare by id and url
-    const formLinkIds = new Set(form.links.map((l) => l.id));
+    const activeFormLinkIds = new Set(form.links.filter((l) => !l._delete).map((l) => l.id));
     const linkEdits: ProfileEditsPayload["links"] = [];
 
-    // Find deleted links (in original but not in form)
+    // Find deleted links (either removed from form or marked for deletion)
     for (const origLink of original.links) {
-      if (origLink.id && !formLinkIds.has(origLink.id)) {
+      const markedForDeletion = form.links.find((l) => l.id === origLink.id)?._delete === true;
+      if (origLink.id && (!activeFormLinkIds.has(origLink.id) || markedForDeletion)) {
         linkEdits.push({ id: origLink.id, url: origLink.url, platform: origLink.platform, _delete: true });
       }
     }
 
     // Find new and updated links
     for (const formLink of form.links) {
+      if (formLink._delete) {
+        continue;
+      }
       if (!formLink.id) {
         // New link
         linkEdits.push({ url: formLink.url, label: formLink.label, platform: formLink.platform });
