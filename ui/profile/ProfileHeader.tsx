@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -16,7 +16,6 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const shouldReduceMotion = useReducedMotion();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
@@ -39,11 +38,12 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   };
 
   useEffect(() => {
-    const shouldOpenJoin = searchParams.get("join") === "1";
+    const params = new URLSearchParams(window.location.search);
+    const shouldOpenJoin = params.get("join") === "1";
     if (!shouldOpenJoin) return;
 
-    const referredBy = (searchParams.get("referred_by") || "").trim();
-    const referredByIdRaw = (searchParams.get("referred_by_id") || "").trim();
+    const referredBy = (params.get("referred_by") || "").trim();
+    const referredByIdRaw = (params.get("referred_by_id") || "").trim();
     const referredById = Number(referredByIdRaw);
 
     setPrefillUsername(null);
@@ -57,13 +57,13 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
 
     setIsJoinOpen(true);
 
-    const nextSearch = new URLSearchParams(searchParams.toString());
+    const nextSearch = new URLSearchParams(params.toString());
     nextSearch.delete("join");
     nextSearch.delete("referred_by");
     nextSearch.delete("referred_by_id");
     const nextUrl = `${pathname || "/"}${nextSearch.toString() ? `?${nextSearch.toString()}` : ""}`;
     router.replace(nextUrl);
-  }, [pathname, router, searchParams]);
+  }, [pathname, router]);
 
   const isNsRoute = pathname === "/ns" || pathname?.startsWith("/ns/");
   if (isNsRoute) {
