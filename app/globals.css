@@ -347,15 +347,14 @@ body {
   display: none;
 }
 
-/* Force black text on 404 page */
-.next-error-h1,
-.next-error-h1 + div h2 {
-  color: #000 !important;
+body.is-not-found [data-global-header] {
+  display: none !important;
 }
 
-@media (prefers-color-scheme: dark) {
-  .next-error-h1,
-  .next-error-h1 + div h2 {
-    color: #000 !important;
-  }
+html.is-not-found,
+body.is-not-found {
+  height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none;
 }
+
