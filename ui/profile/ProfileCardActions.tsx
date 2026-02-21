@@ -73,7 +73,7 @@ export default function ProfileCardActions({
           {menuItem("✓ Verify Profile", onVerify)}
           {menuItem("⤴ Copy Refer Link", async () => {
             const baseUrl = buildShareUrl(profile);
-            const referUrl = `${baseUrl}/refer?referred_by=${encodeURIComponent(profile.name || "")}&referred_by_id=${profile.id}`;
+            const referUrl = `${baseUrl}/refer`;
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
