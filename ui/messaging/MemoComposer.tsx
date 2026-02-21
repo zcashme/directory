@@ -1,9 +1,25 @@
-import { useMemo, useRef, useEffect, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useMemo, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { Profile } from "@/lib/profile/types";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import HelpMessage from "@/ui/verification/HelpMessage";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
+
+const MAX_MEMO_BYTES = 512;
+
+function fitToMaxBytes(text: string, maxBytes: number): string {
+  const encoder = new TextEncoder();
+  let result = "";
+
+  for (const ch of text) {
+    const next = result + ch;
+    if (encoder.encode(next).length > maxBytes) break;
+    result = next;
+  }
+
+  return result;
+}
+
 function toBase64Url(text: string): string {
   try {
     return btoa(unescape(encodeURIComponent(text)))
@@ -49,18 +65,11 @@ function MemoLeftIcon({ text }: MemoLeftIconProps) {
     );
   }
 
-  const remaining = Math.max(0, 512 - bytes);
-  const remainingRatio = remaining / 512;
-  const overBytes = Math.max(0, bytes - 512);
-  const overRatio = Math.min(1, overBytes / 512);
+  const remaining = Math.max(0, MAX_MEMO_BYTES - bytes);
+  const remainingRatio = remaining / MAX_MEMO_BYTES;
   const radius = 6;
   const circumference = 2 * Math.PI * radius;
-  const isOverLimit = overBytes > 0;
-  const dashOffset = isOverLimit
-    ? circumference * (1 - overRatio)
-    : circumference * (1 - remainingRatio);
-  const strokeColor = isOverLimit ? "rgb(220, 38, 38)" : "var(--color-brand-blue)";
-  const ringTransform = isOverLimit ? "scaleX(-1) rotate(-90deg)" : "rotate(-90deg)";
+  const dashOffset = circumference * (1 - remainingRatio);
 
   return (
     <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
@@ -77,14 +86,14 @@ function MemoLeftIcon({ text }: MemoLeftIconProps) {
         cy="7"
         r={radius}
         fill="none"
-        stroke={strokeColor}
+        stroke="var(--color-brand-blue)"
         strokeWidth="2"
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={dashOffset}
         className="transition-[stroke-dashoffset] duration-200 ease-out"
         style={{
-          transform: ringTransform,
+          transform: "rotate(-90deg)",
           transformOrigin: "50% 50%",
           transformBox: "fill-box",
         }}
@@ -95,14 +104,14 @@ function MemoLeftIcon({ text }: MemoLeftIconProps) {
 
 function MemoCounter({ text }: MemoCounterProps) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
-  const remaining = 512 - bytes;
+  const remaining = MAX_MEMO_BYTES - bytes;
   const showRemaining = remaining <= 20;
 
   return (
     <>
       {showRemaining && (
-        <span className={`absolute bottom-3 right-3 text-xs ${remaining < 0 ? "text-red-600" : "text-gray-500"}`}>
-          {remaining < 0 ? `Over by ${Math.abs(remaining)} bytes` : `${remaining} bytes remaining`}
+        <span className="absolute bottom-3 right-3 text-xs text-gray-500">
+          {remaining} bytes remaining
         </span>
       )}
     </>
@@ -142,6 +151,9 @@ export default function MemoComposer({
 }: MemoComposerProps) {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const setMemoCapped = useCallback((value: string) => {
+    setMemo(fitToMaxBytes(value, MAX_MEMO_BYTES));
+  }, [setMemo]);
 
   const uri = useMemo(() =>
     buildZcashUri(profile.address, amount || "0", memo || ""),
@@ -177,7 +189,7 @@ export default function MemoComposer({
   const emoji = useEmojiAutocomplete({
     textareaRef,
     value: memo,
-    setValue: setMemo,
+    setValue: setMemoCapped,
   }) as {
     results: Array<{ ch: string; label: string }>;
     insert: (_item: { ch: string; label: string }) => void;
@@ -210,7 +222,7 @@ export default function MemoComposer({
           disabled={disabled}
           onChange={(e) => {
             const el = e.target;
-            setMemo(el.value);
+            setMemoCapped(el.value);
             el.style.height = "auto";
             el.style.height = el.scrollHeight + "px";
             emoji.update();
