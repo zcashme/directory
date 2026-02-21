@@ -1,7 +1,7 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
@@ -16,12 +16,14 @@ interface ProfileHeaderProps {
 export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const shouldReduceMotion = useReducedMotion();
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
+  const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
   const [availableUsername, setAvailableUsername] = useState<string | null>(null);
 
   const resetSearch = () => {
@@ -32,8 +34,36 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const closeForm = () => {
     setIsJoinOpen(false);
     setPrefillUsername(null);
+    setPrefillReferrer(null);
     resetSearch();
   };
+
+  useEffect(() => {
+    const shouldOpenJoin = searchParams.get("join") === "1";
+    if (!shouldOpenJoin) return;
+
+    const referredBy = (searchParams.get("referred_by") || "").trim();
+    const referredByIdRaw = (searchParams.get("referred_by_id") || "").trim();
+    const referredById = Number(referredByIdRaw);
+
+    setPrefillUsername(null);
+    setPrefillReferrer(referredBy || null);
+
+    if (referredBy && Number.isInteger(referredById) && referredById > 0) {
+      (window as any).lastReferrer = { id: referredById, name: referredBy };
+    } else {
+      (window as any).lastReferrer = null;
+    }
+
+    setIsJoinOpen(true);
+
+    const nextSearch = new URLSearchParams(searchParams.toString());
+    nextSearch.delete("join");
+    nextSearch.delete("referred_by");
+    nextSearch.delete("referred_by_id");
+    const nextUrl = `${pathname || "/"}${nextSearch.toString() ? `?${nextSearch.toString()}` : ""}`;
+    router.replace(nextUrl);
+  }, [pathname, router, searchParams]);
 
   const isNsRoute = pathname === "/ns" || pathname?.startsWith("/ns/");
   if (isNsRoute) {
@@ -155,6 +185,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
       <AddUserForm
         isOpen={isJoinOpen}
         prefillUsername={prefillUsername}
+        prefillReferrer={prefillReferrer}
         onClose={closeForm}
         onUserAdded={closeForm}
       />

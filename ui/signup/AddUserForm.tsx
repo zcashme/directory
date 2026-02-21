@@ -58,6 +58,7 @@ interface AddUserFormProps {
   onClose: () => void;
   onUserAdded?: (_profile: Profile) => void;
   prefillUsername?: string | null;
+  prefillReferrer?: string | null;
   isNsSignup?: boolean;
 }
 
@@ -66,6 +67,7 @@ export default function AddUserForm({
   onClose,
   onUserAdded,
   prefillUsername = null,
+  prefillReferrer = null,
   isNsSignup = false,
 }: AddUserFormProps) {
   const [step, setStep] = useState(0);
@@ -117,7 +119,7 @@ export default function AddUserForm({
       setAddress("");
       setAddressHelp("");
       setAddressConflict(null);
-      setReferrer("");
+      setReferrer(prefillReferrer || "");
       setReferrerConflict(null);
 
       const fromEvent = (window as any).lastReferrer;
@@ -134,7 +136,7 @@ export default function AddUserForm({
 
       setTimeout(() => dialogRef.current?.querySelector<HTMLInputElement>("#name")?.focus(), 50);
     })();
-  }, [isOpen, prefillUsername]);
+  }, [isOpen, prefillReferrer, prefillUsername]);
 
   useEffect(() => {
     if (!name) {
@@ -437,7 +439,10 @@ export default function AddUserForm({
         nearest_city_name: nearestCity
           ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
           : undefined,
-        referred_by: typeof referrer === "object" ? referrer?.name || undefined : undefined,
+        referred_by:
+          typeof referrer === "object"
+            ? referrer?.name || undefined
+            : (referrer || "").trim() || undefined,
         referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
         is_ns: isNsSignup || undefined,
         created_at: new Date().toISOString(),

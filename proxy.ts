@@ -12,6 +12,34 @@ export function proxy(request: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
+  // Support /:slug/refer links by opening join flow on the target profile page.
+  const referMatch = pathname.match(/^\/([^/]+)\/refer\/?$/);
+  if (referMatch) {
+    const reservedRoots = new Set([
+      "api",
+      "ns",
+      "thread",
+      "swap-app",
+      "stats-app",
+      "leader-app",
+      "design-system",
+      "privacy",
+      "terms",
+    ]);
+    const slug = referMatch[1];
+    if (!reservedRoots.has(slug.toLowerCase())) {
+      const referredBy = url.searchParams.get("referred_by") || slug;
+      const referredById = url.searchParams.get("referred_by_id");
+      url.pathname = `/${slug}`;
+      url.searchParams.set("join", "1");
+      url.searchParams.set("referred_by", referredBy);
+      if (referredById) {
+        url.searchParams.set("referred_by_id", referredById);
+      }
+      return NextResponse.redirect(url, 307);
+    }
+  }
+
   // Extract subdomain (handle both localhost and production domains)
   const parts = hostname.split('.');
   let subdomain: string | null = null;

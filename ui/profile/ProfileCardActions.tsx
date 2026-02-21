@@ -71,6 +71,12 @@ export default function ProfileCardActions({
           {menuItem(showStats ? "⭔ Hide Awards" : "⭔ Show Awards", onToggleStats, !showStats && !hasAwards)}
           {menuItem("↺ Edit Profile", onEdit)}
           {menuItem("✓ Verify Profile", onVerify)}
+          {menuItem("⤴ Copy Refer Link", async () => {
+            const baseUrl = buildShareUrl(profile);
+            const referUrl = `${baseUrl}/refer?referred_by=${encodeURIComponent(profile.name || "")}&referred_by_id=${profile.id}`;
+            await navigator.clipboard.writeText(referUrl);
+            alert("Referral link copied to clipboard!");
+          })}
         </div>
       </div>
 
