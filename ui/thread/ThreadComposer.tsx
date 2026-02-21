@@ -1,4 +1,10 @@
-import { useMemo, useRef, useEffect, useState } from "react";
+import {
+  useMemo,
+  useRef,
+  useEffect,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 
 interface MemoCounterProps {
@@ -40,6 +46,11 @@ export function ThreadComposer({
     results: Array<{ ch: string; label: string }>;
     insert: (_item: { ch: string; label: string }) => void;
     update: () => void;
+    highlightedIndex: number;
+    placement: "top" | "bottom";
+    setHighlightedIndex: (_index: number) => void;
+    setOptionRef: (_index: number, _el: HTMLButtonElement | null) => void;
+    handleKeyDown: (_e: ReactKeyboardEvent<HTMLTextAreaElement>) => boolean;
     close: () => void;
   };
 
@@ -68,7 +79,8 @@ export function ThreadComposer({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+    if (emoji.handleKeyDown(e)) return;
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleSubmit();
@@ -110,19 +122,39 @@ export function ThreadComposer({
         />
 
         {emoji.results.length > 0 && (
-          <div className="absolute top-full left-0 mt-1 z-50 w-[240px] rounded-lg border border-gray-200 bg-[#faf6ed] shadow-lg max-h-48 overflow-auto">
+          <div
+            className={`absolute left-0 z-50 w-[240px] max-h-48 overflow-y-auto rounded-xl border border-gray-800 bg-[#faf6ed] shadow-lg ${
+              emoji.placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
+            }`}
+          >
             {emoji.results.map((item, idx) => (
-              <div
-                key={idx}
-                className="flex items-center gap-2 px-3 py-1.5 cursor-pointer hover:bg-gray-50"
+              <button
+                key={`${item.ch}-${item.label}-${idx}`}
+                ref={(el) => emoji.setOptionRef(idx, el)}
+                type="button"
+                className={`group flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                  emoji.highlightedIndex === idx
+                    ? "bg-[var(--color-brand-blue)]/90 text-white"
+                    : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
+                }`}
+                onMouseEnter={() => emoji.setHighlightedIndex(idx)}
+                onFocus={() => emoji.setHighlightedIndex(idx)}
                 onMouseDown={(e) => {
                   e.preventDefault();
                   emoji.insert(item);
                 }}
               >
                 <span className="text-lg">{item.ch}</span>
-                <span className="text-sm text-gray-700">{item.label}</span>
-              </div>
+                <span
+                  className={`truncate ${
+                    emoji.highlightedIndex === idx
+                      ? "text-white"
+                      : "text-gray-700 group-hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </span>
+              </button>
             ))}
           </div>
         )}
