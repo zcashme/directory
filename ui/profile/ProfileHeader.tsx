@@ -71,8 +71,12 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   }
 
   return (
-    <div data-global-header>
-      <div className="sticky top-3 z-[1200] flex justify-center px-4">
+    <div
+      data-global-header
+      className="sticky top-0 z-[1200] pb-2"
+      style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
+    >
+      <div className="flex justify-center px-4">
         <div className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
