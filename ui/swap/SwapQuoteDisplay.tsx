@@ -4,6 +4,7 @@ interface SwapQuoteDisplayProps {
   quote: SwapQuote;
   recipientName?: string;
   showAmounts?: boolean;
+  selectedSlippage?: string;
   className?: string;
 }
 
@@ -11,6 +12,7 @@ export default function SwapQuoteDisplay({
   quote,
   recipientName,
   showAmounts = false,
+  selectedSlippage,
   className = "",
 }: SwapQuoteDisplayProps) {
   return (
@@ -70,6 +72,18 @@ export default function SwapQuoteDisplay({
               }`}
             >
               {quote.timeEstimate}
+            </span>
+          </div>
+        )}
+        {selectedSlippage && (
+          <div className="flex justify-between items-center">
+            <span className="text-sm text-gray-600">Select slippage</span>
+            <span
+              className={`text-gray-${showAmounts ? "600" : "900"} ${
+                showAmounts ? "text-sm" : "text-sm font-semibold"
+              }`}
+            >
+              {selectedSlippage}%
             </span>
           </div>
         )}

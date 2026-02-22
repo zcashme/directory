@@ -3,21 +3,6 @@ import type { MouseEvent } from "react";
 
 /**
  * Button that copies text to clipboard with visual feedback.
- *
- * @example
- * ```tsx
- * <CopyButton text="Hello World" label="Copy" />
- * ```
- *
- * @example
- * ```tsx
- * <CopyButton
- *   text="z1abc..."
- *   label="Copy Address"
- *   copiedLabel="Copied!"
- *   size="md"
- * />
- * ```
  */
 export interface CopyButtonProps {
   /** Text to copy to clipboard */
@@ -36,16 +21,14 @@ export interface CopyButtonProps {
   timeout?: number;
   /** Button size */
   size?: "xs" | "sm" | "md";
+  /** Keep label expanded without hover */
+  expanded?: boolean;
+  /** Base color for uncopied state */
+  defaultColorClass?: string;
 }
 
 /**
  * CopyButton - Copies text to clipboard with expandable label on hover.
- *
- * Features:
- * - Smooth expand/collapse animation on hover
- * - Visual feedback when text is copied (color change, icon change)
- * - Configurable timeout for feedback display
- * - Stops event propagation to prevent parent click handlers
  */
 export default function CopyButton({
   text,
@@ -56,6 +39,8 @@ export default function CopyButton({
   copiedIcon = "⮼",
   timeout = 2000,
   size = "sm",
+  expanded = false,
+  defaultColorClass = "text-gray-500",
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -78,7 +63,7 @@ export default function CopyButton({
       title={copied ? copiedLabel : label}
       className={
         `group flex items-center justify-center transition-all px-1 ` +
-        (copied ? "text-green-600 hover:text-green-600" : "text-gray-500 hover:text-[var(--color-brand-blue)]") +
+        (copied ? "text-green-600 hover:text-green-600" : `${defaultColorClass} hover:text-[var(--color-brand-blue)]`) +
         " " +
         sizeClasses[size] +
         " " +
@@ -87,7 +72,11 @@ export default function CopyButton({
     >
       {copied ? copiedIcon : icon}
       <span
-        className="inline-block overflow-hidden max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1"
+        className={`inline-block overflow-hidden transition-all duration-300 ease-in-out text-xs ml-1 ${
+          expanded
+            ? "max-w-[50px] opacity-100"
+            : "max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100"
+        }`}
       >
         {copied ? copiedLabel : label}
       </span>

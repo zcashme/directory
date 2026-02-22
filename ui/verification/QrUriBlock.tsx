@@ -114,7 +114,7 @@ export default function QrUriBlock({
           </motion.a>
         )}
         {showQR && qrHintText && (
-          <p className="text-center text-xs text-gray-600">
+          <p className="-mt-5 text-center text-xs text-gray-600">
             {qrHintText}
           </p>
         )}

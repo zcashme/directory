@@ -325,6 +325,7 @@ export default function MemoComposer({
             "recipient"
           }
           forceShowQR={forceShowQR}
+          qrHintText="Scan or Tap QR"
         />
       </div>
     </div>

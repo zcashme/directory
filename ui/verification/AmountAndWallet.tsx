@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef, useMemo, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useEffect, useState, useRef, useMemo, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { validate as validateMultichainAddress } from "multichain-address-validator";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
@@ -111,7 +112,30 @@ interface AmountAndWalletProps {
   showRefund?: boolean;
   refundAddress?: string;
   setRefundAddress?: (_address: string) => void;
-  tokenBlockchain?: string;
+  recipientName?: string;
+  onRefundValidationChange?: (_isValid: boolean) => void;
+  validationTrigger?: string | number;
+  betweenAmountAndRefund?: ReactNode;
+}
+
+function resolveValidationChain(assetSymbol: string, chainHint: string): string {
+  const symbol = assetSymbol.toLowerCase();
+  const chain = chainHint.toLowerCase();
+
+  if (symbol === "usdc" || symbol === "usdt") {
+    if (chain.includes("sol")) return "solana";
+    if (chain.includes("tron")) return "tron";
+    if (chain.includes("btc")) return "bitcoin";
+    return "ethereum";
+  }
+
+  if (symbol === "btc") return "bitcoin";
+  if (symbol === "eth") return "ethereum";
+  if (symbol === "sol") return "solana";
+  if (symbol === "zec") return "zec";
+  if (symbol === "xrp") return "ripple";
+
+  return symbol;
 }
 
 export default function AmountAndWallet({
@@ -130,7 +154,10 @@ export default function AmountAndWallet({
   showRefund = false,
   refundAddress = "",
   setRefundAddress,
-  tokenBlockchain = "",
+  recipientName = "recipient",
+  onRefundValidationChange,
+  validationTrigger,
+  betweenAmountAndRefund,
 }: AmountAndWalletProps) {
   const shouldReduceMotion = useReducedMotion();
   const [isUsdOpen, setIsUsdOpen] = useState(false);
@@ -396,6 +423,39 @@ export default function AmountAndWallet({
         CURRENCIES[ticker]?.symbol?.toLowerCase().includes(search),
     );
   }, [fiatSearch]);
+  const selectedToken = useMemo(
+    () => assetOptions.find((token) => asset === (token.symbol ?? token.ticker)),
+    [assetOptions, asset]
+  );
+  const refundValidationChain = useMemo(
+    () => resolveValidationChain(asset, selectedToken?.chain ?? ""),
+    [asset, selectedToken?.chain]
+  );
+  const refundValidation = useMemo(() => {
+    const trimmed = (refundAddress ?? "").trim();
+    if (!showRefund || !trimmed) {
+      return { isValid: false, message: "" };
+    }
+
+    try {
+      const valid = validateMultichainAddress(trimmed, refundValidationChain);
+      return {
+        isValid: valid,
+        message: valid
+          ? `${asset} refund address looks valid.`
+          : `${asset} refund address is not valid.`,
+      };
+    } catch {
+      return {
+        isValid: false,
+        message: `${asset} refund address is not valid.`,
+      };
+    }
+  }, [refundAddress, showRefund, refundValidationChain, asset]);
+
+  useEffect(() => {
+    onRefundValidationChange?.(refundValidation.isValid);
+  }, [onRefundValidationChange, refundValidation.isValid, amount, validationTrigger]);
 
   const getCurrentTokenIndex = () =>
     filteredTokenOptions.findIndex(
@@ -980,28 +1040,69 @@ export default function AmountAndWallet({
         )}
       </div>
 
-      {showRefund && (
-        <div className="w-full mt-3">
-          {isRefundFocused && (
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Your {asset}{" "}
-              {tokenBlockchain && `(${tokenBlockchain.toUpperCase()})`} refund
-              address (in case {asset} → ZEC fails)
-            </label>
-          )}
-          <input
-            type="text"
-            value={refundAddress}
-            onChange={(e) => setRefundAddress?.(e.target.value)}
-            onFocus={() => setIsRefundFocused(true)}
-            onBlur={() => setIsRefundFocused(false)}
-            placeholder={`Paste your ${asset} refund address`}
-            className={`w-full border px-3 py-2 rounded-xl text-md text-gray-900 outline-hidden ${withFieldBorderState("border-gray-800")}`}
-          />
-        </div>
-      )}
+      {betweenAmountAndRefund && <div className="mt-3">{betweenAmountAndRefund}</div>}
+
+      <AnimatePresence initial={false}>
+        {showRefund && (
+          <motion.div
+            initial={{ opacity: 0, y: -8, height: 0 }}
+            animate={{ opacity: 1, y: 0, height: "auto" }}
+            exit={{ opacity: 0, y: -8, height: 0 }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0.08 }
+                : { duration: 0.18, ease: "easeOut" as const }
+            }
+            className="w-full mt-3 overflow-hidden"
+          >
+            <AnimatePresence initial={false}>
+              {isRefundFocused && (
+                <motion.label
+                  initial={{ opacity: 0, y: -6, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -6, height: 0 }}
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0.08 }
+                      : { duration: 0.18, ease: "easeOut" as const }
+                  }
+                  className="block text-sm font-medium text-gray-700 mb-1 overflow-hidden"
+                >
+                  {asset} is returned if {recipientName} does not receive ZEC.
+                </motion.label>
+              )}
+            </AnimatePresence>
+            <input
+              type="text"
+              value={refundAddress}
+              onChange={(e) => setRefundAddress?.(e.target.value)}
+              onFocus={() => setIsRefundFocused(true)}
+              onBlur={() => setIsRefundFocused(false)}
+              placeholder={`${asset} address for refunds`}
+              className={`w-full border px-3 py-2 rounded-xl text-md text-gray-900 outline-hidden ${withFieldBorderState("border-gray-800")}`}
+            />
+            <AnimatePresence initial={false}>
+              {refundValidation.message ? (
+                <motion.p
+                  initial={{ opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={
+                    shouldReduceMotion
+                      ? { duration: 0.08 }
+                      : { duration: 0.18, ease: "easeOut" as const }
+                  }
+                  className={`mt-1 text-xs ${
+                    refundValidation.isValid ? "text-green-600" : "text-red-600"
+                  }`}
+                >
+                  {refundValidation.message}
+                </motion.p>
+              ) : null}
+            </AnimatePresence>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
-

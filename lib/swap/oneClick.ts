@@ -37,6 +37,26 @@ function extractErrorMessage(err: unknown): string {
   return "Unknown error";
 }
 
+function formatQuoteErrorWithUnits(errorMessage: string, originToken: Token): string {
+  const lowAmountPattern =
+    /(amount is too low for bridge,\s*try at least\s*)(\d+)(.*)$/i;
+  const match = errorMessage.match(lowAmountPattern);
+  if (!match) return errorMessage;
+
+  const [, prefix, minBaseUnits, suffix] = match;
+  try {
+    const exactDecimal = baseUnitsToDecimal(minBaseUnits, originToken.decimals);
+    const [wholePart, fractionalPart = ""] = exactDecimal.split(".");
+    const shortenedFraction = fractionalPart.slice(0, 8).replace(/0+$/, "");
+    const compactDecimal = shortenedFraction
+      ? `${wholePart}.${shortenedFraction}`
+      : wholePart;
+    return `${prefix}${minBaseUnits}\n(${compactDecimal} ${originToken.symbol})${suffix ?? ""}`;
+  } catch {
+    return errorMessage;
+  }
+}
+
 /**
  * Helper: Convert SDK TokenResponse to our Token type
  */
@@ -249,9 +269,10 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuoteRespons
 
     return result;
   } catch (err) {
+    const rawError = extractErrorMessage(err) || "Could not get quote";
     return {
       ok: false,
-      error: extractErrorMessage(err) || "Could not get quote",
+      error: formatQuoteErrorWithUnits(rawError, originToken),
       retryable: true,
     };
   }
@@ -313,9 +334,10 @@ export async function confirmSwap(params: SwapParams): Promise<SwapConfirmRespon
 
     return result;
   } catch (err) {
+    const rawError = extractErrorMessage(err) || "Could not confirm swap";
     return {
       ok: false,
-      error: extractErrorMessage(err) || "Could not confirm swap",
+      error: formatQuoteErrorWithUnits(rawError, originToken),
       retryable: true,
     };
   }

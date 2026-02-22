@@ -178,6 +178,7 @@ export default function ProfilePage({
 
   const handleSetAsset = useCallback((tokenId: string) => {
     setOriginTokenId(tokenId);
+    setSwapForm(prev => ({ ...prev, refundAddress: "" }));
     const token = tokens.find((t) => getTokenId(t) === tokenId);
     const isZecSelection =
       !token ||
@@ -291,7 +292,22 @@ export default function ProfilePage({
       ...prev,
       quoteData: null,
       quotePreview: null,
+      depositUri: '',
+      statusKey: null,
       quoteStatus: '',
+      swapError: '',
+    }));
+  }, []);
+
+  const handleResetSwapProgress = useCallback(() => {
+    setQuoteState(prev => ({
+      ...prev,
+      quoteData: null,
+      quotePreview: null,
+      depositUri: '',
+      statusKey: null,
+      quoteStatus: '',
+      swapError: '',
     }));
   }, []);
 
@@ -347,6 +363,7 @@ export default function ProfilePage({
                     isConfirming={isConfirming}
                     quoteStatus={quoteStatus}
                     swapError={swapError}
+                    resetSwapProgress={handleResetSwapProgress}
                     setToken={handleSetAsset}
                     setSwapAmount={handleSwapFieldChange('amount')}
                     setRefundAddress={handleSwapFieldChange('refund')}

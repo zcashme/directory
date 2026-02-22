@@ -7,7 +7,13 @@ interface SwapDepositDisplayProps {
   depositAddress?: string;
   amountDecimal?: string;
   originSymbol: string;
+  recipientName?: string;
+  receivedAmount?: string;
+  receivedSymbol?: string;
+  minimumReceived?: string;
+  estimatedTime?: string;
   onSentFunds?: () => void;
+  onGetNewQuote?: () => void;
 }
 
 export default function SwapDepositDisplay({
@@ -15,14 +21,19 @@ export default function SwapDepositDisplay({
   depositAddress,
   amountDecimal,
   originSymbol,
+  recipientName,
+  receivedAmount,
+  receivedSymbol = "ZEC",
+  minimumReceived,
+  estimatedTime,
   onSentFunds,
+  onGetNewQuote,
 }: SwapDepositDisplayProps) {
-
   // Don't render if no deposit address
   if (!depositAddress) return null;
 
   // Detect payment URI (BTC) vs address-only
-  const hasPaymentUri = depositUri?.includes(':');
+  const hasPaymentUri = depositUri?.includes(":");
   const qrValue = hasPaymentUri ? depositUri : depositAddress;
 
   const handleGoToSwapStatus = () => {
@@ -30,26 +41,21 @@ export default function SwapDepositDisplay({
       onSentFunds();
     } else {
       const swapUrl = getSwapUrl({ depositAddress });
-      window.open(swapUrl, '_blank');
+      window.open(swapUrl, "_blank");
     }
   };
 
-
   return (
-    <div className="mt-3 p-4 rounded-xl border border-gray-800 animate-fadeIn" style={{ backgroundColor: '#faf6ed' }}>
-      <h3 className="text-md font-semibold text-gray-900 mb-3">
-        Deposit {originSymbol} to Complete Swap
-      </h3>
-
-      {/* Amount to send */}
-      <div className="mb-4 p-3 rounded-lg border border-gray-800" style={{ backgroundColor: '#faf6ed' }}>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-600">Send exactly:</span>
-          <span className="text-lg font-bold text-gray-900">
-            {amountDecimal} {originSymbol}
-          </span>
-        </div>
-      </div>
+    <div className="p-4 animate-fadeIn" style={{ backgroundColor: "#faf6ed" }}>
+      <p className="text-lg font-bold text-gray-900 mb-1 text-center">
+        Send exactly {amountDecimal} {originSymbol} below.
+      </p>
+      <p className="text-sm text-gray-600 mb-1 text-center">
+        {recipientName ?? "Recipient"} receives {minimumReceived ?? "-"} - {receivedAmount ?? "-"} {receivedSymbol}.
+      </p>
+      <p className="text-xs text-gray-500 mb-4 text-center">
+        Estimated time {estimatedTime ?? "Unknown"}
+      </p>
 
       {/* QR Code */}
       <div className="flex flex-col items-center gap-2 mb-4">
@@ -64,22 +70,40 @@ export default function SwapDepositDisplay({
 
       {/* Address display */}
       <div className="mb-4">
-        <label className="block text-sm text-gray-600 mb-2">Deposit address:</label>
-        <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: '#faf6ed' }}>
+        <div className="relative">
+          <p className="absolute -top-4 left-0 text-xs text-gray-900">
+            {originSymbol} deposit address:
+          </p>
+          <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: "#faf6ed" }}>
           <p className="text-sm font-mono text-gray-900 break-all flex-1">
             {depositAddress}
           </p>
-          <CopyButton text={depositAddress} label="Copy" copiedLabel="Copied" />
+          <div className="h-6 w-px bg-gray-800/40" aria-hidden="true" />
+          <CopyButton
+            text={depositAddress}
+            label="Copy"
+            copiedLabel="Copied"
+            expanded
+            defaultColorClass="text-gray-900"
+          />
+        </div>
         </div>
       </div>
 
-      {/* Primary action: I've Sent Funds */}
-      <div>
+      {/* Final actions */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          type="button"
+          onClick={onGetNewQuote}
+          className="w-full px-4 py-3 border border-gray-800 bg-transparent text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] font-semibold rounded-xl text-md transition-colors"
+        >
+          Get New Quote
+        </button>
         <button
           onClick={handleGoToSwapStatus}
-          className="w-full px-4 py-3 bg-gray-900 hover:bg-gray-800 text-white font-semibold rounded-xl text-md transition-colors"
+          className="w-full px-4 py-3 bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/90 text-white font-semibold rounded-xl text-md transition-colors"
         >
-          I've Sent Funds
+          I Sent It!
         </button>
       </div>
     </div>
