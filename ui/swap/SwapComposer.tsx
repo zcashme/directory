@@ -302,12 +302,17 @@ export default function SwapComposer({
         }
       />
 
-      {showFlowBox && (
-        <motion.div
-          layout
-          transition={{ duration: 0.24, ease: "easeOut" }}
-          className="mt-3 p-3 rounded-xl border border-gray-800 bg-transparent text-sm text-gray-700 overflow-hidden"
-        >
+      <AnimatePresence initial={false}>
+        {showFlowBox && (
+          <motion.div
+            key="swap-flow-box"
+            layout
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.24, ease: "easeOut" }}
+            className="mt-3 p-3 rounded-xl border border-gray-800 bg-transparent text-sm text-gray-700 overflow-hidden"
+          >
           <AnimatePresence initial={false}>
             {isGettingQuote && !quotePreview && !statusKey?.depositAddress && (
               <motion.div
@@ -414,8 +419,9 @@ export default function SwapComposer({
               {swapError}
             </div>
           )}
-        </motion.div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* STATUS MESSAGE (Before quote/polling) */}
       {quoteStatus && !isGettingQuote && !isConfirming && !quotePreview && !statusKey?.depositAddress && (
