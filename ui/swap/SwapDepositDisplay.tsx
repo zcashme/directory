@@ -58,7 +58,7 @@ export default function SwapDepositDisplay({
       </p>
 
       {/* QR Code */}
-      <div className="flex flex-col items-center gap-2 mb-4">
+      <div className="flex flex-col items-center gap-2 mb-4 -mt-3">
         <QRCodeSVG
           value={qrValue}
           size={250}
@@ -71,7 +71,7 @@ export default function SwapDepositDisplay({
       {/* Address display */}
       <div className="mb-4">
         <div className="relative">
-          <p className="absolute -top-4 left-0 text-xs text-gray-900">
+          <p className="absolute -top-[20px] left-0 text-xs text-[var(--color-brand-blue)]">
             {originSymbol} deposit address:
           </p>
           <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: "#faf6ed" }}>
