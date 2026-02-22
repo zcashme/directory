@@ -58,7 +58,8 @@ export default function ProfilePage({
   tokens,
   duplicateNameCount
 }: ProfilePageProps) {
-  const feedbackGapPx = 32;
+  const feedbackTopPaddingPx = 32;
+  const feedbackTopMarginPx = 40;
   const [isGettingQuote, setIsGettingQuote] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -321,7 +322,7 @@ export default function ProfilePage({
 
   return (
     <div
-      className="relative max-w-3xl mx-auto p-4 pb-24 pt-12 -mt-6 min-h-screen overflow-x-hidden"
+      className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen overflow-x-hidden"
       style={{ backgroundColor: 'var(--color-background)' }}
     >
         <ProfileCard
@@ -337,7 +338,10 @@ export default function ProfilePage({
         <div
           id="zcash-feedback"
           className="border-t"
-          style={{ marginTop: `${feedbackGapPx}px`, paddingTop: `${feedbackGapPx}px` }}
+          style={{
+            marginTop: `${feedbackTopMarginPx}px`,
+            paddingTop: `${feedbackTopPaddingPx}px`
+          }}
         >
           <div className="w-full flex justify-center">
             <div className="w-full" style={{ maxWidth: `${COMPOSER_MAX_WIDTH_PX}px` }}>

@@ -245,7 +245,7 @@ export default function SwapComposer({
         initial={false}
         animate={{ height: isMemoCompact ? 44 : 96 }}
         transition={{ duration: 0.24, ease: "easeOut" }}
-        className="relative mb-2 overflow-hidden"
+        className="relative mb-4 overflow-hidden"
       >
         <div className="relative h-full">
           <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
