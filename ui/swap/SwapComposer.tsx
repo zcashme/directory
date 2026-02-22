@@ -60,7 +60,6 @@ interface SwapComposerProps {
     slippage?: string;
   }) => Promise<SwapConfirmResponse | null>;
 }
-
 export default function SwapComposer({
   profile,
   // Token state
@@ -105,6 +104,15 @@ export default function SwapComposer({
     chain: token.blockchain,
     logo: token.logo ?? "",
   }));
+  const zecToken = tokenOptions.find(
+    (token) =>
+      token.symbol.toUpperCase() === "ZEC" &&
+      token.blockchain.toLowerCase().includes("zec")
+  );
+  const zecTokenId = getTokenId(zecToken) ?? "";
+  const returnToZec = () => {
+    if (zecTokenId) setToken(zecTokenId);
+  };
 
   // Handlers
   const handleTokenChange = (tokenId: string) => {
@@ -134,16 +142,30 @@ export default function SwapComposer({
     <div className="bg-transparent border-none shadow-none p-0 relative z-10">
       {/* DISABLED MEMO FIELD */}
       <div className="relative mb-2">
+        <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
+          <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
+            <path
+              d="M3 11L4 8L9.5 2.5C9.9 2.1 10.5 2.1 10.9 2.5L11.5 3.1C11.9 3.5 11.9 4.1 11.5 4.5L6 10L3 11Z"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.4"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+
         <textarea
           rows={3}
-          disabled
-          placeholder={`Messaging is only available when sending ZEC → ZEC`}
-          className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 bg-gray-100 text-gray-400 cursor-not-allowed"
+          readOnly
+          aria-disabled="true"
+          placeholder="Messaging is only available when sending ZEC → ZEC"
+          onClick={returnToZec}
+          onFocus={(e) => {
+            e.currentTarget.blur();
+            returnToZec();
+          }}
+          className="border border-gray-800 px-3 py-2 rounded-xl w-full text-md resize-none pr-7 pl-8 pb-8 bg-gray-100 text-gray-400 outline-hidden cursor-not-allowed"
         />
-
-        <span className="absolute bottom-3 right-3 text-md text-gray-400">
-          512 bytes left
-        </span>
       </div>
 
       {/* AMOUNT INPUT + TOKEN SELECTOR + USD DISPLAY */}
@@ -246,4 +268,5 @@ export default function SwapComposer({
     </div>
   );
 }
+
 
