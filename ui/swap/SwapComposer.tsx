@@ -92,6 +92,7 @@ export default function SwapComposer({
   confirmSwap
 }: SwapComposerProps) {
 
+  const rootRef = useRef<HTMLDivElement | null>(null);
   const recipientName = profile?.display_name ?? profile?.name ?? "Recipient";
   const confirmedQuote = isConfirmSuccess(quoteData) ? quoteData : null;
   const depositAmountDecimal = confirmedQuote?.deposit?.amountDecimal ?? "";
@@ -99,6 +100,8 @@ export default function SwapComposer({
   const [isMemoCompact, setIsMemoCompact] = useState(false);
   const autoQuoteKeyRef = useRef("");
   const autoConfirmKeyRef = useRef("");
+  const wasRefundValidRef = useRef(false);
+  const previousFlowStepRef = useRef("none");
 
   // Format tokens for selector
   const formattedTokenOptions = tokenOptions.map((token) => ({
@@ -217,6 +220,22 @@ export default function SwapComposer({
       !!quotePreview ||
       !!statusKey?.depositAddress ||
       !!swapError);
+  const isGettingQuoteVisible =
+    isGettingQuote && !quotePreview && !statusKey?.depositAddress;
+  const isQuoteVisible = !!quotePreview && !isConfirming && !statusKey?.depositAddress;
+  const isConfirmingVisible = !!quotePreview && isConfirming && !statusKey?.depositAddress;
+  const isDepositVisible = !!statusKey?.depositAddress && !!quotePreview;
+  const currentFlowStep = !isRefundAddressValid
+    ? "none"
+    : isDepositVisible
+      ? "deposit"
+      : isConfirmingVisible
+        ? "confirming"
+        : isQuoteVisible
+          ? "quote"
+          : isGettingQuoteVisible
+            ? "getting-quote"
+            : "refund-valid";
   const showInlineSlippage = Number.parseFloat(swapAmount) > 0;
   const hasFlowContentBeforeError =
     (isGettingQuote && !quotePreview && !statusKey?.depositAddress) ||
@@ -237,9 +256,66 @@ export default function SwapComposer({
     return () => window.cancelAnimationFrame(raf);
   }, []);
 
+  const scrollToAbsoluteBottom = () => {
+    const scrollOnePass = () => {
+      const root = rootRef.current;
+      const seen = new Set<HTMLElement>();
+      const scrollables: HTMLElement[] = [];
+
+      let node: HTMLElement | null = root;
+      while (node) {
+        if (seen.has(node)) break;
+        seen.add(node);
+        const style = window.getComputedStyle(node);
+        const canScrollY =
+          (style.overflowY === "auto" || style.overflowY === "scroll") &&
+          node.scrollHeight > node.clientHeight;
+        if (canScrollY) scrollables.push(node);
+        node = node.parentElement;
+      }
+
+      for (const scroller of scrollables) {
+        scroller.scrollTop = scroller.scrollHeight;
+      }
+
+      const bottom = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      );
+      window.scrollTo({ top: bottom, behavior: "auto" });
+    };
+
+    scrollOnePass();
+    window.requestAnimationFrame(scrollOnePass);
+    window.setTimeout(scrollOnePass, 80);
+    window.setTimeout(scrollOnePass, 180);
+    window.setTimeout(scrollOnePass, 320);
+  };
+
+  useEffect(() => {
+    if (isRefundAddressValid && !wasRefundValidRef.current) {
+      const active = document.activeElement as HTMLElement | null;
+      active?.blur();
+      scrollToAbsoluteBottom();
+    }
+    wasRefundValidRef.current = isRefundAddressValid;
+  }, [isRefundAddressValid]);
+
+  useEffect(() => {
+    if (!isRefundAddressValid) {
+      previousFlowStepRef.current = "none";
+      return;
+    }
+
+    if (previousFlowStepRef.current !== currentFlowStep) {
+      scrollToAbsoluteBottom();
+      previousFlowStepRef.current = currentFlowStep;
+    }
+  }, [isRefundAddressValid, currentFlowStep]);
+
 
   return (
-    <div className="bg-transparent border-none shadow-none p-0 relative z-10">
+    <div ref={rootRef} className="bg-transparent border-none shadow-none p-0 relative z-10">
       {/* DISABLED MEMO FIELD */}
       <motion.div
         initial={false}
@@ -264,7 +340,7 @@ export default function SwapComposer({
             rows={1}
             readOnly
             aria-disabled="true"
-            placeholder="Messaging is only available when sending ZEC → ZEC"
+            placeholder="Messenging available ZEC to ZEC, only"
             onClick={returnToZec}
             onFocus={(e) => {
               e.currentTarget.blur();
@@ -350,6 +426,7 @@ export default function SwapComposer({
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.24, ease: "easeOut" }}
                 className="overflow-hidden"
+                onAnimationComplete={scrollToAbsoluteBottom}
               >
                 <SwapQuoteDisplayComponent
                   quote={quotePreview}
@@ -370,6 +447,7 @@ export default function SwapComposer({
                 exit={{ opacity: 0, y: -4, height: 0 }}
                 transition={{ duration: 0.24, ease: "easeOut" }}
                 className="overflow-hidden"
+                onAnimationComplete={scrollToAbsoluteBottom}
               >
                 <SwapDepositDisplay
                   depositUri={depositUri}
@@ -395,6 +473,7 @@ export default function SwapComposer({
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="mt-3 flex flex-col items-center justify-center gap-1.5 min-h-14"
+              onAnimationComplete={scrollToAbsoluteBottom}
             >
               <div className="flex gap-0.5">
                 {[0, 0.1, 0.2].map((delay, i) => (
@@ -439,6 +518,3 @@ export default function SwapComposer({
     </div>
   );
 }
-
-
-

@@ -50,8 +50,11 @@ export default function SwapDepositDisplay({
       <p className="text-lg font-bold text-gray-900 mb-1 text-center">
         Send exactly {amountDecimal} {originSymbol} below.
       </p>
-      <p className="text-sm text-gray-600 mb-1 text-center">
-        {recipientName ?? "Recipient"} receives {minimumReceived ?? "-"} - {receivedAmount ?? "-"} {receivedSymbol}.
+      <p className="text-sm text-gray-600 mb-1 text-center flex flex-wrap items-baseline justify-center gap-x-1">
+        <span>{recipientName ?? "Recipient"} receives</span>
+        <span className="font-bold whitespace-nowrap">
+          {minimumReceived ?? "-"} - {receivedAmount ?? "-"} {receivedSymbol}
+        </span>
       </p>
       <p className="text-xs text-gray-500 mb-4 text-center">
         Estimated time {estimatedTime ?? "Unknown"}
