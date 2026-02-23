@@ -81,11 +81,13 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => {
-                // Check if we're on a subdomain (like swap.zcash.me)
-                const isSubdomain = window.location.hostname.includes('swap.');
+                const host = window.location.hostname;
+                const parts = host.split('.');
+                // Detect subdomain: sub.localhost or sub.domain.tld (3+ parts)
+                const isLocalhost = parts[parts.length - 1].includes('localhost');
+                const isSubdomain = (isLocalhost && parts.length >= 2 && parts[0] !== 'localhost') || (!isLocalhost && parts.length >= 3);
                 if (isSubdomain) {
-                  // Redirect to main domain
-                  const mainDomain = window.location.hostname.replace('swap.', '');
+                  const mainDomain = isLocalhost ? parts.slice(1).join('.') : parts.slice(1).join('.');
                   const port = window.location.port ? ':' + window.location.port : '';
                   window.location.href = `${window.location.protocol}//${mainDomain}${port}/`;
                 } else {
@@ -156,11 +158,12 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                     const slug = buildSlug(v as Profile);
                     if (slug) {
                       (window as any).lastSelectionWasExplicit = true;
-                      // Check if we're on a subdomain (like swap.zcash.me)
-                      const isSubdomain = window.location.hostname.includes('swap.');
-                      if (isSubdomain) {
-                        // Redirect to main domain
-                        const mainDomain = window.location.hostname.replace('swap.', '');
+                      const host = window.location.hostname;
+                      const hParts = host.split('.');
+                      const isLH = hParts[hParts.length - 1].includes('localhost');
+                      const isSub = (isLH && hParts.length >= 2 && hParts[0] !== 'localhost') || (!isLH && hParts.length >= 3);
+                      if (isSub) {
+                        const mainDomain = hParts.slice(1).join('.');
                         const port = window.location.port ? ':' + window.location.port : '';
                         window.location.href = `${window.location.protocol}//${mainDomain}${port}/${slug}`;
                       } else {

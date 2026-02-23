@@ -22,6 +22,7 @@ export function proxy(request: NextRequest) {
       "swap-app",
       "stats-app",
       "leader-app",
+      "blog-app",
       "design-system",
       "privacy",
       "terms",
@@ -57,7 +58,7 @@ export function proxy(request: NextRequest) {
 
   // Block direct access to app-specific routes
   if (!subdomain) {
-    if (url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/leader-app')) {
+    if (url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/leader-app') || url.pathname.startsWith('/blog-app')) {
       return new NextResponse(null, { status: 404 });
     }
   }
@@ -118,6 +119,16 @@ export function proxy(request: NextRequest) {
       url.pathname = '/leader-app';
     } else if (!url.pathname.startsWith('/leader-app')) {
       url.pathname = `/leader-app${url.pathname}`;
+    }
+    return NextResponse.rewrite(url);
+  }
+
+  // Handle blog subdomain - rewrite to /blog-app internally
+  if (subdomain === 'blog') {
+    if (url.pathname === '/') {
+      url.pathname = '/blog-app';
+    } else if (!url.pathname.startsWith('/blog-app')) {
+      url.pathname = `/blog-app${url.pathname}`;
     }
     return NextResponse.rewrite(url);
   }
