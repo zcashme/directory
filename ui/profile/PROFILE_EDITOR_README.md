@@ -122,7 +122,7 @@ Verification/auth links:
 ## 4.1 Memo generation (`generateMemoAction`)
 
 Server-side steps:
-1. Validate amount (`MIN_AMOUNT = 0.001`).
+1. Validate amount (`MIN_AMOUNT = 0.002`).
 2. Query `zcasher` for profile address.
 3. Create session ID and memo string (`zvs/{16-digit-session},{userAddress}`).
 4. Build `zcash:` URI to fixed verification address (`SIGNIN_ADDR`) with base64url memo.
