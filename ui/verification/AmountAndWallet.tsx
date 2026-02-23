@@ -91,6 +91,20 @@ const isAllowedTokenBaseLayer = (token: TokenOption) => {
   );
 };
 
+function getBaseLayerLabel(chainHint?: string): string {
+  const raw = (chainHint ?? "").trim();
+  if (!raw) return "";
+
+  const chain = raw.toLowerCase();
+  if (chain.includes("zec") || chain.includes("zcash")) return "Zcash";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "Bitcoin";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "Ethereum";
+  if (chain.includes("sol") || chain.includes("solana")) return "Solana";
+  if (chain.includes("tron")) return "Tron";
+
+  return raw;
+}
+
 interface AmountAndWalletProps {
   // Required props
   amount: string;
@@ -412,6 +426,14 @@ export default function AmountAndWallet({
     () => assetOptions.filter(isAllowedTokenBaseLayer).filter(matchesTokenSearch),
     [assetOptions, tokenSearch], // eslint-disable-line react-hooks/exhaustive-deps
   );
+  const displayTokenOptions = useMemo(
+    () =>
+      filteredTokenOptions.map((token) => ({
+        ...token,
+        displayChain: getBaseLayerLabel(token.chain),
+      })),
+    [filteredTokenOptions]
+  );
 
   const filteredFiatTickers = useMemo(() => {
     const search = fiatSearch.toLowerCase();
@@ -458,12 +480,12 @@ export default function AmountAndWallet({
   }, [onRefundValidationChange, refundValidation.isValid, amount, validationTrigger]);
 
   const getCurrentTokenIndex = () =>
-    filteredTokenOptions.findIndex(
+    displayTokenOptions.findIndex(
       (token) => asset === (token.symbol ?? token.ticker),
     );
 
   const selectTokenAtIndex = (index: number) => {
-    const next = filteredTokenOptions[index];
+    const next = displayTokenOptions[index];
     if (!next || !setAsset) return;
     setAsset(next.id);
     setIsTokenDropdownOpen(false);
@@ -507,11 +529,11 @@ export default function AmountAndWallet({
       return;
     }
 
-    if (filteredTokenOptions.length === 0) return;
+    if (displayTokenOptions.length === 0) return;
     const delta = e.key === "ArrowDown" ? 1 : -1;
     setHighlightedTokenIndex((prev) => {
       const base = prev >= 0 ? prev : Math.max(getCurrentTokenIndex(), 0);
-      return (base + delta + filteredTokenOptions.length) % filteredTokenOptions.length;
+      return (base + delta + displayTokenOptions.length) % displayTokenOptions.length;
     });
   };
 
@@ -553,17 +575,17 @@ export default function AmountAndWallet({
 
   useEffect(() => {
     tokenOptionRefs.current = [];
-    if (!isTokenDropdownOpen || filteredTokenOptions.length === 0) {
+    if (!isTokenDropdownOpen || displayTokenOptions.length === 0) {
       setHighlightedTokenIndex(-1);
       return;
     }
 
     setHighlightedTokenIndex((prev) => {
-      if (prev >= 0 && prev < filteredTokenOptions.length) return prev;
+      if (prev >= 0 && prev < displayTokenOptions.length) return prev;
       const selectedIndex = getCurrentTokenIndex();
       return selectedIndex >= 0 ? selectedIndex : 0;
     });
-  }, [isTokenDropdownOpen, filteredTokenOptions, asset]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isTokenDropdownOpen, displayTokenOptions, asset]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isTokenDropdownOpen || highlightedTokenIndex < 0) return;
@@ -737,7 +759,7 @@ export default function AmountAndWallet({
                     </div>
                   )}
                   <div className="py-1 max-h-60 overflow-y-auto">
-                    {filteredTokenOptions
+                    {displayTokenOptions
                       .map((token, tokenIndex) => {
                         const isRowActive = highlightedTokenIndex === tokenIndex;
                         const isSelectedToken = asset === (token.symbol ?? token.ticker);
@@ -786,22 +808,22 @@ export default function AmountAndWallet({
                               >
                                 {token.symbol}
                               </span>
-                              {token.chain && (
+                              {token.displayChain && (
                                 <span
                                   className={`ml-auto text-xs text-right truncate font-medium ${
                                     isRowActive
-                                      ? "text-[var(--color-brand-blue)]/25"
-                                      : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
+                                      ? "text-white"
+                                      : "text-gray-500 group-hover:text-white"
                                   }`}
                                 >
-                                  {token.chain}
+                                  {token.displayChain}
                                 </span>
                               )}
                             </div>
                           </span>
                         </motion.button>
                       )})}
-                    {filteredTokenOptions.length === 0 && (
+                    {displayTokenOptions.length === 0 && (
                       <div className="px-3 py-2 text-sm text-gray-500 text-center">
                         No tokens found
                       </div>
@@ -971,8 +993,8 @@ export default function AmountAndWallet({
                                   <span
                                   className={`w-6 flex-shrink-0 ${
                                       isRowActive
-                                        ? "text-[var(--color-brand-blue)]/25"
-                                        : "text-gray-600 group-hover:text-[var(--color-brand-blue)]/25"
+                                        ? "text-white"
+                                        : "text-gray-600 group-hover:text-white"
                                     }`}
                                   >
                                     {CURRENCIES[ticker]?.symbol || ""}
@@ -991,8 +1013,8 @@ export default function AmountAndWallet({
                                   <span
                                     className={`ml-auto text-xs text-right truncate flex-1 min-w-0 ${
                                       isRowActive
-                                        ? "text-[var(--color-brand-blue)]/25"
-                                        : "text-gray-500 group-hover:text-[var(--color-brand-blue)]/25"
+                                        ? "text-white"
+                                        : "text-gray-500 group-hover:text-white"
                                     }`}
                                   >
                                     {CURRENCIES[ticker]?.name || ""}
