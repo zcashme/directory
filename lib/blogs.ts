@@ -1,8 +1,16 @@
-import fs from "fs";
-import path from "path";
 import matter from "gray-matter";
 
-const BLOGS_DIR = path.join(process.cwd(), "content", "blogs");
+/** Strip inline HTML tags that break MDX (e.g. <img style="...">) */
+function stripHtml(md: string): string {
+  return md.replace(/<[^>]+>/g, "");
+}
+
+const REPO = "zcashme/blog";
+const BRANCH = "main";
+const CONTENT_PATH = ""; // md files at repo root; change if nested e.g. "posts"
+
+const BASE_RAW = `https://raw.githubusercontent.com/${REPO}/${BRANCH}`;
+const API_BASE = `https://api.github.com/repos/${REPO}/contents`;
 
 export interface BlogPostMeta {
   slug: string;
@@ -16,33 +24,60 @@ export interface BlogPost extends BlogPostMeta {
   content: string;
 }
 
-export function getAllBlogPosts(): BlogPostMeta[] {
-  const files = fs.readdirSync(BLOGS_DIR).filter((f) => f.endsWith(".md"));
+async function fetchFileList(): Promise<string[]> {
+  const url = CONTENT_PATH
+    ? `${API_BASE}/${CONTENT_PATH}?ref=${BRANCH}`
+    : `${API_BASE}?ref=${BRANCH}`;
 
-  const posts = files.map((filename) => {
-    const slug = filename.replace(/\.md$/, "");
-    const raw = fs.readFileSync(path.join(BLOGS_DIR, filename), "utf-8");
-    const { data } = matter(raw);
+  const res = await fetch(url, { next: { revalidate: 60 } });
+  if (!res.ok) return [];
 
-    return {
-      slug,
-      title: data.title ?? slug,
-      date: data.date ?? "",
-      author: data.author ?? "",
-      description: data.description ?? "",
-    };
-  });
-
-  return posts.sort(
-    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-  );
+  const items: { name: string }[] = await res.json();
+  return items
+    .filter((f) => f.name.endsWith(".md") && f.name !== "README.md")
+    .map((f) => f.name);
 }
 
-export function getBlogPostBySlug(slug: string): BlogPost | null {
-  const filePath = path.join(BLOGS_DIR, `${slug}.md`);
-  if (!fs.existsSync(filePath)) return null;
+async function fetchMarkdown(filename: string): Promise<string | null> {
+  const filePath = CONTENT_PATH ? `${CONTENT_PATH}/${filename}` : filename;
+  const res = await fetch(`${BASE_RAW}/${filePath}`, {
+    next: { revalidate: 60 },
+  });
+  if (!res.ok) return null;
+  return res.text();
+}
 
-  const raw = fs.readFileSync(filePath, "utf-8");
+export async function getAllBlogPosts(): Promise<BlogPostMeta[]> {
+  const files = await fetchFileList();
+
+  const posts = await Promise.all(
+    files.map(async (filename) => {
+      const slug = filename.replace(/\.md$/, "");
+      const raw = await fetchMarkdown(filename);
+      if (!raw) return null;
+
+      const { data } = matter(raw);
+      return {
+        slug,
+        title: data.title ?? slug.replace(/-/g, " "),
+        date: data.date ?? "",
+        author: data.author ?? "",
+        description: data.description ?? "",
+      };
+    })
+  );
+
+  return posts
+    .filter((p): p is BlogPostMeta => p !== null)
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+}
+
+export async function getBlogPostBySlug(
+  slug: string
+): Promise<BlogPost | null> {
+  const raw = await fetchMarkdown(`${slug}.md`);
+  if (!raw) return null;
+
   const { data, content } = matter(raw);
 
   return {
@@ -51,13 +86,11 @@ export function getBlogPostBySlug(slug: string): BlogPost | null {
     date: data.date ?? "",
     author: data.author ?? "",
     description: data.description ?? "",
-    content,
+    content: stripHtml(content),
   };
 }
 
-export function getAllBlogSlugs(): string[] {
-  return fs
-    .readdirSync(BLOGS_DIR)
-    .filter((f) => f.endsWith(".md"))
-    .map((f) => f.replace(/\.md$/, ""));
+export async function getAllBlogSlugs(): Promise<string[]> {
+  const files = await fetchFileList();
+  return files.map((f) => f.replace(/\.md$/, ""));
 }
