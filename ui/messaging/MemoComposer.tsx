@@ -2,7 +2,6 @@ import { useMemo, useRef, useEffect, useCallback, type KeyboardEvent as ReactKey
 import type { Profile } from "@/lib/profile/types";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
-import HelpMessage from "@/ui/verification/HelpMessage";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
 
 const MAX_MEMO_BYTES = 512;
@@ -312,8 +311,6 @@ export default function MemoComposer({
 
       {/* Divider line like Verify */}
       <div className="border-t border-gray-300 my-4"></div>
-
-      <HelpMessage />
 
       {/* QR / URI BLOCK */}
       <div className="-mt-4">

@@ -224,10 +224,13 @@ export default function ProfileVerification({
         }`}
       >
         {!showOtpEntry && (
-          <div className="w-full flex items-center justify-center gap-2 text-center mt-1 mb-2">
-            <p className="text-[12px] text-gray-600 italic m-0">
-              Include minimum of 0.002 ZEC. Do not modify memo.
-            </p>
+          <div className="mt-1 mb-2">
+            <Alert
+              variant="warning"
+              size="sm"
+              message="Include minimum of 0.002 ZEC. Do not modify memo"
+              className="text-center"
+            />
           </div>
         )}
 
