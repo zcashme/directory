@@ -6,6 +6,15 @@ const BUILD_VERSION = new Date().toISOString();
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {},
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "fpwrazvgrmatlajjzdiq.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "4mb",

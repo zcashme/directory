@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Profile } from "@/lib/profile/types";
 
 interface ProfileAvatarProps {
@@ -78,11 +79,12 @@ export default function ProfileAvatar({
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt={profile.name || "Profile"}
+              width={size}
+              height={size}
               className={`w-full h-full ${imageClassName}`}
-              loading="lazy"
               referrerPolicy="no-referrer"
             />
           ) : (
