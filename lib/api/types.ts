@@ -127,7 +127,6 @@ export interface CreateProfilePayload {
   display_name?: string;
   bio?: string;
   address: string;
-  avatar_url?: string;
   nearest_city_name?: string;
   referred_by?: string;
   referred_by_zcasher_id?: number;

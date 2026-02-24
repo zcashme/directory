@@ -14,7 +14,6 @@ export interface Profile {
   address: string;
   address_verified: boolean;
   nearest_city_name?: string;
-  avatar_url?: string;
   profile_image_url?: string;
   links?: ProfileLink[];
   verified_links_count?: number;

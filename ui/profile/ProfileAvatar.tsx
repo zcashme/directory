@@ -40,7 +40,7 @@ export default function ProfileAvatar({
   lookAround = true,
 }: ProfileAvatarProps) {
   const outerSize = size + 6; // border + padding
-  const avatarUrl = (profile.profile_image_url || profile.avatar_url)?.trim() || "";
+  const avatarUrl = (profile.profile_image_url)?.trim() || "";
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
 
   // Randomly shift eyes every 5-9s when no avatar image is set
