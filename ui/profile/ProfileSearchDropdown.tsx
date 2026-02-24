@@ -126,13 +126,7 @@ export default function ProfileSearchDropdown({
     const currentQuery = query;
     lastQueryRef.current = currentQuery;
 
-    // If on a subdomain (like swap.zcash.me), use the main domain for API calls
-    const isSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('swap.');
-    const apiBaseUrl = isSubdomain
-      ? `${window.location.protocol}//${window.location.hostname.replace('swap.', '')}${window.location.port ? ':' + window.location.port : ''}`
-      : '';
-
-    fetch(`${apiBaseUrl}/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
+    fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
       headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
     })
       .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
