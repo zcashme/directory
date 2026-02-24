@@ -14,7 +14,7 @@ interface ZcashAddressInputProps {
 export default function ZcashAddressInput({
   value,
   onChange,
-  label = "Zcash Address",
+  label = "Zcash Address (shielded)",
   id = "zcash-address",
   hasConflict = false,
 }: ZcashAddressInputProps) {
