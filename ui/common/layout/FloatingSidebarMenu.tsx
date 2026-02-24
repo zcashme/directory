@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { animate, motion, useDragControls, useMotionValue } from "framer-motion";
 import type { PanInfo } from "framer-motion";
 
 interface FloatingSidebarItem {
@@ -36,6 +36,8 @@ export default function FloatingSidebarMenu() {
   const tabRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const panelX = useMotionValue(0);
+  const dragControls = useDragControls();
 
   const resolveDestination = useCallback((item: FloatingSidebarItem) => {
     if (!item.href) return null;
@@ -80,6 +82,20 @@ export default function FloatingSidebarMenu() {
     if (!isOpen || highlightedIndex < 0) return;
     itemRefs.current[highlightedIndex]?.scrollIntoView({ block: "nearest" });
   }, [isOpen, highlightedIndex]);
+
+  useEffect(() => {
+    panelX.set(-menuWidthPx);
+  }, [menuWidthPx, panelX]);
+
+  useEffect(() => {
+    const controls = animate(panelX, isOpen ? 0 : -menuWidthPx, {
+      type: "spring",
+      stiffness: 520,
+      damping: 34,
+      mass: 0.7,
+    });
+    return () => controls.stop();
+  }, [isOpen, menuWidthPx, panelX]);
 
   useEffect(() => {
     const updateLayout = () => {
@@ -181,11 +197,11 @@ export default function FloatingSidebarMenu() {
     });
   };
 
-  const handleDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+  const handlePanelDragEnd = (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     if (!isMobile) return;
 
     if (!isOpen) {
-      if (info.offset.x > 40 || info.velocity.x > 250) {
+      if (info.offset.x > 32 || info.velocity.x > 220) {
         openMenu();
         return;
       }
@@ -212,18 +228,17 @@ export default function FloatingSidebarMenu() {
         />
       )}
 
-      <div ref={containerRef} className="fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: footerOffsetPx }}>
+      <div ref={containerRef} className="pointer-events-none fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: footerOffsetPx }}>
         <motion.div
-          initial={false}
-          animate={{ x: isOpen ? 0 : -menuWidthPx }}
-          transition={{ type: "spring", stiffness: 520, damping: 34, mass: 0.7 }}
+          style={{ x: panelX, width: menuWidthPx, touchAction: "pan-y" }}
           drag={isMobile ? "x" : false}
+          dragListener={isOpen}
+          dragControls={dragControls}
           dragConstraints={{ left: -menuWidthPx, right: 0 }}
           dragElastic={0.06}
           dragMomentum={false}
-          onDragEnd={handleDragEnd}
-          className="relative h-full"
-          style={{ width: menuWidthPx }}
+          onDragEnd={handlePanelDragEnd}
+          className="pointer-events-auto relative h-full"
         >
           <motion.div
             id="floating-sidebar-menu"
@@ -291,16 +306,19 @@ export default function FloatingSidebarMenu() {
             </div>
           </motion.div>
 
-          <button
+          <motion.button
             ref={tabRef}
             type="button"
             onClick={() => (isOpen ? closeMenu(false) : openMenu())}
             onKeyDown={handleTabKeyDown}
+            onPointerDown={(event) => {
+              if (isMobile && !isOpen) dragControls.start(event);
+            }}
             aria-expanded={isOpen}
             aria-controls="floating-sidebar-menu"
             aria-label="Open quick navigation menu"
             className="absolute right-0 top-1/2 h-24 w-8 translate-x-full -translate-y-1/2 border border-l-0 border-gray-200 rounded-r-2xl text-gray-600 shadow-sm transition-colors hover:text-gray-900 backdrop-blur-sm"
-            style={{ backgroundColor: "color-mix(in srgb, var(--color-background) 84%, transparent)" }}
+            style={{ pointerEvents: "auto", backgroundColor: "color-mix(in srgb, var(--color-background) 84%, transparent)", touchAction: "pan-y" }}
           >
             <span className="flex items-center justify-center">
               <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -312,7 +330,7 @@ export default function FloatingSidebarMenu() {
                 <path d="M14 20.5H17V17.5H14V20.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          </button>
+          </motion.button>
         </motion.div>
       </div>
     </>

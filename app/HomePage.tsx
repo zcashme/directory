@@ -114,6 +114,7 @@ function FannedCard({
         ref={cardRef}
         onClick={onClick}
         className="absolute cursor-pointer left-1/2"
+        data-featured-card={isActive ? "true" : "false"}
         style={{
           transform: `translateX(-50%) translateY(${stackOffset}px) scale(${stackScale}) rotate(${isActive ? 0 : stackRotation}deg)`,
           zIndex: mobileZIndex,
@@ -167,6 +168,7 @@ function FannedCard({
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className="absolute cursor-pointer"
+      data-featured-card={isSpotlit ? "true" : "false"}
       style={{
         transform: `translateX(${offset}px) translateY(${isHighlighted ? verticalOffset - 30 : verticalOffset}px) rotate(${isHighlighted ? 0 : rotation}deg) scale(${isHovering ? 1.05 : isHighlighted ? 1.02 : 1})`,
         zIndex: isHovering ? 100 : isSpotlit ? 50 : zIndex,
@@ -267,7 +269,12 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
   const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
+  const [joinButtonTranslateY, setJoinButtonTranslateY] = useState<number>(0);
+  const [dotsTranslateY, setDotsTranslateY] = useState<number>(0);
   const shouldReduceMotion = useReducedMotion();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const joinButtonRowRef = useRef<HTMLDivElement>(null);
+  const dotsRowRef = useRef<HTMLDivElement>(null);
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -382,6 +389,64 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [typedTargetsKey, centerIndex, headlinePrefix]);
+
+  useEffect(() => {
+    let frameId = 0;
+
+    const measureJoinButtonPosition = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const sectionEl = sectionRef.current;
+        const buttonRowEl = joinButtonRowRef.current;
+        const dotsRowEl = dotsRowRef.current;
+        const featuredCardEl = sectionEl?.querySelector("[data-featured-card='true']") as HTMLElement | null;
+        const footerTabEl = document.querySelector("[data-home-footer-tab='true']") as HTMLElement | null;
+        if (!buttonRowEl || !featuredCardEl || !footerTabEl) return;
+
+        const featuredCardRect = featuredCardEl.getBoundingClientRect();
+        const footerTabRect = footerTabEl.getBoundingClientRect();
+        const buttonRowRect = buttonRowEl.getBoundingClientRect();
+        const targetCenterY = (featuredCardRect.bottom + footerTabRect.top) / 2;
+        const currentCenterY = buttonRowRect.top + buttonRowRect.height / 2;
+        const delta = targetCenterY - currentCenterY;
+
+        setJoinButtonTranslateY((prev) => {
+          const next = Math.round(prev + delta);
+          return Math.abs(next - prev) < 1 ? prev : next;
+        });
+
+        if (dotsRowEl) {
+          const dotsRowRect = dotsRowEl.getBoundingClientRect();
+          const targetDotsCenterY = (featuredCardRect.bottom + buttonRowRect.top) / 2;
+          const currentDotsCenterY = dotsRowRect.top + dotsRowRect.height / 2;
+          const dotsDelta = targetDotsCenterY - currentDotsCenterY;
+
+          setDotsTranslateY((prev) => {
+            const next = Math.round(prev + dotsDelta);
+            return Math.abs(next - prev) < 1 ? prev : next;
+          });
+        }
+      });
+    };
+
+    measureJoinButtonPosition();
+    window.addEventListener("resize", measureJoinButtonPosition);
+
+    const observer = new ResizeObserver(measureJoinButtonPosition);
+    if (sectionRef.current) observer.observe(sectionRef.current);
+    if (joinButtonRowRef.current) observer.observe(joinButtonRowRef.current);
+    if (dotsRowRef.current) observer.observe(dotsRowRef.current);
+    const footerTabEl = document.querySelector("[data-home-footer-tab='true']") as HTMLElement | null;
+    if (footerTabEl) observer.observe(footerTabEl);
+    const featuredCardEl = sectionRef.current?.querySelector("[data-featured-card='true']") as HTMLElement | null;
+    if (featuredCardEl) observer.observe(featuredCardEl);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", measureJoinButtonPosition);
+      observer.disconnect();
+    };
+  }, [activeCardIndex, isMobile, layoutTune.carouselY, profiles.length, joinButtonTranslateY]);
 
   if (!profiles.length) {
     return null;
@@ -521,7 +586,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
+    <div ref={sectionRef} className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
       <div className="mb-10 md:mb-12 text-center" style={{ transform: `translateY(${layoutTune.headlineY}px)` }}>
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
@@ -568,7 +633,11 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           })}
         </div>
         {isMobile && profiles.length > 1 && (
-          <div className="flex justify-center gap-2 mt-10">
+          <div
+            ref={dotsRowRef}
+            className="flex justify-center gap-2 mt-10"
+            style={{ transform: `translateY(${dotsTranslateY}px)` }}
+          >
             {profiles.map((profile, index) => (
               <button
                 key={profile.id ?? `indicator-${index}`}
@@ -579,7 +648,11 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </div>
         )}
       </div>
-      <div className="mt-10 md:mt-14 flex justify-center">
+      <div
+        ref={joinButtonRowRef}
+        className="mt-10 md:mt-14 flex justify-center"
+        style={{ transform: `translateY(${joinButtonTranslateY}px)` }}
+      >
         <motion.button
           onClick={() => setIsJoinOpen(true)}
           whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
@@ -794,6 +867,7 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
             <div
               ref={footerTabRef}
               className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+              data-home-footer-tab="true"
               style={{
                 backgroundColor: "var(--color-background)",
                 transform: "translate(-50%, -33%)",
