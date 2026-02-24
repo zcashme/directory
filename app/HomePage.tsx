@@ -15,6 +15,7 @@ import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
 
 const SHOW_TEMP_CARD_TUNER = false;
+const SHOW_LAYOUT_POSITION_TUNER = false;
 
 interface FannedCardAvatarProps {
   profile: Profile;
@@ -221,6 +222,8 @@ interface FeaturedCardsSectionProps {
 function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionProps) {
   type TunerScale = ProfileCardTextScale & { avatar: number };
   type TunerKey = keyof TunerScale;
+  type LayoutTunerValues = { headlineY: number; carouselY: number };
+  type LayoutTunerKey = keyof LayoutTunerValues;
   const defaultScale: TunerScale = {
     displayName: 1.4,
     verifiedBadge: 1,
@@ -256,7 +259,9 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [scale, setScale] = useState<TunerScale>(defaultScale);
+  const [layoutTune, setLayoutTune] = useState<LayoutTunerValues>({ headlineY: -64, carouselY: -40 });
   const [copyLabel, setCopyLabel] = useState<string>("Copy");
+  const [copyLayoutLabel, setCopyLayoutLabel] = useState<string>("Copy");
   const [animatedHeadline, setAnimatedHeadline] = useState<string>("");
   const [isTypedNameComplete, setIsTypedNameComplete] = useState<boolean>(false);
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
@@ -467,6 +472,28 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       setTimeout(() => setCopyLabel("Copy"), 1500);
     }
   };
+  const layoutStep = 2;
+  const adjustLayout = (key: LayoutTunerKey, delta: number) => {
+    setLayoutTune((prev) => ({ ...prev, [key]: prev[key] + delta }));
+  };
+  const resetLayoutTuner = () => {
+    setLayoutTune({ headlineY: -64, carouselY: -40 });
+  };
+  const copyLayoutValues = async () => {
+    const payload = [
+      "Homepage position tuner values:",
+      `headlineY: ${layoutTune.headlineY}px`,
+      `carouselY: ${layoutTune.carouselY}px`,
+    ].join("\n");
+    try {
+      await navigator.clipboard.writeText(payload);
+      setCopyLayoutLabel("Copied");
+      setTimeout(() => setCopyLayoutLabel("Copy"), 1500);
+    } catch {
+      setCopyLayoutLabel("Failed");
+      setTimeout(() => setCopyLayoutLabel("Copy"), 1500);
+    }
+  };
   const textScaleOverrides: ProfileCardTextScale = {
     displayName: scale.displayName,
     verifiedBadge: scale.verifiedBadge,
@@ -494,8 +521,8 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
-    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-20 md:pt-32">
-      <div className="mb-10 md:mb-12 text-center -translate-y-4 md:-translate-y-6">
+    <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
+      <div className="mb-10 md:mb-12 text-center" style={{ transform: `translateY(${layoutTune.headlineY}px)` }}>
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
           <span className="block md:inline min-h-[1.3em]">
@@ -513,7 +540,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </span>
         </h2>
       </div>
-      <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip" }}>
+      <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY}px)` }}>
         <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
           {profiles.map((profile, index) => {
             const stackIndex = getStackIndex(index);
@@ -562,6 +589,60 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           Claim your name
         </motion.button>
       </div>
+      {SHOW_LAYOUT_POSITION_TUNER && (
+      <div className="max-w-xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Homepage Position Tuner</p>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={resetLayoutTuner}
+              className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700"
+            >
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={copyLayoutValues}
+              className="text-xs px-2 py-1 rounded border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 min-w-[58px]"
+            >
+              {copyLayoutLabel}
+            </button>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {([
+            { key: "headlineY", label: "headlineY" },
+            { key: "carouselY", label: "carouselY" },
+          ] as { key: LayoutTunerKey; label: string }[]).map((control) => (
+            <div key={control.key} className="flex items-center justify-between rounded-md border border-gray-200 bg-white px-2 py-1.5">
+              <span className="text-xs text-gray-700">{control.label}</span>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => adjustLayout(control.key, -layoutStep)}
+                  className="h-6 w-6 rounded border border-gray-300 text-sm leading-none text-gray-700 hover:bg-gray-50"
+                  aria-label={`Move ${control.label} up`}
+                >
+                  -
+                </button>
+                <span className="w-24 text-center text-[11px] text-gray-600 tabular-nums">
+                  {layoutTune[control.key]}px
+                </span>
+                <button
+                  type="button"
+                  onClick={() => adjustLayout(control.key, layoutStep)}
+                  className="h-6 w-6 rounded border border-gray-300 text-sm leading-none text-gray-700 hover:bg-gray-50"
+                  aria-label={`Move ${control.label} down`}
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      )}
       {SHOW_TEMP_CARD_TUNER && (
       <div className="max-w-3xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">
         <div className="flex items-center justify-between mb-2">
@@ -642,6 +723,11 @@ interface HomePageProps {
 
 export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
   const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const footerTabRef = useRef<HTMLDivElement>(null);
+  const [bottomClearance, setBottomClearance] = useState<number>(0);
+  const bottomClearanceRef = useRef<number>(0);
   const handleCardClick = useCallback(
     (profile: Profile) => {
       const slug = buildSlug(profile);
@@ -650,34 +736,95 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
     [router]
   );
 
+  useEffect(() => {
+    bottomClearanceRef.current = bottomClearance;
+  }, [bottomClearance]);
+
+  useEffect(() => {
+    const measure = () => {
+      const contentEl = contentRef.current;
+      const footerEl = footerRef.current;
+      if (!contentEl || !footerEl) return;
+
+      const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
+      const headerHeight = headerEl?.getBoundingClientRect().height ?? 0;
+      const footerRect = footerEl.getBoundingClientRect();
+      const footerHeight = footerRect.height;
+      const tabRect = footerTabRef.current?.getBoundingClientRect();
+      const tabProtrusion = tabRect ? Math.max(0, footerRect.top - tabRect.top) : 0;
+      const visibleContentHeight = window.innerHeight - headerHeight - footerHeight;
+      const naturalContentHeight = Math.max(0, contentEl.scrollHeight - bottomClearanceRef.current);
+      const nextClearance =
+        naturalContentHeight > visibleContentHeight + 1
+          ? Math.ceil(footerHeight + tabProtrusion + 20)
+          : 0;
+
+      setBottomClearance((prev) => (prev === nextClearance ? prev : nextClearance));
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    const observer = new ResizeObserver(measure);
+    if (contentRef.current) observer.observe(contentRef.current);
+    if (footerRef.current) observer.observe(footerRef.current);
+    const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
+    if (headerEl) observer.observe(headerEl);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex-1">
+    <div className="flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div ref={contentRef} className="flex-1" style={{ paddingBottom: bottomClearance }}>
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
-      <footer className="mt-auto py-4 border-t border-gray-200">
+      <footer
+        ref={footerRef}
+        className="fixed inset-x-0 bottom-0 z-[1200] border-t border-gray-200"
+        style={{ backgroundColor: "var(--color-background)" }}
+      >
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex justify-center items-center gap-6">
-              {SOCIAL_LINKS.map((link) => (
-                <motion.a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label={link.label}
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
-                  </svg>
-                </motion.a>
-              ))}
+          <div
+            className="relative"
+            style={{ paddingTop: 5, paddingBottom: 4 }}
+          >
+            <div
+              ref={footerTabRef}
+              className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+              style={{
+                backgroundColor: "var(--color-background)",
+                transform: "translate(-50%, -33%)",
+                padding: "8px 24px",
+              }}
+            >
+              <div className="flex justify-center items-center gap-6">
+                {SOCIAL_LINKS.map((link) => (
+                  <motion.a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={link.label}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
+                    </svg>
+                  </motion.a>
+                ))}
+              </div>
             </div>
-            <div className="w-full flex flex-col items-center gap-1 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className="w-full flex items-center justify-between gap-3 text-xs text-gray-500"
+              style={{ minHeight: 34 }}
+            >
               <span>&copy; 2026 ZcashMe, Inc.</span>
-              <div className="flex items-center gap-4 sm:justify-end">
+              <div className="ml-auto flex items-center justify-end gap-4">
                 <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
                 <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
               </div>

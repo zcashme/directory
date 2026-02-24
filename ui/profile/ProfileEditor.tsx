@@ -878,15 +878,31 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
                       Authenticated
                     </Button>
                   </div>
-                ) : row.id !== null && onAuthenticateLink && !isMarkedForDeletion ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="xs"
-                    onClick={() => onAuthenticateLink({ url: row.url })}
-                  >
-                    Authenticate
-                  </Button>
+                ) : row.id !== null && !isMarkedForDeletion ? (
+                  profile.address_verified && onAuthenticateLink ? (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="xs"
+                      onClick={() => onAuthenticateLink({ url: row.url })}
+                    >
+                      Authenticate
+                    </Button>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="xs"
+                        disabled
+                      >
+                        Authenticate
+                      </Button>
+                      <span className="text-xs text-gray-500">
+                        Only verified profiles can authenticate links
+                      </span>
+                    </div>
+                  )
                 ) : null}
               </div>
               <DeleteActionButton onClick={() => removeLink(row._uid)} isDeleted={isMarkedForDeletion} />
