@@ -11,6 +11,8 @@ import {
   type LeaderboardEntry,
 } from "@/lib/leaderboard/getLeaderboardAction";
 
+const PROFILE_BASE_URL = "https://zcash.me";
+
 const PERIODS: { value: Period; label: string }[] = [
   { value: "daily", label: "Today" },
   { value: "weekly", label: "This Week" },
@@ -85,7 +87,7 @@ function PodiumAvatar({
   borderClassName: string;
 }) {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const profileHref = `http://localhost:3000/${encodeURIComponent(entry.referrerUsername)}`;
+  const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
   return (
     <div className={`relative ${sizeClassName} transition-transform duration-150 hover:scale-110`}>
       <Link
@@ -156,47 +158,6 @@ function ReferrerAvatar({
   );
 }
 
-type SummaryStatId =
-  | "totalReferrers"
-  | "totalReferrals"
-  | "verified"
-  | "eligible"
-  | "activeRewards"
-  | "totalEarned";
-
-const SUMMARY_STAT_DETAILS: Record<SummaryStatId, { title: string; description: string; formula: string }> = {
-  totalReferrers: {
-    title: "Total Referrers",
-    description: "How many unique referrer profiles currently appear in the leaderboard.",
-    formula: "Total Referrers = count(entries)",
-  },
-  totalReferrals: {
-    title: "Total Referrals",
-    description: "Sum of all referrals attributed across every referrer in the current period.",
-    formula: "Total Referrals = sum(entry.totalReferrals for each entry)",
-  },
-  verified: {
-    title: "Verified",
-    description: "Number of referred users whose address verification is complete.",
-    formula: "Verified = sum(entry.verifiedReferrals for each entry)",
-  },
-  eligible: {
-    title: "Eligible",
-    description: "Number of verified referrals that completed verification inside the eligibility window.",
-    formula: "Eligible = sum(entry.eligibleCount for each entry)",
-  },
-  activeRewards: {
-    title: "Active Rewards",
-    description: "Number of eligible referrals still inside their reward payout duration.",
-    formula: "Active Rewards = sum(entry.activeRewardsCount for each entry)",
-  },
-  totalEarned: {
-    title: "Total Earned (ZEC)",
-    description: "Total ZEC already earned so far by all referrers from active and completed payout months.",
-    formula: "Total Earned = sum(entry.totalEarnedToDate for each entry)",
-  },
-};
-
 const TABLE_COLUMN_DETAILS: Array<{ id: string; label: string; description: string; formula: string }> = [
   {
     id: "leader-col-total",
@@ -236,7 +197,6 @@ export default function LeaderboardPage() {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selectedSummaryStatId, setSelectedSummaryStatId] = useState<SummaryStatId | null>(null);
   const [showAssumptionDetails, setShowAssumptionDetails] = useState(false);
   const [visibleRowsCount, setVisibleRowsCount] = useState(ROWS_PER_PAGE);
   const periodDropdownRef = useRef<HTMLDivElement>(null);
@@ -271,17 +231,6 @@ export default function LeaderboardPage() {
   }, [period]);
 
   useEffect(() => {
-    if (!selectedSummaryStatId) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setSelectedSummaryStatId(null);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedSummaryStatId]);
-
-  useEffect(() => {
     if (!isPeriodDropdownOpen) return;
     const onMouseDown = (event: MouseEvent) => {
       if (!periodDropdownRef.current) return;
@@ -300,7 +249,7 @@ export default function LeaderboardPage() {
   const totalEarned = entries.reduce((sum, e) => sum + e.totalEarnedToDate, 0);
 
   const summaryStats: Array<{
-    id: SummaryStatId;
+    id: string;
     label: string;
     value: ReactNode;
     valueClassName?: string;
@@ -335,16 +284,6 @@ export default function LeaderboardPage() {
         </div>
       )}
       <div className="max-w-5xl mx-auto">
-        {loading && (
-          <div className="relative mb-6 h-24 sm:h-28 w-full" style={{ transform: "translateY(10px)" }}>
-            <div className="relative z-10 flex h-full items-center justify-center gap-2 sm:gap-3">
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-2 border-gray-800 bg-transparent" />
-              <div className="h-20 w-20 sm:h-24 sm:w-24 rounded-full border-2 border-gray-900 bg-transparent" />
-              <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-2 border-gray-700 bg-transparent" />
-            </div>
-          </div>
-        )}
-
         {!loading && !error && firstPlace && (
           <div className="relative mb-6 h-24 sm:h-28 w-full" style={{ transform: "translateY(10px)" }}>
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-black" />
@@ -443,27 +382,12 @@ export default function LeaderboardPage() {
         {!loading && !error && entries.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6 mb-6">
             {summaryStats.map((stat) => (
-              <button
-                key={stat.id}
-                type="button"
-                onClick={() => setSelectedSummaryStatId(stat.id)}
-                className="group text-left border border-gray-800 rounded-xl p-4 transition-colors duration-150 bg-transparent hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] active:bg-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black/30"
-              >
-                <p className="text-sm text-gray-600 mb-1 transition-colors group-hover:text-[var(--color-brand-blue)]">{stat.label}</p>
-                <p className={`text-2xl font-bold transition-colors group-hover:text-[var(--color-brand-blue)] ${stat.valueClassName || ""}`}>{stat.value}</p>
-              </button>
-            ))}
-          </div>
-        )}
-        {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6 mb-6">
-            {summaryStats.map((stat) => (
               <div
-                key={`summary-skeleton-${stat.id}`}
-                className="border border-gray-800 rounded-xl p-4 bg-transparent h-[88px]"
+                key={stat.id}
+                className="border border-gray-800 rounded-xl p-4 bg-transparent"
               >
-                <p className="text-sm text-gray-500 mb-2">{stat.label}</p>
-                <div className="h-6 w-16 rounded border border-gray-300 bg-transparent" />
+                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
+                <p className={`text-2xl font-bold ${stat.valueClassName || ""}`}>{stat.value}</p>
               </div>
             ))}
           </div>
@@ -535,43 +459,6 @@ export default function LeaderboardPage() {
             </AnimatePresence>
           </div>
         )}
-        {loading && (
-          <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-            <div className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 bg-gray-100 text-[11px] md:text-sm lg:text-base font-semibold tracking-wide text-gray-600 border-b border-gray-300 min-w-[642px] h-[36px]">
-              <div className="sticky left-0 z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Rank</div>
-              <div className="sticky left-[48px] md:left-[56px] z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Referrer</div>
-              <div className="px-2 py-2 text-right">Total</div>
-              <div className="px-2 py-2 text-right">Verif.</div>
-              <div className="px-2 py-2 text-right">Eligible</div>
-              <div className="px-2 py-2 text-right">Active</div>
-              <div className="pl-2 pr-4 md:pr-5 py-2 text-right">Earned (zats)</div>
-            </div>
-            {Array.from({ length: ROWS_PER_PAGE }).map((_, rowIndex) => (
-              <div
-                key={`table-row-skeleton-${rowIndex}`}
-                className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-b border-gray-200 min-w-[642px] h-[50px]"
-              >
-                <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 text-center border-r border-gray-100 text-gray-500 font-medium">
-                  {rowIndex + 1}
-                </div>
-                <div className="sticky left-[48px] md:left-[56px] z-10 bg-[var(--color-background)] px-2 py-3 border-r border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 sm:h-8 sm:w-8 rounded-full border border-gray-300" />
-                    <div className="min-w-0">
-                      <div className="h-4 w-20 rounded border border-gray-300 bg-transparent" />
-                      <div className="mt-1 h-3 w-16 rounded border border-gray-300 bg-transparent" />
-                    </div>
-                  </div>
-                </div>
-                <div className="px-2 py-3 flex justify-end"><div className="h-4 w-10 rounded border border-gray-300 bg-transparent" /></div>
-                <div className="px-2 py-3 flex justify-end"><div className="h-4 w-10 rounded border border-gray-300 bg-transparent" /></div>
-                <div className="px-2 py-3 flex justify-end"><div className="h-4 w-10 rounded border border-gray-300 bg-transparent" /></div>
-                <div className="px-2 py-3 flex justify-end"><div className="h-4 w-10 rounded border border-gray-300 bg-transparent" /></div>
-                <div className="pl-2 pr-4 md:pr-5 py-3 flex justify-end"><div className="h-4 w-16 rounded border border-gray-300 bg-transparent" /></div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {!loading && !error && entries.length > 0 && (
           <div className="mt-4 flex justify-center">
@@ -597,69 +484,6 @@ export default function LeaderboardPage() {
             </div>
           </div>
         )}
-        {loading && (
-          <div className="mt-4 flex justify-center">
-            <div className="h-10 w-28 rounded-xl border border-gray-300 bg-transparent" />
-          </div>
-        )}
-
-        <AnimatePresence>
-          {selectedSummaryStatId && (
-            <motion.div
-              className="fixed inset-0 z-[10000] flex items-end justify-center bg-black/35 px-2 pt-2 pb-0 sm:px-4 sm:pt-4 sm:pb-0"
-              onClick={() => setSelectedSummaryStatId(null)}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              <motion.div
-                className="w-full max-w-lg rounded-t-2xl border-x border-t border-gray-800 bg-white shadow-xl"
-                onClick={(event) => event.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="summary-stat-modal-title"
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", stiffness: 340, damping: 34 }}
-              >
-                <div className="flex items-start justify-between gap-4 p-5 border-b border-gray-200">
-                  <h2 id="summary-stat-modal-title" className="text-lg font-semibold text-gray-900">
-                    {SUMMARY_STAT_DETAILS[selectedSummaryStatId].title}
-                  </h2>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSummaryStatId(null)}
-                    className="text-gray-500 hover:text-gray-800 transition-colors"
-                    aria-label="Close details"
-                  >
-                    ✕
-                  </button>
-                </div>
-                <div className="p-5 space-y-4">
-                  <div>
-                    <p className="text-xs font-semibold tracking-wide text-gray-500 mb-1">DESCRIPTION</p>
-                    <p className="text-sm text-gray-700">
-                      {SUMMARY_STAT_DETAILS[selectedSummaryStatId].description}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-semibold tracking-wide text-gray-500 mb-1">FORMULA</p>
-                    <pre className="rounded-lg bg-gray-100 px-3 py-2 text-sm text-gray-900 overflow-x-auto whitespace-pre-wrap">
-                      {SUMMARY_STAT_DETAILS[selectedSummaryStatId].formula}
-                    </pre>
-                  </div>
-                </div>
-                <div
-                  className="pointer-events-none h-8 w-full bg-gradient-to-b from-white to-transparent"
-                  aria-hidden="true"
-                />
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
         {constants && (
           <div className="mt-8 rounded-xl border border-gray-800 bg-transparent p-4 text-sm text-gray-700 space-y-1">
             <p className="font-semibold text-gray-900">Program assumptions</p>
@@ -749,43 +573,6 @@ export default function LeaderboardPage() {
             )}
           </div>
         )}
-        {loading && (
-          <div className="mt-8 rounded-xl border border-gray-800 bg-transparent p-4">
-            <div className="h-4 w-40 rounded border border-gray-800 bg-transparent" />
-          </div>
-        )}
-
-        {/*
-
-        <AnimatePresence>
-                    ✕
-                  </button>
-                </div>
-                <div className="p-5 space-y-2 text-sm text-gray-700">
-                  <p>Top referrers ranked by verified referrals</p>
-                  {constants && (
-                    <>
-                      <p>
-                        Eligibility: {constants.eligibilityWindowWeeks} weeks | Duration:{" "}
-                        {constants.rewardDurationMonths} months | Fee: {formatZec(constants.verificationFeeZec)}
-                      </p>
-                      <p>
-                        Base rate: {formatPercent(constants.baseCommissionRate)} | +
-                        {formatPercent(constants.commissionDeltaPerLink)}/link | Max:{" "}
-                        {formatPercent(constants.maxCommissionRate)}
-                      </p>
-                    </>
-                  )}
-                </div>
-                <div
-                  className="pointer-events-none h-8 w-full bg-gradient-to-b from-white to-transparent"
-                  aria-hidden="true"
-                />
-              </motion.div>
-            </motion.div>
-          )}
-        */}
-
       </div>
     </div>
   );
@@ -793,58 +580,22 @@ export default function LeaderboardPage() {
 
 function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
   const [expanded, setExpanded] = useState(false);
-  const [isCollapsing, setIsCollapsing] = useState(false);
-  const [showRowBottomOnCollapse, setShowRowBottomOnCollapse] = useState(false);
-  const collapseOverlapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const profileHref = `http://localhost:3000/${encodeURIComponent(entry.referrerUsername)}`;
-
-  useEffect(() => {
-    return () => {
-      if (collapseOverlapTimerRef.current) {
-        clearTimeout(collapseOverlapTimerRef.current);
-      }
-    };
-  }, []);
-
-  const clearCollapseOverlapTimer = () => {
-    if (collapseOverlapTimerRef.current) {
-      clearTimeout(collapseOverlapTimerRef.current);
-      collapseOverlapTimerRef.current = null;
-    }
-  };
-
-  const handleRowToggle = () => {
-    if (expanded) {
-      setIsCollapsing(true);
-      setShowRowBottomOnCollapse(false);
-      setExpanded(false);
-      clearCollapseOverlapTimer();
-      collapseOverlapTimerRef.current = setTimeout(() => {
-        setShowRowBottomOnCollapse(true);
-      }, 170);
-      return;
-    }
-
-    clearCollapseOverlapTimer();
-    setIsCollapsing(false);
-    setShowRowBottomOnCollapse(false);
-    setExpanded(true);
-  };
+  const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
   return (
     <>
       <div className="group">
       <div
         role="button"
         tabIndex={0}
-        onClick={handleRowToggle}
+        onClick={() => setExpanded((prev) => !prev)}
         onKeyDown={(event) => {
           if (event.key === "Enter" || event.key === " ") {
             event.preventDefault();
-            handleRowToggle();
+            setExpanded((prev) => !prev);
           }
         }}
         className={`grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-y border-transparent border-b-gray-100 bg-transparent hover:border-t-[var(--color-brand-blue)] hover:border-l-transparent hover:border-r-transparent transition-colors text-xs sm:text-sm md:text-base min-w-[642px] cursor-pointer ${
-          expanded || (isCollapsing && !showRowBottomOnCollapse)
+          expanded
             ? "border-b-transparent hover:border-b-transparent"
             : "hover:border-b-[var(--color-brand-blue)]"
         }`}
@@ -895,14 +646,7 @@ function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
       <div className="pl-2 pr-4 md:pr-5 py-3 text-right font-medium text-green-700">{formatZats(entry.totalEarnedToDate)}</div>
       </div>
 
-      <AnimatePresence
-        initial={false}
-        onExitComplete={() => {
-          clearCollapseOverlapTimer();
-          setIsCollapsing(false);
-          setShowRowBottomOnCollapse(false);
-        }}
-      >
+      <AnimatePresence initial={false}>
         {expanded && (
         <motion.div
           className="min-w-[642px] overflow-hidden border-b border-gray-100 bg-gray-50 group-hover:border-b-[var(--color-brand-blue)] transition-colors"
