@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // To add a new app, add one entry here — everything else derives from it.
 const apps: Record<string, { path: string; aliases?: string[] }> = {
   swap:    { path: '/swap-app', aliases: ['swaps'] },
-  stats:   { path: '/stats-app' },
+  // stats: { path: '/stats-app' }, // disconnected — WIP investor stats page
   donate:  { path: '/donate-app' },
   thread:  { path: '/thread' },
   leaders: { path: '/leader-app' },
