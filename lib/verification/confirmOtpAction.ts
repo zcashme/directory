@@ -14,15 +14,77 @@ const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif"]);
 const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png", "gif"]);
 
-function withCacheVersion(url: string): string {
+/**
+ * Download an image from an external URL and upload it to Supabase storage.
+ * Returns the public URL of the uploaded file, or null on failure.
+ */
+async function downloadAndStoreAvatar(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
+  profileId: number,
+  externalUrl: string
+): Promise<{ ok: true; publicUrl: string } | { ok: false; error: string }> {
+  let res: Response;
   try {
-    const parsed = new URL(url);
-    parsed.searchParams.set("v", Date.now().toString());
-    return parsed.toString();
+    res = await fetch(externalUrl, {
+      signal: AbortSignal.timeout(10_000),
+      headers: { Accept: "image/jpeg, image/png, image/gif" },
+    });
   } catch {
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}v=${Date.now()}`;
+    return { ok: false, error: "Failed to download profile image from URL." };
   }
+  if (!res.ok) {
+    return { ok: false, error: `Image download returned HTTP ${res.status}.` };
+  }
+
+  const contentType = (res.headers.get("content-type") || "").split(";")[0].trim().toLowerCase();
+  if (!ALLOWED_AVATAR_MIME_TYPES.has(contentType)) {
+    return { ok: false, error: `Unsupported image type: ${contentType}` };
+  }
+
+  const arrayBuffer = await res.arrayBuffer();
+  const fileBytes = new Uint8Array(arrayBuffer);
+  if (fileBytes.byteLength === 0 || fileBytes.byteLength > MAX_AVATAR_SIZE_BYTES) {
+    return { ok: false, error: "Downloaded image is empty or exceeds the 2 MB limit." };
+  }
+
+  const extMap: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/gif": "gif",
+  };
+
+  const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+  if (!removeExisting.ok) {
+    return { ok: false, error: removeExisting.error || "Failed to replace existing avatar." };
+  }
+
+  const hash = contentHash(fileBytes);
+  const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar_${hash}.${extMap[contentType] || "jpg"}`;
+  const { error: uploadError } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .upload(avatarPath, fileBytes, { contentType, upsert: true });
+
+  if (uploadError) {
+    return { ok: false, error: uploadError.message || "Failed to upload downloaded avatar." };
+  }
+
+  const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+  const publicUrl = publicData?.publicUrl;
+  if (!publicUrl) {
+    return { ok: false, error: "Avatar uploaded, but public URL generation failed." };
+  }
+
+  return { ok: true, publicUrl };
+}
+
+function contentHash(bytes: Uint8Array): string {
+  // Simple FNV-1a hash — fast, deterministic, no crypto import needed
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bytes.length; i++) {
+    h ^= bytes[i];
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(36);
 }
 
 function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
@@ -237,7 +299,8 @@ export async function confirmOtpAction(
         return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
       }
 
-      const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar`;
+      const hash = contentHash(fileBytes);
+      const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar_${hash}`;
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(avatarPath, fileBytes, {
@@ -262,7 +325,7 @@ export async function confirmOtpAction(
           data: { status: "error" },
         };
       }
-      profileUpdate.profile_image_url = withCacheVersion(uploadedAvatarUrl);
+      profileUpdate.profile_image_url = uploadedAvatarUrl;
     }
 
     if (edits) {
@@ -270,7 +333,17 @@ export async function confirmOtpAction(
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
       if (!removeProfileImage && !uploadedAvatarUrl && edits.profile_image_url !== undefined) {
-        profileUpdate.profile_image_url = edits.profile_image_url;
+        // Download external URL and store in Supabase bucket
+        if (edits.profile_image_url) {
+          const dl = await downloadAndStoreAvatar(supabase, profileId, edits.profile_image_url);
+          if (!dl.ok) {
+            return { ok: false, error: dl.error, data: { status: "error" } };
+          }
+          uploadedAvatarUrl = dl.publicUrl;
+          profileUpdate.profile_image_url = dl.publicUrl;
+        } else {
+          profileUpdate.profile_image_url = null;
+        }
       }
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }
