@@ -9,12 +9,11 @@ import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import {
   AVATAR_BUCKET,
-  AVATAR_FOLDER,
   MAX_AVATAR_SIZE_BYTES,
   ALLOWED_AVATAR_MIME_TYPES,
   ALLOWED_AVATAR_EXTENSIONS,
-  contentHash,
-  removeExistingAvatarVariants,
+  avatarPath,
+  removeExistingAvatar,
   downloadAndStoreAvatar,
 } from "@/lib/profile/avatarStorage";
 
@@ -160,7 +159,7 @@ export async function confirmOtpAction(
     }
 
     if (removeProfileImage) {
-      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return {
           ok: false,
@@ -197,16 +196,15 @@ export async function confirmOtpAction(
         return { ok: false, error: "Avatar file exceeds the 2 MB limit.", data: { status: "invalid" } };
       }
 
-      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
       }
 
-      const hash = contentHash(fileBytes);
-      const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar_${hash}`;
+      const path = avatarPath(profileId);
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
-        .upload(avatarPath, fileBytes, {
+        .upload(path, fileBytes, {
           contentType: normalizedMimeType,
           upsert: true,
         });
@@ -219,7 +217,7 @@ export async function confirmOtpAction(
         };
       }
 
-      const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+      const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
       uploadedAvatarUrl = publicData?.publicUrl || null;
       if (!uploadedAvatarUrl) {
         return {

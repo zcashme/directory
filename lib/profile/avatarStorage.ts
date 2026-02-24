@@ -1,25 +1,21 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 
 export const AVATAR_BUCKET = "zcashme";
-export const AVATAR_FOLDER = "avatar_uploads";
+export const AVATAR_FOLDER = "avatars";
 export const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
-export const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif"]);
-export const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png", "gif"]);
+export const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png"]);
+export const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png"]);
 
-export function contentHash(bytes: Uint8Array): string {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < bytes.length; i++) {
-    h ^= bytes[i];
-    h = Math.imul(h, 0x01000193);
-  }
-  return (h >>> 0).toString(36);
+/** Canonical avatar path: avatars/{id}_zmp.png */
+export function avatarPath(profileId: number): string {
+  return `${AVATAR_FOLDER}/${profileId}_zmp.png`;
 }
 
-export async function removeExistingAvatarVariants(
+export async function removeExistingAvatar(
   supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
   profileId: number
 ): Promise<{ ok: boolean; error?: string }> {
-  const prefix = `${profileId}_avatar`;
+  const prefix = `${profileId}_zmp`;
   const { data: files, error: listError } = await supabase.storage
     .from(AVATAR_BUCKET)
     .list(AVATAR_FOLDER, { limit: 200, search: prefix });
@@ -30,7 +26,7 @@ export async function removeExistingAvatarVariants(
 
   const targets = (files || [])
     .map((f) => f.name)
-    .filter((name) => name.toLowerCase() === prefix.toLowerCase() || new RegExp(`^${prefix}\\.[^./]+$`, "i").test(name))
+    .filter((name) => new RegExp(`^${profileId}_zmp\\.[^./]+$`, "i").test(name))
     .map((name) => `${AVATAR_FOLDER}/${name}`);
 
   if (targets.length === 0) return { ok: true };
@@ -55,7 +51,7 @@ export async function downloadAndStoreAvatar(
   try {
     res = await fetch(externalUrl, {
       signal: AbortSignal.timeout(10_000),
-      headers: { Accept: "image/jpeg, image/png, image/gif" },
+      headers: { Accept: "image/jpeg, image/png" },
     });
   } catch {
     return { ok: false, error: "Failed to download profile image from URL." };
@@ -75,28 +71,21 @@ export async function downloadAndStoreAvatar(
     return { ok: false, error: "Downloaded image is empty or exceeds the 2 MB limit." };
   }
 
-  const extMap: Record<string, string> = {
-    "image/jpeg": "jpg",
-    "image/png": "png",
-    "image/gif": "gif",
-  };
-
-  const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+  const removeExisting = await removeExistingAvatar(supabase, profileId);
   if (!removeExisting.ok) {
     return { ok: false, error: removeExisting.error || "Failed to replace existing avatar." };
   }
 
-  const hash = contentHash(fileBytes);
-  const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar_${hash}.${extMap[ct] || "jpg"}`;
+  const path = avatarPath(profileId);
   const { error: uploadError } = await supabase.storage
     .from(AVATAR_BUCKET)
-    .upload(avatarPath, fileBytes, { contentType: ct, upsert: true });
+    .upload(path, fileBytes, { contentType: ct, upsert: true });
 
   if (uploadError) {
     return { ok: false, error: uploadError.message || "Failed to upload downloaded avatar." };
   }
 
-  const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+  const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
   const publicUrl = publicData?.publicUrl;
   if (!publicUrl) {
     return { ok: false, error: "Avatar uploaded, but public URL generation failed." };
