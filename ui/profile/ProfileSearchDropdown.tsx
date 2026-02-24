@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { Command } from "cmdk";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -97,32 +98,14 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [selectedValue, setSelectedValue] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
-  const previousResultsRef = useRef<Profile[]>([]);
   const usernameAvailableRef = useRef<string | null>(null);
 
   const keystrokeDebounced = useKeystrokeDebounce(value, 10);
   const searchDebounced = useSearchDebounce(value, 150);
-
-  // Check if previous results still match the query (to avoid unnecessary refreshes)
-  // IMPORTANT: This only checks if we can reuse search results, NOT if we can skip availability checks
-  const resultsStillMatch = (query: string, previousQuery: string, previousResults: Profile[]): boolean => {
-    if (!query || !previousQuery || previousResults.length === 0) return false;
-    if (previousResults.length > 3) return false; // Only skip if <= 3 results
-
-    if (query.toLowerCase() !== previousQuery.toLowerCase()) return false;
-
-    const q = query.trim().toLowerCase();
-    // Check if all previous results still match the query
-    return previousResults.every((profile) => {
-      const name = (profile.name || "").toLowerCase();
-      const displayName = (profile.display_name || "").toLowerCase();
-      return name.includes(q) || displayName.includes(q);
-    });
-  };
 
   useEffect(() => {
     const query = searchDebounced?.trim();
@@ -135,53 +118,35 @@ export default function ProfileSearchDropdown({
       onUsernameAvailable?.(null);
       searchActiveRef.current = false;
       lastQueryRef.current = "";
-      previousResultsRef.current = [];
-      return;
-    }
-
-    const canReuseResults = resultsStillMatch(query, lastQueryRef.current, previousResultsRef.current);
-
-    if (canReuseResults &&
-        usernameAvailableRef.current &&
-        query.toLowerCase() === usernameAvailableRef.current.toLowerCase()) {
       return;
     }
 
     searchActiveRef.current = true;
     setLoading(true);
-    const currentQuery = query; // Capture for closure
+    const currentQuery = query;
     lastQueryRef.current = currentQuery;
 
-    // Use API route instead of Server Action to prevent router cache invalidation
     // If on a subdomain (like swap.zcash.me), use the main domain for API calls
     const isSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('swap.');
     const apiBaseUrl = isSubdomain
       ? `${window.location.protocol}//${window.location.hostname.replace('swap.', '')}${window.location.port ? ':' + window.location.port : ''}`
       : '';
 
-    const searchPromise: Promise<SearchResult> = canReuseResults
-      ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null, exists: true })
-      : fetch(`${apiBaseUrl}/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
-          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
-        })
-          .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
-          .then((apiResult: ApiSearchResult) => ({
-            results: apiResult.results.map(transformApiResult),
-            next_cursor: apiResult.next_cursor,
-            exists: apiResult.exists,
-          }))
-          .catch(() => ({ results: [], next_cursor: null }));
-
-    searchPromise
+    fetch(`${apiBaseUrl}/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
+      headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
+    })
+      .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
+      .then((apiResult: ApiSearchResult) => ({
+        results: apiResult.results.map(transformApiResult),
+        next_cursor: apiResult.next_cursor,
+        exists: apiResult.exists,
+      }))
       .then((result: SearchResult) => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
           const data = result.results || [];
           const exists = result.exists ?? false;
 
           setResults(data);
-          if (!canReuseResults) {
-            previousResultsRef.current = data;
-          }
 
           if (showUsernameAvailability && !exists) {
             usernameAvailableRef.current = currentQuery;
@@ -226,7 +191,6 @@ export default function ProfileSearchDropdown({
 
     const handleClickOutside = (event: MouseEvent) => {
       if (!containerRef.current) return;
-      // Keep the menu open when clicking inside input or result list.
       if (!containerRef.current.contains(event.target as Node)) {
         setShow(false);
       }
@@ -236,186 +200,137 @@ export default function ProfileSearchDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [show, value]);
 
-  useEffect(() => {
-    const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-    if (totalSelectable === 0 || loading) {
-      setHighlightedIndex(-1);
-      return;
-    }
+  // Build ordered list of item values for listOnly keyboard nav
+  const itemValues = useCallback(() => {
+    const vals: string[] = [];
+    if (usernameAvailable) vals.push("available");
+    for (const p of results) vals.push(`profile-${p.id}`);
+    return vals;
+  }, [usernameAvailable, results]);
 
-    setHighlightedIndex((prev) => {
-      if (prev >= 0 && prev < totalSelectable) return prev;
-      return 0;
-    });
-  }, [usernameAvailable, results, loading]);
-
-  const selectHighlighted = useCallback((index: number) => {
-    if (index < 0 || loading) return;
-    const hasAvailabilityRow = Boolean(usernameAvailable);
-
-    if (hasAvailabilityRow && index === 0) {
+  // Handle selection (Enter or click) for a given cmdk value
+  const handleSelect = useCallback((val: string) => {
+    if (val === "available") {
       onClaimClick?.();
       return;
     }
+    const profileId = val.replace("profile-", "");
+    const selected = results.find((p) => String(p.id) === profileId);
+    if (selected) {
+      onChange(selected);
+      setShow(false);
+    }
+  }, [results, onClaimClick, onChange]);
 
-    const resultIndex = hasAvailabilityRow ? index - 1 : index;
-    const selected = results[resultIndex];
-    if (!selected) return;
-    onChange(selected);
-    setShow(false);
-  }, [loading, usernameAvailable, results, onClaimClick, onChange]);
+  // Keyboard nav for arrow/enter/escape (listOnly uses document listener,
+  // non-listOnly uses onKeyDown on the raw input)
+  const handleKeyNav = useCallback((e: KeyboardEvent | React.KeyboardEvent) => {
+    const vals = itemValues();
+    if (!vals.length || loading) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setShow(false);
+      }
+      return;
+    }
 
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      if (!listOnly) setShow(true);
+      setSelectedValue((prev) => {
+        const idx = vals.indexOf(prev);
+        const delta = e.key === "ArrowDown" ? 1 : -1;
+        const start = idx >= 0 ? idx : 0;
+        const next = (start + delta + vals.length) % vals.length;
+        return vals[next];
+      });
+      return;
+    }
+
+    if (e.key === "Enter") {
+      e.preventDefault();
+      const current = selectedValue || vals[0];
+      handleSelect(current);
+      return;
+    }
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      setShow(false);
+    }
+  }, [itemValues, loading, listOnly, selectedValue, handleSelect]);
+
+  // listOnly: document keydown since the input is external
   useEffect(() => {
     if (!listOnly) return;
     if (!(show || usernameAvailable) || !keystrokeDebounced) return;
 
     const onDocumentKeyDown = (e: KeyboardEvent) => {
-      const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-      if (!totalSelectable || loading) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          setShow(false);
-        }
-        return;
-      }
-
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        e.stopPropagation();
-        const delta = e.key === "ArrowDown" ? 1 : -1;
-        setHighlightedIndex((prev) => {
-          const start = prev >= 0 ? prev : 0;
-          return (start + delta + totalSelectable) % totalSelectable;
-        });
-        return;
-      }
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
-        selectHighlighted(indexToSelect);
-        return;
-      }
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
-        setShow(false);
-      }
+      e.stopPropagation();
+      handleKeyNav(e);
     };
 
     document.addEventListener("keydown", onDocumentKeyDown, true);
     return () => document.removeEventListener("keydown", onDocumentKeyDown, true);
-  }, [
-    listOnly,
-    show,
-    usernameAvailable,
-    keystrokeDebounced,
-    results,
-    loading,
-    highlightedIndex,
-    selectHighlighted,
-  ]);
+  }, [listOnly, show, usernameAvailable, keystrokeDebounced, handleKeyNav]);
+
+  const dropdownVisible = (show || usernameAvailable) && keystrokeDebounced;
 
   return (
     <div ref={containerRef}>
-      {/* Input only if NOT list-only */}
-      {!listOnly && (
-        <input
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setShow(true);
-          }}
-          onKeyDown={(e) => {
-            const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-            if (!totalSelectable || loading) {
-              if (e.key === "Escape") setShow(false);
-              return;
-            }
-
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
+      <Command shouldFilter={false} value={selectedValue} onValueChange={setSelectedValue}>
+        {/* Input only if NOT list-only — raw <input> avoids cmdk's extra render cycle */}
+        {!listOnly && (
+          <input
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
               setShow(true);
-              const delta = e.key === "ArrowDown" ? 1 : -1;
-              setHighlightedIndex((prev) => {
-                const start = prev >= 0 ? prev : 0;
-                return (start + delta + totalSelectable) % totalSelectable;
-              });
-              return;
-            }
+            }}
+            onKeyDown={handleKeyNav}
+            placeholder={placeholder}
+            autoComplete="off"
+            className={className}
+            style={{ outline: 'none' }}
+            {...props}
+          />
+        )}
 
-            if (e.key === "Enter") {
-              e.preventDefault();
-              const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
-              selectHighlighted(indexToSelect);
-              return;
-            }
-
-            if (e.key === "Escape") {
-              setShow(false);
-            }
-          }}
-          placeholder={placeholder}
-          autoComplete="off"
-          className={className}
-          style={{
-            outline: 'none',
-          }}
-          {...props}
-        />
-      )}
-
-      {/* Dropdown menu */}
-      {(show || usernameAvailable) && keystrokeDebounced && (
-        <div
-          className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
-        >
-          {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-              Searching...
-            </div>
-          ) : (
-            <>
-              {/* Show availability message at the top if username is available */}
-              {usernameAvailable && (
-                <div
-                  onClick={() => {
-                    onClaimClick?.();
-                  }}
-                  onMouseEnter={() => setHighlightedIndex(0)}
-                  className={`px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors ${
-                    highlightedIndex === 0
-                      ? "bg-green-100/60"
-                      : "bg-green-50/50 hover:bg-green-100/50"
-                  }`}
-                >
-                  <span>
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
-                  </span>
+        {/* Dropdown menu */}
+        {dropdownVisible && (
+          <Command.List
+            className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
+          >
+            {loading ? (
+              <Command.Loading>
+                <div className="px-3 py-2 text-sm text-gray-800 font-medium">
+                  Searching...
                 </div>
-              )}
+              </Command.Loading>
+            ) : (
+              <>
+                {usernameAvailable && (
+                  <Command.Item
+                    value="available"
+                    forceMount
+                    onSelect={() => onClaimClick?.()}
+                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
+                  >
+                    <span>
+                      <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
+                    </span>
+                  </Command.Item>
+                )}
 
-              {/* Show search results */}
-              {results.length > 0 ? (
-                results.map((p, resultIndex) => (
-                  <div
+                {results.map((p) => (
+                  <Command.Item
                     key={`${p.name}-${p.id}`}
-                    onClick={() => {
+                    value={`profile-${p.id}`}
+                    onSelect={() => {
                       onChange(p);
                       setShow(false);
                     }}
-                    onMouseEnter={() =>
-                      setHighlightedIndex((usernameAvailable ? 1 : 0) + resultIndex)
-                    }
-                    className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors ${
-                      highlightedIndex ===
-                      (usernameAvailable ? 1 : 0) + resultIndex
-                        ? "bg-gray-100"
-                        : "hover:bg-gray-100"
-                    }`}
+                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-100 data-[selected=true]:bg-gray-100"
                   >
                     {/* Avatar */}
                     <div>
@@ -442,19 +357,21 @@ export default function ProfileSearchDropdown({
                         /{formatUsername(p)}
                       </span>
                     </div>
-                  </div>
-                ))
-              ) : (
-                !usernameAvailable && (
-                  <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-                    No matches
-                  </div>
-                )
-              )}
-            </>
-          )}
-        </div>
-      )}
+                  </Command.Item>
+                ))}
+
+                {results.length === 0 && !usernameAvailable && (
+                  <Command.Empty>
+                    <div className="px-3 py-2 text-sm text-gray-800 font-medium">
+                      No matches
+                    </div>
+                  </Command.Empty>
+                )}
+              </>
+            )}
+          </Command.List>
+        )}
+      </Command>
     </div>
   );
 }
