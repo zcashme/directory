@@ -21,11 +21,9 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
-  const [availableUsername, setAvailableUsername] = useState<string | null>(null);
 
   const resetSearch = () => {
     setSearch("");
-    setAvailableUsername(null);
   };
 
   const closeForm = () => {
@@ -121,11 +119,8 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                   setSearch(v);
                 }
               }}
-              onUsernameAvailable={(username) => {
-                setAvailableUsername(username);
-              }}
-              onClaimClick={() => {
-                setPrefillUsername(availableUsername);
+              onClaimClick={(username: string) => {
+                setPrefillUsername(username);
                 setIsJoinOpen(true);
               }}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
@@ -135,7 +130,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
 
           <motion.button
             onClick={() => {
-              setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
             whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
@@ -145,7 +139,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               height: '32px',
             }}
           >
-            {availableUsername ? 'Claim' : 'Join'}
+            Join
           </motion.button>
 
         </div>

@@ -1,71 +1,58 @@
 import { useState, useEffect, useRef } from "react";
 import { Command } from "cmdk";
+import { AnimatePresence, motion } from "framer-motion";
+import { useDebounce } from "use-debounce";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
+import { toProfile, type DirectoryApiResponse } from "@/lib/directory/directoryClient";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import Spinner from "@/ui/common/feedback/Spinner";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 
-// API response format from /api/directory (matches wallet API docs)
-interface ApiDirectoryResult {
-  id: number;
-  username: string;
-  display_name: string | null;
-  profile_image_url: string | null;
-  bio: string | null;
-  nearest_city_name: string | null;
-  address: string | null;
-  address_verified: boolean;
-  verified_at: string | null;
-  authenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
-  unauthenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
+const fmtUsername = (p: Partial<Profile>) =>
+  getUsernameWithDiscriminator(p).replace(/\s+/g, "_");
+
+const displayName = (p: Partial<Profile>) =>
+  p.display_name || p.name || "";
+
+/** Highlight the first occurrence of `query` inside `text` (case-insensitive). */
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const i = text.toLowerCase().indexOf(query.toLowerCase());
+  if (i === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, i)}
+      <span className="text-[var(--color-brand-blue)]">{text.slice(i, i + query.length)}</span>
+      {text.slice(i + query.length)}
+    </>
+  );
 }
 
-interface ApiSearchResult {
-  results: ApiDirectoryResult[];
-  next_cursor: string | null;
-  exists?: boolean;
-}
+// ---------------------------------------------------------------------------
+// Dropdown animation
+// ---------------------------------------------------------------------------
 
-// Transform API response to internal Profile format
-function transformApiResult(r: ApiDirectoryResult): Profile {
-  return {
-    id: r.id,
-    name: r.username,
-    display_name: r.display_name ?? undefined,
-    profile_image_url: r.profile_image_url ?? undefined,
-    bio: r.bio ?? undefined,
-    nearest_city_name: r.nearest_city_name ?? undefined,
-    address: r.address ?? "",
-    address_verified: r.address_verified,
-    last_verified_at: r.verified_at ?? undefined,
-    verified_links_count: r.authenticated_links.length,
-    links: [...r.authenticated_links, ...r.unauthenticated_links],
-  };
-}
+const dropdownMotion = {
+  initial: { opacity: 0, y: -4, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -4, scale: 0.98 },
+  transition: { duration: 0.15, ease: [0.25, 0.1, 0.25, 1] as const },
+};
 
-const formatUsername = (profile: Partial<Profile>): string =>
-  getUsernameWithDiscriminator(profile).replace(/\s+/g, "_");
-
-const getDisplayName = (profile: Partial<Profile>): string =>
-  profile.display_name || profile.name || "";
-
-interface SearchResult {
-  results: Profile[];
-  next_cursor: string | null;
-  exists?: boolean;
-}
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 interface ProfileSearchDropdownProps {
   value: string;
   onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
   showByDefault?: boolean;
-  onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
-  onClaimClick?: () => void; // eslint-disable-line no-unused-vars
+  onClaimClick?: (username: string) => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
   className?: string;
-  [key: string]: unknown;
 }
 
 export default function ProfileSearchDropdown({
@@ -73,98 +60,87 @@ export default function ProfileSearchDropdown({
   onChange,
   placeholder = "Search",
   showByDefault = true,
-  onUsernameAvailable,
   onClaimClick,
   showUsernameAvailability = true,
   className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
-  ...props
 }: ProfileSearchDropdownProps) {
   const [show, setShow] = useState(false);
   const [results, setResults] = useState<Profile[]>([]);
+  const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const searchActiveRef = useRef(false);
-  const lastQueryRef = useRef("");
+  const abortRef = useRef<AbortController | null>(null);
 
+  // Debounce the search value — keystrokes update the input instantly,
+  // but API calls only fire after 150 ms of silence.
+  const [debouncedValue] = useDebounce(value, 150);
+  const query = debouncedValue?.trim() || "";
+
+  // ------- Fetch on debounced query change -------
   useEffect(() => {
-    const query = value?.trim();
+    // Cancel any in-flight request
+    abortRef.current?.abort();
 
     if (!query) {
       setResults([]);
+      setLoading(false);
       setUsernameAvailable(null);
-      onUsernameAvailable?.(null);
-      searchActiveRef.current = false;
-      lastQueryRef.current = "";
       return;
     }
 
-    searchActiveRef.current = true;
-    const currentQuery = query;
-    lastQueryRef.current = currentQuery;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setLoading(true);
 
-    fetch(`/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
-      headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
+    fetch(`/api/directory?q=${encodeURIComponent(query)}&limit=5`, {
+      signal: controller.signal,
+      headers: { "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "" },
     })
-      .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
-      .then((apiResult: ApiSearchResult) => ({
-        results: apiResult.results.map(transformApiResult),
-        next_cursor: apiResult.next_cursor,
-        exists: apiResult.exists,
-      }))
-      .then((result: SearchResult) => {
-        if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          const data = result.results || [];
-          const exists = result.exists ?? false;
+      .then((res) => (res.ok ? res.json() : { results: [], next_cursor: null }))
+      .then((api: DirectoryApiResponse) => {
+        if (controller.signal.aborted) return;
 
-          setResults(data);
+        const profiles = api.results.map(toProfile);
+        const exists = api.exists ?? false;
 
-          if (showUsernameAvailability && !exists) {
-            setUsernameAvailable(currentQuery);
-            onUsernameAvailable?.(currentQuery);
-          } else {
-            setUsernameAvailable(null);
-            onUsernameAvailable?.(null);
-          }
+        setResults(profiles);
+        setLoading(false);
+
+        if (showUsernameAvailability && !exists) {
+          setUsernameAvailable(query);
+        } else {
+          setUsernameAvailable(null);
         }
       })
-      .catch(() => {
-        if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          setUsernameAvailable(null);
-          onUsernameAvailable?.(null);
-        }
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setLoading(false);
+        setUsernameAvailable(null);
       });
 
-    return () => {
-      searchActiveRef.current = false;
-    };
-  }, [value, onUsernameAvailable, showUsernameAvailability]);
+    return () => controller.abort();
+  }, [query, showUsernameAvailability]);
 
+  // ------- Dropdown visibility -------
   useEffect(() => {
-    if (!value?.trim()) {
-      setShow(false);
-      return;
-    }
-
-    if (showByDefault || usernameAvailable) {
-      setShow(true);
-    }
+    if (!value?.trim()) { setShow(false); return; }
+    if (showByDefault || usernameAvailable) setShow(true);
   }, [value, showByDefault, usernameAvailable]);
 
+  // ------- Click-outside -------
   useEffect(() => {
     if (!show) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      if (!containerRef.current.contains(event.target as Node)) {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShow(false);
       }
     };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [show]);
 
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [show, value]);
-
-  const dropdownVisible = (show || usernameAvailable) && value?.trim();
+  const dropdownVisible = (show || usernameAvailable) && !!value?.trim();
+  const hasContent = results.length > 0 || usernameAvailable || loading;
 
   return (
     <div ref={containerRef}>
@@ -178,64 +154,71 @@ export default function ProfileSearchDropdown({
           placeholder={placeholder}
           autoComplete="off"
           className={className}
-          style={{ outline: 'none' }}
-          {...props}
+          style={{ outline: "none" }}
         />
 
-        {dropdownVisible && (
-          <Command.List
-            className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
-          >
-            {usernameAvailable && (
-              <Command.Item
-                value="available"
-                forceMount
-                onSelect={() => onClaimClick?.()}
-                className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
-              >
-                <span>
-                  <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
-                </span>
-              </Command.Item>
-            )}
+        <AnimatePresence>
+          {dropdownVisible && hasContent && (
+            <motion.div {...dropdownMotion}>
+              <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
 
-            {results.map((p) => (
-              <Command.Item
-                key={`${p.name}-${p.id}`}
-                value={`profile-${p.id}`}
-                onSelect={() => {
-                  onChange(p);
-                  setShow(false);
-                }}
-                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-100 data-[selected=true]:bg-gray-100"
-              >
-                <div>
-                  <ProfileAvatar
-                    profile={p}
-                    size={32}
-                    imageClassName="object-cover"
-                  />
-                </div>
+                {/* Loading indicator */}
+                {loading && results.length === 0 && (
+                  <div className="flex items-center justify-center py-3">
+                    <Spinner size="xs" color="gray" />
+                  </div>
+                )}
 
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <span className="truncate shrink-0">
-                    {getDisplayName(p)}
-                  </span>
+                {/* Username availability banner */}
+                {usernameAvailable && (
+                  <Command.Item
+                    value="available"
+                    forceMount
+                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
+                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
+                  >
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
+                    is available!
+                  </Command.Item>
+                )}
 
-                  {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
-                    <div>
-                      <VerifiedBadge verified={true} />
+                {/* Results */}
+                {results.map((p) => (
+                  <Command.Item
+                    key={`${p.name}-${p.id}`}
+                    value={`profile-${p.id}`}
+                    onSelect={() => { onChange(p); setShow(false); }}
+                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-50 data-[selected=true]:bg-gray-100"
+                  >
+                    <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
+
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <span className="truncate shrink-0">
+                        <Highlight text={displayName(p)} query={query} />
+                      </span>
+
+                      {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
+                        <VerifiedBadge verified />
+                      )}
+
+                      <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
+                        /<Highlight text={fmtUsername(p)} query={query} />
+                      </span>
                     </div>
-                  )}
+                  </Command.Item>
+                ))}
 
-                  <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                    /{formatUsername(p)}
-                  </span>
-                </div>
-              </Command.Item>
-            ))}
-          </Command.List>
-        )}
+                {/* Inline loading when we already have stale results */}
+                {loading && results.length > 0 && (
+                  <div className="flex items-center justify-center py-2 border-t border-gray-100">
+                    <Spinner size="xs" color="gray" />
+                  </div>
+                )}
+
+              </Command.List>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </Command>
     </div>
   );
