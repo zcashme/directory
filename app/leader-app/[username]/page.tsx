@@ -6,7 +6,7 @@ import {
   getReferrerStatsAction,
   type ReferralStatus,
 } from "@/lib/leaderboard/getReferrerStatsAction";
-import { ReferrerAvatar, LeaderboardTable } from "../LeaderboardClientIslands";
+import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClientIslands";
 
 const PROFILE_BASE_URL = "https://zcash.me";
 
@@ -31,15 +31,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 // ── Helpers ──────────────────────────────────────────────────
-
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("");
-}
 
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("en-US", {
@@ -93,11 +84,10 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
         {/* Referrer header */}
         <div className="flex items-center gap-4 mb-6">
           <Link href={profileHref} className="shrink-0">
-            <ReferrerAvatar
+            <LeaderAvatar
               imageUrl={referrer.profileImageUrl}
-              initials={getInitials(referrer.displayName)}
-              displayName={referrer.displayName}
-              className="h-14 w-14"
+              name={referrer.displayName}
+              size={50}
             />
           </Link>
           <div className="min-w-0">
@@ -153,11 +143,10 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
                     {/* User — sticky */}
                     <div className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-3 flex items-center gap-2 min-w-0 border-r border-gray-100">
                       <Link href={userHref} className="shrink-0">
-                        <ReferrerAvatar
+                        <LeaderAvatar
                           imageUrl={r.profileImageUrl}
-                          initials={getInitials(r.displayName)}
-                          displayName={r.displayName}
-                          className="h-7 w-7"
+                          name={r.displayName}
+                          size={24}
                         />
                       </Link>
                       <div className="min-w-0">

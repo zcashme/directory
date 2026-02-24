@@ -8,7 +8,7 @@ import {
 } from "@/lib/leaderboard/getLeaderboardAction";
 import {
   PodiumAvatar,
-  ReferrerAvatar,
+  LeaderAvatar,
   ExpandableRow,
   LeaderboardTable,
   AssumptionDetails,
@@ -108,15 +108,6 @@ function formatPercent(value: number): string {
   return `${(value * 100).toFixed(1)}%`;
 }
 
-function getInitials(name: string): string {
-  return name
-    .trim()
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("");
-}
-
 // ── Row content (server-rendered, passed to client ExpandableRow) ──
 
 function RowSummary({ entry }: { entry: LeaderboardEntry }) {
@@ -140,11 +131,10 @@ function RowSummary({ entry }: { entry: LeaderboardEntry }) {
             className="shrink-0"
             ariaLabel={`View ${entry.referrerUsername}`}
           >
-            <ReferrerAvatar
+            <LeaderAvatar
               imageUrl={entry.referrerProfileImageUrl}
-              initials={getInitials(entry.referrerDisplayName)}
-              displayName={entry.referrerDisplayName}
-              className="h-7 w-7 sm:h-8 sm:w-8"
+              name={entry.referrerDisplayName}
+              size={28}
             />
           </ClickStopLink>
           <div className="min-w-0">
@@ -290,34 +280,25 @@ export default async function LeaderboardPage({
                 <PodiumAvatar
                   profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(secondPlace.referrerUsername)}`}
                   imageUrl={secondPlace.referrerProfileImageUrl}
-                  initials={getInitials(secondPlace.referrerDisplayName)}
-                  displayName={secondPlace.referrerDisplayName}
+                  name={secondPlace.referrerDisplayName}
                   emoji="🥈"
-                  sizeClassName="h-16 w-16 sm:h-20 sm:w-20"
-                  initialsClassName="text-xs sm:text-sm font-semibold text-gray-700"
-                  borderClassName="border-2 border-gray-800"
+                  size={60}
                 />
               )}
               <PodiumAvatar
                 profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(firstPlace.referrerUsername)}`}
                 imageUrl={firstPlace.referrerProfileImageUrl}
-                initials={getInitials(firstPlace.referrerDisplayName)}
-                displayName={firstPlace.referrerDisplayName}
+                name={firstPlace.referrerDisplayName}
                 emoji="🥇"
-                sizeClassName="h-20 w-20 sm:h-24 sm:w-24"
-                initialsClassName="text-sm sm:text-base font-semibold text-gray-700"
-                borderClassName="border-2 border-gray-900"
+                size={74}
               />
               {thirdPlace && (
                 <PodiumAvatar
                   profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(thirdPlace.referrerUsername)}`}
                   imageUrl={thirdPlace.referrerProfileImageUrl}
-                  initials={getInitials(thirdPlace.referrerDisplayName)}
-                  displayName={thirdPlace.referrerDisplayName}
+                  name={thirdPlace.referrerDisplayName}
                   emoji="🥉"
-                  sizeClassName="h-16 w-16 sm:h-20 sm:w-20"
-                  initialsClassName="text-xs sm:text-sm font-semibold text-gray-700"
-                  borderClassName="border-2 border-gray-700"
+                  size={60}
                 />
               )}
             </div>

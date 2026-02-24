@@ -3,55 +3,30 @@
 import { useState, type ReactNode } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
+import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
 // ── PodiumAvatar ──────────────────────────────────────────────
 
 export function PodiumAvatar({
   profileHref,
   imageUrl,
-  initials,
+  name,
   emoji,
-  sizeClassName,
-  initialsClassName,
-  borderClassName,
-  displayName,
+  size,
 }: {
   profileHref: string;
   imageUrl: string | null;
-  initials: string;
+  name: string;
   emoji: string;
-  sizeClassName: string;
-  initialsClassName: string;
-  borderClassName: string;
-  displayName: string;
+  size: number;
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
   return (
-    <div className={`relative ${sizeClassName} transition-transform duration-150 hover:scale-110`}>
-      <Link
-        href={profileHref}
-        className={`relative block h-full w-full rounded-full overflow-hidden bg-gray-100 ${borderClassName}`}
-        aria-label={`View profile`}
-      >
-        {imageUrl ? (
-          <>
-            <span className={`flex h-full w-full items-center justify-center ${initialsClassName}`}>
-              {initials}
-            </span>
-            <img
-              src={imageUrl}
-              alt={displayName}
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-                imageLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImageLoaded(true)}
-            />
-          </>
-        ) : (
-          <span className={`flex h-full w-full items-center justify-center ${initialsClassName}`}>
-            {initials}
-          </span>
-        )}
+    <div className="relative transition-transform duration-150 hover:scale-110">
+      <Link href={profileHref} aria-label="View profile">
+        <ProfileAvatar
+          profile={{ profile_image_url: imageUrl ?? undefined, name }}
+          size={size}
+        />
       </Link>
       <span
         className="absolute left-1/2 -bottom-2 -translate-x-1/2 text-2xl sm:text-3xl z-20 select-none pointer-events-none"
@@ -63,42 +38,22 @@ export function PodiumAvatar({
   );
 }
 
-// ── ReferrerAvatar ────────────────────────────────────────────
+// ── LeaderAvatar ──────────────────────────────────────────────
 
-export function ReferrerAvatar({
+export function LeaderAvatar({
   imageUrl,
-  initials,
-  displayName,
-  className,
+  name,
+  size,
 }: {
   imageUrl: string | null;
-  initials: string;
-  displayName: string;
-  className: string;
+  name: string;
+  size: number;
 }) {
-  const [imageLoaded, setImageLoaded] = useState(false);
   return (
-    <div className={`${className} relative shrink-0 rounded-full overflow-hidden bg-gray-100 border border-gray-300`}>
-      {imageUrl ? (
-        <>
-          <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-700">
-            {initials}
-          </span>
-          <img
-            src={imageUrl}
-            alt={displayName}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setImageLoaded(true)}
-          />
-        </>
-      ) : (
-        <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-700">
-          {initials}
-        </span>
-      )}
-    </div>
+    <ProfileAvatar
+      profile={{ profile_image_url: imageUrl ?? undefined, name }}
+      size={size}
+    />
   );
 }
 
