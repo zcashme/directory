@@ -652,32 +652,50 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex-1">
+      <div className="flex-1 pb-16 sm:pb-20">
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
-      <footer className="mt-auto py-4 border-t border-gray-200">
+      <footer
+        className="fixed inset-x-0 bottom-0 z-[1200] border-t border-gray-200"
+        style={{ backgroundColor: "var(--color-background)" }}
+      >
         <div className="max-w-5xl mx-auto px-4">
-          <div className="flex flex-col items-center gap-2">
-            <div className="flex justify-center items-center gap-6">
-              {SOCIAL_LINKS.map((link) => (
-                <motion.a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  whileHover={{ scale: 1.1 }}
-                  className="text-gray-400 hover:text-gray-600 transition-colors"
-                  aria-label={link.label}
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
-                  </svg>
-                </motion.a>
-              ))}
+          <div
+            className="relative"
+            style={{ paddingTop: 5, paddingBottom: 4 }}
+          >
+            <div
+              className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+              style={{
+                backgroundColor: "var(--color-background)",
+                transform: "translate(-50%, -33%)",
+                padding: "8px 24px",
+              }}
+            >
+              <div className="flex justify-center items-center gap-6">
+                {SOCIAL_LINKS.map((link) => (
+                  <motion.a
+                    key={link.href}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    whileHover={{ scale: 1.1 }}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                    aria-label={link.label}
+                  >
+                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                      <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
+                    </svg>
+                  </motion.a>
+                ))}
+              </div>
             </div>
-            <div className="w-full flex flex-col items-center gap-1 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+            <div
+              className="w-full flex items-center justify-between gap-3 text-xs text-gray-500"
+              style={{ minHeight: 34 }}
+            >
               <span>&copy; 2026 ZcashMe, Inc.</span>
-              <div className="flex items-center gap-4 sm:justify-end">
+              <div className="ml-auto flex items-center justify-end gap-4">
                 <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
                 <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
               </div>
