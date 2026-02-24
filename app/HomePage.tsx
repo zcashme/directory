@@ -267,7 +267,9 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
   const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
+  const [dotsGapAboveButton, setDotsGapAboveButton] = useState<number>(0);
   const shouldReduceMotion = useReducedMotion();
+  const claimButtonRef = useRef<HTMLButtonElement>(null);
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -382,6 +384,32 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [typedTargetsKey, centerIndex, headlinePrefix]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setDotsGapAboveButton(0);
+      return;
+    }
+
+    const measureDotsGap = () => {
+      const claimButtonEl = claimButtonRef.current;
+      const footerTabEl = document.querySelector("[data-home-footer-tab='true']") as HTMLElement | null;
+      if (!claimButtonEl || !footerTabEl) return;
+
+      const claimButtonRect = claimButtonEl.getBoundingClientRect();
+      const footerTabRect = footerTabEl.getBoundingClientRect();
+      const gapBelowButton = Math.max(0, Math.round(footerTabRect.top - claimButtonRect.bottom));
+      setDotsGapAboveButton(gapBelowButton);
+    };
+
+    const frameId = requestAnimationFrame(measureDotsGap);
+    window.addEventListener("resize", measureDotsGap);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", measureDotsGap);
+    };
+  }, [isMobile, profiles.length]);
 
   if (!profiles.length) {
     return null;
@@ -567,20 +595,24 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
             );
           })}
         </div>
-        {isMobile && profiles.length > 1 && (
-          <div className="flex justify-center gap-2 mt-6">
-            {profiles.map((profile, index) => (
-              <button
-                key={profile.id ?? `indicator-${index}`}
-                onClick={() => setActiveCardIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
+      {isMobile && profiles.length > 1 && (
+        <div
+          className="flex justify-center gap-2 mt-2"
+          style={{ marginBottom: `${dotsGapAboveButton}px` }}
+        >
+          {profiles.map((profile, index) => (
+            <button
+              key={profile.id ?? `indicator-${index}`}
+              onClick={() => setActiveCardIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
+            />
+          ))}
+        </div>
+      )}
       <div className="mt-8 md:mt-12 flex justify-center">
         <motion.button
+          ref={claimButtonRef}
           onClick={() => setIsJoinOpen(true)}
           whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
           transition={{ type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 }}
@@ -794,6 +826,7 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
             <div
               ref={footerTabRef}
               className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+              data-home-footer-tab="true"
               style={{
                 backgroundColor: "var(--color-background)",
                 transform: "translate(-50%, -33%)",
