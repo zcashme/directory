@@ -57,55 +57,6 @@ export function LeaderAvatar({
   );
 }
 
-// ── ExpandableRow ─────────────────────────────────────────────
-
-export function ExpandableRow({
-  summaryRow,
-  detailPanel,
-}: {
-  summaryRow: ReactNode;
-  detailPanel: ReactNode;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  return (
-    <div className="group">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded((prev) => !prev)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setExpanded((prev) => !prev);
-          }
-        }}
-        className={`grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-y border-transparent border-b-gray-100 bg-transparent hover:border-t-[var(--color-brand-blue)] hover:border-l-transparent hover:border-r-transparent transition-colors text-xs sm:text-sm md:text-base min-w-[642px] cursor-pointer ${
-          expanded
-            ? "border-b-transparent hover:border-b-transparent"
-            : "hover:border-b-[var(--color-brand-blue)]"
-        }`}
-        aria-expanded={expanded}
-      >
-        {summaryRow}
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded && (
-          <motion.div
-            className="min-w-[642px] overflow-hidden border-b border-gray-100 bg-gray-50 group-hover:border-b-[var(--color-brand-blue)] transition-colors"
-            initial={{ height: 0 }}
-            animate={{ height: "auto" }}
-            exit={{ height: 0 }}
-            transition={{ type: "spring", stiffness: 340, damping: 34 }}
-          >
-            {detailPanel}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
-
 // ── LeaderboardTable ──────────────────────────────────────────
 
 const ROWS_PER_PAGE = 10;

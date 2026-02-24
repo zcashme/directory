@@ -9,7 +9,6 @@ import {
 import {
   PodiumAvatar,
   LeaderAvatar,
-  ExpandableRow,
   LeaderboardTable,
   AssumptionDetails,
   ClickStopLink,
@@ -163,68 +162,6 @@ function RowSummary({ entry }: { entry: LeaderboardEntry }) {
   );
 }
 
-function RowDetail({ entry }: { entry: LeaderboardEntry }) {
-  return (
-    <div className="grid grid-cols-3 gap-2 pl-[56px] pr-3 py-3 text-xs sm:text-sm">
-      <div>
-        <p className="text-gray-500">Unverified</p>
-        <p className="font-medium text-gray-700">{entry.unverifiedReferrals}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Conversion</p>
-        <p className="font-medium">{entry.conversionRate.toFixed(1)}%</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Potential Rate</p>
-        <p className="font-medium">{formatPercent(entry.potentialCommissionRate)}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Ineligible</p>
-        <p className="font-medium text-red-500">{entry.ineligibleCount}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Pending Opportunities</p>
-        <p className="font-medium text-yellow-600">{entry.pendingOpportunities}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Expired Opportunities</p>
-        <p className="font-medium text-gray-500">{entry.expiredOpportunities}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Pending Links</p>
-        <p className="font-medium text-yellow-600">{entry.pendingLinksCount}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Active Rewards</p>
-        <p className="font-medium text-purple-600">{entry.activeRewardsCount}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Monthly Payout (ZEC)</p>
-        <p className="font-medium">{formatZec(entry.currentMonthlyPayout)}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Revenue (ZEC)</p>
-        <p className="font-medium">{formatZec(entry.totalRecurringRevenue)}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Remaining (ZEC)</p>
-        <p className="font-medium">{formatZec(entry.totalRewardsRemaining)}</p>
-      </div>
-      <div>
-        <p className="text-gray-500">Total (ZEC)</p>
-        <p className="font-medium">{formatZec(entry.totalEarnedToDate + entry.totalRewardsRemaining)}</p>
-      </div>
-      <div className="col-span-3 pt-1">
-        <Link
-          href={`/${encodeURIComponent(entry.referrerUsername)}`}
-          className="text-[var(--color-brand-blue)] text-xs font-medium hover:underline"
-        >
-          View referrals &rarr;
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────
 
@@ -385,11 +322,12 @@ export default async function LeaderboardPage({
 
             <LeaderboardTable totalRows={entries.length}>
               {entries.map((entry) => (
-                <ExpandableRow
+                <div
                   key={entry.referrerId}
-                  summaryRow={<RowSummary entry={entry} />}
-                  detailPanel={<RowDetail entry={entry} />}
-                />
+                  className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px]"
+                >
+                  <RowSummary entry={entry} />
+                </div>
               ))}
             </LeaderboardTable>
           </div>
