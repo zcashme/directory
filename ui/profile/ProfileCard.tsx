@@ -105,9 +105,9 @@ export default function ProfileCard({
     }
   }, [profile.id]);
 
-  const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; accessToken: string }) => {
+  const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; avatarUrl?: string | null; accessToken: string }) => {
     setShowRedirect(false);
-    const result = await upsertVerifiedLink(profile.id, link.url, link.accessToken);
+    const result = await upsertVerifiedLink(profile.id, link.url, link.accessToken, undefined, link.avatarUrl ?? undefined);
     if (result.ok) {
       setLinksArray((prev) =>
         prev.map((l) =>

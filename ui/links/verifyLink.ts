@@ -6,6 +6,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { getProviderByKey, detectProviderFromUrl, extractHandleFromUrl } from "./providers";
+import { downloadAndStoreAvatar } from "@/lib/profile/avatarStorage";
 
 const PROVIDER_TO_PLATFORM: Record<string, string> = {
   twitter: "X",
@@ -19,6 +20,7 @@ export async function upsertVerifiedLink(
   url: string,
   accessToken: string,
   username?: string,
+  avatarUrl?: string,
 ): Promise<{ ok: boolean; error?: string }> {
   const supabase = createSupabaseServerClient();
   if (!supabase) return { ok: false, error: "Supabase client not available" };
@@ -97,6 +99,26 @@ export async function upsertVerifiedLink(
       .from("zcasher_links")
       .insert({ zcasher_id: profileId, url: verifiedUrl, label, is_verified: true, platform, created_at: new Date().toISOString() });
     if (error) return { ok: false, error: error.message };
+  }
+
+  // If an OAuth avatar URL was provided and the profile has no image yet,
+  // download it to the Supabase bucket and set profile_image_url.
+  if (avatarUrl) {
+    const { data: current } = await supabase
+      .from("zcasher")
+      .select("profile_image_url")
+      .eq("id", profileId)
+      .single();
+
+    if (!current?.profile_image_url) {
+      const dl = await downloadAndStoreAvatar(supabase, profileId, avatarUrl);
+      if (dl.ok) {
+        await supabase
+          .from("zcasher")
+          .update({ profile_image_url: dl.publicUrl })
+          .eq("id", profileId);
+      }
+    }
   }
 
   return { ok: true };
