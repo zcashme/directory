@@ -1,23 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Command } from "cmdk";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
-
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
-}
-
-// Semantic aliases for different debounce contexts
-const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
-const useSearchDebounce = useDebounce;    // API calls (150ms)
 
 // API response format from /api/directory (matches wallet API docs)
 interface ApiDirectoryResult {
@@ -73,7 +60,6 @@ interface ProfileSearchDropdownProps {
   value: string;
   onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
-  listOnly?: boolean;
   showByDefault?: boolean;
   onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
   onClaimClick?: () => void; // eslint-disable-line no-unused-vars
@@ -86,7 +72,6 @@ export default function ProfileSearchDropdown({
   value,
   onChange,
   placeholder = "Search",
-  listOnly = false,
   showByDefault = true,
   onUsernameAvailable,
   onClaimClick,
@@ -96,24 +81,16 @@ export default function ProfileSearchDropdown({
 }: ProfileSearchDropdownProps) {
   const [show, setShow] = useState(false);
   const [results, setResults] = useState<Profile[]>([]);
-  const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const [selectedValue, setSelectedValue] = useState("");
   const containerRef = useRef<HTMLDivElement | null>(null);
   const searchActiveRef = useRef(false);
   const lastQueryRef = useRef("");
-  const usernameAvailableRef = useRef<string | null>(null);
-
-  const keystrokeDebounced = useKeystrokeDebounce(value, 10);
-  const searchDebounced = useSearchDebounce(value, 150);
 
   useEffect(() => {
-    const query = searchDebounced?.trim();
+    const query = value?.trim();
 
     if (!query) {
       setResults([]);
-      setLoading(false);
-      usernameAvailableRef.current = null;
       setUsernameAvailable(null);
       onUsernameAvailable?.(null);
       searchActiveRef.current = false;
@@ -122,7 +99,6 @@ export default function ProfileSearchDropdown({
     }
 
     searchActiveRef.current = true;
-    setLoading(true);
     const currentQuery = query;
     lastQueryRef.current = currentQuery;
 
@@ -143,22 +119,16 @@ export default function ProfileSearchDropdown({
           setResults(data);
 
           if (showUsernameAvailability && !exists) {
-            usernameAvailableRef.current = currentQuery;
             setUsernameAvailable(currentQuery);
             onUsernameAvailable?.(currentQuery);
           } else {
-            usernameAvailableRef.current = null;
             setUsernameAvailable(null);
             onUsernameAvailable?.(null);
           }
-
-          setLoading(false);
         }
       })
       .catch(() => {
         if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          setLoading(false);
-          usernameAvailableRef.current = null;
           setUsernameAvailable(null);
           onUsernameAvailable?.(null);
         }
@@ -167,10 +137,10 @@ export default function ProfileSearchDropdown({
     return () => {
       searchActiveRef.current = false;
     };
-  }, [searchDebounced, onUsernameAvailable, showUsernameAvailability]);
+  }, [value, onUsernameAvailable, showUsernameAvailability]);
 
   useEffect(() => {
-    if (!keystrokeDebounced) {
+    if (!value?.trim()) {
       setShow(false);
       return;
     }
@@ -178,7 +148,7 @@ export default function ProfileSearchDropdown({
     if (showByDefault || usernameAvailable) {
       setShow(true);
     }
-  }, [keystrokeDebounced, showByDefault, usernameAvailable]);
+  }, [value, showByDefault, usernameAvailable]);
 
   useEffect(() => {
     if (!show) return;
@@ -194,175 +164,76 @@ export default function ProfileSearchDropdown({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [show, value]);
 
-  // Build ordered list of item values for listOnly keyboard nav
-  const itemValues = useCallback(() => {
-    const vals: string[] = [];
-    if (usernameAvailable) vals.push("available");
-    for (const p of results) vals.push(`profile-${p.id}`);
-    return vals;
-  }, [usernameAvailable, results]);
-
-  // Handle selection (Enter or click) for a given cmdk value
-  const handleSelect = useCallback((val: string) => {
-    if (val === "available") {
-      onClaimClick?.();
-      return;
-    }
-    const profileId = val.replace("profile-", "");
-    const selected = results.find((p) => String(p.id) === profileId);
-    if (selected) {
-      onChange(selected);
-      setShow(false);
-    }
-  }, [results, onClaimClick, onChange]);
-
-  // Keyboard nav for arrow/enter/escape (listOnly uses document listener,
-  // non-listOnly uses onKeyDown on the raw input)
-  const handleKeyNav = useCallback((e: KeyboardEvent | React.KeyboardEvent) => {
-    const vals = itemValues();
-    if (!vals.length || loading) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setShow(false);
-      }
-      return;
-    }
-
-    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-      e.preventDefault();
-      if (!listOnly) setShow(true);
-      setSelectedValue((prev) => {
-        const idx = vals.indexOf(prev);
-        const delta = e.key === "ArrowDown" ? 1 : -1;
-        const start = idx >= 0 ? idx : 0;
-        const next = (start + delta + vals.length) % vals.length;
-        return vals[next];
-      });
-      return;
-    }
-
-    if (e.key === "Enter") {
-      e.preventDefault();
-      const current = selectedValue || vals[0];
-      handleSelect(current);
-      return;
-    }
-
-    if (e.key === "Escape") {
-      e.preventDefault();
-      setShow(false);
-    }
-  }, [itemValues, loading, listOnly, selectedValue, handleSelect]);
-
-  // listOnly: document keydown since the input is external
-  useEffect(() => {
-    if (!listOnly) return;
-    if (!(show || usernameAvailable) || !keystrokeDebounced) return;
-
-    const onDocumentKeyDown = (e: KeyboardEvent) => {
-      e.stopPropagation();
-      handleKeyNav(e);
-    };
-
-    document.addEventListener("keydown", onDocumentKeyDown, true);
-    return () => document.removeEventListener("keydown", onDocumentKeyDown, true);
-  }, [listOnly, show, usernameAvailable, keystrokeDebounced, handleKeyNav]);
-
-  const dropdownVisible = (show || usernameAvailable) && keystrokeDebounced;
+  const dropdownVisible = (show || usernameAvailable) && value?.trim();
 
   return (
     <div ref={containerRef}>
-      <Command shouldFilter={false} value={selectedValue} onValueChange={setSelectedValue}>
-        {/* Input only if NOT list-only — raw <input> avoids cmdk's extra render cycle */}
-        {!listOnly && (
-          <input
-            value={value}
-            onChange={(e) => {
-              onChange(e.target.value);
-              setShow(true);
-            }}
-            onKeyDown={handleKeyNav}
-            placeholder={placeholder}
-            autoComplete="off"
-            className={className}
-            style={{ outline: 'none' }}
-            {...props}
-          />
-        )}
+      <Command shouldFilter={false}>
+        <Command.Input
+          value={value}
+          onValueChange={(v) => {
+            onChange(v);
+            setShow(true);
+          }}
+          placeholder={placeholder}
+          autoComplete="off"
+          className={className}
+          style={{ outline: 'none' }}
+          {...props}
+        />
 
-        {/* Dropdown menu */}
         {dropdownVisible && (
           <Command.List
             className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
           >
-            {loading ? (
-              <Command.Loading>
-                <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-                  Searching...
-                </div>
-              </Command.Loading>
-            ) : (
-              <>
-                {usernameAvailable && (
-                  <Command.Item
-                    value="available"
-                    forceMount
-                    onSelect={() => onClaimClick?.()}
-                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
-                  >
-                    <span>
-                      <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
-                    </span>
-                  </Command.Item>
-                )}
-
-                {results.map((p) => (
-                  <Command.Item
-                    key={`${p.name}-${p.id}`}
-                    value={`profile-${p.id}`}
-                    onSelect={() => {
-                      onChange(p);
-                      setShow(false);
-                    }}
-                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-100 data-[selected=true]:bg-gray-100"
-                  >
-                    {/* Avatar */}
-                    <div>
-                      <ProfileAvatar
-                        profile={p}
-                        size={32}
-                        imageClassName="object-cover"
-                      />
-                    </div>
-
-                    {/* Text + metadata */}
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="truncate shrink-0">
-                        {getDisplayName(p)}
-                      </span>
-
-                      {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
-                        <div>
-                          <VerifiedBadge verified={true} />
-                        </div>
-                      )}
-
-                      <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                        /{formatUsername(p)}
-                      </span>
-                    </div>
-                  </Command.Item>
-                ))}
-
-                {results.length === 0 && !usernameAvailable && (
-                  <Command.Empty>
-                    <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-                      No matches
-                    </div>
-                  </Command.Empty>
-                )}
-              </>
+            {usernameAvailable && (
+              <Command.Item
+                value="available"
+                forceMount
+                onSelect={() => onClaimClick?.()}
+                className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
+              >
+                <span>
+                  <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
+                </span>
+              </Command.Item>
             )}
+
+            {results.map((p) => (
+              <Command.Item
+                key={`${p.name}-${p.id}`}
+                value={`profile-${p.id}`}
+                onSelect={() => {
+                  onChange(p);
+                  setShow(false);
+                }}
+                className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-100 data-[selected=true]:bg-gray-100"
+              >
+                <div>
+                  <ProfileAvatar
+                    profile={p}
+                    size={32}
+                    imageClassName="object-cover"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 min-w-0 flex-1">
+                  <span className="truncate shrink-0">
+                    {getDisplayName(p)}
+                  </span>
+
+                  {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
+                    <div>
+                      <VerifiedBadge verified={true} />
+                    </div>
+                  )}
+
+                  <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
+                    /{formatUsername(p)}
+                  </span>
+                </div>
+              </Command.Item>
+            ))}
           </Command.List>
         )}
       </Command>
