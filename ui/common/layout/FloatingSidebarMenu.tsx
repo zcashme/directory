@@ -279,7 +279,7 @@ export default function FloatingSidebarMenu() {
                     <span className="flex items-center gap-2 min-w-0">
                       <span
                         className="block min-w-0 truncate font-semibold leading-tight tracking-tight"
-                        style={{ fontSize: "clamp(1.125rem, 0.95rem + 1.25vh, 2.25rem)" }}
+                        style={{ fontSize: "clamp(1rem, 0.9rem + 1vh, 2rem)" }}
                       >
                         {item.label}
                       </span>
