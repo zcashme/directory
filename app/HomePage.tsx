@@ -494,7 +494,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
-    <div className="max-w-7xl mx-auto mb-12 md:mb-16 px-4 pt-20 md:pt-32">
+    <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
       <div className="mb-10 md:mb-12 text-center -translate-y-4 md:-translate-y-6">
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
@@ -642,6 +642,11 @@ interface HomePageProps {
 
 export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
   const router = useRouter();
+  const contentRef = useRef<HTMLDivElement>(null);
+  const footerRef = useRef<HTMLElement>(null);
+  const footerTabRef = useRef<HTMLDivElement>(null);
+  const [bottomClearance, setBottomClearance] = useState<number>(0);
+  const bottomClearanceRef = useRef<number>(0);
   const handleCardClick = useCallback(
     (profile: Profile) => {
       const slug = buildSlug(profile);
@@ -650,12 +655,54 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
     [router]
   );
 
+  useEffect(() => {
+    bottomClearanceRef.current = bottomClearance;
+  }, [bottomClearance]);
+
+  useEffect(() => {
+    const measure = () => {
+      const contentEl = contentRef.current;
+      const footerEl = footerRef.current;
+      if (!contentEl || !footerEl) return;
+
+      const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
+      const headerHeight = headerEl?.getBoundingClientRect().height ?? 0;
+      const footerRect = footerEl.getBoundingClientRect();
+      const footerHeight = footerRect.height;
+      const tabRect = footerTabRef.current?.getBoundingClientRect();
+      const tabProtrusion = tabRect ? Math.max(0, footerRect.top - tabRect.top) : 0;
+      const visibleContentHeight = window.innerHeight - headerHeight - footerHeight;
+      const naturalContentHeight = Math.max(0, contentEl.scrollHeight - bottomClearanceRef.current);
+      const nextClearance =
+        naturalContentHeight > visibleContentHeight + 1
+          ? Math.ceil(footerHeight + tabProtrusion + 20)
+          : 0;
+
+      setBottomClearance((prev) => (prev === nextClearance ? prev : nextClearance));
+    };
+
+    measure();
+    window.addEventListener("resize", measure);
+
+    const observer = new ResizeObserver(measure);
+    if (contentRef.current) observer.observe(contentRef.current);
+    if (footerRef.current) observer.observe(footerRef.current);
+    const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
+    if (headerEl) observer.observe(headerEl);
+
+    return () => {
+      window.removeEventListener("resize", measure);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex-1 pb-16 sm:pb-20">
+    <div className="flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div ref={contentRef} className="flex-1" style={{ paddingBottom: bottomClearance }}>
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
       <footer
+        ref={footerRef}
         className="fixed inset-x-0 bottom-0 z-[1200] border-t border-gray-200"
         style={{ backgroundColor: "var(--color-background)" }}
       >
@@ -665,6 +712,7 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
             style={{ paddingTop: 5, paddingBottom: 4 }}
           >
             <div
+              ref={footerTabRef}
               className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
               style={{
                 backgroundColor: "var(--color-background)",
