@@ -50,11 +50,15 @@ export default function CopyButton({
     md: "text-base",
   };
 
-  const handleCopy = (e: MouseEvent<HTMLButtonElement>) => {
+  const handleCopy = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), timeout);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), timeout);
+    } catch {
+      // clipboard denied — don't show "Copied"
+    }
   };
 
   return (
