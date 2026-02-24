@@ -50,7 +50,7 @@ export default function ProfileCardWarning({ config }: ProfileCardWarningProps) 
   return (
     <div className="mt-5 flex w-full justify-center">
       <div
-        className={`relative max-w-[560px] text-xs rounded-md border text-center transition-[width,background-color,border-color,color] ${dur} ${tone.container}`}
+        className={`relative overflow-hidden -translate-y-[1px] max-w-[560px] text-xs rounded-md border text-center shadow-[0_1px_0_rgba(255,255,255,0.75)_inset,0_2px_4px_rgba(0,0,0,0.12)] transition-[width,background-color,border-color,color] ${dur} ${tone.container}`}
         style={{ width: boxWidthPx ? `${boxWidthPx}px` : undefined }}
       >
         <div ref={summaryRef} className={`inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5 py-2 ${expanded ? "px-3" : "px-2"}`}>

@@ -240,7 +240,8 @@ export default function ProfileCard({
               {/* Address */}
               {profile.address ? (
                 <div className="mt-2 flex items-center justify-center">
-                  <div className="flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50">
+                  <div className="relative overflow-hidden flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%] border-gray-300 bg-white/80">
+                    <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
                     <span className="select-all" title={profile.address}>
                       {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
                     </span>

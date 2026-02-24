@@ -202,9 +202,10 @@ export default function ProfileCardContent({
       {showAddress && profile.address && (
         <div className="mt-2 flex items-center justify-center relative z-10">
           <div
-            className={`flex items-center gap-2 border text-gray-700 font-mono ${s.address} rounded-full ${s.addressPadding} shadow-xs w-fit max-w-[90%] border-gray-300 bg-gray-50`}
+            className={`relative overflow-hidden flex items-center gap-2 border text-gray-700 font-mono ${s.address} rounded-full ${s.addressPadding} shadow-inner w-fit max-w-[90%] border-gray-300 bg-white/80`}
             style={{ fontSize: `${(basePx.address * scale.address).toFixed(1)}px` }}
           >
+            <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
             <span className="select-all pl-0.5" title={profile.address}>
               {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
             </span>
@@ -270,7 +271,7 @@ export default function ProfileCardContent({
       {/* View Profile Footer - Fixed at bottom */}
       <div className={`mt-auto pt-5 pb-2 flex items-center justify-center`}>
         <span
-          className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-xs flex items-center gap-1`}
+          className={`${variant === "mobile" ? "text-[7px]" : "text-[8px]"} relative overflow-hidden -translate-y-[1px] text-green-800 bg-green-100 border border-green-300 rounded px-2 py-0.5 font-semibold shadow-[0_1px_0_rgba(255,255,255,0.75)_inset,0_2px_4px_rgba(0,0,0,0.12)] flex items-center gap-1`}
           style={{ fontSize: `${(basePx.viewProfile * scale.viewProfile).toFixed(1)}px` }}
         >
           View Profile
