@@ -1,15 +1,19 @@
-"use client";
-
-import { useState, useEffect, useCallback, useRef, type ReactNode, type ReactElement } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import Spinner from "@/ui/common/feedback/Spinner";
+import type { ReactElement, ReactNode } from "react";
 import Badge from "@/ui/common/feedback/Badge";
 import {
   getLeaderboardAction,
   type Period,
   type LeaderboardEntry,
 } from "@/lib/leaderboard/getLeaderboardAction";
+import {
+  PodiumAvatar,
+  ReferrerAvatar,
+  ExpandableRow,
+  LeaderboardTable,
+  AssumptionDetails,
+  ClickStopLink,
+} from "./LeaderboardClientIslands";
 
 const PROFILE_BASE_URL = "https://zcash.me";
 
@@ -19,7 +23,47 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: "monthly", label: "This Month" },
   { value: "alltime", label: "All Time" },
 ];
-const ROWS_PER_PAGE = 10;
+
+const VALID_PERIODS = new Set<string>(PERIODS.map((p) => p.value));
+
+function isValidPeriod(value: string | undefined): value is Period {
+  return typeof value === "string" && VALID_PERIODS.has(value);
+}
+
+const TABLE_COLUMN_DETAILS: Array<{ id: string; label: string; description: string; formula: string }> = [
+  {
+    id: "leader-col-total",
+    label: "Total",
+    description: "All referrals attributed to a referrer in the selected period.",
+    formula: "Total = verifiedReferrals + unverifiedReferrals",
+  },
+  {
+    id: "leader-col-verif",
+    label: "Verif.",
+    description: "Referrals that completed address verification.",
+    formula: "Verified = count(referrals where address_verified = true)",
+  },
+  {
+    id: "leader-col-eligible",
+    label: "Eligible",
+    description: "Verified referrals that completed verification within the eligibility window.",
+    formula: "Eligible = count(verified where verifiedAt <= signupAt + eligibilityWindow)",
+  },
+  {
+    id: "leader-col-active",
+    label: "Active",
+    description: "Eligible referrals still inside the reward payout duration.",
+    formula: "Active = count(eligible where now < verifiedAt + rewardDurationMonths)",
+  },
+  {
+    id: "leader-col-earned",
+    label: "Earned (zats)",
+    description: "Lifetime earned converted from ZEC to zatoshis.",
+    formula: "totalEarnedToDate = sum(min(monthsBetween(lastVerifiedAt, now), rewardDurationMonths) * (verificationFeeZec * lockedCommissionRate)); Earned (zats) = round(totalEarnedToDate * 100,000,000)",
+  },
+];
+
+// ── Formatting helpers ────────────────────────────────────────
 
 function ZecMark({ className = "h-3.5 w-3.5" }: { className?: string }) {
   return (
@@ -73,174 +117,139 @@ function getInitials(name: string): string {
     .join("");
 }
 
-function PodiumAvatar({
-  entry,
-  emoji,
-  sizeClassName,
-  initialsClassName,
-  borderClassName,
-}: {
-  entry: LeaderboardEntry;
-  emoji: string;
-  sizeClassName: string;
-  initialsClassName: string;
-  borderClassName: string;
-}) {
-  const [imageLoaded, setImageLoaded] = useState(false);
+// ── Row content (server-rendered, passed to client ExpandableRow) ──
+
+function RowSummary({ entry }: { entry: LeaderboardEntry }) {
   const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
+  const statsHref = `/leader-app/${encodeURIComponent(entry.referrerUsername)}`;
   return (
-    <div className={`relative ${sizeClassName} transition-transform duration-150 hover:scale-110`}>
-      <Link
-        href={profileHref}
-        className={`relative block h-full w-full rounded-full overflow-hidden bg-gray-100 ${borderClassName}`}
-        aria-label={`View ${entry.referrerUsername}`}
-      >
-        {entry.referrerProfileImageUrl ? (
-          <>
-            <span className={`flex h-full w-full items-center justify-center ${initialsClassName}`}>
-              {getInitials(entry.referrerDisplayName)}
-            </span>
-            <img
-              src={entry.referrerProfileImageUrl}
-              alt={entry.referrerDisplayName}
-              className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-                imageLoaded ? "opacity-100" : "opacity-0"
-              }`}
-              onLoad={() => setImageLoaded(true)}
-            />
-          </>
-        ) : (
-          <span className={`flex h-full w-full items-center justify-center ${initialsClassName}`}>
-            {getInitials(entry.referrerDisplayName)}
-          </span>
-        )}
-      </Link>
-      <span
-        className="absolute left-1/2 -bottom-2 -translate-x-1/2 text-2xl sm:text-3xl z-20 select-none pointer-events-none"
-        aria-hidden="true"
-      >
-        {emoji}
-      </span>
-    </div>
-  );
-}
-
-function ReferrerAvatar({
-  entry,
-  className,
-}: {
-  entry: LeaderboardEntry;
-  className: string;
-}) {
-  const [imageLoaded, setImageLoaded] = useState(false);
-  return (
-    <div className={`${className} relative shrink-0 rounded-full overflow-hidden bg-gray-100 border border-gray-300`}>
-      {entry.referrerProfileImageUrl ? (
-        <>
-          <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-700">
-            {getInitials(entry.referrerDisplayName)}
-          </span>
-          <img
-            src={entry.referrerProfileImageUrl}
-            alt={entry.referrerDisplayName}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity duration-300 ${
-              imageLoaded ? "opacity-100" : "opacity-0"
-            }`}
-            onLoad={() => setImageLoaded(true)}
-          />
-        </>
-      ) : (
-        <span className="flex h-full w-full items-center justify-center text-[10px] font-semibold text-gray-700">
-          {getInitials(entry.referrerDisplayName)}
+    <>
+      <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
+        <span className={`font-bold ${entry.rank <= 3 ? "text-base sm:text-lg" : "text-xs sm:text-sm text-gray-500"}`}>
+          {entry.rank === 1 && "🥇"}
+          {entry.rank === 2 && "🥈"}
+          {entry.rank === 3 && "🥉"}
+          {entry.rank > 3 && `${entry.rank}`}
         </span>
-      )}
+      </div>
+
+      <div className="sticky left-[48px] md:left-[56px] z-10 bg-[var(--color-background)] px-2 py-3 border-r border-gray-100">
+        <div className="flex items-center gap-2 min-w-0">
+          <ClickStopLink
+            href={profileHref}
+            className="shrink-0"
+            ariaLabel={`View ${entry.referrerUsername}`}
+          >
+            <ReferrerAvatar
+              imageUrl={entry.referrerProfileImageUrl}
+              initials={getInitials(entry.referrerDisplayName)}
+              displayName={entry.referrerDisplayName}
+              className="h-7 w-7 sm:h-8 sm:w-8"
+            />
+          </ClickStopLink>
+          <div className="min-w-0">
+            <ClickStopLink
+              href={statsHref}
+              className="block w-fit font-medium truncate text-xs sm:text-sm md:text-base hover:text-[var(--color-brand-blue)]"
+            >
+              {entry.referrerDisplayName}
+            </ClickStopLink>
+            <ClickStopLink
+              href={profileHref}
+              className="block w-fit text-[10px] text-gray-500 truncate"
+            >
+              /{entry.referrerUsername}
+            </ClickStopLink>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-2 py-3 text-right font-medium">{entry.totalReferrals}</div>
+      <div className="px-2 py-3 text-right font-medium text-green-600">{entry.verifiedReferrals}</div>
+      <div className="px-2 py-3 text-right font-medium text-[var(--color-brand-blue)]">{entry.eligibleCount}</div>
+      <div className="px-2 py-3 text-right font-medium text-purple-600">{entry.activeRewardsCount}</div>
+      <div className="pl-2 pr-4 md:pr-5 py-3 text-right font-medium text-green-700">{formatZats(entry.totalEarnedToDate)}</div>
+    </>
+  );
+}
+
+function RowDetail({ entry }: { entry: LeaderboardEntry }) {
+  return (
+    <div className="grid grid-cols-3 gap-2 pl-[56px] pr-3 py-3 text-xs sm:text-sm">
+      <div>
+        <p className="text-gray-500">Unverified</p>
+        <p className="font-medium text-gray-700">{entry.unverifiedReferrals}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Conversion</p>
+        <p className="font-medium">{entry.conversionRate.toFixed(1)}%</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Potential Rate</p>
+        <p className="font-medium">{formatPercent(entry.potentialCommissionRate)}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Ineligible</p>
+        <p className="font-medium text-red-500">{entry.ineligibleCount}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Pending Opportunities</p>
+        <p className="font-medium text-yellow-600">{entry.pendingOpportunities}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Expired Opportunities</p>
+        <p className="font-medium text-gray-500">{entry.expiredOpportunities}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Pending Links</p>
+        <p className="font-medium text-yellow-600">{entry.pendingLinksCount}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Active Rewards</p>
+        <p className="font-medium text-purple-600">{entry.activeRewardsCount}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Monthly Payout (ZEC)</p>
+        <p className="font-medium">{formatZec(entry.currentMonthlyPayout)}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Revenue (ZEC)</p>
+        <p className="font-medium">{formatZec(entry.totalRecurringRevenue)}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Remaining (ZEC)</p>
+        <p className="font-medium">{formatZec(entry.totalRewardsRemaining)}</p>
+      </div>
+      <div>
+        <p className="text-gray-500">Total (ZEC)</p>
+        <p className="font-medium">{formatZec(entry.totalEarnedToDate + entry.totalRewardsRemaining)}</p>
+      </div>
+      <div className="col-span-3 pt-1">
+        <Link
+          href={`/leader-app/${encodeURIComponent(entry.referrerUsername)}`}
+          className="text-[var(--color-brand-blue)] text-xs font-medium hover:underline"
+        >
+          View referrals &rarr;
+        </Link>
+      </div>
     </div>
   );
 }
 
-const TABLE_COLUMN_DETAILS: Array<{ id: string; label: string; description: string; formula: string }> = [
-  {
-    id: "leader-col-total",
-    label: "Total",
-    description: "All referrals attributed to a referrer in the selected period.",
-    formula: "Total = verifiedReferrals + unverifiedReferrals",
-  },
-  {
-    id: "leader-col-verif",
-    label: "Verif.",
-    description: "Referrals that completed address verification.",
-    formula: "Verified = count(referrals where address_verified = true)",
-  },
-  {
-    id: "leader-col-eligible",
-    label: "Eligible",
-    description: "Verified referrals that completed verification within the eligibility window.",
-    formula: "Eligible = count(verified where verifiedAt <= signupAt + eligibilityWindow)",
-  },
-  {
-    id: "leader-col-active",
-    label: "Active",
-    description: "Eligible referrals still inside the reward payout duration.",
-    formula: "Active = count(eligible where now < verifiedAt + rewardDurationMonths)",
-  },
-  {
-    id: "leader-col-earned",
-    label: "Earned (zats)",
-    description: "Lifetime earned converted from ZEC to zatoshis.",
-    formula: "totalEarnedToDate = sum(min(monthsBetween(lastVerifiedAt, now), rewardDurationMonths) * (verificationFeeZec * lockedCommissionRate)); Earned (zats) = round(totalEarnedToDate * 100,000,000)",
-  },
-];
+// ── Page ──────────────────────────────────────────────────────
 
-export default function LeaderboardPage() {
-  const [period, setPeriod] = useState<Period>("alltime");
-  const [isPeriodDropdownOpen, setIsPeriodDropdownOpen] = useState(false);
-  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [showAssumptionDetails, setShowAssumptionDetails] = useState(false);
-  const [visibleRowsCount, setVisibleRowsCount] = useState(ROWS_PER_PAGE);
-  const periodDropdownRef = useRef<HTMLDivElement>(null);
-  const [constants, setConstants] = useState<{
-    eligibilityWindowWeeks: number;
-    rewardDurationMonths: number;
-    baseCommissionRate: number;
-    commissionDeltaPerLink: number;
-    maxCommissionRate: number;
-    verificationFeeZec: number;
-  } | null>(null);
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ period?: string }>;
+}) {
+  const params = await searchParams;
+  const period: Period = isValidPeriod(params.period) ? params.period : "alltime";
+  const response = await getLeaderboardAction(period);
 
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    const response = await getLeaderboardAction(period);
-    if (response.ok) {
-      setEntries(response.data);
-      setConstants(response.constants);
-    } else {
-      setError(response.error || "Failed to load leaderboard");
-    }
-    setLoading(false);
-  }, [period]);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  useEffect(() => {
-    setVisibleRowsCount(ROWS_PER_PAGE);
-  }, [period]);
-
-  useEffect(() => {
-    if (!isPeriodDropdownOpen) return;
-    const onMouseDown = (event: MouseEvent) => {
-      if (!periodDropdownRef.current) return;
-      if (!periodDropdownRef.current.contains(event.target as Node)) {
-        setIsPeriodDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    return () => document.removeEventListener("mousedown", onMouseDown);
-  }, [isPeriodDropdownOpen]);
+  const entries = response.ok ? response.data : [];
+  const error = response.ok ? null : (response.error || "Failed to load leaderboard");
+  const constants = response.constants;
 
   const totalReferrals = entries.reduce((sum, e) => sum + e.totalReferrals, 0);
   const totalVerified = entries.reduce((sum, e) => sum + e.verifiedReferrals, 0);
@@ -261,36 +270,28 @@ export default function LeaderboardPage() {
     { id: "activeRewards", label: "Active Rewards", value: totalActiveRewards, valueClassName: "text-purple-600" },
     { id: "totalEarned", label: "Total Earned (ZEC)", value: formatZec(totalEarned), valueClassName: "text-green-700" },
   ];
-  const activePeriodLabel =
-    PERIODS.find((periodOption) => periodOption.value === period)?.label ?? "All Time";
+
   const firstPlace = entries[0];
   const secondPlace = entries[1];
   const thirdPlace = entries[2];
-  const visibleEntries = entries.slice(0, visibleRowsCount);
-  const hasMoreRows = visibleRowsCount < entries.length;
-  const visibleEntryChunks: LeaderboardEntry[][] = [];
-  for (let i = 0; i < visibleEntries.length; i += ROWS_PER_PAGE) {
-    visibleEntryChunks.push(visibleEntries.slice(i, i + ROWS_PER_PAGE));
-  }
 
   return (
     <div
       className="min-h-screen p-4 md:p-8 pt-12"
       style={{ backgroundColor: "var(--color-background)" }}
     >
-      {loading && (
-        <div className="fixed inset-0 z-[10001] pointer-events-none flex items-center justify-center">
-          <Spinner size="xl" color="blue" />
-        </div>
-      )}
       <div className="max-w-5xl mx-auto">
-        {!loading && !error && firstPlace && (
+        {/* Podium */}
+        {firstPlace && (
           <div className="relative mb-6 h-24 sm:h-28 w-full" style={{ transform: "translateY(10px)" }}>
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-black" />
             <div className="relative z-10 flex h-full items-center justify-center gap-2 sm:gap-3">
               {secondPlace && (
                 <PodiumAvatar
-                  entry={secondPlace}
+                  profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(secondPlace.referrerUsername)}`}
+                  imageUrl={secondPlace.referrerProfileImageUrl}
+                  initials={getInitials(secondPlace.referrerDisplayName)}
+                  displayName={secondPlace.referrerDisplayName}
                   emoji="🥈"
                   sizeClassName="h-16 w-16 sm:h-20 sm:w-20"
                   initialsClassName="text-xs sm:text-sm font-semibold text-gray-700"
@@ -298,7 +299,10 @@ export default function LeaderboardPage() {
                 />
               )}
               <PodiumAvatar
-                entry={firstPlace}
+                profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(firstPlace.referrerUsername)}`}
+                imageUrl={firstPlace.referrerProfileImageUrl}
+                initials={getInitials(firstPlace.referrerDisplayName)}
+                displayName={firstPlace.referrerDisplayName}
                 emoji="🥇"
                 sizeClassName="h-20 w-20 sm:h-24 sm:w-24"
                 initialsClassName="text-sm sm:text-base font-semibold text-gray-700"
@@ -306,7 +310,10 @@ export default function LeaderboardPage() {
               />
               {thirdPlace && (
                 <PodiumAvatar
-                  entry={thirdPlace}
+                  profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(thirdPlace.referrerUsername)}`}
+                  imageUrl={thirdPlace.referrerProfileImageUrl}
+                  initials={getInitials(thirdPlace.referrerDisplayName)}
+                  displayName={thirdPlace.referrerDisplayName}
                   emoji="🥉"
                   sizeClassName="h-16 w-16 sm:h-20 sm:w-20"
                   initialsClassName="text-xs sm:text-sm font-semibold text-gray-700"
@@ -317,58 +324,25 @@ export default function LeaderboardPage() {
           </div>
         )}
 
+        {/* Header + Period Links */}
         <div className="mb-6 relative">
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-2xl font-bold text-left">Referral Leaders</h1>
 
-            <div
-              ref={periodDropdownRef}
-              className="relative w-[170px]"
-            >
-              <button
-                type="button"
-                onClick={() => setIsPeriodDropdownOpen((open) => !open)}
-                className="relative w-full rounded-xl border border-gray-800 bg-transparent px-3 py-2 text-sm font-normal text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] transition-colors"
-                aria-haspopup="listbox"
-                aria-expanded={isPeriodDropdownOpen}
-              >
-                <span className="block w-full text-center">{activePeriodLabel}</span>
-                <span
-                  className={`pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 inline-block transition-transform duration-200 ${
-                    isPeriodDropdownOpen ? "rotate-180" : "rotate-0"
+            <div className="flex items-center gap-1">
+              {PERIODS.map((p) => (
+                <Link
+                  key={p.value}
+                  href={`?period=${p.value}`}
+                  className={`rounded-xl border px-3 py-2 text-sm font-normal transition-colors ${
+                    period === p.value
+                      ? "border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10"
+                      : "border-gray-800 bg-transparent text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
                   }`}
                 >
-                  ▼
-                </span>
-              </button>
-              <div
-                aria-hidden={!isPeriodDropdownOpen}
-                className={`absolute right-0 top-full z-20 mt-1 w-full origin-top-right overflow-hidden rounded-xl border border-gray-800 bg-white shadow-lg transition-all duration-300 ease-in-out ${
-                  isPeriodDropdownOpen
-                    ? "max-h-64 opacity-100 translate-y-0"
-                    : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
-                }`}
-              >
-                <div className="py-1" role="listbox" aria-label="Leaderboard period">
-                  {PERIODS.map((periodOption) => (
-                    <button
-                      key={periodOption.value}
-                      type="button"
-                      onClick={() => {
-                        setPeriod(periodOption.value);
-                        setIsPeriodDropdownOpen(false);
-                      }}
-                      className={`w-full px-3 py-2 text-center text-sm transition-colors ${
-                        period === periodOption.value
-                          ? "bg-[var(--color-brand-blue)]/10 font-normal text-gray-900"
-                          : "text-gray-700 hover:bg-gray-50"
-                      }`}
-                    >
-                      {periodOption.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  {p.label}
+                </Link>
+              ))}
             </div>
           </div>
           <div className="pointer-events-none absolute right-0 top-[42px] z-10">
@@ -379,7 +353,7 @@ export default function LeaderboardPage() {
         </div>
 
         {/* Summary Stats */}
-        {!loading && !error && entries.length > 0 && (
+        {entries.length > 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6 mb-6">
             {summaryStats.map((stat) => (
               <div
@@ -401,7 +375,7 @@ export default function LeaderboardPage() {
         )}
 
         {/* Empty State */}
-        {!loading && !error && entries.length === 0 && (
+        {!error && entries.length === 0 && (
           <div className="border border-gray-800 rounded-xl p-6">
             <p className="text-gray-600 text-center py-8">
               No referrals found for this period.
@@ -409,14 +383,14 @@ export default function LeaderboardPage() {
           </div>
         )}
 
-        {!loading && !error && entries.length > 0 && (
+        {entries.length > 0 && (
           <p className="mb-3 text-lg font-semibold text-gray-900">
             Top ranked by verified referrals
           </p>
         )}
 
         {/* Leaderboard Table */}
-        {!loading && !error && entries.length > 0 && (
+        {entries.length > 0 && (
           <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
             <div className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 bg-gray-100 text-[11px] md:text-sm lg:text-base font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[642px]">
               <div id="leader-col-rank" className="sticky left-0 z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Rank</div>
@@ -428,62 +402,19 @@ export default function LeaderboardPage() {
               <div id="leader-col-earned" className="pl-2 pr-4 md:pr-5 py-2 text-right">Earned (zats)</div>
             </div>
 
-            {/* Rows */}
-            <AnimatePresence initial={false}>
-              {visibleEntryChunks.map((chunk, chunkIndex) => {
-                if (chunkIndex === 0) {
-                  return (
-                    <div key="leader-chunk-0">
-                      {chunk.map((entry) => (
-                        <CompactLeaderboardRow key={entry.referrerId} entry={entry} />
-                      ))}
-                    </div>
-                  );
-                }
-
-                return (
-                  <motion.div
-                    key={`leader-chunk-${chunkIndex}`}
-                    className="overflow-hidden"
-                    initial={{ height: 0 }}
-                    animate={{ height: "auto" }}
-                    exit={{ height: 0 }}
-                    transition={{ type: "spring", stiffness: 340, damping: 34 }}
-                  >
-                    {chunk.map((entry) => (
-                      <CompactLeaderboardRow key={entry.referrerId} entry={entry} />
-                    ))}
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
+            <LeaderboardTable totalRows={entries.length}>
+              {entries.map((entry) => (
+                <ExpandableRow
+                  key={entry.referrerId}
+                  summaryRow={<RowSummary entry={entry} />}
+                  detailPanel={<RowDetail entry={entry} />}
+                />
+              ))}
+            </LeaderboardTable>
           </div>
         )}
 
-        {!loading && !error && entries.length > 0 && (
-          <div className="mt-4 flex justify-center">
-            <div className="flex items-center gap-2">
-              {visibleRowsCount > ROWS_PER_PAGE && (
-                <button
-                  type="button"
-                  onClick={() => setVisibleRowsCount((prev) => Math.max(ROWS_PER_PAGE, prev - ROWS_PER_PAGE))}
-                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                >
-                  Show less
-                </button>
-              )}
-              {hasMoreRows && (
-                <button
-                  type="button"
-                  onClick={() => setVisibleRowsCount((prev) => Math.min(prev + ROWS_PER_PAGE, entries.length))}
-                  className="rounded-xl border border-gray-800 bg-transparent px-4 py-2 text-sm font-normal text-gray-900 transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                >
-                  Show more
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        {/* Program Assumptions */}
         {constants && (
           <div className="mt-8 rounded-xl border border-gray-800 bg-transparent p-4 text-sm text-gray-700 space-y-1">
             <p className="font-semibold text-gray-900">Program assumptions</p>
@@ -553,163 +484,18 @@ export default function LeaderboardPage() {
                   )
               )}).
             </p>
-            <button
-              type="button"
-              onClick={() => setShowAssumptionDetails((open) => !open)}
-              className="mt-2 text-[var(--color-brand-blue)] underline underline-offset-2 hover:text-[var(--color-brand-blue)]"
-            >
-              {showAssumptionDetails ? "Hide column descriptions/calculations" : "Show column descriptions/calculations"}
-            </button>
-            {showAssumptionDetails && (
-              <div className="mt-3 space-y-2 border-t border-gray-300 pt-3">
-                {TABLE_COLUMN_DETAILS.map((column) => (
-                  <div key={column.label} className="space-y-0.5">
-                    <p className="font-semibold text-gray-900">{column.label}</p>
-                    <p>{column.description}</p>
-                    <p className="font-mono text-xs text-gray-800">{column.formula}</p>
-                  </div>
-                ))}
-              </div>
-            )}
+            <AssumptionDetails>
+              {TABLE_COLUMN_DETAILS.map((column) => (
+                <div key={column.label} className="space-y-0.5">
+                  <p className="font-semibold text-gray-900">{column.label}</p>
+                  <p>{column.description}</p>
+                  <p className="font-mono text-xs text-gray-800">{column.formula}</p>
+                </div>
+              ))}
+            </AssumptionDetails>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-function CompactLeaderboardRow({ entry }: { entry: LeaderboardEntry }) {
-  const [expanded, setExpanded] = useState(false);
-  const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
-  return (
-    <>
-      <div className="group">
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={() => setExpanded((prev) => !prev)}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            setExpanded((prev) => !prev);
-          }
-        }}
-        className={`grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-y border-transparent border-b-gray-100 bg-transparent hover:border-t-[var(--color-brand-blue)] hover:border-l-transparent hover:border-r-transparent transition-colors text-xs sm:text-sm md:text-base min-w-[642px] cursor-pointer ${
-          expanded
-            ? "border-b-transparent hover:border-b-transparent"
-            : "hover:border-b-[var(--color-brand-blue)]"
-        }`}
-        aria-expanded={expanded}
-      >
-        <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
-          <span className={`font-bold ${entry.rank <= 3 ? "text-base sm:text-lg" : "text-xs sm:text-sm text-gray-500"}`}>
-            {entry.rank === 1 && "🥇"}
-            {entry.rank === 2 && "🥈"}
-            {entry.rank === 3 && "🥉"}
-            {entry.rank > 3 && `${entry.rank}`}
-          </span>
-        </div>
-
-        <div className="sticky left-[48px] md:left-[56px] z-10 bg-[var(--color-background)] px-2 py-3 border-r border-gray-100">
-          <div className="flex items-center gap-2 min-w-0">
-            <Link
-              href={profileHref}
-              className="shrink-0"
-              aria-label={`View ${entry.referrerUsername}`}
-              onClick={(event) => event.stopPropagation()}
-            >
-              <ReferrerAvatar entry={entry} className="h-7 w-7 sm:h-8 sm:w-8" />
-            </Link>
-            <div className="min-w-0">
-              <Link
-                href={profileHref}
-                className="block w-fit font-medium truncate text-xs sm:text-sm md:text-base"
-                onClick={(event) => event.stopPropagation()}
-              >
-                {entry.referrerDisplayName}
-              </Link>
-              <Link
-                href={profileHref}
-                className="block w-fit text-[10px] text-gray-500 truncate"
-                onClick={(event) => event.stopPropagation()}
-              >
-                /{entry.referrerUsername}
-              </Link>
-            </div>
-          </div>
-        </div>
-
-      <div className="px-2 py-3 text-right font-medium">{entry.totalReferrals}</div>
-      <div className="px-2 py-3 text-right font-medium text-green-600">{entry.verifiedReferrals}</div>
-      <div className="px-2 py-3 text-right font-medium text-[var(--color-brand-blue)]">{entry.eligibleCount}</div>
-      <div className="px-2 py-3 text-right font-medium text-purple-600">{entry.activeRewardsCount}</div>
-      <div className="pl-2 pr-4 md:pr-5 py-3 text-right font-medium text-green-700">{formatZats(entry.totalEarnedToDate)}</div>
-      </div>
-
-      <AnimatePresence initial={false}>
-        {expanded && (
-        <motion.div
-          className="min-w-[642px] overflow-hidden border-b border-gray-100 bg-gray-50 group-hover:border-b-[var(--color-brand-blue)] transition-colors"
-          initial={{ height: 0 }}
-          animate={{ height: "auto" }}
-          exit={{ height: 0 }}
-          transition={{ type: "spring", stiffness: 340, damping: 34 }}
-        >
-          <div className="grid grid-cols-3 gap-2 pl-[56px] pr-3 py-3 text-xs sm:text-sm">
-            <div>
-              <p className="text-gray-500">Unverified</p>
-              <p className="font-medium text-gray-700">{entry.unverifiedReferrals}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Conversion</p>
-              <p className="font-medium">{entry.conversionRate.toFixed(1)}%</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Potential Rate</p>
-              <p className="font-medium">{formatPercent(entry.potentialCommissionRate)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Ineligible</p>
-              <p className="font-medium text-red-500">{entry.ineligibleCount}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Pending Opportunities</p>
-              <p className="font-medium text-yellow-600">{entry.pendingOpportunities}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Expired Opportunities</p>
-              <p className="font-medium text-gray-500">{entry.expiredOpportunities}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Pending Links</p>
-              <p className="font-medium text-yellow-600">{entry.pendingLinksCount}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Active Rewards</p>
-              <p className="font-medium text-purple-600">{entry.activeRewardsCount}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Monthly Payout (ZEC)</p>
-              <p className="font-medium">{formatZec(entry.currentMonthlyPayout)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Revenue (ZEC)</p>
-              <p className="font-medium">{formatZec(entry.totalRecurringRevenue)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Remaining (ZEC)</p>
-              <p className="font-medium">{formatZec(entry.totalRewardsRemaining)}</p>
-            </div>
-            <div>
-              <p className="text-gray-500">Total (ZEC)</p>
-              <p className="font-medium">{formatZec(entry.totalEarnedToDate + entry.totalRewardsRemaining)}</p>
-            </div>
-          </div>
-        </motion.div>
-      )}
-      </AnimatePresence>
-      </div>
-    </>
-  );
-}
-
