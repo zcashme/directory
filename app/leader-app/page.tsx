@@ -11,7 +11,7 @@ import {
   LeaderboardTable,
   AssumptionDetails,
   ClickStopLink,
-} from "./LeaderboardClientIslands";
+} from "./LeaderboardClient";
 
 const PROFILE_BASE_URL = "https://zcash.me";
 

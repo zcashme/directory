@@ -6,7 +6,7 @@ import {
   getReferrerStatsAction,
   type ReferralStatus,
 } from "@/lib/leaderboard/getReferrerStatsAction";
-import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClientIslands";
+import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
 
 const PROFILE_BASE_URL = "https://zcash.me";
 
