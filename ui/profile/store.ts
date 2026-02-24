@@ -32,8 +32,8 @@ export interface FormState {
 
 export interface PendingAvatarUpload {
   fileName: string;
-  mimeType: "image/jpeg" | "image/png" | "image/gif";
-  extension: "jpg" | "png" | "gif";
+  mimeType: "image/jpeg" | "image/png";
+  extension: "jpg" | "png";
   base64Data: string;
   sizeBytes: number;
   width: number;

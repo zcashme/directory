@@ -221,8 +221,8 @@ export interface ProfileEditsPayload {
 
 export interface AvatarUploadPayload {
   fileName: string;
-  mimeType: "image/jpeg" | "image/png" | "image/gif";
-  extension: "jpg" | "png" | "gif";
+  mimeType: "image/jpeg" | "image/png";
+  extension: "jpg" | "png";
   base64Data: string;
   sizeBytes: number;
   width: number;

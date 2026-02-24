@@ -1,92 +1,24 @@
-# /lib/api - API Utilities
+# /lib/api
 
-## Purpose
-Security utilities for API routes: rate limiting, API key validation,
-and response formatting.
+API guard and shared response types.
 
-## Key Files
+## guard.ts
 
-### guard.ts
-API protection middleware:
-```typescript
-interface GuardOptions {
-  rateLimit?: {
-    window: number;      // Time window in ms
-    maxRequests: number; // Max requests per window
-  };
-  requireApiKey?: boolean;
-}
+`enforceApiGuard(request, options?)` — validates API key and applies per-IP rate limiting. Returns a `Response` on failure or `{ ok: true, cacheSeconds }` on success.
 
-async function apiGuard(
-  request: Request,
-  options?: GuardOptions
-): Promise<{ allowed: boolean; error?: string }>
-```
+Options: `{ cacheSeconds?: number, rateLimitPerMinute?: number }` (default 60/min).
 
-**Rate Limiting:**
-- Per-IP tracking
-- Sliding window algorithm
-- Returns 429 when exceeded
+`withCacheHeaders(headers, cacheSeconds)` — adds `Cache-Control: s-maxage` when cacheSeconds > 0.
 
-**API Key Validation:**
-```typescript
-// Check header
-const apiKey = request.headers.get('x-api-key');
-if (apiKey !== process.env.API_KEY) {
-  return { allowed: false, error: 'Invalid API key' };
-}
-```
+## types.ts
 
-### types.ts
-API response types:
-```typescript
-interface ApiResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  meta?: {
-    cursor?: string;
-    total?: number;
-  };
-}
-```
+`APIResponse<T>` = `SuccessResponse<T> | ErrorResponse<T>` — standard `{ ok, data, error }` discriminated union used across API boundaries.
 
-## Usage in API Routes
-
-```typescript
-// app/api/directory/route.ts
-import { apiGuard } from '@/lib/api/guard';
-
-export async function GET(request: Request) {
-  const guard = await apiGuard(request, {
-    rateLimit: { window: 60000, maxRequests: 100 }
-  });
-
-  if (!guard.allowed) {
-    return Response.json(
-      { error: guard.error },
-      { status: 429 }
-    );
-  }
-
-  // ... handle request
-}
-```
+Also exports domain-specific response types (`DirectoryResponse`, `ConfirmOtpResponse`, `ProfileEditsPayload`, etc.) and payload interfaces used by server actions.
 
 ## Environment Variables
-```
-API_KEY              - Server-side API key for validation
-NEXT_PUBLIC_API_KEY  - Client-side (for authenticated requests)
-```
 
-## Testing Harness
-- Mock time for rate limit tests
-- Test various IP scenarios
-- Verify API key validation
-- Check response format consistency
-
-## Security Notes
-- Never expose server API_KEY to client
-- Rate limits apply per-IP
-- Log suspicious activity
-- Return generic errors (don't leak info)
+```
+API_KEY              - Server-side key checked by enforceApiGuard
+NEXT_PUBLIC_API_KEY  - Client-side key for authenticated fetches
+```

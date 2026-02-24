@@ -1,84 +1,60 @@
 # /lib/supabase - Database Client
 
-## Purpose
-Supabase client initialization and database connection management.
-Single source of truth for all database access.
+Supabase client initialization. Single source of truth for all DB and storage access.
 
-## Client Setup
+## Clients
 
-### Server-Side Client
-```typescript
-import { createClient } from '@supabase/supabase-js';
+**Server** (`supabase-server.ts`): `createSupabaseServerClient()` — returns `SupabaseClient | null`. Uses service role key (bypasses RLS), falls back to anon key. Sessions not persisted.
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!  // Server-only key
-);
-```
-
-### Client-Side Client
-```typescript
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!  // Public key
-);
-```
+**Client** (`supabase-client.ts`): Singleton `supabase` export using anon key.
 
 ## Environment Variables
+
 ```
-NEXT_PUBLIC_SUPABASE_URL     - Supabase project URL
-NEXT_PUBLIC_SUPABASE_ANON_KEY - Public anon key (client)
-SUPABASE_SERVICE_KEY         - Service role key (server only)
+NEXT_PUBLIC_SUPABASE_URL      - Project URL (both client/server)
+NEXT_PUBLIC_SUPABASE_ANON_KEY - Public anon key (client, server fallback)
+SUPABASE_SERVICE_KEY          - Service role key (server only, bypasses RLS)
 ```
 
-## Database Tables
+## Tables
 
 ### zcasher (Profiles)
-| Column | Type | Purpose |
-|--------|------|---------|
-| id | uuid | Primary key |
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | integer | PK |
 | name | text | Username (normalized) |
 | display_name | text | Shown in UI |
 | slug | text | URL path |
 | address | text | Zcash address |
-| address_verified | boolean | Blockchain verified |
-| bio | text | Short description |
-| avatar_url | text | Profile image |
+| address_verified | boolean | |
+| bio | text | |
+| profile_image_url | text | Always a Supabase bucket URL or null |
+| nearest_city_name | text | |
 | is_ns | boolean | Network School member |
 | featured | boolean | Homepage featured |
 
 ### zcasher_links (Profile Links)
-| Column | Type | Purpose |
-|--------|------|---------|
-| id | integer | Primary key (serial) |
-| zcasher_id | integer | FK to zcasher(id) |
+
+| Column | Type | Notes |
+|--------|------|-------|
+| id | integer | PK (serial) |
+| zcasher_id | integer | FK → zcasher(id) |
 | url | text | Full URL |
-| label | text | Optional display label (e.g. Discord username) |
-| platform | text | Platform name ("X", "GitHub", "Discord", etc.) |
-| is_verified | boolean | Whether the link is verified via OAuth |
+| label | text | Display label |
+| platform | text | "X", "GitHub", "Discord", etc. |
+| is_verified | boolean | Verified via OAuth |
 
-### zcasher_searchable (Search Index)
-Denormalized view for fast search queries.
+### zcasher_searchable
 
-## Query Patterns
+Denormalized view over zcasher for fast search/directory queries.
 
-```typescript
-// Fetch profile by slug
-const { data } = await supabase
-  .from('zcasher')
-  .select('*, zcasher_links(*)')
-  .eq('slug', slug)
-  .single();
+## Avatar Storage
 
-// Search profiles
-const { data } = await supabase
-  .from('zcasher_searchable')
-  .select('*')
-  .ilike('name', `%${query}%`)
-  .limit(25);
-```
+All profile images live in the Supabase storage bucket `zcashme`, folder `avatars/`.
 
-## Testing Harness
-- Mock Supabase client in tests
-- Use test database for integration
-- Never use production keys in tests
+- Reads and writes always go through the bucket — `profile_image_url` is always a Supabase public storage URL, never an external URL.
+- Canonical path: `avatars/{profileId}_zmp.png`
+- Write points: `confirmOtpAction.ts` (primary), `verifyLink.ts` (secondary, only if no existing image)
+- External OAuth avatar URLs are downloaded server-side and re-uploaded to the bucket before storing the URL.
+- See `lib/profile/avatarStorage.ts` for storage helpers.
