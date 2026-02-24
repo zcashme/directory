@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
@@ -81,7 +81,7 @@ function FannedCard({
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const { linksArray } = parseProfileLinks(profile);
 
-  const handleMouseMove = useCallback((e: MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || isMobile) return;
     const rect = cardRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
@@ -735,7 +735,6 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
     },
     [router]
   );
-
   useEffect(() => {
     bottomClearanceRef.current = bottomClearance;
   }, [bottomClearance]);
