@@ -179,8 +179,6 @@ export default async function LeaderboardPage({
 
   const totalReferrals = entries.reduce((sum, e) => sum + e.totalReferrals, 0);
   const totalVerified = entries.reduce((sum, e) => sum + e.verifiedReferrals, 0);
-  const totalEligible = entries.reduce((sum, e) => sum + e.eligibleCount, 0);
-  const totalActiveRewards = entries.reduce((sum, e) => sum + e.activeRewardsCount, 0);
   const totalEarned = entries.reduce((sum, e) => sum + e.totalEarnedToDate, 0);
 
   const summaryStats: Array<{
@@ -189,11 +187,8 @@ export default async function LeaderboardPage({
     value: ReactNode;
     valueClassName?: string;
   }> = [
-    { id: "totalReferrers", label: "Total Referrers", value: entries.length },
     { id: "totalReferrals", label: "Total Referrals", value: totalReferrals },
-    { id: "verified", label: "Verified", value: totalVerified, valueClassName: "text-green-600" },
-    { id: "eligible", label: "Eligible", value: totalEligible, valueClassName: "text-[var(--color-brand-blue)]" },
-    { id: "activeRewards", label: "Active Rewards", value: totalActiveRewards, valueClassName: "text-purple-600" },
+    { id: "verified", label: "Verified Referrals", value: totalVerified, valueClassName: "text-green-600" },
     { id: "totalEarned", label: "Total Earned (ZEC)", value: formatZec(totalEarned), valueClassName: "text-green-700" },
   ];
 
@@ -266,7 +261,7 @@ export default async function LeaderboardPage({
 
         {/* Summary Stats */}
         {entries.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 mt-6 mb-6">
+          <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
             {summaryStats.map((stat) => (
               <div
                 key={stat.id}
