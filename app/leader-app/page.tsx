@@ -112,7 +112,7 @@ function formatPercent(value: number): string {
 
 function RowSummary({ entry }: { entry: LeaderboardEntry }) {
   const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
-  const statsHref = `/leader-app/${encodeURIComponent(entry.referrerUsername)}`;
+  const statsHref = `/${encodeURIComponent(entry.referrerUsername)}`;
   return (
     <>
       <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
@@ -216,7 +216,7 @@ function RowDetail({ entry }: { entry: LeaderboardEntry }) {
       </div>
       <div className="col-span-3 pt-1">
         <Link
-          href={`/leader-app/${encodeURIComponent(entry.referrerUsername)}`}
+          href={`/${encodeURIComponent(entry.referrerUsername)}`}
           className="text-[var(--color-brand-blue)] text-xs font-medium hover:underline"
         >
           View referrals &rarr;

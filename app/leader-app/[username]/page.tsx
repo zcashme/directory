@@ -75,7 +75,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto">
         {/* Back link */}
         <Link
-          href="/leader-app"
+          href="/"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--color-brand-blue)] mb-6"
         >
           &larr; Leaderboard
