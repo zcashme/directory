@@ -1,3 +1,5 @@
+import type { Result } from "@/lib/actions/types";
+
 /**
  * Token entity for cryptocurrency swaps
  */
@@ -25,10 +27,9 @@ export interface SwapQuoteDisplay {
 }
 
 /**
- * Success response from swap quote
+ * Swap quote data (success payload)
  */
-export interface SwapQuoteSuccess {
-  ok: true;
+export interface SwapQuoteData {
   quoteId: string | null;
   quote: {
     amountInFormatted: string;
@@ -44,20 +45,6 @@ export interface SwapQuoteSuccess {
 }
 
 /**
- * Error response from swap quote
- */
-export interface SwapQuoteError {
-  ok: false;
-  error: string;
-  retryable: boolean;
-}
-
-/**
- * Discriminated union for swap quote responses
- */
-export type SwapQuoteResponse = SwapQuoteSuccess | SwapQuoteError;
-
-/**
  * Confirmed swap deposit structure
  */
 export interface SwapDeposit {
@@ -70,10 +57,9 @@ export interface SwapDeposit {
 }
 
 /**
- * Success response from swap confirmation
+ * Swap confirm data (success payload)
  */
-export interface SwapConfirmSuccess {
-  ok: true;
+export interface SwapConfirmData {
   deposit: SwapDeposit;
   paymentUri: string;
   statusKey: {
@@ -87,25 +73,11 @@ export interface SwapConfirmSuccess {
 }
 
 /**
- * Error response from swap confirmation
- */
-export interface SwapConfirmError {
-  ok: false;
-  error: string;
-  retryable: boolean;
-}
-
-/**
- * Discriminated union for swap confirm responses
- */
-export type SwapConfirmResponse = SwapConfirmSuccess | SwapConfirmError;
-
-/**
  * Quote data stored in context (quote result or confirm result)
  */
 export type SwapContextQuoteData =
-  | SwapQuoteResponse
-  | SwapConfirmResponse
+  | Result<SwapQuoteData>
+  | Result<SwapConfirmData>
   | null;
 
 /**

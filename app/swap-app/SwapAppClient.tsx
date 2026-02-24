@@ -46,9 +46,9 @@ function SwapStatusDisplay({
     enabled: !!depositAddress && !showInput,
     refetchInterval: (query) => {
       const data = query.state.data;
-      if (!data || "error" in data) return 5000;
+      if (!data || !data.ok) return 5000;
 
-      const status = data.status?.toUpperCase();
+      const status = data.data.status?.toUpperCase();
       const isTerminal = [
         "SUCCESS",
         "FAILED",
@@ -61,10 +61,9 @@ function SwapStatusDisplay({
     },
   });
 
-  const statusData =
-    statusResult && "status" in statusResult ? statusResult : null;
+  const statusData = statusResult?.ok ? statusResult.data : null;
   const statusError =
-    statusResult && "error" in statusResult
+    statusResult && !statusResult.ok
       ? statusResult.error
       : error?.message || "";
 
@@ -376,12 +375,12 @@ export default function SwapAppClient({
       try {
         const result = await getSwapTokens();
 
-        if ("tokens" in result) {
-          setTokens(result.tokens);
+        if (result.ok) {
+          setTokens(result.data);
           // Set default tokens if available
-          if (result.tokens.length >= 2) {
-            setFromToken(result.tokens[0]);
-            setToToken(result.tokens[1]);
+          if (result.data.length >= 2) {
+            setFromToken(result.data[0]);
+            setToToken(result.data[1]);
           }
         } else {
           setTokensError(result.error);
@@ -414,8 +413,8 @@ export default function SwapAppClient({
       });
 
       if (result.ok) {
-        setQuote(result.display);
-        setToAmount(result.display.amountOutFormatted);
+        setQuote(result.data.display);
+        setToAmount(result.data.display.amountOutFormatted);
       } else {
         setQuote(null);
         setToAmount("");
@@ -448,9 +447,9 @@ export default function SwapAppClient({
       });
 
       if (result.ok) {
-        setDepositUri(result.paymentUri);
-        setStatusKey(result.statusKey);
-        setDepositAmountDecimal(result.deposit?.amountDecimal ?? "");
+        setDepositUri(result.data.paymentUri);
+        setStatusKey(result.data.statusKey);
+        setDepositAmountDecimal(result.data.deposit?.amountDecimal ?? "");
       } else {
         setQuoteError(result.error);
       }

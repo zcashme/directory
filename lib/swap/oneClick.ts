@@ -11,13 +11,12 @@ import {
 } from "@defuse-protocol/one-click-sdk-typescript";
 import type {
   Token,
-  SwapQuoteResponse,
-  SwapQuoteSuccess,
-  SwapConfirmResponse,
-  SwapConfirmSuccess,
+  SwapQuoteData,
+  SwapConfirmData,
   SwapStatusData,
 } from "./types";
 import { findToken, toBaseUnits, baseUnitsToDecimal } from "./utils";
+import type { Result } from "@/lib/actions/types";
 
 // Configure SDK
 OpenAPI.BASE = "https://1click.chaindefuser.com";
@@ -107,14 +106,10 @@ interface ValidatedSwapParams {
   amountBase: string;
 }
 
-type SwapValidationResult =
-  | { ok: true; params: ValidatedSwapParams }
-  | { ok: false; error: string; retryable: boolean };
-
 /**
  * Validate swap parameters and resolve tokens
  */
-function validateSwapParams(params: SwapParams): SwapValidationResult {
+function validateSwapParams(params: SwapParams): Result<ValidatedSwapParams> {
   if (!OpenAPI.TOKEN) {
     return { ok: false, error: "1Click API key not configured", retryable: false };
   }
@@ -140,7 +135,7 @@ function validateSwapParams(params: SwapParams): SwapValidationResult {
 
   return {
     ok: true,
-    params: { originToken, destToken, amountBase },
+    data: { originToken, destToken, amountBase },
   };
 }
 
@@ -182,9 +177,9 @@ function buildQuoteRequest(
 /**
  * Fetch available swap tokens
  */
-export async function getSwapTokens(): Promise<{ tokens: Token[] } | { error: string }> {
+export async function getSwapTokens(): Promise<Result<Token[]>> {
   if (!OpenAPI.TOKEN) {
-    return { error: "1Click API key not configured. Please contact support." };
+    return { ok: false, error: "1Click API key not configured. Please contact support." };
   }
 
   try {
@@ -218,25 +213,25 @@ export async function getSwapTokens(): Promise<{ tokens: Token[] } | { error: st
       return true;
     });
 
-    return { tokens: finalFiltered.map(toToken) };
+    return { ok: true, data: finalFiltered.map(toToken) };
   } catch (err) {
-    return { error: extractErrorMessage(err) || "Failed to load tokens" };
+    return { ok: false, error: extractErrorMessage(err) || "Failed to load tokens" };
   }
 }
 
 /**
  * Get swap quote (dry run - no deposit address generated)
  */
-export async function getSwapQuote(params: SwapParams): Promise<SwapQuoteResponse> {
+export async function getSwapQuote(params: SwapParams): Promise<Result<SwapQuoteData>> {
   const validation = validateSwapParams(params);
   if (!validation.ok) {
     return validation;
   }
 
-  const { originToken, destToken } = validation.params;
+  const { originToken, destToken } = validation.data;
 
   try {
-    const request = buildQuoteRequest(params, validation.params, true);
+    const request = buildQuoteRequest(params, validation.data, true);
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
 
     // Format minAmountOut from base units to decimal
@@ -244,30 +239,30 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuoteRespons
       ? baseUnitsToDecimal(response.quote.minAmountOut, destToken.decimals)
       : undefined;
 
-    const result: SwapQuoteSuccess = {
+    return {
       ok: true,
-      quoteId: response.correlationId,
-      quote: {
-        amountInFormatted: response.quote.amountInFormatted,
-        amountOutFormatted: response.quote.amountOutFormatted,
-        amountInUsd: parseFloat(response.quote.amountInUsd) ?? undefined,
-        amountOutUsd: parseFloat(response.quote.amountOutUsd) ?? undefined,
-        timeEstimate: response.quote.timeEstimate,
-        minAmountOut: response.quote.minAmountOut,
-      },
-      display: {
-        fromSymbol: originToken.symbol,
-        toSymbol: destToken.symbol,
-        amountInFormatted: response.quote.amountInFormatted,
-        amountOutFormatted: response.quote.amountOutFormatted,
-        amountInUsd: parseFloat(response.quote.amountInUsd) ?? undefined,
-        amountOutUsd: parseFloat(response.quote.amountOutUsd) ?? undefined,
-        timeEstimate: response.quote.timeEstimate ? `~${response.quote.timeEstimate}s` : "Unknown",
-        minAmountOut: minAmountOutFormatted,
+      data: {
+        quoteId: response.correlationId,
+        quote: {
+          amountInFormatted: response.quote.amountInFormatted,
+          amountOutFormatted: response.quote.amountOutFormatted,
+          amountInUsd: parseFloat(response.quote.amountInUsd) ?? undefined,
+          amountOutUsd: parseFloat(response.quote.amountOutUsd) ?? undefined,
+          timeEstimate: response.quote.timeEstimate,
+          minAmountOut: response.quote.minAmountOut,
+        },
+        display: {
+          fromSymbol: originToken.symbol,
+          toSymbol: destToken.symbol,
+          amountInFormatted: response.quote.amountInFormatted,
+          amountOutFormatted: response.quote.amountOutFormatted,
+          amountInUsd: parseFloat(response.quote.amountInUsd) ?? undefined,
+          amountOutUsd: parseFloat(response.quote.amountOutUsd) ?? undefined,
+          timeEstimate: response.quote.timeEstimate ? `~${response.quote.timeEstimate}s` : "Unknown",
+          minAmountOut: minAmountOutFormatted,
+        },
       },
     };
-
-    return result;
   } catch (err) {
     const rawError = extractErrorMessage(err) || "Could not get quote";
     return {
@@ -281,16 +276,16 @@ export async function getSwapQuote(params: SwapParams): Promise<SwapQuoteRespons
 /**
  * Confirm swap and get deposit address (dry=false)
  */
-export async function confirmSwap(params: SwapParams): Promise<SwapConfirmResponse> {
+export async function confirmSwap(params: SwapParams): Promise<Result<SwapConfirmData>> {
   const validation = validateSwapParams(params);
   if (!validation.ok) {
     return validation;
   }
 
-  const { originToken, amountBase } = validation.params;
+  const { originToken, amountBase } = validation.data;
 
   try {
-    const request = buildQuoteRequest(params, validation.params, false);
+    const request = buildQuoteRequest(params, validation.data, false);
     const response: SDKQuoteResponse = await OneClickService.getQuote(request);
 
     if (!response.quote.depositAddress) {
@@ -311,28 +306,28 @@ export async function confirmSwap(params: SwapParams): Promise<SwapConfirmRespon
       paymentUri = response.quote.depositAddress;
     }
 
-    const result: SwapConfirmSuccess = {
+    return {
       ok: true,
-      deposit: {
-        address: response.quote.depositAddress,
-        mode: response.quote.depositMemo ? "MEMO" : "SIMPLE",
-        amountBaseUnits: amountBase,
-        amountDecimal: baseUnitsToDecimal(amountBase, originToken.decimals),
-        originAsset: params.fromToken,
-        decimals: originToken.decimals,
-      },
-      paymentUri,
-      statusKey: {
-        depositAddress: response.quote.depositAddress,
-      },
-      display: {
-        amountInFormatted: response.quote.amountInFormatted,
-        amountOutFormatted: response.quote.amountOutFormatted,
-        timeEstimateSec: response.quote.timeEstimate,
+      data: {
+        deposit: {
+          address: response.quote.depositAddress,
+          mode: response.quote.depositMemo ? "MEMO" : "SIMPLE",
+          amountBaseUnits: amountBase,
+          amountDecimal: baseUnitsToDecimal(amountBase, originToken.decimals),
+          originAsset: params.fromToken,
+          decimals: originToken.decimals,
+        },
+        paymentUri,
+        statusKey: {
+          depositAddress: response.quote.depositAddress,
+        },
+        display: {
+          amountInFormatted: response.quote.amountInFormatted,
+          amountOutFormatted: response.quote.amountOutFormatted,
+          timeEstimateSec: response.quote.timeEstimate,
+        },
       },
     };
-
-    return result;
   } catch (err) {
     const rawError = extractErrorMessage(err) || "Could not confirm swap";
     return {
@@ -346,61 +341,45 @@ export async function confirmSwap(params: SwapParams): Promise<SwapConfirmRespon
 /**
  * Check swap execution status
  */
-export async function getSwapStatus(depositAddress: string, depositMemo?: string): Promise<SwapStatusData | { error: string }> {
+export async function getSwapStatus(depositAddress: string, depositMemo?: string): Promise<Result<SwapStatusData>> {
   if (!OpenAPI.TOKEN) {
-    return { error: "1Click API key not configured" };
+    return { ok: false, error: "1Click API key not configured" };
   }
 
   if (!depositAddress) {
-    return { error: "Deposit address is required" };
+    return { ok: false, error: "Deposit address is required" };
   }
 
   try {
     const response: GetExecutionStatusResponse = await OneClickService.getExecutionStatus(depositAddress, depositMemo);
 
     return {
-      status: response.status,
-      swapDetails: {
-        amountInFormatted: response.swapDetails.amountInFormatted,
-        amountInUsd: response.swapDetails.amountInUsd ? parseFloat(response.swapDetails.amountInUsd) : undefined,
-        amountOutFormatted: response.swapDetails.amountOutFormatted,
-        amountOutUsd: response.swapDetails.amountOutUsd ? parseFloat(response.swapDetails.amountOutUsd) : undefined,
-      },
-      quoteResponse: {
-        quoteRequest: {
-          originAsset: response.quoteResponse.quoteRequest.originAsset,
-          destinationAsset: response.quoteResponse.quoteRequest.destinationAsset,
-          refundTo: response.quoteResponse.quoteRequest.refundTo,
+      ok: true,
+      data: {
+        status: response.status,
+        swapDetails: {
+          amountInFormatted: response.swapDetails.amountInFormatted,
+          amountInUsd: response.swapDetails.amountInUsd ? parseFloat(response.swapDetails.amountInUsd) : undefined,
+          amountOutFormatted: response.swapDetails.amountOutFormatted,
+          amountOutUsd: response.swapDetails.amountOutUsd ? parseFloat(response.swapDetails.amountOutUsd) : undefined,
         },
-        quote: {
-          amountOutFormatted: response.quoteResponse.quote.amountOutFormatted,
-          depositAddress: response.quoteResponse.quote.depositAddress,
-          timeEstimate: response.quoteResponse.quote.timeEstimate,
-          deadline: response.quoteResponse.quote.deadline,
+        quoteResponse: {
+          quoteRequest: {
+            originAsset: response.quoteResponse.quoteRequest.originAsset,
+            destinationAsset: response.quoteResponse.quoteRequest.destinationAsset,
+            refundTo: response.quoteResponse.quoteRequest.refundTo,
+          },
+          quote: {
+            amountOutFormatted: response.quoteResponse.quote.amountOutFormatted,
+            depositAddress: response.quoteResponse.quote.depositAddress,
+            timeEstimate: response.quoteResponse.quote.timeEstimate,
+            deadline: response.quoteResponse.quote.deadline,
+          },
         },
+        updatedAt: response.updatedAt,
       },
-      updatedAt: response.updatedAt,
     };
   } catch (err) {
-    return { error: extractErrorMessage(err) || "Could not check swap status" };
-  }
-}
-
-/**
- * Submit deposit transaction hash (optional - speeds up processing)
- */
-export async function submitDepositTx(txHash: string, depositAddress: string): Promise<{ success: boolean; error?: string }> {
-  if (!OpenAPI.TOKEN) {
-    return { success: false, error: "1Click API key not configured" };
-  }
-
-  try {
-    await OneClickService.submitDepositTx({
-      txHash,
-      depositAddress,
-    });
-    return { success: true };
-  } catch (err) {
-    return { success: false, error: extractErrorMessage(err) || "Could not submit transaction" };
+    return { ok: false, error: extractErrorMessage(err) || "Could not check swap status" };
   }
 }

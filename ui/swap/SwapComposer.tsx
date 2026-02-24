@@ -3,16 +3,16 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import type {
-  SwapConfirmResponse,
-  SwapConfirmSuccess,
+  SwapConfirmData,
   SwapContextQuoteData,
+  SwapQuoteData,
   SwapQuoteDisplay,
-  SwapQuoteResponse,
   Token,
 } from "@/lib/swap/types";
+import type { Result } from "@/lib/actions/types";
 
-const isConfirmSuccess = (data: SwapContextQuoteData | null): data is SwapConfirmSuccess =>
-  Boolean(data && data.ok === true && "deposit" in data);
+const isConfirmSuccess = (data: SwapContextQuoteData | null): data is Result<SwapConfirmData> =>
+  Boolean(data && data.ok === true && "deposit" in data.data);
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import SwapQuoteDisplayComponent from "@/ui/swap/SwapQuoteDisplay";
@@ -52,7 +52,7 @@ interface SwapComposerProps {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<SwapQuoteResponse | null>;
+  }) => Promise<Result<SwapQuoteData> | null>;
   confirmSwap: (_params: {
     amountIn: string;
     destAddress: string;
@@ -60,7 +60,7 @@ interface SwapComposerProps {
     toToken?: string;
     refund?: string;
     slippage?: string;
-  }) => Promise<SwapConfirmResponse | null>;
+  }) => Promise<Result<SwapConfirmData> | null>;
 }
 export default function SwapComposer({
   profile,
@@ -95,7 +95,7 @@ export default function SwapComposer({
   const rootRef = useRef<HTMLDivElement | null>(null);
   const recipientName = profile?.display_name ?? profile?.name ?? "Recipient";
   const confirmedQuote = isConfirmSuccess(quoteData) ? quoteData : null;
-  const depositAmountDecimal = confirmedQuote?.deposit?.amountDecimal ?? "";
+  const depositAmountDecimal = confirmedQuote?.data?.deposit?.amountDecimal ?? "";
   const [isRefundAddressValid, setIsRefundAddressValid] = useState(false);
   const [isMemoCompact, setIsMemoCompact] = useState(false);
   const autoQuoteKeyRef = useRef("");
