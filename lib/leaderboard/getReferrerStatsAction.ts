@@ -1,6 +1,7 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
+import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
 // Must stay in sync with getLeaderboardAction.ts
 const ELIGIBILITY_WINDOW_WEEKS = 4;
@@ -83,11 +84,13 @@ export async function getReferrerStatsAction(
       return { ...empty, error: "Database connection error" };
     }
 
-    // 1. Resolve referrer by username
+    // 1. Resolve referrer by username (normalize to handle legacy spaces)
+    const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
       .select("id, name, display_name, profile_image_url")
-      .eq("name", username)
+      .or(`name.eq.${normalized},name.eq.${normalized.replace(/_/g, " ")}`)
+      .limit(1)
       .single();
 
     if (referrerError || !referrerRow) {

@@ -12,6 +12,7 @@ import {
   AssumptionDetails,
   ClickStopLink,
 } from "./LeaderboardClient";
+import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
 const PROFILE_BASE_URL = "https://zcash.me";
 
@@ -109,8 +110,9 @@ function formatPercent(value: number): string {
 // ── Row content (server-rendered, passed to client ExpandableRow) ──
 
 function RowSummary({ entry }: { entry: LeaderboardEntry }) {
-  const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(entry.referrerUsername)}`;
-  const statsHref = `/${encodeURIComponent(entry.referrerUsername)}`;
+  const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
+  const profileHref = `${PROFILE_BASE_URL}/${safeUsername}`;
+  const statsHref = `/${safeUsername}`;
   return (
     <>
       <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
@@ -209,7 +211,7 @@ export default async function LeaderboardPage({
             <div className="relative z-10 flex h-full items-center justify-center gap-2 sm:gap-3">
               {secondPlace && (
                 <PodiumAvatar
-                  profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(secondPlace.referrerUsername)}`}
+                  profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(secondPlace.referrerUsername)}`}
                   imageUrl={secondPlace.referrerProfileImageUrl}
                   name={secondPlace.referrerDisplayName}
                   emoji="🥈"
@@ -217,7 +219,7 @@ export default async function LeaderboardPage({
                 />
               )}
               <PodiumAvatar
-                profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(firstPlace.referrerUsername)}`}
+                profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(firstPlace.referrerUsername)}`}
                 imageUrl={firstPlace.referrerProfileImageUrl}
                 name={firstPlace.referrerDisplayName}
                 emoji="🥇"
@@ -225,7 +227,7 @@ export default async function LeaderboardPage({
               />
               {thirdPlace && (
                 <PodiumAvatar
-                  profileHref={`${PROFILE_BASE_URL}/${encodeURIComponent(thirdPlace.referrerUsername)}`}
+                  profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(thirdPlace.referrerUsername)}`}
                   imageUrl={thirdPlace.referrerProfileImageUrl}
                   name={thirdPlace.referrerDisplayName}
                   emoji="🥉"
