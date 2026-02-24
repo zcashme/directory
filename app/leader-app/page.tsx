@@ -1,6 +1,5 @@
 import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
-import Badge from "@/ui/common/feedback/Badge";
 import {
   getLeaderboardAction,
   type Period,
@@ -262,11 +261,6 @@ export default async function LeaderboardPage({
                 </Link>
               ))}
             </div>
-          </div>
-          <div className="pointer-events-none absolute right-0 top-[42px] z-10">
-            <Badge variant="warning" size="sm">
-              Under Construction
-            </Badge>
           </div>
         </div>
 
