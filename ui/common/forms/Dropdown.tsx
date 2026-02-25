@@ -18,7 +18,7 @@ import DropdownOptionComponent, {
  *
  * @template T - The type of the option's id value (defaults to string)
  */
-export interface DropdownProps<T = string> {
+interface DropdownProps<T = string> {
   /** Array of options to display in the dropdown */
   options: DropdownOption<T>[];
   /** Currently selected value (option id) */

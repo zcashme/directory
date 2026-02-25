@@ -20,7 +20,7 @@ import IconButton from "@/ui/common/buttons/IconButton";
  * />
  * ```
  */
-export interface ModalHeaderProps {
+interface ModalHeaderProps {
   /** Header title (can be string or custom ReactNode) */
   title: ReactNode;
   /** Callback when close button is clicked */

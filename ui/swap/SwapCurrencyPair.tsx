@@ -11,7 +11,7 @@ const TOKEN_COLORS: Record<string, string> = {
   NEAR: "bg-gray-700",
 };
 
-export interface TokenIconProps {
+interface TokenIconProps {
   symbol: string;
   size?: number;
 }

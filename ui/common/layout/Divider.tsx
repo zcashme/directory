@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
  * <Divider variant="gradient" />
  * ```
  */
-export interface DividerProps {
+interface DividerProps {
   /** Visual style variant */
   variant?: "solid" | "dashed" | "dotted" | "gradient";
   /** Vertical spacing around divider */

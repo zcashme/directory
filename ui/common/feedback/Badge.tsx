@@ -25,7 +25,7 @@ import type { ReactNode } from "react";
  * </Badge>
  * ```
  */
-export interface BadgeProps {
+interface BadgeProps {
   /** Visual style variant */
   variant?: "success" | "warning" | "error" | "info" | "neutral";
   /** Badge size */

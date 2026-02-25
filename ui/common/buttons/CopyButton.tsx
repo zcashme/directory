@@ -4,7 +4,7 @@ import type { MouseEvent } from "react";
 /**
  * Button that copies text to clipboard with visual feedback.
  */
-export interface CopyButtonProps {
+interface CopyButtonProps {
   /** Text to copy to clipboard */
   text: string;
   /** Label shown on hover (default state) */

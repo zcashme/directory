@@ -11,7 +11,7 @@
  * <Spinner size="lg" color="blue" />
  * ```
  */
-export interface SpinnerProps {
+interface SpinnerProps {
   /** Spinner size */
   size?: "xs" | "sm" | "md" | "lg" | "xl";
   /** Spinner color */

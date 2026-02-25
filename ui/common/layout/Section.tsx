@@ -25,7 +25,7 @@ import type { ReactNode } from "react";
  * </Section>
  * ```
  */
-export interface SectionProps {
+interface SectionProps {
   /** Section title */
   title: ReactNode;
   /** Whether section starts open (default: true) */

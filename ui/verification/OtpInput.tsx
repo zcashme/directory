@@ -5,7 +5,7 @@ import type React from "react";
 /**
  * OTP Input Component Props
  */
-export interface OtpInputProps {
+interface OtpInputProps {
   /** Controlled value (digits only) */
   value: string;
 

@@ -30,7 +30,7 @@ import type { ReactNode } from "react";
  * </Alert>
  * ```
  */
-export interface AlertProps {
+interface AlertProps {
   /** Visual style variant */
   variant?: "error" | "warning" | "success" | "info";
   /** Alert size */

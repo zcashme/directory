@@ -8,7 +8,7 @@ import { supabase } from "@/lib/supabase/supabase-client";
 import { getProviderByKey } from "./providers";
 import { getPendingConnect, clearPendingConnect } from "./connect";
 
-export interface ConnectedLink {
+interface ConnectedLink {
   url: string;
   provider: string;
   handle: string;

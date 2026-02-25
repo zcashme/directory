@@ -17,7 +17,7 @@ import type { ReactNode } from "react";
  * </Button>
  * ```
  */
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style variant */
   variant?: "primary" | "secondary" | "danger" | "ghost";
   /** Button size */

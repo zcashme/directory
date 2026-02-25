@@ -1,6 +1,5 @@
 interface HelpMessageProps {
   introText?: string;
-  helpText?: string;
   className?: string;
 }
 

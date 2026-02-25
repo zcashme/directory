@@ -1,7 +1,7 @@
 // ui/links/providers.ts
 // Single source of truth for OAuth providers and handle extraction
 
-export interface Provider {
+interface Provider {
   key: string;
   label: string;
   buildUrl: (handle: string) => string;
