@@ -3,18 +3,13 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import {
-  ELIGIBILITY_WINDOW_WEEKS,
   REWARD_DURATION_MONTHS,
   VERIFICATION_FEE_ZEC,
-  addWeeks,
-  addMonths,
   monthsBetween,
   calculateCommissionRate,
+  computeReferralStatus,
+  type ReferralStatus,
 } from "./rewardProgram";
-
-// ── Types ────────────────────────────────────────────────────
-
-export type ReferralStatus = "eligible" | "active" | "expired" | "ineligible";
 
 export interface ReferralRow {
   id: number;
@@ -53,27 +48,6 @@ export interface ReferrerStatsResponse {
 }
 
 // ── Helpers ──────────────────────────────────────────────────
-
-function computeStatus(
-  addressVerified: boolean,
-  createdAt: Date,
-  lastVerifiedAt: Date | null,
-  now: Date,
-): ReferralStatus {
-  const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
-
-  // Verified AND verified within the 4-week window → activated
-  if (addressVerified && lastVerifiedAt && lastVerifiedAt <= eligibilityDeadline) {
-    const rewardEnd = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
-    return now < rewardEnd ? "active" : "expired";
-  }
-
-  // Still within the 4-week window → eligible (can still activate)
-  if (now < eligibilityDeadline) return "eligible";
-
-  // 4-week window passed without valid verification
-  return "ineligible";
-}
 
 function computeEarnedZats(
   status: ReferralStatus,
@@ -170,7 +144,7 @@ export async function getReferrerStatsAction(
 
       if (isVerified) verified++;
 
-      const status = computeStatus(isVerified, createdAt, lastVerifiedAt, now);
+      const status = computeReferralStatus(isVerified, createdAt, lastVerifiedAt, now);
 
       if (status === "eligible") eligible++;
       if (status === "active" || status === "expired") {

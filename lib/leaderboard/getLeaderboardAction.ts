@@ -8,11 +8,11 @@ import {
   VERIFICATION_FEE_ZEC,
   COMMISSION_DELTA_PER_LINK,
   MAX_COMMISSION_RATE,
-  addWeeks,
   addMonths,
   monthsBetween,
   calculateCommissionRate,
   getCommissionTier,
+  computeReferralStatus,
   type CommissionTier,
 } from "./rewardProgram";
 
@@ -219,7 +219,6 @@ export async function getLeaderboardAction(
       if (!referrerId || referrerId === user.id) continue; // Skip self-referrals
 
       const createdAt = new Date(user.created_at);
-      const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
       const lastVerifiedAt = user.last_verified_at ? new Date(user.last_verified_at) : null;
 
       // For time-filtered periods, only count referrals within the period
@@ -262,46 +261,37 @@ export async function getLeaderboardAction(
 
       current.total++;
 
-      if (user.address_verified && lastVerifiedAt) {
-        current.verified++;
+      const isVerified = !!user.address_verified;
+      if (isVerified) current.verified++;
+      else current.unverified++;
 
-        // Check if verified within eligibility window
-        const isEligible = lastVerifiedAt <= eligibilityDeadline;
+      const status = computeReferralStatus(isVerified, createdAt, lastVerifiedAt, now);
 
-        if (isEligible) {
+      switch (status) {
+        case "active":
+        case "expired": {
+          // Activated referrals (verified within eligibility window)
           current.eligibleCount++;
+          const rewardEndDate = addMonths(lastVerifiedAt!, REWARD_DURATION_MONTHS);
+          const isActive = status === "active";
+          if (isActive) current.activeRewardsCount++;
 
-          // Calculate reward end date
-          const rewardEndDate = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
-          const isActive = now < rewardEndDate;
-
-          if (isActive) {
-            current.activeRewardsCount++;
-          }
-
-          // Commission rate is locked at time of referral verification
-          // In production, this would be stored in the database
-          // For now, we use the current verified links count as approximation
           const lockedCommissionRate = calculateCommissionRate(referrerVerifiedLinks);
-
           current.eligibleReferrals.push({
-            lastVerifiedAt,
+            lastVerifiedAt: lastVerifiedAt!,
             rewardEndDate,
             isActive,
             lockedCommissionRate,
           });
-        } else {
-          current.ineligibleCount++;
+          break;
         }
-      } else {
-        current.unverified++;
-
-        // Check if still within eligibility window
-        if (now <= eligibilityDeadline) {
+        case "eligible":
           current.pendingOpportunities++;
-        } else {
-          current.expiredOpportunities++;
-        }
+          break;
+        case "ineligible":
+          if (isVerified) current.ineligibleCount++;
+          else current.expiredOpportunities++;
+          break;
       }
 
       referrerStats.set(referrerId, current);

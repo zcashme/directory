@@ -2,10 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Badge from "@/ui/common/feedback/Badge";
-import {
-  getReferrerStatsAction,
-  type ReferralStatus,
-} from "@/lib/leaderboard/getReferrerStatsAction";
+import { getReferrerStatsAction } from "@/lib/leaderboard/getReferrerStatsAction";
+import type { ReferralStatus } from "@/lib/leaderboard/rewardProgram";
 import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
 
 // ── Metadata ─────────────────────────────────────────────────

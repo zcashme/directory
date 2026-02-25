@@ -22,6 +22,7 @@ export const MAX_COMMISSION_RATE = 0.5; // Cap at 50%
 // ============================================
 
 export type CommissionTier = "base" | "bronze" | "silver" | "gold" | "platinum";
+export type ReferralStatus = "eligible" | "active" | "expired" | "ineligible";
 
 // ============================================
 // HELPER FUNCTIONS
@@ -53,6 +54,30 @@ export function monthsBetween(start: Date, end: Date): number {
 export function calculateCommissionRate(verifiedLinksCount: number): number {
   const rate = BASE_COMMISSION_RATE + verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
   return Math.min(rate, MAX_COMMISSION_RATE);
+}
+
+/**
+ * Determine referral status based on verification timing.
+ */
+export function computeReferralStatus(
+  addressVerified: boolean,
+  createdAt: Date,
+  lastVerifiedAt: Date | null,
+  now: Date,
+): ReferralStatus {
+  const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
+
+  // Verified AND verified within the 4-week window → activated
+  if (addressVerified && lastVerifiedAt && lastVerifiedAt <= eligibilityDeadline) {
+    const rewardEnd = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
+    return now < rewardEnd ? "active" : "expired";
+  }
+
+  // Still within the 4-week window → eligible (can still activate)
+  if (now < eligibilityDeadline) return "eligible";
+
+  // 4-week window passed without valid verification
+  return "ineligible";
 }
 
 /**
