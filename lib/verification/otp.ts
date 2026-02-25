@@ -34,7 +34,7 @@ function hexToBytes(hex: string): Uint8Array {
  *
  * Matches ZVS backend: HMAC-SHA256(secret_bytes, session_id)
  *
- * @param memo - The ZVS memo string (e.g., "zvs/2026021505421234,u1d9l0a8...")
+ * @param memo - The ZVS memo string (e.g., "DO NOT MODIFY:{zvs/2026021505421234,u1d9l0a8...}")
  * @returns 6-digit OTP string
  */
 export async function generateOtp(memo: string): Promise<string> {

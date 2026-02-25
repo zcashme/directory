@@ -25,11 +25,11 @@ export function generateSessionId(): string {
 
 /**
  * Build the ZVS memo string
- * Format: zvs/session_id,u-address
- * Example: zvs/2026021505421234,u1d9l0a8ldht9zcp...
+ * Format: DO NOT MODIFY:{zvs/session_id,u-address}
+ * Example: DO NOT MODIFY:{zvs/2026021505421234,u1d9l0a8ldht9zcp...}
  */
 export function buildZvsMemo(sessionId: string, userAddress: string): string {
-  return `zvs/${sessionId},${userAddress}`;
+  return `DO NOT MODIFY:{zvs/${sessionId},${userAddress}}`;
 }
 
 /**
@@ -37,7 +37,7 @@ export function buildZvsMemo(sessionId: string, userAddress: string): string {
  * Returns null if the memo format is invalid
  */
 export function parseZvsMemo(memo: string): { sessionId: string; userAddress: string } | null {
-  const match = memo.match(/^zvs\/(\d{16}),(.+)$/);
+  const match = memo.match(/\{zvs\/(\d{16}),(.+)\}$/);
   if (!match) return null;
 
   return {

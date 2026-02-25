@@ -9,7 +9,8 @@ import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 
 const AVATAR_BUCKET = "zcashme";
-const AVATAR_FOLDER = "avatar_uploads";
+const AVATAR_FOLDER = "avatars";
+const AVATAR_HISTORY_FOLDER = "avatar_history";
 const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif"]);
 const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png", "gif"]);
@@ -41,7 +42,7 @@ async function removeExistingAvatarVariants(
   profileId: number
 ): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Supabase client not available." };
-  const prefix = `${profileId}_avatar`;
+  const prefix = `${profileId}_zmp`;
   const { data: files, error: listError } = await supabase.storage
     .from(AVATAR_BUCKET)
     .list(AVATAR_FOLDER, { limit: 200, search: prefix });
@@ -62,6 +63,42 @@ async function removeExistingAvatarVariants(
     return { ok: false, error: removeError.message || "Failed to remove previous avatar." };
   }
   return { ok: true };
+}
+
+function formatTimestamp(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+async function copyAvatarToHistory(
+  supabase: ReturnType<typeof createSupabaseServerClient>,
+  profileId: number
+): Promise<void> {
+  if (!supabase) return;
+  const prefix = `${profileId}_zmp`;
+  const { data: files } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .list(AVATAR_FOLDER, { limit: 200, search: prefix });
+
+  const existing = (files || [])
+    .map((f) => f.name)
+    .filter((name) => name.toLowerCase() === prefix.toLowerCase() || new RegExp(`^${prefix}\\.[^./]+$`, "i").test(name));
+
+  for (const name of existing) {
+    const srcPath = `${AVATAR_FOLDER}/${name}`;
+    const ext = name.includes(".") ? name.substring(name.lastIndexOf(".")) : "";
+    const historyPath = `${AVATAR_HISTORY_FOLDER}/${profileId}_zmp_${formatTimestamp()}${ext}`;
+
+    const { data } = await supabase.storage.from(AVATAR_BUCKET).download(srcPath);
+    if (!data) continue;
+
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    await supabase.storage.from(AVATAR_BUCKET).upload(historyPath, bytes, {
+      contentType: data.type || "application/octet-stream",
+      upsert: false,
+    });
+  }
 }
 
 /**
@@ -165,7 +202,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country")
       .eq("id", profileId)
       .single();
 
@@ -182,7 +219,7 @@ export async function confirmOtpAction(
     }
 
     // --- Apply profile update -----------------------------------------------
-    const profileUpdate: Record<string, unknown> = { address_verified: true };
+    const profileUpdate: Record<string, unknown> = { address_verified: true, last_verified_at: new Date().toISOString() };
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 
@@ -195,6 +232,7 @@ export async function confirmOtpAction(
     }
 
     if (removeProfileImage) {
+      await copyAvatarToHistory(supabase, profileId);
       const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
       if (!removeExisting.ok) {
         return {
@@ -232,12 +270,13 @@ export async function confirmOtpAction(
         return { ok: false, error: "Avatar file exceeds the 2 MB limit.", data: { status: "invalid" } };
       }
 
+      await copyAvatarToHistory(supabase, profileId);
       const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
       if (!removeExisting.ok) {
         return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
       }
 
-      const avatarPath = `${AVATAR_FOLDER}/${profileId}_avatar`;
+      const avatarPath = `${AVATAR_FOLDER}/${profileId}_zmp`;
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
         .upload(avatarPath, fileBytes, {
@@ -287,6 +326,27 @@ export async function confirmOtpAction(
         data: { status: "error" },
       };
     }
+
+    // --- Insert verification snapshot ----------------------------------------
+    const { data: currentLinks } = await supabase
+      .from("zcasher_links")
+      .select("url, label, platform")
+      .eq("zcasher_id", profileId);
+
+    await supabase.from("zcasher_verifications").insert({
+      zcasher_id: profileId,
+      address: profile.address,
+      name: profile.name,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      slug: profile.slug,
+      nearest_city_name: profile.nearest_city_name,
+      category: profile.category,
+      referred_by_zcasher_id: profile.referred_by_zcasher_id,
+      iso2: profile.iso2,
+      country: profile.country,
+      links: currentLinks || [],
+    });
 
     // --- Apply link edits ---------------------------------------------------
     const linkErrors: string[] = [];
