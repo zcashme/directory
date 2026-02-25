@@ -231,7 +231,7 @@ export default function MemoComposer({
           placeholder={
             disabled
               ? "Memos are not supported for transparent addresses"
-              : `Write your message to ${recipientName} here...`
+              : `Write a shielded message to ${recipientName}`
           }
           className={`border px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden ${disabled
               ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed pb-8"

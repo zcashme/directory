@@ -87,7 +87,7 @@ export function OtpInput({
    * Handle Enter key press for submission
    */
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && onSubmit && value.trim()) {
+    if (e.key === "Enter" && onSubmit && value.trim().length === 6) {
       e.preventDefault();
       onSubmit();
     }

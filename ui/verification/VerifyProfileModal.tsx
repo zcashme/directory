@@ -44,7 +44,8 @@ export default function VerifyProfileModal({ isOpen, onClose, profile }: VerifyP
       <div className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200 my-4">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-black/10">
-          <h2 className="text-lg font-semibold text-gray-800">Verify Profile</h2>
+          <div className="h-8 w-8" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-gray-800 text-center flex-1">Verify Profile</h2>
           <button
             onClick={handleClose}
             className="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center"
@@ -55,7 +56,7 @@ export default function VerifyProfileModal({ isOpen, onClose, profile }: VerifyP
         </div>
 
         {/* Content */}
-        <div className="px-5 py-4">
+        <div className="px-5 py-4 min-h-[220px] grid place-items-center">
           {profile && (
             <ProfileVerification
               profile={profile as Profile}

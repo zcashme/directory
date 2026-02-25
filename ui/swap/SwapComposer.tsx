@@ -340,7 +340,7 @@ export default function SwapComposer({
             rows={1}
             readOnly
             aria-disabled="true"
-            placeholder="Messenging available ZEC to ZEC, only"
+            placeholder="Messaging only available ZEC to ZEC"
             onClick={returnToZec}
             onFocus={(e) => {
               e.currentTarget.blur();

@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { INLINE_ACTION_BUTTON_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 
 interface QrUriBlockProps {
   uri: string;
   profileName?: string;
+  qrTopHintText?: string;
   qrHintText?: string;
   compactTopSpacing?: boolean;
   forceShowQR?: boolean;
@@ -19,6 +20,7 @@ interface QrUriBlockProps {
 export default function QrUriBlock({
   uri,
   profileName,
+  qrTopHintText,
   qrHintText,
   compactTopSpacing = false,
   forceShowQR,
@@ -93,35 +95,53 @@ export default function QrUriBlock({
     <div className={`flex flex-col items-center gap-4 ${compactTopSpacing ? "mt-0" : "mt-6"} animate-fadeIn`}>
 
       {/* QR block */}
-      <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
+      <AnimatePresence initial={false}>
         {showQR && (
-          <motion.a
-            href={uri}
-            {...tapProps}
-            className="inline-block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
-            title="Open payment URI"
-            aria-label="Open payment URI"
+          <motion.div
+            key="qr-block"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
           >
-            <QRCodeSVG
-              ref={qrRef}
-              value={uri}
-              size={300}
-              includeMargin={true}
-              bgColor="transparent"
-              fgColor="#000000"
-              style={{ width: "min(300px, 100%)", height: "auto" }}
-            />
-          </motion.a>
+            {qrTopHintText && (
+              <p className="-mb-5 text-center text-xs text-gray-600">
+                {qrTopHintText}
+              </p>
+            )}
+            <motion.a
+              href={uri}
+              {...tapProps}
+              className="inline-block cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)] focus-visible:ring-offset-2"
+              title="Open payment URI"
+              aria-label="Open payment URI"
+            >
+              <QRCodeSVG
+                ref={qrRef}
+                value={uri}
+                size={300}
+                includeMargin={true}
+                bgColor="transparent"
+                fgColor="#000000"
+                style={{ width: "min(300px, 100%)", height: "auto" }}
+              />
+            </motion.a>
+            {qrHintText && (
+              <p className="-mt-5 text-center text-xs text-gray-600">
+                {qrHintText}
+              </p>
+            )}
+          </motion.div>
         )}
-        {showQR && qrHintText && (
-          <p className="-mt-5 text-center text-xs text-gray-600">
-            {qrHintText}
-          </p>
-        )}
-      </div>
+      </AnimatePresence>
 
       {/* QR + URI controls row */}
-      <div className="flex flex-wrap items-center justify-center gap-3 w-full">
+      <div
+        className={`flex flex-wrap items-center justify-center gap-3 w-max max-w-full ${
+          !showQR ? "mt-4" : ""
+        }`}
+      >
         {showQR ? (
           <div className="flex items-center gap-0">
             <motion.button
@@ -178,18 +198,27 @@ export default function QrUriBlock({
       </div>
 
       {/* URI block */}
-      {showFull && (
-        <div className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden">
-          <a
-            href={uri}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full max-w-full text-center text-[var(--color-brand-blue)] underline break-all text-sm"
+      <AnimatePresence initial={false}>
+        {showFull && (
+          <motion.div
+            key="uri-block"
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
           >
-            {uri}
-          </a>
-        </div>
-      )}
+            <a
+              href={uri}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full max-w-full text-center text-[var(--color-brand-blue)] underline break-all text-sm"
+            >
+              {uri}
+            </a>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
     </div>
   );

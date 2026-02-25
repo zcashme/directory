@@ -15,7 +15,7 @@ function DeleteActionButton({ onClick, disabled = false, isDeleted = false }: De
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`text-xs font-normal hover:underline ${disabled
+      className={`inline-flex items-center whitespace-nowrap text-xs font-normal hover:underline ${disabled
         ? "text-gray-400 cursor-not-allowed"
         : isDeleted
           ? "text-green-700"
