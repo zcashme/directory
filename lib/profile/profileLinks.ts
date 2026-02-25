@@ -31,7 +31,7 @@ interface DomainConfig {
   icon: StaticImageData;
 }
 
-export const KNOWN_DOMAINS: Record<string, DomainConfig> = {
+const KNOWN_DOMAINS: Record<string, DomainConfig> = {
   "x.com": { label: "X", icon: faviconX },
   "twitter.com": { label: "Twitter", icon: faviconX },
 
@@ -132,7 +132,7 @@ export const getLinkLabel = (url: string = ""): string => {
 
 type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram";
 
-export const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
+const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "x.com": "X",
   "twitter.com": "X",
   "github.com": "GitHub",
@@ -172,9 +172,6 @@ export const getSocialHandle = (url: string = "", platform?: string | null): str
   const last = parts[parts.length - 1] ?? "";
   return decodeURIComponent(last);
 };
-
-export const isDiscordLink = (platform?: string | null): boolean =>
-  platform === "Discord";
 
 export const getSocialDisplay = (link: ProfileLink): string => {
   if (!link) return "";

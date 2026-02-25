@@ -4,7 +4,7 @@ import type { Profile } from "@/lib/profile/types";
 // Raw API response types (matches GET /api/directory)
 // ---------------------------------------------------------------------------
 
-export interface DirectoryApiResult {
+interface DirectoryApiResult {
   id: number;
   username: string;
   display_name: string | null;

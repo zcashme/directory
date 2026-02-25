@@ -91,33 +91,3 @@ export interface ProfileLinks {
   totalLinks: number;
 }
 
-/**
- * Link verification update payload
- */
-export interface LinkVerificationPayload {
-  is_verified: boolean;
-  verification_expires_at?: string | null;
-  [key: string]: unknown;
-}
-
-/**
- * Rank type discriminator
- */
-export type RankType = "alltime" | "weekly" | "monthly" | "daily" | null;
-
-/**
- * Profile with ranking information
- */
-export interface RankedProfile extends Profile {
-  rank_alltime: number;
-  rank_weekly: number;
-  rank_monthly: number;
-}
-
-/**
- * Link enrichment input
- */
-export interface LinkEnrichmentInput {
-  url: string;
-  label?: string;
-}
