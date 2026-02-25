@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { MouseEvent as ReactMouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
@@ -270,6 +270,15 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [dotsGapAboveButton, setDotsGapAboveButton] = useState<number>(0);
   const shouldReduceMotion = useReducedMotion();
   const claimButtonRef = useRef<HTMLButtonElement>(null);
+  const activeCardIndexRef = useRef<number>(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const suppressTapUntilRef = useRef<number>(0);
+  const manualTypingPauseUntilRef = useRef<number>(0);
+  const manualResumeTargetRef = useRef<{ index: number; name: string } | null>(null);
+  const MANUAL_TYPING_PAUSE_MS = 2600;
+  const SWIPE_THRESHOLD_PX = 45;
+  const TAP_CANCEL_THRESHOLD_PX = 12;
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -283,6 +292,10 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   useEffect(() => {
     pauseRef.current = isNameHoverPaused;
   }, [isNameHoverPaused]);
+
+  useEffect(() => {
+    activeCardIndexRef.current = activeCardIndex;
+  }, [activeCardIndex]);
 
   useEffect(() => {
     setActiveCardIndex(centerIndex);
@@ -313,6 +326,25 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     const TYPE_MS = 90;
     const DELETE_MS = 75;
     const PAUSE_POLL_MS = 120;
+    const isManualPauseActive = () => manualTypingPauseUntilRef.current > Date.now();
+    const syncManualResumeTarget = () => {
+      if (isManualPauseActive()) return false;
+      if (!typedTargets.length) return false;
+      const manualTarget = manualResumeTargetRef.current;
+      if (!manualTarget) return false;
+
+      const wrappedTargetIndex = ((manualTarget.index % typedTargets.length) + typedTargets.length) % typedTargets.length;
+      const target = typedTargets[wrappedTargetIndex];
+      const targetName = target?.name ?? manualTarget.name;
+
+      currentText = `${headlinePrefix}${targetName}`;
+      currentTargetIndex = (wrappedTargetIndex + 1) % typedTargets.length;
+      setAnimatedHeadline(currentText);
+      setIsTypedNameComplete(false);
+      setCurrentTypedProfileIndex(target?.index ?? wrappedTargetIndex);
+      manualResumeTargetRef.current = null;
+      return true;
+    };
 
     const schedule = (fn: () => void, delay: number) => {
       timeoutId = setTimeout(fn, delay);
@@ -320,6 +352,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startTypingName = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startTypingName, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       const target = typedTargets[currentTargetIndex];
       setCurrentTypedProfileIndex(target.index);
       const nextText = `${headlinePrefix}${target.name}`;
@@ -351,6 +391,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startDeleting = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startDeleting, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       setIsTypedNameComplete(false);
       if (currentText.length > headlinePrefix.length) {
         currentText = currentText.slice(0, -1);
@@ -363,6 +411,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startTypingInitial = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startTypingInitial, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       if (currentText.length < initialText.length) {
         setIsTypedNameComplete(false);
         currentText = initialText.slice(0, currentText.length + 1);
@@ -438,7 +494,96 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     return (index - activeCardIndex + count) % count;
   };
 
+  const getWrappedIndex = (index: number) => {
+    const count = profiles.length;
+    if (count <= 0) return 0;
+    return ((index % count) + count) % count;
+  };
+
+  const shiftActiveCard = (delta: number) => {
+    if (profiles.length <= 1) return;
+    const nextIndex = getWrappedIndex(activeCardIndexRef.current + delta);
+    const selectedProfile = profiles[nextIndex];
+    let selectedName: string | null = null;
+    if (selectedProfile) {
+      const displayName = selectedProfile.display_name?.trim();
+      const profileName = selectedProfile.name?.trim();
+      if (displayName && displayName.length > 0) {
+        selectedName = displayName;
+      } else if (profileName && profileName.length > 0) {
+        selectedName = profileName;
+      } else {
+        selectedName = "zcash user";
+      }
+    }
+
+    activeCardIndexRef.current = nextIndex;
+    setActiveCardIndex(nextIndex);
+    manualTypingPauseUntilRef.current = Date.now() + MANUAL_TYPING_PAUSE_MS;
+
+    if (selectedName) {
+      setAnimatedHeadline(`${headlinePrefix}${selectedName}`);
+      setIsTypedNameComplete(true);
+      setCurrentTypedProfileIndex(nextIndex);
+      manualResumeTargetRef.current = { index: nextIndex, name: selectedName };
+    }
+  };
+
+  const handleCarouselTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!isMobile || profiles.length <= 1) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
+  const handleCarouselTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!isMobile || profiles.length <= 1) return;
+    const start = swipeStartRef.current;
+    if (!start) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    swipeDeltaRef.current = { x: deltaX, y: deltaY };
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > TAP_CANCEL_THRESHOLD_PX) {
+      suppressTapUntilRef.current = Date.now() + 250;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const handleCarouselTouchEnd = () => {
+    if (!isMobile || profiles.length <= 1) {
+      swipeStartRef.current = null;
+      swipeDeltaRef.current = { x: 0, y: 0 };
+      return;
+    }
+
+    const { x: deltaX, y: deltaY } = swipeDeltaRef.current;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (horizontalDistance >= SWIPE_THRESHOLD_PX && horizontalDistance > verticalDistance) {
+      shiftActiveCard(deltaX < 0 ? 1 : -1);
+      suppressTapUntilRef.current = Date.now() + 300;
+    }
+
+    swipeStartRef.current = null;
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
+  const handleCarouselTouchCancel = () => {
+    swipeStartRef.current = null;
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
   const handleCardClick = (profile: Profile) => {
+    if (Date.now() < suppressTapUntilRef.current) return;
     onCardClick(profile);
   };
   const step = 0.05;
@@ -569,7 +714,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         </h2>
       </div>
       <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY}px)` }}>
-        <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
+        <div
+          className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20"
+          style={{ overflowX: "clip", touchAction: isMobile ? "pan-y" : undefined }}
+          onTouchStart={handleCarouselTouchStart}
+          onTouchMove={handleCarouselTouchMove}
+          onTouchEnd={handleCarouselTouchEnd}
+          onTouchCancel={handleCarouselTouchCancel}
+        >
           {profiles.map((profile, index) => {
             const stackIndex = getStackIndex(index);
             const isActive = isMobile && index === activeCardIndex;
