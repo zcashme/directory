@@ -48,6 +48,7 @@ const STATUS_CONFIG: Record<ReferralStatus, { label: string; variant: "success" 
   active: { label: "Active", variant: "success" },
   eligible: { label: "Eligible", variant: "warning" },
   expired: { label: "Expired", variant: "neutral" },
+  ineligible: { label: "N/A", variant: "error" },
 };
 
 // ── Page ─────────────────────────────────────────────────────

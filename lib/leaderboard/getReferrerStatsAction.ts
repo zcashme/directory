@@ -14,7 +14,7 @@ import {
 
 // ── Types ────────────────────────────────────────────────────
 
-export type ReferralStatus = "eligible" | "active" | "expired";
+export type ReferralStatus = "eligible" | "active" | "expired" | "ineligible";
 
 export interface ReferralRow {
   id: number;
@@ -62,14 +62,17 @@ function computeStatus(
 ): ReferralStatus {
   const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
 
-  if (addressVerified && lastVerifiedAt) {
-    const isEligible = lastVerifiedAt <= eligibilityDeadline;
-    if (isEligible) {
-      const rewardEnd = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
-      return now < rewardEnd ? "active" : "eligible";
-    }
+  // Verified AND verified within the 4-week window → activated
+  if (addressVerified && lastVerifiedAt && lastVerifiedAt <= eligibilityDeadline) {
+    const rewardEnd = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
+    return now < rewardEnd ? "active" : "expired";
   }
-  return "expired";
+
+  // Still within the 4-week window → eligible (can still activate)
+  if (now < eligibilityDeadline) return "eligible";
+
+  // 4-week window passed without valid verification
+  return "ineligible";
 }
 
 function computeEarnedZats(
@@ -78,7 +81,7 @@ function computeEarnedZats(
   referrerVerifiedLinks: number,
   now: Date,
 ): number {
-  if (status === "expired") return 0;
+  if (status === "ineligible" || status === "eligible") return 0;
 
   const commissionRate = calculateCommissionRate(referrerVerifiedLinks);
   const monthlyReward = VERIFICATION_FEE_ZEC * commissionRate;
@@ -170,13 +173,13 @@ export async function getReferrerStatsAction(
       const status = computeStatus(isVerified, createdAt, lastVerifiedAt, now);
 
       if (status === "eligible") eligible++;
-      if (status === "active") {
-        eligible++; // active implies eligible
-        active++;
+      if (status === "active" || status === "expired") {
+        eligible++; // activated referrals were eligible
       }
+      if (status === "active") active++;
 
       let earnedZats = 0;
-      if (lastVerifiedAt && (status === "eligible" || status === "active")) {
+      if (lastVerifiedAt && (status === "active" || status === "expired")) {
         earnedZats = computeEarnedZats(status, lastVerifiedAt, referrerVerifiedLinks, now);
         totalEarnedZats += earnedZats;
       }
