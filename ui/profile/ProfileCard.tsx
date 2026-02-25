@@ -233,8 +233,12 @@ export default function ProfileCard({
                 <span className="whitespace-nowrap">
                   Joined {new Date(profile.joined_at || profile.created_at || profile.since || new Date().toISOString()).toLocaleString("default", { month: "short", year: "numeric" })}
                 </span>
-                <span className="opacity-70" aria-hidden>•</span>
-                <span className="whitespace-nowrap">Verified {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}</span>
+                {profile.address_verified === true && (
+                  <>
+                    <span className="opacity-70" aria-hidden>•</span>
+                    <span className="whitespace-nowrap">Active {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}</span>
+                  </>
+                )}
               </p>
 
               {/* Address */}

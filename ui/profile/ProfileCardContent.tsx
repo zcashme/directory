@@ -191,10 +191,14 @@ export default function ProfileCardContent({
               year: "numeric",
             })}
           </span>
-          <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
-          <span className="whitespace-nowrap">
-            Verified {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}
-          </span>
+          {profile.address_verified === true && (
+            <>
+              <span className="opacity-70 transition-opacity duration-300" aria-hidden="true">•</span>
+              <span className="whitespace-nowrap">
+                Active {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}
+              </span>
+            </>
+          )}
         </p>
       )}
 
