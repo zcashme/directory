@@ -8,8 +8,6 @@ import {
 } from "@/lib/leaderboard/getReferrerStatsAction";
 import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
 
-const PROFILE_BASE_URL = "https://zcash.me";
-
 // ── Metadata ─────────────────────────────────────────────────
 
 interface PageProps {
@@ -40,11 +38,16 @@ function formatDate(iso: string): string {
   });
 }
 
+function formatZats(zats: number): string {
+  if (zats === 0) return "0";
+  if (zats >= 1e8) return `${(zats / 1e8).toFixed(4)} ZEC`;
+  return zats.toLocaleString();
+}
+
 const STATUS_CONFIG: Record<ReferralStatus, { label: string; variant: "success" | "warning" | "error" | "neutral" }> = {
-  eligible: { label: "Eligible", variant: "success" },
-  pending: { label: "Pending", variant: "warning" },
+  active: { label: "Active", variant: "success" },
+  eligible: { label: "Eligible", variant: "warning" },
   expired: { label: "Expired", variant: "neutral" },
-  ineligible: { label: "Ineligible", variant: "error" },
 };
 
 // ── Page ─────────────────────────────────────────────────────
@@ -58,13 +61,14 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
   }
 
   const { referrer, referrals, summary } = response;
-  const profileHref = `${PROFILE_BASE_URL}/${encodeURIComponent(referrer.username)}`;
+  const profileHref = `/${encodeURIComponent(referrer.username)}`;
 
   const summaryStats: Array<{ id: string; label: string; value: string | number; className?: string }> = [
-    { id: "total", label: "Total Referred", value: summary.total },
+    { id: "total", label: "Referred", value: summary.total },
     { id: "verified", label: "Verified", value: summary.verified, className: "text-green-600" },
-    { id: "unverified", label: "Unverified", value: summary.unverified },
-    { id: "conversion", label: "Conversion", value: `${summary.conversionRate.toFixed(1)}%` },
+    { id: "eligible", label: "Eligible", value: summary.eligible },
+    { id: "active", label: "Active", value: summary.active, className: "text-blue-600" },
+    { id: "zats", label: "Zats Earned", value: formatZats(summary.totalEarnedZats), className: "text-amber-600" },
   ];
 
   return (
@@ -101,7 +105,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
         </div>
 
         {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           {summaryStats.map((stat) => (
             <div
               key={stat.id}
@@ -121,24 +125,25 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
         ) : (
           <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
             {/* Header */}
-            <div className="grid grid-cols-[160px_100px_80px_100px_90px] md:grid-cols-[minmax(200px,2fr)_110px_80px_110px_100px] gap-0 bg-gray-100 text-[11px] md:text-sm font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[530px]">
+            <div className="grid grid-cols-[160px_100px_100px_80px_100px_80px] md:grid-cols-[minmax(180px,2fr)_110px_110px_90px_110px_100px] gap-0 bg-gray-100 text-[11px] md:text-sm font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[620px]">
               <div className="sticky left-0 z-20 bg-gray-100 px-3 py-2 border-r border-gray-300">User</div>
               <div className="px-3 py-2 text-right">Joined</div>
-              <div className="px-3 py-2 text-center">Verified</div>
-              <div className="px-3 py-2 text-right">Last Verified</div>
+              <div className="px-3 py-2 text-right">First Verified</div>
               <div className="px-3 py-2 text-center">Status</div>
+              <div className="px-3 py-2 text-right">Auth Links</div>
+              <div className="px-3 py-2 text-right">Zats</div>
             </div>
 
             {/* Rows */}
             <LeaderboardTable totalRows={referrals.length}>
               {referrals.map((r) => {
-                const userHref = `${PROFILE_BASE_URL}/${encodeURIComponent(r.username)}`;
+                const userHref = `/${encodeURIComponent(r.username)}`;
                 const statusCfg = STATUS_CONFIG[r.status];
 
                 return (
                   <div
                     key={r.id}
-                    className="grid grid-cols-[160px_100px_80px_100px_90px] md:grid-cols-[minmax(200px,2fr)_110px_80px_110px_100px] gap-0 border-b border-gray-100 text-xs sm:text-sm min-w-[530px]"
+                    className="grid grid-cols-[160px_100px_100px_80px_100px_80px] md:grid-cols-[minmax(180px,2fr)_110px_110px_90px_110px_100px] gap-0 border-b border-gray-100 text-xs sm:text-sm min-w-[620px]"
                   >
                     {/* User — sticky */}
                     <div className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-3 flex items-center gap-2 min-w-0 border-r border-gray-100">
@@ -164,16 +169,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
                       {formatDate(r.createdAt)}
                     </div>
 
-                    {/* Verified */}
-                    <div className="px-3 py-3 text-center self-center">
-                      {r.addressVerified ? (
-                        <span className="text-green-600 font-medium">Yes</span>
-                      ) : (
-                        <span className="text-gray-400">No</span>
-                      )}
-                    </div>
-
-                    {/* Last Verified */}
+                    {/* First Verified */}
                     <div className="px-3 py-3 text-right text-gray-600 self-center">
                       {r.lastVerifiedAt ? formatDate(r.lastVerifiedAt) : "—"}
                     </div>
@@ -183,6 +179,16 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
                       <Badge variant={statusCfg.variant} size="xs">
                         {statusCfg.label}
                       </Badge>
+                    </div>
+
+                    {/* Auth Links */}
+                    <div className="px-3 py-3 text-right text-gray-600 self-center">
+                      {r.verifiedLinksCount}
+                    </div>
+
+                    {/* Zats */}
+                    <div className="px-3 py-3 text-right self-center font-medium">
+                      {r.earnedZats > 0 ? formatZats(r.earnedZats) : "—"}
                     </div>
                   </div>
                 );

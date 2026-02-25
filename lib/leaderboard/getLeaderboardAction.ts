@@ -1,39 +1,26 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-
-// ============================================
-// REWARD PROGRAM CONSTANTS - TWEAK THESE
-// ============================================
-
-// Eligibility & Duration
-const ELIGIBILITY_WINDOW_WEEKS = 4; // R = weeks after signup to verify for eligibility
-const REWARD_DURATION_MONTHS = 12; // T = months rewards are paid after verification
-
-// Base Commission
-const BASE_COMMISSION_RATE = 0.3; // Base X% = 30% commission
-const VERIFICATION_FEE_ZEC = 0.001; // Fixed fee per verification (in ZEC)
-
-// Authenticated Links Multiplier (Option A: Linear Increment)
-const COMMISSION_DELTA_PER_LINK = 0.05; // 5% increase per authenticated link
-const MAX_COMMISSION_RATE = 0.5; // Cap at 50%
-
-// Alternative: Tiered Structure (Option B) - uncomment to use
-// const COMMISSION_TIERS = [
-//   { minLinks: 0, rate: 0.30 },   // 0 links: 30%
-//   { minLinks: 1, rate: 0.35 },   // 1 links: 35%
-//   { minLinks: 2, rate: 0.40 },   // 2 links: 40%
-//   { minLinks: 3, rate: 0.45 },   // 3 links: 45%
-//   { minLinks: 4, rate: 0.50 },   // 4+ links: 50%
-// ];
+import {
+  ELIGIBILITY_WINDOW_WEEKS,
+  REWARD_DURATION_MONTHS,
+  BASE_COMMISSION_RATE,
+  VERIFICATION_FEE_ZEC,
+  COMMISSION_DELTA_PER_LINK,
+  MAX_COMMISSION_RATE,
+  addWeeks,
+  addMonths,
+  monthsBetween,
+  calculateCommissionRate,
+  getCommissionTier,
+  type CommissionTier,
+} from "./rewardProgram";
 
 // ============================================
 // TYPES
 // ============================================
 
 export type Period = "daily" | "weekly" | "monthly" | "alltime";
-
-export type CommissionTier = "base" | "bronze" | "silver" | "gold" | "platinum";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -101,45 +88,6 @@ function getPeriodFilter(period: Period): Date | null {
     default:
       return null;
   }
-}
-
-function addWeeks(date: Date, weeks: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + weeks * 7);
-  return result;
-}
-
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
-
-function monthsBetween(start: Date, end: Date): number {
-  const months =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth());
-  return Math.max(0, months);
-}
-
-/**
- * Calculate commission rate based on authenticated links count
- * Uses linear increment model: base_rate + (authenticated_links * delta)
- */
-function calculateCommissionRate(verifiedLinksCount: number): number {
-  const rate = BASE_COMMISSION_RATE + verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
-  return Math.min(rate, MAX_COMMISSION_RATE);
-}
-
-/**
- * Determine commission tier based on verified links count
- */
-function getCommissionTier(verifiedLinksCount: number): CommissionTier {
-  if (verifiedLinksCount >= 10) return "platinum";
-  if (verifiedLinksCount >= 6) return "gold";
-  if (verifiedLinksCount >= 3) return "silver";
-  if (verifiedLinksCount >= 1) return "bronze";
-  return "base";
 }
 
 // ============================================
