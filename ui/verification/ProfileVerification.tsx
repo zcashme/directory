@@ -14,11 +14,13 @@ const QR_AMOUNT_ZEC = "0.004";
 interface ProfileVerificationProps {
   profile: Profile;
   generateQrTrigger?: number;
+  onClose?: () => void;
 }
 
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
+  onClose,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
@@ -253,7 +255,20 @@ export default function ProfileVerification({
         )}
 
         {showOtpEntry && (
-          <div className="w-full max-w-[408px] mx-auto border border-black/10 rounded-xl p-5 bg-white/80">
+          <div className="relative w-full max-w-[408px] mx-auto border border-black/10 rounded-xl p-5 bg-white/80">
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-2 right-2 w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                aria-label="Close"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-600">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
             <div className="text-sm font-semibold text-gray-700 mb-2">
               Enter your 6-digit verification code
             </div>
@@ -261,7 +276,7 @@ export default function ProfileVerification({
               After sending the transaction, enter the code you receive in your wallet.
             </p>
 
-            <div className="flex gap-2">
+            <div className="space-y-3">
               <OtpInput
                 id="verification-otp"
                 value={otp}
@@ -269,7 +284,7 @@ export default function ProfileVerification({
                 onSubmit={handleSubmitOtp}
                 placeholder="Enter 6-digit code"
                 hideLabel={true}
-                className="flex-1"
+                className="w-full"
                 disabled={isSubmitting}
               />
               <Button
@@ -277,10 +292,10 @@ export default function ProfileVerification({
                 onClick={handleSubmitOtp}
                 variant="primary"
                 size="md"
-                className="border-green-600 bg-green-600 text-white hover:border-green-500 hover:bg-green-500"
+                className="w-full border-[var(--color-brand-blue)] bg-[var(--color-brand-blue)] text-white hover:border-[var(--color-brand-blue)]/90 hover:bg-[var(--color-brand-blue)]/90"
                 disabled={!isOtpComplete || isSubmitting}
               >
-                {isSubmitting ? "Verifying..." : "Submit"}
+                {isSubmitting ? "Verifying..." : "Verify Code"}
               </Button>
             </div>
 

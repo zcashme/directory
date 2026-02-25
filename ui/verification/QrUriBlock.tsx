@@ -106,7 +106,7 @@ export default function QrUriBlock({
             className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
           >
             {qrTopHintText && (
-              <p className="-mb-5 text-center text-xs text-gray-600">
+              <p className="mb-1 text-center text-sm font-semibold text-[var(--color-brand-blue)]">
                 {qrTopHintText}
               </p>
             )}
