@@ -10,7 +10,6 @@ import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import {
   getSwapQuote,
   confirmSwap,
-  getSwapTokens,
   getSwapStatus,
 } from "@/lib/swap/oneClick";
 import { parseTokenSymbol } from "@/lib/swap/utils";
@@ -311,22 +310,21 @@ function SwapStatusDisplay({
 
 export default function SwapAppClient({
   initialDepositAddress,
+  initialTokens,
 }: {
   initialDepositAddress: string | null;
+  initialTokens: Token[];
 }) {
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
   const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(
     initialDepositAddress || "",
   );
 
-  // Token state
-  const [tokens, setTokens] = useState<Token[]>([]);
-  const [tokensLoading, setTokensLoading] = useState(false);
-  const [tokensError, setTokensError] = useState<string | null>(null);
+  const tokens = initialTokens;
 
   // Swap form state
-  const [fromToken, setFromToken] = useState<Token | null>(null);
-  const [toToken, setToToken] = useState<Token | null>(null);
+  const [fromToken, setFromToken] = useState<Token | null>(tokens[0] ?? null);
+  const [toToken, setToToken] = useState<Token | null>(tokens[1] ?? null);
   const [fromAmount, setFromAmount] = useState("");
   const [toAmount, setToAmount] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
@@ -365,35 +363,6 @@ export default function SwapAppClient({
       );
     }
   }, [trackingDepositAddress]);
-
-  // Load tokens on mount
-  useEffect(() => {
-    const loadTokens = async () => {
-      setTokensLoading(true);
-      setTokensError(null);
-
-      try {
-        const result = await getSwapTokens();
-
-        if (result.ok) {
-          setTokens(result.data);
-          // Set default tokens if available
-          if (result.data.length >= 2) {
-            setFromToken(result.data[0]);
-            setToToken(result.data[1]);
-          }
-        } else {
-          setTokensError(result.error);
-        }
-      } catch (error) {
-        setTokensError("Failed to load tokens");
-      } finally {
-        setTokensLoading(false);
-      }
-    };
-
-    void loadTokens();
-  }, []);
 
   const fetchQuote = async () => {
     if (!fromToken || !toToken) return;
@@ -526,26 +495,8 @@ export default function SwapAppClient({
     logo: token.logo || "",
   }));
 
-  if (tokensLoading && tokens.length === 0) {
-    return (
-      <div className="flex items-center justify-center min-h-100">
-        <p className="text-gray-600">Loading tokens...</p>
-      </div>
-    );
-  }
-
   return (
     <>
-      {/* Error Display */}
-      {tokensError && (
-        <div
-          className="mb-4 p-4 rounded-xl border border-gray-800 text-gray-900"
-          style={{ backgroundColor: "var(--color-background)" }}
-        >
-          {tokensError}
-        </div>
-      )}
-
       {/* Flip Card Container */}
       <div
         className="relative overflow-visible"
