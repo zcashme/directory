@@ -24,29 +24,40 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <ProfileHeader profileCount={profileCount} />
         <FloatingSidebarMenu />
         <div className="flex-1">{children}</div>
-        <footer className="border-t border-gray-200" style={{ backgroundColor: "var(--color-background)" }}>
+        <footer className="relative border-t border-gray-200" style={{ backgroundColor: "var(--color-background)" }}>
           <div className="max-w-5xl mx-auto px-4">
-            <div className="flex justify-center items-center gap-6 pt-3 pb-1">
-              {SOCIAL_LINKS.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-gray-400 hover:text-gray-600 hover:scale-110 transition-all"
-                  aria-label={link.label}
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
-                  </svg>
-                </a>
-              ))}
-            </div>
-            <div className="w-full flex items-center justify-between gap-3 text-xs text-gray-500 pb-3" style={{ minHeight: 34 }}>
-              <span>&copy; 2026 ZcashMe, Inc.</span>
-              <div className="ml-auto flex items-center justify-end gap-4">
-                <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
-                <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
+            <div className="relative" style={{ paddingTop: 5, paddingBottom: 4 }}>
+              <div
+                className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+                style={{
+                  backgroundColor: "var(--color-background)",
+                  transform: "translate(-50%, -33%)",
+                  padding: "8px 24px",
+                }}
+              >
+                <div className="flex justify-center items-center gap-6">
+                  {SOCIAL_LINKS.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-400 hover:text-gray-600 hover:scale-110 transition-all"
+                      aria-label={link.label}
+                    >
+                      <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                        <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
+                      </svg>
+                    </a>
+                  ))}
+                </div>
+              </div>
+              <div className="w-full flex items-center justify-between gap-3 text-xs text-gray-500" style={{ minHeight: 34 }}>
+                <span>&copy; 2026 ZcashMe, Inc.</span>
+                <div className="ml-auto flex items-center justify-end gap-4">
+                  <Link href="/terms" className="hover:text-gray-600 transition-colors leading-relaxed">Terms</Link>
+                  <Link href="/privacy" className="hover:text-gray-600 transition-colors leading-relaxed">Privacy</Link>
+                </div>
               </div>
             </div>
           </div>
