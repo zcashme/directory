@@ -112,7 +112,7 @@ function formatPercent(value: number): string {
 function RowSummary({ entry }: { entry: LeaderboardEntry }) {
   const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
   const profileHref = `${PROFILE_BASE_URL}/${safeUsername}`;
-  const statsHref = `/leader-app/${safeUsername}`;
+  const statsHref = `/${safeUsername}`;
   return (
     <>
       <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
@@ -189,9 +189,9 @@ export default async function LeaderboardPage({
     value: ReactNode;
     valueClassName?: string;
   }> = [
-    { id: "totalReferrals", label: "Total Referrals", value: totalReferrals },
+    { id: "totalReferrals", label: "Referrals", value: totalReferrals },
     { id: "verified", label: "Verified Referrals", value: totalVerified, valueClassName: "text-green-600" },
-    { id: "totalEarned", label: "Total Earned (ZEC)", value: formatZec(totalEarned), valueClassName: "text-green-700" },
+    { id: "totalEarned", label: "Rewards (zats)", value: formatZats(totalEarned), valueClassName: "text-green-700" },
   ];
 
   const firstPlace = entries[0];
@@ -200,13 +200,12 @@ export default async function LeaderboardPage({
 
   return (
     <div
-      className="min-h-screen p-4 md:p-8 pt-12"
-      style={{ backgroundColor: "var(--color-background)" }}
+      className="min-h-screen p-4 md:p-8 pt-12 [&_*]:outline [&_*]:outline-1 [&_*]:outline-red-500/30 bg-[var(--color-background)]"
     >
       <div className="max-w-5xl mx-auto">
         {/* Podium */}
         {firstPlace && (
-          <div className="relative mb-6 h-24 sm:h-28 w-full" style={{ transform: "translateY(10px)" }}>
+          <div className="relative mb-6 h-24 sm:h-28 w-full translate-y-[10px]">
             <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-black" />
             <div className="relative z-10 flex h-full items-center justify-center gap-2 sm:gap-3">
               {secondPlace && (
@@ -243,7 +242,7 @@ export default async function LeaderboardPage({
           <div className="flex items-center justify-between gap-2">
             <h1 className="text-2xl font-bold text-left">Referral Leaders</h1>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-4">
               {PERIODS.map((p) => (
                 <Link
                   key={p.value}
