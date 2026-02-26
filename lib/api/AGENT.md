@@ -4,11 +4,11 @@ API guard and shared response types.
 
 ## guard.ts
 
-`enforceApiGuard(request, options?)` — validates API key and applies per-IP rate limiting. Returns a `Response` on failure or `{ ok: true, cacheSeconds }` on success.
+`enforceApiGuard(request, options?)` — validates API key. Returns a `Response` on failure or `{ ok: true, cacheSeconds }` on success.
 
-Options: `{ cacheSeconds?: number, rateLimitPerMinute?: number }` (default 60/min).
+Options: `{ cacheSeconds?: number }`.
 
-`withCacheHeaders(headers, cacheSeconds)` — adds `Cache-Control: s-maxage` when cacheSeconds > 0.
+`withCacheHeaders(headers, cacheSeconds)` — adds `Cache-Control: s-maxage` + `stale-while-revalidate` when cacheSeconds > 0.
 
 ## types.ts
 
