@@ -14,7 +14,7 @@ export default async function SwapsPage({
 
   return (
     <div
-      className="min-h-screen p-4 md:p-8 pt-16"
+      className="min-h-full p-4 md:p-8 pt-16"
       style={{ backgroundColor: "var(--color-background)" }}
     >
       <div className="max-w-6xl mx-auto">
