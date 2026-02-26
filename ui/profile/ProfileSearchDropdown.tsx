@@ -70,6 +70,7 @@ export default function ProfileSearchDropdown({
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const dismissedRef = useRef(false);
 
   // Debounce the search value — keystrokes update the input instantly,
   // but API calls only fire after 150 ms of silence.
@@ -123,21 +124,34 @@ export default function ProfileSearchDropdown({
 
   // ------- Dropdown visibility -------
   useEffect(() => {
-    if (!value?.trim()) { setShow(false); return; }
+    if (!value?.trim()) { setShow(false); dismissedRef.current = false; return; }
+    if (dismissedRef.current) return;
     if (showByDefault || usernameAvailable) setShow(true);
   }, [value, showByDefault, usernameAvailable]);
 
-  // ------- Click-outside -------
+  // ------- Dismiss (click-outside + Escape) -------
   useEffect(() => {
-    if (!show) return;
-    const handler = (e: MouseEvent) => {
+    if (!show && !usernameAvailable) return;
+    const dismiss = () => {
+      dismissedRef.current = true;
+      setShow(false);
+      setUsernameAvailable(null);
+    };
+    const onMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setShow(false);
+        dismiss();
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [show]);
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") dismiss();
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [show, usernameAvailable]);
 
   const dropdownVisible = (show || usernameAvailable) && !!value?.trim();
   const hasContent = results.length > 0 || usernameAvailable || loading;
@@ -148,6 +162,7 @@ export default function ProfileSearchDropdown({
         <Command.Input
           value={value}
           onValueChange={(v) => {
+            dismissedRef.current = false;
             onChange(v);
             setShow(true);
           }}
@@ -162,11 +177,24 @@ export default function ProfileSearchDropdown({
             <motion.div {...dropdownMotion}>
               <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
 
-                {/* Loading indicator (always above results) */}
+                {/* Loading indicator */}
                 {loading && (
                   <div className="flex items-center justify-center py-3">
                     <Spinner size="xs" color="gray" />
                   </div>
+                )}
+
+                {/* Username availability banner */}
+                {usernameAvailable && (
+                  <Command.Item
+                    value="available"
+                    forceMount
+                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
+                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
+                  >
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
+                    is available!
+                  </Command.Item>
                 )}
 
                 {/* Results */}
@@ -194,19 +222,6 @@ export default function ProfileSearchDropdown({
                     </div>
                   </Command.Item>
                 ))}
-
-                {/* Username availability banner */}
-                {usernameAvailable && (
-                  <Command.Item
-                    value="available"
-                    forceMount
-                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
-                    className="px-3 py-2 text-sm text-gray-800 font-medium border-t border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
-                  >
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
-                    is available!
-                  </Command.Item>
-                )}
 
               </Command.List>
             </motion.div>
