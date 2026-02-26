@@ -9,8 +9,8 @@ import {
   PodiumAvatar,
   LeaderAvatar,
   LeaderboardTable,
-  AssumptionDetails,
   ClickStopLink,
+  FAQAccordion,
 } from "./LeaderboardClient";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
@@ -29,36 +29,44 @@ function isValidPeriod(value: string | undefined): value is Period {
   return typeof value === "string" && VALID_PERIODS.has(value);
 }
 
-const TABLE_COLUMN_DETAILS: Array<{ id: string; label: string; description: string; formula: string }> = [
+const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactElement }> = [
   {
-    id: "leader-col-total",
-    label: "Total",
-    description: "All referrals attributed to a referrer in the selected period.",
-    formula: "Total = verifiedReferrals + unverifiedReferrals",
+    id: "faq-verification",
+    question: "Do I need to be verified to appear on the leaderboard?",
+    answer: "Yes. Users must verify their address to appear on the leaderboard. Only verified referrers and their verified referrals count towards ranking.",
   },
   {
-    id: "leader-col-verif",
-    label: "Verif.",
-    description: "Referrals that completed address verification.",
-    formula: "Verified = count(referrals where address_verified = true)",
+    id: "faq-eligible",
+    question: "What makes a referral 'Eligible'?",
+    answer: (
+      <>
+        A referral is eligible if the referred user verifies their address within{" "}
+        <span className="font-semibold">4 weeks of signing up</span>. After that window closes, new
+        verifications don't count as eligible.
+      </>
+    ),
   },
   {
-    id: "leader-col-eligible",
-    label: "Eligible",
-    description: "Verified referrals that completed verification within the eligibility window.",
-    formula: "Eligible = count(verified where verifiedAt <= signupAt + eligibilityWindow)",
+    id: "faq-active",
+    question: "What are 'Active Rewards'?",
+    answer: (
+      <>
+        Active rewards are eligible referrals still within the{" "}
+        <span className="font-semibold">12-month reward payout window</span> after verification. Once
+        12 months pass, the referral is no longer active.
+      </>
+    ),
   },
   {
-    id: "leader-col-active",
-    label: "Active",
-    description: "Eligible referrals still inside the reward payout duration.",
-    formula: "Active = count(eligible where now < verifiedAt + rewardDurationMonths)",
-  },
-  {
-    id: "leader-col-earned",
-    label: "Earned (zats)",
-    description: "Lifetime earned converted from ZEC to zatoshis.",
-    formula: "totalEarnedToDate = sum(min(monthsBetween(lastVerifiedAt, now), rewardDurationMonths) * (verificationFeeZec * lockedCommissionRate)); Earned (zats) = round(totalEarnedToDate * 100,000,000)",
+    id: "faq-earned",
+    question: "How are rewards calculated?",
+    answer: (
+      <>
+        Rewards = base rate (15%) + profile bonuses (up to 15%) + link bonuses (10% per link), capped at
+        50%. Multiplied by the verification fee (0.001 ZEC), locked at verification time, paid monthly for
+        12 months.
+      </>
+    ),
   },
 ];
 
@@ -200,7 +208,8 @@ export default async function LeaderboardPage({
 
   return (
     <div
-      className="min-h-screen p-4 md:p-8 pt-12 [&_*]:outline [&_*]:outline-1 [&_*]:outline-red-500/30 bg-[var(--color-background)]"
+      className="min-h-screen p-4 md:p-8 pt-12"
+      style={{ backgroundColor: "var(--color-background)" }}
     >
       <div className="max-w-5xl mx-auto">
         {/* Podium */}
@@ -323,92 +332,11 @@ export default async function LeaderboardPage({
           </div>
         )}
 
-        {/* Program Assumptions */}
-        {constants && (
-          <div className="mt-8 rounded-xl border border-gray-800 bg-transparent p-4 text-sm text-gray-700 space-y-1">
-            <p className="font-semibold text-gray-900">Program assumptions</p>
-            <p>
-              <span className="font-semibold text-gray-900">Eligible</span> = verified within{" "}
-              {constants.eligibilityWindowWeeks} weeks of signup.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Active Rewards</span> = eligible referrals still within{" "}
-              {constants.rewardDurationMonths} months after verification.
-            </p>
-            <p>
-              So <span className="font-semibold text-gray-900">Active Rewards is always part of Eligible</span>{" "}
-              (never greater).
-            </p>
-            <p className="text-xs text-gray-600">
-              Example: Eligible = 5, Active Rewards = 3 means 2 referrals were eligible before, but their{" "}
-              {constants.rewardDurationMonths}-month reward window has ended.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Fee</span> = fixed fee paid when a referred user verifies
-              their address:{" "}
-              {formatZec(constants.verificationFeeZec)}.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Base rate</span> = starting commission:{" "}
-              {formatPercent(constants.baseCommissionRate)}.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Profile completeness</span> = add{" "}
-              {formatPercent(constants.profileCompletenessBonus)} for each: profile picture, bio, location.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Per-link increase</span> = add{" "}
-              {formatPercent(constants.commissionDeltaPerLink)} for each authenticated link.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Max rate</span> = cap commission at{" "}
-              {formatPercent(constants.maxCommissionRate)}.
-            </p>
-            <p>
-              <span className="font-semibold text-gray-900">Link authentication</span> is free, and only users with a
-              verified address can authenticate links. Users may verify their address at any time.
-            </p>
-            <p className="text-xs text-gray-600">
-              Example: a referrer with a profile picture, bio, location, and 2 authenticated links →
-              rate = min(
-              {formatPercent(constants.baseCommissionRate)} + 3 × {formatPercent(constants.profileCompletenessBonus)} + 2 × {formatPercent(constants.commissionDeltaPerLink)},
-              {" "}{formatPercent(constants.maxCommissionRate)}) ={" "}
-              {formatPercent(
-                Math.min(
-                  constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
-                  constants.maxCommissionRate
-                )
-              )}
-              .
-            </p>
-            <p className="text-xs text-gray-600">
-              Monthly reward per active eligible referral = Fee × locked rate ={" "}
-              {formatZec(constants.verificationFeeZec)} ×{" "}
-              {formatPercent(
-                Math.min(
-                  constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
-                  constants.maxCommissionRate
-                )
-              )}
-              {" "}({formatZec(
-                constants.verificationFeeZec *
-                  Math.min(
-                    constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
-                    constants.maxCommissionRate
-                  )
-              )}).
-            </p>
-            <AssumptionDetails>
-              {TABLE_COLUMN_DETAILS.map((column) => (
-                <div key={column.label} className="space-y-0.5">
-                  <p className="font-semibold text-gray-900">{column.label}</p>
-                  <p>{column.description}</p>
-                  <p className="font-mono text-xs text-gray-800">{column.formula}</p>
-                </div>
-              ))}
-            </AssumptionDetails>
-          </div>
-        )}
+        {/* FAQ */}
+        <div className="mt-8">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
+          <FAQAccordion items={FAQ_ITEMS} />
+        </div>
       </div>
     </div>
   );

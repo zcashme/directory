@@ -129,28 +129,6 @@ export function LeaderboardTable({
   );
 }
 
-// ── AssumptionDetails ─────────────────────────────────────────
-
-export function AssumptionDetails({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="mt-2 text-[var(--color-brand-blue)] underline underline-offset-2 hover:text-[var(--color-brand-blue)]"
-      >
-        {open ? "Hide column descriptions/calculations" : "Show column descriptions/calculations"}
-      </button>
-      {open && (
-        <div className="mt-3 space-y-2 border-t border-gray-300 pt-3">
-          {children}
-        </div>
-      )}
-    </>
-  );
-}
-
 // ── ClickStopLink ─────────────────────────────────────────────
 // A Link that stops click propagation — safe to render from server
 // components that get passed as props to client components.
@@ -175,5 +153,56 @@ export function ClickStopLink({
     >
       {children}
     </Link>
+  );
+}
+
+// ── FAQ Accordion ──────────────────────────────────────────────
+
+interface FAQItem {
+  id: string;
+  question: string;
+  answer: string | ReactNode;
+}
+
+export function FAQAccordion({ items }: { items: FAQItem[] }) {
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-3">
+      {items.map((item) => (
+        <motion.div
+          key={item.id}
+          className="border border-gray-800 rounded-xl overflow-hidden bg-transparent"
+        >
+          <button
+            type="button"
+            onClick={() => setOpenId(openId === item.id ? null : item.id)}
+            className="w-full px-4 py-3 text-left font-medium text-gray-900 hover:bg-gray-50 transition-colors flex items-center justify-between"
+          >
+            <span>{item.question}</span>
+            <motion.span
+              animate={{ rotate: openId === item.id ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="text-gray-600 shrink-0 ml-2"
+            >
+              ▼
+            </motion.span>
+          </button>
+          <AnimatePresence initial={false}>
+            {openId === item.id && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 340, damping: 34 }}
+                className="overflow-hidden border-t border-gray-200"
+              >
+                <div className="px-4 py-3 text-sm text-gray-700">{item.answer}</div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      ))}
+    </div>
   );
 }
