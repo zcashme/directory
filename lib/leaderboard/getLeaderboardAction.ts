@@ -5,6 +5,7 @@ import {
   ELIGIBILITY_WINDOW_WEEKS,
   REWARD_DURATION_MONTHS,
   BASE_COMMISSION_RATE,
+  PROFILE_COMPLETENESS_BONUS,
   VERIFICATION_FEE_ZEC,
   COMMISSION_DELTA_PER_LINK,
   MAX_COMMISSION_RATE,
@@ -62,6 +63,7 @@ export interface LeaderboardResponse {
     eligibilityWindowWeeks: number;
     rewardDurationMonths: number;
     baseCommissionRate: number;
+    profileCompletenessBonus: number;
     commissionDeltaPerLink: number;
     maxCommissionRate: number;
     verificationFeeZec: number;
@@ -128,6 +130,7 @@ export async function getLeaderboardAction(
     eligibilityWindowWeeks: ELIGIBILITY_WINDOW_WEEKS,
     rewardDurationMonths: REWARD_DURATION_MONTHS,
     baseCommissionRate: BASE_COMMISSION_RATE,
+    profileCompletenessBonus: PROFILE_COMPLETENESS_BONUS,
     commissionDeltaPerLink: COMMISSION_DELTA_PER_LINK,
     maxCommissionRate: MAX_COMMISSION_RATE,
     verificationFeeZec: VERIFICATION_FEE_ZEC,
@@ -167,11 +170,11 @@ export async function getLeaderboardAction(
 
     const referrersWithDisplay = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url")
+      .select("id, name, display_name, profile_image_url, bio, nearest_city_name")
       .in("id", referrerIds);
 
     let referrers = referrersWithDisplay.data as
-      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null }>
+      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null; bio?: string | null; nearest_city_name?: string | null }>
       | null;
 
     if (referrersWithDisplay.error) {
@@ -180,19 +183,29 @@ export async function getLeaderboardAction(
         .select("id, name, profile_image_url")
         .in("id", referrerIds);
       referrers = (referrersFallback.data as Array<{ id: number; name: string | null; profile_image_url?: string | null }> | null)
-        ?.map((r) => ({ ...r, display_name: null })) ?? null;
+        ?.map((r) => ({ ...r, display_name: null, bio: null, nearest_city_name: null })) ?? null;
     }
 
     const { data: allLinks } = await linksPromise;
 
-    // Build referrer identity map
-    const referrerIdentity = new Map<number, { username: string; displayName: string; profileImageUrl: string | null }>(
+    // Build referrer identity map (includes profile completeness flags)
+    const referrerIdentity = new Map<number, {
+      username: string;
+      displayName: string;
+      profileImageUrl: string | null;
+      hasProfileImage: boolean;
+      hasBio: boolean;
+      hasLocation: boolean;
+    }>(
       (referrers || []).map((r) => [
         r.id,
         {
           username: r.name || `user${r.id}`,
           displayName: r.display_name || r.name || `User ${r.id}`,
           profileImageUrl: r.profile_image_url || null,
+          hasProfileImage: !!r.profile_image_url,
+          hasBio: !!r.bio,
+          hasLocation: !!r.nearest_city_name,
         },
       ])
     );
@@ -276,7 +289,12 @@ export async function getLeaderboardAction(
           const isActive = status === "active";
           if (isActive) current.activeRewardsCount++;
 
-          const lockedCommissionRate = calculateCommissionRate(referrerVerifiedLinks);
+          const lockedCommissionRate = calculateCommissionRate({
+            verifiedLinksCount: referrerVerifiedLinks,
+            hasProfileImage: identity?.hasProfileImage ?? false,
+            hasBio: identity?.hasBio ?? false,
+            hasLocation: identity?.hasLocation ?? false,
+          });
           current.eligibleReferrals.push({
             lastVerifiedAt: lastVerifiedAt!,
             rewardEndDate,
@@ -300,10 +318,20 @@ export async function getLeaderboardAction(
     // Convert to array and calculate earnings
     const entries: LeaderboardEntry[] = Array.from(referrerStats.entries())
       .map(([referrerId, stats]) => {
-        const currentCommissionRate = calculateCommissionRate(stats.verifiedLinksCount);
-        const potentialCommissionRate = calculateCommissionRate(
-          stats.verifiedLinksCount + stats.pendingLinksCount
-        );
+        const identity = referrerIdentity.get(referrerId);
+        const profileFlags = {
+          hasProfileImage: identity?.hasProfileImage ?? false,
+          hasBio: identity?.hasBio ?? false,
+          hasLocation: identity?.hasLocation ?? false,
+        };
+        const currentCommissionRate = calculateCommissionRate({
+          verifiedLinksCount: stats.verifiedLinksCount,
+          ...profileFlags,
+        });
+        const potentialCommissionRate = calculateCommissionRate({
+          verifiedLinksCount: stats.verifiedLinksCount + stats.pendingLinksCount,
+          ...profileFlags,
+        });
 
         // Calculate earnings using locked commission rates per referral
         let currentMonthlyPayout = 0;

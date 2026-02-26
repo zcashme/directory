@@ -354,6 +354,10 @@ export default async function LeaderboardPage({
               {formatPercent(constants.baseCommissionRate)}.
             </p>
             <p>
+              <span className="font-semibold text-gray-900">Profile completeness</span> = add{" "}
+              {formatPercent(constants.profileCompletenessBonus)} for each: profile picture, bio, location.
+            </p>
+            <p>
               <span className="font-semibold text-gray-900">Per-link increase</span> = add{" "}
               {formatPercent(constants.commissionDeltaPerLink)} for each authenticated link.
             </p>
@@ -366,12 +370,13 @@ export default async function LeaderboardPage({
               verified address can authenticate links. Users may verify their address at any time.
             </p>
             <p className="text-xs text-gray-600">
-              Example: if a referrer has 4 authenticated links, rate = min(
-              {formatPercent(constants.baseCommissionRate)} + 4 × {formatPercent(constants.commissionDeltaPerLink)},
+              Example: a referrer with a profile picture, bio, location, and 2 authenticated links →
+              rate = min(
+              {formatPercent(constants.baseCommissionRate)} + 3 × {formatPercent(constants.profileCompletenessBonus)} + 2 × {formatPercent(constants.commissionDeltaPerLink)},
               {" "}{formatPercent(constants.maxCommissionRate)}) ={" "}
               {formatPercent(
                 Math.min(
-                  constants.baseCommissionRate + 4 * constants.commissionDeltaPerLink,
+                  constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
                   constants.maxCommissionRate
                 )
               )}
@@ -382,14 +387,14 @@ export default async function LeaderboardPage({
               {formatZec(constants.verificationFeeZec)} ×{" "}
               {formatPercent(
                 Math.min(
-                  constants.baseCommissionRate + 4 * constants.commissionDeltaPerLink,
+                  constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
                   constants.maxCommissionRate
                 )
               )}
               {" "}({formatZec(
                 constants.verificationFeeZec *
                   Math.min(
-                    constants.baseCommissionRate + 4 * constants.commissionDeltaPerLink,
+                    constants.baseCommissionRate + 3 * constants.profileCompletenessBonus + 2 * constants.commissionDeltaPerLink,
                     constants.maxCommissionRate
                   )
               )}).

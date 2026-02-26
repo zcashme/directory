@@ -10,11 +10,14 @@ export const ELIGIBILITY_WINDOW_WEEKS = 4; // R = weeks after signup to verify f
 export const REWARD_DURATION_MONTHS = 12; // T = months rewards are paid after verification
 
 // Base Commission
-export const BASE_COMMISSION_RATE = 0.3; // Base X% = 30% commission
+export const BASE_COMMISSION_RATE = 0.15; // Base 15% commission
 export const VERIFICATION_FEE_ZEC = 0.001; // Fixed fee per verification (in ZEC)
 
-// Authenticated Links Multiplier (Option A: Linear Increment)
-export const COMMISSION_DELTA_PER_LINK = 0.05; // 5% increase per authenticated link
+// Profile Completeness Bonus
+export const PROFILE_COMPLETENESS_BONUS = 0.05; // 5% per completed profile field (picture, bio, location)
+
+// Authenticated Links Multiplier (Linear Increment)
+export const COMMISSION_DELTA_PER_LINK = 0.10; // 10% increase per authenticated link
 export const MAX_COMMISSION_RATE = 0.5; // Cap at 50%
 
 // ============================================
@@ -48,11 +51,20 @@ export function monthsBetween(start: Date, end: Date): number {
 }
 
 /**
- * Calculate commission rate based on authenticated links count.
- * Uses linear increment model: base_rate + (authenticated_links * delta)
+ * Calculate commission rate based on profile completeness and authenticated links.
+ * Formula: base (15%) + profile bonuses (5% each for picture, bio, location) + links (10% each), capped at 50%.
  */
-export function calculateCommissionRate(verifiedLinksCount: number): number {
-  const rate = BASE_COMMISSION_RATE + verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
+export function calculateCommissionRate(opts: {
+  verifiedLinksCount: number;
+  hasProfileImage: boolean;
+  hasBio: boolean;
+  hasLocation: boolean;
+}): number {
+  let rate = BASE_COMMISSION_RATE;
+  if (opts.hasProfileImage) rate += PROFILE_COMPLETENESS_BONUS;
+  if (opts.hasBio) rate += PROFILE_COMPLETENESS_BONUS;
+  if (opts.hasLocation) rate += PROFILE_COMPLETENESS_BONUS;
+  rate += opts.verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
   return Math.min(rate, MAX_COMMISSION_RATE);
 }
 

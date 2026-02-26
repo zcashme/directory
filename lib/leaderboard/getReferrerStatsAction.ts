@@ -52,12 +52,17 @@ export interface ReferrerStatsResponse {
 function computeEarnedZats(
   status: ReferralStatus,
   lastVerifiedAt: Date,
-  referrerVerifiedLinks: number,
+  commissionOpts: {
+    verifiedLinksCount: number;
+    hasProfileImage: boolean;
+    hasBio: boolean;
+    hasLocation: boolean;
+  },
   now: Date,
 ): number {
   if (status === "ineligible" || status === "eligible") return 0;
 
-  const commissionRate = calculateCommissionRate(referrerVerifiedLinks);
+  const commissionRate = calculateCommissionRate(commissionOpts);
   const monthlyReward = VERIFICATION_FEE_ZEC * commissionRate;
   const monthsElapsed = Math.min(
     monthsBetween(lastVerifiedAt, now),
@@ -89,7 +94,7 @@ export async function getReferrerStatsAction(
     const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url")
+      .select("id, name, display_name, profile_image_url, bio, nearest_city_name")
       .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}"`)
 
       .limit(1)
@@ -104,6 +109,13 @@ export async function getReferrerStatsAction(
       username: referrerRow.name ?? `user${referrerRow.id}`,
       displayName: referrerRow.display_name ?? referrerRow.name ?? `User ${referrerRow.id}`,
       profileImageUrl: referrerRow.profile_image_url ?? null,
+    };
+
+    // Profile completeness flags for commission calculation
+    const profileFlags = {
+      hasProfileImage: !!referrerRow.profile_image_url,
+      hasBio: !!referrerRow.bio,
+      hasLocation: !!referrerRow.nearest_city_name,
     };
 
     // 2. Fetch all users referred by this referrer
@@ -155,7 +167,10 @@ export async function getReferrerStatsAction(
 
       let earnedZats = 0;
       if (lastVerifiedAt && (status === "active" || status === "expired")) {
-        earnedZats = computeEarnedZats(status, lastVerifiedAt, referrerVerifiedLinks, now);
+        earnedZats = computeEarnedZats(status, lastVerifiedAt, {
+          verifiedLinksCount: referrerVerifiedLinks,
+          ...profileFlags,
+        }, now);
         totalEarnedZats += earnedZats;
       }
 
