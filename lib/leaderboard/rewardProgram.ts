@@ -74,14 +74,14 @@ export function calculateCommissionRate(opts: {
 export function computeReferralStatus(
   addressVerified: boolean,
   createdAt: Date,
-  lastVerifiedAt: Date | null,
+  firstVerifiedAt: Date | null,
   now: Date,
 ): ReferralStatus {
   const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
 
   // Verified AND verified within the 4-week window → activated
-  if (addressVerified && lastVerifiedAt && lastVerifiedAt <= eligibilityDeadline) {
-    const rewardEnd = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
+  if (addressVerified && firstVerifiedAt && firstVerifiedAt <= eligibilityDeadline) {
+    const rewardEnd = addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS);
     return now < rewardEnd ? "active" : "expired";
   }
 

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Badge from "@/ui/common/feedback/Badge";
 import { getReferrerStatsAction } from "@/lib/leaderboard/getReferrerStatsAction";
-import type { ReferralStatus } from "@/lib/leaderboard/rewardProgram";
+import type { StillActiveFlag } from "@/lib/leaderboard/getReferrerStatsAction";
 import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
@@ -43,11 +43,10 @@ function formatZats(zats: number): string {
   return zats.toLocaleString();
 }
 
-const STATUS_CONFIG: Record<ReferralStatus, { label: string; variant: "success" | "warning" | "error" | "neutral" }> = {
-  active: { label: "Active", variant: "success" },
-  eligible: { label: "Eligible", variant: "warning" },
-  expired: { label: "Expired", variant: "neutral" },
-  ineligible: { label: "N/A", variant: "error" },
+const STILL_ACTIVE_CONFIG: Record<StillActiveFlag, { label: string; variant: "success" | "warning" | "error" | "neutral" }> = {
+  YES: { label: "YES", variant: "success" },
+  NO: { label: "NO", variant: "error" },
+  "N/A": { label: "N/A", variant: "neutral" },
 };
 
 // ── Page ─────────────────────────────────────────────────────
@@ -71,15 +70,20 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
     { id: "zats", label: "Zats Earned", value: formatZats(summary.totalEarnedZats), className: "text-amber-600" },
   ];
 
+  // Column definitions for the grid
+  const gridCols = "grid-cols-[160px_90px_90px_70px_90px_70px_60px_60px_90px_70px_70px]";
+  const mdGridCols = "md:grid-cols-[minmax(160px,2fr)_100px_100px_80px_100px_80px_70px_70px_100px_80px_90px]";
+  const minW = "min-w-[920px]";
+
   return (
     <div
       className="min-h-screen p-4 md:p-8 pt-12"
       style={{ backgroundColor: "var(--color-background)" }}
     >
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         {/* Back link */}
         <Link
-          href="/"
+          href="/leader-app"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--color-brand-blue)] mb-6"
         >
           &larr; Leaderboard
@@ -125,12 +129,17 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
         ) : (
           <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
             {/* Header */}
-            <div className="grid grid-cols-[160px_100px_100px_80px_100px_80px] md:grid-cols-[minmax(180px,2fr)_110px_110px_90px_110px_100px] gap-0 bg-gray-100 text-[11px] md:text-sm font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[620px]">
+            <div className={`grid ${gridCols} ${mdGridCols} gap-0 bg-gray-100 text-[11px] md:text-xs font-semibold tracking-wide text-gray-700 border-b border-gray-300 ${minW}`}>
               <div className="sticky left-0 z-20 bg-gray-100 px-3 py-2 border-r border-gray-300">User</div>
               <div className="px-3 py-2 text-right">Joined</div>
-              <div className="px-3 py-2 text-right">First Verified</div>
-              <div className="px-3 py-2 text-center">Status</div>
-              <div className="px-3 py-2 text-right">Auth Links</div>
+              <div className="px-3 py-2 text-right">Elig. Until</div>
+              <div className="px-3 py-2 text-center">Elig.</div>
+              <div className="px-3 py-2 text-right">First Verif.</div>
+              <div className="px-3 py-2 text-center">Activated</div>
+              <div className="px-3 py-2 text-right">Links</div>
+              <div className="px-3 py-2 text-right">Auth</div>
+              <div className="px-3 py-2 text-right">Expiry</div>
+              <div className="px-3 py-2 text-center">Active</div>
               <div className="px-3 py-2 text-right">Zats</div>
             </div>
 
@@ -138,12 +147,12 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
             <LeaderboardTable totalRows={referrals.length}>
               {referrals.map((r) => {
                 const userHref = `/${sanitizeUsernameInput(r.username)}`;
-                const statusCfg = STATUS_CONFIG[r.status];
+                const stillActiveCfg = STILL_ACTIVE_CONFIG[r.stillActive];
 
                 return (
                   <div
                     key={r.id}
-                    className="grid grid-cols-[160px_100px_100px_80px_100px_80px] md:grid-cols-[minmax(180px,2fr)_110px_110px_90px_110px_100px] gap-0 border-b border-gray-100 text-xs sm:text-sm min-w-[620px]"
+                    className={`grid ${gridCols} ${mdGridCols} gap-0 border-b border-gray-100 text-xs ${minW}`}
                   >
                     {/* User — sticky */}
                     <div className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-3 flex items-center gap-2 min-w-0 border-r border-gray-100">
@@ -155,7 +164,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
                         />
                       </Link>
                       <div className="min-w-0">
-                        <Link href={userHref} className="block w-fit font-medium truncate text-xs sm:text-sm">
+                        <Link href={userHref} className="block w-fit font-medium truncate text-xs">
                           {r.displayName}
                         </Link>
                         <Link href={userHref} className="block w-fit text-[10px] text-gray-500 truncate">
@@ -169,21 +178,50 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
                       {formatDate(r.createdAt)}
                     </div>
 
-                    {/* First Verified */}
+                    {/* Eligible Until */}
                     <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {r.lastVerifiedAt ? formatDate(r.lastVerifiedAt) : "—"}
+                      {formatDate(r.eligibleUntil)}
                     </div>
 
-                    {/* Status */}
+                    {/* Eligible Flag */}
                     <div className="px-3 py-3 text-center self-center">
-                      <Badge variant={statusCfg.variant} size="xs">
-                        {statusCfg.label}
+                      <Badge variant={r.eligibleFlag ? "warning" : "neutral"} size="xs">
+                        {r.eligibleFlag ? "Yes" : "No"}
                       </Badge>
+                    </div>
+
+                    {/* First Verified */}
+                    <div className="px-3 py-3 text-right text-gray-600 self-center">
+                      {r.firstVerifiedAt ? formatDate(r.firstVerifiedAt) : "—"}
+                    </div>
+
+                    {/* Rewards Activated */}
+                    <div className="px-3 py-3 text-center self-center">
+                      <Badge variant={r.rewardsActivated ? "success" : "neutral"} size="xs">
+                        {r.rewardsActivated ? "Yes" : "No"}
+                      </Badge>
+                    </div>
+
+                    {/* Total Links */}
+                    <div className="px-3 py-3 text-right text-gray-600 self-center">
+                      {r.totalLinksCount}
                     </div>
 
                     {/* Auth Links */}
                     <div className="px-3 py-3 text-right text-gray-600 self-center">
                       {r.verifiedLinksCount}
+                    </div>
+
+                    {/* Activation Expiry */}
+                    <div className="px-3 py-3 text-right text-gray-600 self-center">
+                      {r.activationExpiryDate ? formatDate(r.activationExpiryDate) : "—"}
+                    </div>
+
+                    {/* Still Active */}
+                    <div className="px-3 py-3 text-center self-center">
+                      <Badge variant={stillActiveCfg.variant} size="xs">
+                        {stillActiveCfg.label}
+                      </Badge>
                     </div>
 
                     {/* Zats */}

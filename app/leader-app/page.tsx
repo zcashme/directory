@@ -112,7 +112,7 @@ function formatPercent(value: number): string {
 function RowSummary({ entry }: { entry: LeaderboardEntry }) {
   const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
   const profileHref = `${PROFILE_BASE_URL}/${safeUsername}`;
-  const statsHref = `/${safeUsername}`;
+  const statsHref = `/leader-app/${safeUsername}`;
   return (
     <>
       <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">

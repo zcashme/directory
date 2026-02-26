@@ -135,7 +135,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at")
       .eq("id", profileId)
       .single();
 
@@ -152,7 +152,12 @@ export async function confirmOtpAction(
     }
 
     // --- Apply profile update -----------------------------------------------
-    const profileUpdate: Record<string, unknown> = { address_verified: true, last_verified_at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const profileUpdate: Record<string, unknown> = {
+      address_verified: true,
+      last_verified_at: now,
+      ...(profile.first_verified_at ? {} : { first_verified_at: now }),
+    };
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 

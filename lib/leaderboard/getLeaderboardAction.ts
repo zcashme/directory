@@ -112,7 +112,7 @@ interface ReferralStats {
   pendingLinksCount: number;
   // Track individual eligible referrals with their locked commission rates
   eligibleReferrals: Array<{
-    lastVerifiedAt: Date;
+    firstVerifiedAt: Date;
     rewardEndDate: Date;
     isActive: boolean;
     lockedCommissionRate: number; // Rate at time of verification
@@ -145,7 +145,7 @@ export async function getLeaderboardAction(
     // Fetch all users with their referrer info
     const { data: users, error } = await supabase
       .from("zcasher")
-      .select("id, name, referred_by_zcasher_id, address_verified, created_at, last_verified_at")
+      .select("id, name, referred_by_zcasher_id, address_verified, created_at, first_verified_at")
       .not("referred_by_zcasher_id", "is", null);
 
     if (error) {
@@ -232,15 +232,15 @@ export async function getLeaderboardAction(
       if (!referrerId || referrerId === user.id) continue; // Skip self-referrals
 
       const createdAt = new Date(user.created_at);
-      const lastVerifiedAt = user.last_verified_at ? new Date(user.last_verified_at) : null;
+      const firstVerifiedAt = user.first_verified_at ? new Date(user.first_verified_at) : null;
 
       // For time-filtered periods, only count referrals within the period
       // Skip referrals that don't fall within the selected period
       if (periodStart) {
-        const isVerifiedUser = user.address_verified && lastVerifiedAt;
+        const isVerifiedUser = user.address_verified && firstVerifiedAt;
         if (isVerifiedUser) {
           // For verified referrals, filter by verification date
-          if (lastVerifiedAt < periodStart) {
+          if (firstVerifiedAt < periodStart) {
             continue; // Skip - verified before the period started
           }
         } else {
@@ -278,14 +278,14 @@ export async function getLeaderboardAction(
       if (isVerified) current.verified++;
       else current.unverified++;
 
-      const status = computeReferralStatus(isVerified, createdAt, lastVerifiedAt, now);
+      const status = computeReferralStatus(isVerified, createdAt, firstVerifiedAt, now);
 
       switch (status) {
         case "active":
         case "expired": {
           // Activated referrals (verified within eligibility window)
           current.eligibleCount++;
-          const rewardEndDate = addMonths(lastVerifiedAt!, REWARD_DURATION_MONTHS);
+          const rewardEndDate = addMonths(firstVerifiedAt!, REWARD_DURATION_MONTHS);
           const isActive = status === "active";
           if (isActive) current.activeRewardsCount++;
 
@@ -296,7 +296,7 @@ export async function getLeaderboardAction(
             hasLocation: identity?.hasLocation ?? false,
           });
           current.eligibleReferrals.push({
-            lastVerifiedAt: lastVerifiedAt!,
+            firstVerifiedAt: firstVerifiedAt!,
             rewardEndDate,
             isActive,
             lockedCommissionRate,
@@ -348,7 +348,7 @@ export async function getLeaderboardAction(
           }
 
           const monthsElapsed = Math.min(
-            monthsBetween(referral.lastVerifiedAt, now),
+            monthsBetween(referral.firstVerifiedAt, now),
             REWARD_DURATION_MONTHS
           );
           totalEarnedToDate += monthsElapsed * monthlyReward;

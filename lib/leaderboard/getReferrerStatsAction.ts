@@ -3,13 +3,19 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import {
+  ELIGIBILITY_WINDOW_WEEKS,
   REWARD_DURATION_MONTHS,
   VERIFICATION_FEE_ZEC,
+  addWeeks,
+  addMonths,
   monthsBetween,
   calculateCommissionRate,
   computeReferralStatus,
   type ReferralStatus,
 } from "./rewardProgram";
+
+// ── Still-Active flag values ────────────────────────────────
+export type StillActiveFlag = "YES" | "NO" | "N/A";
 
 export interface ReferralRow {
   id: number;
@@ -18,9 +24,16 @@ export interface ReferralRow {
   profileImageUrl: string | null;
   addressVerified: boolean;
   createdAt: string;          // ISO string
-  lastVerifiedAt: string | null;
+  firstVerifiedAt: string | null;
   status: ReferralStatus;
+  // New computed columns
+  eligibleUntil: string;      // ISO string (createdAt + 4 weeks)
+  eligibleFlag: boolean;      // within 4-week window right now
+  rewardsActivated: boolean;  // verified within eligibility window
+  totalLinksCount: number;
   verifiedLinksCount: number;
+  activationExpiryDate: string | null; // firstVerifiedAt + 12 months (if activated)
+  stillActive: StillActiveFlag;
   earnedZats: number;
 }
 
@@ -51,7 +64,7 @@ export interface ReferrerStatsResponse {
 
 function computeEarnedZats(
   status: ReferralStatus,
-  lastVerifiedAt: Date,
+  firstVerifiedAt: Date,
   commissionOpts: {
     verifiedLinksCount: number;
     hasProfileImage: boolean;
@@ -65,11 +78,30 @@ function computeEarnedZats(
   const commissionRate = calculateCommissionRate(commissionOpts);
   const monthlyReward = VERIFICATION_FEE_ZEC * commissionRate;
   const monthsElapsed = Math.min(
-    monthsBetween(lastVerifiedAt, now),
+    monthsBetween(firstVerifiedAt, now),
     REWARD_DURATION_MONTHS,
   );
-  // Convert ZEC to zats (1 ZEC = 1e8 zats)
   return Math.round(monthsElapsed * monthlyReward * 1e8);
+}
+
+function computeStillActive(
+  createdAt: Date,
+  firstVerifiedAt: Date | null,
+  now: Date,
+): StillActiveFlag {
+  const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
+
+  // N/A: past eligibility window AND (never verified OR verified after window)
+  if (now >= eligibilityDeadline && (!firstVerifiedAt || firstVerifiedAt > eligibilityDeadline)) {
+    return "N/A";
+  }
+
+  // Not yet activated (still within window, hasn't verified yet)
+  if (!firstVerifiedAt) return "N/A";
+
+  // Activated — check if within 1-year reward window
+  const expiryDate = addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS);
+  return now < expiryDate ? "YES" : "NO";
 }
 
 // ── Main Action ──────────────────────────────────────────────
@@ -90,7 +122,7 @@ export async function getReferrerStatsAction(
       return { ...empty, error: "Database connection error" };
     }
 
-    // 1. Resolve referrer by username (normalize to handle legacy spaces)
+    // 1. Resolve referrer by username
     const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
@@ -111,7 +143,6 @@ export async function getReferrerStatsAction(
       profileImageUrl: referrerRow.profile_image_url ?? null,
     };
 
-    // Profile completeness flags for commission calculation
     const profileFlags = {
       hasProfileImage: !!referrerRow.profile_image_url,
       hasBio: !!referrerRow.bio,
@@ -121,19 +152,19 @@ export async function getReferrerStatsAction(
     // 2. Fetch all users referred by this referrer
     const referredPromise = supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, address_verified, created_at, last_verified_at")
+      .select("id, name, display_name, profile_image_url, address_verified, created_at, first_verified_at")
       .eq("referred_by_zcasher_id", referrer.id)
       .neq("id", referrer.id)
       .order("created_at", { ascending: false });
 
-    // 3. Fetch referrer's verified links count
+    // 3. Fetch referrer's links (all + verified)
     const linksPromise = supabase
       .from("zcasher_links")
-      .select("is_verified")
-      .eq("zcasher_id", referrer.id)
-      .eq("is_verified", true);
+      .select("zcasher_id, is_verified")
+      .eq("zcasher_id", referrer.id);
 
-    const [{ data: referred, error: referredError }, { data: links }] = await Promise.all([
+    // 4. Fetch referred users' link counts
+    const [{ data: referred, error: referredError }, { data: referrerLinks }] = await Promise.all([
       referredPromise,
       linksPromise,
     ]);
@@ -142,7 +173,25 @@ export async function getReferrerStatsAction(
       return { ...empty, ok: false, referrer, error: referredError.message };
     }
 
-    const referrerVerifiedLinks = links?.length ?? 0;
+    const referredIds = (referred ?? []).map((u) => u.id);
+
+    // Fetch all links for referred users to get total + verified counts per user
+    let referredLinksMap = new Map<number, { total: number; verified: number }>();
+    if (referredIds.length > 0) {
+      const { data: referredLinks } = await supabase
+        .from("zcasher_links")
+        .select("zcasher_id, is_verified")
+        .in("zcasher_id", referredIds);
+
+      for (const link of referredLinks ?? []) {
+        const entry = referredLinksMap.get(link.zcasher_id) ?? { total: 0, verified: 0 };
+        entry.total++;
+        if (link.is_verified) entry.verified++;
+        referredLinksMap.set(link.zcasher_id, entry);
+      }
+    }
+
+    const referrerVerifiedLinks = (referrerLinks ?? []).filter((l) => l.is_verified).length;
     const now = new Date();
 
     let verified = 0;
@@ -152,12 +201,12 @@ export async function getReferrerStatsAction(
 
     const referrals: ReferralRow[] = (referred ?? []).map((u) => {
       const createdAt = new Date(u.created_at);
-      const lastVerifiedAt = u.last_verified_at ? new Date(u.last_verified_at) : null;
+      const firstVerifiedAt = u.first_verified_at ? new Date(u.first_verified_at) : null;
       const isVerified = !!u.address_verified;
 
       if (isVerified) verified++;
 
-      const status = computeReferralStatus(isVerified, createdAt, lastVerifiedAt, now);
+      const status = computeReferralStatus(isVerified, createdAt, firstVerifiedAt, now);
 
       if (status === "eligible") eligible++;
       if (status === "active" || status === "expired") {
@@ -166,13 +215,21 @@ export async function getReferrerStatsAction(
       if (status === "active") active++;
 
       let earnedZats = 0;
-      if (lastVerifiedAt && (status === "active" || status === "expired")) {
-        earnedZats = computeEarnedZats(status, lastVerifiedAt, {
+      if (firstVerifiedAt && (status === "active" || status === "expired")) {
+        earnedZats = computeEarnedZats(status, firstVerifiedAt, {
           verifiedLinksCount: referrerVerifiedLinks,
           ...profileFlags,
         }, now);
         totalEarnedZats += earnedZats;
       }
+
+      // Computed columns
+      const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
+      const rewardsActivated = !!(firstVerifiedAt && firstVerifiedAt <= eligibilityDeadline);
+      const activationExpiryDate = rewardsActivated && firstVerifiedAt
+        ? addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS).toISOString()
+        : null;
+      const userLinks = referredLinksMap.get(u.id) ?? { total: 0, verified: 0 };
 
       return {
         id: u.id,
@@ -181,9 +238,15 @@ export async function getReferrerStatsAction(
         profileImageUrl: u.profile_image_url ?? null,
         addressVerified: isVerified,
         createdAt: u.created_at,
-        lastVerifiedAt: u.last_verified_at ?? null,
+        firstVerifiedAt: u.first_verified_at ?? null,
         status,
-        verifiedLinksCount: referrerVerifiedLinks,
+        eligibleUntil: eligibilityDeadline.toISOString(),
+        eligibleFlag: now < eligibilityDeadline,
+        rewardsActivated,
+        totalLinksCount: userLinks.total,
+        verifiedLinksCount: userLinks.verified,
+        activationExpiryDate,
+        stillActive: computeStillActive(createdAt, firstVerifiedAt, now),
         earnedZats,
       };
     });
