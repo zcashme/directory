@@ -70,7 +70,6 @@ export default function ProfileSearchDropdown({
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-  const dismissedRef = useRef(false);
 
   // Debounce the search value — keystrokes update the input instantly,
   // but API calls only fire after 150 ms of silence.
@@ -124,26 +123,20 @@ export default function ProfileSearchDropdown({
 
   // ------- Dropdown visibility -------
   useEffect(() => {
-    if (!value?.trim()) { setShow(false); dismissedRef.current = false; return; }
-    if (dismissedRef.current) return;
+    if (!value?.trim()) { setShow(false); return; }
     if (showByDefault || usernameAvailable) setShow(true);
   }, [value, showByDefault, usernameAvailable]);
 
   // ------- Dismiss (click-outside + Escape) -------
   useEffect(() => {
-    if (!show && !usernameAvailable) return;
-    const dismiss = () => {
-      dismissedRef.current = true;
-      setShow(false);
-      setUsernameAvailable(null);
-    };
+    if (!show) return;
     const onMouseDown = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        dismiss();
+        setShow(false);
       }
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") dismiss();
+      if (e.key === "Escape") setShow(false);
     };
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKeyDown);
@@ -151,9 +144,9 @@ export default function ProfileSearchDropdown({
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [show, usernameAvailable]);
+  }, [show]);
 
-  const dropdownVisible = (show || usernameAvailable) && !!value?.trim();
+  const dropdownVisible = show && !!value?.trim();
   const hasContent = results.length > 0 || usernameAvailable || loading;
 
   return (
@@ -162,7 +155,6 @@ export default function ProfileSearchDropdown({
         <Command.Input
           value={value}
           onValueChange={(v) => {
-            dismissedRef.current = false;
             onChange(v);
             setShow(true);
           }}
