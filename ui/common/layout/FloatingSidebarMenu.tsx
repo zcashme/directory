@@ -32,7 +32,6 @@ export default function FloatingSidebarMenu() {
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [menuWidthPx, setMenuWidthPx] = useState<number>(360);
   const [headerOffsetPx, setHeaderOffsetPx] = useState<number>(0);
-  const [footerOffsetPx, setFooterOffsetPx] = useState<number>(0);
   const tabRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
@@ -102,16 +101,11 @@ export default function FloatingSidebarMenu() {
       const viewportWidth = window.innerWidth;
       const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
       const headerHeight = headerEl?.getBoundingClientRect().height ?? 0;
-      const footerEls = Array.from(document.querySelectorAll("footer")) as HTMLElement[];
-      const fixedFooter = footerEls.find((el) => getComputedStyle(el).position === "fixed") ?? null;
-      const footerHeight = fixedFooter?.getBoundingClientRect().height ?? 0;
-      const footerSafeGap = 22;
       const targetWidth = viewportWidth < 768
         ? Math.round(Math.min(Math.max(viewportWidth * 0.86, 300), 420))
         : Math.round(Math.min(Math.max(viewportWidth * 0.33, 360), 520));
 
       setHeaderOffsetPx(headerHeight);
-      setFooterOffsetPx(footerHeight + footerSafeGap);
       setMenuWidthPx(targetWidth);
       setIsMobile(viewportWidth < 768);
     };
@@ -228,7 +222,7 @@ export default function FloatingSidebarMenu() {
         />
       )}
 
-      <div ref={containerRef} className="pointer-events-none fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: footerOffsetPx }}>
+      <div ref={containerRef} className="pointer-events-none fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: 0 }}>
         <motion.div
           style={{ x: panelX, width: menuWidthPx, touchAction: "pan-y" }}
           drag={isMobile ? "x" : false}
