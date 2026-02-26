@@ -7,7 +7,6 @@ import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
-import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
 
 const QR_AMOUNT_ZEC = "0.004";
@@ -15,11 +14,13 @@ const QR_AMOUNT_ZEC = "0.004";
 interface ProfileVerificationProps {
   profile: Profile;
   generateQrTrigger?: number;
+  onClose?: () => void;
 }
 
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
+  onClose,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
@@ -147,7 +148,8 @@ export default function ProfileVerification({
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
-    if (!otp.trim() || !profile.id || !currentMemo) return;
+    const otpValue = otp.trim();
+    if (otpValue.length !== 6 || !profile.id || !currentMemo) return;
 
     setIsSubmitting(true);
     setOtpResult(null);
@@ -156,7 +158,7 @@ export default function ProfileVerification({
     try {
       // Build edits payload from store
       const edits = buildEditsPayload();
-      const response = await confirmOtpAction(profile.id, otp.trim(), currentMemo, edits);
+      const response = await confirmOtpAction(profile.id, otpValue, currentMemo, edits);
 
       if (response.ok) {
         const responseData = response.data as Record<string, unknown> | undefined;
@@ -207,11 +209,17 @@ export default function ProfileVerification({
   const handleSentIt = useCallback(() => {
     setShowOtpEntry(true);
   }, []);
+  const isOtpComplete = otp.trim().length === 6;
 
   const showQrSection = qrVisible && !!currentUri;
+  const qrSectionClasses = showQrSection
+    ? showOtpEntry
+      ? "max-h-[1200px] opacity-100"
+      : "mt-1 pt-1 max-h-[1200px] opacity-100"
+    : "max-h-0 opacity-0";
 
   return (
-    <div className="bg-transparent border-none shadow-none p-0 mt-1">
+    <div className="w-full bg-transparent border-none shadow-none p-0">
       {/* Error display (for memo generation errors) */}
       {error && !qrVisible && (
         <Alert variant="error" size="sm" message={error} className="mt-2" />
@@ -219,26 +227,14 @@ export default function ProfileVerification({
 
       {/* QR Code Display */}
       <div
-        className={`overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${
-          showQrSection ? "mt-1 pt-1 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"
-        }`}
+        className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${qrSectionClasses}`}
       >
-        {!showOtpEntry && (
-          <div className="mt-1 mb-2">
-            <Alert
-              variant="warning"
-              size="sm"
-              message="Include minimum of 0.002 ZEC. Do not modify memo"
-              className="text-center"
-            />
-          </div>
-        )}
-
         {!showOtpEntry && (
           <div className="flex justify-center mb-4">
             <QrUriBlock
               uri={currentUri}
               profileName="verification"
+              qrTopHintText="Include 0.002 ZEC minimum"
               qrHintText="Scan or Tap QR"
               compactTopSpacing
             />
@@ -251,7 +247,7 @@ export default function ProfileVerification({
               type="button"
               onClick={handleSentIt}
               disabled={isGenerating}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} disabled:opacity-50 disabled:cursor-not-allowed`}
+              className="w-full max-w-[300px] px-4 py-3 bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/90 text-white font-semibold rounded-xl text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               I Sent It!
             </button>
@@ -259,7 +255,20 @@ export default function ProfileVerification({
         )}
 
         {showOtpEntry && (
-          <div className="mt-2 border border-black/10 rounded-xl p-4 bg-white/80">
+          <div className="relative w-full max-w-[408px] mx-auto border border-black/10 rounded-xl p-5 bg-white/80">
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute top-2 right-2 w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center"
+                aria-label="Close"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-600">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            )}
             <div className="text-sm font-semibold text-gray-700 mb-2">
               Enter your 6-digit verification code
             </div>
@@ -267,7 +276,7 @@ export default function ProfileVerification({
               After sending the transaction, enter the code you receive in your wallet.
             </p>
 
-            <div className="flex gap-2">
+            <div className="space-y-3">
               <OtpInput
                 id="verification-otp"
                 value={otp}
@@ -275,7 +284,7 @@ export default function ProfileVerification({
                 onSubmit={handleSubmitOtp}
                 placeholder="Enter 6-digit code"
                 hideLabel={true}
-                className="flex-1"
+                className="w-full"
                 disabled={isSubmitting}
               />
               <Button
@@ -283,9 +292,10 @@ export default function ProfileVerification({
                 onClick={handleSubmitOtp}
                 variant="primary"
                 size="md"
-                disabled={!otp.trim() || isSubmitting}
+                className="w-full border-[var(--color-brand-blue)] bg-[var(--color-brand-blue)] text-white hover:border-[var(--color-brand-blue)]/90 hover:bg-[var(--color-brand-blue)]/90"
+                disabled={!isOtpComplete || isSubmitting}
               >
-                {isSubmitting ? "Verifying..." : "Submit"}
+                {isSubmitting ? "Verifying..." : "Verify Code"}
               </Button>
             </div>
 

@@ -384,7 +384,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                 <textarea
                   value={memo}
                   onChange={(event) => setDraftMemo(event.target.value)}
-                  placeholder={`Write your message to ${activeProfileName} here...`}
+                  placeholder={`Write a shielded message to ${activeProfileName}`}
                   className="mt-2 w-full border border-gray-900 bg-white px-3 py-2 text-sm resize-none focus:outline-hidden rounded-none"
                   rows={4}
                   onClick={(event) => event.stopPropagation()}

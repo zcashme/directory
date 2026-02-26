@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import type React from "react";
 
 /**
@@ -75,6 +76,9 @@ export function OtpInput({
   autoFocus = false,
   className = "",
 }: OtpInputProps) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
+
   /**
    * Handle input change - strip non-digits automatically
    */
@@ -87,7 +91,7 @@ export function OtpInput({
    * Handle Enter key press for submission
    */
   const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && onSubmit && value.trim()) {
+    if (e.key === "Enter" && onSubmit && value.trim().length === 6) {
       e.preventDefault();
       onSubmit();
     }
@@ -103,23 +107,49 @@ export function OtpInput({
       >
         {label}
       </label>
-      <input
-        id={id}
-        type="text"
-        value={value}
-        onChange={handleChange}
-        onKeyPress={handleKeyPress}
-        placeholder={placeholder}
-        disabled={disabled}
-        autoFocus={autoFocus}
-        maxLength={6}
-        inputMode="numeric"
-        autoComplete="one-time-code"
-        className={`w-full rounded-xl border px-3 py-2 text-sm outline-hidden
-          ${error ? "border-red-400" : "border-black/30"}
-          ${disabled ? "bg-gray-50 cursor-not-allowed" : "bg-white"}
-          focus:border-[var(--color-brand-blue)]`}
-      />
+      <div
+        className="relative"
+        onClick={() => {
+          if (!disabled) inputRef.current?.focus();
+        }}
+      >
+        <div className="grid grid-cols-6 gap-2">
+          {digits.map((digit, idx) => {
+            const isActive = !disabled && (idx === value.length || (value.length === 6 && idx === 5));
+            return (
+              <div
+                key={`otp-slot-${idx}`}
+                className={`h-12 rounded-lg border text-lg font-semibold leading-none flex items-center justify-center transition-colors ${
+                  error
+                    ? "border-red-400 bg-red-50 text-red-600"
+                    : isActive
+                      ? "border-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/8 text-gray-900"
+                      : "border-black/20 bg-white text-gray-900"
+                } ${disabled ? "bg-gray-50 text-gray-400" : ""}`}
+                aria-hidden="true"
+              >
+                {digit}
+              </div>
+            );
+          })}
+        </div>
+
+        <input
+          ref={inputRef}
+          id={id}
+          type="text"
+          value={value}
+          onChange={handleChange}
+          onKeyPress={handleKeyPress}
+          placeholder={placeholder}
+          disabled={disabled}
+          autoFocus={autoFocus}
+          maxLength={6}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          className="absolute inset-0 h-full w-full opacity-0 cursor-text"
+        />
+      </div>
     </div>
   );
 }

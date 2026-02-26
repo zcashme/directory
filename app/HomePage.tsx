@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import type { MouseEvent } from "react";
+import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
@@ -81,7 +81,7 @@ function FannedCard({
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const { linksArray } = parseProfileLinks(profile);
 
-  const handleMouseMove = useCallback((e: MouseEvent<HTMLDivElement>) => {
+  const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || isMobile) return;
     const rect = cardRef.current.getBoundingClientRect();
     const centerX = rect.width / 2;
@@ -267,7 +267,18 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
   const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
+  const [dotsGapAboveButton, setDotsGapAboveButton] = useState<number>(0);
   const shouldReduceMotion = useReducedMotion();
+  const claimButtonRef = useRef<HTMLButtonElement>(null);
+  const activeCardIndexRef = useRef<number>(0);
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const suppressTapUntilRef = useRef<number>(0);
+  const manualTypingPauseUntilRef = useRef<number>(0);
+  const manualResumeTargetRef = useRef<{ index: number; name: string } | null>(null);
+  const MANUAL_TYPING_PAUSE_MS = 2600;
+  const SWIPE_THRESHOLD_PX = 45;
+  const TAP_CANCEL_THRESHOLD_PX = 12;
 
   const centerIndex = Math.floor(profiles.length / 2);
   const headlinePrefix = "The easiest way to Zcash ";
@@ -281,6 +292,10 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   useEffect(() => {
     pauseRef.current = isNameHoverPaused;
   }, [isNameHoverPaused]);
+
+  useEffect(() => {
+    activeCardIndexRef.current = activeCardIndex;
+  }, [activeCardIndex]);
 
   useEffect(() => {
     setActiveCardIndex(centerIndex);
@@ -311,6 +326,25 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     const TYPE_MS = 90;
     const DELETE_MS = 75;
     const PAUSE_POLL_MS = 120;
+    const isManualPauseActive = () => manualTypingPauseUntilRef.current > Date.now();
+    const syncManualResumeTarget = () => {
+      if (isManualPauseActive()) return false;
+      if (!typedTargets.length) return false;
+      const manualTarget = manualResumeTargetRef.current;
+      if (!manualTarget) return false;
+
+      const wrappedTargetIndex = ((manualTarget.index % typedTargets.length) + typedTargets.length) % typedTargets.length;
+      const target = typedTargets[wrappedTargetIndex];
+      const targetName = target?.name ?? manualTarget.name;
+
+      currentText = `${headlinePrefix}${targetName}`;
+      currentTargetIndex = (wrappedTargetIndex + 1) % typedTargets.length;
+      setAnimatedHeadline(currentText);
+      setIsTypedNameComplete(false);
+      setCurrentTypedProfileIndex(target?.index ?? wrappedTargetIndex);
+      manualResumeTargetRef.current = null;
+      return true;
+    };
 
     const schedule = (fn: () => void, delay: number) => {
       timeoutId = setTimeout(fn, delay);
@@ -318,6 +352,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startTypingName = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startTypingName, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       const target = typedTargets[currentTargetIndex];
       setCurrentTypedProfileIndex(target.index);
       const nextText = `${headlinePrefix}${target.name}`;
@@ -349,6 +391,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startDeleting = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startDeleting, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       setIsTypedNameComplete(false);
       if (currentText.length > headlinePrefix.length) {
         currentText = currentText.slice(0, -1);
@@ -361,6 +411,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
     const startTypingInitial = () => {
       if (isCancelled) return;
+      if (isManualPauseActive()) {
+        schedule(startTypingInitial, PAUSE_POLL_MS);
+        return;
+      }
+      if (syncManualResumeTarget()) {
+        schedule(startDeleting, DELETE_MS);
+        return;
+      }
       if (currentText.length < initialText.length) {
         setIsTypedNameComplete(false);
         currentText = initialText.slice(0, currentText.length + 1);
@@ -382,6 +440,32 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       if (timeoutId) clearTimeout(timeoutId);
     };
   }, [typedTargetsKey, centerIndex, headlinePrefix]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setDotsGapAboveButton(0);
+      return;
+    }
+
+    const measureDotsGap = () => {
+      const claimButtonEl = claimButtonRef.current;
+      const footerTabEl = document.querySelector("[data-home-footer-tab='true']") as HTMLElement | null;
+      if (!claimButtonEl || !footerTabEl) return;
+
+      const claimButtonRect = claimButtonEl.getBoundingClientRect();
+      const footerTabRect = footerTabEl.getBoundingClientRect();
+      const gapBelowButton = Math.max(0, Math.round(footerTabRect.top - claimButtonRect.bottom));
+      setDotsGapAboveButton(gapBelowButton);
+    };
+
+    const frameId = requestAnimationFrame(measureDotsGap);
+    window.addEventListener("resize", measureDotsGap);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", measureDotsGap);
+    };
+  }, [isMobile, profiles.length]);
 
   if (!profiles.length) {
     return null;
@@ -410,7 +494,96 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     return (index - activeCardIndex + count) % count;
   };
 
+  const getWrappedIndex = (index: number) => {
+    const count = profiles.length;
+    if (count <= 0) return 0;
+    return ((index % count) + count) % count;
+  };
+
+  const shiftActiveCard = (delta: number) => {
+    if (profiles.length <= 1) return;
+    const nextIndex = getWrappedIndex(activeCardIndexRef.current + delta);
+    const selectedProfile = profiles[nextIndex];
+    let selectedName: string | null = null;
+    if (selectedProfile) {
+      const displayName = selectedProfile.display_name?.trim();
+      const profileName = selectedProfile.name?.trim();
+      if (displayName && displayName.length > 0) {
+        selectedName = displayName;
+      } else if (profileName && profileName.length > 0) {
+        selectedName = profileName;
+      } else {
+        selectedName = "zcash user";
+      }
+    }
+
+    activeCardIndexRef.current = nextIndex;
+    setActiveCardIndex(nextIndex);
+    manualTypingPauseUntilRef.current = Date.now() + MANUAL_TYPING_PAUSE_MS;
+
+    if (selectedName) {
+      setAnimatedHeadline(`${headlinePrefix}${selectedName}`);
+      setIsTypedNameComplete(true);
+      setCurrentTypedProfileIndex(nextIndex);
+      manualResumeTargetRef.current = { index: nextIndex, name: selectedName };
+    }
+  };
+
+  const handleCarouselTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!isMobile || profiles.length <= 1) return;
+    const touch = event.touches[0];
+    if (!touch) return;
+    swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
+  const handleCarouselTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
+    if (!isMobile || profiles.length <= 1) return;
+    const start = swipeStartRef.current;
+    if (!start) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const deltaX = touch.clientX - start.x;
+    const deltaY = touch.clientY - start.y;
+    swipeDeltaRef.current = { x: deltaX, y: deltaY };
+
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > TAP_CANCEL_THRESHOLD_PX) {
+      suppressTapUntilRef.current = Date.now() + 250;
+      if (event.cancelable) {
+        event.preventDefault();
+      }
+    }
+  };
+
+  const handleCarouselTouchEnd = () => {
+    if (!isMobile || profiles.length <= 1) {
+      swipeStartRef.current = null;
+      swipeDeltaRef.current = { x: 0, y: 0 };
+      return;
+    }
+
+    const { x: deltaX, y: deltaY } = swipeDeltaRef.current;
+    const horizontalDistance = Math.abs(deltaX);
+    const verticalDistance = Math.abs(deltaY);
+
+    if (horizontalDistance >= SWIPE_THRESHOLD_PX && horizontalDistance > verticalDistance) {
+      shiftActiveCard(deltaX < 0 ? 1 : -1);
+      suppressTapUntilRef.current = Date.now() + 300;
+    }
+
+    swipeStartRef.current = null;
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
+  const handleCarouselTouchCancel = () => {
+    swipeStartRef.current = null;
+    swipeDeltaRef.current = { x: 0, y: 0 };
+  };
+
   const handleCardClick = (profile: Profile) => {
+    if (Date.now() < suppressTapUntilRef.current) return;
     onCardClick(profile);
   };
   const step = 0.05;
@@ -541,7 +714,14 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         </h2>
       </div>
       <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY}px)` }}>
-        <div className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20" style={{ overflowX: "clip" }}>
+        <div
+          className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20"
+          style={{ overflowX: "clip", touchAction: isMobile ? "pan-y" : undefined }}
+          onTouchStart={handleCarouselTouchStart}
+          onTouchMove={handleCarouselTouchMove}
+          onTouchEnd={handleCarouselTouchEnd}
+          onTouchCancel={handleCarouselTouchCancel}
+        >
           {profiles.map((profile, index) => {
             const stackIndex = getStackIndex(index);
             const isActive = isMobile && index === activeCardIndex;
@@ -567,20 +747,24 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
             );
           })}
         </div>
-        {isMobile && profiles.length > 1 && (
-          <div className="flex justify-center gap-2 mt-10">
-            {profiles.map((profile, index) => (
-              <button
-                key={profile.id ?? `indicator-${index}`}
-                onClick={() => setActiveCardIndex(index)}
-                className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
-              />
-            ))}
-          </div>
-        )}
       </div>
-      <div className="mt-10 md:mt-14 flex justify-center">
+      {isMobile && profiles.length > 1 && (
+        <div
+          className="flex justify-center gap-2 mt-2"
+          style={{ marginBottom: `${dotsGapAboveButton}px` }}
+        >
+          {profiles.map((profile, index) => (
+            <button
+              key={profile.id ?? `indicator-${index}`}
+              onClick={() => setActiveCardIndex(index)}
+              className={`w-2 h-2 rounded-full transition-all duration-300 ${index === activeCardIndex ? "bg-green-600 w-6" : "bg-gray-300"}`}
+            />
+          ))}
+        </div>
+      )}
+      <div className="mt-8 md:mt-12 flex justify-center">
         <motion.button
+          ref={claimButtonRef}
           onClick={() => setIsJoinOpen(true)}
           whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
           transition={{ type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 }}
@@ -735,7 +919,6 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
     },
     [router]
   );
-
   useEffect(() => {
     bottomClearanceRef.current = bottomClearance;
   }, [bottomClearance]);
@@ -753,9 +936,9 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
       const tabRect = footerTabRef.current?.getBoundingClientRect();
       const tabProtrusion = tabRect ? Math.max(0, footerRect.top - tabRect.top) : 0;
       const visibleContentHeight = window.innerHeight - headerHeight - footerHeight;
-      const naturalContentHeight = Math.max(0, contentEl.scrollHeight - bottomClearanceRef.current);
+      const naturalContentHeight = Math.max(0, contentEl.offsetHeight - bottomClearanceRef.current);
       const nextClearance =
-        naturalContentHeight > visibleContentHeight + 1
+        naturalContentHeight > visibleContentHeight + 8
           ? Math.ceil(footerHeight + tabProtrusion + 20)
           : 0;
 
@@ -795,6 +978,7 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
             <div
               ref={footerTabRef}
               className="absolute left-1/2 top-0 rounded-t-2xl border border-b-0 border-gray-200"
+              data-home-footer-tab="true"
               style={{
                 backgroundColor: "var(--color-background)",
                 transform: "translate(-50%, -33%)",
