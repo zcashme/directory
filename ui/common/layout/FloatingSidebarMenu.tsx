@@ -31,13 +31,18 @@ export default function FloatingSidebarMenu() {
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
   const [headerOffsetPx, setHeaderOffsetPx] = useState<number>(0);
-  const menuWidthRef = useRef<number>(360);
+  const menuWidthRef = useRef<number>(typeof window !== "undefined"
+    ? Math.round(window.innerWidth < 768
+      ? Math.min(Math.max(window.innerWidth * 0.86, 300), 420)
+      : Math.min(Math.max(window.innerWidth * 0.33, 360), 520))
+    : 520);
   const tabRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const panelX = useMotionValue(-360);
+  const panelX = useMotionValue(-menuWidthRef.current);
   const dragControls = useDragControls();
+  const isOpenRef = useRef(false);
 
   const resolveDestination = useCallback((item: FloatingSidebarItem) => {
     if (!item.href) return null;
@@ -51,11 +56,13 @@ export default function FloatingSidebarMenu() {
   }, []);
 
   const openMenu = useCallback(() => {
+    isOpenRef.current = true;
     setIsOpen(true);
     setHighlightedIndex((prev) => (prev >= 0 ? prev : 0));
   }, []);
 
   const closeMenu = useCallback((returnFocus = true) => {
+    isOpenRef.current = false;
     setIsOpen(false);
     setHighlightedIndex(-1);
     if (returnFocus) tabRef.current?.focus();
@@ -104,7 +111,7 @@ export default function FloatingSidebarMenu() {
 
       menuWidthRef.current = targetWidth;
       if (panelRef.current) panelRef.current.style.width = `${targetWidth}px`;
-      panelX.set(isOpen ? 0 : -targetWidth);
+      panelX.set(isOpenRef.current ? 0 : -targetWidth);
       setHeaderOffsetPx(headerHeight);
       setIsMobile(viewportWidth < 768);
     };
@@ -112,7 +119,7 @@ export default function FloatingSidebarMenu() {
     updateLayout();
     window.addEventListener("resize", updateLayout);
     return () => window.removeEventListener("resize", updateLayout);
-  }, [isOpen, panelX]);
+  }, [panelX]);
 
   useEffect(() => {
     if (!isOpen) return;
