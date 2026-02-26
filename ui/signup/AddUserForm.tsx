@@ -667,7 +667,6 @@ export default function AddUserForm({
               }
             }}
             placeholder="username"
-            showByDefault={false}
             showUsernameAvailability={false}
             className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
           />

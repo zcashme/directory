@@ -49,7 +49,6 @@ interface ProfileSearchDropdownProps {
   value: string;
   onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
-  showByDefault?: boolean;
   onClaimClick?: (username: string) => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
   className?: string;
@@ -59,7 +58,6 @@ export default function ProfileSearchDropdown({
   value,
   onChange,
   placeholder = "Search",
-  showByDefault = true,
   onClaimClick,
   showUsernameAvailability = true,
   className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
@@ -121,12 +119,6 @@ export default function ProfileSearchDropdown({
     return () => controller.abort();
   }, [query, showUsernameAvailability]);
 
-  // ------- Dropdown visibility -------
-  useEffect(() => {
-    if (!value?.trim()) { setShow(false); return; }
-    if (showByDefault || usernameAvailable) setShow(true);
-  }, [value, showByDefault, usernameAvailable]);
-
   // ------- Dismiss (click-outside + Escape) -------
   useEffect(() => {
     if (!show) return;
@@ -136,7 +128,10 @@ export default function ProfileSearchDropdown({
       }
     };
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setShow(false);
+      if (e.key === "Escape") {
+        setShow(false);
+        (document.activeElement as HTMLElement)?.blur();
+      }
     };
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKeyDown);
@@ -147,17 +142,17 @@ export default function ProfileSearchDropdown({
   }, [show]);
 
   const dropdownVisible = show && !!value?.trim();
-  const hasContent = results.length > 0 || usernameAvailable || loading;
 
   return (
-    <div ref={containerRef}>
+    <div ref={containerRef} className="relative">
       <Command shouldFilter={false}>
         <Command.Input
           value={value}
           onValueChange={(v) => {
             onChange(v);
-            setShow(true);
+            setShow(!!v?.trim());
           }}
+          onFocus={() => { if (value?.trim()) setShow(true); }}
           placeholder={placeholder}
           autoComplete="off"
           className={className}
@@ -165,7 +160,7 @@ export default function ProfileSearchDropdown({
         />
 
         <AnimatePresence>
-          {dropdownVisible && hasContent && (
+          {dropdownVisible && (
             <motion.div {...dropdownMotion}>
               <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
 
@@ -189,6 +184,11 @@ export default function ProfileSearchDropdown({
                   </Command.Item>
                 )}
 
+                {/* Empty state */}
+                {!loading && results.length === 0 && !usernameAvailable && (
+                  <div className="px-3 py-3 text-sm text-gray-400 text-center">No results</div>
+                )}
+
                 {/* Results */}
                 {results.map((p) => (
                   <Command.Item
@@ -200,11 +200,11 @@ export default function ProfileSearchDropdown({
                     <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
 
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="truncate shrink-0">
+                      <span className="truncate">
                         <Highlight text={displayName(p)} query={query} />
                       </span>
 
-                      {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
+                      {p.address_verified && (
                         <VerifiedBadge verified />
                       )}
 
