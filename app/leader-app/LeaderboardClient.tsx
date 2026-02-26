@@ -80,7 +80,7 @@ export function LeaderboardTable({
   }
 
   return (
-    <>
+    <div className="flex flex-col">
       <AnimatePresence initial={false}>
         {chunks.map((chunk, chunkIndex) => {
           if (chunkIndex === 0) {
@@ -102,7 +102,7 @@ export function LeaderboardTable({
       </AnimatePresence>
 
       {(visibleCount > ROWS_PER_PAGE || hasMore) && (
-        <div className="mt-4 flex justify-center">
+        <div className="mt-6 flex justify-center">
           <div className="flex items-center gap-2">
             {visibleCount > ROWS_PER_PAGE && (
               <button
@@ -125,7 +125,7 @@ export function LeaderboardTable({
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
 

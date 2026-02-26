@@ -214,16 +214,16 @@ export default async function LeaderboardPage({
       <div className="max-w-5xl mx-auto">
         {/* Podium */}
         {firstPlace && (
-          <div className="relative mb-6 h-24 sm:h-28 w-full translate-y-[10px]">
-            <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 border-t-2 border-black" />
-            <div className="relative z-10 flex h-full items-center justify-center gap-2 sm:gap-3">
+          <div className="relative mb-8 h-32 sm:h-40 w-full flex items-end justify-center">
+            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-black" />
+            <div className="relative z-10 flex h-full items-end justify-center gap-3 sm:gap-4">
               {secondPlace && (
                 <PodiumAvatar
                   profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(secondPlace.referrerUsername)}`}
                   imageUrl={secondPlace.referrerProfileImageUrl}
                   name={secondPlace.referrerDisplayName}
                   emoji="🥈"
-                  size={60}
+                  size={56}
                 />
               )}
               <PodiumAvatar
@@ -231,7 +231,7 @@ export default async function LeaderboardPage({
                 imageUrl={firstPlace.referrerProfileImageUrl}
                 name={firstPlace.referrerDisplayName}
                 emoji="🥇"
-                size={74}
+                size={96}
               />
               {thirdPlace && (
                 <PodiumAvatar
@@ -239,7 +239,7 @@ export default async function LeaderboardPage({
                   imageUrl={thirdPlace.referrerProfileImageUrl}
                   name={thirdPlace.referrerDisplayName}
                   emoji="🥉"
-                  size={60}
+                  size={56}
                 />
               )}
             </div>
@@ -308,32 +308,38 @@ export default async function LeaderboardPage({
 
         {/* Leaderboard Table */}
         {entries.length > 0 && (
-          <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-            <div className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 bg-gray-100 text-[11px] md:text-sm lg:text-base font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[642px]">
-              <div id="leader-col-rank" className="sticky left-0 z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Rank</div>
-              <div id="leader-col-referrer" className="sticky left-[48px] md:left-[56px] z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Referrer</div>
-              <div id="leader-col-total" className="px-2 py-2 text-right">Total</div>
-              <div id="leader-col-verif" className="px-2 py-2 text-right">Verif.</div>
-              <div id="leader-col-eligible" className="px-2 py-2 text-right">Eligible</div>
-              <div id="leader-col-active" className="px-2 py-2 text-right">Active</div>
-              <div id="leader-col-earned" className="pl-2 pr-4 md:pr-5 py-2 text-right">Earned (zats)</div>
-            </div>
+          <div className="space-y-6">
+            <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
+              <div className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 bg-gray-100 text-[11px] md:text-sm lg:text-base font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[642px]">
+                <div id="leader-col-rank" className="sticky left-0 z-20 bg-gray-100 px-2 py-2 border-r border-gray-300 text-center">Rank</div>
+                <div id="leader-col-referrer" className="sticky left-[48px] md:left-[56px] z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Referrer</div>
+                <div id="leader-col-total" className="px-2 py-2 text-center">Total</div>
+                <div id="leader-col-verif" className="px-2 py-2 text-center">Verif.</div>
+                <div id="leader-col-eligible" className="px-2 py-2 text-center">Eligible</div>
+                <div id="leader-col-active" className="px-2 py-2 text-center">Active</div>
+                <div id="leader-col-earned" className="pl-2 pr-4 md:pr-5 py-2 text-center">Earned (zats)</div>
+              </div>
 
-            <LeaderboardTable totalRows={entries.length}>
-              {entries.map((entry) => (
-                <div
-                  key={entry.referrerId}
-                  className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px]"
-                >
-                  <RowSummary entry={entry} />
-                </div>
-              ))}
-            </LeaderboardTable>
+              <LeaderboardTable totalRows={entries.length}>
+                {entries.map((entry) => {
+                  const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
+                  return (
+                    <Link
+                      key={entry.referrerId}
+                      href={`/${safeUsername}`}
+                      className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-t border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px] transition-colors hover:bg-gray-50 cursor-pointer"
+                    >
+                      <RowSummary entry={entry} />
+                    </Link>
+                  );
+                })}
+              </LeaderboardTable>
+            </div>
           </div>
         )}
 
         {/* FAQ */}
-        <div className="mt-8">
+        <div className="mt-8 mb-8">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
           <FAQAccordion items={FAQ_ITEMS} />
         </div>
