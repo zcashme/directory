@@ -5,6 +5,7 @@ import Badge from "@/ui/common/feedback/Badge";
 import { getReferrerStatsAction } from "@/lib/leaderboard/getReferrerStatsAction";
 import type { ReferralStatus } from "@/lib/leaderboard/rewardProgram";
 import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
+import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
 // ── Metadata ─────────────────────────────────────────────────
 
@@ -60,7 +61,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
   }
 
   const { referrer, referrals, summary } = response;
-  const profileHref = `/${encodeURIComponent(referrer.username)}`;
+  const profileHref = `/${sanitizeUsernameInput(referrer.username)}`;
 
   const summaryStats: Array<{ id: string; label: string; value: string | number; className?: string }> = [
     { id: "total", label: "Referred", value: summary.total },
@@ -136,7 +137,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
             {/* Rows */}
             <LeaderboardTable totalRows={referrals.length}>
               {referrals.map((r) => {
-                const userHref = `/${encodeURIComponent(r.username)}`;
+                const userHref = `/${sanitizeUsernameInput(r.username)}`;
                 const statusCfg = STATUS_CONFIG[r.status];
 
                 return (

@@ -90,7 +90,8 @@ export async function getReferrerStatsAction(
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
       .select("id, name, display_name, profile_image_url")
-      .or(`name.eq.${normalized},name.eq.${normalized.replace(/_/g, " ")}`)
+      .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}"`)
+
       .limit(1)
       .single();
 
