@@ -9,6 +9,7 @@ import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import {
   AVATAR_BUCKET,
+  AVATAR_FOLDER,
   MAX_AVATAR_SIZE_BYTES,
   ALLOWED_AVATAR_MIME_TYPES,
   ALLOWED_AVATAR_EXTENSIONS,
@@ -16,6 +17,43 @@ import {
   removeExistingAvatar,
   downloadAndStoreAvatar,
 } from "@/lib/profile/avatarStorage";
+
+const AVATAR_HISTORY_FOLDER = "avatar_history";
+
+function formatTimestamp(): string {
+  const d = new Date();
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+}
+
+async function copyAvatarToHistory(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
+  profileId: number
+): Promise<void> {
+  const prefix = `${profileId}_zmp`;
+  const { data: files } = await supabase.storage
+    .from(AVATAR_BUCKET)
+    .list(AVATAR_FOLDER, { limit: 200, search: prefix });
+
+  const existing = (files || [])
+    .map((f) => f.name)
+    .filter((name) => new RegExp(`^${profileId}_zmp\\.[^./]+$`, "i").test(name));
+
+  for (const name of existing) {
+    const srcPath = `${AVATAR_FOLDER}/${name}`;
+    const ext = name.includes(".") ? name.substring(name.lastIndexOf(".")) : "";
+    const historyPath = `${AVATAR_HISTORY_FOLDER}/${profileId}_zmp_${formatTimestamp()}${ext}`;
+
+    const { data } = await supabase.storage.from(AVATAR_BUCKET).download(srcPath);
+    if (!data) continue;
+
+    const bytes = new Uint8Array(await data.arrayBuffer());
+    await supabase.storage.from(AVATAR_BUCKET).upload(historyPath, bytes, {
+      contentType: data.type || "application/octet-stream",
+      upsert: false,
+    });
+  }
+}
 
 function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
   try {
@@ -129,7 +167,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country")
       .eq("id", profileId)
       .single();
 
@@ -146,7 +184,7 @@ export async function confirmOtpAction(
     }
 
     // --- Apply profile update -----------------------------------------------
-    const profileUpdate: Record<string, unknown> = { address_verified: true };
+    const profileUpdate: Record<string, unknown> = { address_verified: true, last_verified_at: new Date().toISOString() };
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 
@@ -159,6 +197,7 @@ export async function confirmOtpAction(
     }
 
     if (removeProfileImage) {
+      await copyAvatarToHistory(supabase, profileId);
       const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return {
@@ -196,6 +235,7 @@ export async function confirmOtpAction(
         return { ok: false, error: "Avatar file exceeds the 2 MB limit.", data: { status: "invalid" } };
       }
 
+      await copyAvatarToHistory(supabase, profileId);
       const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
@@ -261,6 +301,27 @@ export async function confirmOtpAction(
         data: { status: "error" },
       };
     }
+
+    // --- Insert verification snapshot ----------------------------------------
+    const { data: currentLinks } = await supabase
+      .from("zcasher_links")
+      .select("url, label, platform")
+      .eq("zcasher_id", profileId);
+
+    await supabase.from("zcasher_verifications").insert({
+      zcasher_id: profileId,
+      address: profile.address,
+      name: profile.name,
+      display_name: profile.display_name,
+      bio: profile.bio,
+      slug: profile.slug,
+      nearest_city_name: profile.nearest_city_name,
+      category: profile.category,
+      referred_by_zcasher_id: profile.referred_by_zcasher_id,
+      iso2: profile.iso2,
+      country: profile.country,
+      links: currentLinks || [],
+    });
 
     // --- Apply link edits ---------------------------------------------------
     const linkErrors: string[] = [];
