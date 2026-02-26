@@ -6,7 +6,7 @@ const apps: Record<string, { path: string; aliases?: string[] }> = {
   swap:    { path: '/swap-app', aliases: ['swaps'] },
   donate:  { path: '/donate-app' },
   thread:  { path: '/thread' },
-  leaders: { path: '/leader-app' },
+  leaders: { path: '/leader-app', aliases: ['leader'] },
   blog:    { path: '/blog-app' },
   status:  { path: '/status-app' },
 };
@@ -83,7 +83,7 @@ export function proxy(request: NextRequest) {
   // Rewrite subdomain requests to internal app paths
   const appPath = subdomain ? subdomainMap.get(subdomain) : undefined;
   if (appPath) {
-    url.pathname = pathname === '/' || pathname.startsWith(appPath) ? appPath : `${appPath}${pathname}`;
+    url.pathname = pathname === '/' ? appPath : pathname.startsWith(appPath) ? pathname : `${appPath}${pathname}`;
     return NextResponse.rewrite(url);
   }
 
