@@ -3,12 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import type { MouseEvent as ReactMouseEvent, TouchEvent as ReactTouchEvent } from "react";
 import { useRouter } from "next/navigation";
-import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileCardContent from "@/ui/profile/ProfileCardContent";
-import AddUserForm from "@/ui/signup/AddUserForm";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
@@ -265,9 +263,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const [isTypedNameComplete, setIsTypedNameComplete] = useState<boolean>(false);
   const [isNameHoverPaused, setIsNameHoverPaused] = useState<boolean>(false);
   const [currentTypedProfileIndex, setCurrentTypedProfileIndex] = useState<number | null>(null);
-  const [isJoinOpen, setIsJoinOpen] = useState<boolean>(false);
-  const shouldReduceMotion = useReducedMotion();
-  const claimButtonRef = useRef<HTMLButtonElement>(null);
   const activeCardIndexRef = useRef<number>(0);
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const swipeDeltaRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
@@ -664,7 +659,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     if (!selectedProfile) return;
     onCardClick(selectedProfile);
   };
-  const closeJoinForm = () => setIsJoinOpen(false);
 
   return (
     <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
@@ -734,17 +728,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           ))}
         </div>
       )}
-      <div className="mt-8 md:mt-12 flex justify-center">
-        <motion.button
-          ref={claimButtonRef}
-          onClick={() => setIsJoinOpen(true)}
-          whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
-          transition={{ type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 }}
-          className="h-8 md:h-10 flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 md:px-6 rounded-full text-sm md:text-base font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
-        >
-          Claim your name
-        </motion.button>
-      </div>
       {SHOW_LAYOUT_POSITION_TUNER && (
       <div className="max-w-xl mx-auto mt-4 rounded-xl border border-gray-300 bg-white/80 p-3 shadow-sm">
         <div className="flex items-center justify-between mb-2">
@@ -850,12 +833,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
         </div>
       </div>
       )}
-      <AddUserForm
-        isOpen={isJoinOpen}
-        prefillUsername={null}
-        onClose={closeJoinForm}
-        onUserAdded={closeJoinForm}
-      />
     </div>
   );
 }

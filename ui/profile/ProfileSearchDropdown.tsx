@@ -162,24 +162,11 @@ export default function ProfileSearchDropdown({
             <motion.div {...dropdownMotion}>
               <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
 
-                {/* Loading indicator */}
-                {loading && results.length === 0 && (
+                {/* Loading indicator (always above results) */}
+                {loading && (
                   <div className="flex items-center justify-center py-3">
                     <Spinner size="xs" color="gray" />
                   </div>
-                )}
-
-                {/* Username availability banner */}
-                {usernameAvailable && (
-                  <Command.Item
-                    value="available"
-                    forceMount
-                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
-                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
-                  >
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
-                    is available!
-                  </Command.Item>
                 )}
 
                 {/* Results */}
@@ -208,11 +195,17 @@ export default function ProfileSearchDropdown({
                   </Command.Item>
                 ))}
 
-                {/* Inline loading when we already have stale results */}
-                {loading && results.length > 0 && (
-                  <div className="flex items-center justify-center py-2 border-t border-gray-100">
-                    <Spinner size="xs" color="gray" />
-                  </div>
+                {/* Username availability banner */}
+                {usernameAvailable && (
+                  <Command.Item
+                    value="available"
+                    forceMount
+                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
+                    className="px-3 py-2 text-sm text-gray-800 font-medium border-t border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
+                  >
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
+                    is available!
+                  </Command.Item>
                 )}
 
               </Command.List>
