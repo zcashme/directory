@@ -2,8 +2,6 @@
 
 import { verifyOtp } from "@/lib/verification/otp";
 import { parseZvsMemo } from "@/lib/verification/session";
-import { getMemoEntry, recordFailure, removeMemo, getMaxAttempts } from "@/lib/verification/memoStore";
-import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
@@ -102,48 +100,18 @@ export async function confirmOtpAction(
 
     const trimmedMemo = memo.trim();
 
-    // --- Check memo was server-issued ---------------------------------------
-    const entry = getMemoEntry(trimmedMemo);
-    if (!entry) {
-      return {
-        ok: false,
-        error: "Memo expired or not recognised. Please generate a new QR code.",
-        data: { status: "invalid" },
-      };
-    }
-
-    // --- Verify OTP ---------------------------------------------------------
+    // --- Verify OTP (stateless HMAC-SHA256 — no server-side memo store) -----
     const isValid = await verifyOtp(trimmedMemo, otp.trim());
 
     if (!isValid) {
-      // Record the failed attempt; check if exhausted
-      const exhausted = recordFailure(trimmedMemo);
-
-      if (exhausted) {
-        // Generate a fresh memo + URI for the same profile & amount
-        const fresh = await generateMemoAction(profileId, entry.amount);
-
-        return {
-          ok: false,
-          error: `Too many attempts. A new QR code has been generated — please send a new transaction.`,
-          data: {
-            status: "exhausted",
-            newMemo: fresh.ok ? fresh.memo : undefined,
-            newUri: fresh.ok ? fresh.uri : undefined,
-          },
-        };
-      }
-
-      const remaining = getMaxAttempts() - entry.attempts - 1;
       return {
         ok: false,
-        error: `Invalid verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+        error: "Invalid verification code.",
         data: { status: "invalid" },
       };
     }
 
     // --- OTP valid — proceed with verification ------------------------------
-    removeMemo(trimmedMemo);
 
     // Parse memo to extract address
     const parsed = parseZvsMemo(trimmedMemo);

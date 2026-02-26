@@ -108,6 +108,7 @@ export default function ProfileVerification({
   // Memo + URI returned from the server
   const [currentMemo, setCurrentMemo] = useState("");
   const [currentUri, setCurrentUri] = useState("");
+  const [otpAttemptsLeft, setOtpAttemptsLeft] = useState(5);
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
 
   // Generate QR - calls the server to create memo + URI
@@ -118,6 +119,7 @@ export default function ProfileVerification({
     setOtpResult(null);
     setOtp("");
     setShowOtpEntry(false);
+    setOtpAttemptsLeft(5);
     setIsGenerating(true);
 
     try {
@@ -151,6 +153,14 @@ export default function ProfileVerification({
     const otpValue = otp.trim();
     if (otpValue.length !== 6 || !profile.id || !currentMemo) return;
 
+    if (otpAttemptsLeft <= 0) {
+      setOtpResult({
+        ok: false,
+        message: "Too many attempts. Please generate a new QR code.",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     setOtpResult(null);
     setError("");
@@ -180,26 +190,30 @@ export default function ProfileVerification({
           window.location.reload();
         }, 1000);
       } else {
-        // Check if the memo was exhausted and a new one was issued
-        const data = response.data as Record<string, unknown> | undefined;
-        if (data?.status === "exhausted" && data.newMemo && data.newUri) {
-          setCurrentMemo(data.newMemo as string);
-          setCurrentUri(data.newUri as string);
-          setOtp("");
-          setShowOtpEntry(false);
-        }
+        const remaining = otpAttemptsLeft - 1;
+        setOtpAttemptsLeft(remaining);
+        setOtp("");
 
-        setOtpResult({
-          ok: false,
-          message: response.error || "Invalid verification code.",
-        });
+        if (remaining <= 0) {
+          setOtpResult({
+            ok: false,
+            message: "Too many attempts. Please generate a new QR code.",
+          });
+          setShowOtpEntry(false);
+          setQrVisible(false);
+        } else {
+          setOtpResult({
+            ok: false,
+            message: `Invalid code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+          });
+        }
       }
     } catch {
       setOtpResult({ ok: false, message: "An error occurred. Please try again." });
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id, currentMemo, buildEditsPayload, clearPendingAvatarUpload, updateField]);
+  }, [otp, profile.id, currentMemo, otpAttemptsLeft, buildEditsPayload, clearPendingAvatarUpload, updateField]);
 
   // Handle OTP input change - strip non-digits
   const handleOtpChange = useCallback((value: string) => {

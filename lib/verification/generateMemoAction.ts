@@ -18,7 +18,6 @@ function buildZcashUri(address: string, amount: string = "0", memo: string = "")
   if (memo) params.push(`memo=${toBase64Url(memo)}`);
   return params.length ? `${base}?${params.join("&")}` : base;
 }
-import { registerMemo } from "@/lib/verification/memoStore";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 
 const SIGNIN_ADDR =
@@ -72,9 +71,6 @@ export async function generateMemoAction(
     const memo = buildZvsMemo(sessionId, profile.address);
     const cleanAmount = amount.replace(/[^\d.]/g, "");
     const uri = buildZcashUri(SIGNIN_ADDR, cleanAmount, memo);
-
-    // Register in the in-memory store (tracks attempts)
-    registerMemo(memo, profileId, cleanAmount);
 
     return { ok: true, memo, uri };
   } catch {
