@@ -20,14 +20,6 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "4mb",
     },
   },
-  webpack(config) {
-    config.module.rules.push({
-      test: /\.svg$/i,
-      type: "asset/resource",
-    });
-    return config;
-  },
-
   async headers() {
     return [
       {
