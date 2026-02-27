@@ -39,7 +39,7 @@ import type { InputHTMLAttributes, ReactNode } from "react";
  * />
  * ```
  */
-export interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "type" | "size"> {
+interface CheckboxProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "type" | "size"> {
   /** Whether checkbox is checked */
   checked: boolean;
   /** Callback when checked state changes */

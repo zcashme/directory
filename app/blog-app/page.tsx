@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { getAllBlogPosts } from "@/lib/blogs";
 
-export default function BlogListingPage() {
-  const posts = getAllBlogPosts();
+export default async function BlogListingPage() {
+  const posts = await getAllBlogPosts();
 
   return (
     <div className="p-4 md:p-8 pt-16" style={{ backgroundColor: "var(--color-background)" }}>

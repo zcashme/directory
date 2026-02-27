@@ -26,6 +26,9 @@ yarn-error.log*
 .DS_Store
 *.sw?
 
+# Lint category configs (local-only)
+lint/
+
 # Misc
 coverage/
 README_STYLE_GUIDE.md

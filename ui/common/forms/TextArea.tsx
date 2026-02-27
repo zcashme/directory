@@ -43,7 +43,7 @@ import FieldMessages from "./FieldMessages";
  * />
  * ```
  */
-export interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "size"> {
+interface TextAreaProps extends Omit<TextareaHTMLAttributes<HTMLTextAreaElement>, "onChange" | "size"> {
   /** Current textarea value */
   value: string;
   /** Callback when value changes */

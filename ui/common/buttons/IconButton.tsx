@@ -17,7 +17,7 @@ import type { ReactNode } from "react";
  * </IconButton>
  * ```
  */
-export interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+interface IconButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   /** Visual style variant */
   variant?: "primary" | "secondary" | "danger" | "ghost";
   /** Button size (affects both padding and icon size) */

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import type { Profile } from "@/lib/profile/types";
 
 interface ProfileAvatarProps {
@@ -39,7 +40,7 @@ export default function ProfileAvatar({
   lookAround = true,
 }: ProfileAvatarProps) {
   const outerSize = size + 6; // border + padding
-  const avatarUrl = (profile.profile_image_url || profile.avatar_url)?.trim() || "";
+  const avatarUrl = (profile.profile_image_url)?.trim() || "";
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
 
   // Randomly shift eyes every 5-9s when no avatar image is set
@@ -78,11 +79,12 @@ export default function ProfileAvatar({
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
           {avatarUrl ? (
-            <img
+            <Image
               src={avatarUrl}
               alt={profile.name || "Profile"}
+              width={size}
+              height={size}
               className={`w-full h-full ${imageClassName}`}
-              loading="lazy"
               referrerPolicy="no-referrer"
             />
           ) : (

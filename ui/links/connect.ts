@@ -6,7 +6,7 @@ import { PROVIDERS, ProviderKey } from "./providers";
 
 const PENDING_CONNECT_KEY = "pendingConnect";
 
-export interface PendingConnect {
+interface PendingConnect {
   provider: ProviderKey;
   profileId: number;
 }

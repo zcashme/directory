@@ -18,7 +18,7 @@ import type { ReactNode } from "react";
  * </Card>
  * ```
  */
-export interface CardProps {
+interface CardProps {
   /** Card content */
   children: ReactNode;
   /** Padding size */

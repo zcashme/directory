@@ -23,7 +23,7 @@ export interface DropdownOption<T = string> {
  *
  * @template T - The type of the option's id value
  */
-export interface DropdownOptionComponentProps<T = string> {
+interface DropdownOptionComponentProps<T = string> {
   /** The option data to render */
   option: DropdownOption<T>;
   /** Whether this option is currently selected */

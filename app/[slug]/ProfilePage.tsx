@@ -221,7 +221,7 @@ export default function ProfilePage({
         setQuoteState(prev => ({
           ...prev,
           quoteData: result,
-          quotePreview: result.display,
+          quotePreview: result.data.display,
           quoteStatus: "",
         }));
       } else {
@@ -264,8 +264,8 @@ export default function ProfilePage({
         setQuoteState(prev => ({
           ...prev,
           quoteData: result,
-          depositUri: result.paymentUri,
-          statusKey: result.statusKey,
+          depositUri: result.data.paymentUri,
+          statusKey: result.data.statusKey,
         }));
       } else {
         setQuoteState(prev => ({

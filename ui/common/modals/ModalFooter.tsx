@@ -24,7 +24,7 @@ import type { ReactNode } from "react";
  * </ModalFooter>
  * ```
  */
-export interface ModalFooterProps {
+interface ModalFooterProps {
   /** Footer content (typically buttons) */
   children: ReactNode;
   /** Additional CSS classes */

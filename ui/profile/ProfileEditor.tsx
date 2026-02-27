@@ -57,7 +57,7 @@ const LINK_FIELD_CLASS =
 const LINK_CONTAINER_CLASS =
   "rounded-2xl border border-[#0a1126]/60 p-3 bg-transparent";
 const MAX_AVATAR_FILE_SIZE_BYTES = 2 * 1024 * 1024;
-const SUPPORTED_AVATAR_MIME_TYPES = ["image/jpeg", "image/png", "image/gif"] as const;
+const SUPPORTED_AVATAR_MIME_TYPES = ["image/jpeg", "image/png"] as const;
 
 function parseDataUrl(dataUrl: string): { mimeType: string; base64Data: string } | null {
   const match = /^data:([^;]+);base64,(.+)$/i.exec(dataUrl);
@@ -92,38 +92,6 @@ function loadImageDimensions(file: File): Promise<{ width: number; height: numbe
     };
     img.src = objectUrl;
   });
-}
-
-function isAnimatedGif(buffer: ArrayBuffer): boolean {
-  const bytes = new Uint8Array(buffer);
-  if (bytes.length < 13) return false;
-  if (
-    bytes[0] !== 0x47 || bytes[1] !== 0x49 || bytes[2] !== 0x46 ||
-    bytes[3] !== 0x38 || (bytes[4] !== 0x37 && bytes[4] !== 0x39) || bytes[5] !== 0x61
-  ) {
-    return false;
-  }
-
-  let frameCount = 0;
-  for (let i = 13; i < bytes.length; i += 1) {
-    const b = bytes[i];
-    if (b === 0x2c) {
-      frameCount += 1;
-      if (frameCount > 1) return true;
-      continue;
-    }
-    if (b === 0x21) {
-      i += 1;
-      while (i < bytes.length) {
-        const blockSize = bytes[i];
-        if (blockSize === 0) break;
-        i += blockSize + 1;
-      }
-      continue;
-    }
-    if (b === 0x3b) break;
-  }
-  return false;
 }
 
 interface CharCounterProps {
@@ -419,7 +387,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
 
     const type = (file.type || "").toLowerCase();
     if (!SUPPORTED_AVATAR_MIME_TYPES.includes(type as (typeof SUPPORTED_AVATAR_MIME_TYPES)[number])) {
-      setAvatarUploadError("Unsupported format. Use JPG, PNG, or non-animated GIF.");
+      setAvatarUploadError("Unsupported format. Use JPG or PNG.");
       e.target.value = "";
       return;
     }
@@ -442,19 +410,10 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         return;
       }
 
-      if (type === "image/gif") {
-        const buffer = await file.arrayBuffer();
-        if (isAnimatedGif(buffer)) {
-          setAvatarUploadError("Animated GIFs are not supported. Please upload a non-animated GIF.");
-          e.target.value = "";
-          return;
-        }
-      }
-
-      const extension = type === "image/png" ? "png" : type === "image/gif" ? "gif" : "jpg";
+      const extension = type === "image/png" ? "png" : "jpg";
       setPendingAvatarUpload({
         fileName: file.name,
-        mimeType: type as "image/jpeg" | "image/png" | "image/gif",
+        mimeType: type as "image/jpeg" | "image/png",
         extension,
         base64Data: parsed.base64Data,
         sizeBytes: file.size,
@@ -594,7 +553,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
             id="pimg"
             ref={fileInputRef}
             type="file"
-            accept=".jpg,.jpeg,.png,.gif,image/jpeg,image/png,image/gif"
+            accept=".jpg,.jpeg,.png,image/jpeg,image/png"
             className="hidden"
             onChange={handleAvatarFileSelection}
           />
@@ -613,7 +572,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               </span>
             ) : (
               <span className="text-xs text-gray-600">
-                Requirements: JPG, PNG, or non-animated GIF, max 2 MB (recommended 400 x 400).
+                Requirements: JPG or PNG, max 2 MB (recommended 400 x 400).
               </span>
             )}
           </div>

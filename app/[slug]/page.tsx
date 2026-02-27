@@ -53,7 +53,7 @@ export default async function Page({ params }: PageProps) {
     getSwapTokens(),
   ]);
 
-  const tokens = 'tokens' in tokensResult ? tokensResult.tokens : [];
+  const tokens = tokensResult.ok ? tokensResult.data : [];
 
   return (
     <ProfilePage

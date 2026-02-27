@@ -15,7 +15,7 @@ export interface TutorialStep {
   textContent?: ReactNode;
 }
 
-export interface TutorialModalProps {
+interface TutorialModalProps {
   isOpen: boolean;
   onClose: () => void;
   title?: string;

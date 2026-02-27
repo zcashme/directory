@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { Profile } from "@/lib/profile/types";
 
@@ -43,7 +44,7 @@ async function findProfileByName(supabase: any, name: string): Promise<Profile |
   return verified || matching.slice().sort((a: Profile, b: Profile) => (a.id ?? 0) - (b.id ?? 0))[0];
 }
 
-export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | null> {
+export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawSlug: string): Promise<Profile | null> {
   const supabase = createSupabaseServerClient();
   if (!supabase) return null;
 
@@ -136,4 +137,4 @@ export async function fetchProfileForSlug(rawSlug: string): Promise<Profile | nu
   profile.links = links?.data ?? [];
 
   return mergeRanks(profile, ranks);
-}
+});

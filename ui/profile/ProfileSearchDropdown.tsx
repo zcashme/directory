@@ -1,460 +1,225 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
+import { Command } from "cmdk";
+import { AnimatePresence, motion } from "framer-motion";
+import { useDebounce } from "use-debounce";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
+import { toProfile, type DirectoryApiResponse } from "@/lib/directory/directoryClient";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import Spinner from "@/ui/common/feedback/Spinner";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(timer);
-  }, [value, delay]);
-  return debouncedValue;
+const fmtUsername = (p: Partial<Profile>) =>
+  getUsernameWithDiscriminator(p).replace(/\s+/g, "_");
+
+const displayName = (p: Partial<Profile>) =>
+  p.display_name || p.name || "";
+
+/** Highlight the first occurrence of `query` inside `text` (case-insensitive). */
+function Highlight({ text, query }: { text: string; query: string }) {
+  if (!query) return <>{text}</>;
+  const i = text.toLowerCase().indexOf(query.toLowerCase());
+  if (i === -1) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, i)}
+      <span className="text-[var(--color-brand-blue)]">{text.slice(i, i + query.length)}</span>
+      {text.slice(i + query.length)}
+    </>
+  );
 }
 
-// Semantic aliases for different debounce contexts
-const useKeystrokeDebounce = useDebounce; // UI responsiveness (10ms)
-const useSearchDebounce = useDebounce;    // API calls (150ms)
+// ---------------------------------------------------------------------------
+// Dropdown animation
+// ---------------------------------------------------------------------------
 
-// API response format from /api/directory (matches wallet API docs)
-interface ApiDirectoryResult {
-  id: number;
-  username: string;
-  display_name: string | null;
-  profile_image_url: string | null;
-  bio: string | null;
-  nearest_city_name: string | null;
-  address: string | null;
-  address_verified: boolean;
-  verified_at: string | null;
-  authenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
-  unauthenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
-}
+const dropdownMotion = {
+  initial: { opacity: 0, y: -4, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, y: -4, scale: 0.98 },
+  transition: { duration: 0.15, ease: [0.25, 0.1, 0.25, 1] as const },
+};
 
-interface ApiSearchResult {
-  results: ApiDirectoryResult[];
-  next_cursor: string | null;
-  exists?: boolean;
-}
-
-// Transform API response to internal Profile format
-function transformApiResult(r: ApiDirectoryResult): Profile {
-  return {
-    id: r.id,
-    name: r.username,
-    display_name: r.display_name ?? undefined,
-    profile_image_url: r.profile_image_url ?? undefined,
-    bio: r.bio ?? undefined,
-    nearest_city_name: r.nearest_city_name ?? undefined,
-    address: r.address ?? "",
-    address_verified: r.address_verified,
-    last_verified_at: r.verified_at ?? undefined,
-    verified_links_count: r.authenticated_links.length,
-    links: [...r.authenticated_links, ...r.unauthenticated_links],
-  };
-}
-
-const formatUsername = (profile: Partial<Profile>): string =>
-  getUsernameWithDiscriminator(profile).replace(/\s+/g, "_");
-
-const getDisplayName = (profile: Partial<Profile>): string =>
-  profile.display_name || profile.name || "";
-
-interface SearchResult {
-  results: Profile[];
-  next_cursor: string | null;
-  exists?: boolean;
-}
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
 interface ProfileSearchDropdownProps {
   value: string;
   onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
-  listOnly?: boolean;
-  showByDefault?: boolean;
-  onUsernameAvailable?: (username: string | null) => void; // eslint-disable-line no-unused-vars
-  onClaimClick?: () => void; // eslint-disable-line no-unused-vars
+  onClaimClick?: (username: string) => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
   className?: string;
-  [key: string]: unknown;
 }
 
 export default function ProfileSearchDropdown({
   value,
   onChange,
   placeholder = "Search",
-  listOnly = false,
-  showByDefault = true,
-  onUsernameAvailable,
   onClaimClick,
   showUsernameAvailability = true,
   className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
-  ...props
 }: ProfileSearchDropdownProps) {
   const [show, setShow] = useState(false);
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
-  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const searchActiveRef = useRef(false);
-  const lastQueryRef = useRef("");
-  const previousResultsRef = useRef<Profile[]>([]);
-  const usernameAvailableRef = useRef<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const keystrokeDebounced = useKeystrokeDebounce(value, 10);
-  const searchDebounced = useSearchDebounce(value, 150);
+  // Debounce the search value — keystrokes update the input instantly,
+  // but API calls only fire after 150 ms of silence.
+  const [debouncedValue] = useDebounce(value, 150);
+  const query = debouncedValue?.trim() || "";
 
-  // Check if previous results still match the query (to avoid unnecessary refreshes)
-  // IMPORTANT: This only checks if we can reuse search results, NOT if we can skip availability checks
-  const resultsStillMatch = (query: string, previousQuery: string, previousResults: Profile[]): boolean => {
-    if (!query || !previousQuery || previousResults.length === 0) return false;
-    if (previousResults.length > 3) return false; // Only skip if <= 3 results
-
-    if (query.toLowerCase() !== previousQuery.toLowerCase()) return false;
-
-    const q = query.trim().toLowerCase();
-    // Check if all previous results still match the query
-    return previousResults.every((profile) => {
-      const name = (profile.name || "").toLowerCase();
-      const displayName = (profile.display_name || "").toLowerCase();
-      return name.includes(q) || displayName.includes(q);
-    });
-  };
-
+  // ------- Fetch on debounced query change -------
   useEffect(() => {
-    const query = searchDebounced?.trim();
+    // Cancel any in-flight request
+    abortRef.current?.abort();
 
     if (!query) {
       setResults([]);
       setLoading(false);
-      usernameAvailableRef.current = null;
       setUsernameAvailable(null);
-      onUsernameAvailable?.(null);
-      searchActiveRef.current = false;
-      lastQueryRef.current = "";
-      previousResultsRef.current = [];
       return;
     }
 
-    const canReuseResults = resultsStillMatch(query, lastQueryRef.current, previousResultsRef.current);
-
-    if (canReuseResults &&
-        usernameAvailableRef.current &&
-        query.toLowerCase() === usernameAvailableRef.current.toLowerCase()) {
-      return;
-    }
-
-    searchActiveRef.current = true;
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
-    const currentQuery = query; // Capture for closure
-    lastQueryRef.current = currentQuery;
 
-    // Use API route instead of Server Action to prevent router cache invalidation
-    // If on a subdomain (like swap.zcash.me), use the main domain for API calls
-    const isSubdomain = typeof window !== 'undefined' && window.location.hostname.includes('swap.');
-    const apiBaseUrl = isSubdomain
-      ? `${window.location.protocol}//${window.location.hostname.replace('swap.', '')}${window.location.port ? ':' + window.location.port : ''}`
-      : '';
+    fetch(`/api/directory?q=${encodeURIComponent(query)}&limit=5`, {
+      signal: controller.signal,
+      headers: { "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "" },
+    })
+      .then((res) => (res.ok ? res.json() : { results: [], next_cursor: null }))
+      .then((api: DirectoryApiResponse) => {
+        if (controller.signal.aborted) return;
 
-    const searchPromise: Promise<SearchResult> = canReuseResults
-      ? Promise.resolve({ results: previousResultsRef.current, next_cursor: null, exists: true })
-      : fetch(`${apiBaseUrl}/api/directory?q=${encodeURIComponent(currentQuery)}&limit=3`, {
-          headers: { 'X-API-Key': process.env.NEXT_PUBLIC_API_KEY || '' }
-        })
-          .then(res => res.ok ? res.json() : { results: [], next_cursor: null })
-          .then((apiResult: ApiSearchResult) => ({
-            results: apiResult.results.map(transformApiResult),
-            next_cursor: apiResult.next_cursor,
-            exists: apiResult.exists,
-          }))
-          .catch(() => ({ results: [], next_cursor: null }));
+        const profiles = api.results.map(toProfile);
+        const exists = api.exists ?? false;
 
-    searchPromise
-      .then((result: SearchResult) => {
-        if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          const data = result.results || [];
-          const exists = result.exists ?? false;
+        setResults(profiles);
+        setLoading(false);
 
-          setResults(data);
-          if (!canReuseResults) {
-            previousResultsRef.current = data;
-          }
-
-          if (showUsernameAvailability && !exists) {
-            usernameAvailableRef.current = currentQuery;
-            setUsernameAvailable(currentQuery);
-            onUsernameAvailable?.(currentQuery);
-          } else {
-            usernameAvailableRef.current = null;
-            setUsernameAvailable(null);
-            onUsernameAvailable?.(null);
-          }
-
-          setLoading(false);
+        if (showUsernameAvailability && !exists) {
+          setUsernameAvailable(query);
+        } else {
+          setUsernameAvailable(null);
         }
       })
-      .catch(() => {
-        if (searchActiveRef.current && lastQueryRef.current === currentQuery) {
-          setLoading(false);
-          usernameAvailableRef.current = null;
-          setUsernameAvailable(null);
-          onUsernameAvailable?.(null);
-        }
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        setLoading(false);
+        setUsernameAvailable(null);
       });
 
-    return () => {
-      searchActiveRef.current = false;
-    };
-  }, [searchDebounced, onUsernameAvailable, showUsernameAvailability]);
+    return () => controller.abort();
+  }, [query, showUsernameAvailability]);
 
-  useEffect(() => {
-    if (!keystrokeDebounced) {
-      setShow(false);
-      return;
-    }
-
-    if (showByDefault || usernameAvailable) {
-      setShow(true);
-    }
-  }, [keystrokeDebounced, showByDefault, usernameAvailable]);
-
+  // ------- Dismiss (click-outside + Escape) -------
   useEffect(() => {
     if (!show) return;
-
-    const handleClickOutside = (event: MouseEvent) => {
-      if (!containerRef.current) return;
-      // Keep the menu open when clicking inside input or result list.
-      if (!containerRef.current.contains(event.target as Node)) {
+    const onMouseDown = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
         setShow(false);
       }
     };
-
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, [show, value]);
-
-  useEffect(() => {
-    const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-    if (totalSelectable === 0 || loading) {
-      setHighlightedIndex(-1);
-      return;
-    }
-
-    setHighlightedIndex((prev) => {
-      if (prev >= 0 && prev < totalSelectable) return prev;
-      return 0;
-    });
-  }, [usernameAvailable, results, loading]);
-
-  const selectHighlighted = useCallback((index: number) => {
-    if (index < 0 || loading) return;
-    const hasAvailabilityRow = Boolean(usernameAvailable);
-
-    if (hasAvailabilityRow && index === 0) {
-      onClaimClick?.();
-      return;
-    }
-
-    const resultIndex = hasAvailabilityRow ? index - 1 : index;
-    const selected = results[resultIndex];
-    if (!selected) return;
-    onChange(selected);
-    setShow(false);
-  }, [loading, usernameAvailable, results, onClaimClick, onChange]);
-
-  useEffect(() => {
-    if (!listOnly) return;
-    if (!(show || usernameAvailable) || !keystrokeDebounced) return;
-
-    const onDocumentKeyDown = (e: KeyboardEvent) => {
-      const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-      if (!totalSelectable || loading) {
-        if (e.key === "Escape") {
-          e.preventDefault();
-          e.stopPropagation();
-          setShow(false);
-        }
-        return;
-      }
-
-      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        e.preventDefault();
-        e.stopPropagation();
-        const delta = e.key === "ArrowDown" ? 1 : -1;
-        setHighlightedIndex((prev) => {
-          const start = prev >= 0 ? prev : 0;
-          return (start + delta + totalSelectable) % totalSelectable;
-        });
-        return;
-      }
-
-      if (e.key === "Enter") {
-        e.preventDefault();
-        e.stopPropagation();
-        const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
-        selectHighlighted(indexToSelect);
-        return;
-      }
-
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        e.preventDefault();
-        e.stopPropagation();
         setShow(false);
+        (document.activeElement as HTMLElement)?.blur();
       }
     };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [show]);
 
-    document.addEventListener("keydown", onDocumentKeyDown, true);
-    return () => document.removeEventListener("keydown", onDocumentKeyDown, true);
-  }, [
-    listOnly,
-    show,
-    usernameAvailable,
-    keystrokeDebounced,
-    results,
-    loading,
-    highlightedIndex,
-    selectHighlighted,
-  ]);
+  const dropdownVisible = show && !!value?.trim();
 
   return (
-    <div ref={containerRef}>
-      {/* Input only if NOT list-only */}
-      {!listOnly && (
-        <input
+    <div ref={containerRef} className="relative">
+      <Command shouldFilter={false}>
+        <Command.Input
           value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setShow(true);
+          onValueChange={(v) => {
+            onChange(v);
+            setShow(!!v?.trim());
           }}
-          onKeyDown={(e) => {
-            const totalSelectable = (usernameAvailable ? 1 : 0) + results.length;
-            if (!totalSelectable || loading) {
-              if (e.key === "Escape") setShow(false);
-              return;
-            }
-
-            if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-              e.preventDefault();
-              setShow(true);
-              const delta = e.key === "ArrowDown" ? 1 : -1;
-              setHighlightedIndex((prev) => {
-                const start = prev >= 0 ? prev : 0;
-                return (start + delta + totalSelectable) % totalSelectable;
-              });
-              return;
-            }
-
-            if (e.key === "Enter") {
-              e.preventDefault();
-              const indexToSelect = highlightedIndex >= 0 ? highlightedIndex : 0;
-              selectHighlighted(indexToSelect);
-              return;
-            }
-
-            if (e.key === "Escape") {
-              setShow(false);
-            }
-          }}
+          onFocus={() => { if (value?.trim()) setShow(true); }}
           placeholder={placeholder}
           autoComplete="off"
           className={className}
-          style={{
-            outline: 'none',
-          }}
-          {...props}
+          style={{ outline: "none" }}
         />
-      )}
 
-      {/* Dropdown menu */}
-      {(show || usernameAvailable) && keystrokeDebounced && (
-        <div
-          className="absolute left-0 top-full z-[1001] mt-1 max-h-48 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white backdrop-blur-md shadow-xl"
-        >
-          {loading ? (
-            <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-              Searching...
-            </div>
-          ) : (
-            <>
-              {/* Show availability message at the top if username is available */}
-              {usernameAvailable && (
-                <div
-                  onClick={() => {
-                    onClaimClick?.();
-                  }}
-                  onMouseEnter={() => setHighlightedIndex(0)}
-                  className={`px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-200 cursor-pointer transition-colors ${
-                    highlightedIndex === 0
-                      ? "bg-green-100/60"
-                      : "bg-green-50/50 hover:bg-green-100/50"
-                  }`}
-                >
-                  <span>
-                    <span className="font-semibold text-green-700">/{usernameAvailable}</span> is available!
-                  </span>
-                </div>
-              )}
+        <AnimatePresence>
+          {dropdownVisible && (
+            <motion.div {...dropdownMotion}>
+              <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
 
-              {/* Show search results */}
-              {results.length > 0 ? (
-                results.map((p, resultIndex) => (
-                  <div
-                    key={`${p.name}-${p.id}`}
-                    onClick={() => {
-                      onChange(p);
-                      setShow(false);
-                    }}
-                    onMouseEnter={() =>
-                      setHighlightedIndex((usernameAvailable ? 1 : 0) + resultIndex)
-                    }
-                    className={`px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors ${
-                      highlightedIndex ===
-                      (usernameAvailable ? 1 : 0) + resultIndex
-                        ? "bg-gray-100"
-                        : "hover:bg-gray-100"
-                    }`}
+                {/* Loading indicator */}
+                {loading && (
+                  <div className="flex items-center justify-center py-3">
+                    <Spinner size="xs" color="gray" />
+                  </div>
+                )}
+
+                {/* Username availability banner */}
+                {usernameAvailable && (
+                  <Command.Item
+                    value="available"
+                    forceMount
+                    onSelect={() => usernameAvailable && onClaimClick?.(usernameAvailable)}
+                    className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 cursor-pointer transition-colors bg-green-50/50 data-[selected=true]:bg-green-100/60 hover:bg-green-100/50"
                   >
-                    {/* Avatar */}
-                    <div>
-                      <ProfileAvatar
-                        profile={p}
-                        size={32}
-                        imageClassName="object-cover"
-                      />
-                    </div>
+                    <span className="font-semibold text-green-700">/{usernameAvailable}</span>{" "}
+                    is available!
+                  </Command.Item>
+                )}
 
-                    {/* Text + metadata */}
+                {/* Empty state */}
+                {!loading && results.length === 0 && !usernameAvailable && (
+                  <div className="px-3 py-3 text-sm text-gray-400 text-center">No results</div>
+                )}
+
+                {/* Results */}
+                {results.map((p) => (
+                  <Command.Item
+                    key={`${p.name}-${p.id}`}
+                    value={`profile-${p.id}`}
+                    onSelect={() => { onChange(p); setShow(false); }}
+                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-50 data-[selected=true]:bg-gray-100"
+                  >
+                    <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
+
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="truncate shrink-0">
-                        {getDisplayName(p)}
+                      <span className="truncate">
+                        <Highlight text={displayName(p)} query={query} />
                       </span>
 
-                      {(p.address_verified || (p.verified_links_count ?? 0) > 0) && (
-                        <div>
-                          <VerifiedBadge verified={true} />
-                        </div>
+                      {p.address_verified && (
+                        <VerifiedBadge verified />
                       )}
 
                       <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                        /{formatUsername(p)}
+                        /<Highlight text={fmtUsername(p)} query={query} />
                       </span>
                     </div>
-                  </div>
-                ))
-              ) : (
-                !usernameAvailable && (
-                  <div className="px-3 py-2 text-sm text-gray-800 font-medium">
-                    No matches
-                  </div>
-                )
-              )}
-            </>
+                  </Command.Item>
+                ))}
+
+              </Command.List>
+            </motion.div>
           )}
-        </div>
-      )}
+        </AnimatePresence>
+      </Command>
     </div>
   );
 }

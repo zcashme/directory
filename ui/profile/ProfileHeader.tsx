@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
@@ -17,17 +17,13 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const router = useRouter();
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
-  const searchInputRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
-  const [suppressDropdown, setSuppressDropdown] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
-  const [availableUsername, setAvailableUsername] = useState<string | null>(null);
 
   const resetSearch = () => {
     setSearch("");
-    setAvailableUsername(null);
   };
 
   const closeForm = () => {
@@ -83,7 +79,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               onClick={() => {
                 const host = window.location.hostname;
                 const parts = host.split('.');
-                // Detect subdomain: sub.localhost or sub.domain.tld (3+ parts)
                 const isLocalhost = parts[parts.length - 1].includes('localhost');
                 const isSubdomain = (isLocalhost && parts.length >= 2 && parts[0] !== 'localhost') || (!isLocalhost && parts.length >= 3);
                 if (isSubdomain) {
@@ -100,42 +95,41 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             </button>
           </div>
 
-          <div className="flex-1 min-w-0 relative flex items-center">
-            <input
-              ref={searchInputRef}
+          <div className="flex-1 min-w-0 relative">
+            <ProfileSearchDropdown
               value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setSuppressDropdown(false);
-                if (!e.target.value.trim()) setAvailableUsername(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && search.trim()) {
-                  setSuppressDropdown(true);
+              onChange={(v) => {
+                if (typeof v === "object") {
+                  const slug = buildSlug(v as Profile);
+                  if (slug) {
+                    (window as any).lastSelectionWasExplicit = true;
+                    const host = window.location.hostname;
+                    const hParts = host.split('.');
+                    const isLH = hParts[hParts.length - 1].includes('localhost');
+                    const isSub = (isLH && hParts.length >= 2 && hParts[0] !== 'localhost') || (!isLH && hParts.length >= 3);
+                    if (isSub) {
+                      const mainDomain = hParts.slice(1).join('.');
+                      const port = window.location.port ? ':' + window.location.port : '';
+                      window.location.href = `${window.location.protocol}//${mainDomain}${port}/${slug}`;
+                    } else {
+                      router.push(`/${slug}`);
+                    }
+                  }
+                } else {
+                  setSearch(v);
                 }
               }}
+              onClaimClick={(username: string) => {
+                setPrefillUsername(username);
+                setIsJoinOpen(true);
+              }}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
-              className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-8 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
+              className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-3 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
-
-            {search && (
-              <button
-                onClick={() => {
-                  resetSearch();
-                  searchInputRef.current?.focus();
-                }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-red-500 text-lg font-semibold leading-none flex-shrink-0"
-                aria-label="Clear search"
-              >
-                ✕
-              </button>
-            )}
-
           </div>
 
           <motion.button
             onClick={() => {
-              setPrefillUsername(availableUsername);
               setIsJoinOpen(true);
             }}
             whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
@@ -145,46 +139,8 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
               height: '32px',
             }}
           >
-            {availableUsername ? 'Claim' : 'Join'}
+            Join
           </motion.button>
-
-          {search && !suppressDropdown && (
-            <div className="absolute left-0 right-0 top-full mt-1 z-[9999]">
-              <ProfileSearchDropdown
-                listOnly
-                value={search}
-                onChange={(v) => {
-                  if (typeof v === "object") {
-                    const slug = buildSlug(v as Profile);
-                    if (slug) {
-                      (window as any).lastSelectionWasExplicit = true;
-                      const host = window.location.hostname;
-                      const hParts = host.split('.');
-                      const isLH = hParts[hParts.length - 1].includes('localhost');
-                      const isSub = (isLH && hParts.length >= 2 && hParts[0] !== 'localhost') || (!isLH && hParts.length >= 3);
-                      if (isSub) {
-                        const mainDomain = hParts.slice(1).join('.');
-                        const port = window.location.port ? ':' + window.location.port : '';
-                        window.location.href = `${window.location.protocol}//${mainDomain}${port}/${slug}`;
-                      } else {
-                        router.push(`/${slug}`);
-                      }
-                    }
-                  } else {
-                    setSearch(v);
-                  }
-                }}
-                onUsernameAvailable={(username) => {
-                  setAvailableUsername(username);
-                }}
-                onClaimClick={() => {
-                  setPrefillUsername(availableUsername);
-                  setIsJoinOpen(true);
-                }}
-                placeholder="search"
-              />
-            </div>
-          )}
 
         </div>
       </div>

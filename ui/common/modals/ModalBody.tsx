@@ -20,7 +20,7 @@ import type { ReactNode } from "react";
  * </ModalBody>
  * ```
  */
-export interface ModalBodyProps {
+interface ModalBodyProps {
   /** Modal body content */
   children: ReactNode;
   /** Additional CSS classes */

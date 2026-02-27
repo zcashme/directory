@@ -12,7 +12,6 @@ Contains all page routes and API endpoints for zcash.me. Uses Next.js 16 App Rou
 | `/ns` | Network School directory - filtered profile list |
 | `/swap-app` | Cryptocurrency swap interface (Defuse OneClick) |
 | `/leader-app` | Referral leaderboard dashboard |
-| `/stats-app` | Network statistics |
 | `/thread` | Discussion board (OTP-verified posting) |
 | `/design-system` | Component showcase for manual testing |
 

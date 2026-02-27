@@ -1,5 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Single source of truth for all subdomain-routed apps.
+// To add a new app, add one entry here — everything else derives from it.
+const apps: Record<string, { path: string; aliases?: string[] }> = {
+  swap:    { path: '/swap-app', aliases: ['swaps'] },
+  donate:  { path: '/donate-app' },
+  thread:  { path: '/thread' },
+  leaders: { path: '/leader-app', aliases: ['leader'] },
+  blog:    { path: '/blog-app' },
+  status:  { path: '/status-app' },
+};
+
+// Subdomain (including aliases) → internal path
+const subdomainMap = new Map<string, string>();
+for (const [sub, cfg] of Object.entries(apps)) {
+  subdomainMap.set(sub, cfg.path);
+  for (const alias of cfg.aliases ?? []) {
+    subdomainMap.set(alias, cfg.path);
+  }
+}
+
+// Internal paths that should 404 when accessed without a subdomain
+const blockedPaths = Object.values(apps).map(a => a.path);
+
+// Reserved roots that should never be treated as usernames in referral links
+const reservedRoots = new Set([
+  ...Object.keys(apps),
+  ...Object.values(apps).map(a => a.path.slice(1)),
+  ...Object.values(apps).flatMap(a => a.aliases ?? []),
+  'api', 'ns', 'design-system', 'privacy', 'terms',
+]);
+
 export function proxy(request: NextRequest) {
   const hostname = request.headers.get('host') || '';
   const url = request.nextUrl.clone();
@@ -15,18 +46,6 @@ export function proxy(request: NextRequest) {
   // Support /:slug/refer links by opening join flow on the target profile page.
   const referMatch = pathname.match(/^\/([^/]+)\/refer\/?$/);
   if (referMatch) {
-    const reservedRoots = new Set([
-      "api",
-      "ns",
-      "thread",
-      "swap-app",
-      "stats-app",
-      "leader-app",
-      "blog-app",
-      "design-system",
-      "privacy",
-      "terms",
-    ]);
     const slug = referMatch[1];
     if (!reservedRoots.has(slug.toLowerCase())) {
       const referredBy = url.searchParams.get("referred_by") || slug;
@@ -56,80 +75,15 @@ export function proxy(request: NextRequest) {
     }
   }
 
-  // Block direct access to app-specific routes
-  if (!subdomain) {
-    if (url.pathname.startsWith('/stats-app') || url.pathname.startsWith('/donate-app') || url.pathname.startsWith('/thread') || url.pathname.startsWith('/swap-app') || url.pathname.startsWith('/leader-app') || url.pathname.startsWith('/blog-app')) {
-      return new NextResponse(null, { status: 404 });
-    }
+  // Block direct access to app-specific routes (subdomain required)
+  if (!subdomain && blockedPaths.some(p => pathname.startsWith(p))) {
+    return new NextResponse(null, { status: 404 });
   }
 
-  // Handle swap subdomain - rewrite to /swap-app internally
-  if (subdomain === 'swap') {
-    if (url.pathname === '/') {
-      url.pathname = '/swap-app';
-    } else if (!url.pathname.startsWith('/swap-app')) {
-      url.pathname = `/swap-app${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle stats subdomain - rewrite to /stats-app internally
-  if (subdomain === 'stats') {
-    if (url.pathname === '/') {
-      url.pathname = '/stats-app';
-    } else if (!url.pathname.startsWith('/stats-app')) {
-      url.pathname = `/stats-app${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle donate subdomain - rewrite to /donate-app internally
-  if (subdomain === 'donate') {
-    if (url.pathname === '/') {
-      url.pathname = '/donate-app';
-    } else if (!url.pathname.startsWith('/donate-app')) {
-      url.pathname = `/donate-app${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle thread subdomain - rewrite to /thread internally
-  if (subdomain === 'thread') {
-    if (url.pathname === '/') {
-      url.pathname = '/thread';
-    } else if (!url.pathname.startsWith('/thread')) {
-      url.pathname = `/thread${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle swaps subdomain - rewrite to /swap-app internally
-  if (subdomain === 'swaps') {
-    if (url.pathname === '/') {
-      url.pathname = '/swap-app';
-    } else if (!url.pathname.startsWith('/swap-app')) {
-      url.pathname = `/swap-app${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle leaders subdomain - rewrite to /leader-app internally
-  if (subdomain === 'leaders') {
-    if (url.pathname === '/') {
-      url.pathname = '/leader-app';
-    } else if (!url.pathname.startsWith('/leader-app')) {
-      url.pathname = `/leader-app${url.pathname}`;
-    }
-    return NextResponse.rewrite(url);
-  }
-
-  // Handle blog subdomain - rewrite to /blog-app internally
-  if (subdomain === 'blog') {
-    if (url.pathname === '/') {
-      url.pathname = '/blog-app';
-    } else if (!url.pathname.startsWith('/blog-app')) {
-      url.pathname = `/blog-app${url.pathname}`;
-    }
+  // Rewrite subdomain requests to internal app paths
+  const appPath = subdomain ? subdomainMap.get(subdomain) : undefined;
+  if (appPath) {
+    url.pathname = pathname === '/' ? appPath : pathname.startsWith(appPath) ? pathname : `${appPath}${pathname}`;
     return NextResponse.rewrite(url);
   }
 

@@ -1,39 +1,27 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-
-// ============================================
-// REWARD PROGRAM CONSTANTS - TWEAK THESE
-// ============================================
-
-// Eligibility & Duration
-const ELIGIBILITY_WINDOW_WEEKS = 4; // R = weeks after signup to verify for eligibility
-const REWARD_DURATION_MONTHS = 12; // T = months rewards are paid after verification
-
-// Base Commission
-const BASE_COMMISSION_RATE = 0.3; // Base X% = 30% commission
-const VERIFICATION_FEE_ZEC = 0.001; // Fixed fee per verification (in ZEC)
-
-// Authenticated Links Multiplier (Option A: Linear Increment)
-const COMMISSION_DELTA_PER_LINK = 0.05; // 5% increase per authenticated link
-const MAX_COMMISSION_RATE = 0.5; // Cap at 50%
-
-// Alternative: Tiered Structure (Option B) - uncomment to use
-// const COMMISSION_TIERS = [
-//   { minLinks: 0, rate: 0.30 },   // 0 links: 30%
-//   { minLinks: 1, rate: 0.35 },   // 1 links: 35%
-//   { minLinks: 2, rate: 0.40 },   // 2 links: 40%
-//   { minLinks: 3, rate: 0.45 },   // 3 links: 45%
-//   { minLinks: 4, rate: 0.50 },   // 4+ links: 50%
-// ];
+import {
+  ELIGIBILITY_WINDOW_WEEKS,
+  REWARD_DURATION_MONTHS,
+  BASE_COMMISSION_RATE,
+  PROFILE_COMPLETENESS_BONUS,
+  VERIFICATION_FEE_ZEC,
+  COMMISSION_DELTA_PER_LINK,
+  MAX_COMMISSION_RATE,
+  addMonths,
+  monthsBetween,
+  calculateCommissionRate,
+  getCommissionTier,
+  computeReferralStatus,
+  type CommissionTier,
+} from "./rewardProgram";
 
 // ============================================
 // TYPES
 // ============================================
 
 export type Period = "daily" | "weekly" | "monthly" | "alltime";
-
-export type CommissionTier = "base" | "bronze" | "silver" | "gold" | "platinum";
 
 export interface LeaderboardEntry {
   rank: number;
@@ -75,6 +63,7 @@ export interface LeaderboardResponse {
     eligibilityWindowWeeks: number;
     rewardDurationMonths: number;
     baseCommissionRate: number;
+    profileCompletenessBonus: number;
     commissionDeltaPerLink: number;
     maxCommissionRate: number;
     verificationFeeZec: number;
@@ -103,45 +92,6 @@ function getPeriodFilter(period: Period): Date | null {
   }
 }
 
-function addWeeks(date: Date, weeks: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + weeks * 7);
-  return result;
-}
-
-function addMonths(date: Date, months: number): Date {
-  const result = new Date(date);
-  result.setMonth(result.getMonth() + months);
-  return result;
-}
-
-function monthsBetween(start: Date, end: Date): number {
-  const months =
-    (end.getFullYear() - start.getFullYear()) * 12 +
-    (end.getMonth() - start.getMonth());
-  return Math.max(0, months);
-}
-
-/**
- * Calculate commission rate based on authenticated links count
- * Uses linear increment model: base_rate + (authenticated_links * delta)
- */
-function calculateCommissionRate(verifiedLinksCount: number): number {
-  const rate = BASE_COMMISSION_RATE + verifiedLinksCount * COMMISSION_DELTA_PER_LINK;
-  return Math.min(rate, MAX_COMMISSION_RATE);
-}
-
-/**
- * Determine commission tier based on verified links count
- */
-function getCommissionTier(verifiedLinksCount: number): CommissionTier {
-  if (verifiedLinksCount >= 10) return "platinum";
-  if (verifiedLinksCount >= 6) return "gold";
-  if (verifiedLinksCount >= 3) return "silver";
-  if (verifiedLinksCount >= 1) return "bronze";
-  return "base";
-}
-
 // ============================================
 // INTERNAL TYPES
 // ============================================
@@ -162,7 +112,7 @@ interface ReferralStats {
   pendingLinksCount: number;
   // Track individual eligible referrals with their locked commission rates
   eligibleReferrals: Array<{
-    lastVerifiedAt: Date;
+    firstVerifiedAt: Date;
     rewardEndDate: Date;
     isActive: boolean;
     lockedCommissionRate: number; // Rate at time of verification
@@ -180,6 +130,7 @@ export async function getLeaderboardAction(
     eligibilityWindowWeeks: ELIGIBILITY_WINDOW_WEEKS,
     rewardDurationMonths: REWARD_DURATION_MONTHS,
     baseCommissionRate: BASE_COMMISSION_RATE,
+    profileCompletenessBonus: PROFILE_COMPLETENESS_BONUS,
     commissionDeltaPerLink: COMMISSION_DELTA_PER_LINK,
     maxCommissionRate: MAX_COMMISSION_RATE,
     verificationFeeZec: VERIFICATION_FEE_ZEC,
@@ -194,7 +145,7 @@ export async function getLeaderboardAction(
     // Fetch all users with their referrer info
     const { data: users, error } = await supabase
       .from("zcasher")
-      .select("id, name, referred_by_zcasher_id, address_verified, created_at, last_verified_at")
+      .select("id, name, referred_by_zcasher_id, address_verified, created_at, first_verified_at")
       .not("referred_by_zcasher_id", "is", null);
 
     if (error) {
@@ -219,11 +170,11 @@ export async function getLeaderboardAction(
 
     const referrersWithDisplay = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url")
+      .select("id, name, display_name, profile_image_url, bio, nearest_city_name")
       .in("id", referrerIds);
 
     let referrers = referrersWithDisplay.data as
-      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null }>
+      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null; bio?: string | null; nearest_city_name?: string | null }>
       | null;
 
     if (referrersWithDisplay.error) {
@@ -232,19 +183,29 @@ export async function getLeaderboardAction(
         .select("id, name, profile_image_url")
         .in("id", referrerIds);
       referrers = (referrersFallback.data as Array<{ id: number; name: string | null; profile_image_url?: string | null }> | null)
-        ?.map((r) => ({ ...r, display_name: null })) ?? null;
+        ?.map((r) => ({ ...r, display_name: null, bio: null, nearest_city_name: null })) ?? null;
     }
 
     const { data: allLinks } = await linksPromise;
 
-    // Build referrer identity map
-    const referrerIdentity = new Map<number, { username: string; displayName: string; profileImageUrl: string | null }>(
+    // Build referrer identity map (includes profile completeness flags)
+    const referrerIdentity = new Map<number, {
+      username: string;
+      displayName: string;
+      profileImageUrl: string | null;
+      hasProfileImage: boolean;
+      hasBio: boolean;
+      hasLocation: boolean;
+    }>(
       (referrers || []).map((r) => [
         r.id,
         {
           username: r.name || `user${r.id}`,
           displayName: r.display_name || r.name || `User ${r.id}`,
           profileImageUrl: r.profile_image_url || null,
+          hasProfileImage: !!r.profile_image_url,
+          hasBio: !!r.bio,
+          hasLocation: !!r.nearest_city_name,
         },
       ])
     );
@@ -271,16 +232,15 @@ export async function getLeaderboardAction(
       if (!referrerId || referrerId === user.id) continue; // Skip self-referrals
 
       const createdAt = new Date(user.created_at);
-      const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
-      const lastVerifiedAt = user.last_verified_at ? new Date(user.last_verified_at) : null;
+      const firstVerifiedAt = user.first_verified_at ? new Date(user.first_verified_at) : null;
 
       // For time-filtered periods, only count referrals within the period
       // Skip referrals that don't fall within the selected period
       if (periodStart) {
-        const isVerifiedUser = user.address_verified && lastVerifiedAt;
+        const isVerifiedUser = user.address_verified && firstVerifiedAt;
         if (isVerifiedUser) {
           // For verified referrals, filter by verification date
-          if (lastVerifiedAt < periodStart) {
+          if (firstVerifiedAt < periodStart) {
             continue; // Skip - verified before the period started
           }
         } else {
@@ -314,46 +274,42 @@ export async function getLeaderboardAction(
 
       current.total++;
 
-      if (user.address_verified && lastVerifiedAt) {
-        current.verified++;
+      const isVerified = !!user.address_verified;
+      if (isVerified) current.verified++;
+      else current.unverified++;
 
-        // Check if verified within eligibility window
-        const isEligible = lastVerifiedAt <= eligibilityDeadline;
+      const status = computeReferralStatus(isVerified, createdAt, firstVerifiedAt, now);
 
-        if (isEligible) {
+      switch (status) {
+        case "active":
+        case "expired": {
+          // Activated referrals (verified within eligibility window)
           current.eligibleCount++;
+          const rewardEndDate = addMonths(firstVerifiedAt!, REWARD_DURATION_MONTHS);
+          const isActive = status === "active";
+          if (isActive) current.activeRewardsCount++;
 
-          // Calculate reward end date
-          const rewardEndDate = addMonths(lastVerifiedAt, REWARD_DURATION_MONTHS);
-          const isActive = now < rewardEndDate;
-
-          if (isActive) {
-            current.activeRewardsCount++;
-          }
-
-          // Commission rate is locked at time of referral verification
-          // In production, this would be stored in the database
-          // For now, we use the current verified links count as approximation
-          const lockedCommissionRate = calculateCommissionRate(referrerVerifiedLinks);
-
+          const lockedCommissionRate = calculateCommissionRate({
+            verifiedLinksCount: referrerVerifiedLinks,
+            hasProfileImage: identity?.hasProfileImage ?? false,
+            hasBio: identity?.hasBio ?? false,
+            hasLocation: identity?.hasLocation ?? false,
+          });
           current.eligibleReferrals.push({
-            lastVerifiedAt,
+            firstVerifiedAt: firstVerifiedAt!,
             rewardEndDate,
             isActive,
             lockedCommissionRate,
           });
-        } else {
-          current.ineligibleCount++;
+          break;
         }
-      } else {
-        current.unverified++;
-
-        // Check if still within eligibility window
-        if (now <= eligibilityDeadline) {
+        case "eligible":
           current.pendingOpportunities++;
-        } else {
-          current.expiredOpportunities++;
-        }
+          break;
+        case "ineligible":
+          if (isVerified) current.ineligibleCount++;
+          else current.expiredOpportunities++;
+          break;
       }
 
       referrerStats.set(referrerId, current);
@@ -362,10 +318,20 @@ export async function getLeaderboardAction(
     // Convert to array and calculate earnings
     const entries: LeaderboardEntry[] = Array.from(referrerStats.entries())
       .map(([referrerId, stats]) => {
-        const currentCommissionRate = calculateCommissionRate(stats.verifiedLinksCount);
-        const potentialCommissionRate = calculateCommissionRate(
-          stats.verifiedLinksCount + stats.pendingLinksCount
-        );
+        const identity = referrerIdentity.get(referrerId);
+        const profileFlags = {
+          hasProfileImage: identity?.hasProfileImage ?? false,
+          hasBio: identity?.hasBio ?? false,
+          hasLocation: identity?.hasLocation ?? false,
+        };
+        const currentCommissionRate = calculateCommissionRate({
+          verifiedLinksCount: stats.verifiedLinksCount,
+          ...profileFlags,
+        });
+        const potentialCommissionRate = calculateCommissionRate({
+          verifiedLinksCount: stats.verifiedLinksCount + stats.pendingLinksCount,
+          ...profileFlags,
+        });
 
         // Calculate earnings using locked commission rates per referral
         let currentMonthlyPayout = 0;
@@ -382,7 +348,7 @@ export async function getLeaderboardAction(
           }
 
           const monthsElapsed = Math.min(
-            monthsBetween(referral.lastVerifiedAt, now),
+            monthsBetween(referral.firstVerifiedAt, now),
             REWARD_DURATION_MONTHS
           );
           totalEarnedToDate += monthsElapsed * monthlyReward;

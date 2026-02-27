@@ -1,8 +1,8 @@
 import type { CSSProperties } from "react";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
-export type Variant = "default" | "mobile";
-export type LinkVariant = "default" | "simple";
+type Variant = "default" | "mobile";
+type LinkVariant = "default" | "simple";
 
 export interface LinkRowClasses {
   row: string;
@@ -60,11 +60,6 @@ export interface ProfileCardContentProps {
   className?: string;
   textScaleOverrides?: Partial<ProfileCardTextScale>;
   showDisplayNameVerifiedBadge?: boolean;
-}
-
-export interface RedirectModalProps {
-  isOpen: boolean;
-  label: string;
 }
 
 export interface ProfileCardProps {

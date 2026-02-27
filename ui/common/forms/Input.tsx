@@ -40,7 +40,7 @@ import FieldMessages from "./FieldMessages";
  * />
  * ```
  */
-export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "size"> {
+interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "onChange" | "size"> {
   /** Current input value */
   value: string;
   /** Callback when value changes */

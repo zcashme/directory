@@ -5,15 +5,7 @@
 export function generateSessionId(): string {
   const digits = '0123456789';
   const array = new Uint8Array(16);
-
-  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
-    crypto.getRandomValues(array);
-  } else {
-    // Fallback for environments without crypto (shouldn't happen in modern browsers)
-    for (let i = 0; i < 16; i++) {
-      array[i] = Math.floor(Math.random() * 256);
-    }
-  }
+  crypto.getRandomValues(array);
 
   let sessionId = '';
   for (let i = 0; i < 16; i++) {

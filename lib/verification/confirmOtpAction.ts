@@ -2,68 +2,21 @@
 
 import { verifyOtp } from "@/lib/verification/otp";
 import { parseZvsMemo } from "@/lib/verification/session";
-import { getMemoEntry, recordFailure, removeMemo, getMaxAttempts } from "@/lib/verification/memoStore";
-import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
+import {
+  AVATAR_BUCKET,
+  AVATAR_FOLDER,
+  MAX_AVATAR_SIZE_BYTES,
+  ALLOWED_AVATAR_MIME_TYPES,
+  ALLOWED_AVATAR_EXTENSIONS,
+  avatarPath,
+  removeExistingAvatar,
+  downloadAndStoreAvatar,
+} from "@/lib/profile/avatarStorage";
 
-const AVATAR_BUCKET = "zcashme";
-const AVATAR_FOLDER = "avatars";
 const AVATAR_HISTORY_FOLDER = "avatar_history";
-const MAX_AVATAR_SIZE_BYTES = 2 * 1024 * 1024;
-const ALLOWED_AVATAR_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif"]);
-const ALLOWED_AVATAR_EXTENSIONS = new Set(["jpg", "png", "gif"]);
-
-function withCacheVersion(url: string): string {
-  try {
-    const parsed = new URL(url);
-    parsed.searchParams.set("v", Date.now().toString());
-    return parsed.toString();
-  } catch {
-    const separator = url.includes("?") ? "&" : "?";
-    return `${url}${separator}v=${Date.now()}`;
-  }
-}
-
-function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
-  try {
-    const normalized = base64Data.replace(/\s+/g, "");
-    const buffer = Buffer.from(normalized, "base64");
-    if (!buffer || buffer.length === 0) return null;
-    return new Uint8Array(buffer);
-  } catch {
-    return null;
-  }
-}
-
-async function removeExistingAvatarVariants(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
-  profileId: number
-): Promise<{ ok: boolean; error?: string }> {
-  if (!supabase) return { ok: false, error: "Supabase client not available." };
-  const prefix = `${profileId}_zmp`;
-  const { data: files, error: listError } = await supabase.storage
-    .from(AVATAR_BUCKET)
-    .list(AVATAR_FOLDER, { limit: 200, search: prefix });
-
-  if (listError) {
-    return { ok: false, error: listError.message || "Failed to list existing avatars." };
-  }
-
-  const targets = (files || [])
-    .map((f) => f.name)
-    .filter((name) => name.toLowerCase() === prefix.toLowerCase() || new RegExp(`^${prefix}\\.[^./]+$`, "i").test(name))
-    .map((name) => `${AVATAR_FOLDER}/${name}`);
-
-  if (targets.length === 0) return { ok: true };
-
-  const { error: removeError } = await supabase.storage.from(AVATAR_BUCKET).remove(targets);
-  if (removeError) {
-    return { ok: false, error: removeError.message || "Failed to remove previous avatar." };
-  }
-  return { ok: true };
-}
 
 function formatTimestamp(): string {
   const d = new Date();
@@ -72,10 +25,9 @@ function formatTimestamp(): string {
 }
 
 async function copyAvatarToHistory(
-  supabase: ReturnType<typeof createSupabaseServerClient>,
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
   profileId: number
 ): Promise<void> {
-  if (!supabase) return;
   const prefix = `${profileId}_zmp`;
   const { data: files } = await supabase.storage
     .from(AVATAR_BUCKET)
@@ -83,7 +35,7 @@ async function copyAvatarToHistory(
 
   const existing = (files || [])
     .map((f) => f.name)
-    .filter((name) => name.toLowerCase() === prefix.toLowerCase() || new RegExp(`^${prefix}\\.[^./]+$`, "i").test(name));
+    .filter((name) => new RegExp(`^${profileId}_zmp\\.[^./]+$`, "i").test(name));
 
   for (const name of existing) {
     const srcPath = `${AVATAR_FOLDER}/${name}`;
@@ -98,6 +50,17 @@ async function copyAvatarToHistory(
       contentType: data.type || "application/octet-stream",
       upsert: false,
     });
+  }
+}
+
+function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
+  try {
+    const normalized = base64Data.replace(/\s+/g, "");
+    const buffer = Buffer.from(normalized, "base64");
+    if (!buffer || buffer.length === 0) return null;
+    return new Uint8Array(buffer);
+  } catch {
+    return null;
   }
 }
 
@@ -137,48 +100,18 @@ export async function confirmOtpAction(
 
     const trimmedMemo = memo.trim();
 
-    // --- Check memo was server-issued ---------------------------------------
-    const entry = getMemoEntry(trimmedMemo);
-    if (!entry) {
-      return {
-        ok: false,
-        error: "Memo expired or not recognised. Please generate a new QR code.",
-        data: { status: "invalid" },
-      };
-    }
-
-    // --- Verify OTP ---------------------------------------------------------
+    // --- Verify OTP (stateless HMAC-SHA256 — no server-side memo store) -----
     const isValid = await verifyOtp(trimmedMemo, otp.trim());
 
     if (!isValid) {
-      // Record the failed attempt; check if exhausted
-      const exhausted = recordFailure(trimmedMemo);
-
-      if (exhausted) {
-        // Generate a fresh memo + URI for the same profile & amount
-        const fresh = await generateMemoAction(profileId, entry.amount);
-
-        return {
-          ok: false,
-          error: `Too many attempts. A new QR code has been generated — please send a new transaction.`,
-          data: {
-            status: "exhausted",
-            newMemo: fresh.ok ? fresh.memo : undefined,
-            newUri: fresh.ok ? fresh.uri : undefined,
-          },
-        };
-      }
-
-      const remaining = getMaxAttempts() - entry.attempts - 1;
       return {
         ok: false,
-        error: `Invalid verification code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+        error: "Invalid verification code.",
         data: { status: "invalid" },
       };
     }
 
     // --- OTP valid — proceed with verification ------------------------------
-    removeMemo(trimmedMemo);
 
     // Parse memo to extract address
     const parsed = parseZvsMemo(trimmedMemo);
@@ -202,7 +135,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at")
       .eq("id", profileId)
       .single();
 
@@ -219,7 +152,12 @@ export async function confirmOtpAction(
     }
 
     // --- Apply profile update -----------------------------------------------
-    const profileUpdate: Record<string, unknown> = { address_verified: true, last_verified_at: new Date().toISOString() };
+    const now = new Date().toISOString();
+    const profileUpdate: Record<string, unknown> = {
+      address_verified: true,
+      last_verified_at: now,
+      ...(profile.first_verified_at ? {} : { first_verified_at: now }),
+    };
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 
@@ -233,7 +171,7 @@ export async function confirmOtpAction(
 
     if (removeProfileImage) {
       await copyAvatarToHistory(supabase, profileId);
-      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return {
           ok: false,
@@ -271,15 +209,15 @@ export async function confirmOtpAction(
       }
 
       await copyAvatarToHistory(supabase, profileId);
-      const removeExisting = await removeExistingAvatarVariants(supabase, profileId);
+      const removeExisting = await removeExistingAvatar(supabase, profileId);
       if (!removeExisting.ok) {
         return { ok: false, error: removeExisting.error || "Failed to replace existing avatar.", data: { status: "error" } };
       }
 
-      const avatarPath = `${AVATAR_FOLDER}/${profileId}_zmp`;
+      const path = avatarPath(profileId);
       const { error: uploadError } = await supabase.storage
         .from(AVATAR_BUCKET)
-        .upload(avatarPath, fileBytes, {
+        .upload(path, fileBytes, {
           contentType: normalizedMimeType,
           upsert: true,
         });
@@ -292,7 +230,7 @@ export async function confirmOtpAction(
         };
       }
 
-      const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(avatarPath);
+      const { data: publicData } = supabase.storage.from(AVATAR_BUCKET).getPublicUrl(path);
       uploadedAvatarUrl = publicData?.publicUrl || null;
       if (!uploadedAvatarUrl) {
         return {
@@ -301,7 +239,7 @@ export async function confirmOtpAction(
           data: { status: "error" },
         };
       }
-      profileUpdate.profile_image_url = withCacheVersion(uploadedAvatarUrl);
+      profileUpdate.profile_image_url = uploadedAvatarUrl;
     }
 
     if (edits) {
@@ -309,7 +247,17 @@ export async function confirmOtpAction(
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
       if (!removeProfileImage && !uploadedAvatarUrl && edits.profile_image_url !== undefined) {
-        profileUpdate.profile_image_url = edits.profile_image_url;
+        // Download external URL and store in Supabase bucket
+        if (edits.profile_image_url) {
+          const dl = await downloadAndStoreAvatar(supabase, profileId, edits.profile_image_url);
+          if (!dl.ok) {
+            return { ok: false, error: dl.error, data: { status: "error" } };
+          }
+          uploadedAvatarUrl = dl.publicUrl;
+          profileUpdate.profile_image_url = dl.publicUrl;
+        } else {
+          profileUpdate.profile_image_url = null;
+        }
       }
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }

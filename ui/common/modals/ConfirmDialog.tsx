@@ -43,7 +43,7 @@ import Button from "@/ui/common/buttons/Button";
  * />
  * ```
  */
-export interface ConfirmDialogProps {
+interface ConfirmDialogProps {
   /** Whether the dialog is open */
   isOpen: boolean;
   /** Callback when dialog is closed */

@@ -32,7 +32,7 @@ import ModalPortal from "@/ui/common/ModalPortal";
  * </Modal>
  * ```
  */
-export interface ModalProps {
+interface ModalProps {
   /** Whether the modal is open */
   isOpen: boolean;
   /** Callback when modal is closed */

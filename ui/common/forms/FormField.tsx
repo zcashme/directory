@@ -54,7 +54,7 @@ import HelpIcon from "@/ui/common/HelpIcon";
  * </FormField>
  * ```
  */
-export interface FormFieldProps {
+interface FormFieldProps {
   /** Field label text */
   label: string;
   /** HTML for attribute to associate label with input */

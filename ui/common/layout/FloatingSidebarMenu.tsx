@@ -30,14 +30,19 @@ export default function FloatingSidebarMenu() {
   const [isOpen, setIsOpen] = useState<boolean>(false);
   const [isMobile, setIsMobile] = useState<boolean>(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
-  const [menuWidthPx, setMenuWidthPx] = useState<number>(360);
   const [headerOffsetPx, setHeaderOffsetPx] = useState<number>(0);
-  const [footerOffsetPx, setFooterOffsetPx] = useState<number>(0);
+  const menuWidthRef = useRef<number>(typeof window !== "undefined"
+    ? Math.round(window.innerWidth < 768
+      ? Math.min(Math.max(window.innerWidth * 0.86, 300), 420)
+      : Math.min(Math.max(window.innerWidth * 0.33, 360), 520))
+    : 520);
   const tabRef = useRef<HTMLButtonElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<Array<HTMLButtonElement | null>>([]);
-  const panelX = useMotionValue(0);
+  const panelX = useMotionValue(-menuWidthRef.current);
   const dragControls = useDragControls();
+  const isOpenRef = useRef(false);
 
   const resolveDestination = useCallback((item: FloatingSidebarItem) => {
     if (!item.href) return null;
@@ -51,11 +56,13 @@ export default function FloatingSidebarMenu() {
   }, []);
 
   const openMenu = useCallback(() => {
+    isOpenRef.current = true;
     setIsOpen(true);
     setHighlightedIndex((prev) => (prev >= 0 ? prev : 0));
   }, []);
 
   const closeMenu = useCallback((returnFocus = true) => {
+    isOpenRef.current = false;
     setIsOpen(false);
     setHighlightedIndex(-1);
     if (returnFocus) tabRef.current?.focus();
@@ -84,42 +91,35 @@ export default function FloatingSidebarMenu() {
   }, [isOpen, highlightedIndex]);
 
   useEffect(() => {
-    panelX.set(-menuWidthPx);
-  }, [menuWidthPx, panelX]);
-
-  useEffect(() => {
-    const controls = animate(panelX, isOpen ? 0 : -menuWidthPx, {
+    const controls = animate(panelX, isOpen ? 0 : -menuWidthRef.current, {
       type: "spring",
       stiffness: 520,
       damping: 34,
       mass: 0.7,
     });
     return () => controls.stop();
-  }, [isOpen, menuWidthPx, panelX]);
+  }, [isOpen, panelX]);
 
   useEffect(() => {
     const updateLayout = () => {
       const viewportWidth = window.innerWidth;
       const headerEl = document.querySelector("[data-global-header]") as HTMLElement | null;
       const headerHeight = headerEl?.getBoundingClientRect().height ?? 0;
-      const footerEls = Array.from(document.querySelectorAll("footer")) as HTMLElement[];
-      const fixedFooter = footerEls.find((el) => getComputedStyle(el).position === "fixed") ?? null;
-      const footerHeight = fixedFooter?.getBoundingClientRect().height ?? 0;
-      const footerSafeGap = 22;
       const targetWidth = viewportWidth < 768
         ? Math.round(Math.min(Math.max(viewportWidth * 0.86, 300), 420))
         : Math.round(Math.min(Math.max(viewportWidth * 0.33, 360), 520));
 
+      menuWidthRef.current = targetWidth;
+      if (panelRef.current) panelRef.current.style.width = `${targetWidth}px`;
+      panelX.set(isOpenRef.current ? 0 : -targetWidth);
       setHeaderOffsetPx(headerHeight);
-      setFooterOffsetPx(footerHeight + footerSafeGap);
-      setMenuWidthPx(targetWidth);
       setIsMobile(viewportWidth < 768);
     };
 
     updateLayout();
     window.addEventListener("resize", updateLayout);
     return () => window.removeEventListener("resize", updateLayout);
-  }, []);
+  }, [panelX]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -224,32 +224,33 @@ export default function FloatingSidebarMenu() {
           type="button"
           aria-label="Close sidebar menu"
           onClick={() => closeMenu(false)}
-          className="fixed inset-0 z-[1190] bg-black/15 backdrop-blur-[2px]"
+          className="fixed inset-0 z-[1190] bg-black/20"
         />
       )}
 
-      <div ref={containerRef} className="pointer-events-none fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: footerOffsetPx }}>
+      <div ref={containerRef} className="pointer-events-none fixed left-0 z-[1200]" style={{ top: headerOffsetPx, bottom: 0 }}>
         <motion.div
-          style={{ x: panelX, width: menuWidthPx, touchAction: "pan-y" }}
+          ref={panelRef}
+          style={{ x: panelX, width: menuWidthRef.current, touchAction: "pan-y", willChange: "transform" }}
           drag={isMobile ? "x" : false}
           dragListener={isOpen}
           dragControls={dragControls}
-          dragConstraints={{ left: -menuWidthPx, right: 0 }}
+          dragConstraints={{ left: -menuWidthRef.current, right: 0 }}
           dragElastic={0.06}
           dragMomentum={false}
           onDragEnd={handlePanelDragEnd}
           className="pointer-events-auto relative h-full"
         >
-          <motion.div
+          <div
             id="floating-sidebar-menu"
             role="menu"
             onKeyDown={handleMenuKeyDown}
-            initial={false}
-            animate={{ opacity: isOpen ? 1 : 0.96, scale: isOpen ? 1 : 0.995 }}
-            className="h-full w-full overflow-hidden rounded-r-3xl rounded-l-none border border-l-0 border-gray-200 shadow-2xl backdrop-blur-sm"
+            className="h-full w-full overflow-hidden rounded-r-3xl rounded-l-none border border-l-0 border-gray-200 shadow-2xl"
             style={{
               pointerEvents: isOpen ? "auto" : "none",
-              backgroundColor: "color-mix(in srgb, var(--color-background) 88%, transparent)",
+              backgroundColor: "var(--color-background)",
+              opacity: isOpen ? 1 : 0.96,
+              transition: "opacity 0.15s ease-out",
             }}
           >
             <div className="px-6 pt-6 pb-4 border-b border-gray-200">
@@ -259,7 +260,7 @@ export default function FloatingSidebarMenu() {
               {SIDEBAR_MENU_ITEMS.map((item, index) => {
                 const isRowActive = highlightedIndex === index;
                 return (
-                  <motion.button
+                  <button
                     key={item.href ?? item.label}
                     ref={(el) => {
                       itemRefs.current[index] = el;
@@ -300,13 +301,13 @@ export default function FloatingSidebarMenu() {
                     >
                       {item.description}
                     </span>
-                  </motion.button>
+                  </button>
                 );
               })}
             </div>
-          </motion.div>
+          </div>
 
-          <motion.button
+          <button
             ref={tabRef}
             type="button"
             onClick={() => (isOpen ? closeMenu(false) : openMenu())}
@@ -317,8 +318,8 @@ export default function FloatingSidebarMenu() {
             aria-expanded={isOpen}
             aria-controls="floating-sidebar-menu"
             aria-label="Open quick navigation menu"
-            className="absolute right-0 top-1/2 h-24 w-8 translate-x-full -translate-y-1/2 border border-l-0 border-gray-200 rounded-r-2xl text-gray-600 shadow-sm transition-colors hover:text-gray-900 backdrop-blur-sm"
-            style={{ pointerEvents: "auto", backgroundColor: "color-mix(in srgb, var(--color-background) 84%, transparent)", touchAction: "pan-y" }}
+            className="absolute right-0 top-1/2 h-24 w-8 translate-x-full -translate-y-1/2 border border-l-0 border-gray-200 rounded-r-2xl text-gray-600 shadow-sm transition-colors hover:text-gray-900"
+            style={{ pointerEvents: "auto", backgroundColor: "var(--color-background)", touchAction: "pan-y" }}
           >
             <span className="flex items-center justify-center">
               <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -330,7 +331,7 @@ export default function FloatingSidebarMenu() {
                 <path d="M14 20.5H17V17.5H14V20.5Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </span>
-          </motion.button>
+          </button>
         </motion.div>
       </div>
     </>

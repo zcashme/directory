@@ -1,4 +1,4 @@
-import type { Profile, ProfileTrust, ProfileTrustWarning, RankType } from "@/lib/profile/types";
+import type { Profile, ProfileTrust, ProfileTrustWarning } from "@/lib/profile/types";
 
 /**
  * Derives trust-state booleans from a profile object.
@@ -123,39 +123,6 @@ export function getWarningConfig({ profile, warning, verifiedAddress, verifiedLi
       "Names can be impersonated.",
     ],
   };
-}
-
-/**
- * Derives the highest-priority rank type from a profile.
- */
-export function getRankType(profile: Partial<Profile>): RankType {
-  if (profile.rank_alltime && profile.rank_alltime > 0) return "alltime";
-  if (profile.rank_weekly && profile.rank_weekly > 0) return "weekly";
-  if (profile.rank_monthly && profile.rank_monthly > 0) return "monthly";
-  if (profile.rank_daily && profile.rank_daily > 0) return "daily";
-  return null;
-}
-
-/**
- * Returns a Tailwind class string for the profile circle indicator.
- */
-export function getCircleClass(isVerified: boolean, rankType: RankType): string {
-  if (isVerified && rankType) {
-    return "bg-linear-to-r from-green-400 to-orange-500";
-  }
-  if (isVerified) {
-    return "bg-green-500";
-  }
-  if (rankType) {
-    const map: Record<string, string> = {
-      alltime: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-red-500",
-      weekly: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-orange-500",
-      monthly: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-red-500",
-      daily: "bg-linear-to-r from-[var(--color-brand-blue)]/55 to-cyan-500",
-    };
-    return map[rankType] || "bg-[var(--color-brand-blue)]/55";
-  }
-  return "bg-[var(--color-brand-blue)]/55";
 }
 
 /**
