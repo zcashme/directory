@@ -72,47 +72,8 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
 
 // ── Formatting helpers ────────────────────────────────────────
 
-function ZecMark({ className = "h-3.5 w-3.5" }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 256 256"
-      className={className}
-      aria-hidden="true"
-    >
-      <g
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="22"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M56 56 H200 L56 200 H200" />
-        <path d="M128 32 V224" />
-      </g>
-    </svg>
-  );
-}
-
-function formatZecNumber(value: number): string {
-  return value.toFixed(8).replace(/\.?0+$/, "");
-}
-
-function formatZec(value: number): ReactElement {
-  return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap">
-      <ZecMark />
-      <span>{formatZecNumber(value)}</span>
-    </span>
-  );
-}
-
 function formatZats(value: number): string {
   return Math.round(value * 100000000).toLocaleString("en-US");
-}
-
-function formatPercent(value: number): string {
-  return `${(value * 100).toFixed(1)}%`;
 }
 
 // ── Row content (server-rendered, passed to client ExpandableRow) ──
@@ -185,7 +146,6 @@ export default async function LeaderboardPage({
 
   const entries = response.ok ? response.data : [];
   const error = response.ok ? null : (response.error || "Failed to load leaderboard");
-  const constants = response.constants;
 
   const totalReferrals = entries.reduce((sum, e) => sum + e.totalReferrals, 0);
   const totalVerified = entries.reduce((sum, e) => sum + e.verifiedReferrals, 0);
