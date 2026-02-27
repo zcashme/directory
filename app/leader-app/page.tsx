@@ -281,18 +281,14 @@ export default async function LeaderboardPage({
               </div>
 
               <LeaderboardTable totalRows={entries.length}>
-                {entries.map((entry) => {
-                  const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
-                  return (
-                    <Link
-                      key={entry.referrerId}
-                      href={`/${safeUsername}`}
-                      className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-t border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px] transition-colors hover:bg-gray-50 cursor-pointer"
-                    >
-                      <RowSummary entry={entry} />
-                    </Link>
-                  );
-                })}
+                {entries.map((entry) => (
+                  <div
+                    key={entry.referrerId}
+                    className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-t border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px] transition-colors hover:bg-gray-50 cursor-pointer"
+                  >
+                    <RowSummary entry={entry} />
+                  </div>
+                ))}
               </LeaderboardTable>
             </div>
           </div>
