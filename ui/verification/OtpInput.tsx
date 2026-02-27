@@ -121,11 +121,11 @@ export function OtpInput({
                 key={`otp-slot-${idx}`}
                 className={`h-12 rounded-lg border text-lg font-semibold leading-none flex items-center justify-center transition-colors ${
                   error
-                    ? "border-red-400 bg-red-50 text-red-600"
+                    ? "border-red-400 bg-transparent text-red-600"
                     : isActive
-                      ? "border-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/8 text-gray-900"
-                      : "border-black/20 bg-white text-gray-900"
-                } ${disabled ? "bg-gray-50 text-gray-400" : ""}`}
+                      ? "border-[var(--color-brand-blue)] bg-transparent text-[var(--color-brand-blue)]"
+                      : "border-gray-800 bg-transparent text-gray-700"
+                } ${disabled ? "border-black/20 bg-transparent text-gray-400" : ""}`}
                 aria-hidden="true"
               >
                 {digit}

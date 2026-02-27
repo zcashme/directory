@@ -98,9 +98,13 @@ interface CharCounterProps {
   text: string;
 }
 
-function BioLeftIcon({ text }: CharCounterProps) {
+interface BioLeftIconProps extends CharCounterProps {
+  isActive: boolean;
+}
+
+function BioLeftIcon({ text, isActive }: BioLeftIconProps) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
-  const showCircle = bytes > 25;
+  const showCircle = isActive && bytes > 25;
 
   if (!showCircle) {
     return (
@@ -208,6 +212,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
 
   // Display value for city search input (local UI state)
   const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name ?? "");
+  const [isBioActive, setIsBioActive] = useState(false);
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -754,7 +759,7 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
         >
           <div className="relative">
             <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
-              <BioLeftIcon text={form.bio} />
+              <BioLeftIcon text={form.bio} isActive={isBioActive} />
             </div>
             <textarea
               id="bio"
@@ -763,6 +768,8 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               value={form.bio}
               placeholder={deletedFields.bio ? "" : originals.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
+              onFocus={() => setIsBioActive(true)}
+              onBlur={() => setIsBioActive(false)}
               className={`${FIELD_CLASS} resize-none overflow-hidden pl-8 pr-8 pb-8 pt-2.5 relative text-left whitespace-pre-wrap break-words`}
             />
             <CharCounter text={form.bio} />

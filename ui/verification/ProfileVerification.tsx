@@ -6,7 +6,7 @@ import { OtpInput } from "@/ui/verification/OtpInput";
 import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
-import Button from "@/ui/common/buttons/Button";
+import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
 
 const QR_AMOUNT_ZEC = "0.004";
@@ -20,7 +20,6 @@ interface ProfileVerificationProps {
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
-  onClose,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
@@ -98,9 +97,7 @@ export default function ProfileVerification({
 
   // Local UI state
   const [qrVisible, setQrVisible] = useState(false);
-  const [showOtpEntry, setShowOtpEntry] = useState(false);
   const [otp, setOtp] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
@@ -118,9 +115,7 @@ export default function ProfileVerification({
     setError("");
     setOtpResult(null);
     setOtp("");
-    setShowOtpEntry(false);
     setOtpAttemptsLeft(5);
-    setIsGenerating(true);
 
     try {
       const result = await generateMemoAction(profile.id, QR_AMOUNT_ZEC);
@@ -129,14 +124,11 @@ export default function ProfileVerification({
         setCurrentMemo(result.memo);
         setCurrentUri(result.uri);
         setQrVisible(true);
-        setShowOtpEntry(false);
       } else {
         setError(result.error ?? "Failed to generate QR code.");
       }
     } catch {
       setError("Failed to generate QR code. Please try again.");
-    } finally {
-      setIsGenerating(false);
     }
   }, [profile?.id]);
 
@@ -199,7 +191,6 @@ export default function ProfileVerification({
             ok: false,
             message: "Too many attempts. Please generate a new QR code.",
           });
-          setShowOtpEntry(false);
           setQrVisible(false);
         } else {
           setOtpResult({
@@ -220,16 +211,11 @@ export default function ProfileVerification({
     setOtp(value.replace(/\D/g, ""));
   }, []);
 
-  const handleSentIt = useCallback(() => {
-    setShowOtpEntry(true);
-  }, []);
   const isOtpComplete = otp.trim().length === 6;
 
   const showQrSection = qrVisible && !!currentUri;
   const qrSectionClasses = showQrSection
-    ? showOtpEntry
-      ? "max-h-[1200px] opacity-100"
-      : "mt-1 pt-1 max-h-[1200px] opacity-100"
+    ? "mt-1 pt-1 max-h-[1200px] opacity-100"
     : "max-h-0 opacity-0";
 
   return (
@@ -243,93 +229,54 @@ export default function ProfileVerification({
       <div
         className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${qrSectionClasses}`}
       >
-        {!showOtpEntry && (
-          <div className="flex justify-center mb-4">
-            <QrUriBlock
-              uri={currentUri}
-              profileName="verification"
-              qrTopHintText="Include 0.002 ZEC minimum"
-              qrHintText="Scan or Tap QR"
-              compactTopSpacing
-            />
-          </div>
-        )}
+        <div className="flex justify-center mb-4">
+          <QrUriBlock
+            uri={currentUri}
+            profileName="verification"
+            qrTopHintText="Send transaction to receive code."
+            qrHintText="Scan or Tap QR"
+            compactTopSpacing
+          />
+        </div>
 
-        {!showOtpEntry && (
-          <div className="flex justify-center mt-2">
+        <div className="relative w-full max-w-[300px] mx-auto border border-gray-800 rounded-xl p-3 bg-transparent">
+          <div className="space-y-3">
+            <OtpInput
+              id="verification-otp"
+              value={otp}
+              onChange={handleOtpChange}
+              onSubmit={handleSubmitOtp}
+              placeholder="Enter 6-digit code"
+              hideLabel={true}
+              className="w-full"
+              disabled={isSubmitting}
+            />
             <button
               type="button"
-              onClick={handleSentIt}
-              disabled={isGenerating}
-              className="w-full max-w-[300px] px-4 py-3 bg-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/90 text-white font-semibold rounded-xl text-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleSubmitOtp}
+              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
+              disabled={!isOtpComplete || isSubmitting}
             >
-              I Sent It!
+              {isSubmitting ? "Verifying..." : "Verify Code"}
             </button>
           </div>
-        )}
 
-        {showOtpEntry && (
-          <div className="relative w-full max-w-[408px] mx-auto border border-black/10 rounded-xl p-5 bg-white/80">
-            {onClose && (
-              <button
-                type="button"
-                onClick={onClose}
-                className="absolute top-2 right-2 w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center"
-                aria-label="Close"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-4 h-4 text-gray-600">
-                  <line x1="18" y1="6" x2="6" y2="18" />
-                  <line x1="6" y1="6" x2="18" y2="18" />
-                </svg>
-              </button>
-            )}
-            <div className="text-sm font-semibold text-gray-700 mb-2">
-              Enter your 6-digit verification code
+          {/* Result message */}
+          {otpResult && (
+            <div
+              className={`mt-3 text-sm font-semibold ${
+                otpResult.ok ? "text-green-700" : "text-red-600"
+              }`}
+            >
+              {otpResult.message}
             </div>
-            <p className="text-xs text-gray-500 mb-3">
-              After sending the transaction, enter the code you receive in your wallet.
-            </p>
+          )}
 
-            <div className="space-y-3">
-              <OtpInput
-                id="verification-otp"
-                value={otp}
-                onChange={handleOtpChange}
-                onSubmit={handleSubmitOtp}
-                placeholder="Enter 6-digit code"
-                hideLabel={true}
-                className="w-full"
-                disabled={isSubmitting}
-              />
-              <Button
-                type="button"
-                onClick={handleSubmitOtp}
-                variant="primary"
-                size="md"
-                className="w-full border-[var(--color-brand-blue)] bg-[var(--color-brand-blue)] text-white hover:border-[var(--color-brand-blue)]/90 hover:bg-[var(--color-brand-blue)]/90"
-                disabled={!isOtpComplete || isSubmitting}
-              >
-                {isSubmitting ? "Verifying..." : "Verify Code"}
-              </Button>
-            </div>
-
-            {/* Result message */}
-            {otpResult && (
-              <div
-                className={`mt-3 text-sm font-semibold ${
-                  otpResult.ok ? "text-green-700" : "text-red-600"
-                }`}
-              >
-                {otpResult.message}
-              </div>
-            )}
-
-            {/* Error display */}
-            {error && (
-              <Alert variant="error" size="sm" message={error} className="mt-2" />
-            )}
-          </div>
-        )}
+          {/* Error display */}
+          {error && (
+            <Alert variant="error" size="sm" message={error} className="mt-2" />
+          )}
+        </div>
       </div>
     </div>
   );
