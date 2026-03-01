@@ -24,7 +24,7 @@ function Highlight({ text, query }: { text: string; query: string }) {
   return (
     <>
       {text.slice(0, i)}
-      <span className="text-[var(--color-brand-blue)]">{text.slice(i, i + query.length)}</span>
+      <span className="font-semibold underline underline-offset-2">{text.slice(i, i + query.length)}</span>
       {text.slice(i + query.length)}
     </>
   );
@@ -195,7 +195,7 @@ export default function ProfileSearchDropdown({
                     key={`${p.name}-${p.id}`}
                     value={`profile-${p.id}`}
                     onSelect={() => { onChange(p); setShow(false); }}
-                    className="px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-gray-50 data-[selected=true]:bg-gray-100"
+                    className="group px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-[var(--color-brand-blue)]/90 hover:text-white data-[selected=true]:bg-[var(--color-brand-blue)]/90 data-[selected=true]:text-white"
                   >
                     <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
 
