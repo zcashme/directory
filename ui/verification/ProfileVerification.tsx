@@ -234,6 +234,11 @@ export default function ProfileVerification({
             uri={currentUri}
             profileName="verification"
             qrTopHintText="Send transaction to receive code."
+            qrTopHintDetails={[
+              "Include a minimum of 0.002 ZEC.",
+              "Do not leave the page before entering the code.",
+            ]}
+            qrTopHintToggleLabel="Tips"
             qrHintText="Scan or Tap QR"
             compactTopSpacing
           />

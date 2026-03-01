@@ -7,6 +7,8 @@ interface QrUriBlockProps {
   uri: string;
   profileName?: string;
   qrTopHintText?: string;
+  qrTopHintDetails?: string[];
+  qrTopHintToggleLabel?: string;
   qrHintText?: string;
   compactTopSpacing?: boolean;
   forceShowQR?: boolean;
@@ -21,6 +23,8 @@ export default function QrUriBlock({
   uri,
   profileName,
   qrTopHintText,
+  qrTopHintDetails,
+  qrTopHintToggleLabel,
   qrHintText,
   compactTopSpacing = false,
   forceShowQR,
@@ -32,8 +36,11 @@ export default function QrUriBlock({
 }: QrUriBlockProps) {
   const qrRef = useRef<SVGSVGElement>(null);
   const shouldReduceMotion = useReducedMotion();
+  const hintTransitionClasses = shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out";
   const [showQR, setShowQR] = useState(defaultShowQR);
   const [showFull, setShowFull] = useState(defaultShowURI);
+  const [showTopHintDetails, setShowTopHintDetails] = useState(false);
+  const hasTopHintDetails = (qrTopHintDetails?.length ?? 0) > 0;
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -48,6 +55,10 @@ export default function QrUriBlock({
   useEffect(() => {
     if (forceShowURI) setShowFull(true);
   }, [forceShowURI]);
+
+  useEffect(() => {
+    if (!hasTopHintDetails && showTopHintDetails) setShowTopHintDetails(false);
+  }, [hasTopHintDetails, showTopHintDetails]);
 
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -106,9 +117,45 @@ export default function QrUriBlock({
             className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
           >
             {qrTopHintText && (
-              <p className="mb-1 text-center text-sm font-semibold text-[var(--color-brand-blue)]">
-                {qrTopHintText}
-              </p>
+              <div className="mb-1 flex flex-col items-center text-center text-sm font-semibold text-[var(--color-brand-blue)]">
+                <div className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
+                  <span>{qrTopHintText}</span>
+                  {hasTopHintDetails && (
+                    <button
+                      type="button"
+                      onClick={() => setShowTopHintDetails((prev) => !prev)}
+                      aria-expanded={showTopHintDetails}
+                      className="ml-1 inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-[var(--color-brand-blue)] hover:underline"
+                    >
+                      <span>{showTopHintDetails ? "Hide" : (qrTopHintToggleLabel ?? "Tips")}</span>
+                      <span
+                        aria-hidden
+                        className={`inline-block transition-transform ${hintTransitionClasses} ${showTopHintDetails ? "rotate-180" : "rotate-0"}`}
+                      >
+                        {"\u25BE"}
+                      </span>
+                    </button>
+                  )}
+                </div>
+                {hasTopHintDetails && (
+                  <div
+                    aria-hidden={!showTopHintDetails}
+                    className={`overflow-hidden text-xs font-normal text-gray-700 transition-all ${hintTransitionClasses} ${
+                      showTopHintDetails ? "mt-1 max-h-24 opacity-100" : "mt-0 max-h-0 opacity-0"
+                    }`}
+                  >
+                    <div
+                      className={`space-y-0.5 transition-transform ${hintTransitionClasses} ${
+                        showTopHintDetails ? "translate-y-0" : "-translate-y-1"
+                      }`}
+                    >
+                      {qrTopHintDetails?.map((line, i) => (
+                        <div key={`top-hint-${i}`}>{line}</div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
             <motion.a
               href={uri}
