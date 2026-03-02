@@ -63,6 +63,45 @@ export function LeaderAvatar({
 
 // ── LeaderboardTable ──────────────────────────────────────────
 
+export function ReferralLinkCopy({ referralUrl }: { referralUrl: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(referralUrl);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  };
+
+  return (
+    <div className="min-w-0 text-right">
+      <p className="mb-1 text-xs text-gray-500">Referral link</p>
+      <div className="inline-flex max-w-full items-center gap-2 rounded-lg border border-gray-300 px-2 py-1">
+        <a
+          href={referralUrl}
+          target="_blank"
+          rel="noreferrer"
+          className="max-w-[180px] truncate text-xs text-[var(--color-brand-blue)] hover:underline sm:max-w-[300px]"
+          title={referralUrl}
+        >
+          {referralUrl}
+        </a>
+        <button
+          type="button"
+          onClick={handleCopy}
+          aria-label="Copy referral link"
+          className="shrink-0 rounded-md border border-gray-300 px-2 py-0.5 text-xs text-gray-700 transition-colors hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+        >
+          {copied ? "Copied" : "Copy"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 const ROWS_PER_PAGE = 10;
 const DEFAULT_VISIBLE_ROWS = 10;
 const SORT_DROPDOWN_ARROW_CLASS =

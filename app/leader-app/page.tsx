@@ -30,6 +30,17 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     ),
   },
   {
+    id: "faq-how-to-refer",
+    question: "How can I refer someone?",
+    answer: (
+      <>
+        <span className="block">There are two ways.</span>
+        <span className="block">They can visit your profile at zcash.me/{`{your_username}`} and tap Join at the top right.</span>
+        <span className="block">Or you can share this direct link: zcash.me/{`{your_username}`}/refer.</span>
+      </>
+    ),
+  },
+  {
     id: "faq-eligible",
     question: "What makes a referral 'Eligible'?",
     answer: (

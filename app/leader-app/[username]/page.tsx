@@ -9,6 +9,7 @@ import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import {
   FAQAccordion,
   LeaderAvatar,
+  ReferralLinkCopy,
   ReferrerReferralsTable,
   type ReferrerReferralRow,
 } from "../LeaderboardClient";
@@ -44,6 +45,17 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
         <span className="block">Active Until is First Verif. + 12 months.</span>
         <span className="block">Count Verifs. is how many times they verified before Active Until.</span>
         <span className="block">Commission is the total from those counted verifications.</span>
+      </>
+    ),
+  },
+  {
+    id: "faq-how-to-refer",
+    question: "How can I refer someone?",
+    answer: (
+      <>
+        <span className="block">There are two ways.</span>
+        <span className="block">They can visit your profile at zcash.me/{`{your_username}`} and tap Join at the top right.</span>
+        <span className="block">Or you can share this direct link: zcash.me/{`{your_username}`}/refer.</span>
       </>
     ),
   },
@@ -148,6 +160,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
     address_verified: referrer.addressVerified,
   });
   const profileHref = `${profileOrigin}/${profileSlug || sanitizeUsernameInput(referrer.username)}`;
+  const referralUrl = `${profileOrigin}/${sanitizeUsernameInput(referrer.username)}/refer`;
   const displayUsername = referrer.addressVerified ? referrer.username : `${referrer.username}-${referrer.id}`;
   const awards = [
     { id: "alltime", rank: referrer.rankAlltime, period: "all" as const },
@@ -174,34 +187,39 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
           <span>Leaderboard</span>
         </Link>
 
-        <div className="flex flex-wrap items-center gap-4 mb-6">
-          <Link href={profileHref} className="shrink-0 transition-transform duration-150 hover:scale-110">
-            <LeaderAvatar
-              imageUrl={referrer.profileImageUrl}
-              name={referrer.displayName}
-              size={50}
-            />
-          </Link>
-          <div className="min-w-0">
-            <Link href={profileHref} className="block w-fit text-xl font-bold truncate">
-              {referrer.displayName}
+        <div className="mb-6 flex flex-wrap items-center gap-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-4">
+            <Link href={profileHref} className="shrink-0 transition-transform duration-150 hover:scale-110">
+              <LeaderAvatar
+                imageUrl={referrer.profileImageUrl}
+                name={referrer.displayName}
+                size={50}
+              />
             </Link>
-            <Link href={profileHref} className="block w-fit text-sm text-gray-500 truncate">
-              /{displayUsername}
-            </Link>
-          </div>
-          {awards.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              {awards.map((award) => (
-                <ReferRankBadgeMulti
-                  key={award.id}
-                  rank={award.rank}
-                  period={award.period}
-                  alwaysOpen
-                />
-              ))}
+            <div className="min-w-0">
+              <Link href={profileHref} className="block w-fit text-xl font-bold truncate">
+                {referrer.displayName}
+              </Link>
+              <Link href={profileHref} className="block w-fit text-sm text-gray-500 truncate">
+                /{displayUsername}
+              </Link>
             </div>
-          )}
+            {awards.length > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {awards.map((award) => (
+                  <ReferRankBadgeMulti
+                    key={award.id}
+                    rank={award.rank}
+                    period={award.period}
+                    alwaysOpen
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="ml-auto w-full sm:w-auto sm:min-w-[300px] flex justify-end">
+            <ReferralLinkCopy referralUrl={referralUrl} />
+          </div>
         </div>
 
         <ReferrerReferralsTable referrals={referrals as ReferrerReferralRow[]} />
