@@ -254,9 +254,6 @@ export async function getReferrerStatsAction(
       const status = computeReferralStatus(isVerified, createdAt, firstVerifiedAt, now);
 
       if (status === "eligible") eligible++;
-      if (status === "active" || status === "expired") {
-        eligible++; // activated referrals were eligible
-      }
       if (status === "active") active++;
 
       let earnedZats = 0;
@@ -286,8 +283,8 @@ export async function getReferrerStatsAction(
         firstVerifiedAt: u.first_verified_at ?? null,
         status,
         eligibleUntil: eligibilityDeadline.toISOString(),
-        // Eligible if still in window, or if verification happened in-window (active/expired).
-        eligibleFlag: status !== "ineligible",
+        // Eligible "Yes" means still pending within the window.
+        eligibleFlag: status === "eligible",
         rewardsActivated,
         totalLinksCount: userLinks.total,
         verifiedLinksCount: userLinks.verified,

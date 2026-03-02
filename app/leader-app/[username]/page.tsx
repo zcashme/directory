@@ -48,8 +48,9 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
         <span className="font-semibold">4 weeks after Joined</span> (before Elig. Until) and First Verif. is missing.
         If there is no verification by Elig. Until, Eligible becomes{" "}
         <span className="font-semibold">No</span>. If verification happens during that eligibility window, Eligible
-        shows a <span className="font-semibold">checkmark</span>, and rewards can run for up to{" "}
+        shows a <span className="font-semibold">checkmark</span> (activated), and rewards can run for up to{" "}
         <span className="font-semibold">12 months from First Verif.</span>
+        The Eligible summary count tracks only current <span className="font-semibold">Yes</span> rows.
       </>
     ),
   },

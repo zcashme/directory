@@ -29,9 +29,9 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     question: "What makes a referral 'Eligible'?",
     answer: (
       <>
-        A referral is eligible if the referred user verifies their address within{" "}
-        <span className="font-semibold">4 weeks of signing up</span>. After that window closes, new
-        verifications don't count as eligible.
+        A referral is shown as <span className="font-semibold">Eligible</span> only while it is still in the first{" "}
+        <span className="font-semibold">4 weeks after signup</span> and has no First Verif. date yet (Eligible = Yes).
+        Once verified, it leaves the pending Eligible count and moves into reward tracking.
       </>
     ),
   },
@@ -107,7 +107,7 @@ export default async function LeaderboardPage({
   }> = [
     {
       id: "totalEarned",
-      label: "Earnings (zats)",
+      label: "Earned (zats)",
       value: formatZats(totalEarned),
       valueClassName: "text-amber-600",
       cardClassName: "col-span-2 sm:col-span-1",

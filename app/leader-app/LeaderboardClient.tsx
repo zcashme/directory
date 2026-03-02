@@ -550,7 +550,7 @@ interface ReferrerSortRule {
 
 const REFERRER_SORT_OPTIONS: Array<{ value: ReferrerSortField; label: string }> = [
   { value: "joined", label: "joined" },
-  { value: "earned", label: "earnings (zats)" },
+  { value: "earned", label: "commission" },
   { value: "eligibleUntil", label: "eligible until" },
   { value: "activeUntil", label: "active until" },
 ];
@@ -626,7 +626,7 @@ function compareSortValues(a: number, b: number, direction: SortDirection): numb
 }
 
 function getEligibleState(row: ReferrerReferralRow, nowTs: number): {
-  variant: "info" | "neutral";
+  variant: "success" | "info" | "neutral";
   label: string;
   isPendingYes: boolean;
   hasFirstVerified: boolean;
@@ -647,7 +647,7 @@ function getEligibleState(row: ReferrerReferralRow, nowTs: number): {
     nowTs < eligibleUntilTs;
 
   if (verifiedWithinEligibleWindow) {
-    return { variant: "info", label: "\u2713", isPendingYes: false, hasFirstVerified, eligibleUntilTs };
+    return { variant: "success", label: "\u2713", isPendingYes: false, hasFirstVerified, eligibleUntilTs };
   }
   if (pendingEligibleWindow) {
     return { variant: "info", label: "Yes", isPendingYes: true, hasFirstVerified, eligibleUntilTs };
@@ -703,7 +703,7 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
         return row.addressVerified;
       }
       if (summaryFilter === "eligible") {
-        return getEligibleState(row, nowTs).label !== "No";
+        return getEligibleState(row, nowTs).isPendingYes;
       }
       if (summaryFilter === "active") {
         return row.stillActive === "YES";
@@ -744,7 +744,7 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
     for (const row of referrals) {
       if (row.addressVerified) verified++;
       const eligibleState = getEligibleState(row, nowTs);
-      if (eligibleState.label !== "No") eligible++;
+      if (eligibleState.isPendingYes) eligible++;
       if (row.stillActive === "YES") active++;
       totalEarnedZats += row.earnedZats;
     }

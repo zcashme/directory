@@ -300,7 +300,6 @@ export async function getLeaderboardAction(
         case "active":
         case "expired": {
           // Activated referrals (verified within eligibility window)
-          current.eligibleCount++;
           const rewardEndDate = addMonths(firstVerifiedAt!, REWARD_DURATION_MONTHS);
           const isActive = status === "active";
           if (isActive) current.activeRewardsCount++;
@@ -320,6 +319,8 @@ export async function getLeaderboardAction(
           break;
         }
         case "eligible":
+          // Pending referrals still within the eligibility window ("Eligible" = Yes)
+          current.eligibleCount++;
           current.pendingOpportunities++;
           break;
         case "ineligible":
