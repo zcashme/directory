@@ -59,6 +59,10 @@ export interface LeaderboardResponse {
   ok: boolean;
   data: LeaderboardEntry[];
   error?: string;
+  periodWindow: {
+    startIso: string;
+    endIso: string;
+  };
   constants: {
     eligibilityWindowWeeks: number;
     rewardDurationMonths: number;
@@ -126,6 +130,12 @@ interface ReferralStats {
 export async function getLeaderboardAction(
   period: Period = "alltime"
 ): Promise<LeaderboardResponse> {
+  const now = new Date();
+  const periodStart = getPeriodFilter(period);
+  const fallbackPeriodWindow = {
+    startIso: (periodStart ?? now).toISOString(),
+    endIso: now.toISOString(),
+  };
   const constants = {
     eligibilityWindowWeeks: ELIGIBILITY_WINDOW_WEEKS,
     rewardDurationMonths: REWARD_DURATION_MONTHS,
@@ -139,7 +149,7 @@ export async function getLeaderboardAction(
   try {
     const supabase = createSupabaseServerClient();
     if (!supabase) {
-      return { ok: false, error: "Database connection error", data: [], constants };
+      return { ok: false, error: "Database connection error", data: [], periodWindow: fallbackPeriodWindow, constants };
     }
 
     // Fetch all users with their referrer info
@@ -149,15 +159,14 @@ export async function getLeaderboardAction(
       .not("referred_by_zcasher_id", "is", null);
 
     if (error) {
-      return { ok: false, error: error.message, data: [], constants };
+      return { ok: false, error: error.message, data: [], periodWindow: fallbackPeriodWindow, constants };
     }
 
     if (!users || users.length === 0) {
-      return { ok: true, data: [], constants };
+      return { ok: true, data: [], periodWindow: fallbackPeriodWindow, constants };
     }
 
-    const now = new Date();
-    const periodStart = getPeriodFilter(period);
+    let alltimePeriodStart: Date | null = null;
 
     // Get unique referrer IDs
     const referrerIds = [...new Set(users.map((u) => u.referred_by_zcasher_id).filter(Boolean))];
@@ -248,6 +257,13 @@ export async function getLeaderboardAction(
           if (createdAt < periodStart) {
             continue; // Skip - created before the period started
           }
+        }
+      }
+
+      if (!periodStart) {
+        const periodDate = user.address_verified && firstVerifiedAt ? firstVerifiedAt : createdAt;
+        if (!alltimePeriodStart || periodDate < alltimePeriodStart) {
+          alltimePeriodStart = periodDate;
         }
       }
 
@@ -400,12 +416,22 @@ export async function getLeaderboardAction(
       entry.rank = index + 1;
     });
 
-    return { ok: true, data: entries, constants };
+    const effectivePeriodStart = periodStart ?? alltimePeriodStart ?? now;
+    return {
+      ok: true,
+      data: entries,
+      periodWindow: {
+        startIso: effectivePeriodStart.toISOString(),
+        endIso: now.toISOString(),
+      },
+      constants,
+    };
   } catch (error) {
     return {
       ok: false,
       error: String((error as Error)?.message || error),
       data: [],
+      periodWindow: fallbackPeriodWindow,
       constants,
     };
   }

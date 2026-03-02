@@ -32,16 +32,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   };
 }
 
-function formatZats(zats: number): string {
-  return Math.round(zats).toLocaleString("en-US");
-}
-
 const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactElement }> = [
   {
     id: "faq-columns",
-    question: "How do these columns connect from Joined to Earned?",
+    question: "How do these columns connect from Joined to Earnings?",
     answer:
-      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earned grows monthly while Active is Yes.",
+      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earnings grow monthly while Active is Yes.",
   },
   {
     id: "faq-eligible-activated",
@@ -76,15 +72,26 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
   },
   {
     id: "faq-earned",
-    question: "How is Earned (zats) calculated?",
+    question: "How is Earnings (zats) calculated?",
     answer: (
       <>
-        Earned is your referral payout total in zats. For each activated referral, rewards can be paid monthly for up
+        Earnings are your referral payout total in zats. For each activated referral, rewards can be paid monthly for up
         to 12 months after first verification. The monthly amount starts at 15% of the minimum verification fee, then
         adds profile bonuses (5% each for profile image, bio, and location, up to 15%) and link bonuses (10% per
         authenticated link), up to a 50% cap.
       </>
     ),
+  },
+  {
+    id: "faq-payout-timing",
+    question: "When is payout?",
+    answer: "At the Active Until date.",
+  },
+  {
+    id: "faq-zat",
+    question: "What is a Zat?",
+    answer:
+      "A Zat means Zatoshi. 1 Zatoshi equals 0.00000001 ZEC. The easy way to think about it is: 100,000,000 zats = 1 ZEC.",
   },
 ];
 
@@ -96,7 +103,7 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
     notFound();
   }
 
-  const { referrer, referrals, summary } = response;
+  const { referrer, referrals } = response;
   const requestHeaders = await headers();
   const forwardedHost = requestHeaders.get("x-forwarded-host");
   const directHost = requestHeaders.get("host");
@@ -125,18 +132,6 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
     { id: "monthly", rank: referrer.rankMonthly, period: "monthly" as const },
   ].filter((item) => typeof item.rank === "number" && item.rank > 0 && item.rank <= 10);
 
-  const summaryStats: Array<{ id: string; label: string; value: string | number; className?: string }> = [
-    { id: "total", label: "Referrals", value: summary.total },
-    {
-      id: "verified",
-      label: "Verified Referrals",
-      value: summary.verified,
-      className: "text-green-600",
-    },
-    { id: "eligible", label: "Eligible", value: summary.eligible },
-    { id: "active", label: "Active", value: summary.active, className: "text-blue-600" },
-  ];
-
   return (
     <div
       className="min-h-screen p-4 md:p-8 pt-6 md:pt-8"
@@ -145,9 +140,15 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
       <div className="max-w-5xl mx-auto">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--color-brand-blue)] mb-6"
+          className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-[var(--color-brand-blue)] mb-6"
         >
-          &larr; Leaderboard
+          <span
+            aria-hidden
+            className="inline-flex items-center justify-center text-base leading-none text-current"
+          >
+            {"\u25C2"}
+          </span>
+          <span>Leaderboard</span>
         </Link>
 
         <div className="flex flex-wrap items-center gap-4 mb-6">
@@ -178,34 +179,12 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
               ))}
             </div>
           )}
-          <div className="sm:ml-auto w-full sm:w-[calc((100%-3rem)/4)] border border-gray-800 rounded-xl p-4 bg-transparent">
-            <p className="text-sm text-gray-600 mb-1">Earned (zats)</p>
-            <p className="text-2xl font-bold text-amber-600">{formatZats(summary.totalEarnedZats)}</p>
-          </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-          {summaryStats.map((stat) => (
-            <div
-              key={stat.id}
-              className="border border-gray-800 rounded-xl p-4 bg-transparent"
-            >
-              <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.className ?? ""}`}>{stat.value}</p>
-            </div>
-          ))}
-        </div>
-
-        {referrals.length === 0 ? (
-          <div className="border border-gray-800 rounded-xl p-6">
-            <p className="text-gray-600 text-center py-8">No referrals yet.</p>
-          </div>
-        ) : (
-          <ReferrerReferralsTable referrals={referrals as ReferrerReferralRow[]} />
-        )}
+        <ReferrerReferralsTable referrals={referrals as ReferrerReferralRow[]} />
 
         <div className="mt-8 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 text-center">Frequently Asked Questions</h2>
           <FAQAccordion items={REFERRER_FAQ_ITEMS} />
         </div>
       </div>

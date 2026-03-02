@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactElement, ReactNode } from "react";
 import {
   getLeaderboardAction,
@@ -7,18 +6,12 @@ import {
 import {
   PodiumAvatar,
   SortableLeaderboard,
+  LeaderboardPeriodTitle,
   FAQAccordion,
 } from "./LeaderboardClient";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 
-const PERIODS: { value: Period; label: string }[] = [
-  { value: "daily", label: "Today" },
-  { value: "weekly", label: "This Week" },
-  { value: "monthly", label: "This Month" },
-  { value: "alltime", label: "All Time" },
-];
-
-const VALID_PERIODS = new Set<string>(PERIODS.map((p) => p.value));
+const VALID_PERIODS = new Set<string>(["daily", "weekly", "monthly", "alltime"]);
 
 function isValidPeriod(value: string | undefined): value is Period {
   return typeof value === "string" && VALID_PERIODS.has(value);
@@ -64,10 +57,26 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
       </>
     ),
   },
+  {
+    id: "faq-payout-timing",
+    question: "When is payout?",
+    answer: "At the Active Until date.",
+  },
+  {
+    id: "faq-zat",
+    question: "What is a Zat?",
+    answer:
+      "A Zat means Zatoshi. 1 Zatoshi equals 0.00000001 ZEC. The easy way to think about it is: 100,000,000 zats = 1 ZEC.",
+  },
 ];
 
 function formatZats(value: number): string {
   return Math.round(value * 100000000).toLocaleString("en-US");
+}
+
+function formatPeriodDate(iso: string): string {
+  const date = new Date(iso);
+  return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 export default async function LeaderboardPage({
@@ -81,6 +90,9 @@ export default async function LeaderboardPage({
 
   const entries = response.ok ? response.data : [];
   const error = response.ok ? null : response.error ?? "Failed to load leaderboard";
+  const periodStartLabel = formatPeriodDate(response.periodWindow.startIso);
+  const periodEndLabel = formatPeriodDate(response.periodWindow.endIso);
+  const periodRangeLabel = `${periodStartLabel} - ${periodEndLabel}`;
 
   const totalReferrals = entries.reduce((sum, e) => sum + e.totalReferrals, 0);
   const totalVerified = entries.reduce((sum, e) => sum + e.verifiedReferrals, 0);
@@ -91,19 +103,21 @@ export default async function LeaderboardPage({
     label: string;
     value: ReactNode;
     valueClassName?: string;
+    cardClassName?: string;
   }> = [
+    {
+      id: "totalEarned",
+      label: "Earnings (zats)",
+      value: formatZats(totalEarned),
+      valueClassName: "text-amber-600",
+      cardClassName: "col-span-2 sm:col-span-1",
+    },
     { id: "totalReferrals", label: "Referrals", value: totalReferrals },
     {
       id: "verified",
-      label: "Verified Referrals",
+      label: "Verif. Refs",
       value: totalVerified,
       valueClassName: "text-green-600",
-    },
-    {
-      id: "totalEarned",
-      label: "Rewards (zats)",
-      value: formatZats(totalEarned),
-      valueClassName: "text-green-700",
     },
   ];
 
@@ -150,15 +164,16 @@ export default async function LeaderboardPage({
         )}
 
         <div className="mb-6 relative">
-          <h1 className="text-2xl font-bold text-left">Referral Leaders</h1>
+          <LeaderboardPeriodTitle period={period} />
+          <p className="mt-1 text-sm text-gray-600 text-center">{periodRangeLabel}</p>
         </div>
 
-        {entries.length > 0 && (
-          <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
+        {!error && (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6 mb-6">
             {summaryStats.map((stat) => (
               <div
                 key={stat.id}
-                className="border border-gray-800 rounded-xl p-4 bg-transparent"
+                className={`border border-gray-800 rounded-xl p-4 bg-transparent ${stat.cardClassName ?? ""}`}
               >
                 <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
                 <p className={`text-2xl font-bold ${stat.valueClassName ?? ""}`}>{stat.value}</p>
@@ -173,37 +188,15 @@ export default async function LeaderboardPage({
           </div>
         )}
 
-        {!error && entries.length === 0 && (
-          <div className="border border-gray-800 rounded-xl p-6">
-            <p className="text-gray-600 text-center py-8">No referrals found for this period.</p>
-          </div>
-        )}
-
-        {entries.length > 0 && (
+        {!error && (
           <SortableLeaderboard
             entries={entries}
-            filterControls={(
-              <>
-                {PERIODS.map((p) => (
-                  <Link
-                    key={p.value}
-                    href={`?period=${p.value}`}
-                    className={`rounded-xl border px-3 py-2 text-sm font-normal transition-colors ${
-                      period === p.value
-                        ? "border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10"
-                        : "border-gray-800 bg-transparent text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                    }`}
-                  >
-                    {p.label}
-                  </Link>
-                ))}
-              </>
-            )}
+            emptyMessage="No referrals found for this period."
           />
         )}
 
         <div className="mt-8 mb-8">
-          <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 text-center">Frequently Asked Questions</h2>
           <FAQAccordion items={FAQ_ITEMS} />
         </div>
       </div>
