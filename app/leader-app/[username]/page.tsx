@@ -1,13 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import type { Metadata } from "next";
-import Badge from "@/ui/common/feedback/Badge";
+import type { ReactElement } from "react";
 import { getReferrerStatsAction } from "@/lib/leaderboard/getReferrerStatsAction";
-import type { StillActiveFlag } from "@/lib/leaderboard/getReferrerStatsAction";
-import { LeaderAvatar, LeaderboardTable } from "../LeaderboardClient";
+import { buildSlug } from "@/lib/profile/profileUtils";
+import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
+import {
+  FAQAccordion,
+  LeaderAvatar,
+  ReferrerReferralsTable,
+  type ReferrerReferralRow,
+} from "../LeaderboardClient";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
-
-// ── Metadata ─────────────────────────────────────────────────
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -22,34 +27,66 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   return {
-    title: `${referrer.displayName}'s Referrals — ZcashMe`,
+    title: `${referrer.displayName}'s Referrals - ZcashMe`,
     description: `Referral stats for ${referrer.displayName} on ZcashMe`,
   };
 }
 
-// ── Helpers ──────────────────────────────────────────────────
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 function formatZats(zats: number): string {
-  if (zats === 0) return "0";
-  if (zats >= 1e8) return `${(zats / 1e8).toFixed(4)} ZEC`;
-  return zats.toLocaleString();
+  return Math.round(zats).toLocaleString("en-US");
 }
 
-const STILL_ACTIVE_CONFIG: Record<StillActiveFlag, { label: string; variant: "success" | "warning" | "error" | "neutral" }> = {
-  YES: { label: "YES", variant: "success" },
-  NO: { label: "NO", variant: "error" },
-  "N/A": { label: "N/A", variant: "neutral" },
-};
-
-// ── Page ─────────────────────────────────────────────────────
+const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactElement }> = [
+  {
+    id: "faq-columns",
+    question: "How do these columns connect from Joined to Earned?",
+    answer:
+      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earned grows monthly while Active is Yes.",
+  },
+  {
+    id: "faq-eligible-activated",
+    question: "What makes a referral Eligible and Activated?",
+    answer: (
+      <>
+        Eligible shows <span className="font-semibold">Yes</span> while the referral is still in the first{" "}
+        <span className="font-semibold">4 weeks after Joined</span> (before Elig. Until) and First Verif. is missing.
+        If there is no verification by Elig. Until, Eligible becomes{" "}
+        <span className="font-semibold">No</span>. If verification happens during that eligibility window, Eligible
+        shows a <span className="font-semibold">checkmark</span>, and rewards can run for up to{" "}
+        <span className="font-semibold">12 months from First Verif.</span>
+      </>
+    ),
+  },
+  {
+    id: "faq-active-status",
+    question: "What do Active, Active Until, Yes/No/N/a mean?",
+    answer: (
+      <>
+        Active Until is First Verif. + 12 months for activated referrals. Active is{" "}
+        <span className="font-semibold">Yes</span> when now is before Active Until,{" "}
+        <span className="font-semibold">No</span> after it ends, and{" "}
+        <span className="font-semibold">N/a</span> when rewards were never activated.
+      </>
+    ),
+  },
+  {
+    id: "faq-auth-links",
+    question: "What does Auth/Links mean?",
+    answer: "Auth/Links is authenticated links over total links for that referred user. Example: 1/2 means 1 verified link out of 2 total links.",
+  },
+  {
+    id: "faq-earned",
+    question: "How is Earned (zats) calculated?",
+    answer: (
+      <>
+        Earned is your referral payout total in zats. For each activated referral, rewards can be paid monthly for up
+        to 12 months after first verification. The monthly amount starts at 15% of the minimum verification fee, then
+        adds profile bonuses (5% each for profile image, bio, and location, up to 15%) and link bonuses (10% per
+        authenticated link), up to a 50% cap.
+      </>
+    ),
+  },
+];
 
 export default async function ReferrerStatsPage({ params }: PageProps) {
   const { username } = await params;
@@ -60,28 +97,52 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
   }
 
   const { referrer, referrals, summary } = response;
-  const profileHref = `/${sanitizeUsernameInput(referrer.username)}`;
+  const requestHeaders = await headers();
+  const forwardedHost = requestHeaders.get("x-forwarded-host");
+  const directHost = requestHeaders.get("host");
+  const rawHost = (forwardedHost ?? directHost ?? "").split(",")[0].trim();
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN?.trim() ?? "zcash.me";
+  const profileHost = rawHost
+    ? rawHost.replace(/^(leader|leaders)\./i, "")
+    : baseDomain;
+  const forwardedProto = requestHeaders.get("x-forwarded-proto");
+  const protocol = forwardedProto
+    ? forwardedProto.split(",")[0].trim()
+    : profileHost.includes("localhost") || profileHost.endsWith(".local")
+      ? "http"
+      : "https";
+  const profileOrigin = `${protocol}://${profileHost}`;
+  const profileSlug = buildSlug({
+    id: referrer.id,
+    name: referrer.username,
+    address_verified: referrer.addressVerified,
+  });
+  const profileHref = `${profileOrigin}/${profileSlug || sanitizeUsernameInput(referrer.username)}`;
+  const displayUsername = referrer.addressVerified ? referrer.username : `${referrer.username}-${referrer.id}`;
+  const awards = [
+    { id: "alltime", rank: referrer.rankAlltime, period: "all" as const },
+    { id: "weekly", rank: referrer.rankWeekly, period: "weekly" as const },
+    { id: "monthly", rank: referrer.rankMonthly, period: "monthly" as const },
+  ].filter((item) => typeof item.rank === "number" && item.rank > 0 && item.rank <= 10);
 
   const summaryStats: Array<{ id: string; label: string; value: string | number; className?: string }> = [
-    { id: "total", label: "Referred", value: summary.total },
-    { id: "verified", label: "Verified", value: summary.verified, className: "text-green-600" },
+    { id: "total", label: "Referrals", value: summary.total },
+    {
+      id: "verified",
+      label: "Verified Referrals",
+      value: summary.verified,
+      className: "text-green-600",
+    },
     { id: "eligible", label: "Eligible", value: summary.eligible },
     { id: "active", label: "Active", value: summary.active, className: "text-blue-600" },
-    { id: "zats", label: "Zats Earned", value: formatZats(summary.totalEarnedZats), className: "text-amber-600" },
   ];
-
-  // Column definitions for the grid
-  const gridCols = "grid-cols-[160px_90px_90px_70px_90px_70px_60px_60px_90px_70px_70px]";
-  const mdGridCols = "md:grid-cols-[minmax(160px,2fr)_100px_100px_80px_100px_80px_70px_70px_100px_80px_90px]";
-  const minW = "min-w-[920px]";
 
   return (
     <div
-      className="min-h-screen p-4 md:p-8 pt-12"
+      className="min-h-screen p-4 md:p-8 pt-6 md:pt-8"
       style={{ backgroundColor: "var(--color-background)" }}
     >
-      <div className="max-w-6xl mx-auto">
-        {/* Back link */}
+      <div className="max-w-5xl mx-auto">
         <Link
           href="/leader-app"
           className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[var(--color-brand-blue)] mb-6"
@@ -89,9 +150,8 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
           &larr; Leaderboard
         </Link>
 
-        {/* Referrer header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Link href={profileHref} className="shrink-0">
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <Link href={profileHref} className="shrink-0 transition-transform duration-150 hover:scale-110">
             <LeaderAvatar
               imageUrl={referrer.profileImageUrl}
               name={referrer.displayName}
@@ -103,137 +163,51 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
               {referrer.displayName}
             </Link>
             <Link href={profileHref} className="block w-fit text-sm text-gray-500 truncate">
-              /{referrer.username}
+              /{displayUsername}
             </Link>
+          </div>
+          {awards.length > 0 && (
+            <div className="flex flex-wrap items-center gap-2">
+              {awards.map((award) => (
+                <ReferRankBadgeMulti
+                  key={award.id}
+                  rank={award.rank}
+                  period={award.period}
+                  alwaysOpen
+                />
+              ))}
+            </div>
+          )}
+          <div className="sm:ml-auto w-full sm:w-[calc((100%-3rem)/4)] border border-gray-800 rounded-xl p-4 bg-transparent">
+            <p className="text-sm text-gray-600 mb-1">Earned (zats)</p>
+            <p className="text-2xl font-bold text-amber-600">{formatZats(summary.totalEarnedZats)}</p>
           </div>
         </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
           {summaryStats.map((stat) => (
             <div
               key={stat.id}
               className="border border-gray-800 rounded-xl p-4 bg-transparent"
             >
               <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-              <p className={`text-2xl font-bold ${stat.className || ""}`}>{stat.value}</p>
+              <p className={`text-2xl font-bold ${stat.className ?? ""}`}>{stat.value}</p>
             </div>
           ))}
         </div>
 
-        {/* Referrals table */}
         {referrals.length === 0 ? (
           <div className="border border-gray-800 rounded-xl p-6">
             <p className="text-gray-600 text-center py-8">No referrals yet.</p>
           </div>
         ) : (
-          <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-            {/* Header */}
-            <div className={`grid ${gridCols} ${mdGridCols} gap-0 bg-gray-100 text-[11px] md:text-xs font-semibold tracking-wide text-gray-700 border-b border-gray-300 ${minW}`}>
-              <div className="sticky left-0 z-20 bg-gray-100 px-3 py-2 border-r border-gray-300">User</div>
-              <div className="px-3 py-2 text-right">Joined</div>
-              <div className="px-3 py-2 text-right">Elig. Until</div>
-              <div className="px-3 py-2 text-center">Elig.</div>
-              <div className="px-3 py-2 text-right">First Verif.</div>
-              <div className="px-3 py-2 text-center">Activated</div>
-              <div className="px-3 py-2 text-right">Links</div>
-              <div className="px-3 py-2 text-right">Auth</div>
-              <div className="px-3 py-2 text-right">Expiry</div>
-              <div className="px-3 py-2 text-center">Active</div>
-              <div className="px-3 py-2 text-right">Zats</div>
-            </div>
-
-            {/* Rows */}
-            <LeaderboardTable totalRows={referrals.length}>
-              {referrals.map((r) => {
-                const userHref = `/${sanitizeUsernameInput(r.username)}`;
-                const stillActiveCfg = STILL_ACTIVE_CONFIG[r.stillActive];
-
-                return (
-                  <div
-                    key={r.id}
-                    className={`grid ${gridCols} ${mdGridCols} gap-0 border-b border-gray-100 text-xs ${minW}`}
-                  >
-                    {/* User — sticky */}
-                    <div className="sticky left-0 z-10 bg-[var(--color-background)] px-3 py-3 flex items-center gap-2 min-w-0 border-r border-gray-100">
-                      <Link href={userHref} className="shrink-0">
-                        <LeaderAvatar
-                          imageUrl={r.profileImageUrl}
-                          name={r.displayName}
-                          size={24}
-                        />
-                      </Link>
-                      <div className="min-w-0">
-                        <Link href={userHref} className="block w-fit font-medium truncate text-xs">
-                          {r.displayName}
-                        </Link>
-                        <Link href={userHref} className="block w-fit text-[10px] text-gray-500 truncate">
-                          /{r.username}
-                        </Link>
-                      </div>
-                    </div>
-
-                    {/* Joined */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {formatDate(r.createdAt)}
-                    </div>
-
-                    {/* Eligible Until */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {formatDate(r.eligibleUntil)}
-                    </div>
-
-                    {/* Eligible Flag */}
-                    <div className="px-3 py-3 text-center self-center">
-                      <Badge variant={r.eligibleFlag ? "warning" : "neutral"} size="xs">
-                        {r.eligibleFlag ? "Yes" : "No"}
-                      </Badge>
-                    </div>
-
-                    {/* First Verified */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {r.firstVerifiedAt ? formatDate(r.firstVerifiedAt) : "—"}
-                    </div>
-
-                    {/* Rewards Activated */}
-                    <div className="px-3 py-3 text-center self-center">
-                      <Badge variant={r.rewardsActivated ? "success" : "neutral"} size="xs">
-                        {r.rewardsActivated ? "Yes" : "No"}
-                      </Badge>
-                    </div>
-
-                    {/* Total Links */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {r.totalLinksCount}
-                    </div>
-
-                    {/* Auth Links */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {r.verifiedLinksCount}
-                    </div>
-
-                    {/* Activation Expiry */}
-                    <div className="px-3 py-3 text-right text-gray-600 self-center">
-                      {r.activationExpiryDate ? formatDate(r.activationExpiryDate) : "—"}
-                    </div>
-
-                    {/* Still Active */}
-                    <div className="px-3 py-3 text-center self-center">
-                      <Badge variant={stillActiveCfg.variant} size="xs">
-                        {stillActiveCfg.label}
-                      </Badge>
-                    </div>
-
-                    {/* Zats */}
-                    <div className="px-3 py-3 text-right self-center font-medium">
-                      {r.earnedZats > 0 ? formatZats(r.earnedZats) : "—"}
-                    </div>
-                  </div>
-                );
-              })}
-            </LeaderboardTable>
-          </div>
+          <ReferrerReferralsTable referrals={referrals as ReferrerReferralRow[]} />
         )}
+
+        <div className="mt-8 mb-8">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
+          <FAQAccordion items={REFERRER_FAQ_ITEMS} />
+        </div>
       </div>
     </div>
   );

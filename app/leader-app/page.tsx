@@ -3,18 +3,13 @@ import type { ReactElement, ReactNode } from "react";
 import {
   getLeaderboardAction,
   type Period,
-  type LeaderboardEntry,
 } from "@/lib/leaderboard/getLeaderboardAction";
 import {
   PodiumAvatar,
-  LeaderAvatar,
-  LeaderboardTable,
-  ClickStopLink,
+  SortableLeaderboard,
   FAQAccordion,
 } from "./LeaderboardClient";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
-
-const PROFILE_BASE_URL = "https://zcash.me";
 
 const PERIODS: { value: Period; label: string }[] = [
   { value: "daily", label: "Today" },
@@ -33,7 +28,8 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
   {
     id: "faq-verification",
     question: "Do I need to be verified to appear on the leaderboard?",
-    answer: "Yes. Users must verify their address to appear on the leaderboard. Only verified referrers and their verified referrals count towards ranking.",
+    answer:
+      "Yes. Users must verify their address to appear on the leaderboard. Only verified referrers and their verified referrals count towards ranking.",
   },
   {
     id: "faq-eligible",
@@ -62,78 +58,17 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     question: "How are rewards calculated?",
     answer: (
       <>
-        Rewards = base rate (15%) + profile bonuses (up to 15%) + link bonuses (10% per link), capped at
-        50%. Multiplied by the verification fee (0.001 ZEC), locked at verification time, paid monthly for
-        12 months.
+        Rewards = base rate (15%) + profile bonuses (5% each for profile image, bio, and location, up to
+        15%) + link bonuses (10% per authenticated link), capped at 50%. Multiplied by the minimum
+        verification fee, locked at verification time, paid monthly for 12 months.
       </>
     ),
   },
 ];
 
-// ── Formatting helpers ────────────────────────────────────────
-
 function formatZats(value: number): string {
   return Math.round(value * 100000000).toLocaleString("en-US");
 }
-
-// ── Row content (server-rendered, passed to client ExpandableRow) ──
-
-function RowSummary({ entry }: { entry: LeaderboardEntry }) {
-  const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
-  const profileHref = `${PROFILE_BASE_URL}/${safeUsername}`;
-  const statsHref = `/${safeUsername}`;
-  return (
-    <>
-      <div className="sticky left-0 z-10 bg-[var(--color-background)] px-2 py-3 flex items-center justify-center text-center border-r border-gray-100">
-        <span className={`font-bold ${entry.rank <= 3 ? "text-base sm:text-lg" : "text-xs sm:text-sm text-gray-500"}`}>
-          {entry.rank === 1 && "🥇"}
-          {entry.rank === 2 && "🥈"}
-          {entry.rank === 3 && "🥉"}
-          {entry.rank > 3 && `${entry.rank}`}
-        </span>
-      </div>
-
-      <div className="sticky left-[48px] md:left-[56px] z-10 bg-[var(--color-background)] px-2 py-3 border-r border-gray-100">
-        <div className="flex items-center gap-2 min-w-0">
-          <ClickStopLink
-            href={profileHref}
-            className="shrink-0"
-            ariaLabel={`View ${entry.referrerUsername}`}
-          >
-            <LeaderAvatar
-              imageUrl={entry.referrerProfileImageUrl}
-              name={entry.referrerDisplayName}
-              size={28}
-            />
-          </ClickStopLink>
-          <div className="min-w-0">
-            <ClickStopLink
-              href={statsHref}
-              className="block w-fit font-medium truncate text-xs sm:text-sm md:text-base hover:text-[var(--color-brand-blue)]"
-            >
-              {entry.referrerDisplayName}
-            </ClickStopLink>
-            <ClickStopLink
-              href={profileHref}
-              className="block w-fit text-[10px] text-gray-500 truncate"
-            >
-              /{entry.referrerUsername}
-            </ClickStopLink>
-          </div>
-        </div>
-      </div>
-
-      <div className="px-2 py-3 text-right font-medium">{entry.totalReferrals}</div>
-      <div className="px-2 py-3 text-right font-medium text-green-600">{entry.verifiedReferrals}</div>
-      <div className="px-2 py-3 text-right font-medium text-[var(--color-brand-blue)]">{entry.eligibleCount}</div>
-      <div className="px-2 py-3 text-right font-medium text-purple-600">{entry.activeRewardsCount}</div>
-      <div className="pl-2 pr-4 md:pr-5 py-3 text-right font-medium text-green-700">{formatZats(entry.totalEarnedToDate)}</div>
-    </>
-  );
-}
-
-
-// ── Page ──────────────────────────────────────────────────────
 
 export default async function LeaderboardPage({
   searchParams,
@@ -145,7 +80,7 @@ export default async function LeaderboardPage({
   const response = await getLeaderboardAction(period);
 
   const entries = response.ok ? response.data : [];
-  const error = response.ok ? null : (response.error || "Failed to load leaderboard");
+  const error = response.ok ? null : response.error ?? "Failed to load leaderboard";
 
   const totalReferrals = entries.reduce((sum, e) => sum + e.totalReferrals, 0);
   const totalVerified = entries.reduce((sum, e) => sum + e.verifiedReferrals, 0);
@@ -158,8 +93,18 @@ export default async function LeaderboardPage({
     valueClassName?: string;
   }> = [
     { id: "totalReferrals", label: "Referrals", value: totalReferrals },
-    { id: "verified", label: "Verified Referrals", value: totalVerified, valueClassName: "text-green-600" },
-    { id: "totalEarned", label: "Rewards (zats)", value: formatZats(totalEarned), valueClassName: "text-green-700" },
+    {
+      id: "verified",
+      label: "Verified Referrals",
+      value: totalVerified,
+      valueClassName: "text-green-600",
+    },
+    {
+      id: "totalEarned",
+      label: "Rewards (zats)",
+      value: formatZats(totalEarned),
+      valueClassName: "text-green-700",
+    },
   ];
 
   const firstPlace = entries[0];
@@ -168,37 +113,35 @@ export default async function LeaderboardPage({
 
   return (
     <div
-      className="min-h-screen p-4 md:p-8 pt-12"
+      className="min-h-screen p-4 md:p-8 pt-6 md:pt-8"
       style={{ backgroundColor: "var(--color-background)" }}
     >
       <div className="max-w-5xl mx-auto">
-        {/* Podium */}
         {firstPlace && (
-          <div className="relative mb-8 h-32 sm:h-40 w-full flex items-end justify-center">
-            <div className="absolute left-0 right-0 top-1/3 border-t-2 border-black" />
-            <div className="relative z-10 flex h-full items-end justify-center gap-3 sm:gap-4">
+          <div className="relative mb-8 h-24 sm:h-28 w-full">
+            <div className="relative z-10 mx-auto flex h-full w-fit items-end justify-center gap-3 sm:gap-4">
               {secondPlace && (
                 <PodiumAvatar
-                  profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(secondPlace.referrerUsername)}`}
+                  profileHref={`/${sanitizeUsernameInput(secondPlace.referrerUsername)}`}
                   imageUrl={secondPlace.referrerProfileImageUrl}
                   name={secondPlace.referrerDisplayName}
-                  emoji="🥈"
+                  emoji={"\uD83E\uDD48"}
                   size={56}
                 />
               )}
               <PodiumAvatar
-                profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(firstPlace.referrerUsername)}`}
+                profileHref={`/${sanitizeUsernameInput(firstPlace.referrerUsername)}`}
                 imageUrl={firstPlace.referrerProfileImageUrl}
                 name={firstPlace.referrerDisplayName}
-                emoji="🥇"
+                emoji={"\uD83E\uDD47"}
                 size={96}
               />
               {thirdPlace && (
                 <PodiumAvatar
-                  profileHref={`${PROFILE_BASE_URL}/${sanitizeUsernameInput(thirdPlace.referrerUsername)}`}
+                  profileHref={`/${sanitizeUsernameInput(thirdPlace.referrerUsername)}`}
                   imageUrl={thirdPlace.referrerProfileImageUrl}
                   name={thirdPlace.referrerDisplayName}
-                  emoji="🥉"
+                  emoji={"\uD83E\uDD49"}
                   size={56}
                 />
               )}
@@ -206,30 +149,10 @@ export default async function LeaderboardPage({
           </div>
         )}
 
-        {/* Header + Period Links */}
         <div className="mb-6 relative">
-          <div className="flex items-center justify-between gap-2">
-            <h1 className="text-2xl font-bold text-left">Referral Leaders</h1>
-
-            <div className="flex items-center gap-4">
-              {PERIODS.map((p) => (
-                <Link
-                  key={p.value}
-                  href={`?period=${p.value}`}
-                  className={`rounded-xl border px-3 py-2 text-sm font-normal transition-colors ${
-                    period === p.value
-                      ? "border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10"
-                      : "border-gray-800 bg-transparent text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                  }`}
-                >
-                  {p.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          <h1 className="text-2xl font-bold text-left">Referral Leaders</h1>
         </div>
 
-        {/* Summary Stats */}
         {entries.length > 0 && (
           <div className="grid grid-cols-3 gap-4 mt-6 mb-6">
             {summaryStats.map((stat) => (
@@ -238,67 +161,47 @@ export default async function LeaderboardPage({
                 className="border border-gray-800 rounded-xl p-4 bg-transparent"
               >
                 <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className={`text-2xl font-bold ${stat.valueClassName || ""}`}>{stat.value}</p>
+                <p className={`text-2xl font-bold ${stat.valueClassName ?? ""}`}>{stat.value}</p>
               </div>
             ))}
           </div>
         )}
 
-        {/* Error State */}
         {error && (
           <div className="border border-red-300 bg-red-50 rounded-xl p-4 mb-6">
             <p className="text-red-700">{error}</p>
           </div>
         )}
 
-        {/* Empty State */}
         {!error && entries.length === 0 && (
           <div className="border border-gray-800 rounded-xl p-6">
-            <p className="text-gray-600 text-center py-8">
-              No referrals found for this period.
-            </p>
+            <p className="text-gray-600 text-center py-8">No referrals found for this period.</p>
           </div>
         )}
 
         {entries.length > 0 && (
-          <p className="mb-3 text-lg font-semibold text-gray-900">
-            Top ranked by verified referrals
-          </p>
+          <SortableLeaderboard
+            entries={entries}
+            filterControls={(
+              <>
+                {PERIODS.map((p) => (
+                  <Link
+                    key={p.value}
+                    href={`?period=${p.value}`}
+                    className={`rounded-xl border px-3 py-2 text-sm font-normal transition-colors ${
+                      period === p.value
+                        ? "border-[var(--color-brand-blue)] text-[var(--color-brand-blue)] bg-[var(--color-brand-blue)]/10"
+                        : "border-gray-800 bg-transparent text-gray-900 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                    }`}
+                  >
+                    {p.label}
+                  </Link>
+                ))}
+              </>
+            )}
+          />
         )}
 
-        {/* Leaderboard Table */}
-        {entries.length > 0 && (
-          <div className="space-y-6">
-            <div className="border border-gray-800 rounded-xl overflow-hidden overflow-x-auto">
-              <div className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 bg-gray-100 text-[11px] md:text-sm lg:text-base font-semibold tracking-wide text-gray-700 border-b border-gray-300 min-w-[642px]">
-                <div id="leader-col-rank" className="sticky left-0 z-20 bg-gray-100 px-2 py-2 border-r border-gray-300 text-center">Rank</div>
-                <div id="leader-col-referrer" className="sticky left-[48px] md:left-[56px] z-20 bg-gray-100 px-2 py-2 border-r border-gray-300">Referrer</div>
-                <div id="leader-col-total" className="px-2 py-2 text-center">Total</div>
-                <div id="leader-col-verif" className="px-2 py-2 text-center">Verif.</div>
-                <div id="leader-col-eligible" className="px-2 py-2 text-center">Eligible</div>
-                <div id="leader-col-active" className="px-2 py-2 text-center">Active</div>
-                <div id="leader-col-earned" className="pl-2 pr-4 md:pr-5 py-2 text-center">Earned (zats)</div>
-              </div>
-
-              <LeaderboardTable totalRows={entries.length}>
-                {entries.map((entry) => {
-                  const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
-                  return (
-                    <Link
-                      key={entry.referrerId}
-                      href={`/${safeUsername}`}
-                      className="grid grid-cols-[48px_170px_76px_76px_76px_76px_120px] md:grid-cols-[56px_minmax(220px,1.9fr)_repeat(4,minmax(84px,1fr))_minmax(140px,1.5fr)] gap-0 border-t border-b border-gray-100 text-xs sm:text-sm md:text-base min-w-[642px] transition-colors hover:bg-gray-50 cursor-pointer"
-                    >
-                      <RowSummary entry={entry} />
-                    </Link>
-                  );
-                })}
-              </LeaderboardTable>
-            </div>
-          </div>
-        )}
-
-        {/* FAQ */}
         <div className="mt-8 mb-8">
           <h2 className="text-2xl font-bold mb-4 text-gray-900">Frequently Asked Questions</h2>
           <FAQAccordion items={FAQ_ITEMS} />

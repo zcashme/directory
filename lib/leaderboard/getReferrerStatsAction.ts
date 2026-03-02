@@ -42,6 +42,10 @@ export interface ReferrerProfile {
   username: string;
   displayName: string;
   profileImageUrl: string | null;
+  addressVerified: boolean;
+  rankAlltime: number | null;
+  rankWeekly: number | null;
+  rankMonthly: number | null;
 }
 
 export interface ReferrerStatsSummary {
@@ -126,7 +130,7 @@ export async function getReferrerStatsAction(
     const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, bio, nearest_city_name")
+      .select("id, name, display_name, profile_image_url, address_verified, bio, nearest_city_name")
       .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}"`)
 
       .limit(1)
@@ -141,6 +145,10 @@ export async function getReferrerStatsAction(
       username: referrerRow.name ?? `user${referrerRow.id}`,
       displayName: referrerRow.display_name ?? referrerRow.name ?? `User ${referrerRow.id}`,
       profileImageUrl: referrerRow.profile_image_url ?? null,
+      addressVerified: !!referrerRow.address_verified,
+      rankAlltime: null,
+      rankWeekly: null,
+      rankMonthly: null,
     };
 
     const profileFlags = {
@@ -163,20 +171,57 @@ export async function getReferrerStatsAction(
       .select("zcasher_id, is_verified")
       .eq("zcasher_id", referrer.id);
 
+    const rankAlltimePromise = supabase
+      .from("referrer_ranked_alltime")
+      .select("rank_alltime")
+      .eq("referred_by_zcasher_id", referrer.id)
+      .limit(1)
+      .maybeSingle();
+
+    const rankWeeklyPromise = supabase
+      .from("referrer_ranked_weekly")
+      .select("rank_weekly")
+      .eq("referred_by_zcasher_id", referrer.id)
+      .limit(1)
+      .maybeSingle();
+
+    const rankMonthlyPromise = supabase
+      .from("referrer_ranked_monthly")
+      .select("rank_monthly")
+      .eq("referred_by_zcasher_id", referrer.id)
+      .limit(1)
+      .maybeSingle();
+
     // 4. Fetch referred users' link counts
-    const [{ data: referred, error: referredError }, { data: referrerLinks }] = await Promise.all([
+    const [
+      { data: referred, error: referredError },
+      { data: referrerLinks },
+      { data: rankAlltimeData },
+      { data: rankWeeklyData },
+      { data: rankMonthlyData },
+    ] = await Promise.all([
       referredPromise,
       linksPromise,
+      rankAlltimePromise,
+      rankWeeklyPromise,
+      rankMonthlyPromise,
     ]);
 
+    const referrerWithRanks: ReferrerProfile = {
+      ...referrer,
+      rankAlltime: typeof rankAlltimeData?.rank_alltime === "number" ? rankAlltimeData.rank_alltime : null,
+      rankWeekly: typeof rankWeeklyData?.rank_weekly === "number" ? rankWeeklyData.rank_weekly : null,
+      rankMonthly: typeof rankMonthlyData?.rank_monthly === "number" ? rankMonthlyData.rank_monthly : null,
+    };
+
     if (referredError) {
-      return { ...empty, ok: false, referrer, error: referredError.message };
+      return { ...empty, ok: false, referrer: referrerWithRanks, error: referredError.message };
     }
 
     const referredIds = (referred ?? []).map((u) => u.id);
 
     // Fetch all links for referred users to get total + verified counts per user
-    let referredLinksMap = new Map<number, { total: number; verified: number }>();
+    const referredLinksMap = new Map<number, { total: number; verified: number }>();
     if (referredIds.length > 0) {
       const { data: referredLinks } = await supabase
         .from("zcasher_links")
@@ -241,7 +286,8 @@ export async function getReferrerStatsAction(
         firstVerifiedAt: u.first_verified_at ?? null,
         status,
         eligibleUntil: eligibilityDeadline.toISOString(),
-        eligibleFlag: now < eligibilityDeadline,
+        // Eligible if still in window, or if verification happened in-window (active/expired).
+        eligibleFlag: status !== "ineligible",
         rewardsActivated,
         totalLinksCount: userLinks.total,
         verifiedLinksCount: userLinks.verified,
@@ -255,7 +301,7 @@ export async function getReferrerStatsAction(
 
     return {
       ok: true,
-      referrer,
+      referrer: referrerWithRanks,
       referrals,
       summary: {
         total,
