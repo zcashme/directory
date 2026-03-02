@@ -36,21 +36,26 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
   {
     id: "faq-columns",
     question: "How do these columns connect from Joined to Earnings?",
-    answer:
-      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earnings increase for each verification event recorded during the active window.",
+    answer: (
+      <>
+        <span className="block">Joined is when your friend signed up.</span>
+        <span className="block">Elig. Until is Joined + 4 weeks.</span>
+        <span className="block">First Verif. is the first time they verified.</span>
+        <span className="block">Active Until is First Verif. + 12 months.</span>
+        <span className="block">Count Verifs. is how many times they verified before Active Until.</span>
+        <span className="block">Commission is the total from those counted verifications.</span>
+      </>
+    ),
   },
   {
     id: "faq-eligible-activated",
     question: "What makes a referral Eligible and Activated?",
     answer: (
       <>
-        Eligible shows <span className="font-semibold">Yes</span> while the referral is still in the first{" "}
-        <span className="font-semibold">4 weeks after Joined</span> (before Elig. Until) and First Verif. is missing.
-        If there is no verification by Elig. Until, Eligible becomes{" "}
-        <span className="font-semibold">No</span>. If verification happens during that eligibility window, Eligible
-        shows a <span className="font-semibold">checkmark</span> (activated), and rewards can run for up to{" "}
-        <span className="font-semibold">12 months from First Verif.</span>
-        The Eligible summary count tracks only current <span className="font-semibold">Yes</span> rows.
+        <span className="block">Eligible = Yes means they are still in the first 4 weeks after signup.</span>
+        <span className="block">Eligible = checkmark means they verified in time.</span>
+        <span className="block">Eligible = No means they did not verify in time.</span>
+        <span className="block">Only checkmark rows can earn commission.</span>
       </>
     ),
   },
@@ -59,40 +64,57 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
     question: "What do Active, Active Until, Yes/No/N/a mean?",
     answer: (
       <>
-        Active Until is First Verif. + 12 months for activated referrals. Active is{" "}
-        <span className="font-semibold">Yes</span> when now is before Active Until,{" "}
-        <span className="font-semibold">No</span> after it ends, and{" "}
-        <span className="font-semibold">N/a</span> when rewards were never activated.
+        <span className="block">Active Until is the date when earning stops for that friend.</span>
+        <span className="block">Active = Yes means today is still before that date.</span>
+        <span className="block">Active = No means that date already passed.</span>
+        <span className="block">Active = N/a means they never qualified to earn.</span>
       </>
     ),
   },
   {
     id: "faq-auth-links",
     question: "What does Auth/Links mean?",
-    answer: "Auth/Links is authenticated links over total links for that referred user. Example: 1/2 means 1 verified link out of 2 total links.",
+    answer: (
+      <>
+        <span className="block">Auth/Links shows how many of their links are verified.</span>
+        <span className="block">Example: 1/2 means 1 verified link out of 2 links.</span>
+        <span className="block">More verified links can increase your commission rate.</span>
+      </>
+    ),
   },
   {
     id: "faq-earned",
     question: "How is Earnings (zats) calculated?",
     answer: (
       <>
-        Earnings are your referral payout total in zats. For each activated referral, each verification event during
-        the 12-month active window can pay: minimum verification fee multiplied by commission rate. Commission starts at
-        15%, adds profile bonuses (5% each for profile image, bio, and location, up to 15%), and adds link bonuses
-        based on that referred user&apos;s authenticated links (10% per link), capped at 50%.
+        <span className="block">Earnings is the sum of all counted commission payments.</span>
+        <span className="block">Each counted verification pays: fee x commission rate.</span>
+        <span className="block">The rate starts at 15% and can go up.</span>
+        <span className="block">The rate is capped at 50%.</span>
+        <span className="block">Only verifications before Active Until are counted.</span>
       </>
     ),
   },
   {
     id: "faq-payout-timing",
     question: "When is payout?",
-    answer: "Each qualifying verification event is counted during the active window; Active Until is when earning stops.",
+    answer: (
+      <>
+        <span className="block">Commission builds up while that referral is active.</span>
+        <span className="block">Payout is made after Active Until, when the earning window ends.</span>
+      </>
+    ),
   },
   {
     id: "faq-zat",
     question: "What is a Zat?",
-    answer:
-      "A Zat means Zatoshi. 1 Zatoshi equals 0.00000001 ZEC. The easy way to think about it is: 100,000,000 zats = 1 ZEC.",
+    answer: (
+      <>
+        <span className="block">A Zat means Zatoshi.</span>
+        <span className="block">1 Zatoshi equals 0.00000001 ZEC.</span>
+        <span className="block">100,000,000 zats = 1 ZEC.</span>
+      </>
+    ),
   },
 ];
 

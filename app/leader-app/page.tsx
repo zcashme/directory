@@ -21,17 +21,23 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
   {
     id: "faq-verification",
     question: "Do I need to be verified to appear on the leaderboard?",
-    answer:
-      "Yes. Users must verify their address to appear on the leaderboard. Only verified referrers and their verified referrals count towards ranking.",
+    answer: (
+      <>
+        <span className="block">Yes.</span>
+        <span className="block">You must verify your address to show up in the list.</span>
+        <span className="block">Your friend must also verify before they help your score.</span>
+      </>
+    ),
   },
   {
     id: "faq-eligible",
     question: "What makes a referral 'Eligible'?",
     answer: (
       <>
-        A referral is shown as <span className="font-semibold">Eligible</span> only while it is still in the first{" "}
-        <span className="font-semibold">4 weeks after signup</span> and has no First Verif. date yet (Eligible = Yes).
-        Once verified, it leaves the pending Eligible count and moves into reward tracking.
+        <span className="block">After signup, your friend has 4 weeks to verify for the first time.</span>
+        <span className="block">While they are in that 4-week window, you see Eligible = Yes.</span>
+        <span className="block">If they verify in time, they can earn commission for you.</span>
+        <span className="block">If they miss that window, they do not earn commission for you.</span>
       </>
     ),
   },
@@ -40,9 +46,9 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     question: "What are 'Active Rewards'?",
     answer: (
       <>
-        Active rewards are eligible referrals still within the{" "}
-        <span className="font-semibold">12-month reward payout window</span> after verification. Once
-        12 months pass, the referral is no longer active.
+        <span className="block">Once your friend verifies, a 12-month timer starts.</span>
+        <span className="block">You earn from each verification during those 12 months.</span>
+        <span className="block">After that date, new verifications pay 0.</span>
       </>
     ),
   },
@@ -51,23 +57,34 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     question: "How are rewards calculated?",
     answer: (
       <>
-        Rewards are paid per verification event for activated referrals during their 12-month active window.
-        Per-event payout = minimum verification fee x commission rate, where commission rate = base rate (15%)
-        + profile bonuses (5% each for profile image, bio, and location, up to 15%) + link bonuses (10% per
-        authenticated link), capped at 50%.
+        <span className="block">You get paid per verification, not per person.</span>
+        <span className="block">Payment for one verification = fee x your commission rate.</span>
+        <span className="block">Your rate starts at 15%.</span>
+        <span className="block">It goes up for profile setup and for your friend&apos;s verified links.</span>
+        <span className="block">The rate cannot go above 50%.</span>
       </>
     ),
   },
   {
     id: "faq-payout-timing",
     question: "When is payout?",
-    answer: "Each qualifying verification event is counted during the active window; Active Until is when earning stops.",
+    answer: (
+      <>
+        <span className="block">Commission builds up while the referral is active.</span>
+        <span className="block">Payout is made after Active Until, when that earning window ends.</span>
+      </>
+    ),
   },
   {
     id: "faq-zat",
     question: "What is a Zat?",
-    answer:
-      "A Zat means Zatoshi. 1 Zatoshi equals 0.00000001 ZEC. The easy way to think about it is: 100,000,000 zats = 1 ZEC.",
+    answer: (
+      <>
+        <span className="block">A Zat means Zatoshi.</span>
+        <span className="block">1 Zatoshi equals 0.00000001 ZEC.</span>
+        <span className="block">100,000,000 zats = 1 ZEC.</span>
+      </>
+    ),
   },
 ];
 
