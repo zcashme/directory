@@ -5,16 +5,12 @@ import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import {
   ELIGIBILITY_WINDOW_WEEKS,
   REWARD_DURATION_MONTHS,
-  VERIFICATION_FEE_ZEC,
   addWeeks,
   addMonths,
-  monthsBetween,
-  calculateCommissionRate,
   computeReferralStatus,
   type ReferralStatus,
 } from "./rewardProgram";
 
-// ── Still-Active flag values ────────────────────────────────
 export type StillActiveFlag = "YES" | "NO" | "N/A";
 
 export interface ReferralRow {
@@ -23,16 +19,16 @@ export interface ReferralRow {
   displayName: string;
   profileImageUrl: string | null;
   addressVerified: boolean;
-  createdAt: string;          // ISO string
+  createdAt: string;
   firstVerifiedAt: string | null;
   status: ReferralStatus;
-  // New computed columns
-  eligibleUntil: string;      // ISO string (createdAt + 4 weeks)
-  eligibleFlag: boolean;      // within 4-week window right now
-  rewardsActivated: boolean;  // verified within eligibility window
+  eligibleUntil: string;
+  eligibleFlag: boolean;
+  rewardsActivated: boolean;
   totalLinksCount: number;
   verifiedLinksCount: number;
-  activationExpiryDate: string | null; // firstVerifiedAt + 12 months (if activated)
+  countVerifs: number;
+  activationExpiryDate: string | null;
   stillActive: StillActiveFlag;
   earnedZats: number;
 }
@@ -64,28 +60,17 @@ export interface ReferrerStatsResponse {
   summary: ReferrerStatsSummary;
 }
 
-// ── Helpers ──────────────────────────────────────────────────
-
-function computeEarnedZats(
-  status: ReferralStatus,
-  firstVerifiedAt: Date,
-  commissionOpts: {
-    verifiedLinksCount: number;
-    hasProfileImage: boolean;
-    hasBio: boolean;
-    hasLocation: boolean;
-  },
-  now: Date,
-): number {
-  if (status === "ineligible" || status === "eligible") return 0;
-
-  const commissionRate = calculateCommissionRate(commissionOpts);
-  const monthlyReward = VERIFICATION_FEE_ZEC * commissionRate;
-  const monthsElapsed = Math.min(
-    monthsBetween(firstVerifiedAt, now),
-    REWARD_DURATION_MONTHS,
-  );
-  return Math.round(monthsElapsed * monthlyReward * 1e8);
+function toZatsInteger(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.max(0, Math.round(value));
+  }
+  if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return Math.max(0, Math.round(parsed));
+    }
+  }
+  return 0;
 }
 
 function computeStillActive(
@@ -95,20 +80,15 @@ function computeStillActive(
 ): StillActiveFlag {
   const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
 
-  // N/A: past eligibility window AND (never verified OR verified after window)
   if (now >= eligibilityDeadline && (!firstVerifiedAt || firstVerifiedAt > eligibilityDeadline)) {
     return "N/A";
   }
 
-  // Not yet activated (still within window, hasn't verified yet)
   if (!firstVerifiedAt) return "N/A";
 
-  // Activated — check if within 1-year reward window
   const expiryDate = addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS);
   return now < expiryDate ? "YES" : "NO";
 }
-
-// ── Main Action ──────────────────────────────────────────────
 
 export async function getReferrerStatsAction(
   username: string,
@@ -126,13 +106,11 @@ export async function getReferrerStatsAction(
       return { ...empty, error: "Database connection error" };
     }
 
-    // 1. Resolve referrer by username
     const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, address_verified, bio, nearest_city_name")
+      .select("id, name, display_name, profile_image_url, address_verified")
       .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}"`)
-
       .limit(1)
       .single();
 
@@ -151,25 +129,12 @@ export async function getReferrerStatsAction(
       rankMonthly: null,
     };
 
-    const profileFlags = {
-      hasProfileImage: !!referrerRow.profile_image_url,
-      hasBio: !!referrerRow.bio,
-      hasLocation: !!referrerRow.nearest_city_name,
-    };
-
-    // 2. Fetch all users referred by this referrer
     const referredPromise = supabase
       .from("zcasher")
       .select("id, name, display_name, profile_image_url, address_verified, created_at, first_verified_at")
       .eq("referred_by_zcasher_id", referrer.id)
       .neq("id", referrer.id)
       .order("created_at", { ascending: false });
-
-    // 3. Fetch referrer's links (all + verified)
-    const linksPromise = supabase
-      .from("zcasher_links")
-      .select("zcasher_id, is_verified")
-      .eq("zcasher_id", referrer.id);
 
     const rankAlltimePromise = supabase
       .from("referrer_ranked_alltime")
@@ -192,16 +157,13 @@ export async function getReferrerStatsAction(
       .limit(1)
       .maybeSingle();
 
-    // 4. Fetch referred users' link counts
     const [
       { data: referred, error: referredError },
-      { data: referrerLinks },
       { data: rankAlltimeData },
       { data: rankWeeklyData },
       { data: rankMonthlyData },
     ] = await Promise.all([
       referredPromise,
-      linksPromise,
       rankAlltimePromise,
       rankWeeklyPromise,
       rankMonthlyPromise,
@@ -219,26 +181,46 @@ export async function getReferrerStatsAction(
     }
 
     const referredIds = (referred ?? []).map((u) => u.id);
-
-    // Fetch all links for referred users to get total + verified counts per user
     const referredLinksMap = new Map<number, { total: number; verified: number }>();
+    const referredVerificationRowsMap = new Map<number, Array<{
+      verifiedAtTs: number | null;
+      countsForCommission: boolean;
+      rewardZats: number;
+    }>>();
+
     if (referredIds.length > 0) {
-      const { data: referredLinks } = await supabase
-        .from("zcasher_links")
-        .select("zcasher_id, is_verified")
-        .in("zcasher_id", referredIds);
+      const [{ data: referredLinks }, { data: verifications }] = await Promise.all([
+        supabase
+          .from("zcasher_links")
+          .select("zcasher_id, is_verified")
+          .in("zcasher_id", referredIds),
+        supabase
+          .from("zcasher_verifications")
+          .select("zcasher_id, verified_at, counts_for_commission, reward_zats")
+          .in("zcasher_id", referredIds)
+          .eq("referred_by_zcasher_id", referrer.id),
+      ]);
 
       for (const link of referredLinks ?? []) {
         const entry = referredLinksMap.get(link.zcasher_id) ?? { total: 0, verified: 0 };
-        entry.total++;
-        if (link.is_verified) entry.verified++;
+        entry.total += 1;
+        if (link.is_verified) entry.verified += 1;
         referredLinksMap.set(link.zcasher_id, entry);
+      }
+
+      for (const verification of verifications ?? []) {
+        const entry = referredVerificationRowsMap.get(verification.zcasher_id) ?? [];
+        const verifiedAtTs = verification.verified_at ? Date.parse(verification.verified_at) : Number.NaN;
+        entry.push({
+          verifiedAtTs: Number.isFinite(verifiedAtTs) ? verifiedAtTs : null,
+          countsForCommission: !!verification.counts_for_commission,
+          rewardZats: toZatsInteger(verification.reward_zats),
+        });
+        referredVerificationRowsMap.set(verification.zcasher_id, entry);
       }
     }
 
-    const referrerVerifiedLinks = (referrerLinks ?? []).filter((l) => l.is_verified).length;
     const now = new Date();
-
     let verified = 0;
     let eligible = 0;
     let active = 0;
@@ -249,29 +231,38 @@ export async function getReferrerStatsAction(
       const firstVerifiedAt = u.first_verified_at ? new Date(u.first_verified_at) : null;
       const isVerified = !!u.address_verified;
 
-      if (isVerified) verified++;
+      if (isVerified) verified += 1;
 
       const status = computeReferralStatus(isVerified, createdAt, firstVerifiedAt, now);
+      if (status === "eligible") eligible += 1;
+      if (status === "active") active += 1;
 
-      if (status === "eligible") eligible++;
-      if (status === "active") active++;
-
-      let earnedZats = 0;
-      if (firstVerifiedAt && (status === "active" || status === "expired")) {
-        earnedZats = computeEarnedZats(status, firstVerifiedAt, {
-          verifiedLinksCount: referrerVerifiedLinks,
-          ...profileFlags,
-        }, now);
-        totalEarnedZats += earnedZats;
-      }
-
-      // Computed columns
       const eligibilityDeadline = addWeeks(createdAt, ELIGIBILITY_WINDOW_WEEKS);
       const rewardsActivated = !!(firstVerifiedAt && firstVerifiedAt <= eligibilityDeadline);
       const activationExpiryDate = rewardsActivated && firstVerifiedAt
         ? addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS).toISOString()
         : null;
+
       const userLinks = referredLinksMap.get(u.id) ?? { total: 0, verified: 0 };
+      const verificationRows = referredVerificationRowsMap.get(u.id) ?? [];
+      const earnedZats = verificationRows
+        .filter((row) => row.countsForCommission)
+        .reduce((sum, row) => sum + row.rewardZats, 0);
+
+      let countVerifs = 0;
+      if (firstVerifiedAt) {
+        const windowStartTs = firstVerifiedAt.getTime();
+        const windowEndTs = addMonths(firstVerifiedAt, REWARD_DURATION_MONTHS).getTime();
+        countVerifs = verificationRows.filter((row) => {
+          return row.verifiedAtTs !== null && row.verifiedAtTs >= windowStartTs && row.verifiedAtTs <= windowEndTs;
+        }).length;
+        if (countVerifs === 0) {
+          // Legacy safeguard: a first verification exists, so show at least one event.
+          countVerifs = 1;
+        }
+      }
+
+      totalEarnedZats += earnedZats;
 
       return {
         id: u.id,
@@ -283,25 +274,23 @@ export async function getReferrerStatsAction(
         firstVerifiedAt: u.first_verified_at ?? null,
         status,
         eligibleUntil: eligibilityDeadline.toISOString(),
-        // Eligible "Yes" means still pending within the window.
         eligibleFlag: status === "eligible",
         rewardsActivated,
         totalLinksCount: userLinks.total,
         verifiedLinksCount: userLinks.verified,
+        countVerifs,
         activationExpiryDate,
         stillActive: computeStillActive(createdAt, firstVerifiedAt, now),
         earnedZats,
       };
     });
 
-    const total = referrals.length;
-
     return {
       ok: true,
       referrer: referrerWithRanks,
       referrals,
       summary: {
-        total,
+        total: referrals.length,
         verified,
         eligible,
         active,

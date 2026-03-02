@@ -96,6 +96,19 @@ function getPeriodFilter(period: Period): Date | null {
   }
 }
 
+function toZecFromZats(value: unknown): number {
+  let zats = 0;
+  if (typeof value === "number" && Number.isFinite(value)) {
+    zats = Math.max(0, Math.round(value));
+  } else if (typeof value === "string" && value.trim() !== "") {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      zats = Math.max(0, Math.round(parsed));
+    }
+  }
+  return zats / 1e8;
+}
+
 // ============================================
 // INTERNAL TYPES
 // ============================================
@@ -116,6 +129,7 @@ interface ReferralStats {
   pendingLinksCount: number;
   // Track individual eligible referrals with their locked commission rates
   eligibleReferrals: Array<{
+    referredUserId: number;
     firstVerifiedAt: Date;
     rewardEndDate: Date;
     isActive: boolean;
@@ -170,12 +184,21 @@ export async function getLeaderboardAction(
 
     // Get unique referrer IDs
     const referrerIds = [...new Set(users.map((u) => u.referred_by_zcasher_id).filter(Boolean))];
+    const referredUserIds = [...new Set(users.map((u) => u.id))];
 
     // Fetch referrer identities and links (display_name is optional with fallback)
     const linksPromise = supabase
       .from("zcasher_links")
       .select("zcasher_id, is_verified, pending_verif")
       .in("zcasher_id", referrerIds);
+    const referredUserLinksPromise = supabase
+      .from("zcasher_links")
+      .select("zcasher_id, is_verified")
+      .in("zcasher_id", referredUserIds);
+    const verificationEventsPromise = supabase
+      .from("zcasher_verifications")
+      .select("zcasher_id, referred_by_zcasher_id, verified_at, counts_for_commission, reward_zats")
+      .in("zcasher_id", referredUserIds);
 
     const referrersWithDisplay = await supabase
       .from("zcasher")
@@ -195,7 +218,15 @@ export async function getLeaderboardAction(
         ?.map((r) => ({ ...r, display_name: null, bio: null, nearest_city_name: null })) ?? null;
     }
 
-    const { data: allLinks } = await linksPromise;
+    const [
+      { data: allLinks },
+      { data: referredUserLinks },
+      { data: verificationEvents },
+    ] = await Promise.all([
+      linksPromise,
+      referredUserLinksPromise,
+      verificationEventsPromise,
+    ]);
 
     // Build referrer identity map (includes profile completeness flags)
     const referrerIdentity = new Map<number, {
@@ -230,6 +261,38 @@ export async function getLeaderboardAction(
       } else if (link.pending_verif) {
         pendingLinksMap.set(id, (pendingLinksMap.get(id) ?? 0) + 1);
       }
+    }
+
+    const referredUserVerifiedLinksMap = new Map<number, number>();
+    for (const link of referredUserLinks ?? []) {
+      if (!link.is_verified) continue;
+      referredUserVerifiedLinksMap.set(
+        link.zcasher_id,
+        (referredUserVerifiedLinksMap.get(link.zcasher_id) ?? 0) + 1,
+      );
+    }
+
+    const verificationEventsMap = new Map<number, Array<{
+      ts: number;
+      referredByZcasherId: number | null;
+      countsForCommission: boolean;
+      rewardZec: number;
+    }>>();
+    for (const event of verificationEvents ?? []) {
+      if (!event.verified_at) continue;
+      const ts = Date.parse(event.verified_at);
+      if (!Number.isFinite(ts)) continue;
+      const row = verificationEventsMap.get(event.zcasher_id) ?? [];
+      row.push({
+        ts,
+        referredByZcasherId:
+          typeof event.referred_by_zcasher_id === "number"
+            ? event.referred_by_zcasher_id
+            : null,
+        countsForCommission: !!event.counts_for_commission,
+        rewardZec: toZecFromZats(event.reward_zats),
+      });
+      verificationEventsMap.set(event.zcasher_id, row);
     }
 
     // Group referrals by referrer
@@ -269,6 +332,7 @@ export async function getLeaderboardAction(
 
       const referrerVerifiedLinks = verifiedLinksMap.get(referrerId) || 0;
       const referrerPendingLinks = pendingLinksMap.get(referrerId) || 0;
+      const referredUserVerifiedLinks = referredUserVerifiedLinksMap.get(user.id) || 0;
       const identity = referrerIdentity.get(referrerId);
 
       const current = referrerStats.get(referrerId) || {
@@ -305,12 +369,13 @@ export async function getLeaderboardAction(
           if (isActive) current.activeRewardsCount++;
 
           const lockedCommissionRate = calculateCommissionRate({
-            verifiedLinksCount: referrerVerifiedLinks,
+            verifiedLinksCount: referredUserVerifiedLinks,
             hasProfileImage: identity?.hasProfileImage ?? false,
             hasBio: identity?.hasBio ?? false,
             hasLocation: identity?.hasLocation ?? false,
           });
           current.eligibleReferrals.push({
+            referredUserId: user.id,
             firstVerifiedAt: firstVerifiedAt!,
             rewardEndDate,
             isActive,
@@ -364,11 +429,23 @@ export async function getLeaderboardAction(
             totalRecurringRevenue += VERIFICATION_FEE_ZEC;
           }
 
+          const payoutEnd = referral.rewardEndDate < now ? referral.rewardEndDate : now;
+          const referralEarnedZec = (verificationEventsMap.get(referral.referredUserId) ?? [])
+            .filter((event) => {
+              if (event.referredByZcasherId !== referrerId) return false;
+              if (!event.countsForCommission) return false;
+              return (
+                event.ts >= referral.firstVerifiedAt.getTime() &&
+                event.ts <= payoutEnd.getTime()
+              );
+            })
+            .reduce((sum, event) => sum + event.rewardZec, 0);
+          totalEarnedToDate += referralEarnedZec;
+
           const monthsElapsed = Math.min(
             monthsBetween(referral.firstVerifiedAt, now),
             REWARD_DURATION_MONTHS
           );
-          totalEarnedToDate += monthsElapsed * monthlyReward;
 
           if (referral.isActive) {
             const monthsRemaining = REWARD_DURATION_MONTHS - monthsElapsed;

@@ -37,7 +37,7 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
     id: "faq-columns",
     question: "How do these columns connect from Joined to Earnings?",
     answer:
-      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earnings grow monthly while Active is Yes.",
+      "Joined is signup date. Elig. Until is 4 weeks later. If they verify before that date, Activated = Yes. Then Active Until is 12 months after First Verif. Active stays Yes until that date. Earnings increase for each verification event recorded during the active window.",
   },
   {
     id: "faq-eligible-activated",
@@ -76,17 +76,17 @@ const REFERRER_FAQ_ITEMS: Array<{ id: string; question: string; answer: string |
     question: "How is Earnings (zats) calculated?",
     answer: (
       <>
-        Earnings are your referral payout total in zats. For each activated referral, rewards can be paid monthly for up
-        to 12 months after first verification. The monthly amount starts at 15% of the minimum verification fee, then
-        adds profile bonuses (5% each for profile image, bio, and location, up to 15%) and link bonuses (10% per
-        authenticated link), up to a 50% cap.
+        Earnings are your referral payout total in zats. For each activated referral, each verification event during
+        the 12-month active window can pay: minimum verification fee multiplied by commission rate. Commission starts at
+        15%, adds profile bonuses (5% each for profile image, bio, and location, up to 15%), and adds link bonuses
+        based on that referred user&apos;s authenticated links (10% per link), capped at 50%.
       </>
     ),
   },
   {
     id: "faq-payout-timing",
     question: "When is payout?",
-    answer: "At the Active Until date.",
+    answer: "Each qualifying verification event is counted during the active window; Active Until is when earning stops.",
   },
   {
     id: "faq-zat",

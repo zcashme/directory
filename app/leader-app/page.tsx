@@ -51,16 +51,17 @@ const FAQ_ITEMS: Array<{ id: string; question: string; answer: string | ReactEle
     question: "How are rewards calculated?",
     answer: (
       <>
-        Rewards = base rate (15%) + profile bonuses (5% each for profile image, bio, and location, up to
-        15%) + link bonuses (10% per authenticated link), capped at 50%. Multiplied by the minimum
-        verification fee, locked at verification time, paid monthly for 12 months.
+        Rewards are paid per verification event for activated referrals during their 12-month active window.
+        Per-event payout = minimum verification fee x commission rate, where commission rate = base rate (15%)
+        + profile bonuses (5% each for profile image, bio, and location, up to 15%) + link bonuses (10% per
+        authenticated link), capped at 50%.
       </>
     ),
   },
   {
     id: "faq-payout-timing",
     question: "When is payout?",
-    answer: "At the Active Until date.",
+    answer: "Each qualifying verification event is counted during the active window; Active Until is when earning stops.",
   },
   {
     id: "faq-zat",

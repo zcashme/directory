@@ -534,6 +534,7 @@ export interface ReferrerReferralRow {
   rewardsActivated: boolean;
   totalLinksCount: number;
   verifiedLinksCount: number;
+  countVerifs: number;
   activationExpiryDate: string | null;
   stillActive: ReferrerStillActiveFlag;
   earnedZats: number;
@@ -556,8 +557,8 @@ const REFERRER_SORT_OPTIONS: Array<{ value: ReferrerSortField; label: string }> 
 ];
 
 const REFERRER_GRID_CLASSES =
-  "grid-cols-[48px_58px_180px_96px_86px_98px_96px_92px_110px] md:grid-cols-[56px_64px_minmax(210px,2fr)_repeat(6,minmax(88px,1fr))]";
-const REFERRER_MIN_WIDTH_CLASS = "min-w-[1028px]";
+  "grid-cols-[48px_58px_180px_96px_86px_98px_84px_96px_92px_110px] md:grid-cols-[56px_64px_minmax(210px,2fr)_repeat(7,minmax(88px,1fr))]";
+const REFERRER_MIN_WIDTH_CLASS = "min-w-[1116px]";
 const RAW_PROFILE_BASE_DOMAIN = process.env.NEXT_PUBLIC_BASE_DOMAIN?.trim() ?? "zcash.me";
 const PROFILE_BASE_DOMAIN = RAW_PROFILE_BASE_DOMAIN
   .replace(/^https?:\/\//i, "")
@@ -941,6 +942,7 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
               <div className="px-3 py-2 text-center">Elig. Until</div>
               <div className="px-3 py-2 text-center">Eligible</div>
               <div className="px-3 py-2 text-center">First Verif.</div>
+              <div className="px-3 py-2 text-center">Count Verifs.</div>
               <div className="px-3 py-2 text-center">Auth/Links</div>
               <div className="px-3 py-2 text-center">Active Until</div>
               <div className="px-3 py-2 text-center">Commission</div>
@@ -1008,6 +1010,9 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
                 <div className="px-3 py-3 text-center text-gray-600 self-center">
                   {row.firstVerifiedAt ? formatDate(row.firstVerifiedAt) : "—"}
                 </div>
+                <div className="px-3 py-3 text-center text-cyan-600 self-center">
+                  {row.firstVerifiedAt ? row.countVerifs.toLocaleString("en-US") : "-"}
+                </div>
                 <div className="px-3 py-3 text-center text-green-600 self-center">
                   {row.verifiedLinksCount}/{row.totalLinksCount}
                 </div>
@@ -1015,7 +1020,7 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
                   {activeUntilLabel}
                 </div>
                 <div className="px-3 py-3 text-center self-center font-medium text-amber-600">
-                  {row.earnedZats > 0 ? formatZatsInteger(row.earnedZats) : "—"}
+                  {row.firstVerifiedAt ? formatZatsInteger(row.earnedZats) : "—"}
                 </div>
               </Link>
             );
