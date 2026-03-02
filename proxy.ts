@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 // Single source of truth for all subdomain-routed apps.
 // To add a new app, add one entry here — everything else derives from it.
@@ -13,10 +14,13 @@ const apps: Record<string, { path: string; aliases?: string[] }> = {
 
 // Subdomain (including aliases) → internal path
 const subdomainMap = new Map<string, string>();
+// Alias subdomain → canonical subdomain
+const aliasToCanonicalMap = new Map<string, string>();
 for (const [sub, cfg] of Object.entries(apps)) {
   subdomainMap.set(sub, cfg.path);
   for (const alias of cfg.aliases ?? []) {
     subdomainMap.set(alias, cfg.path);
+    aliasToCanonicalMap.set(alias, sub);
   }
 }
 
@@ -32,7 +36,7 @@ const reservedRoots = new Set([
 ]);
 
 export function proxy(request: NextRequest) {
-  const hostname = request.headers.get('host') || '';
+  const hostname = (request.headers.get('host') ?? '').toLowerCase();
   const url = request.nextUrl.clone();
   const pathname = url.pathname;
 
@@ -48,7 +52,7 @@ export function proxy(request: NextRequest) {
   if (referMatch) {
     const slug = referMatch[1];
     if (!reservedRoots.has(slug.toLowerCase())) {
-      const referredBy = url.searchParams.get("referred_by") || slug;
+      const referredBy = url.searchParams.get("referred_by") ?? slug;
       const referredById = url.searchParams.get("referred_by_id");
       url.pathname = `/${slug}`;
       url.searchParams.set("join", "1");
@@ -72,6 +76,18 @@ export function proxy(request: NextRequest) {
 
     if (isLocalhost || isProduction) {
       subdomain = parts[0];
+    }
+  }
+
+  // Redirect alias subdomains to their canonical subdomain.
+  // Example: leader.zcash.me -> leaders.zcash.me
+  if (subdomain) {
+    const canonicalSubdomain = aliasToCanonicalMap.get(subdomain);
+    if (canonicalSubdomain && hostname.startsWith(`${subdomain}.`)) {
+      const canonicalHost = `${canonicalSubdomain}.${hostname.slice(subdomain.length + 1)}`;
+      const redirectUrl = request.nextUrl.clone();
+      redirectUrl.host = canonicalHost;
+      return NextResponse.redirect(redirectUrl, 308);
     }
   }
 

@@ -16,7 +16,7 @@ interface FloatingSidebarItem {
 
 const SIDEBAR_MENU_ITEMS: FloatingSidebarItem[] = [
   { href: "https://status.zcash.me", localHref: "/stats-app", label: "Status Page", description: "See live uptime and incident reports", comingSoon: true },
-  { href: "https://leaders.zcash.me", localHref: "/leader-app", label: "Leaders", description: "Top profiles by referral activity", comingSoon: true },
+  { href: "https://leaders.zcash.me", label: "Leaders", description: "Top profiles by referral activity" },
   { href: null, label: "Statistics", description: "Platform metrics and growth", comingSoon: true },
   { href: null, label: "Polls", description: "Vote and voice your opinion", comingSoon: true },
   { href: null, label: "News", description: "Announcements and updates", comingSoon: true },
