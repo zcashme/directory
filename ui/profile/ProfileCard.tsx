@@ -62,6 +62,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
@@ -178,6 +179,7 @@ export default function ProfileCard({
                   onToggleStats={() => setShowStats((p) => !p)}
                   onEdit={() => setShowBack(true)}
                   onVerify={() => setIsVerifyOpen(true)}
+                  onUpgrade={() => setIsUpgradeOpen(true)}
                 />
               </div>
 
