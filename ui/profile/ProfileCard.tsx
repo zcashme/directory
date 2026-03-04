@@ -12,6 +12,7 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
 import { RedirectModal } from "@/ui/profile/editorModals";
+import UpgradeToMaxiModal from "@/ui/profile/UpgradeToMaxiModal";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
 import { upsertVerifiedLink } from "@/ui/links/verifyLink";
@@ -318,6 +319,7 @@ export default function ProfileCard({
 
           {isVerifyOpen && <VerifyProfileModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} profile={profile} />}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
+          <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
         </VerifiedCardWrapper>
       </div>
     </div>
