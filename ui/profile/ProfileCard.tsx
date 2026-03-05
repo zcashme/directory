@@ -319,7 +319,7 @@ export default function ProfileCard({
 
           {isVerifyOpen && <VerifyProfileModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} profile={profile} />}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
-          <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} />
+          <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} profile={profile} />
         </VerifiedCardWrapper>
       </div>
     </div>

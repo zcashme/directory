@@ -1,6 +1,8 @@
 "use client";
 
 import ReactDOM from "react-dom";
+import type { Profile } from "@/lib/profile/types";
+import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
 
 const FEATURES = [
   "Priority placement in the directory",
@@ -12,9 +14,10 @@ const FEATURES = [
 interface UpgradeToMaxiModalProps {
   isOpen: boolean;
   onClose: () => void;
+  profile: Profile;
 }
 
-export default function UpgradeToMaxiModal({ isOpen, onClose }: UpgradeToMaxiModalProps) {
+export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: UpgradeToMaxiModalProps) {
   if (!isOpen || typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
@@ -45,17 +48,12 @@ export default function UpgradeToMaxiModal({ isOpen, onClose }: UpgradeToMaxiMod
             ))}
           </div>
 
-          <div className="border-t border-gray-200 pt-4 text-center">
-            <div className="mb-4">
+          <div className="border-t border-gray-200 pt-4">
+            <div className="text-center mb-4">
               <span className="text-2xl font-bold text-gray-900">1 ZEC</span>
               <span className="text-sm text-gray-500 ml-1">one-time</span>
             </div>
-            <button
-              onClick={() => { /* TODO: payment flow */ }}
-              className="w-full py-3 rounded-xl bg-[var(--color-brand-blue)] text-white font-semibold hover:bg-[var(--color-brand-blue)]/90 transition-colors"
-            >
-              Upgrade Now
-            </button>
+            <MaxiUpgrade profile={profile} onClose={onClose} />
           </div>
         </div>
       </div>
