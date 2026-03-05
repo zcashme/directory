@@ -15,7 +15,7 @@ This document explains the API endpoints for wallet integrations with Zcash.me d
 
 ## Authentication
 
-All API requests **require** an API key:
+Most endpoints require an API key:
 
 ```
 X-API-Key: YOUR_KEY
@@ -25,21 +25,80 @@ If the key is missing or invalid, the API returns `401 unauthorized`.
 
 To obtain an API key for your wallet, contact the Zcash.me team.
 
+**Exception:** The `/api/lookup` endpoint is public and requires no authentication.
+
 ## Rate limits and caching
 
-| Endpoint | Cache TTL | Rate Limit |
-|----------|-----------|------------|
-| `/api/directory` | 30 seconds | 60/min |
-| `/api/resolve` | 60 seconds | 60/min |
-| `/api/social` | 300 seconds | 60/min |
-
-If you exceed the rate limit, you will receive `429 rate_limited`.
+| Endpoint | Cache TTL | Auth |
+|----------|-----------|------|
+| `/api/lookup` | 300 seconds | Public |
+| `/api/directory` | 30 seconds | API key |
+| `/api/resolve` | 60 seconds | API key |
+| `/api/social` | 300 seconds | API key |
 
 ---
 
 ## Endpoints
 
-### 1) Directory Search
+### 1) Lookup (Public)
+
+```
+GET /api/lookup/{username}
+```
+
+Resolve a ZcashMe username to a Zcash unified address. No authentication required. CORS enabled for browser-based clients.
+
+This is the recommended endpoint for wallets that only need name-to-address resolution.
+
+#### Example
+
+```bash
+curl https://zcash.me/api/lookup/yoshi
+```
+
+```javascript
+const res = await fetch("https://zcash.me/api/lookup/yoshi");
+const data = await res.json();
+console.log(data.address); // "u1abc..."
+```
+
+#### Success Response (200)
+
+```json
+{
+  "username": "yoshi",
+  "display_name": "Yoshi",
+  "address": "u1abc...",
+  "address_verified": true
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `username` | string | The canonical username (case-preserved) |
+| `display_name` | string \| null | Optional display name set by the user |
+| `address` | string | Zcash unified address |
+| `address_verified` | boolean | Whether the user has verified ownership of this address |
+
+#### Error Responses
+
+| Status | Error Code | Meaning |
+|--------|------------|---------|
+| 400 | `invalid_username` | Empty or missing username |
+| 404 | `not_found` | Username does not exist |
+| 404 | `no_address` | Username exists but has no address set |
+| 500 | `lookup_failed` | Internal error — safe to retry |
+| 503 | `service_unavailable` | Service is temporarily down — safe to retry |
+
+#### Notes
+
+- Lookups are case-insensitive (`Yoshi`, `yoshi`, and `YOSHI` all resolve the same)
+- An `address_verified: false` response means the address has not been cryptographically verified by the user — wallets may choose to warn before sending
+- Responses are cached at the edge — address updates may take a few minutes to propagate
+
+---
+
+### 2) Directory Search
 
 ```
 GET /api/directory?q=<search>&limit=25&cursor=<token>&verified_only=true
@@ -134,24 +193,20 @@ GET /api/directory?q=cobra&limit=25
 
 ---
 
-### 2) Resolve Username
+### 3) Resolve Username
 
 ```
-GET /api/resolve?username=<username>
+GET /api/resolve/{username}
 ```
 
-Use this to get full profile details for a specific user.
+Full profile details for a specific user, including all links. Use this when you need more than just the address (bio, links, avatar, etc.).
 
-#### Parameters
-
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| `username` | string | Yes | The username to resolve |
+For address-only resolution, prefer `/api/lookup/{username}` instead.
 
 #### Example
 
 ```
-GET /api/resolve?username=cobra
+GET /api/resolve/cobra
 ```
 
 #### Response
@@ -177,13 +232,13 @@ GET /api/resolve?username=cobra
 
 ---
 
-### 3) Resolve Social Handle
+### 4) Resolve Social Handle
 
 ```
 GET /api/social?platform=<platform>&handle=<handle>
 ```
 
-Use this to find a Zcash address from a social media handle.
+Find a Zcash address from a social media handle.
 
 #### Parameters
 
@@ -247,34 +302,44 @@ GET /api/directory?limit=100&cursor=eyJuYW1lIjoiem9ybyIsImlkIjoxMDB9
 
 ## Error handling
 
+### Error response format
+
+All errors return a JSON object with an `error` field:
+
+```json
+{ "error": "not_found" }
+```
+
 ### HTTP status codes
 
 | Status | Error | Description |
 |--------|-------|-------------|
 | 400 | `invalid_username`, `missing_parameters` | Bad request |
 | 401 | `unauthorized` | API key missing or invalid |
-| 404 | `not_found` | Username or handle not found |
-| 429 | `rate_limited` | Too many requests |
-| 500 | `search_failed`, `links_lookup_failed`, `server_misconfigured` | Server error |
-
-### Error response format
-
-```json
-{ "error": "not_found", "username": "nonexistent" }
-{ "error": "rate_limited" }
-{ "error": "unsupported_platform", "handle": null }
-```
+| 404 | `not_found`, `no_address` | Username or handle not found |
+| 500 | `search_failed`, `lookup_failed`, `links_lookup_failed` | Server error |
+| 503 | `service_unavailable` | Service temporarily down |
 
 ---
 
 ## Integration examples
 
-### Minimal integration flow
+### Simple wallet integration (recommended)
 
-1. User types a search term -> call `/api/directory?q=...`
-2. Show results (username + display name + verified badge)
-3. On selection, call `/api/resolve/:username` to get the address
-4. Optionally, allow direct social lookup with `/api/social?platform=...&handle=...`
+For wallets that just need to resolve a username to an address:
+
+```javascript
+async function resolveZcashMe(username) {
+  const res = await fetch(`https://zcash.me/api/lookup/${encodeURIComponent(username)}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.address;
+}
+
+// Usage
+const address = await resolveZcashMe("yoshi");
+if (address) sendZec(address, amount);
+```
 
 ### Slash shorthand resolution
 
@@ -292,9 +357,7 @@ function parseInput(input) {
 async function resolveInput(input) {
   const parsed = parseInput(input);
   if (parsed.type === 'zcashme') {
-    const res = await fetch(`https://zcash.me/api/resolve?username=${parsed.username}`, {
-      headers: { 'X-API-Key': 'YOUR_KEY' }
-    });
+    const res = await fetch(`https://zcash.me/api/lookup/${parsed.username}`);
     if (!res.ok) throw new Error('User not found');
     const data = await res.json();
     return data.address;
@@ -320,59 +383,24 @@ results.forEach(profile => {
 });
 ```
 
-### Directory browser
-
-```javascript
-async function* browseDirectory(verifiedOnly = true) {
-  let cursor = null;
-
-  while (true) {
-    const url = new URL('https://zcash.me/api/directory');
-    url.searchParams.set('limit', '100');
-    url.searchParams.set('verified_only', verifiedOnly);
-    if (cursor) url.searchParams.set('cursor', cursor);
-
-    const res = await fetch(url, {
-      headers: { 'X-API-Key': 'YOUR_KEY' }
-    });
-    const { results, next_cursor } = await res.json();
-
-    yield results;
-
-    if (!next_cursor) break;
-    cursor = next_cursor;
-  }
-}
-
-// Usage
-for await (const batch of browseDirectory()) {
-  displayProfiles(batch);
-}
-```
-
 ---
 
 ## UX recommendations
 
 1. **Debounce search input** by 200-300ms to reduce API calls
 2. **Start searching after 1-2 characters** to reduce noise
-3. **Show verified badge** when `address_verified` is true or a verified link exists
+3. **Show verified badge** when `address_verified` is true
 4. **Cache results** client-side for responsive UX
 5. **Handle errors gracefully** with user-friendly messages
 
 ---
 
-## Security guidance
-
-- **Backend proxy recommended:** Keep API keys on your backend server when possible
-- **Key rotation:** If shipping keys in client apps, plan for rotation
-- **HTTPS only:** Always use HTTPS in production
-- **Input validation:** Sanitize user input before passing to API
-
----
-
 ## Changelog
 
+- **2026-03:** Added public `/api/lookup/{username}` endpoint
+  - No authentication required
+  - CORS enabled for browser-based clients
+  - Returns only username, display_name, address, address_verified
 - **2025-02:** Updated `/api/directory` response format
   - Renamed `name` to `username`
   - Added `authenticated_links` and `unauthenticated_links` arrays

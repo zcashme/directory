@@ -1,5 +1,6 @@
 interface ApiGuardOptions {
   cacheSeconds?: number;
+  public?: boolean;
 }
 
 interface ApiGuardSuccess {
@@ -14,8 +15,12 @@ const getApiKey = (request: Request): string | null =>
 
 export const enforceApiGuard = async (
   request: Request,
-  { cacheSeconds = 0 }: ApiGuardOptions = {}
+  { cacheSeconds = 0, public: isPublic = false }: ApiGuardOptions = {}
 ): Promise<ApiGuardResult> => {
+  if (isPublic) {
+    return { ok: true, cacheSeconds };
+  }
+
   const expectedKey = process.env.API_KEY;
   if (!expectedKey) {
     return new Response(
