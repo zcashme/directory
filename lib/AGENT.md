@@ -1,55 +1,36 @@
-# /lib - Core Business Logic
+# /lib - Server-Side Business Logic
 
 ## Purpose
-Shared server-side logic, data fetching, server actions, types, and utilities.
-This is the brain of zcash.me - all business logic lives here.
+All server actions, data fetching, types, and utilities. Pages in `/app` call into
+`/lib` for business logic. Components in `/ui` consume types and call server actions
+defined here.
 
-## Directory Structure
+## Directory Overview
 
-| Folder | Purpose |
-|--------|---------|
-| `/zcash` | Zcash address validation, URI building, memo encoding |
-| `/profile` | Profile types, fetching, username policies, link handling |
-| `/directory` | Search, city filtering, featured profiles |
-| `/verification` | OTP confirmation, link verification |
-| `/signup` | Profile creation server actions |
-| `/swap` | OneClick SDK integration, token types |
-| `/profile/urlValidation.ts` | URL validation (isValidUrl, normalizeUrl) |
-| `/leaderboard` | Referral commission calculations |
-| `/thread` | Discussion board actions |
-| `/supabase` | Database client initialization |
-| `/api` | Rate limiting, API guards |
+| Folder | Purpose | See |
+|--------|---------|-----|
+| `profile/` | Profile types, fetching, username validation, link enrichment, avatar storage, trust/warning state | `lib/profile/AGENT.md` |
+| `directory/` | Homepage carousel, directory search, city search, NS directory | `lib/directory/AGENT.md` |
+| `signup/` | Profile creation server actions, real-time username/address validation | `lib/signup/AGENT.md` |
+| `verification/` | ZVS address verification (HMAC OTP), profile edit persistence, reward snapshots | `lib/verification/AGENT.md` |
+| `swap/` | 1Click/Defuse SDK integration for cross-chain swaps | `lib/swap/AGENT.md` |
+| `leaderboard/` | Referral commission calculations, leaderboard rankings, referrer stats | `lib/leaderboard/AGENT.md` |
+| `thread/` | Discussion board server actions [WIP — all stubbed] | `lib/thread/AGENT.md` |
+| `supabase/` | Database client initialization (server + client) | `lib/supabase/AGENT.md` |
+| `api/` | API guard (key validation + caching), standardized response types | `lib/api/AGENT.md` |
 
-## Key Exports
+## Key Server Actions
 
-### Server Actions
-- `createProfileAction` - Create new profile
-- `confirmOtpAction` - Verify OTP from transaction memo
-- `updateLinkVerificationAction` - Mark links verified
-- `getLeaderboardAction` - Fetch referral rankings
-
-### Utilities
-- `validateZcashAddress()` - Full validation with type detection
-- `buildZcashUri()` - Construct zcash: payment URIs
-- `isValidUrl()` - URL validation with security checks
-
-## Zcash Address Types Supported
-- **Unified (u1...)** - Recommended, privacy-preserving
-- **Sapling (zs1...)** - Shielded pool
-- **Transparent (t1.../t3...)** - Public (shown with warnings)
-- **TEX (tex1...)** - Discouraged
-
-## Testing Harness
-- No unit tests currently
-- Server actions can be tested via API routes
-- URL validation is a pure function - easy to unit test
+| Action | File | What It Does |
+|--------|------|-------------|
+| `createProfileAction` | `signup/createProfileAction.ts` | Creates new profile with links |
+| `confirmOtpAction` | `verification/confirmOtpAction.ts` | Verifies OTP, applies profile edits, records reward snapshot |
+| `generateMemoAction` | `verification/generateMemoAction.ts` | Generates memo + zcash: URI for verification |
+| `getLeaderboardAction` | `leaderboard/getLeaderboardAction.ts` | Ranked leaderboard with earnings and period filters |
+| `getReferrerStatsAction` | `leaderboard/getReferrerStatsAction.ts` | Per-referrer detail page data |
+| `getSwapTokens` / `getSwapQuote` / `confirmSwap` | `swap/oneClick.ts` | Token discovery, quotes, deposit addresses |
+| `getProfileLinksBatchAction` | `profile/getProfileLinksBatchAction.ts` | Batch-fetch links by profile IDs |
 
 ## Database Access
-All DB queries go through Supabase client in `/lib/supabase/`.
-Main tables: `zcasher`, `zcasher_links`, `zcasher_searchable`
-
-## Adding New Logic
-1. Create folder for feature domain
-2. Add `types.ts` for interfaces
-3. Add `actions.ts` for server actions (use 'use server')
-4. Export from `index.ts`
+All queries go through Supabase clients in `lib/supabase/`. Main tables: `zcasher`,
+`zcasher_links`, `zcasher_searchable`, `zcasher_verifications`, `referrer_ranked_*`.

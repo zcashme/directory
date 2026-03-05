@@ -1,60 +1,24 @@
 # /ui - React Components
 
 ## Purpose
-Reusable React components organized by feature domain. All UI presentation
-lives here - pages in `/app` compose these components.
+All reusable React components, organized by feature. Pages in `/app` compose these
+components. Server actions and types come from `/lib`.
 
-## Directory Structure
+## Directory Overview
 
-| Folder | Purpose |
-|--------|---------|
-| `/common` | Design system: buttons, forms, modals, layout |
-| `/profile` | Profile cards, editors, avatars, badges |
-| `/signup` | Profile creation form components |
-| `/verification` | OTP input, QR codes, verification flows |
-| `/swap` | Swap composer, token selection, quotes |
-| `/thread` | Discussion board, message cards |
-| `/messaging` | Memo composer with emoji support |
-| `/social` | Social link verification UI |
-| `/ns-directory` | Network School specific components |
-| `/styles` | Shared style utilities |
+| Folder | Purpose | See |
+|--------|---------|-----|
+| `common/` | Design system: buttons, forms, modals, layout, feedback, tooltips | `ui/common/AGENT.md` |
+| `profile/` | Profile card (3D flip), editor, avatar, badges, search dropdown, header, Maxi upgrade [WIP] | `ui/profile/AGENT.md` |
+| `signup/` | 6-step signup modal (username, address, links, city, referrer, review) | `ui/signup/AGENT.md` |
+| `verification/` | QR code display, OTP input, verification modal | `ui/verification/AGENT.md` |
+| `links/` | OAuth social link authentication (X, GitHub, Discord, LinkedIn) | `ui/links/AGENT.md` |
+| `swap/` | Swap composer with auto-flow, deposit display, slippage control | `ui/swap/AGENT.md` |
+| `thread/` | Discussion board UI [WIP — backend stubbed] | `ui/thread/AGENT.md` |
+| `messaging/` | Memo composer with 512-byte limit, emoji autocomplete | `ui/messaging/AGENT.md` |
 
-## Component Conventions
-
-### File Naming
-- `ComponentName.tsx` - Main component
-- `componentUtils.ts` - Helper functions
-- `componentTypes.ts` - TypeScript interfaces
-- `useComponentHook.ts` - Custom hooks
-
-### Client vs Server Components
-```typescript
-// Server component (default)
-export function ProfileCard({ profile }) { ... }
-
-// Client component (when needed)
-'use client';
-export function InteractiveForm() { ... }
-```
-
-Use `'use client'` only when component needs:
-- Event handlers (onClick, onChange)
-- Hooks (useState, useEffect)
-- Browser APIs
-
-## Styling
-- TailwindCSS 4 with utility classes
-- No CSS modules or styled-components
-- Framer Motion for animations
-
-## Zcash UI Patterns
-- QR codes use `zcash:` URI scheme
-- Address inputs validate on blur
-- Privacy warnings for transparent addresses
-- Unified address (u1...) shown prominently
-
-## Adding Components
-1. Create in appropriate feature folder
-2. Export from folder's `index.ts`
-3. Use `/common` components for consistency
-4. Add to design-system page if reusable
+## Conventions
+- TailwindCSS 4 for styling, Framer Motion for animations
+- `'use client'` only when component needs event handlers, hooks, or browser APIs
+- Direct imports from subfolders (no barrel exports): `import Button from '@/ui/common/buttons/Button'`
+- Visit `/design-system` to see all `ui/common` components rendered

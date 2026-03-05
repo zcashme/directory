@@ -1,102 +1,28 @@
-# /lib/thread - Discussion Board Logic
+# /lib/thread - Discussion Board Logic [WIP]
 
 ## Purpose
-Server actions and types for the OTP-verified discussion board.
-Users post messages by proving identity via Zcash transactions.
+Server actions and types for the discussion board at thread.zcash.me.
+**Status: Stub — all server actions return placeholder data. No database integration yet.**
 
-## Key Files
+## What It Will Do
+Users post messages to topic boards. Each post requires Zcash OTP verification
+(send a transaction to prove identity). Messages show verified badges for authenticated
+posts. Boards can be created by verified users.
 
-### types.ts
-```typescript
-interface ThreadMessage {
-  id: string;
-  boardId: string;
-  authorId: string;
-  authorUsername: string;
-  authorDisplayName: string;
-  content: string;
-  createdAt: string;
-  verified: boolean;
-}
+## Current State
+- Types are defined (`ThreadMessage`, `Board`)
+- Server actions exist but all contain `TODO: Replace with actual API call`
+- Validation is implemented (500-char message limit, 2-50 char board names)
+- No database tables are queried or written to
+- OTP verification is not connected
 
-interface Board {
-  id: string;
-  name: string;
-  description?: string;
-  memberCount: number;
-  messageCount: number;
-  createdAt: string;
-}
+## File -> Feature Map
 
-interface ThreadStore {
-  currentBoard: Board | null;
-  messages: ThreadMessage[];
-  composerContent: string;
-}
-```
+| File | Feature |
+|------|---------|
+| `actions.ts` | Stubbed server actions: `fetchBoardsAction()`, `fetchMessagesAction()`, `postMessageAction()`, `createBoardAction()` |
+| `types.ts` | `ThreadMessage` (id, user_id, username, verified, content, board_id) and `Board` (id, name, description, creator_id, member_count) |
+| `utils.ts` | `formatDistanceToNow()` — relative time labels ("just now", "2 hours ago", etc.) |
 
-### actions.ts
-Server actions (partially implemented):
-```typescript
-'use server'
-
-// Fetch available boards
-export async function fetchBoards(): Promise<Board[]>
-
-// Post verified message
-export async function postMessage(input: {
-  boardId: string;
-  content: string;
-  otp: string;
-}): Promise<{ success: boolean; message?: ThreadMessage }>
-
-// Create new board
-export async function createBoard(input: {
-  name: string;
-  description?: string;
-}): Promise<{ success: boolean; board?: Board }>
-```
-
-### utils.ts
-Helper functions for thread operations.
-
-## Verification Flow
-1. User writes message
-2. Generates OTP
-3. Sends Zcash tx with OTP in memo
-4. Server confirms OTP
-5. Message posted with verified badge
-
-## Anti-Spam Mechanism
-- Each post requires on-chain proof
-- Small fee (~0.0001 ZEC) per message
-- Ties posts to verified profiles
-- Rate limits per user
-
-## Database Tables
-```sql
-zcasher_boards (
-  id, name, description, created_at
-)
-
-zcasher_thread_messages (
-  id, board_id, author_id, content,
-  verified, created_at
-)
-```
-
-## Status: Partially Implemented
-The actions file has TODO comments - some features pending:
-- Board creation flow
-- Message editing/deletion
-- Moderation tools
-
-## Testing Harness
-- Mock database responses
-- Test message posting flow
-- Verify OTP integration
-- Test board switching
-
-## UI Integration
-Components in `/ui/thread/` consume this logic.
-State managed by Zustand store in `/lib/stores/thread.ts`.
+## See Also
+- `ui/thread/AGENT.md` — UI components (fully built, awaiting backend integration)

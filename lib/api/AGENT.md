@@ -1,24 +1,34 @@
-# /lib/api
+# /lib/api - API Guard & Response Types
 
-API guard and shared response types.
+## Purpose
+API authentication, caching helpers, and standardized response types used across
+all API routes and server actions.
 
-## guard.ts
+## What It Does
 
-`enforceApiGuard(request, options?)` — validates API key. Returns a `Response` on failure or `{ ok: true, cacheSeconds }` on success.
+### API Guard
+`enforceApiGuard(request, options?)` validates the API key from `x-api-key` or
+`authorization` headers against `API_KEY` env var. Returns `{ ok: true, cacheSeconds }`
+on success, or a 401/500 Response on failure.
 
-Options: `{ cacheSeconds?: number }`.
+`withCacheHeaders(headers, cacheSeconds)` adds `Cache-Control: s-maxage` and
+`stale-while-revalidate` headers for CDN caching.
 
-`withCacheHeaders(headers, cacheSeconds)` — adds `Cache-Control: s-maxage` + `stale-while-revalidate` when cacheSeconds > 0.
+### Response Types
+`APIResponse<T>` is the standard discriminated union: `{ ok: true, data: T }` or
+`{ ok: false, error: string, retryable?: boolean }`. Used by all server actions and
+API routes.
 
-## types.ts
+Domain-specific response types: `ConfirmOtpResponse`, `CreateProfileResponse`,
+`CheckUsernameAvailabilityResponse`, `CheckAddressTakenResponse`,
+`GetProfileLinksBatchResponse`, `GetNsProfilesResponse`, `ExchangeRate`.
 
-`APIResponse<T>` = `SuccessResponse<T> | ErrorResponse<T>` — standard `{ ok, data, error }` discriminated union used across API boundaries.
+Payload types: `CreateProfilePayload`, `ProfileEditsPayload` (with base64 avatar upload),
+`AvatarUploadPayload`, `ProfileLinkEdit` (with `_delete` flag), `ProfileLinkInput`.
 
-Also exports domain-specific response types (`DirectoryResponse`, `ConfirmOtpResponse`, `ProfileEditsPayload`, etc.) and payload interfaces used by server actions.
+## File -> Feature Map
 
-## Environment Variables
-
-```
-API_KEY              - Server-side key checked by enforceApiGuard
-NEXT_PUBLIC_API_KEY  - Client-side key for authenticated fetches
-```
+| File | Feature |
+|------|---------|
+| `guard.ts` | `enforceApiGuard()` API key validation, `withCacheHeaders()` cache control |
+| `types.ts` | `APIResponse<T>` union, domain response types, payload interfaces |

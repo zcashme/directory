@@ -1,94 +1,37 @@
-# /lib/signup - Profile Creation
+# /lib/signup - Profile Creation (Server)
 
 ## Purpose
-Server actions for creating new Zcash profiles.
-Handles validation, database insertion, and initial setup.
+Server actions that handle profile creation. Called by the signup form
+in `/ui/signup/AddUserForm.tsx`.
 
-## Key Files
+## User Flow
+When a user fills out the signup modal and hits "Add Name", this is what
+runs on the server:
 
-### createProfileAction.ts
-Main server action for profile creation:
-```typescript
-'use server'
-export async function createProfileAction(input: {
-  username: string;
-  displayName: string;
-  bio?: string;
-  address: string;
-  links?: LinkInput[];
-  cityId?: string;
-}): Promise<{
-  success: boolean;
-  profileId?: string;
-  slug?: string;
-  error?: string;
-}>
-```
+1. Validates username is not taken by a verified profile
+2. Validates Zcash address is not already associated with another profile
+3. Inserts a row into the `zcasher` table (profile starts unverified)
+4. Inserts links into `zcasher_links` (all start unverified)
+5. Returns the new profile — the client redirects to `/:slug`
 
-### createProfile.ts
-Core creation logic (called by action):
-```typescript
-async function createProfile(data: ProfileInput): Promise<Profile>
-```
+The user must separately verify via the OTP/ZVS flow (`/lib/verification`)
+to become a verified profile.
 
-## Validation Steps
-1. **Username** - Policy check via `/lib/profile/usernamePolicy.ts`
-2. **Address** - Zcash validation via `/ui/signup/zcashAddress.ts`
-3. **Uniqueness** - Check username not taken
-4. **Links** - Validate URLs/handles
+## Real-Time Validation
+The signup form calls these server actions as the user types, before submit:
+- `checkUsernameAvailabilityAction` — is this username taken? by a verified profile?
+- `checkAddressTakenAction` — is this Zcash address already in use?
 
-## Database Operations
-```typescript
-// Insert profile
-const { data: profile } = await supabase
-  .from('zcasher')
-  .insert({
-    name: normalizedUsername,
-    display_name: displayName,
-    slug: generateSlug(username),
-    address: address,
-    bio: bio,
-    nearest_city_id: cityId
-  })
-  .select()
-  .single();
+## Database
+- `zcasher` — profile row (name, display_name, address, nearest_city_name, referred_by)
+- `zcasher_links` — one row per link (url, label, platform, is_verified=false)
 
-// Insert links
-if (links.length > 0) {
-  await supabase
-    .from('zcasher_links')
-    .insert(links.map(l => ({
-      zcasher_id: profile.id,
-      url: l.url,
-      label: l.label,
-      platform: l.platform,
-      is_verified: false
-    })));
-}
-```
+## File → Feature Map
 
-## Zcash Address Handling
-- Validates address format before storage
-- Stores original address (preserves case for unified)
-- `address_verified` defaults to false
-- User must complete OTP flow to verify
+| File | Feature |
+|------|---------|
+| `createProfileAction.ts` | Server actions: createProfile, insertLinks, checkUsername, checkAddress |
+| `createProfile.ts` | Core DB operations: insert into `zcasher` and `zcasher_links` |
 
-## Error Handling
-```typescript
-// Common errors
-{ error: 'Username already taken' }
-{ error: 'Invalid Zcash address' }
-{ error: 'Username contains invalid characters' }
-{ error: 'Database error' }
-```
-
-## Testing Harness
-- Mock Supabase client
-- Test validation edge cases
-- Verify slug generation
-- Test link insertion
-
-## Related Files
-- `/ui/signup/` - Form components
-- `/lib/profile/usernamePolicy.ts` - Validation rules
-- `/ui/signup/zcashAddress.ts` - Address validation
+## See Also
+- `/ui/signup/AGENT.md` — the 6-step form UI that calls these actions

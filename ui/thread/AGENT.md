@@ -1,89 +1,50 @@
-# /ui/thread - Discussion Board UI
+# /ui/thread - Discussion Board UI [WIP]
 
 ## Purpose
-Components for Zcash-verified discussion boards. Users post messages
-by proving identity via blockchain transaction.
+React components for the discussion board at thread.zcash.me.
+**Status: UI is fully built and styled, but the backend is stubbed. No real data flows through yet.**
 
-## Components
+## What the User Would See
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ThreadBoard` | ThreadBoard.tsx | Main board container |
-| `ThreadFeed` | ThreadFeed.tsx | Scrollable message list |
-| `ThreadCard` | ThreadCard.tsx | Individual message card |
-| `ThreadComposer` | ThreadComposer.tsx | Message input form |
-| `ZcashVerificationComposer` | ZcashVerificationComposer.tsx | OTP-verified composer |
-| `BoardHeader` | BoardHeader.tsx | Board title and info |
-| `BoardSelector` | BoardSelector.tsx | Board selection dropdown |
-| `SidebarNav` | SidebarNav.tsx | Navigation sidebar |
-| `CreateBoardModal` | CreateBoardModal.tsx | New board creation |
+### Desktop Layout
+A sidebar listing boards (with active highlight and "Create Board" button) next to
+a main area with: board header (name, description, member count), scrollable message
+feed with infinite scroll, and a message composer at the bottom.
 
-## Board Structure
+### Mobile Layout
+The sidebar collapses into a dropdown board selector. Same main content area.
 
-```
-┌─────────────────────────────────────────────────────┐
-│ ┌──────────┐ ┌────────────────────────────────────┐ │
-│ │ Boards   │ │  General Discussion                │ │
-│ │ ───────  │ │  ─────────────────                  │ │
-│ │ General  │ │  ┌──────────────────────────────┐   │ │
-│ │ Tech     │ │  │ alice.zcash.me        2h ago│   │ │
-│ │ Trading  │ │  │ Just sent my first shielded │   │ │
-│ │          │ │  │ transaction!              ✓ │   │ │
-│ │ [+]      │ │  └──────────────────────────────┘   │ │
-│ │          │ │  ┌──────────────────────────────┐   │ │
-│ │          │ │  │ bob.zcash.me          5h ago│   │ │
-│ │          │ │  │ Welcome to the community!   │   │ │
-│ │          │ │  └──────────────────────────────┘   │ │
-│ └──────────┘ │                                     │ │
-│              │  ┌──────────────────────────────┐   │ │
-│              │  │ Write a message...           │   │ │
-│              │  │               [Verify & Post]│   │ │
-│              │  └──────────────────────────────┘   │ │
-│              └────────────────────────────────────┘ │
-└─────────────────────────────────────────────────────┘
-```
+### Message Card
+Avatar (image or gradient fallback with first letter), username, verified badge,
+relative timestamp, and message content.
 
-## Zcash Verification
+### Composer
+Auto-expanding textarea with emoji autocomplete (`:` trigger), 512-byte limit with
+counter, Cmd+Enter to submit, and a clear button.
 
-### Verified Posting
-Users must verify each post via Zcash transaction:
-1. Write message
-2. Generate OTP
-3. Send small tx with OTP in memo
-4. Message posted after confirmation
+### Create Board
+Modal with name input (2-50 chars) and optional description (max 200 chars),
+character counters on both fields.
 
-```tsx
-<ZcashVerificationComposer
-  onVerified={(message) => postMessage(message)}
-/>
-```
+## What's Not Wired Yet
+- Infinite scroll pagination (`hasMoreMessages` is hardcoded to `true`)
+- `verified` badge is always `false` (OTP verification not connected)
+- Avatar `profile_image_url` is never populated
+- All data comes from stubbed server actions returning empty arrays
 
-### Anti-Spam
-- Each post requires on-chain proof
-- Small fee (~0.0001 ZEC) per post
-- Links posts to verified profiles
+## File -> Feature Map
 
-## State Management
-Uses Zustand store at `/lib/stores/thread.ts`:
-- Current board selection
-- Message list
-- Composer content
+| File | Feature |
+|------|---------|
+| `ThreadBoard.tsx` | Top-level orchestrator: board selection, message display, responsive layout |
+| `ThreadFeed.tsx` | Scrollable message list with Intersection Observer infinite scroll + loading skeletons |
+| `ThreadCard.tsx` | Individual message: avatar, username, verified badge, timestamp, content |
+| `ThreadComposer.tsx` | Message input with emoji autocomplete (`useEmojiAutocomplete`), byte counter, Cmd+Enter submit |
+| `BoardHeader.tsx` | Board name, description, member count, creation date |
+| `BoardSelector.tsx` | Mobile-only dropdown for switching boards |
+| `SidebarNav.tsx` | Desktop sidebar: board list with active state, "Create Board" button, loading skeleton |
+| `CreateBoardModal.tsx` | Modal form for new boards with name/description validation |
 
-## Types
-See `/lib/thread/types.ts`:
-```typescript
-interface ThreadMessage {
-  id: string;
-  boardId: string;
-  authorId: string;
-  content: string;
-  createdAt: string;
-  verified: boolean;
-}
-```
-
-## Testing Harness
-- Mock thread actions for unit tests
-- Test message rendering
-- Verify composer validation
-- Test board switching
+## See Also
+- `lib/thread/AGENT.md` — stubbed server actions and types
+- `ui/messaging/AGENT.md` — emoji autocomplete hook used by ThreadComposer

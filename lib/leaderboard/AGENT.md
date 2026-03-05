@@ -1,77 +1,66 @@
-# /lib/leaderboard - Referral System
+# /lib/leaderboard - Referral Commission System
 
 ## Purpose
-Referral commission tracking and leaderboard calculations.
-Rewards users for bringing new profiles to zcash.me.
+Server-side logic for the referral leaderboard and commission calculations.
+Powers the leaderboard page (leaders.zcash.me) and individual referrer detail
+pages (leaders.zcash.me/:username).
 
-## Key File
+## What the User Experiences
 
-### getLeaderboardAction.ts
-Server action for leaderboard data:
-```typescript
-'use server'
-export async function getLeaderboardAction(): Promise<{
-  leaders: LeaderEntry[];
-  userRank?: number;
-  userStats?: UserStats;
-}>
-```
+### Leaderboard Page
+A ranked table of top referrers showing: rank, avatar, name, referral counts
+(verified vs total), conversion rate, commission tier, active rewards count,
+monthly payout, and total earned. Filterable by period (daily/weekly/monthly/all-time).
 
-## Data Model
+### Referrer Detail Page
+A per-referrer breakdown at leaders.zcash.me/:username showing: referrer profile
+with ranks (all-time/weekly/monthly), and a table of each referred user with:
+join date, eligibility deadline, verification date, activation status, link counts,
+commission earned, and whether rewards are still active.
 
-### LeaderEntry
-```typescript
-interface LeaderEntry {
-  profileId: string;
-  username: string;
-  displayName: string;
-  avatarUrl?: string;
-  referralCount: number;
-  totalCommission: number;  // In ZEC
-  rank: number;
-}
-```
+## Commission Model
 
-### Commission Tiers
-Multi-tier referral system:
-- **Direct referrals**: Higher commission
-- **Second-tier**: Smaller percentage
-- **Eligibility window**: Time-limited earning period
+- **Base rate**: 15%
+- **Profile completeness**: +5% each for profile picture, bio, and location (max +15%)
+- **Per authenticated link**: +10% per verified link
+- **Cap**: 50% maximum commission rate
+- **Fee**: 0.001 ZEC per verification event
+- **Monthly reward** per active referral: 0.001 ZEC x locked rate (e.g. 0.0005 ZEC at 50%)
+- **Rate lock-in**: Commission rate is locked at the moment the referred user verifies
+  (not recalculated later). Stored in `zcasher_verifications`.
+- **Duration**: 12 months from the referred user's first verification date
 
-## Calculation Logic
+### Commission Tiers (by verified link count)
+- Base: 0 links
+- Bronze: 1+ links
+- Silver: 3+ links
+- Gold: 6+ links
+- Platinum: 10+ links
 
-```
-User A refers User B
-  ↓
-User B creates profile
-  ↓
-User B receives payments
-  ↓
-User A earns X% commission on payments
-  ↓
-Tracked in leaderboard
-```
+### Referral Eligibility
+- Referred user must verify their address within 4 weeks of signup to be "eligible"
+- If eligible and verified, rewards are "active" for 12 months from first verification
+- After 12 months: "expired"
+- If not verified within 4 weeks: "ineligible"
 
-## Database Fields
-Profiles have referral tracking fields:
-- `referred_by` - Profile ID of referrer
-- `referral_code` - Unique code for sharing
-- `commission_earned` - Total ZEC earned
+## Database
 
-## Zcash Integration
-- Commissions paid in ZEC
-- Tracked via transaction memos
-- Settlement to referrer's Zcash address
+| Table | Access |
+|-------|--------|
+| `zcasher` | Read — referrer + referred user profiles |
+| `zcasher_links` | Read — verified link counts for commission calculation |
+| `zcasher_verifications` | Read — verification events with locked commission rates and reward amounts |
+| `referrer_ranked_alltime` | Read — pre-computed all-time rankings (materialized view) |
+| `referrer_ranked_weekly` | Read — pre-computed weekly rankings |
+| `referrer_ranked_monthly` | Read — pre-computed monthly rankings |
 
-## Testing Harness
-- Mock referral chains
-- Test commission calculations
-- Verify ranking logic
-- Test edge cases (self-referral, expired windows)
+## File -> Feature Map
 
-## UI Integration
-Displayed in `/app/leader-app` using data from this action.
+| File | Feature |
+|------|---------|
+| `rewardProgram.ts` | Constants (rates, windows, caps), `calculateCommissionRate()`, `computeReferralStatus()`, `getCommissionTier()`, date helpers |
+| `getLeaderboardAction.ts` | Server action: ranked leaderboard with earnings, period filters (daily/weekly/monthly/alltime), commission calculations |
+| `getReferrerStatsAction.ts` | Server action: per-referrer detail page data — referral table with status/earnings, summary stats, ranks |
 
-## Network School
-NS members may have special referral bonuses tracked via
-`is_ns_core` and `is_ns_longterm` flags.
+## See Also
+- `lib/verification/AGENT.md` — `confirmOtpAction` records the reward snapshot at verification time

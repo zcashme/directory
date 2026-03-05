@@ -1,60 +1,36 @@
 # /lib/supabase - Database Client
 
-Supabase client initialization. Single source of truth for all DB and storage access.
+## Purpose
+Supabase client initialization. Single source of truth for all database and storage access.
 
 ## Clients
 
-**Server** (`supabase-server.ts`): `createSupabaseServerClient()` — returns `SupabaseClient | null`. Uses service role key (bypasses RLS), falls back to anon key. Sessions not persisted.
+**Server** (`supabase-server.ts`): `createSupabaseServerClient()` returns `SupabaseClient | null`.
+Prefers service role key (bypasses RLS), falls back to anon key. Sessions not persisted
+(`persistSession: false`) for stateless serverless operations.
 
-**Client** (`supabase-client.ts`): Singleton `supabase` export using anon key.
+**Client** (`supabase-client.ts`): Singleton `supabase` export using anon key. Respects RLS.
 
-## Environment Variables
+## Key Tables
 
-```
-NEXT_PUBLIC_SUPABASE_URL      - Project URL (both client/server)
-NEXT_PUBLIC_SUPABASE_ANON_KEY - Public anon key (client, server fallback)
-SUPABASE_SERVICE_KEY          - Service role key (server only, bypasses RLS)
-```
-
-## Tables
-
-### zcasher (Profiles)
-
-| Column | Type | Notes |
-|--------|------|-------|
-| id | integer | PK |
-| name | text | Username (normalized) |
-| display_name | text | Shown in UI |
-| slug | text | URL path |
-| address | text | Zcash address |
-| address_verified | boolean | |
-| bio | text | |
-| profile_image_url | text | Always a Supabase bucket URL or null |
-| nearest_city_name | text | |
-| is_ns | boolean | Network School member |
-| featured | boolean | Homepage featured |
-
-### zcasher_links (Profile Links)
-
-| Column | Type | Notes |
-|--------|------|-------|
-| id | integer | PK (serial) |
-| zcasher_id | integer | FK → zcasher(id) |
-| url | text | Full URL |
-| label | text | Display label |
-| platform | text | "X", "GitHub", "Discord", etc. |
-| is_verified | boolean | Verified via OAuth |
-
-### zcasher_searchable
-
-Denormalized view over zcasher for fast search/directory queries.
+| Table | Purpose |
+|-------|---------|
+| `zcasher` | Profile records (id, name, slug, address, address_verified, bio, profile_image_url, etc.) |
+| `zcasher_links` | Profile social links (url, platform, is_verified, label) |
+| `zcasher_searchable` | Denormalized view for fast search/directory queries |
+| `zcasher_verifications` | Append-only verification event log (reward snapshots) |
+| `referrer_ranked_alltime/weekly/monthly` | Pre-computed leaderboard rankings (materialized views) |
 
 ## Avatar Storage
 
-All profile images live in the Supabase storage bucket `zcashme`, folder `avatars/`.
+All profile images live in Supabase storage bucket `zcashme`, folder `avatars/`.
+Canonical path: `avatars/{profileId}_zmp.png`. `profile_image_url` is always a Supabase
+public storage URL, never an external URL. External OAuth avatars are downloaded and
+re-uploaded. See `lib/profile/avatarStorage.ts`.
 
-- Reads and writes always go through the bucket — `profile_image_url` is always a Supabase public storage URL, never an external URL.
-- Canonical path: `avatars/{profileId}_zmp.png`
-- Write points: `confirmOtpAction.ts` (primary), `verifyLink.ts` (secondary, only if no existing image)
-- External OAuth avatar URLs are downloaded server-side and re-uploaded to the bucket before storing the URL.
-- See `lib/profile/avatarStorage.ts` for storage helpers.
+## File -> Feature Map
+
+| File | Feature |
+|------|---------|
+| `supabase-server.ts` | `createSupabaseServerClient()` — server-side client with service key |
+| `supabase-client.ts` | Singleton `supabase` export — browser-side client with anon key |
