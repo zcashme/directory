@@ -49,8 +49,9 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
-    .select("name,display_name,address,address_verified")
+    .select("id,name,display_name,address,address_verified")
     .ilike("name", username)
+    .order("id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -66,12 +67,17 @@ export async function GET(
     return jsonResponse({ error: "no_address" }, 404);
   }
 
+  const verified = !!profile.address_verified;
+  const displayUsername = verified
+    ? profile.name
+    : `${profile.name}-${profile.id}`;
+
   return jsonResponse(
     {
-      username: profile.name,
+      username: displayUsername,
       display_name: profile.display_name,
       address: profile.address,
-      address_verified: !!profile.address_verified,
+      address_verified: verified,
     },
     200,
     guard.cacheSeconds
