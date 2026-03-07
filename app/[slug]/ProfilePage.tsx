@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
@@ -118,10 +118,20 @@ export default function ProfilePage({
   duplicateNameCount,
   initialPrefill,
 }: ProfilePageProps) {
+  const hasAutoScrolledPrefillRef = useRef(false);
+  const pageBottomSentinelRef = useRef<HTMLDivElement | null>(null);
   const prefilledOriginTokenId = resolvePrefillOriginTokenId(
     tokens,
     initialPrefill?.swapTicker ?? "",
     initialPrefill?.swapBaseLayer ?? ""
+  );
+  const hasInitialPrefill = Boolean(
+    initialPrefill?.memo ||
+      initialPrefill?.donateAmount ||
+      initialPrefill?.swapTicker ||
+      initialPrefill?.swapAmount ||
+      initialPrefill?.fiatTicker ||
+      initialPrefill?.fiatAmount
   );
   const shouldSeedFiatFromInitialSwapAmount = Boolean(
     initialPrefill?.swapTicker &&
@@ -382,13 +392,39 @@ export default function ProfilePage({
     }));
   }, []);
 
+  const runMultiPassScroll = useCallback((scrollFn: () => void) => {
+    scrollFn();
+    window.requestAnimationFrame(scrollFn);
+    window.setTimeout(scrollFn, 120);
+    window.setTimeout(scrollFn, 320);
+    window.setTimeout(scrollFn, 700);
+    window.setTimeout(scrollFn, 1200);
+  }, []);
+
   const handleShowQR = useCallback(() => {
     setForceShowQR(true);
     setTimeout(() => {
-      const el = document.getElementById("zcash-feedback");
-      if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      runMultiPassScroll(() => {
+        const el = document.getElementById("zcash-feedback");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+      });
     }, 200);
-  }, []);
+  }, [runMultiPassScroll]);
+
+  useEffect(() => {
+    if (!hasInitialPrefill) return;
+    if (hasAutoScrolledPrefillRef.current) return;
+    hasAutoScrolledPrefillRef.current = true;
+
+    runMultiPassScroll(() => {
+      pageBottomSentinelRef.current?.scrollIntoView({ behavior: "auto", block: "end" });
+      const bottom = Math.max(
+        document.documentElement.scrollHeight,
+        document.body.scrollHeight
+      );
+      window.scrollTo({ top: bottom, behavior: "auto" });
+    });
+  }, [hasInitialPrefill, runMultiPassScroll]);
 
   return (
     <div
@@ -469,6 +505,7 @@ export default function ProfilePage({
             </div>
           </div>
         </div>
+        <div ref={pageBottomSentinelRef} aria-hidden />
       </div>
   );
 }

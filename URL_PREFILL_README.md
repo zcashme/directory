@@ -1,17 +1,24 @@
-# URL Prefill README
+# URL Prefill + Paylink README
 
-This document describes the URL prefill behavior for profile pages (`/{name}`) in zcash.me.
+This document describes:
+
+1. URL prefill parsing/hydration for profile pages (`/{name}`)
+2. The profile-menu paylink builder UI (`Create Paylink`)
 
 ## Goal
 
 Allow links like `https://zcash.me/{name}?...` (or `http://localhost:3000/{name}?...`) to prefill:
 
 1. Memo text
-2. Amount field (crypto)
-3. Fiat pill (currency + fiat amount)
+2. Crypto amount
+3. Fiat amount/currency
 4. Swap mode token selection for non-ZEC tickers
 
+Also allow profile owners to generate a shareable paylink from the profile menu.
+
 ## Where It Is Implemented
+
+### URL parsing + hydration
 
 1. `app/[slug]/page.tsx`
 2. `app/[slug]/ProfilePage.tsx`
@@ -19,14 +26,20 @@ Allow links like `https://zcash.me/{name}?...` (or `http://localhost:3000/{name}
 4. `ui/swap/SwapComposer.tsx`
 5. `ui/verification/AmountAndWallet.tsx`
 
+### Paylink builder UI
+
+1. `ui/profile/ProfileCardActions.tsx` (menu entry: `Create Paylink`)
+2. `ui/profile/ProfileCard.tsx` (opens/closes modal)
+3. `ui/profile/CreatePrefillUrlModal.tsx` (builder + preview)
+
 ## Canonical Redirect Behavior
 
-If a non-canonical slug is visited (example: wrong casing), the app redirects to canonical slug **and preserves query params**.
+If a non-canonical slug is visited, the app redirects to canonical slug and preserves query params.
 
 Example:
 
 `/Savezcash?memo=Hi&ticker=ZEC&amount=0.01`  
-redirects to canonical slug and keeps `?memo=Hi&ticker=ZEC&amount=0.01`.
+redirects to canonical slug with the same query string.
 
 ## Supported Query Parameters
 
@@ -53,7 +66,7 @@ Memo is capped to 512 bytes.
 Validation:
 
 1. Positive decimal only
-2. Up to 8 decimals for crypto amount parsing
+2. Up to 8 decimals
 
 ### Fiat
 
@@ -71,9 +84,9 @@ Fiat amount sources:
 Validation:
 
 1. Positive decimal only
-2. Up to 2 decimals for fiat amount parsing
+2. Up to 2 decimals
 
-### Base Layer (for tokens available on multiple chains)
+### Base Layer (parser still supports it)
 
 1. `base_layer`
 2. `baseLayer`
@@ -83,62 +96,61 @@ Validation:
 6. `layer`
 7. `blockchain`
 
-If missing and multiple base layers exist for the ticker, first token match from loaded token list is used.
+If missing and multiple base layers exist for a non-ZEC ticker, first token match is used.
 
 ## Prefill Rules
 
 ### Donate mode (`ticker=ZEC` or no ticker)
 
 1. `memo` is applied.
-2. If `fiat` + fiat amount is present, fiat pill is opened and conversion updates crypto amount.
-3. If fiat prefill is not present, crypto amount prefill is applied from `zec` or `amount`.
+2. If `fiat` + fiat amount exists, fiat is hydrated and conversion updates crypto amount.
+3. If fiat prefill does not exist, crypto amount prefill is used (`zec` or shared amount).
 
 ### Swap mode (`ticker` is non-ZEC and exists in token list)
 
 1. Opens swap composer with selected token.
 2. Memo is ignored in swap mode.
 3. If only crypto amount is provided, crypto amount is applied.
-4. If fiat prefill is provided without crypto amount, fiat pill is opened and conversion updates token amount.
-5. If both crypto and fiat amounts are provided, **crypto amount wins**.
+4. If fiat prefill is provided without crypto amount, fiat drives token conversion.
+5. If both crypto and fiat amounts are provided, crypto amount wins.
 
 ### Memo carry-over behavior
 
-If URL includes a memo with non-ZEC ticker:
+If URL includes memo with non-ZEC ticker:
 
-1. Memo is ignored while in swap mode.
-2. If user switches ticker back to ZEC, memo appears in memo composer.
+1. Memo is hidden in swap mode.
+2. If user switches token back to ZEC, memo appears in memo composer.
 
-## Additional Behavior
+## Paylink Builder Behavior (Profile Menu)
 
-If URL provides non-ZEC ticker with crypto amount and no fiat amount:
+The modal is opened from `Create Paylink` in the profile menu.
 
-1. Swap view auto-opens fiat pill from crypto amount.
-2. Fiat state is persisted in session storage.
-3. If user switches to ZEC, that fiat state carries over and continues driving ZEC amount conversion.
+Current builder behavior:
+
+1. Crypto ticker is fixed to `ZEC` (no crypto/base-layer selector in builder).
+2. User can edit `Amount (ZEC)` and/or `Amount (fiat)` with fiat ticker selection.
+3. Fiat and ZEC amounts stay synchronized using current rate.
+4. Last modified amount field controls URL amount params:
+   1. Last modified ZEC field -> `ticker=ZEC&amount=...`
+   2. Last modified fiat field -> `fiat=...&fiat_amount=...`
+5. Memo input is available and capped to 512 bytes.
+6. Builder includes `Close`, `Open URL`, `Copy URL`, `Share URL`.
+
+UI note shown in builder:
+
+`Payable in ZEC, BTC, SOL, USDT, USDC - you will receive ZEC.`
 
 ## Example URLs
 
-### Donate / memo
+### Builder output when ZEC amount is last modified
 
 `http://localhost:3000/SaveZcash?memo=Thanks&ticker=ZEC&amount=0.01`
 
-### Donate / fiat
+### Builder output when fiat amount is last modified
 
-`http://localhost:3000/SaveZcash?memo=Thanks&fiat=USD&amount=25.50`
+`http://localhost:3000/SaveZcash?memo=Thanks&fiat=USD&fiat_amount=25.00`
 
-### Swap / crypto amount
+### Manual swap URL (still supported by parser)
 
-`http://localhost:3000/SaveZcash?memo=Thanks&ticker=BTC&amount=0.001`
-
-### Swap / fiat only
-
-`http://localhost:3000/SaveZcash?ticker=ETH&fiat=USD&fiat_amount=50`
-
-### Swap / both crypto and fiat (crypto wins)
-
-`http://localhost:3000/SaveZcash?ticker=BTC&amount=0.001&fiat=USD&fiat_amount=25`
-
-### Multi-base-layer token with explicit chain
-
-`http://localhost:3000/SaveZcash?ticker=USDC&base_layer=solana&fiat=USD&fiat_amount=30`
+`http://localhost:3000/SaveZcash?ticker=BTC&amount=0.001`
 
