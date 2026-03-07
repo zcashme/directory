@@ -24,6 +24,9 @@ interface SwapComposerProps {
   // Token state
   tokenOptions: Token[];
   originSymbol: string;
+  autoOpenFiatFromAmount?: boolean;
+  prefillFiatTicker?: string;
+  prefillFiatAmount?: string;
   // Swap input state
   swapAmount: string;
   refundAddress: string;
@@ -62,11 +65,15 @@ interface SwapComposerProps {
     slippage?: string;
   }) => Promise<Result<SwapConfirmData> | null>;
 }
+
 export default function SwapComposer({
   profile,
   // Token state
   tokenOptions,
   originSymbol,
+  autoOpenFiatFromAmount = false,
+  prefillFiatTicker = "",
+  prefillFiatAmount = "",
   // Swap input state
   swapAmount,
   refundAddress,
@@ -361,6 +368,9 @@ export default function SwapComposer({
         asset={originSymbol}
         assetOptions={formattedTokenOptions}
         setAsset={handleTokenChange}
+        initialAutoOpenFiatFromAmount={autoOpenFiatFromAmount}
+        initialFiatTicker={prefillFiatTicker}
+        initialFiatAmount={prefillFiatAmount}
         showRefund={Number.parseFloat(swapAmount) > 0}
         refundAddress={refundAddress}
         setRefundAddress={setRefundAddress}

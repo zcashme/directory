@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
 
@@ -21,6 +21,15 @@ interface ProfilePageProps {
   initialProfile: Profile;
   tokens: Token[];
   duplicateNameCount?: number;
+  initialPrefill?: {
+    memo: string;
+    donateAmount: string;
+    swapTicker: string;
+    swapBaseLayer: string;
+    swapAmount: string;
+    fiatTicker: string;
+    fiatAmount: string;
+  };
 }
 
 type BaseLayerKey = "zec" | "btc" | "eth" | "sol";
@@ -53,22 +62,83 @@ function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
   return null;
 }
 
+function normalizeBaseLayerKey(value: string): string {
+  const normalized = value.trim().toLowerCase().replace(/[_\s./-]+/g, "");
+  if (!normalized) return "";
+  if (normalized.includes("bitcoin") || normalized.includes("btc")) return "btc";
+  if (normalized.includes("ethereum") || normalized.includes("eth")) return "eth";
+  if (normalized.includes("solana") || normalized.includes("sol")) return "sol";
+  if (normalized.includes("zcash") || normalized.includes("zec")) return "zec";
+  if (normalized.includes("tron") || normalized.includes("trx")) return "tron";
+  return normalized;
+}
+
+function tokenMatchesBaseLayer(token: Token, requestedBaseLayer: string): boolean {
+  if (!requestedBaseLayer) return true;
+  const requestedKey = normalizeBaseLayerKey(requestedBaseLayer);
+  if (!requestedKey) return true;
+
+  const tokenBlockchain = token.blockchain || "";
+  const tokenKey = normalizeBaseLayerKey(tokenBlockchain);
+  if (tokenKey && tokenKey === requestedKey) return true;
+
+  return tokenBlockchain.toLowerCase().includes(requestedBaseLayer.toLowerCase());
+}
+
+function resolvePrefillOriginTokenId(
+  tokens: Token[],
+  ticker: string,
+  requestedBaseLayer: string
+): string | null {
+  const normalizedTicker = ticker.trim().toUpperCase();
+  if (!normalizedTicker || normalizedTicker === "ZEC") return null;
+
+  const matches = tokens.filter((token) => token.symbol.toUpperCase() === normalizedTicker);
+  if (matches.length === 0) return null;
+
+  if (requestedBaseLayer) {
+    const layered = matches.find((token) => tokenMatchesBaseLayer(token, requestedBaseLayer));
+    if (layered) {
+      const layeredId = getTokenId(layered);
+      if (layeredId) return layeredId;
+    }
+  }
+
+  for (const token of matches) {
+    const tokenId = getTokenId(token);
+    if (tokenId) return tokenId;
+  }
+
+  return null;
+}
+
 export default function ProfilePage({
   initialProfile,
   tokens,
-  duplicateNameCount
+  duplicateNameCount,
+  initialPrefill,
 }: ProfilePageProps) {
+  const prefilledOriginTokenId = resolvePrefillOriginTokenId(
+    tokens,
+    initialPrefill?.swapTicker ?? "",
+    initialPrefill?.swapBaseLayer ?? ""
+  );
+  const shouldSeedFiatFromInitialSwapAmount = Boolean(
+    initialPrefill?.swapTicker &&
+    initialPrefill.swapAmount &&
+    !initialPrefill.fiatAmount
+  );
   const feedbackTopPaddingPx = 32;
   const feedbackTopMarginPx = 40;
   const [isGettingQuote, setIsGettingQuote] = useState(false);
   const [isConfirming, setIsConfirming] = useState(false);
 
   // Local swap form state (previously in global store)
-  const [swapForm, setSwapForm] = useState({
-    amount: '',
+  const [swapForm, setSwapForm] = useState(() => ({
+    amount: initialPrefill?.swapAmount ?? '',
     refundAddress: '',
     slippageTolerance: '1',
-  });
+  }));
 
   // Local quote state
   const [quoteState, setQuoteState] = useState<{
@@ -88,19 +158,17 @@ export default function ProfilePage({
   });
 
   // Local memo form state
-  const [memoForm, setMemoForm] = useState({
-    memo: '',
-    amount: '',
-  });
+  const [memoForm, setMemoForm] = useState(() => ({
+    memo: initialPrefill?.memo ?? '',
+    amount: initialPrefill?.donateAmount ?? '',
+  }));
 
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [verificationGenerateQrTrigger, setVerificationGenerateQrTrigger] = useState(0);
 
-  // Local state
-  const [mode, setMode] = useState<'donate' | 'swap' | 'verification'>('donate');
-  const [originTokenId, setOriginTokenId] = useState<string | null>(null);
+  const [originTokenId, setOriginTokenId] = useState<string | null>(prefilledOriginTokenId);
 
   // Extract local state values
   const swapAmount = swapForm.amount;
@@ -115,6 +183,15 @@ export default function ProfilePage({
   const zecTokenId = getTokenId(zecToken) ?? null;
   const selectedToken = tokens.find((t) => getTokenId(t) === originTokenId);
   const originSymbol = selectedToken?.symbol ?? "ZEC";
+  const isZecSelection =
+    !selectedToken ||
+    (selectedToken.symbol.toUpperCase() === "ZEC" &&
+      selectedToken.blockchain.toLowerCase().includes("zec"));
+  const mode: "donate" | "swap" | "verification" = isProfileEditing
+    ? "verification"
+    : isZecSelection
+      ? "donate"
+      : "swap";
   const memoAssetOptions = useMemo(() => {
     const allowed = tokens
       .map((token) => {
@@ -151,16 +228,6 @@ export default function ProfilePage({
       return aSymbol.localeCompare(bSymbol);
     });
   }, [tokens]);
-
-  // Mode selection logic based strictly on profile card side
-  useEffect(() => {
-    if (isProfileEditing) {
-      setMode('verification');
-      return;
-    }
-    setMode('donate');
-  }, [isProfileEditing]);
-
   // Handlers
   const handleGenerateVerificationQr = useCallback(() => {
     setVerificationGenerateQrTrigger((prev) => prev + 1);
@@ -179,13 +246,16 @@ export default function ProfilePage({
 
   const handleSetAsset = useCallback((tokenId: string) => {
     setOriginTokenId(tokenId);
-    setSwapForm(prev => ({ ...prev, refundAddress: "" }));
     const token = tokens.find((t) => getTokenId(t) === tokenId);
     const isZecSelection =
       !token ||
       (token.symbol.toUpperCase() === "ZEC" &&
         token.blockchain.toLowerCase().includes("zec"));
-    setMode(isZecSelection ? "donate" : "swap");
+    setSwapForm(prev =>
+      isZecSelection
+        ? { ...prev, amount: "", refundAddress: "" }
+        : { ...prev, refundAddress: "" }
+    );
     setQuoteState(prev => ({
       ...prev,
       quoteData: null,
@@ -356,6 +426,9 @@ export default function ProfilePage({
                     profile={initialProfile}
                     tokenOptions={tokens}
                     originSymbol={originSymbol}
+                    autoOpenFiatFromAmount={shouldSeedFiatFromInitialSwapAmount}
+                    prefillFiatTicker={initialPrefill?.fiatTicker ?? ""}
+                    prefillFiatAmount={initialPrefill?.fiatAmount ?? ""}
                     swapAmount={swapAmount}
                     refundAddress={refundAddress}
                     slippageTolerance={slippageTolerance}
@@ -388,6 +461,8 @@ export default function ProfilePage({
                     setMemo={(m) => setMemoForm(prev => ({ ...prev, memo: m }))}
                     amount={memoForm.amount}
                     setAmount={(a) => setMemoForm(prev => ({ ...prev, amount: a }))}
+                    prefillFiatTicker={initialPrefill?.fiatTicker ?? ""}
+                    prefillFiatAmount={initialPrefill?.fiatAmount ?? ""}
                   />
                 </div>
               )}

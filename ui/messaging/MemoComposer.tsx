@@ -130,6 +130,8 @@ interface MemoComposerProps {
   asset?: string;
   assetOptions?: AssetOption[];
   onSetAsset?: (_asset: string) => void;
+  prefillFiatTicker?: string;
+  prefillFiatAmount?: string;
   // Controlled state props
   memo: string;
   setMemo: (_memo: string) => void;
@@ -143,6 +145,8 @@ export default function MemoComposer({
   asset = "ZEC",
   assetOptions = [],
   onSetAsset,
+  prefillFiatTicker = "",
+  prefillFiatAmount = "",
   memo,
   setMemo,
   amount,
@@ -307,6 +311,8 @@ export default function MemoComposer({
         asset={asset}
         assetOptions={assetOptions}
         setAsset={onSetAsset}
+        initialFiatTicker={prefillFiatTicker}
+        initialFiatAmount={prefillFiatAmount}
       />
 
       {/* Divider line like Verify */}

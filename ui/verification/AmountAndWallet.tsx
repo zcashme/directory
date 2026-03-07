@@ -66,6 +66,21 @@ const formatDecimal = (value: number, fallback = "") => {
 const clamp = (num: number, min: number, max: number) =>
   Math.min(Math.max(num, min), max);
 
+const sanitizeFiatPrefillAmount = (rawValue: string): string => {
+  const value = rawValue.trim().replace(/,/g, "");
+  const normalized = value.endsWith(".") ? value.slice(0, -1) : value;
+  if (!normalized || normalized === ".") return "";
+  if (!/^\d*\.?\d*$/.test(normalized)) return "";
+  if (/^0\d+/.test(normalized)) return "";
+
+  const parts = normalized.split(".");
+  if (parts[1] && parts[1].length > 2) return "";
+
+  const num = Number.parseFloat(normalized);
+  if (!Number.isFinite(num) || num <= 0) return "";
+  return normalized;
+};
+
 interface TokenOption {
   id: string;
   symbol?: string;
@@ -116,6 +131,9 @@ interface AmountAndWalletProps {
   showOpenWallet?: boolean;
   showUsdPill?: boolean;
   disabled?: boolean;
+  initialAutoOpenFiatFromAmount?: boolean;
+  initialFiatTicker?: string;
+  initialFiatAmount?: string;
 
   // Token selector props (optional)
   asset?: string;
@@ -160,6 +178,9 @@ export default function AmountAndWallet({
   showOpenWallet = true,
   showUsdPill = false,
   disabled = false,
+  initialAutoOpenFiatFromAmount = false,
+  initialFiatTicker = "",
+  initialFiatAmount = "",
   // Token selector props (optional)
   asset = "ZEC",
   assetOptions = [],
@@ -199,6 +220,9 @@ export default function AmountAndWallet({
   const [highlightedFiatIndex, setHighlightedFiatIndex] = useState(-1);
   const tokenOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const fiatOptionRefs = useRef<(HTMLButtonElement | null)[]>([]);
+  const hasAppliedInitialFiatPrefill = useRef(false);
+  const hasRequestedInitialAutoFiat = useRef(false);
+  const hasAppliedInitialAutoFiat = useRef(false);
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -280,6 +304,73 @@ export default function AmountAndWallet({
       setFiatStateHydrated(true);
     }
   }, [showUsdPill]);
+
+  useEffect(() => {
+    if (!showUsdPill || !fiatStateHydrated) return;
+    if (hasAppliedInitialFiatPrefill.current) return;
+
+    const normalizedTicker = initialFiatTicker.trim().toUpperCase();
+    const normalizedAmount = sanitizeFiatPrefillAmount(initialFiatAmount);
+    if (!normalizedTicker || !normalizedAmount) return;
+    if (!FIAT_TICKERS.includes(normalizedTicker)) return;
+
+    hasAppliedInitialFiatPrefill.current = true;
+    setFiat(normalizedTicker);
+    setUsdInput(normalizedAmount);
+    setPreferFiatValue(true);
+    setIsUsdOpen(true);
+    setRateRequested(true);
+    void fetchRate(normalizedTicker, asset);
+  }, [
+    showUsdPill,
+    fiatStateHydrated,
+    initialFiatTicker,
+    initialFiatAmount,
+    asset,
+  ]);
+
+  useEffect(() => {
+    if (!showUsdPill || !fiatStateHydrated) return;
+    if (!initialAutoOpenFiatFromAmount) return;
+    if (hasAppliedInitialFiatPrefill.current) return;
+    if (hasRequestedInitialAutoFiat.current) return;
+
+    const initialAmount = Number.parseFloat(amount || "");
+    if (!Number.isFinite(initialAmount) || initialAmount <= 0) return;
+
+    hasRequestedInitialAutoFiat.current = true;
+    setIsUsdOpen(true);
+    setRateRequested(true);
+    void fetchRate(fiat, asset);
+  }, [
+    showUsdPill,
+    fiatStateHydrated,
+    initialAutoOpenFiatFromAmount,
+    amount,
+    fiat,
+    asset,
+  ]);
+
+  useEffect(() => {
+    if (!showUsdPill || !initialAutoOpenFiatFromAmount) return;
+    if (hasAppliedInitialFiatPrefill.current) return;
+    if (hasAppliedInitialAutoFiat.current) return;
+    if (!rateFetched || !isUsdOpen) return;
+
+    const initialAmount = Number.parseFloat(amount || "");
+    if (!Number.isFinite(initialAmount) || initialAmount <= 0) return;
+
+    hasAppliedInitialAutoFiat.current = true;
+    setUsdInput(formatDecimal(initialAmount * rate));
+    setPreferFiatValue(true);
+  }, [
+    showUsdPill,
+    initialAutoOpenFiatFromAmount,
+    rateFetched,
+    isUsdOpen,
+    amount,
+    rate,
+  ]);
 
   useEffect(() => {
     if (!showUsdPill || typeof window === "undefined") return;
