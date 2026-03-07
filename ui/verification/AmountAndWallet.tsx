@@ -12,7 +12,7 @@ interface Currency {
   name: string;
 }
 
-const CURRENCIES: Record<string, Currency> = {
+export const CURRENCIES: Record<string, Currency> = {
   USD: { symbol: "$", name: "US Dollar" },
   AED: { symbol: "AED", name: "UAE Dirham" },
   AUD: { symbol: "A$", name: "Australian Dollar" },
@@ -45,7 +45,7 @@ const CURRENCIES: Record<string, Currency> = {
   VND: { symbol: "₫", name: "Vietnamese Dong" },
   ZAR: { symbol: "R", name: "South African Rand" },
 };
-const FIAT_TICKERS = Object.keys(CURRENCIES);
+export const FIAT_TICKERS = Object.keys(CURRENCIES);
 const FIAT_STATE_STORAGE_KEY = "zcashme.amountAndWallet.fiatState";
 const ALLOWED_BASE_LAYER_PARTS = new Set([
   "btc",

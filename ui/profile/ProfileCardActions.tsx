@@ -12,6 +12,7 @@ interface ProfileCardActionsProps {
   onToggleStats: () => void;
   onEdit: () => void;
   onVerify: () => void;
+  onCreatePrefillUrl: () => void;
 }
 
 export default function ProfileCardActions({
@@ -21,6 +22,7 @@ export default function ProfileCardActions({
   onToggleStats,
   onEdit,
   onVerify,
+  onCreatePrefillUrl,
 }: ProfileCardActionsProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -71,6 +73,7 @@ export default function ProfileCardActions({
           {menuItem(showStats ? "⭔ Hide Awards" : "⭔ Show Awards", onToggleStats, !showStats && !hasAwards)}
           {menuItem("↺ Edit Profile", onEdit)}
           {menuItem("✓ Verify Profile", onVerify)}
+          {menuItem("\u26D3 Create Paylink", onCreatePrefillUrl)}
           {menuItem("⤴ Copy Refer Link", async () => {
             const baseUrl = buildShareUrl(profile);
             const referUrl = `${baseUrl}/refer`;

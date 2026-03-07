@@ -11,6 +11,7 @@ import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
+import CreatePrefillUrlModal from "@/ui/profile/CreatePrefillUrlModal";
 import { RedirectModal } from "@/ui/profile/editorModals";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
@@ -62,6 +63,7 @@ export default function ProfileCard({
 }: ProfileCardProps) {
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
+  const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
@@ -178,6 +180,7 @@ export default function ProfileCard({
                   onToggleStats={() => setShowStats((p) => !p)}
                   onEdit={() => setShowBack(true)}
                   onVerify={() => setIsVerifyOpen(true)}
+                  onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
                 />
               </div>
 
@@ -315,6 +318,13 @@ export default function ProfileCard({
           </div>
 
           {isVerifyOpen && <VerifyProfileModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} profile={profile} />}
+          {isPrefillUrlOpen && (
+            <CreatePrefillUrlModal
+              isOpen={isPrefillUrlOpen}
+              onClose={() => setIsPrefillUrlOpen(false)}
+              profile={profile}
+            />
+          )}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
         </VerifiedCardWrapper>
       </div>
