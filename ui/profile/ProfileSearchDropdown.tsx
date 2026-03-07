@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties, type RefObject } from "react";
 import { Command } from "cmdk";
 import { AnimatePresence, motion } from "framer-motion";
 import { useDebounce } from "use-debounce";
@@ -52,6 +52,7 @@ interface ProfileSearchDropdownProps {
   onClaimClick?: (username: string) => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
   className?: string;
+  dropdownContainerRef?: RefObject<HTMLElement | null>;
 }
 
 export default function ProfileSearchDropdown({
@@ -61,11 +62,13 @@ export default function ProfileSearchDropdown({
   onClaimClick,
   showUsernameAvailability = true,
   className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
+  dropdownContainerRef,
 }: ProfileSearchDropdownProps) {
   const [show, setShow] = useState(false);
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
+  const [mobileDropdownStyle, setMobileDropdownStyle] = useState<CSSProperties | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -143,6 +146,56 @@ export default function ProfileSearchDropdown({
 
   const dropdownVisible = show && !!value?.trim();
 
+  // On mobile, expand the dropdown to match the full header container width.
+  useEffect(() => {
+    if (!dropdownVisible) {
+      setMobileDropdownStyle(undefined);
+      return;
+    }
+
+    const updateDropdownPosition = () => {
+      const anchorEl = containerRef.current;
+      const fullWidthContainerEl = dropdownContainerRef?.current;
+      if (!anchorEl || !fullWidthContainerEl || window.matchMedia("(min-width: 640px)").matches) {
+        setMobileDropdownStyle(undefined);
+        return;
+      }
+
+      const anchorRect = anchorEl.getBoundingClientRect();
+      const fullWidthRect = fullWidthContainerEl.getBoundingClientRect();
+      setMobileDropdownStyle({
+        left: `${fullWidthRect.left - anchorRect.left}px`,
+        width: `${fullWidthRect.width}px`,
+      });
+    };
+
+    updateDropdownPosition();
+
+    const mediaQuery = window.matchMedia("(min-width: 640px)");
+    const onLayoutChange = () => updateDropdownPosition();
+    window.addEventListener("resize", onLayoutChange);
+    if ("addEventListener" in mediaQuery) {
+      mediaQuery.addEventListener("change", onLayoutChange);
+    } else {
+      mediaQuery.addListener(onLayoutChange);
+    }
+
+    const resizeObserver =
+      typeof ResizeObserver === "undefined" ? null : new ResizeObserver(onLayoutChange);
+    if (containerRef.current) resizeObserver?.observe(containerRef.current);
+    if (dropdownContainerRef?.current) resizeObserver?.observe(dropdownContainerRef.current);
+
+    return () => {
+      window.removeEventListener("resize", onLayoutChange);
+      if ("removeEventListener" in mediaQuery) {
+        mediaQuery.removeEventListener("change", onLayoutChange);
+      } else {
+        mediaQuery.removeListener(onLayoutChange);
+      }
+      resizeObserver?.disconnect();
+    };
+  }, [dropdownContainerRef, dropdownVisible]);
+
   return (
     <div ref={containerRef} className="relative">
       <Command shouldFilter={false}>
@@ -162,7 +215,10 @@ export default function ProfileSearchDropdown({
         <AnimatePresence>
           {dropdownVisible && (
             <motion.div {...dropdownMotion}>
-              <Command.List className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl">
+              <Command.List
+                className="absolute left-0 top-full z-[1001] mt-1 max-h-60 w-full min-w-0 overflow-y-auto overflow-x-hidden rounded-xl border border-gray-200 bg-white shadow-xl"
+                style={mobileDropdownStyle}
+              >
 
                 {/* Loading indicator */}
                 {loading && (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
@@ -21,6 +21,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
+  const headerBarRef = useRef<HTMLDivElement | null>(null);
 
   const resetSearch = () => {
     setSearch("");
@@ -73,7 +74,11 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
       style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
     >
       <div className="flex justify-center px-4">
-        <div className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50" style={{ backgroundColor: 'var(--color-background)' }}>
+        <div
+          ref={headerBarRef}
+          className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50"
+          style={{ backgroundColor: "var(--color-background)" }}
+        >
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => {
@@ -123,6 +128,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 setPrefillUsername(username);
                 setIsJoinOpen(true);
               }}
+              dropdownContainerRef={headerBarRef}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
               className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-3 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
