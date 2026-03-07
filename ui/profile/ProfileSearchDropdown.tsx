@@ -174,11 +174,7 @@ export default function ProfileSearchDropdown({
     const mediaQuery = window.matchMedia("(min-width: 640px)");
     const onLayoutChange = () => updateDropdownPosition();
     window.addEventListener("resize", onLayoutChange);
-    if ("addEventListener" in mediaQuery) {
-      mediaQuery.addEventListener("change", onLayoutChange);
-    } else {
-      mediaQuery.addListener(onLayoutChange);
-    }
+    mediaQuery.addEventListener("change", onLayoutChange);
 
     const resizeObserver =
       typeof ResizeObserver === "undefined" ? null : new ResizeObserver(onLayoutChange);
@@ -187,11 +183,7 @@ export default function ProfileSearchDropdown({
 
     return () => {
       window.removeEventListener("resize", onLayoutChange);
-      if ("removeEventListener" in mediaQuery) {
-        mediaQuery.removeEventListener("change", onLayoutChange);
-      } else {
-        mediaQuery.removeListener(onLayoutChange);
-      }
+      mediaQuery.removeEventListener("change", onLayoutChange);
       resizeObserver?.disconnect();
     };
   }, [dropdownContainerRef, dropdownVisible]);
