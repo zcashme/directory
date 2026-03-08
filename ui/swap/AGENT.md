@@ -1,72 +1,41 @@
 # /ui/swap - Swap Composer UI
 
 ## Purpose
-User interface for cryptocurrency swaps via Defuse Protocol OneClick.
-Allows users to receive any token and convert to ZEC.
+Client-side components for the cross-chain swap form. Users select a token, enter an
+amount, and receive a deposit address with QR code. The flow auto-advances — no manual
+"confirm" step. Available at swap.zcash.me and embedded in profile page payment composers.
 
-## Components
+## What the User Sees
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `SwapComposer` | SwapComposer.tsx | Main swap interface |
-| `SwapCurrencyPair` | SwapCurrencyPair.tsx | From/To token selection |
-| `SwapQuoteDisplay` | SwapQuoteDisplay.tsx | Quote details and rate |
-| `SwapDepositDisplay` | SwapDepositDisplay.tsx | Deposit address & memo |
-| `SwapAddressInput` | SwapAddressInput.tsx | Destination Zcash address |
-| `SwapSlippageControl` | SwapSlippageControl.tsx | Slippage tolerance setting |
+### Swap Form
+A compact form with: token selector (colored circle icons), amount input with USD
+conversion, inline slippage control (presets: 0.1%, 0.5%, 1%, 2%, 5% + custom), and
+a refund address field. The memo field is visible but disabled (future ZEC messaging).
 
-## Swap Flow UI
+### Auto-Flow
+Once the user enters a valid amount and refund address, the system automatically:
+1. Fetches a quote (shows "Getting quote..." with bouncing dots)
+2. Displays the quote (send amount, receive amount, USD value, min received, estimated time)
+3. Confirms the quote (shows "Confirming quote..." spinner)
+4. Shows the deposit display with QR code and exact amount to send
 
-```
-┌─────────────────────────────────────┐
-│  From: [ETH ▼] [    1.5    ]       │
-│         ↓                           │
-│  To:   [ZEC ▼] [   ~245    ]       │
-├─────────────────────────────────────┤
-│  Rate: 1 ETH = 163.33 ZEC           │
-│  Slippage: [0.5%] [1%] [2%]        │
-├─────────────────────────────────────┤
-│  Deposit to: 0x1234...5678          │
-│  [Copy Address] [Show QR]           │
-├─────────────────────────────────────┤
-│  Your ZEC arrives at:               │
-│  u1qw3r...xyz                       │
-└─────────────────────────────────────┘
-```
+No buttons needed between steps — the flow triggers automatically when inputs are valid.
 
-## Zcash Integration
+### Deposit Display
+After confirmation: bold headline ("Send exactly X.XX BTC below"), recipient receive
+range, estimated time, QR code (scannable payment URI), copyable deposit address, and
+two buttons: "Get New Quote" and "I Sent It!" (opens swap status page).
 
-### Destination Address
-- Must be valid Zcash address
-- Unified addresses (u1...) preferred
-- Validates using `/ui/signup/zcashAddress.ts`
+## File -> Feature Map
 
-### Privacy Note
-- Swap deposits are on public chains (ETH, etc.)
-- Final ZEC receipt can be to shielded address
-- Users should understand privacy implications
+| File | Feature |
+|------|---------|
+| `SwapComposer.tsx` | Master orchestration: token/amount/refund inputs, auto-quote + auto-confirm flow, animated step transitions (AnimatePresence), scroll management |
+| `SwapCurrencyPair.tsx` | Token pair display with colored circle icons (BTC=orange, ETH=blue, ZEC=yellow, etc.), arrow between, configurable sizes (sm/md/lg) |
+| `SwapAddressInput.tsx` | Text input for refund/destination addresses with FormField wrapper |
+| `SwapDepositDisplay.tsx` | Deposit address + QR code, exact amount headline, "Get New Quote" / "I Sent It!" buttons |
+| `SwapQuoteDisplay.tsx` | Quote preview: send/receive amounts, USD value, minimum received, estimated time, slippage |
+| `SwapSlippageControl.tsx` | Slippage tolerance: 5 preset buttons + custom input, collapsible or inline variant |
 
-## State Management
-Uses Zustand store at `/lib/stores/swap.ts`:
-```typescript
-const { fromToken, toToken, quote, deposit } = useSwapStore();
-```
-
-## Quote Lifecycle
-1. User selects tokens and amount
-2. `SwapCurrencyPair` triggers quote fetch
-3. `SwapQuoteDisplay` shows rate (expires in ~30s)
-4. User confirms → deposit address generated
-5. `SwapDepositDisplay` shows where to send
-
-## Testing Harness
-- Mock OneClick SDK responses
-- Test token selection
-- Verify quote display formatting
-- Check address validation errors
-
-## Error States
-- Quote expired (refresh button)
-- Insufficient liquidity
-- Invalid destination address
-- Network errors
+## See Also
+- `lib/swap/AGENT.md` — 1Click SDK integration, quote/confirm server actions, token filtering

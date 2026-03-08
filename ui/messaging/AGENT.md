@@ -1,80 +1,35 @@
 # /ui/messaging - Memo Composer
 
 ## Purpose
-Components for composing Zcash transaction memos.
-Used when sending payments with messages attached.
+Components for composing Zcash transaction memos. Used on profile pages when sending
+payments and in the thread composer for emoji autocomplete.
 
-## Components
+## What the User Sees
 
-### MemoComposer.tsx
-Main memo input with character limit:
-```tsx
-<MemoComposer
-  value={memo}
-  onChange={setMemo}
-  maxLength={512}    // Zcash memo limit
-  placeholder="Add a message..."
-/>
-```
+### Memo Input
+A text area for writing a message to attach to a Zcash payment. Enforces the 512-byte
+UTF-8 memo limit. Shows a circular progress indicator when >128 bytes are used, and a
+"X bytes remaining" warning when <=20 bytes left. Auto-expands vertically as the user types.
 
-Features:
-- Character counter
-- Emoji picker integration
-- UTF-8 aware length calculation
+Disabled for transparent addresses (t1.../t3...) since they don't support memos.
 
-### useEmojiAutocomplete.ts
-Emoji autocomplete hook:
-```typescript
-const {
-  suggestions,
-  query,
-  select,
-  isOpen
-} = useEmojiAutocomplete(inputRef);
-```
+Below the memo field: `AmountAndWallet` (amount input with fiat conversion) and `QrUriBlock`
+(QR code with `zcash:` URI). The memo is base64url-encoded into the payment URI.
 
-Triggered by `:` character (e.g., `:smile:`).
-Uses `emojilib` for emoji lookup.
+### Emoji Autocomplete
+Type `:` followed by a keyword (e.g. `:smile`) to trigger an emoji suggestion dropdown.
+Up to 10 matches from `emojilib`. Navigate with Arrow keys, select with Enter, dismiss
+with Escape. The dropdown repositions above or below based on viewport space.
 
-## Zcash Memo Field
+Also used by `ThreadComposer` (see `ui/thread/AGENT.md`).
 
-### Constraints
-- **Max 512 bytes** after encoding
-- UTF-8 encoded
-- Stored in shielded transaction
-- Only sender and recipient can read
+## File -> Feature Map
 
-### Encoding
-Memos are base64url encoded when constructing URIs:
-```typescript
-const encoded = btoa(unescape(encodeURIComponent(memo)));
-// Used in: zcash:u1...?memo={encoded}
-```
+| File | Feature |
+|------|---------|
+| `MemoComposer.tsx` | Memo textarea with byte counter, progress ring, auto-expand, base64url encoding, `AmountAndWallet` + `QrUriBlock` subcomponents |
+| `useEmojiAutocomplete.ts` | Hook: `:keyword` trigger, `emojilib` search, keyboard nav, viewport-aware placement, text replacement |
 
-## Privacy Features
-- Memos are encrypted in shielded transactions
-- Only visible to transaction participants
-- Blockchain observers cannot read content
-
-## Use Cases
-1. **Payment messages** - "Thanks for dinner!"
-2. **OTP verification** - `{"otp":"123456"}`
-3. **Profile edits** - `{"otp":"...","edits":{...}}`
-4. **Thread posts** - Message content + verification
-
-## Character Counting
-UTF-8 characters vary in byte size:
-```typescript
-function getByteLength(str: string): number {
-  return new Blob([str]).size;
-}
-// "Hello" = 5 bytes
-// "你好" = 6 bytes
-// "🎉" = 4 bytes
-```
-
-## Testing Harness
-- Test byte limit enforcement
-- Verify emoji insertion
-- Check encoding roundtrip
-- Test max length edge cases
+## See Also
+- `ui/verification/AGENT.md` — `AmountAndWallet` and `QrUriBlock` components (shared)
+- `ui/thread/AGENT.md` — `ThreadComposer` uses `useEmojiAutocomplete`

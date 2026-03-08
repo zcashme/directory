@@ -1,85 +1,39 @@
-# /lib/swap - Cryptocurrency Swap
+# /lib/swap - Cross-Chain Swap Integration
 
 ## Purpose
-Integration with Defuse Protocol's OneClick SDK for cross-chain swaps.
-Allows users to receive payments in any token, converted to ZEC.
+Server-side integration with Defuse Protocol's 1Click SDK for cross-chain token swaps.
+Users send any supported crypto and the recipient receives ZEC. Powers both the standalone
+swap page (swap.zcash.me) and the payment composer on profile pages.
 
-## Key Files
+## What the User Experiences
 
-### types.ts
-```typescript
-interface Token {
-  symbol: string;
-  name: string;
-  decimals: number;
-  address?: string;      // contract address for ERC20
-  chainId: string;
-}
+### Getting a Quote
+User selects a token (BTC, ETH, USDC, USDT, SOL) and enters an amount. The system
+fetches a dry-run quote from the 1Click API showing the estimated ZEC the recipient
+will receive, USD equivalents, and a minimum amount after slippage. Quotes expire
+after ~60 seconds.
 
-interface SwapQuote {
-  fromToken: Token;
-  toToken: Token;        // Usually ZEC
-  fromAmount: string;
-  toAmount: string;
-  rate: string;
-  slippage: number;
-  expiresAt: number;
-}
+### Confirming a Swap
+Once the user provides a valid refund address, the system auto-confirms the quote
+(no manual button). This generates a deposit address and a blockchain-specific payment
+URI (`bitcoin:`, `ethereum:`, or `solana:` scheme). The user scans the QR or copies
+the address and sends the exact amount from their wallet.
 
-interface SwapDeposit {
-  address: string;       // Deposit address (chain-specific)
-  memo?: string;         // Required for some chains
-  expiresAt: number;
-}
-```
+### Checking Status
+After sending, the user can check swap status. The system polls the 1Click API using
+the deposit address and memo to track execution progress.
 
-### oneClick.ts
-OneClick SDK wrapper:
-```typescript
-import { OneClickClient } from '@anthropic/defuse-one-click-sdk';
+## Supported Tokens
+ZEC (native chain only), BTC, ETH, USDC, USDT, SOL. Testnet and NEAR-bridged tokens
+are filtered out. The app takes a fee via the "zcash-me.near" recipient (150 base units).
 
-// Initialize client
-const client = new OneClickClient({ apiKey: ONECLICK_API_KEY });
+## File -> Feature Map
 
-// Get supported tokens
-await client.getTokens();
+| File | Feature |
+|------|---------|
+| `oneClick.ts` | Server actions: `getSwapTokens()` (filtered token list), `getSwapQuote()` (dry-run quote), `confirmSwap()` (deposit address + payment URI), `getSwapStatus()` (execution polling) |
+| `types.ts` | Interfaces: `Token`, `SwapQuoteData` (base + display layers), `SwapConfirmData` (deposit + URI), `SwapContextQuoteData` |
+| `utils.ts` | `toBaseUnits()` / `baseUnitsToDecimal()` (BigInt math), `findToken()`, `getSwapUrl()`, `parseTokenSymbol()` |
 
-// Get quote
-await client.getQuote({ from, to, amount });
-
-// Create deposit address
-await client.createDeposit({ quoteId, destinationAddress });
-```
-
-### utils.ts
-Helper functions for swap calculations and formatting.
-
-## Zcash as Destination
-Primary use case: receive any crypto → convert to ZEC
-- User's Zcash address is the final destination
-- Supports unified addresses for privacy
-- OneClick handles cross-chain bridging
-
-## Environment Variables
-```
-ONECLICK_API_KEY - Server-side Defuse API key
-```
-
-## Testing Harness
-- Mock OneClick SDK responses
-- Test quote calculations locally
-- Use testnet for integration tests
-
-## State Management
-Swap state lives in `/lib/stores/swap.ts` (Zustand):
-- Selected tokens
-- Amounts
-- Current quote
-- Deposit info
-- Slippage tolerance
-
-## Error Handling
-- Quote expiration (refresh needed)
-- Insufficient liquidity
-- Network errors
-- Invalid addresses
+## See Also
+- `ui/swap/AGENT.md` — swap form components, QR display, auto-flow orchestration

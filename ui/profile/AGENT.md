@@ -1,85 +1,85 @@
-# /ui/profile - Profile Components
+# /ui/profile - Profile Card & Editor Components
 
 ## Purpose
-Components for displaying and editing Zcash user profiles.
-The primary UI for the zcash.me identity system.
+React components for displaying and editing Zcash profiles. The profile card is the
+central UI element on zcash.me/:username — it shows the user's identity, links, and
+Zcash address, and flips to reveal a full editor on the back.
 
-## Components
+## What the User Sees
 
-### Display
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ProfileCard` | ProfileCard.tsx | Main profile display card |
-| `ProfileCardContent` | ProfileCardContent.tsx | Card body rendering |
-| `ProfileHeader` | ProfileHeader.tsx | Navigation with profile count |
-| `ProfileAvatar` | ProfileAvatar.tsx | Avatar image with fallback |
-| `ProfileLinkRow` | ProfileLinkRow.tsx | Individual link display |
-| `VerifiedBadge` | VerifiedBadge.tsx | Checkmark for verified items |
-| `CopyButton` | CopyButton.tsx | Copy address/link to clipboard |
+### Profile Card (Front)
+A card showing: avatar (or animated smiley fallback with blinking eyes), display name
+with verified badge, username, bio (2-line clamp), Zcash address with copy + QR buttons,
+and social links with authentication badges. A three-dot menu offers: Show/Hide Awards,
+Edit Profile, Verify Profile, Upgrade to Maxi, Copy Referral Link, Share Profile.
 
-### Editing
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ProfileEditor` | ProfileEditor.tsx | Full profile edit interface |
-| `ProfileField` | ProfileField.tsx | Single editable field |
-| `editorModals` | editorModals.tsx | `RedirectModal` (OAuth redirect spinner), `AvatarPreviewModal` |
+Below the links, a trust warning banner may appear (red/yellow/green/neutral) based on
+verification status, duplicate names, and link counts. The card background has tier-based
+styling — golden glow for featured profiles, green shimmer for 3+ verified items, blue
+tint for 1, gray for 0.
 
-### Search
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ProfileSearchDropdown` | ProfileSearchDropdown.tsx | Search results dropdown |
+### Profile Card (Back — Editor)
+Clicking "Edit Profile" flips the card with a 3D animation. The back shows editable fields:
+- **Avatar**: File upload (JPG/PNG, max 2 MB) with preview
+- **Zcash Address**: Text input with validation
+- **Username**: Real-time availability check (debounced 250ms), locked suffix if unverified
+- **Display Name**: Text input with deletion support
+- **Bio**: Textarea with 100-byte limit and visual progress ring
+- **City**: Autocomplete dropdown
+- **Links**: Add/remove/reorder, social username normalization, authenticated links are read-only
 
-## Zcash-Specific Features
+"Start Verification" button at the bottom submits all edits through the ZVS verification
+flow (see `ui/verification/AGENT.md`).
 
-### Address Display
-```tsx
-<ProfileCard profile={profile} />
-// Shows Zcash address prominently
-// QR code for easy wallet scanning
-// Copy button for address
-```
+### Navigation Header
+Sticky header on every page with: logo, live search dropdown (debounced 150ms, `cmdk` library),
+and "Join" button. Search shows results with avatars and verified badges. The Join button
+opens the signup form, supporting referral pre-fill via URL params (`join=1`, `referred_by`).
+Hidden on `/ns` routes.
 
-### Verification Badge
-```tsx
-<VerifiedBadge verified={profile.address_verified} />
-// Green checkmark if address proven via blockchain
-```
+### Compact Views
+`ProfileCardContent` — reusable card renderer for directory/leaderboard contexts (3 size variants).
+`ProfileCardListView` — single-row list item for rankings with avatar, name, badges, and rank.
 
-### Link Verification
-Each link can be verified independently:
-```tsx
-<ProfileLinkRow link={link} showVerified />
-// Shows verification status per link
-```
+### Maxi Upgrade [WIP]
+Premium tier promotion modal listing features (priority placement, gold badge, referral
+commissions, custom themes) at 1 ZEC. Payment flow (QR + OTP) is stubbed — server actions
+not yet implemented.
 
 ## State Management
+- **`store.ts` (Zustand)**: Profile editing state — form values, original snapshot, deleted
+  fields, pending avatar upload with metadata. All edits are batched here and submitted
+  through verification.
+- **`useProfileLinks.ts`**: Hook managing enriched link array from profile data.
+- **Local state in ProfileCard**: Flip state, modal visibility, QR visibility.
 
-### store.ts (Zustand)
-Profile editing state - colocated with components:
-```typescript
-import { useEditsStore } from "@/ui/profile/store";
+## File -> Feature Map
 
-const { form, setForm, initializeForm } = useEditsStore();
-```
+| File | Feature |
+|------|---------|
+| `ProfileCard.tsx` | Main card with 3D flip between display/edit, menu, modals |
+| `ProfileCardContent.tsx` | Reusable card body for directory/leaderboard views (mobile/default/compact) |
+| `ProfileCardActions.tsx` | Three-dot menu with profile actions |
+| `ProfileCardListView.tsx` | Compact list item for directory/leaderboard rankings |
+| `ProfileCardWarning.tsx` | Expandable trust warning banner (tone-based: red/yellow/green/neutral) |
+| `profileCardTypes.ts` | TypeScript interfaces for card components |
+| `profileCardUtils.ts` | `formatUsername()`, `resolveIconSrc()` |
+| `ProfileEditor.tsx` | Full edit interface: all fields, link management, avatar upload, bio counter |
+| `ProfileField.tsx` | Reusable field wrapper with label, help tooltip, delete/reset button |
+| `ProfileAvatar.tsx` | Avatar image with animated smiley fallback (blinking eyes, random look-around) |
+| `ProfileHeader.tsx` | Sticky nav header with search + Join button |
+| `ProfileSearchDropdown.tsx` | `cmdk`-based search with live results, username availability banner |
+| `ProfileLinkRow.tsx` | Single link row with icon, label, auth badge, click-to-verify |
+| `VerifiedBadge.tsx` | Expandable checkmark badge (green=verified, gray=unverified), auto-collapse |
+| `VerifiedCardWrapper.tsx` | Tier-based card background (gold/green shimmer/blue/gray) |
+| `store.ts` | Zustand store for profile edits (form, original, deletedFields, pendingAvatarUpload) |
+| `useProfileLinks.ts` | Hook: enriches and manages link array state |
+| `editorModals.tsx` | `RedirectModal` — full-screen spinner during OAuth redirect |
+| `MaxiUpgrade.tsx` | [WIP] Maxi payment flow: QR + OTP (server actions not yet implemented) |
+| `UpgradeToMaxiModal.tsx` | [WIP] Premium tier promotion modal with features + pricing |
 
-State includes:
-- `form` - Current form values
-- `original` - Original values for comparison
-- `deletedFields` - Track field deletions
-Note: Profile edits are submitted directly to the backend after OTP verification via ZVS (Zcash Verification Service). The old `pendingEdits` system that encoded changes in the Zcash memo has been removed.
-
-## Hooks
-
-### useProfileLinks.ts
-Manages link state for editing:
-- Add/remove links
-- Reorder links
-- Track verification status
-
-## Testing Harness
-- Components receive profile data via props
-- Mock profile objects for unit tests
-- Use design-system page for visual testing
-
-## Types
-See `/lib/profile/types.ts` for `Profile` and `ProfileLink` interfaces.
+## See Also
+- `lib/profile/AGENT.md` — profile types, fetching, validation, avatar storage
+- `lib/verification/AGENT.md` — OTP verification and edit persistence
+- `ui/verification/AGENT.md` — QR code and OTP input components
+- `ui/links/AGENT.md` — OAuth link authentication flow

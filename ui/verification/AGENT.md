@@ -1,82 +1,51 @@
 # /ui/verification - ZVS Verification UI
 
 ## Purpose
-User interface for ZVS (Zcash Verification System) based identity verification.
-Users prove Zcash address ownership by sending a transaction with a deterministic OTP.
+Client-side components for the Zcash Verification System flow. Users generate a QR code,
+send a Zcash transaction, and enter the 6-digit OTP they receive back.
 
-## ZVS Verification Flow
-1. User clicks "Generate QR" → calls `generateMemoAction` server action
-2. Server creates memo + URI, registers memo in in-memory store, returns both to client
-3. Client stores memo + URI in React state, displays QR
-4. User sends transaction to ZVS address with memo
-5. Backend wallet receives tx, computes OTP from memo, sends ZEC back with OTP
-6. User enters OTP in UI
-7. Client calls `confirmOtpAction` with memo + OTP
-8. Server checks memo is server-issued, verifies OTP, marks profile as verified
-9. On 5th failed attempt, server invalidates memo and returns a new one
+## What the User Sees
 
-**Important:** Verification must be completed in one session. If user refreshes or navigates away, they must generate a new QR and send again.
+### Step 1: Generate QR
+User clicks "Verify" on their profile card, which opens the verification modal.
+The modal auto-triggers QR generation via `generateMemoAction` server action.
+A QR code appears with the `zcash:` URI. The user can save the QR as SVG,
+show/hide the raw URI, and see contextual help text.
 
-## Components
+### Step 2: Send Transaction
+User scans the QR code from their Zcash wallet (or copies the URI) and sends the
+transaction. The memo is embedded in the URI. Amount input supports fiat conversion
+(30+ currencies) and token selection.
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `ProfileVerification` | ProfileVerification.tsx | Main verification flow — server-side QR generation + OTP input |
-| `VerifyProfileModal` | VerifyProfileModal.tsx | Modal wrapper for ProfileVerification |
-| `OtpInput` | OtpInput.tsx | 6-digit code input field |
-| `QrUriBlock` | QrUriBlock.tsx | QR code with zcash: URI |
-| `AmountAndWallet` | AmountAndWallet.tsx | Amount input + generate QR button |
-| `HelpMessage` | HelpMessage.tsx | Contextual help text |
+### Step 3: Enter OTP
+After the wallet processes the transaction, the user receives a 6-digit OTP in the
+return memo. They enter it in a 6-box digit input (mobile-optimized, numeric keyboard).
+Pressing Enter submits.
 
-## Verification Flow UI
+### Step 4: Result
+- **Success**: Profile is verified, page reloads to reflect updated state.
+- **Failure**: Error message with remaining attempt count. After 5 failed attempts,
+  the QR is hidden and the user must generate a new one.
 
-```
-┌─────────────────────────────────────┐
-│  Generate QR  (calls server action) │
-│  ┌─────────────┐                    │
-│  │   QR CODE   │  Amount: 0.003 ZEC │
-│  │             │                    │
-│  └─────────────┘                    │
-│  Memo: zvs/1234567890123456,u1...   │
-├─────────────────────────────────────┤
-│  Enter OTP                          │
-│  ┌───┬───┬───┬───┬───┬───┐         │
-│  │ 1 │ 2 │ 3 │ 4 │ 5 │ 6 │ [Submit]│
-│  └───┴───┴───┴───┴───┴───┘         │
-│  "4 attempts remaining"             │
-└─────────────────────────────────────┘
-```
+### Important
+- Attempt limiting is **client-side only** (5 tries in React state). The server is
+  stateless — it validates the HMAC on every call with no attempt tracking.
+- Memo and URI are stored in React state only. If the user refreshes or navigates
+  away, they must generate a new QR and send again.
+- Profile edits from `useEditsStore` (Zustand) are submitted alongside the OTP
+  via `confirmOtpAction`. Edits are applied atomically on successful verification.
 
-## Memo Format
-```
-zvs/{session_id},{user_address}
-```
-- `session_id`: 16 ASCII digits (generated server-side)
-- `user_address`: User's Zcash unified address
+## File -> Feature Map
 
-## State Management
+| File | Feature |
+|------|---------|
+| `ProfileVerification.tsx` | Main flow: QR generation, OTP input, attempt tracking, submit to `confirmOtpAction` |
+| `VerifyProfileModal.tsx` | Portal modal wrapper, auto-triggers QR generation on open |
+| `OtpInput.tsx` | 6-digit code input with per-digit boxes, Enter-to-submit, error/disabled states |
+| `QrUriBlock.tsx` | QR code display with save-as-SVG, show/hide URI toggle, collapsible tips |
+| `AmountAndWallet.tsx` | Amount input with fiat conversion, currency selector, token selector, refund address |
+| `HelpMessage.tsx` | Contextual help text for the verification flow |
 
-### Local React State (ProfileVerification)
-```typescript
-const [currentMemo, setCurrentMemo] = useState("");  // Memo from server
-const [currentUri, setCurrentUri] = useState("");     // zcash: URI from server
-const [qrVisible, setQrVisible] = useState(false);    // Show QR?
-const [otp, setOtp] = useState("");                   // User's OTP input
-const [isGenerating, setIsGenerating] = useState(false); // Server call in progress?
-```
-
-### State
-All verification state is managed locally via React `useState` inside `ProfileVerification`.
-Cross-component state for profile edits lives in `/ui/profile/store.ts` (`useEditsStore`).
-
-## Exhaustion Handling
-When the server returns `status: "exhausted"` with `newMemo` + `newUri`:
-- Client swaps `currentMemo` and `currentUri` to the new values
-- OTP input is cleared
-- QR code updates automatically
-- User must send a new transaction with the new memo
-
-## No DB Persistence
-- Memo is stored in client React state only (no database)
-- Server tracks memos in an in-memory store (for attempt counting + validation)
-- If user leaves the page, they must start over
+## See Also
+- `lib/verification/AGENT.md` — server-side OTP generation, HMAC verification, edit persistence
+- `ui/profile/AGENT.md` — profile editor (where edits originate)

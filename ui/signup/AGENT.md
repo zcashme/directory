@@ -1,92 +1,47 @@
-# /ui/signup - Profile Creation Forms
+# /ui/signup - Profile Creation Form (Client)
 
 ## Purpose
-Multi-step form components for creating new Zcash profiles.
-Guides users through username, address, bio, and link setup.
+Multi-step signup modal for creating a new Zcash profile. Calls server
+actions in `/lib/signup/createProfileAction.ts`.
 
-## Components
+## User Flow
+The user clicks "Join" in the header (or visits `/:username/refer` which
+opens the modal automatically with the referrer pre-filled). The modal
+walks through 6 steps:
 
-| Component | File | Purpose |
-|-----------|------|---------|
-| `AddUserForm` | AddUserForm.tsx | Main multi-step form |
-| `StepContainer` | StepContainer.tsx | Step wrapper with progress |
-| `ZcashAddressInput` | ZcashAddressInput.tsx | Address input + validation |
-| `LinkInput` | LinkInput.tsx | Generic link input |
-| `SocialLinkInput` | SocialLinkInput.tsx | Social media handle input |
-| `CitySearchDropdown` | CitySearchDropdown.tsx | Location selection |
+1. **Username + Display Name** — username shows as `Zcash.me/username`,
+   live-checks availability against verified profiles
+2. **Zcash Address** — validates address type, blocks transparent/tex/viewing
+   keys, checks if address is already taken
+3. **Social Links** — add links from supported platforms (X, GitHub, Discord,
+   etc.) or custom URLs. All start unverified
+4. **City** — optional, autocomplete dropdown searching `city-timezones`
+5. **Referrer** — optional, autocomplete search for existing profiles.
+   Pre-filled when arriving via `/:username/refer` referral links
+6. **Review + Submit** — summary of all fields, submits to server
 
-## Signup Flow
-
-```
-┌─────────────────────────────────────┐
-│  Step 1: Basic Info                 │
-│  ┌─────────────────────────────┐    │
-│  │ Username: alice             │    │
-│  │ Display Name: Alice Z       │    │
-│  │ Short Bio: Zcash enthusiast │    │
-│  └─────────────────────────────┘    │
-├─────────────────────────────────────┤
-│  Step 2: Zcash Address              │
-│  ┌─────────────────────────────┐    │
-│  │ u1qw3rty...                 │ ✓  │
-│  └─────────────────────────────┘    │
-│  ⚠️ Use a unified address for       │
-│     maximum privacy                 │
-├─────────────────────────────────────┤
-│  Step 3: Links (Optional)           │
-│  ┌─────────────────────────────┐    │
-│  │ Twitter: @alice             │    │
-│  │ GitHub: alice               │    │
-│  │ [+ Add Link]                │    │
-│  └─────────────────────────────┘    │
-├─────────────────────────────────────┤
-│  Step 4: Location (Optional)        │
-│  ┌─────────────────────────────┐    │
-│  │ City: San Francisco, CA     │ ▼  │
-│  └─────────────────────────────┘    │
-└─────────────────────────────────────┘
-```
+On success, the user is redirected to their new profile page. The profile
+is unverified until they complete the OTP/ZVS flow.
 
 ## Zcash Address Validation
+`zcashAddress.ts` validates addresses client-side using `bech32`/`bech32m`/`bs58check`:
+- **Unified (u1...)** — recommended, accepted
+- **Sapling (zs1...)** — accepted
+- **Transparent (t1.../t3...)** — valid but blocked during signup
+- **TEX (tex1...)** — valid but blocked during signup
+- **Viewing keys** — rejected with hint
 
-`ZcashAddressInput` provides real-time validation:
-```typescript
-<ZcashAddressInput
-  value={address}
-  onChange={setAddress}
-  onValidation={({ valid, type, hint }) => { ... }}
-/>
-```
+## File → Feature Map
 
-- Shows address type (unified, sapling, transparent)
-- Warns about transparent address privacy
-- Blocks viewing keys
-- Hints toward unified addresses
+| File | Feature |
+|------|---------|
+| `AddUserForm.tsx` | The 6-step signup modal (all steps, validation, submit) |
+| `ZcashAddressInput.tsx` | Zcash address input field with live validation hints |
+| `zcashAddress.ts` | Client-side address validation (type detection, hints) |
+| `SocialLinkInput.tsx` | Social platform selector + username/URL input |
+| `LinkInput.tsx` | Generic link input field |
+| `CitySearchDropdown.tsx` | City autocomplete dropdown (uses `searchCitiesAction`) |
+| `StepContainer.tsx` | Animated step wrapper (Framer Motion transitions) |
 
-## Username Validation
-Uses `/lib/profile/usernamePolicy.ts`:
-- 3-30 characters
-- Alphanumeric + underscore only
-- No reserved words
-- Profanity filter
-
-## Server Action
-Form submits to `createProfileAction`:
-```typescript
-import { createProfileAction } from '@/lib/signup/createProfileAction';
-
-const result = await createProfileAction({
-  username,
-  displayName,
-  bio,
-  address,
-  links,
-  cityId
-});
-```
-
-## Testing Harness
-- Mock `createProfileAction` for form tests
-- Test each step independently
-- Validate address input edge cases
-- Check city search dropdown behavior
+## See Also
+- `/lib/signup/AGENT.md` — server actions that this form calls
