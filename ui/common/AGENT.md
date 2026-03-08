@@ -1,87 +1,64 @@
 # /ui/common - Design System
 
 ## Purpose
-Core design system components. Building blocks for all UI in zcash.me.
-~3500 LOC of reusable, accessible components.
+Reusable UI components used across all pages. Direct imports (no barrel exports)
+for tree-shaking. Visit `/design-system` to see all components rendered.
 
 ## Components
 
-### Forms
-| Component | Purpose |
+### buttons/
+| Component | Feature |
 |-----------|---------|
-| `Input` | Text input with validation states |
-| `TextArea` | Multi-line text input |
-| `Checkbox` | Checkbox with label |
-| `Select` | Native select dropdown |
-| `Dropdown` | Custom dropdown with search |
-| `FormField` | Wrapper with label and error |
+| `Button.tsx` | Action button with variants (primary/secondary/danger/ghost) and sizes (xs-lg) |
+| `IconButton.tsx` | Icon-only button for close, edit, and compact actions |
+| `CopyButton.tsx` | Copy-to-clipboard with visual feedback (icon change + "Copied" label) |
 
-### Buttons
-| Component | Purpose |
+### feedback/
+| Component | Feature |
 |-----------|---------|
-| `Button` | Primary action button |
-| `IconButton` | Icon-only button |
-| `CopyButton` | Copy-to-clipboard with feedback |
+| `Alert.tsx` | Info/warning/error/success messages, optional dismiss |
+| `Badge.tsx` | Status indicators with gradient backgrounds, expandable on hover/touch |
+| `Spinner.tsx` | Animated loading indicator, sizes xs-xl, color variants |
 
-### Layout
-| Component | Purpose |
+### forms/
+| Component | Feature |
 |-----------|---------|
-| `Card` | Content container with shadow |
-| `Section` | Page section with heading |
-| `Divider` | Visual separator |
+| `Input.tsx` | Text input with validation states, multiple types (text/email/url/number/tel/password/search) |
+| `TextArea.tsx` | Multi-line input with row control and validation |
+| `Checkbox.tsx` | Checkbox with flexible label positioning and sizes |
+| `Select.tsx` | Native select dropdown with styled arrow |
+| `Dropdown.tsx` | Custom searchable dropdown with keyboard nav, floating-ui positioning, icon/description support |
+| `FormField.tsx` | Field wrapper with label, HelpIcon tooltip, error display, hint text, required indicator |
+| `FieldMessages.tsx` | Shared error/info message rendering for form fields |
+| `useFieldValidation.ts` | Hook for validation state, border styling, and message display |
 
-### Modals
-| Component | Purpose |
+### layout/
+| Component | Feature |
 |-----------|---------|
-| `Modal` | Base modal component |
-| `ModalHeader` | Modal title bar |
-| `ModalBody` | Modal content area |
-| `ModalFooter` | Modal action buttons |
-| `ConfirmDialog` | Yes/No confirmation |
-| `TutorialModal` | Large tutorial/onboarding |
-| `ModalPortal` | Portal for modal rendering |
+| `Card.tsx` | Content container with configurable padding (none/sm/md/lg) and shadow |
+| `Section.tsx` | Collapsible page section with smooth height/opacity animation |
+| `Divider.tsx` | Separator with variants (solid/dashed/dotted/gradient) and optional label |
+| `FloatingSidebarMenu.tsx` | Floating navigation menu across sub-apps |
 
-### Feedback
-| Component | Purpose |
+### modals/
+| Component | Feature |
 |-----------|---------|
-| `Alert` | Info/warning/error messages |
-| `Badge` | Status indicators |
-| `Spinner` | Loading indicator |
+| `Modal.tsx` | Base modal with backdrop blur, Escape key, click-outside close, size variants (xs-full) |
+| `ModalHeader.tsx` | Title bar with close button |
+| `ModalBody.tsx` | Scrollable content area (max-h 60vh) |
+| `ModalFooter.tsx` | Footer with right-aligned action buttons |
+| `ConfirmDialog.tsx` | Yes/No dialog with variants (danger/warning/info/primary), async support |
+| `TutorialModal.tsx` | Multi-step tutorial with progress bar, video embedding, step navigation |
 
-### Utilities
-| Component | Purpose |
+### Root
+| Component | Feature |
 |-----------|---------|
-| `HelpIcon` | Tooltip trigger icon |
-| `Transitions` | Animation wrappers |
+| `HelpIcon.tsx` | Tooltip trigger (?) — hover on desktop, click on touch |
+| `ModalPortal.tsx` | React Portal wrapper rendering modals to document.body |
 
-## Usage Pattern
+## Import Pattern
 ```typescript
-// Direct imports - no barrel exports
 import Button from '@/ui/common/buttons/Button';
-import Input from '@/ui/common/forms/Input';
+import FormField from '@/ui/common/forms/FormField';
 import Modal from '@/ui/common/modals/Modal';
-import Card from '@/ui/common/layout/Card';
-
-<Card>
-  <Input placeholder="Username" />
-  <Button onClick={submit}>Save</Button>
-</Card>
 ```
-
-## Styling Conventions
-- TailwindCSS utilities
-- Consistent spacing scale (4px base)
-- Color palette via Tailwind config
-- Responsive: mobile-first
-
-## Testing Harness
-Visit `/app/design-system` to see all components rendered.
-Good for visual regression testing.
-
-## Adding Components
-1. Create `ComponentName.tsx` in appropriate subdirectory
-2. Use default export
-3. Add example to design-system page
-4. Keep API minimal - props over config
-
-Note: This design system uses direct imports (no barrel exports) for better tree-shaking and build performance.

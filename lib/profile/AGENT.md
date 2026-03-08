@@ -1,77 +1,69 @@
-# /lib/profile - Profile Management
+# /lib/profile - Profile Data & Business Logic
 
 ## Purpose
-Core profile logic: types, fetching, username validation, link handling, verification.
-Central to the zcash.me identity system.
+Server-side profile types, fetching, validation, link enrichment, and avatar storage.
+Powers the profile page (zcash.me/:username) and appears in search, directory, and leaderboard views.
 
-## Key Files
+## What the User Experiences
 
-### types.ts
-```typescript
-interface Profile {
-  id: string;
-  name: string;           // username (normalized)
-  display_name: string;   // shown in UI
-  slug: string;           // URL path
-  bio?: string;
-  address: string;        // Zcash address
-  address_verified: boolean;
-  avatar_url?: string;
-  verified_links_count: number;
-  is_ns?: boolean;        // Network School member
-}
+### Viewing a Profile
+When someone visits zcash.me/:username, the server fetches the profile from `zcasher_searchable`,
+joins rank data from the leaderboard tables, and fetches the user's links. The profile slug
+supports three lookup strategies: exact slug match, username-discriminator pattern (e.g. `zooko-132`
+for unverified profiles), and normalized username fallback.
 
-interface ProfileLink {
-  id?: number | null;
-  url: string;                        // full URL
-  label?: string;                     // optional display label
-  platform?: string | null;           // "X", "GitHub", "Discord", etc.
-  is_verified: boolean;               // verified via OAuth
-  verification_expires_at?: string;
-  zcasher_id?: number;                // FK to zcasher(id)
-}
-```
+### Usernames & Slugs
+Verified profiles get a clean slug (`/zooko`). Unverified profiles get a discriminator suffix
+(`/zooko-132`). Username input is sanitized (NFKC normalize, lowercase, spaces to underscores,
+non-alphanumeric stripped). Social usernames are normalized per-platform (strip @, remove host
+prefixes, extract first path segment).
 
-### profileFetcher.ts
-Database queries for profile retrieval. Uses Supabase client.
+### Links
+Each profile has social links stored in `zcasher_links`. Links are enriched client-side with
+platform-specific favicons (29 platforms supported), human-readable labels, and extracted handles.
+Platform detection maps URLs to canonical provider names (X, GitHub, Discord, LinkedIn, etc.).
 
-### usernamePolicy.ts
-Username validation rules:
-- Min/max length (3-30 chars)
-- Allowed characters (alphanumeric, underscore)
-- Reserved words blocked
-- Profanity filter
+### URL Validation
+Profile links must be HTTPS. Blocked: localhost, IP addresses, and 12 link shorteners
+(t.co, bit.ly, tinyurl.com, etc.). Tracking parameters (utm_*, fbclid, gclid) trigger warnings.
 
-### usernameNormalizer.ts
-Unicode normalization and sanitization:
-- Lowercase conversion
-- Diacritic removal
-- Homoglyph normalization (prevent impersonation)
+### Avatar Storage
+Avatars are stored in Supabase storage (`zcashme` bucket, `avatars/` folder). External URLs
+(from OAuth providers) are downloaded server-side and re-uploaded. Max 2 MB, JPG/PNG only.
+Path format: `avatars/{profileId}_zmp.png`.
 
-### profileLinks.ts
-Link enrichment utilities:
-- Icon resolution by provider
-- Label formatting
-- URL construction
+### Trust & Warnings
+Profiles have a computed trust state: verified address, verified link count, and whether they
+can authenticate links. Warning banners (red/yellow/green/neutral) appear on the profile card
+based on verification status, duplicate usernames, and link counts.
 
-### social-lookup.ts
-Social platform detection from URLs/handles.
-Maps input to canonical provider names.
+## Database
 
-## Zcash Integration
-- `address` field stores Zcash unified/sapling address
-- `address_verified` confirms on-chain proof of ownership
-- Links can be verified via blockchain transaction
+| Table | Access |
+|-------|--------|
+| `zcasher_searchable` | Read — profile fetching, username availability, profile count |
+| `zcasher_links` | Read — links for profile display and batch fetching |
+| `referrer_ranked_alltime` | Read — leaderboard rank joined to profile |
+| `referrer_ranked_weekly` | Read — weekly rank |
+| `referrer_ranked_monthly` | Read — monthly rank |
 
-## Testing Harness
-- `usernamePolicy` and `usernameNormalizer` are pure functions
-- Mock Supabase client for `profileFetcher` tests
-- Example:
-```typescript
-expect(normalizeUsername('Álice')).toBe('alice');
-expect(isValidUsername('__admin__')).toBe(false);
-```
+## File -> Feature Map
 
-## Database Tables
-- `zcasher` - Main profile records
-- `zcasher_links` - Associated links
+| File | Feature |
+|------|---------|
+| `types.ts` | Core interfaces: `Profile`, `ProfileLink`, `EnrichedProfileLink`, `ProfileTrust`, `ProfileTrustWarning` |
+| `profileFetcher.ts` | `fetchProfileForSlug()` — cached server function, slug lookup with fallbacks, rank + link joins |
+| `profileQueries.ts` | `getProfileCount()`, `getUsernameAvailability()`, `getDuplicateNameCount()` |
+| `profileUtils.ts` | Trust/warning state (`getProfileTrust`, `getWarningConfig`), slug building, share URLs, last-verified labels |
+| `profileLinks.ts` | Link enrichment: 24-domain favicon map, platform detection, handle extraction, `enrichLink()` |
+| `usernamePolicy.ts` | Username sanitization and normalization for comparison/slugs |
+| `usernameNormalizer.ts` | Social username extraction per platform (X, GitHub, Instagram, etc.) and canonical URL building |
+| `urlValidation.ts` | HTTPS enforcement, shortener blocking, tracking param warnings |
+| `avatarStorage.ts` | Supabase storage upload/download, external URL fetch, size/type validation |
+| `getProfileLinksBatchAction.ts` | Server action: batch-fetch links by profile IDs (used by NS directory) |
+| `assets/favicons/` | 29 platform favicon PNGs |
+
+## See Also
+- `ui/profile/AGENT.md` — profile card, editor, and display components
+- `lib/signup/AGENT.md` — profile creation flow
+- `lib/verification/AGENT.md` — address verification and profile edit persistence

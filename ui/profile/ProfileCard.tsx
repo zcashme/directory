@@ -14,6 +14,7 @@ import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
 import CreatePrefillUrlModal from "@/ui/profile/CreatePrefillUrlModal";
 import { RedirectModal } from "@/ui/profile/editorModals";
+import UpgradeToMaxiModal from "@/ui/profile/UpgradeToMaxiModal";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
 import { upsertVerifiedLink } from "@/ui/links/verifyLink";
@@ -92,6 +93,7 @@ export default function ProfileCard({
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [showDesignBack, setShowDesignBack] = useState(false);
@@ -256,6 +258,7 @@ export default function ProfileCard({
                   onEdit={() => setShowBack(true)}
                   onVerify={() => setIsVerifyOpen(true)}
                   onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
+                  onUpgrade={() => setIsUpgradeOpen(true)}
                 />
               </div>
 
@@ -447,7 +450,11 @@ export default function ProfileCard({
                 style={{ transformOrigin: "center center", willChange: "transform" }}
               >
                 <div
-                  className={`${showDesignBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
+                  className={`${
+                    showDesignBack
+                      ? "absolute inset-0 z-0 opacity-0 pointer-events-none"
+                      : "relative h-auto z-10 opacity-100 pointer-events-auto"
+                  } backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
                   <ProfileEditor
                     profile={profile}
@@ -458,8 +465,11 @@ export default function ProfileCard({
                 </div>
 
                 <div
-                  className={`absolute inset-0 rotate-y-neg-180 backface-hidden top-0 left-0 w-full ${showDesignBack ? "relative h-auto" : ""}`}
-                  style={{ pointerEvents: showDesignBack ? "auto" : "none" }}
+                  className={`${
+                    showDesignBack
+                      ? "relative h-auto z-10 opacity-100 pointer-events-auto"
+                      : "absolute inset-0 z-0 opacity-0 pointer-events-none"
+                  } rotate-y-neg-180 backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
                   <ProfileCardDesignPanel profile={profile} onGenerateQr={onGenerateVerificationQr} />
                 </div>
@@ -476,6 +486,7 @@ export default function ProfileCard({
             />
           )}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
+          <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} profile={profile} />
         </VerifiedCardWrapper>
       </div>
     </div>
