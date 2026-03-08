@@ -6,6 +6,12 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import {
+  getProfileCardTheme,
+  getProfilePageBackground,
+  normalizeProfileCardThemeId,
+  normalizeProfilePageBackgroundId,
+} from "@/lib/profile/profileCardTheme";
+import {
   AVATAR_BUCKET,
   AVATAR_FOLDER,
   MAX_AVATAR_SIZE_BYTES,
@@ -254,6 +260,30 @@ export async function confirmOtpAction(
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
+      if (edits.profile_card_theme !== undefined) {
+        const normalizedThemeId = normalizeProfileCardThemeId(edits.profile_card_theme);
+        if (!normalizedThemeId && edits.profile_card_theme !== "") {
+          return {
+            ok: false,
+            error: "Unsupported profile card theme.",
+            data: { status: "invalid" },
+          };
+        }
+        const selectedTheme = getProfileCardTheme(normalizedThemeId);
+        profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
+      }
+      if (edits.profile_page_bkgd !== undefined) {
+        const normalizedBackgroundId = normalizeProfilePageBackgroundId(edits.profile_page_bkgd);
+        if (!normalizedBackgroundId && edits.profile_page_bkgd !== "") {
+          return {
+            ok: false,
+            error: "Unsupported profile page background.",
+            data: { status: "invalid" },
+          };
+        }
+        const selectedBackground = getProfilePageBackground(normalizedBackgroundId);
+        profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
+      }
       if (!removeProfileImage && !uploadedAvatarUrl && edits.profile_image_url !== undefined) {
         // Download external URL and store in Supabase bucket
         if (edits.profile_image_url) {

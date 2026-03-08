@@ -1,0 +1,2552 @@
+[
+  {
+    "x_handle": "",
+    "zcasher_id": 45,
+    "display_name": null,
+    "name": "Marcus",
+    "address": "t1Yp2zYZJ3zv8hteBhvAR3nVhD9QTQWPaZe",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "_aaronmar_",
+    "zcasher_id": 71,
+    "display_name": null,
+    "name": "jimmy",
+    "address": "u100yaw6w4j9ekg4dn9jdex8l033x59r44q8klycw3u6he5qujsgjrlhz468kzsqzdt37k9jr4mh3j3szhjn2q0c0wvcuphjkkuuu4un722gzn7wzqxs9pxl5zdkrn4hvxpgudm7hvvk2zke64rje0ppegk4gyxv3et6dh4m72nycw0f0w",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0x_aswin",
+    "zcasher_id": 970,
+    "display_name": null,
+    "name": "Aswin",
+    "address": "u1n3f8uefk460k2txagcgae5mhdm5u8qmn4kga3s76prf7z5ux28665xwkuzqam78q33y7fe8fy5w8lt3ny929lamlws0urunuhdfpzdfzhty6dzr4qzmxy9vh4hmqlj97cvdr4jav4kd7m6x4sr7rpcqupyajlqm0glyx2jduey5w6z34",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0xjacked",
+    "zcasher_id": 338,
+    "display_name": null,
+    "name": "0xjacked",
+    "address": "u1vv3dtvusa0kwv6uekzhqk4jxe0qewe628zlddygnt0plrfqf0v2czpsl5pyhjhfkn6jg5znxrl3eq5p74c2d0sqtawdsffjdxa9ls8kpqqrh8kuxhvrkgr48m0t7cxcxfxmnhnv7pz00mn9ar0duwmpurymmzj57r8dtm3p7auh33y5y",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0xmikedubo",
+    "zcasher_id": 2031,
+    "display_name": "Mike Dubo",
+    "name": "Gonzebei",
+    "address": "u127srcjjga83xjd6ff37qexer4vf2lllj8aw8grljz2mwrl7l48udfuhcrk35hget2n0f740694uvmqdeu6ld20ns0ntxjzrvswfy6m50p7jpammy7nm8whj6etsslsmywvehrpdq9j04uugnpqvuvjwmchaxav2mrnckds3u4q9ultyq",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-27 10:27:23.369+00"
+  },
+  {
+    "x_handle": "0xnetero201",
+    "zcasher_id": 526,
+    "display_name": null,
+    "name": "0xnetero",
+    "address": "u1330z94kpmadx9r6rnshn4dtqtlkef5qmgz6qtqkdzsh0nrs42kj9sqtzknaadmyzr2z7te5vzeeqyjgh50gccpkz5d94etg2h6mzhm8488cag5g0rsv6mv57tz6z8lvu97tz3rzuqmkezkdl2tdldjtzenp3qdmw0cpsg062eqzp5n2t",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0xparker88",
+    "zcasher_id": 532,
+    "display_name": null,
+    "name": "Jhonparker",
+    "address": "u17dwug29zg9ffl8vtvwz2lj7jmkp87gskgv52ncu2n57xkem2a78xw2cfhh7q24ewhn365nce6ymp98ywz39j7m5dvkgvr33w2ngzwt8sgq7mn6gy2h26uxmgxshat80tq3e4c2uzee3sxj6avde4z3zvvg4csc7fm5569rsa6vfj57q0",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-11-28 07:33:31.624267+00"
+  },
+  {
+    "x_handle": "0xpierre_com",
+    "zcasher_id": 1050,
+    "display_name": null,
+    "name": "0xPierre",
+    "address": "u19mzljjkxaa79nkv3w59vuwfzlqs56qgdn84ec6neyd6ysz906suw34h9ud258t6k8un8xh29fyqg3f0tlmyfn7yyh67wt78s0ldjcg3hzwcdey2jpkm5xzct99qeg0fnp8lgdjxvl43affvqhxxv9fqmyhevx7y0nwztl6ywna7jwdjqxpml4fmp08seaflq6yvmy28mqzcmwezznez",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0xsilviusbrabo",
+    "zcasher_id": 170,
+    "display_name": null,
+    "name": "⚡️",
+    "address": "u14cl9zvn0p6vp87qsrrm34ga6umcw3l74znydt82yrdtgy66qpt5456d3szlduvpckyy2253p0ywfhxa7pyyc7m3tysrvq06turvmpervxtgsyc4jjhlr2qwqua3sckahfak4h9zpf6rrpu5e7sqa0408zc6klfmd0ux4geaydc3e0guv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "0xvoxy",
+    "zcasher_id": 257,
+    "display_name": null,
+    "name": "Voxy",
+    "address": "u10s0xgmty0et4mn6e4932k69zrvxl5ylzsww362y5w3wyalkdtpw7nrm8ewrj28w54gh0d37q2xuv33xjw27kg6wr2j4w9yckl6f8vh3065dy2p34anps2q7qyey4c59t94n4y2acnr4s0m7egahrge5mjphffwu6y593l2fj95j8a4zm",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "aamandita_",
+    "zcasher_id": 1098,
+    "display_name": "AAmandita",
+    "name": "AAmandita",
+    "address": "u17xu73s9jayl3nppjws6sgaa3czxzx9huju9fpl3lkp8cv3ecapk4wramwqjnwvfl2dsmed8s2d3dy097na5hsm77sez2zwpekf568jypl909ft2x59y53ctq4xdlq96gncvamemh4v5ttr0f43a527w8c9nr4gshcn6cyg4q9czsmtej",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-31 21:51:39.297795+00"
+  },
+  {
+    "x_handle": "ab_ah28",
+    "zcasher_id": 1172,
+    "display_name": null,
+    "name": "Struggle0x",
+    "address": "u14gt0h7q7c303yxlxnxdhahlmduet49ayr4c060ng4jdq09eptgney5enxpuut6zh2a8h9l2zhz5evz85gnk8ukt9n5yey82345tdzc8dwf6cd83zyday7xpqwttv630aksewc8luwsnhxw2lavw8xal79m2t0evtu8smklpusvqx2zdg",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "adamziz",
+    "zcasher_id": 221,
+    "display_name": null,
+    "name": "Adam",
+    "address": "u15sl4h78memf9ndrkehtxgcj23kk4e9dslszgrnmq34vq6vased06tqdcet3zzcg2ltq7e3c2jhly9ql55nc3shmh6ur6jw4rx0y8sd635es8syn9wmgn5m238hvtv36d6z9kmwjgr6xzhf3lu7aytd886mp5wxvx04sa5y5jrshf59a8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "aishaafterhours",
+    "zcasher_id": 87,
+    "display_name": null,
+    "name": "aisha",
+    "address": "u1v0en6864n06dwdpysluh6ymquzwl7sam5m8z8ewva0g40wx0zqwpfjmpd30tjkgtpjnyw2j5qlaaxutmvr0yvzezasj02unxv6cw5uw39f6s7tf4w6y0zu54awcmtg9nn8fqjt5mn0vw0dcy52cecgvh25eqwaee5dlpnqrh8g7xw2kv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "allegedlyjason",
+    "zcasher_id": 1715,
+    "display_name": null,
+    "name": "zAllegedly",
+    "address": "u1smj0gsnregmk093wet09hxs3xy0pfja5rwtm9amzd6t4qujzp930zp079f9m82t84eya8u6erz8c8uwynamqaaxgq93l0vq4q2vhuzdhnj24lhpmwg6mu98dawnzpe4vnqcudhrp8mwrcs458ma2tjsjpz7c8vtjr8kt8fgx2vf6sz6m",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-13 07:40:39.052921+00"
+  },
+  {
+    "x_handle": "alurosu/",
+    "zcasher_id": 86,
+    "display_name": null,
+    "name": "alurosu",
+    "address": "u1r4ktzm8vn6fax8g3xk43700qf7fk238g90w463lg2ucgrtvvylcem0w2std6yxjskj7wf008tpxuf73nkesquppn98pvwggv8jd88dukhj8kq5up6pvx4cqrq960azh3tj63jleyz4qkju92h7qgq5cw6cm488000fetsf0mqy64k72l",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "anabelle326582",
+    "zcasher_id": 2001,
+    "display_name": "Anabelle",
+    "name": "Annabelle",
+    "address": "u19mmv2j67tzuynzmcw4wmqp8ml2qla5w83zwj4da7ctfqrf7dlsxhgde9kazhk4da65exevsarx3kqxm48mmrhz7cgg5cl3zdqvnqu8xxlhktawatxu8n3rxu5ygkgvn8e0y45kmxfxv3099p5ezgmy8sgkh672ew7dt93uh3gptymjy9up4k7drwnmkh7fjvpwgwy75jxxptscwqh3z",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-05 09:57:14.832101+00"
+  },
+  {
+    "x_handle": "ann_imoagene",
+    "zcasher_id": 1829,
+    "display_name": null,
+    "name": "Ann",
+    "address": "u1045q2r04tfkpr6exs0zyq38ee3vc4p04m9l47j4wpv62r4da2ufmfgrrpky7wexepwfqv8sztkv5nhth5pk9tpwetkp3j6s2sd8lqlz2uh39qkehlaryku2y7yd49ul6zmgqmcf4hay2htpt5hyqqp0jcuc97j9s0eksj5rkxvuk240h",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-31 07:05:15.23034+00"
+  },
+  {
+    "x_handle": "anonymistxyz",
+    "zcasher_id": 856,
+    "display_name": null,
+    "name": "Anonymist",
+    "address": "u1gqdr80quwaerzup624guej7f0t3yn9fcphpggqtt2uh7tshsqu9c96kafuqt97f8u56ymh8xtcl3cegp6vm2nryyp9j2j779vt3zf5vf9rcgjk7vspajv4lngkqntaqf7fhj5us9wnss6m586jtv2awxvusmhje6lt6w0pm8qcl2dguv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "argon551891",
+    "zcasher_id": 1058,
+    "display_name": null,
+    "name": "Kellyjoe",
+    "address": "u1zqagmdukq3xd54k3twal8pyuuzuc2ksv2zqnvhen7zuf6xn6az6gym5qy8xwuufsgdlmykxjr9d8v4mqs7pd4a0d4rspadww6090ftq72v0ze3cxsj68twxsg7lkv8j38uvddu0jgtez5um36gj5m78t2fmg9nkz07p48dl8vygl4a8g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "argon551891",
+    "zcasher_id": 1128,
+    "display_name": null,
+    "name": "Zcash Group Bday Celebration Fund",
+    "address": "t1cpin2mCGYVSPZ7ixEJgBPMpTVBNzwoQKi",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "astechne",
+    "zcasher_id": 2010,
+    "display_name": "anjal",
+    "name": "anjal",
+    "address": "u14pc4hmh6902wchqj40xvfat84cdpsh0rqxm5cvd3s263agn3qh67c0cnwt3rgf7kajna69nqfk4f5js53zdcud7el4cu2mnn29hyr94393txvmx9fs5kz7n0xy6jgkqssw5hq5x3n2rztp7jyn8qjsenrjw6vjdfsrlflm29eg8lpwzs",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-13 09:24:04.223116+00"
+  },
+  {
+    "x_handle": "axelbuddy/",
+    "zcasher_id": 377,
+    "display_name": null,
+    "name": "Asia",
+    "address": "u1c48slzhj0s8lqjpg9ycxa7zwj3gml6nmrzfx9ll7lzeld893243qj7rwrst5f6ltr97500vc3nrdurs7el0vnav9s80wd3et3fn4r7wpk29x93wljkrzfny8344w8ylv0cp7j2772tf2j2nnqkpasn3v5ush687z53y8dpssqvdj5r0r",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "bbelay20",
+    "zcasher_id": 442,
+    "display_name": null,
+    "name": "BBELAY",
+    "address": "u10vafu65uun7vl2322kh463z8xxhd0jc9xntmdv7vfan32dlrhtzqyykuszuv394gacx7f2trrn4925d2paheh3fwn7s58k9frh5ukpmtc5gceztt8dnfe6e65z5y7t6a8jnhtp63vx7czawyr6f7zrezydzjja6ylv2zvyu6nqgem8je",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "bearirritable",
+    "zcasher_id": 16,
+    "display_name": null,
+    "name": "IrritableBear",
+    "address": "u1er4leq85tjhgjn9hw78kedtcta9afpwy7v7m8dtyaqzh3mu9qrtrrtppt2ahhmmn95a9w0s8cy4k3tn6pug32snnj6ppqslnwtxx6whlk85v8ljjrjvp0yquq0us052tulyj5t6ttvlln6rhte6fs5ee7wq5aw4fcrpw8n07rc75ejtz",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "beary_wood",
+    "zcasher_id": 889,
+    "display_name": null,
+    "name": "Beary",
+    "address": "u1x58cxysvwqrsl0xsr5uu0f9nuejaw82x0swvatt2arat67dqzac7c93jzfva5v5rnn8ce7j4nquu58hl3tpsmp42j7hq9l2gm0rcl7l80jxj8hf422pmy9j5pxwdu0ah2ue8dvp8ezql0768tehj6wpeprplfd8hszhl2qw3tu3pvvas",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "binbulling",
+    "zcasher_id": 725,
+    "display_name": null,
+    "name": "Binbulling",
+    "address": "u1kqe96h4hvjrrxflgmscqgwv4tgzz3zcjrd5mc35z9s58lwc4cvrvjwmxhaqdswwkg5xwf7mavvv6pzak20skzlvpdykyn990yrgm4mfwlxa3pr0dszgnfm6zymhvpnfduvggcmmuwdewhduencf94p5sc74dppz6duj50nt9h52ywazr",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "bitcoinstripper",
+    "zcasher_id": 206,
+    "display_name": null,
+    "name": "Zecretary",
+    "address": "u1njewvgj7taar3z3hthr5nzrg378ya2jz87z9hzfa54tgrw3sp9xtfsuqle0w0q40zaj32t7fng7s6hr35yttt9ars8aqt74cy2u0kc9u0dpkmrhuu60kdx4yzkjhq4w6vzf6pqw493xrp40n680hw5fzgfzjk8rhf389kq2yjgjns79h",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "bitcrushx",
+    "zcasher_id": 334,
+    "display_name": null,
+    "name": "Zcrush",
+    "address": "u16mhq55mzgn0ke2x8n7q4zwckmljdq0v53k8e8m59ert0adve2h92qrzznyhrszr2y2m68yzyfqsv8nr24vgxf8rpe263y3e6wg0tgyclmznpeft7k8krxzwr73dazn7kjqs3u25guva6ncn83jj0hf4p900tl9w2k7t3kt23lu6t04uk",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "bitlarrain/",
+    "zcasher_id": 186,
+    "display_name": null,
+    "name": "Zebastian",
+    "address": "u1sr6x9qrvkmuk0tv5h7wzw5xz65ndcnp05t5keuyscs6c5zefjppcwu5z0pup4mrgp7tz8unwjwf6y6h7u4ngu5ve0wp72n4kwvya7m2vzjwpdxj32cehqk4h2qtjkxj84dhztk30nnlp3468h08xwtfdqm6ulaqsgfkdmh58ysuh4utc",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "blakiat",
+    "zcasher_id": 1809,
+    "display_name": null,
+    "name": "Blakiat",
+    "address": "u16jatma9euqxw7dujrjf2mzq2dm5r7z5kf8n0rsujva64c93p0kl42gu0pcxuttqvus2admaq2235hy2nds5vte3u0ygyszf6cdtv8hzqkec0kzhlp5hvz6nnhz6k6v8xz0v9lefxs4zl0j79mljkjtnqv4lxr28wqt709s6hkypmm2sm",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-24 11:26:39.724432+00"
+  },
+  {
+    "x_handle": "blanks__blanks",
+    "zcasher_id": 557,
+    "display_name": null,
+    "name": "Blanks",
+    "address": "u1g63xx9422g25c3z9qdnuf8gct9g3yey6jftn4cmwgkdukpk3tprfd6nkt5rq0htdkgyetqrva3l6h4v4q0vdclzt7z3ea8wfprf6jfq8x3ps5k06vzqz5wepl67dh4yq5u7s4072kdyhh7sl3nx4psyekv58nepnxfdeaev9svkhs6we",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "blazeyoru",
+    "zcasher_id": 475,
+    "display_name": null,
+    "name": "blazeyoru",
+    "address": "u1ws7nfhsfqnsm4gvk3kh0w85wrqgtx7xssxrrsw7jkyztwtd59czfr5de5avjfmscnl4sm7rtn33ntnnxam6avryaej73wurdj3epq0yyu3jm6hlylmpc083yywtj2f0z8mtmwxc4dk98rxgkjn3z92yzxtzdguvm7axhzj7hcuglzthy",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "blazeyoru?s=21",
+    "zcasher_id": 475,
+    "display_name": null,
+    "name": "blazeyoru",
+    "address": "u1ws7nfhsfqnsm4gvk3kh0w85wrqgtx7xssxrrsw7jkyztwtd59czfr5de5avjfmscnl4sm7rtn33ntnnxam6avryaej73wurdj3epq0yyu3jm6hlylmpc083yywtj2f0z8mtmwxc4dk98rxgkjn3z92yzxtzdguvm7axhzj7hcuglzthy",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "bluburrybruh",
+    "zcasher_id": 1793,
+    "display_name": null,
+    "name": "mvon",
+    "address": "u1ypq9gfm2lxy83a4rhtm76jukl3u8cqxr84u8tvep52hp6yet96ysc04tkjua43pu75xgmjl3husf862t27rhx5zjr9y8c5tjw208mq4cncfcrmvmyaa8v7ssc34acrmh3tk5v359cjf385vglla6tfzltne00ghfm5lsfyt6lrj7jw4wkgesr5jcpwwacq8qn6dukxc277pcqs2jz9l",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-12 05:30:47.214835+00"
+  },
+  {
+    "x_handle": "blueai8866",
+    "zcasher_id": 103,
+    "display_name": null,
+    "name": "Anaximander",
+    "address": "u12p883e7xrk0fwmmx6hx0akhj89tneqzxjwpzneucvkkus3x3m8qm9juqf3v7t32tfrtm6nmkrw99rjkwwrxkjlt98730ydzgrqmx6022uwttq42r3nv33tdfe3e3dd6y70nkstp79c49qsefug6m4l2ttxpz495lltp0n4ehv5jxj8rt",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "bluemoon_2099",
+    "zcasher_id": 98,
+    "display_name": null,
+    "name": "Sarah",
+    "address": "u1tjvfgg6meev6yghxll6y47ferrwwgrum4m4fs0zxxmdwap7azukrangqgwtldax7gupzuhjstdvr9uk75mh9zjxn6n7mkkf6xf8f62la7j2gjaykhvlpkfaqqkmvrfpkz7gp27q5pv7lvay0vc5pj3zaegatf0r6kz7kfjqw5y47h05c",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "bostonzcash",
+    "zcasher_id": 40,
+    "display_name": null,
+    "name": "BostonZcash",
+    "address": "u1weahnqv2utsxjz9l0q2pgxjzstpeyksnq2vv327t528scxm2djr4y8qfwa9lr3vf9jm0yzl60k8987dfeeuqz4vhg294a3na8v9pglea",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "botak1118",
+    "zcasher_id": 326,
+    "display_name": null,
+    "name": "Botak🛡",
+    "address": "u1233lnql6rh0avsjt4xzdx3w930fqthzrtjph47he2649rpjz7yqwwasyadhc2e5ykpdsrvjrdk82jgrqqslvwg7re9h7mdnvs696w02jnhhqm0ma7ajy0pees7w7tqthl5yr5sk6gl2evmujvhst96e367gxlm7a9ft59xxcmqld4p6e",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "braimgaguna",
+    "zcasher_id": 1501,
+    "display_name": null,
+    "name": "Braimrapp",
+    "address": "u1tu96nhjvejk4sw32ctvtlkvcl7p4hsm2uqw5nl7w559aft0zqqpvxswksc55fxqv4p5kdgz5jcrg67dlncyu8rqgqptz5wrcdw0s39s98dgeummuxcc36ey05duwl8gq07r0dpyfvxszvk5nmzpj804058zanm6ft6w39fe7pgfjvwhc",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "brittintech",
+    "zcasher_id": 1892,
+    "display_name": "Britt",
+    "name": "britt",
+    "address": "u183u298ny3t0uysqpardlwwljuuqq8gt30dv2wlwtz9qaxjtlm0rtvwel9p64kcchn5fzyyms7dvgpqtx9glgx385tqtuhczhlyl3g9npvs9zg4vpf53j0h05sukefnmu8r9qhv9a9w5583y8fzt5dah9jjc8u9n6xs6jwl05av0gz9a8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "brooksmus",
+    "zcasher_id": 355,
+    "display_name": null,
+    "name": "Harlowe Rousseau",
+    "address": "u13y3px4u0uhtjhx9d3fthu6fnggl5jnydsxjc4wg7w79qjc9dcx5gjdzcd892z2uma5fs604wtcure2nasn0hxhld0ceuhgl3yyzs88dz9236ghayhxw6u97u3cd53j599dyeehsquqqhvd47jmewgn895cha83fg5ly5uwe7qs57hpxd",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "btc_cz",
+    "zcasher_id": 1463,
+    "display_name": null,
+    "name": "smokedog",
+    "address": "u1wfyr04s6k6kk7lgkc7lv6s30ldf2jegy0xdjwjv9l072tfcq08h4y6nlgs2xnj7e5wvpf29aprmxmg6yxwzkkynf5j9wfw20ctewwncdc64w3929yld9epctvczwd4mzp2ns3sls4dfnjydravst44p5nerk6ur825trckxtr5jhjsse",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "btcturtle",
+    "zcasher_id": 134,
+    "display_name": null,
+    "name": "Michelangelo.zec",
+    "address": "u1822w29s7xc4tqs0wxlaqjvfccwphgnsrshmn7yjxncgzmtx8tzauzdj4kq62lcvpqzd7uqrzp6ryrrfsn7r3zjm8epn508380yyjjm2004hp8gpnvj9pdy7surr8fk7ayrvvyynn20vqmuxkf4j0xdyzhslrw8wdc9lesw53pqdjnxvf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "c_armitage1",
+    "zcasher_id": 1097,
+    "display_name": null,
+    "name": "Armitage",
+    "address": "u184znp5pcpzct4uvtrx3p8chdvn5yx93sgpvw33kmt3ylk5h5q7mcyh4z70lrrm5tusthvuf8n8zw0ahftjsw3mjq7wh9zaz98z2m6dqcyg87yh5p7afp46ugdlctjte3sf0l2xlj4028dyzqy9fnnmk5g5ana67070lve6zxnvd44559",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "c3ntilmen",
+    "zcasher_id": 688,
+    "display_name": null,
+    "name": "beyefendi",
+    "address": "u1vq3kur0e5rq0jr5huz3008dwwp0ttng26rfzj4g7k80d3l3naycmzzpfc2qa5t6madlefx7n64c8h2d6pqzn4sse3akmv2delyyjtrssrzrrgw99w8lt56yldyn8a0jye26hctg20t826lxfw47hz4ewl5qzm78mw2wqxkj53yduefke",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "cambion888",
+    "zcasher_id": 474,
+    "display_name": null,
+    "name": "cambion",
+    "address": "u1dkgdhlmued4dgf8ksk9x4kgdq90qhsm9fkpdd9efuvk4qpamqnytt89tkl4hacznh9xqul5zym5cfmdhva359wtpu5huyqgw0lsq56qern52czqvz2prwc72lh7zl60p6uc0328f84vkjtu8rnqh3vt26euc6n8qy5rnd0fy5gvapcfe",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "chaerul_mifta",
+    "zcasher_id": 639,
+    "display_name": null,
+    "name": "Iqraflii",
+    "address": "u10nysq4dpc6gxdu2d8e8ssgt6k65q534a7fa47wzxjrfauka08nzqpm653hr3dzg7uhfztwqw8jslhmplexd2mpqve2qe4743tm3mjur6qelcg4msy3et9ayaqhrjanzznkra8glkx6sx9e3fahl7z0yh3jw053s7gqa445y9fyeyuvuf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "chewiewins/",
+    "zcasher_id": 78,
+    "display_name": null,
+    "name": "Chewie",
+    "address": "u19vvzl4jqngl2hgd6l9gdq0nrujr5ufa2k8cw2qyxmm9wenv2ed23he4tayjlckd6w4u6ugqu07avtcda8gc9qynsxt6kynv0yzduq0clr6ezdfzq6686d4s47dmhhpzccc35579g85duxcgj46lersf9uetj3n7amt9ye72d0unxj0hx",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "clouver26",
+    "zcasher_id": 958,
+    "display_name": null,
+    "name": "26",
+    "address": "u1ps8vws0rqp32c8xj4x456fhfwlx38za0l7yjdfuvhqx4yrgs22hehhgwx6qgzg9el0yuwh9hn2c76qjsr8e5dum4gyhm2l98ygzpc3xrmmpc2mewd40rwkjw0ljcuc0shfyu540f2n2ecp2kjwzyaplzrlt59umgkgef0pc3ds2n5qhf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "cq_elzz",
+    "zcasher_id": 631,
+    "display_name": null,
+    "name": "elzz",
+    "address": "u185nrxtaqhdrlwx8par0vj7cy5s8h5r6lm38vnpf3d786awhvmshvgdfd5ywytft5zkxrchwfuutqkge60frrewhytlnnt06fa9lzx7f6qfj8q4uak83exzvsc9kt6s4qhr7uhtm95uws4rtl8cvzlqu9vdvxy9m3w8kmds76cvqcphyd",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "craftsoldier",
+    "zcasher_id": 1772,
+    "display_name": "Julian Abraham",
+    "name": "julian_abraham",
+    "address": "u1s934c2lc5he7qenspczdfgzmpn8qyun0vw8paclxeu888wgu46yt9uagr3we3c2apvu78m9fmkpdh09w44akl48aawzlhq5q73mynp5rlyznj0cm7rzq632lp5rfwl6ymauee6pj87examy75r3ymvv7u5tu3xg7zaw98z0tvvk672am",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-27 18:13:08.19+00"
+  },
+  {
+    "x_handle": "crypt0naut_303",
+    "zcasher_id": 1577,
+    "display_name": null,
+    "name": "808zec",
+    "address": "u1x4pmen23gq49wvqreey0acx9xqshm6esneq6t8mjxqxkdyj8hdqhhtl3tq65vnw9a6fjfaj46lzus70eplkd6pmlnsq3v5fgtu4rn5myjrdarelts7slu4zd0hxu7q42qf8t4jj8hm5va9ppnuyner5r08tzwujz77d4a7lwhgl2686n",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "cryptle7314",
+    "zcasher_id": 224,
+    "display_name": null,
+    "name": "Cryptle 任",
+    "address": "u15q9rz4zge5he7v0kuzeclxkf6r6gnwvsv7yy89hsnle0cu2mdwwcwwg77fj7m8k9jg5tuegefcqtrz28cud38p2sfzgh54kn23dzg5kdt80dpjqa32stv9v4xzyr4rfxvc4zqpsgv7mrht7f358lpu7ms5l30f0waew6md0tzysdwadx",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "crypto_cr0c",
+    "zcasher_id": 265,
+    "display_name": null,
+    "name": "ZkCroc",
+    "address": "u17ru954vtng7msy7w74zmwglzfl3xjn0fy7zn63lafrknn64ylwcfnhszttddezr7yqhhc7j22qpkhyzt5c0qctjm2arfr8zvsj88tk726e8748nfjxmaz3yuzje0f2z9x8m9dasep87ykhfgepqr2m03m4xmdtmd2lgqj0a0xvnujz9g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "cryptokrum/",
+    "zcasher_id": 268,
+    "display_name": null,
+    "name": "Krumlar",
+    "address": "u1yljx0v6x5dna20rx3mnq37sz5d45ta0929vmv84schjyfkxdlpd8an5f3cy48jc66qql2nh8wd3007279sju56qzq5tng59yel2e8mg9uc0976gtllvlvuutu3un4z30fynx95e08yppdfnputhx3hz6wwppyudqzh6g4t8lgqy7twnd",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "cryptoman1125",
+    "zcasher_id": 1133,
+    "display_name": null,
+    "name": "ReX",
+    "address": "u1fehjyy7ju3jlqkm0nh8dlsmgaf2llfevndv9zs3ww2p8g5utsu4h4wwgltuja9hs0y6309gefqvx37qzexlw58vg749n36zfmv5lv35tzjgtzeau4fd4l7raajtptnr97t6z95ed7qejg6w0dllufa9kzm905z75cf9ygkn6lseuctvj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "cryptophare",
+    "zcasher_id": 690,
+    "display_name": null,
+    "name": "CryptoPhare",
+    "address": "u1dgexzkzyt8ea5jsxt2v7jm6kn2jg6sc3nwzae08236c36cl4c3quuvlyjnt89lkr4swgvekn5ntn8vqzdcfslcc2k6kmazsdevtjl86mafhzzz0r8qpewjr44kwc0g3fzqa3ux4clzsdppkgpx4m3enk6c02wshpkyjhacvx0573u9q9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "cyberaxe",
+    "zcasher_id": 952,
+    "display_name": null,
+    "name": "CyberAxe",
+    "address": "u1gvnthgukm0ecnan3tgj3h6pdhrmmv8zyqx8ayup9yg9er4t5l7nesas6leavc4x3rsj98n65nn2w3ekzur9yejadlmv7k4vjgu8kp58q",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "d_quixote37",
+    "zcasher_id": 2042,
+    "display_name": "Fefek",
+    "name": "D_quixote37",
+    "address": "u15drnq5ph5xz0h4hwrj288v3wnnwspu5f2jmyndcrw8q8lukvpuzzdg4p5m9qvwqc0km0ehehd75p0f6y5y3t7gnutz0z2f79q3zda72sl6q0nds230enc4zxm7qng29y057wrl7lrk5teq9l9dpjr65e9jk054rdqt6ck98j75lkff9x",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "daughterofpops",
+    "zcasher_id": 898,
+    "display_name": null,
+    "name": "daughterofpops",
+    "address": "u1ezecdp238e6t0vhv8lhggd6wcruy7v9sggsduxnlz333u72nkdgezqpswh3q3400ak9cmftc9ksvdsqurxgykvyls3jv8k0f5ngum05azc8v27yvthme9vu0yaqfacelfdsauda505y3u2dpyxgdjc43pc5jpeyr52vjws70v586qf5l",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "davidx",
+    "zcasher_id": 74,
+    "display_name": null,
+    "name": "davidx",
+    "address": "u1tyj2vcwrhjl6y80y364hqleey7unsp7gn8dnkfynw8e4gwrx2ltgvdj4dv07j9v6h7x8nx74d9ks5ke6prd8qsqjy8qvv6942tch5xuzp6268q2rw44rh2jmvlnywxyr753mkyj6pp7pezc68pavfdzmy4zkx86ps6k38xfwayfc6lzf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "denissquad3",
+    "zcasher_id": 1083,
+    "display_name": null,
+    "name": "Dennissq",
+    "address": "u1nhdjtrr7gmvlp9vtm0gucewlf3sddmnh82az0sg0j3c7cjyu0fhvwevhzjq7r0042u2ws6r92ywh9w4lzhdz35vt9c55mvhfuxdcgavyp3zesx8c83kzjzt54jmrdmjx5t4qtwjkz0nss2fes3apmvuryaz9rndstvf64kvyqqu4a6zq",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "derek_88888888",
+    "zcasher_id": 899,
+    "display_name": null,
+    "name": "DEREK_88888888",
+    "address": "u1q4nmrfar37fpwg80rflszghujtsf5zmd7tv8eulfmxtxvzv8hal28kk8q6znghj25qnnrtm4kczlff3gxder59z77lsl3kwkfrmulj4v4xfa0au63wqguhrzkkrw5w4ja89spe6t8essff8whsu9udhrsvakrfrnwlhk67w2d5ljyw5v",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "domusgratiae",
+    "zcasher_id": 1657,
+    "display_name": null,
+    "name": "domusgratiae",
+    "address": "u1hvyvnp3j4fmlwtxnc3asfx0wdkeyznfplw2qmdvrgymeuagkvlwytkuy0n8xy7zstlacpln0zhz6efs2awvyctstfdzydnf4dyyknpu79zqmc552ekcn2v6s6ad400mn7k545armcc40jtwwjwtryn30ht3ylh0dsal5lx2uzqq773f8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-17 16:56:34.931944+00"
+  },
+  {
+    "x_handle": "drickzy10",
+    "zcasher_id": 58,
+    "display_name": null,
+    "name": "drickzy10",
+    "address": "u1usn0pv23wadpuladqhfg79hdc4jn6zdh4n944tk27mpwm52c3u539z03mxzsw0xl2lj5wncunvwwyc2nglqfvv2hd8e3kqxdz9aer4zekw7myu7zp5dmxlts5m24ppl6uwy5smdk23p6drccznl0w5uj5za3ge2l72u6esyl5qwr782q",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "dwrtz",
+    "zcasher_id": 843,
+    "display_name": null,
+    "name": "Dave",
+    "address": "u1f2x97f765sxlf89cfmceh00rgamv4ga94hayhvch4hftwyysqxyjcyzc4euxjlezy4wxp87jjl3nl8rhr44ljl6zt2ztv6pqlzp4nsh8vznz36qghjdju0l85uj8kwg6y48rdfqrn8d73clrpdkvpxm2grwm2t8qh2cya5jng5gtyx25",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "eagle202501",
+    "zcasher_id": 205,
+    "display_name": null,
+    "name": "Eagle",
+    "address": "u1mt4ldqmcdd7jql2j84tasvu6jx2dhalrwr7xkhdyps43e5tpk5s6q5vj3f0ku5y8rvtvzurae9uhaxkp70knsa8f2fjazqqycktn80mtr6zg6wpgt99n5h6a5cfwagdpgqjzfsvn7vjzghz85ralu95nc9zkud4hapa49y2pzyr20afw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "easy01m74098",
+    "zcasher_id": 578,
+    "display_name": null,
+    "name": "zcash monster",
+    "address": "u1efk3dht50j00n6tyemx80z82dygfskqke5vtpvsew8arkgw6hgc5ldxwkmqdq2u8hw7gh8xe5d6v97v7ls7q4xalk8lz889hma5ndqxg8le4tgpc3mmhxc8ku8q6xjeu3d25msxezswswqszzqs79ktxrakta6e0hh2mw4h98v3tepnz",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-15 06:34:45.555497+00"
+  },
+  {
+    "x_handle": "easy3forreal\r\n",
+    "zcasher_id": 1185,
+    "display_name": null,
+    "name": "CeukayWeb3",
+    "address": "u1m280jku28vcn89gyylp7wwmfcsg6lek2kswnyzv9rj95q4qwru2vfgtef5hqkqvxpt5qgn7tusp2tjweeyjuqqpelu6mk4kzt3p7rhqzn5ryses0dnnk40ukqanjsvhyc5m0959s0h6er20c7pqmzrk80qze5y9xh2v57hpqhuhvzasp",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "edicksonjga",
+    "zcasher_id": 281,
+    "display_name": "Edickson González",
+    "name": "Edicksonjga",
+    "address": "u16gx0s4kgqwwe7r9lpdqkpzv6ckjw87n7k44eqtymlr7a454aeak3z4lhyga7hd7hs6ce7zu6p5m4x8qfuszzq6wxdyd3la703vnm6t6a",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-25 13:17:53.57019+00"
+  },
+  {
+    "x_handle": "egidwisapu97950",
+    "zcasher_id": 1884,
+    "display_name": "king halfin",
+    "name": "king halfin",
+    "address": "u1jzts0dypg7c3l7scamajmf3xpaaweeh82j9wvry35mvuaqeaszx4mkak4gr7sylcc0vvq42e2lxesy7ztupmvt4k4urj3nndg2d4awfnyzew200v7tku6mz357japh0r28hduszsyk37vskcddzcrlckahzz06ku9l9g94vc6y5nzcn9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-21 09:59:55.283401+00"
+  },
+  {
+    "x_handle": "ello_matty",
+    "zcasher_id": 947,
+    "display_name": null,
+    "name": "Matty Snarks",
+    "address": "u12nphz64lsr20hd2wa0hkgd9s2gx4xkthksjulp7l9fsj7t07258twu4lzws5c6l5vtrgkcjylvm94k28lzft265vra6kdku6vnapx04s5dcehgddkt7q43d2gwgzc6ln9dumckp343vzd66c0nxmxyap4zj3x8y0zd597y7pe52l4zzw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "elmahdyhassan6",
+    "zcasher_id": 414,
+    "display_name": null,
+    "name": "El Mahdy",
+    "address": "u12xzsahxhwafrq8m6hepcdf0k4al3rugn7jxenh9fss9qzwfjzyg63e369wve3xatz67j3u2kvn66w8d4stu543l97pqp867z59kg0lvxsqgjjmg6ptp52gats4x0lku6envf7vrg3twcu00j8jw5mgc3zpq5y5zq9ad96my3dydznwax",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "enkidotbtc",
+    "zcasher_id": 1100,
+    "display_name": null,
+    "name": "Enki",
+    "address": "u1qh379rdxkpx0yarmynf9pxlgvzc4dcr8knmqa2d3huq0xkqw2vhxldzwltc8m7vamudarex5vvem0n8dkust85c4we3eyqvvzjncltr2xh3ea226fu7urtfartxxu5qdgmvkvyw4p0st97m29w0dh25wgln72j49a64nm62d6vu35c3g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "eren18888",
+    "zcasher_id": 42,
+    "display_name": null,
+    "name": "eren",
+    "address": "u1926gzrzw2vv9wssl5e5c8hyztzn2qg4tgdv2sufj60r757hlaz0lg966scdlxp3w7wnwsdag2mc2rnk0k5dyed5sdf309cj2drfwm0v37s5gdk29dt40ue8th23xu08tqsmxkp52l4lnl6h8dytk9em82z5f00s9aydq7gxhessyc30h",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "ethosventures",
+    "zcasher_id": 531,
+    "display_name": null,
+    "name": "ethos",
+    "address": "u1uy3hsf2jsprqc7tvqemfkswusqms85868fzlvk8wzx0f3362qcfrevfpsy5hxn25vs57jpzhm8pmq6325gcg9uudpg3gvx73jrghwn3sptyjtupr94z7z2lr60tnr4uu9lenl9j2nad8hm5e4sskvcjf32gcewegl4rfp5p8jg7apu6d",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "etukudo68370",
+    "zcasher_id": 1822,
+    "display_name": null,
+    "name": "Abasibiangake",
+    "address": "u1aqhaa9hls8gavswhxfzmqr7hy04q9sg35remqchdgxj4p9yr45kezlnuemsnlkvlp6lqp43nhll75gvpv447angfdv5cdqjv7skzhfprgpengweka4vpuqk2sr270elph3n5w78axwp34zryumukgujns9u4s59k2d22qf9vqqh2zp28",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-22 10:48:07.261256+00"
+  },
+  {
+    "x_handle": "eyitsmeavaash",
+    "zcasher_id": 586,
+    "display_name": null,
+    "name": "avaxxzz",
+    "address": "u1mv4qht93f5pd26cug5eax6k4lsfpa44xzgzq5m6846a3kp3g9pq4yk4emvd8gazglh66dvyn39annrxzegeum0tu354zs25tuayd74hr3vpcu5tcn47g2qg3c9p6uzx7csd7clxaen33hcaey4sfh768ctxrxt7vnt7k78juau6akreh",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "fagbenrogbengah",
+    "zcasher_id": 1794,
+    "display_name": null,
+    "name": "uniqueGbengah",
+    "address": "u1wldtdnwfl6cq5tdd4g3agqa0k44e65dtg2srxa4zgwaeqyyezplm8upfcrjjzxxs9wz8shsf70cu3r0nuwl9k50fd2hzkvpptxjj3h8g65lvggvvh83r7axazt9k4p3pcc0aa5cujrxn8rhcyxdq08he8kvge7yhwv6ddp7rcs6a4aqv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-13 07:42:20.799093+00"
+  },
+  {
+    "x_handle": "farad_0",
+    "zcasher_id": 312,
+    "display_name": null,
+    "name": "farad",
+    "address": "u120k3vu5j99gu4fc82vdpfd29nsnt8j4e0usdp0pcuklx5m6cng4ek74la5wv24fkf863uyt7unz060v4ztww4mjgxgaksztlf60ddud0krmepnqryt33z7dpafz3e3tah8enw7f8yl6kkq0u0ywqdy4flj8lyrsr38zmyutrmuupr4a3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "fasb63259099",
+    "zcasher_id": 1360,
+    "display_name": null,
+    "name": "Fasb63259099",
+    "address": "u1ye3ux9n6hcl3v332lgjl5wpefcguqm0pvma60arvjw4w9fxuqcx4e0sef2vvnw6392p7gfynv0jm0d7zqpfn7qmzu73lwl0lwpqw9wuudfye8ses2vcftvp5cf66yyw8w4v6l9lmhgwp884caypndxmez0ataavhsft0qj8amu4ztnaw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-27 11:26:11.980892+00"
+  },
+  {
+    "x_handle": "fastgridtrader/",
+    "zcasher_id": 56,
+    "display_name": null,
+    "name": "Fastgridtrader",
+    "address": "u1d6c7e0kwj72stlayhpsv6tj3gm390dz92867l6wcjc9wd8j72q03xln2lwjqrmcg5ufcdt5gtcmyj8wlhcg9wr5zcmsxjvxk7zgvjgrumlpegtrgcqft4e9vgxghuxp28658uglhr5t7e7zar59s0jlm434e3xczqg6kj4s0vufk6rrl",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "felixtaiwo12",
+    "zcasher_id": 529,
+    "display_name": null,
+    "name": "cyber",
+    "address": "u1wwquqzuy8s2v23f3tjwlt5nv8q240jdsze6uzjv8q78qqaqhvw4m0qyzyxd0kkngy7tr9xug9sr4ug7e8tr9d9rud5293trvapuwqqlves56jgkdw8rp0qv59778g4qzhyd89s2andhsu7zcdhs5eu6jsjv0gltfdxrt4gd26gv2q79w",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "fosterandbieber",
+    "zcasher_id": 871,
+    "display_name": null,
+    "name": "shakizec",
+    "address": "u1k2dap4h06ngpk6245t36zvqhvjzkfcmgmpfz3xflk38kj4t965vpdrvz8z6n8qugvttx45qtyqct5nempyvvqzc25a0jcan673hluhs42x2rplzw87apjp5df95wt59f39jvhdc2656jkz4jg0340y9jyhfwap7crpsfqzzdmc8agpvg",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "frz_fzl",
+    "zcasher_id": 859,
+    "display_name": null,
+    "name": "Frz_fzl",
+    "address": "u145kzese94ptwrdt0m7s36fsnejj4wawjnyqqh4kwaqw9nquukl85dcprljpewcmlz0ckvypc243zvf52cuduve5ens84nw8jftaa0k36x2nu3gefh0pf6uzgmwxgtrqgtkn0qqcfnduwkwekwmnkh8hyjfpxs8yssz9tmm6ycy80p7r9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "fullyshielded",
+    "zcasher_id": 1741,
+    "display_name": null,
+    "name": "fullyshielded",
+    "address": "u1kr2wlze2sge82ysalqsjevalutdmdr37uq9cm8xlemry8wx3e0j8pghfq43j33xj2x6zuf5mzluvjq0cjppfesj0c4qx2xuvtra9laxnkhfyh0lxqspd2s7qqlqnc4pagkt6ntz6le0f67hmgzh9aewqfa0f92x27z25cwzwkcz7hle7",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-14 07:14:49.052861+00"
+  },
+  {
+    "x_handle": "gemstatestacker",
+    "zcasher_id": 131,
+    "display_name": null,
+    "name": "GemState",
+    "address": "u1t4wuwh7c2287ku5qpf3tu6ma9syksh36h38jdk8nsaqwsffsnuam5mgxsfy4g6pqfm4zjgn9jzv7yyeklvmv2zuy828gnccgerpr5yqrgy7nd7znfsdkjj52x7p3u2avdvr465g3eaaptwqkyeayvrl3g54mjruqmdv337sq9u0u9mr8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "gmocerpae522",
+    "zcasher_id": 327,
+    "display_name": null,
+    "name": "wilff",
+    "address": "u10yydsty5k9n0c8au99dvtc2h65lenmyu3d3cp7qafueydwq9u9vkyeyhzq42gsapylyqvvppvz62ne2w9kxxgddc9x3fh5jeka5smd5arhd4venr7wjkmynw856gy5qmaehxuyqn4r8ztrxvlrrygeyvfvnj2lvy7epmx9rf0c6k4qy3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "goldenegg_sol",
+    "zcasher_id": 608,
+    "display_name": null,
+    "name": "encrypt",
+    "address": "u1g6ds4s2lxep7kn9yy3mgsjkc889exytmfn0g9qtnx2ssdduv58m47eknfsrg6kd6xe6rqzxan9s5rje630g4988hzyr5mv3ld5zgy3laskdntpyyntvhp8v3yt2p29zducnahzkwyv24fk7l2qqrndqhmlst6wnyhpa80yqd2cxvek6d",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "griscomjacob",
+    "zcasher_id": 1883,
+    "display_name": "Nabadi",
+    "name": "jacobgriscom",
+    "address": "u1ava680p38a83997euprungth696szcnxu4lk9naflfl03twsv42g5uwvr2dxrrgvnwha83qz4vy8whnseha8crrx03hpxd3tt08v966dtm5kymchzkuugs9ny82phyl0rqty0qs8uu2xchs05hnn335chttqk7fx6utt2kfkugykl07n",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "gtfarah",
+    "zcasher_id": 1747,
+    "display_name": null,
+    "name": "G",
+    "address": "u1h7xapusc4flj9x2fjlkuyy8072zuwd7y28la7mz7mk0zxluwp7llcnfwn2lycnwp83ddfnaqqpwgc6hj47ppc8k7zu7gsmylz0lcacyt6tw9utn7rq07gu2ezrlywe07u2qrelh5sdmlga0a24gys524j398lfs4hwjl4ulnksn8y5u0",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-10 19:42:50.178485+00"
+  },
+  {
+    "x_handle": "guudtek",
+    "zcasher_id": 211,
+    "display_name": null,
+    "name": "Guudtek",
+    "address": "u1kjpdfsvtg5e73r8sdu8v6nly0ts98p0qj2njkdqzksq9vexalgswcsadxdl6mxjvp9gcdnm9c73dtpynj6r884l5eqy382alzvmpmkacy8z6nzz24n3ul0um05gwjp4vy7arha0lsf4j8vcrjqq76frnkk5cuvxxfhhzswvseqjzakry",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "h47ch11n9",
+    "zcasher_id": 911,
+    "display_name": null,
+    "name": "AL3X",
+    "address": "u1y9vcz6ym7ql2m8w85s6yy9n0dpfdjlrgpmg0hsc0gdaagw4wzwxadl0qykhwj60ng084xc6z4pwa3xdk2j3ussp72c4lyzf6ytwkmwdqpv9vhlx2zsztwextlj4w99srr0qas03h3fnm923jgha4tfmfqywrv4tgl8ccm9qj6v7mdn07",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "hardaeborla",
+    "zcasher_id": 1200,
+    "display_name": null,
+    "name": "Hardaeborla",
+    "address": "zs1ysf8uhtkxza0ayu9sqts96l76m4ytsa2eevnt60v59xvgsw4k03nyd3n05mse7t0w8gdvqpw2fj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "hashtag/zalloween",
+    "zcasher_id": 1163,
+    "display_name": null,
+    "name": "zalloween",
+    "address": "u18cffzx2kmtj60gg2dqfs6jasksapph4u2cp424rpplcmdgxc4zuez04l8wyc09cuq6yxl84c9p5cj5dyxa6zy9ndgl0y55s30y8u4acz",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "heyitsgilroy",
+    "zcasher_id": 1093,
+    "display_name": null,
+    "name": "Gilroy",
+    "address": "u1aue3q3knclzdmk8d6jr6qd744p4wsewy3c068w2ufhjdax45ywcl7sneza9us02urrqallqc9rf64wgdeukxmuwegx0jue4ydpezzg6waqc5daqt3symhezaz7z2fufrw79yn33y0x3zmdf64hy939rlxjyw86z35yymn47gccjzpjyl",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "http://x.com/raulzart",
+    "zcasher_id": 677,
+    "display_name": null,
+    "name": "RaulZ",
+    "address": "u16wcnzh6z42367rhr2kmu7g5f2fkwhn6gp50dnr3myzud2cedvf3rzw47mxvfhksr7d4zp90zxscsqczkh0yl9m72a2xqeqrq0zsh7tx97afcyexudt9e0fy98c603lh08780xvx9utvjfq7g2wcd35mjgyfznx287cuepnvh2qkwr2gw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "http://x.com/thea888_",
+    "zcasher_id": 729,
+    "display_name": null,
+    "name": "thea",
+    "address": "u1qf87ssgufvdprdmw2jz8eh2ss2clmg5gqqe9azsrgd2nwtkjyn0zteuvunmd9n558ydkmh6yq72g6t438st5qcn85kegeweqs4qagart9nvpsules26j63yxwl39r88v6zqz3mry3y7y7v7rfnwxq0vrrvajxu7d5sarqshq5u7tsr52",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "https://twitter.com/wagmiteth",
+    "zcasher_id": 1848,
+    "display_name": "Oskar / wagmit",
+    "name": "wagmit",
+    "address": "u183pespvr3ay4vzl7rnm25fckwx93elpawgdws7v6m70ldstp64tk7mwprhjuuuc50mzer7ylr6qsswtmmhcwg3gzgy76qwu0w4jfvwsxqt0kv6qwvlhcap5dqlxe3zw0w0qalgqaf9q774d6cn2ugs8rmh5hkq4slgx2f078wcqvfcc7",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-29 13:17:42.174004+00"
+  },
+  {
+    "x_handle": "hx_suc",
+    "zcasher_id": 1796,
+    "display_name": null,
+    "name": "Xiang",
+    "address": "u1mfwu936pf5fd6xmvusr2u35f6705y9rqtkmrtzhp58x85ug6sknzrmych34kh9kfje4he8afk6elzr0ahsejq59t4wzt2jy34g0gvgzl8z7g69pg0896gxvlwuhyst68gsas9aktqa73ly36cv4vkwaxlr74e7rgjq6288mzwzfx42hkkzexvgrztq986lk999qx7pp82jqw7vxmn3p",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "hyder13",
+    "zcasher_id": 974,
+    "display_name": null,
+    "name": "Roy8",
+    "address": "u1hykyvp49s4lq80vgccjat70yfuxt472dvgelqhz7nv839wz6g4h84zpau85yst8aw463endttmmhy9talwxvlf94clca8taqcwkf0cfaw8tfu032mg4mk6fuaaqn4y2ery379ykn70ngv7mxs4fxzve9qjd98wd5na9cqvgn4u4zcdjd",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "iamaj0004",
+    "zcasher_id": 1784,
+    "display_name": null,
+    "name": "AJ",
+    "address": "u14mxv60ndjm2q4cfxjdh5dyk63vtk6hxra4q2cj8r35a6ktxcrrmentrmrpl2htmzcwwsp25fn4xp9mqahgn9hetj6e046zrlldgaemdhzq43pzav6n2vkyxr8har2fk86e5ga9j0r4mmvevmvvjw0drwsaq3uaqdc079ajqhz4s45q7y9h9jze20rw3w4yywezcnsxjfqwx8qz2s54v",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-09 18:41:45.568912+00"
+  },
+  {
+    "x_handle": "ibra_initiative",
+    "zcasher_id": 1317,
+    "display_name": null,
+    "name": "Ibrahim",
+    "address": "u1neam7aum6g5l26uwnkqzakxqx408flr65xg8c94rwmjnas0p0qfwn5neyaptw5rev446fnxkcz8v0hhepuc8k89r8s8rngrg5qerjkcp",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "iffaweb3",
+    "zcasher_id": 835,
+    "display_name": null,
+    "name": "IF",
+    "address": "u136tz0tujlazh7f66xzayh0c9p4jjzdy67lpfz6qud4j9qz8a93aa4c4lkqvqtn0aa5klsv9m4an3ll7m9u9jpvluudkjhsx5nclxfq0m6djvw0uf32r2yw3y7xvrmxy9ps64tduju8c420x4460ujt07leuyehsxr8v7k2g87y7qena5",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "im_trinath",
+    "zcasher_id": 1077,
+    "display_name": null,
+    "name": "Trinath",
+    "address": "u1g2gy8kdxuy56emznnzjq57u898c89y0awhz68ql5p0d6z6mt5duydaynerjuzjhsw9wrwrdyjux29pp88gey05yczpuy8thp52s02aul8wfprj8wwxprrnudtdglwl5ju2t4ckttey3meqmqwad9nsrwxg39kzxuzww2vuz5zyavzxn4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-22 07:50:27.943898+00"
+  },
+  {
+    "x_handle": "investophilan",
+    "zcasher_id": 356,
+    "display_name": null,
+    "name": "InvestoPhilo",
+    "address": "u1v9dz4at84nkf9x7qjwqzyxwmvnm0k6kn6wfngq7h7qpnu764hfxx7qvrwawmwzntym5u7dk0qtr4g35u64z0nf6eqznng6a9e7xwvk6u7cp7jfdj0cg0aufh9lelv90cqy53asn0w9rk6gy8mwwtkjqse9x5nzsud3e7c2hr3yhjpfq3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "istp0x",
+    "zcasher_id": 678,
+    "display_name": null,
+    "name": "Ibex",
+    "address": "u1cu45zhu9gn7y8amf2yhx9epsy6ww6dvnvznxdefm5tctrwzmeupt2924xp75nrvutphy6az0mwrzkfdwxstp2a0lx3strhuwg99u5w48qh706k8ht3f2ykew8jgjlrwq6908lxmvvpaazw49ar5kkgamt02rrunvp4rxmm43ycz2e85e",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "jenkin27",
+    "zcasher_id": 118,
+    "display_name": null,
+    "name": "jenkin",
+    "address": "u1j7pxgzedx98ev5zfqvhccgpdeujjpf22l0yvr332rp2a4sngww6pyuks8kq09r6erhclnjnuptvlg5kpgmaa9xvnxq3pca0pv2trqczadf0602eq7kzqr54ff7ustl3w2cpzf6g2w64hc9mfegs6u7c3434sta22kxy2c79hd53klz7f",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-15 10:53:31.464274+00"
+  },
+  {
+    "x_handle": "johnfts1",
+    "zcasher_id": 1051,
+    "display_name": null,
+    "name": "Johnfts1",
+    "address": "u1aqlp3e89fazzkrt02ssggsf08ngua53fd8n7d5fwd5493wgez2sx07ap02lsyvx97l856vsukx4gl9u34ltjzxmc8uzjf293y895yxytd27cfs7h8d0a8mfn86uyr49jn005uqkhganw8qg7w5tmmrc9tj73umzdafnvsgnfns85e995",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-14 10:09:34.84846+00"
+  },
+  {
+    "x_handle": "johnnyonline_",
+    "zcasher_id": 2033,
+    "display_name": "johnnyonline",
+    "name": "johnnyonline",
+    "address": "u1xqca7jyunadu635h340xkmpt72uwq4xd87h6gg3pqjrp8mn5n8qf0ma6su2paq45zp2ey0vns8hx5sjuw467gz93v533vaxkuugv29dagaglcw7tnwkkctl7j9knykhe30d9vc66ydwul3p84402es2nrwwtt6rpkxdcqwdd0uyh2kja",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "jowi_be",
+    "zcasher_id": 855,
+    "display_name": null,
+    "name": "JowiZ",
+    "address": "u1s2mwjfg0pm9tg95dhwas55c4tkpzef2cx6ky8hcqxnzkxntjpazjx0ljam58x2n47pk7ed2dgc2lramz9fus3je2dmkt6aekd8h3g29v3fqz0xrqp9n4j6tkmqc4j62sxd7t22hg5e495zvn5324svx9hc9d4psjkzd6tp7tqv3rts2w",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-16 17:32:30.682673+00"
+  },
+  {
+    "x_handle": "juragantimah77",
+    "zcasher_id": 530,
+    "display_name": null,
+    "name": "Vincent",
+    "address": "u1p8kfwahc46ldaj2ggfseee2772fpyhzmvltwlnulskdlf4u75ye255fujkrh50y4du2klzu45yp68f9zh5kn9d38ku5xxufdrmmpjgvzr6kzdhvqrmqzwmg082h9k8q36u3umgh8m5l5rgh9ff6x7xneq9y4frdrkcykzun5nqe635h5",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "kabir11490",
+    "zcasher_id": 321,
+    "display_name": null,
+    "name": "Kabir",
+    "address": "u1ek8csffgfms0w85z59wqa674q6y2wzzvwqqhxvtu95x4mqegt2500r6ugz5dcdrs5xu58xk7usfrd5gtuelmnd8f4fjaq9flphylzf8krlkyy7yr8rl3tksfsrjlzqe2u8pgw5ytcdru62925mr3lw9m20j7lj4cucky23p0zupw5mkg",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "keenanrivals/",
+    "zcasher_id": 119,
+    "display_name": null,
+    "name": "KeenanRIVALS",
+    "address": "u19trjnyy5lhqmzw8s8fhdw6xvx3mp7rlwgtj3wgg3nlzw2ru2kqmcjphnznadk3mk24nd4fr8ztdwxk3y49p88cucfy7axh7wm9zy6nhn453au3zsscteqnw8djntmvt8fdd48dul0xn34jw5w3572mkwrpuv8544ly74k0tzqykwmysv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "kenyan_satoshi/photo",
+    "zcasher_id": 155,
+    "display_name": null,
+    "name": "Hotdog",
+    "address": "u1rjdmssmuktcxw4yvsy6jj2f4aw4vex378yk6upp53n6zvw7qwsnjqzez8x3ydll9rs6rp99ng9v35xpk5d6mc72crmu8f0qanayaegka5p9hp885zmgpeertluua27rfgus2jvx82r8g3vmnevn25szl3mv90620uamnledfry9aa5ke",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "kenzyy_0",
+    "zcasher_id": 991,
+    "display_name": null,
+    "name": "kenzo",
+    "address": "zs1d309qsdd35tkppcj7cd4m327vfdzglse2ws9m5095mn5f42pmmerm5ucsm4g0c0usu44y50cg02",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "kingag031",
+    "zcasher_id": 476,
+    "display_name": null,
+    "name": "KingAG",
+    "address": "u1zxgta349mxq9q6j3kjehrxgssyqy98st7mj0lfqsat8zd9afq2whuk4jhlnv8c3zktrume6xl3v9w3cdsjrdfsa2f0d88wmfw9a7g2yrhm07cympmxke8wm898cxn9udpfkpu4tyz8e74adw6ly59drx2l6k23y825wqq0dhruv0ntjx",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "kingdompings",
+    "zcasher_id": 473,
+    "display_name": null,
+    "name": "Kingdompings",
+    "address": "u1mm0n2sthshujyhdvn2hamqr84p09430hhzgcyc9gsh2ceje3vjlqclg03kftuq29v5rt5thk3yjezprclmsdqt2tqva2ljswt2gj4afk3dgzwcpzt2rhcqqyxd88ftpl9r6mj9yvljmm0q892aggjc45e5m0x0vsdeqcz4lupqcy6uhs",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "kristenkukarito",
+    "zcasher_id": 637,
+    "display_name": null,
+    "name": "Kristen",
+    "address": "u12j9s94l5ru03e6hhmsvs2tauw8wk852q84eah4w9xwg7p4sjnvq0sh3qkg88gep3qle6ju0rrrqnmmttt5vkr7f7f9x0yfz7t8n4w5cmnnz8sj3c5wyqez9q44q7utrdgucx52czdw3v6wnzehxu08w0yut5j8kf2nzwcutfcszjhyfy",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "l_etim",
+    "zcasher_id": 1823,
+    "display_name": null,
+    "name": "Gabriel Etim",
+    "address": "u1e6zmecanpmgrsw7x2aajdf59ar6grsru248q5y9xy0sph69fwng9hdve4ppjy8szdxrsuy4yqfqd4063a22cfcw37zjxvjkunauzwy533n57ufh6y946ggu6rupqldqx8eshz658qx6t677shm0rl98qhhthcp6nmzqzmvgt5ygh04fw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-22 06:50:26.351411+00"
+  },
+  {
+    "x_handle": "l0ckb_",
+    "zcasher_id": 2007,
+    "display_name": "l0ck",
+    "name": "l0ck",
+    "address": "u14fnfm6ehszcg5hu6q8vzmm6v7j8tluh5w3r8nm26rkgnngntt8n9plafgxed9l4plfay3hgepc5pa9jdezypw7tmxn2f6zu8y620gejw60re4pgg3l2nulmflpwrpdej439er6hvvgf3vesy44nl90ppzkr5qu9he4p97203h5h0yk89",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-11 23:58:20.433118+00"
+  },
+  {
+    "x_handle": "legendgonna",
+    "zcasher_id": 246,
+    "display_name": null,
+    "name": "ZcashBoy",
+    "address": "u14djfzrgmva5jyeqf74s2aay3pvtv87tcn2t22mzzf6j0uxav99yqz7ge4yeawec3jtm5fzagl7hhq9cpje3uksmsf7k9tug027x7384t5fwtpqmcwudkjv4n4el7hwgwmw5d77nvv0e3py7r939xp7q63uslk4y27jtf3pmhr5s3npzk",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "lospinosdefi/",
+    "zcasher_id": 146,
+    "display_name": null,
+    "name": "LosPinosDeFi",
+    "address": "u1adnlu7a07a69530t8mumlzk5kqs88jkvs0mkzl4d2sp4csmv8cemrhxspx970tk9lz3xx9g6n9n244s0phpge52lxsv83h7tlwhjktgw0kdzzg05glajwsdnehpd8srkk5hmrr279443fjhyw6ppw49k4kxjf8erjwnm3qamsyp90u9j",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "louarmr?s=21",
+    "zcasher_id": 925,
+    "display_name": null,
+    "name": "Luefe",
+    "address": "u1x4hg5zyrkmzrwjpmp6s7z5p3jz3yhq3kv53x4sysgt42wwtr0a8lmzyqvrxkek92609deh7mph8zqyq8fze66pv0e8jr0hgazf99hypmq7e62u4sks49c3plretp9fxgt2tl5uqywxasvfw3cf39dfm53e8kqm7cjmhujjg02syhx405",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-17 09:12:08.514311+00"
+  },
+  {
+    "x_handle": "lubanbigwin",
+    "zcasher_id": 481,
+    "display_name": null,
+    "name": "blacktoberr",
+    "address": "u1tawgw7k8quq97nvl38a4ysw75zrygfdyeydn9jlatw86ax9hcptnkjreadhad7wmncetar80s7jgdel6e9l9l8c2349kq0kd3yqr8h3rvzsazhzq7jm9zuxk0ckr6ae8xw3z65vs3ec6jqzynmszrfwvg9y3vwyk3scndwwt7q8zlezj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "majordeathstro1",
+    "zcasher_id": 775,
+    "display_name": null,
+    "name": "Mayor",
+    "address": "u1clrzw46wfcsh8tr93rjl8qj8tuhq4v523uw8g6rws6emeqdk3ftpuwcrutwdh7xjn8z4sa45laneh4a5yf0p26pr0emr78w4x8w0cjeqj64p0q644nc2726r0tpgzfcfndphw62azr3cw8v2ujjgfzcxhse95nfmqyf5z4dgy5hegs00",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "makkunah",
+    "zcasher_id": 847,
+    "display_name": null,
+    "name": "Makkunah",
+    "address": "u1p07uj8tmca84z0jslw8dyhgs49s07vc6jnvxpcjyjurucvljjm9536ythjyrxw2l2l28vrqr43geqq2xlfnplntsk7grad62aqx8mf8gh9d50fy3n3zwkk2367nm8cynn3z4cknzx7rjc7v25lslm4naj6c3ttc9jrtrlmmy7qdd29uq",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "manic8d",
+    "zcasher_id": 145,
+    "display_name": null,
+    "name": "Anarch",
+    "address": "u1ht5ppu9mu9h36hfpuh2y9hcerzekvftf7fhyu2g390rcu0dwsvgrt84vvhlzs5mxz4st6alr5n3w62y3e4tcj92v4cq8srrdglckqjyrj8qc32p0xh5mf3lhewkdy62qf34ahlljre54pg6z42v2kyep240n4gh8zheujlnc9qphqj9d",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "manlikedreyy",
+    "zcasher_id": 972,
+    "display_name": null,
+    "name": "Dreyy",
+    "address": "u134tgk6e076p8cjwhgye0tdrfhv9tu6jh63q3f546q8ke2qgpdj4760pc2yg5ptzjp62cr5tpuwrf2qudmr0cl4dqp5dtaymmphkyyp2fffh2rrn6zmrnkquenv50v6x6hvdf4fd0d57htjcx7fcarn0ufekrvxu6ujux5qpxrckmc7a6",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "maverick8899667?t=ugzhipnyerb-dsw0q_cnkw&s=09",
+    "zcasher_id": 808,
+    "display_name": null,
+    "name": "Maverick",
+    "address": "u1trqklw9cvty0wuaj2asv3uyandrnjygdw02ne5mkmwqeznn2wuhvdpjlfrm9ruqheh3q2m8k40gjnttka7usjx37fuu0uwelvh9kczx788au05tf5z445520v5tpxwj20pyxqa9a953qy26q5nttyefnulytetmlx6dy343esyj4u82k",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "memefomo",
+    "zcasher_id": 914,
+    "display_name": null,
+    "name": "Memefomo",
+    "address": "u16ysfvrqhmr7dqpmefckyf3fxl6ta6zqhkrdav9lnqdaqutynh6al22fep22q4lxku4umzt4sfp3hgjdyhetgr3zjtp9e94g882z7m4y7m0rm8e2h5qfrxsrqcujxkk7dk03rsser0rennk5hsau99qqehax5u8tfuz5jy9reac9wekx9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "metafrend",
+    "zcasher_id": 963,
+    "display_name": null,
+    "name": "metafrend",
+    "address": "u1hfnm503a8farplff8y8xwufuhxtzez4l8lzc5egq7vfu0yjalqm6hllkk5dtyp53w5q6tnvdd4lelzf638ce8fufn7r64ufzf2dh7cc39mx3cgl7e2mxwn8yt2u03dm3gy0pnkh2lyyhlg4zmuwlmuh7ldrcaxwsvgwdt0svjs9avmjh",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "michael2xl",
+    "zcasher_id": 229,
+    "display_name": null,
+    "name": "Michae2xl",
+    "address": "u13kme77ak5wvxu57da5y9wwqfftjh0pad563rh7252dqkmyjhq2d2qdjyraz2c4l9xyf2r6zner2feqfdfvxs4m3ahvp8ldrq0207aadu6j45x0p7jky4xm764samrj9kw8e0fzhsdrctmpejhvmsnpjk2j9zxgrsxqm9pxh5hyg5rxwnwknw2lj0mvxnzamtxlsv8pfljn8jgfvfej7",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "min_jong_un",
+    "zcasher_id": 507,
+    "display_name": null,
+    "name": "Min-Jung-Un",
+    "address": "u1egalhglecu3297qw980d73hpk09ln5zdp5kk384qddhn6kfz5j27eq9fx5lcz3dmgfalz376x5lzrtkhn55qs3ptmlerd07dcfff0ne68chqpcljg8n7nc8p7p45t40txkv8duz5rem63pkkvxu8pewmwdu8y4m5mjqccmde8ce3k0hv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "monsignoree/",
+    "zcasher_id": 718,
+    "display_name": null,
+    "name": "Monsignore",
+    "address": "u1nka25lr7s46kwpmguvjh208ju7362sf42wjry8c3r4vnh8ppmvtd9qnf3re4wam9gql0dv3eddhm7dxa02hcz7r2hem7rnmlehzjhq2508h74uzc3vhxprjehwqqam4lr07k6jtp77wulx98wp9krpj05kevylr4px5d795sls9wqnmp",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "mosetibosire",
+    "zcasher_id": 68,
+    "display_name": null,
+    "name": "Moseti",
+    "address": "u17et5jf5w7j5ssv76ww49f9hjt46d2ncvh8d08xwgfcusynqny5ur367dx6hzkf067hvdkartlg7svmt9ncuc639hmksu8hp93wsxxs495jnatss2mt459y595su5j4pwupf0u6aj07kaat6aryjzmsjzdssgt489qkmz7d32zyztcg0x",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "murogeo/",
+    "zcasher_id": 241,
+    "display_name": null,
+    "name": "MuroGeo",
+    "address": "u1djf6u9ygvm6edl5e7753ahs25cuuwygmt8p60l504za0n8cula2e2hrwtju66us2exvzjuevse2fhhtu20mechs04sxhhr344848n6f38e6g50athypxw0p3fyjzlmrje3j9jwxl28eukq60kaayhegffqmygxqkqzv334mhns58ytuu",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "nanitheheck",
+    "zcasher_id": 335,
+    "display_name": null,
+    "name": "lastbread",
+    "address": "u1a80yfrdlwsf6093e6udygz3wstcnx3mxuk0wlrysaru8mulfdp24tatzjs3zqh4dz5rgj8xg84cj6thg0ffkp9hjfcv7a02yschajm6vh09zsngx7nzaatutu7tksw2u3zcnjvghcv4jlwalwquvnu2a7t94j8wu4n40l2hfccxa0e5g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "ndrw1337",
+    "zcasher_id": 464,
+    "display_name": null,
+    "name": "ndrw",
+    "address": "u1jy5asgwflytheqdglj6djrwds76d90uxaw43lsp6jh3zfmzka7m57vlmfc4kfnfc3qrykchrjxuh3f4e3tjzwqkg6x4uv4s3e4f4ve09zn97l4yy2sl7cvcly2k9hhhpsgxsvsvqr9q5j2drwdvfc0awfm8kf2f339r60hrrsy62d6t4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "newniao",
+    "zcasher_id": 1118,
+    "display_name": null,
+    "name": "Newniao",
+    "address": "u1w2e4g827nm6qh54zauahk3dkh6u02h8q65mrr0yujdujds09e6drhlt4yavc3k7fevjqkn6y5x83p03shxwu3f7l4sqh3mwe9ngjvrqy3kwcwkdgqx554aea3dpcu9x3h6j0pjx9cmrx45mcgu425eqw0z6c597clpf96kqtqsl472jf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "nfthiero",
+    "zcasher_id": 1130,
+    "display_name": null,
+    "name": "hiero",
+    "address": "u1qd7weauhjx4v5jlvtrh7aqaup3psnana78zx58qv20rzan9pwduvm0es54kvzvd9gcf2sm8xrcpg5y2z5euc3fs6pf56kntyy0med9khu7kewsfh7akqkmt2dhvry8t9wnmqvgpnguxdqqs8pvhgd8awz4hs6mdr03uvfkfmdql9dlfh",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "nic_whr/",
+    "zcasher_id": 80,
+    "display_name": null,
+    "name": "wh00hw",
+    "address": "u1lcwv48e2v4hlwwr9x8mnwgrv6ywyt2ecatf49v4y53g62chgs99et8x3sdwyvhkt99tgk5t6qkv0udwm4jldp0xj0htefdhxygkzaezn",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "nilraka",
+    "zcasher_id": 1615,
+    "display_name": null,
+    "name": "nilraka",
+    "address": "u1mkrftshwvmsu8y8lng07zsqdlrl7s42vg52y4u44gey0jsk0c7dp6rdnmua8dfya8e8s7zulqy3zkcyp9lqdmvnzxqvq2x9ksztxg0efttg8yjtjnlpzptt2p5dq2wgnkq3un9hnex28njcacvyyv7wrd6amlmnmk8futhwkng9hx453",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-31 09:51:28.682242+00"
+  },
+  {
+    "x_handle": "nobu_2k",
+    "zcasher_id": 912,
+    "display_name": null,
+    "name": "Nobu",
+    "address": "u1v6h6ellun4ld38lnxy77zc0g43vq83lvrakugk2xnclw5qukyh7zu7atnwstzlx2zu4feq4440dav3ugyxpt0z4q0rnxlamemgqp6krveev2xgr0j8fhv6l68hjqv7fme995la2pvy6aa5wufhuyavwczsllg0qm884ty9sfdvlac5zs",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "oceriketh",
+    "zcasher_id": 359,
+    "display_name": null,
+    "name": "Erik",
+    "address": "u1d68cwmd3gxt0ewr4z67j03s65caw28azn3hc7r7gnr4wh3a22gx9pw0z7u9hm2fylvpz7hh8lftl38t7gu3mmm7y0zmsh67jem70st97x6wx9j0pa3wu5ksehsfp0n647mnmujj7vzfw4kpd4x2x5eu06hy02tnsj3u384y7hqe230yy",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "odtopboy",
+    "zcasher_id": 1311,
+    "display_name": null,
+    "name": "Odtopboy",
+    "address": "u14kfhm6lgd2yrux37x5aqms88ka3aj0yhtmdj2zfgsddnxqtnwdr35ukhlu3qcat6hhv4a8ads338gv6358dn85gxht78x73vd2d7xhy8jy3yxsvsdqsrpdqvlv526p604zn9nvrrgler3xs4dyfyes9ap6kvy7t6m5xht83l9grgv6gv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "opomsol",
+    "zcasher_id": 64,
+    "display_name": null,
+    "name": "OPOMSOL",
+    "address": "u1n9hvy4ra6k527s5tkzzelxn0zl0m45gyd0v7rf597gz6uz79t939e57s4lew6d2yzvxhahxxrwwtj5sw203qlu48xm8rxaztrapp0ew4e22mku0dtjwthef3cuwmt700esxny604763gf79vl7y2k79unm025qksp4jp87aucqngfw7f",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "osasdinvestor",
+    "zcasher_id": 1818,
+    "display_name": null,
+    "name": "Osas",
+    "address": "u1hm5x4qvkl3ulzx99vs0k2v9mhpwgjhylxzu05u50lx5pjplfsgnmlvqkeka3p0pmvsq24k776zjceccfd5x2vj9906ca2vec2nyrc7hvd5gp532ye0lltn8eazmmrq779q94tm3mxzgpcmns4t766u9zgl3zd64ezmx3wg2lp53xprll",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-22 07:03:27.533808+00"
+  },
+  {
+    "x_handle": "p5btc",
+    "zcasher_id": 1338,
+    "display_name": null,
+    "name": "P5",
+    "address": "u1llxe7q5vmr8hx7nglf68lqw9g8fqeqfx5c4lnmkhetd40arfcaugs6xhad8gyky7cpzhr7sjt9f5zcdhlehdv0d6gsv9sxuz3pxdva4pzskf2dawt9wsd2lvf7h42l6tnd0077que5ytxac2y7fp7s8mw2q6dudmnr8l3ysg0c22jz2s",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "palmarzk",
+    "zcasher_id": 1812,
+    "display_name": "Palmar",
+    "name": "palmar",
+    "address": "u1an9ydnldketu4mk220jjthm7edwvpqggu5jvly78zkadkuqrxwwychjw8r96cr582xprrywc7lcfnlx7f64mehwz2nrgcrmnvv6v044j",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "paow4n",
+    "zcasher_id": 230,
+    "display_name": null,
+    "name": "PacBR",
+    "address": "u1ke6wcjyhhycdfjwp9qjan3vf8a5qm04uhvd7f9r3vyqyxmucv506r4mnse3km6w9z5pntpclnx48a0z3pjvsplnrym704klykmj3favnsdlzf34ykffqfllhhqt24f9s5f0hl9r09n7aek3uwhenhlpakyh3a8ugafpmdyw5m5g0x03g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-31 21:31:33.42489+00"
+  },
+  {
+    "x_handle": "paow4n",
+    "zcasher_id": 230,
+    "display_name": null,
+    "name": "PacBR",
+    "address": "u1ke6wcjyhhycdfjwp9qjan3vf8a5qm04uhvd7f9r3vyqyxmucv506r4mnse3km6w9z5pntpclnx48a0z3pjvsplnrym704klykmj3favnsdlzf34ykffqfllhhqt24f9s5f0hl9r09n7aek3uwhenhlpakyh3a8ugafpmdyw5m5g0x03g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-31 21:31:33.42489+00"
+  },
+  {
+    "x_handle": "pappy_bern\r\n",
+    "zcasher_id": 929,
+    "display_name": null,
+    "name": "Pappy_bern",
+    "address": "u127vn8vuuekcxgv7apjmuw6rj63rxnj727a8f79393fz8czu637yssu2xz4wn95lqcdf8gev7ypavxj54za7ztqgwjla6ny5s9t98rgl8k6mkx6j3v5a5t5hn4fg67920my904adtt7lv4clj9p0t50j8fypgvpea9qur0ftggy0nsfmq",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "pathmunger",
+    "zcasher_id": 441,
+    "display_name": null,
+    "name": "$Zcash$",
+    "address": "u1s8qfa50ctxy6hhe3wsdj2jeknucmd5hykpgx7g3yu9xgywpttdpz647d6hjhhx6kny4e2cncvkw0p7qrysrdukwfcjz2venec56kel3p2tcqhnuehme7age3swxejaa4qafykd49au8p6e3nlmynqwlwufrr8gzlzz0rfm8chu33wk7h",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "paulbrigner",
+    "zcasher_id": 867,
+    "display_name": null,
+    "name": "Paul Brigner",
+    "address": "u1wgl39g79gzm6adzuu7zavdxy7vxddtdn9575fmzgunysl7d707ehmcdkkd0hsn8mft99t3yyw3qdxjm4f5ufw0hfe3d5rwx4k3vaeykp20d5hcjmvctem4qy6ew7ef76rm8xdgpkrlk2rwm6ly6h2ejrdah0j6uyyqdcnftla5eql2a8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "pavvannn",
+    "zcasher_id": 1853,
+    "display_name": "pavvan",
+    "name": "pavvan",
+    "address": "u133s30mpuvlwx9vuxhw2w7t8mqxy82pvq837x40mavehs5a6da35yt260u7f66x68y2q6u42suq4yv6kuqx66cg3p8f33r09cd09e823da5w4ftxpzfp0e6w0c9untmz7a9p2vnxwtye8atcwn932fyv0c2nukj0fe4xeke94uc6xfsu8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-06 18:04:33.936609+00"
+  },
+  {
+    "x_handle": "peichain",
+    "zcasher_id": 1223,
+    "display_name": null,
+    "name": "peichain",
+    "address": "u1xchqflggx7n8sgmnff6sxd3p85fzg0fsg823g9avzlhxkqp8xu8prmz3khgqmdksd5k7x7td58pqvgpfhk8fc7yy3jytd58q45ssamltwaj0qavlc4g3ytyr2rupfrv0u4w4y3tavgdenw079vj20m5zs98k05j4u47ewf0dgs7jys23",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "piurjudges",
+    "zcasher_id": 1005,
+    "display_name": null,
+    "name": "piurjudges",
+    "address": "u1j5jndsztla2f4gtzw2a840s6ehrt74jxfyltkxfstr0g4j7pmvr3jgc6p0hzfd8hzuhf9348v65qlzysc3ntgdg5uqp2hjqxalx8z4tduru2s0uavpmh4w2rq7earc2vude3yvq3hw39hxggjxsgx8zfavz5jk2dlk25rzk7fqvlcgs9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "player1taco",
+    "zcasher_id": 1899,
+    "display_name": "Player1Taco",
+    "name": "player1taco",
+    "address": "u1umwra5wugad0lvw63vxzzwr5r323fa9a2r24ny0gvpc793dw5gmvxev6n7lsu9wmf8myuxv93xlrwm0dxgnm3wzk039q8ngrpfgzqxrglh2sw5f3r3vycrz35eflh7hqt6dxdutfw563gzdtzdsnxpcm8e24ptw2avq8czldz5nvj5mr",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-14 18:20:13.280107+00"
+  },
+  {
+    "x_handle": "privacydollars",
+    "zcasher_id": 303,
+    "display_name": null,
+    "name": "Privacydollars",
+    "address": "u1qukxu4exa8gvpsrc5xj985l3n9gq4cn4uxnmpp6cwz0m2g65kavakjjg362ehv39rv0pevtf0xtkf35z72ywrsx56q8fldg9x9vmyrqps0z5qankmpkhezdnwq2ydfty6fj6v0z5teyhdqrsype950gm3d8vg03saddukrjfdg8uc359",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "proud0x",
+    "zcasher_id": 1256,
+    "display_name": null,
+    "name": "Proud",
+    "address": "u13yffp5eet844x9ltwxv4dksjmwuj3469ed7xq53jqp5du5ps8k243lht3pn37pm6y5dxtffw93qk9839fqwwvclfsewt4lt0304cdrerznqncg07jgldwy8qtaqhrm0ljqzwfaapcxjg53647q63cu7uhlymzul577w69srk9sgvl6u4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "ptanicabe",
+    "zcasher_id": 419,
+    "display_name": null,
+    "name": "Ptanicabe",
+    "address": "u1p835fjynq28sc7d8r8s7qjp7u6ymhh0ed63mhqxz8mcpw4uy2ptm2qwwxwlsnjwy4w9g9fn0s9faalwzu77uyawdvjmc2p74dz8hw4gyw4e5w4sgcaqg4808zm6e2ewxhhpex58xes9xdv35pazm659v7sex7pvsmfvqjyk9huqrarcu",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "r1csqap",
+    "zcasher_id": 555,
+    "display_name": null,
+    "name": "zero",
+    "address": "u1xth2fp6p7mpzgrtuml9vtrpv8tktxpyna8jxtr0lkrym0h442mc5tldda5mj0c2yf0heqdye3g6fz96a3cqfcyr58hqpp24wuvnlztvf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "rainbowboyly",
+    "zcasher_id": 1636,
+    "display_name": null,
+    "name": "Rainbowboyly",
+    "address": "u17up6a2c2eekay46f9650sgy7elk7uf65vvscgwfcqu0jchcnm03cms6nk5gs6xe09vrq255ugyyxtrmcd6hjj80jugp9mjresrjm48cvndc0hturs67z8ecvwh4079q63cf3pjm47mjr0nef5ww4dsrzeem9udja5k5sc328tvks8ndr",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-15 10:09:03.679377+00"
+  },
+  {
+    "x_handle": "rashmivabbigeri",
+    "zcasher_id": 2014,
+    "display_name": "Torch Ablazed",
+    "name": "Torchablazed",
+    "address": "u1fctyspxkcmerlul070dze0kcedm476lapdlxnwvj9d8fayks2tmf8hmp3wu76w6uglz6pnkkraak8sup46qe63vdp0h7mcdrm8mlpd33t7fcztsucxmw7jg4zlaxz4azkjhqptngypmpjclwrrapehsljs5lw3q78ve0mdwsmcjsqj57",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-19 12:01:29.960777+00"
+  },
+  {
+    "x_handle": "returnonyield",
+    "zcasher_id": 245,
+    "display_name": null,
+    "name": "0",
+    "address": "u10g4dx4ag0ftmaqyegmmw8trurwyf2q3yza2v5va5vzkmpl532dwjtpcg8ywcl4j5heuvx9q70zpc4z7hwal4uzq6zhzfw4uvm0c3vy8zzk9qlnkc7uce5vd2un4hjj2x79dzw0xm6gekmrwzue8r0ddwjzfuauu9h73gsm03ecmg0cay",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "richardmccrackn",
+    "zcasher_id": 1995,
+    "display_name": "Richard McCracken",
+    "name": "rick",
+    "address": "u1n5rue8kxgqruqzdnz3zm5pq76fljvsdfrp52c8y0764n9y0z6mrsegcw34d78vvdy2dqy47x7l2ynaa4pws5e2rjp8mwkufy7tygj8zu6c39gdmxhmaxeh9nyahveshksq2j9mufjgc45qnwuslfl9rkk5av4s6xrxxru9v90cj97a6e",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-30 21:58:19.154841+00"
+  },
+  {
+    "x_handle": "rilxtam",
+    "zcasher_id": 900,
+    "display_name": null,
+    "name": "tamao",
+    "address": "u15wewu8gta9g8vv6p0q2cr87aca5zrhs9j2a5zgutngjh8jglsytpkcum5cvjdm5azk8yvvg29ug8ef7jszyegy4200ymrfz3h6vg900844fgmrjwnxx6vk8hecuwnpy0vp73hxrxvqr2rp6rjtdn5vr8kugglfwxapxn23mk8srst94t",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "ripperbhoy",
+    "zcasher_id": 993,
+    "display_name": null,
+    "name": "Ripper💀",
+    "address": "u19zq8mw5qxafxrekaekmlc4zcdlgxw3n6uevj0wwtjqaqw4ylarq7nkscvsndnqq5sr4sus8mtmfwa8ypzh0qzznpkypled05nyw7ugt8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "rj",
+    "zcasher_id": 976,
+    "display_name": null,
+    "name": "rj",
+    "address": "u14xsl7ehvcdxvjc8p3az805rjvllz9msy78cungtgrqgfujkpswq2y4pxqvh4lrawgqcy36ucdf0pc9qzfxzvq09xzufmjlqnrukpup9dcphaefq6ahalkehr9pcpmmxzamwjmgk3jx5rrm5vfx2gfaa6jp5c5yhl384auxcq9th54uz7u20xpv5kjuljrjgne0kdvvggp5ng5jv5gdu",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "romar1025",
+    "zcasher_id": 235,
+    "display_name": null,
+    "name": "r25",
+    "address": "u1heudqy6cswemexrefnvrfj4nc0yhxelg0wl7zhssemw4kjq6av8dwp6fmxyrgvlq9jgyvs4rfzru9dh67mxhvsds778xr74zzlxwv4gc779wrq0tdz67t33awh2hlzcgfq3yf2p3a64er3qhlvpf7vwcwjw6mnff0t8w8w9z95ep4s36",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "rupert8821",
+    "zcasher_id": 943,
+    "display_name": null,
+    "name": "Rupert8821",
+    "address": "u1jyqjgtsmuz060wqpmj28l0l0q44qmy33ehcngm4mtvq0tux8x6jd34hpns3rltghmgmtzzk89m6h2cy577g0fkuc276f5ggj7scktffshqxpfjer6scpk2nzxyz4ppqn4dkx02hsm94rf06aqj5hp0sadl603cugvz8te53mdyr9l6hc",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-20 00:24:31.005324+00"
+  },
+  {
+    "x_handle": "sanadayuki88531",
+    "zcasher_id": 2049,
+    "display_name": "Sanada Yukimura",
+    "name": "sanadayuki88531",
+    "address": "u1u74cvfdly8huzgj6k6sgsty9uvkxx4hywk8zrj5nc9qy5n7xagdvsjkvxy74lph2hwj56erqgr8dd6zeduxshqhjldtnca00h840h3d7vp3tmmeua34qhzmzh3xhcuwsc02s8dru5xfdjxue64j6jzw5ug6qyjfaxwg5nez7r5sf95yx",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "savezcash",
+    "zcasher_id": 15,
+    "display_name": "Safety First!",
+    "name": "SaveZcash",
+    "address": "u1gex2wm56xgveqx2hvxylwtla6nz03scyrpvyvhfccnvuv3kaetlnxe6x4d7ljf7cwqq7etj7m4p33064rsxft7se26yzgrs540trahn6ldp9cxe2d27wa98hml6a3mmn7ephyqagy8grr8z06ufqnnzy3c6e37kefazuf4k3nvchfh08",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-27 12:05:34.74+00"
+  },
+  {
+    "x_handle": "savezcash",
+    "zcasher_id": 1831,
+    "display_name": null,
+    "name": "James",
+    "address": "u1wgact22jprn85nxk3ce4nf40xl9apkkrwuf60rmjz8ekd379fezszzm502y643p4ku6e25cxsh00mtlcfarcrs5jkuw3fckpqe8sxym968ajedwzj5t6vyrus0p5gyfvkpe9e6cdc6svaz492387636xnnj9j8mxz68lvq3vpm3u5cv7zrukfl225yypvkwuwtk608mh3ham63xx2ud",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "sebo21m",
+    "zcasher_id": 785,
+    "display_name": null,
+    "name": "Sebo",
+    "address": "u1tyzuza9xyvffhepplqe5cxf77x52h56pcyyg35x2ddpary753dgqfqerpc5d62jtjtgcdn7nktsaukesw2zy552eacx5xxmpuggavfmw8cete7fpav8x2xwfkeud2em2vgg09lfqs90dmyjj3vraysudtnv0ku4gt762xkdt3ur3zcaj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "seren_aris",
+    "zcasher_id": 1142,
+    "display_name": null,
+    "name": "Seren_Aris",
+    "address": "u1qwf84j7u7zm2yrxagu6x0zvzq2h8p4qpp6v9wwm42g454xz47njrnr06kfjzu9anm079khc40g62dx7ex5lgjgcng0p64mdf5huzvk83kqtxv2p0mf79y7n7473dvltujq4847s0lhllacygkk6ml7kszlcgay7cysmg7kmtp5dy494p",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-11-30 00:00:00+00"
+  },
+  {
+    "x_handle": "sethforprivacy",
+    "zcasher_id": 1951,
+    "display_name": "Seth For Privacy",
+    "name": "sethforprivacy",
+    "address": "u104v3h0lvdc2jjd8czfjt2uwxt50sl4gnekvhet3eq7xe4rp5vmqzj6q05jv8xc4lez26xv2mps99s72s90y0wujlmd9259xlct69qu7dk98h2nthnl0erw8200xa3qlxn06qrfpd8l4mfqpevf0xsz88400y87lr6294mx0qhulxv03w",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-25 13:54:47.619571+00"
+  },
+  {
+    "x_handle": "shaadawi",
+    "zcasher_id": 421,
+    "display_name": null,
+    "name": "Shaadawi",
+    "address": "u1sgnx5zq498ak5z5ws7grvglksw8gwq4j5wvw3z20fqc2smle86nwdtt8luwexxvvkm3h3w89tm9f4yy9ks3gdar05dhzkhkeyxu3wx3755jvjtdd9w0azpuq7xakusjjjluhu780cm6ve3a5r2d7fv3qpzftlrspwjwaelsevcy89ysv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "sheemprende_",
+    "zcasher_id": 1898,
+    "display_name": "Sheila Vargas R.",
+    "name": "sheemprende",
+    "address": "u1vdauah3mwd2dpdxwew4v69yk72vg4398uz8pnh6uwd7mczk5ph6ylemqece486tezt2ksl4fj3e0wtfflgmfaf2fg7mkszjayedjx292trnze6lx4cvax0tza76220jauw7sp649a52p4468rtsj95kmdmxpf4lj5u8ugk4h3g6zsyh4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-07 14:34:23.41278+00"
+  },
+  {
+    "x_handle": "shieldedflow",
+    "zcasher_id": 2000,
+    "display_name": "Shielded Flow",
+    "name": "shieldedFlow",
+    "address": "u1zm38lqqxc3vpax0apxm4l7au0d4r9hy2v49t602apptptnqe3rs7504ywreyct50y7rh2kqn0t3ykskpp8rmltr79xkyadgr80lmy0pc9ehx30wgxejc67gasjzmujvav63t324sr2skvnyrnkx6qq02zlwh3cu50t7zssnc5g6mee3e",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-06 05:43:29.277289+00"
+  },
+  {
+    "x_handle": "shieldedmark",
+    "zcasher_id": 207,
+    "display_name": null,
+    "name": "Mark",
+    "address": "u1l8l5kw6f23f9xxs93cdw7raufr0qesj3tamqndzt5p0xfegqx00m04jx0pr0m68gfar5t4je543r2kujnugqxswgvzscsurgfqztwxhfla9vg6vj4y45v39pffh3jresxjkms05z0xp8fj89x3pnhg7p705fzpja45ht62d4yuqenj94",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-11-28 02:27:51.258223+00"
+  },
+  {
+    "x_handle": "shieldedtim",
+    "zcasher_id": 357,
+    "display_name": null,
+    "name": "Tim",
+    "address": "u19jr3vz7pm2azlucw9zgh7h9uhxmfxcqsm9tle59fvp77a2n2flyk38crnm8u549aagchu505c0ltcwr8vwgv0jgxnk6mwztu4c839yk7f8vgdluwh6mk5d6jlt4dd29wysz3xnfkaetkh7vrjl3gte32ac8tfmwxx69z06a32str07ee",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "siloe8790187232",
+    "zcasher_id": 1836,
+    "display_name": null,
+    "name": "Yendira Digital",
+    "address": "u1f4jwxpxpckktfyx5dt8a7hm54ra4fjv26fgycjrd2u3vkurkugej4cdr3f7a0vd3rzr3knew9a4ch2mrdhw2hurtrq84r3rhfvd2a74w",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-16 20:08:38.372341+00"
+  },
+  {
+    "x_handle": "sisicrypto1",
+    "zcasher_id": 154,
+    "display_name": null,
+    "name": "Sisicrypto",
+    "address": "u1723p83572clh62yxwj87lgx0kec3rzez47vkex860fhhd0hj329kwe42svh6tv2v974k49natv7vj03nqakmke4jpyy6w9fqkszmwstmxv40v35tgyrww0l3s2g6sa8jlzcgxmqv9jx4k5g7w9cmqcxl8rwae20a363299l2fvw7jk5k",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "smit0320_",
+    "zcasher_id": 1670,
+    "display_name": null,
+    "name": "Smit",
+    "address": "u1g2tqakqyzarsmf96jyxa97dyme72smvvpwz994trg0tt4fhfft5ajnuedfkr5v57tfpwrkthcrd8fskkyjwhr66l08cwjvtvwjq3azntg9rklax7sc3urgz9qep0wygyqezw3nuja82rgww0repvedshxznyedtf6kchatv5xcq7a4aj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-02-04 23:15:47.476677+00"
+  },
+  {
+    "x_handle": "softfuder",
+    "zcasher_id": 2027,
+    "display_name": "marc",
+    "name": "marc",
+    "address": "u1snqkfldawdhtq336wpp95hqealws77qgn5tejzjkfjmme9x3m7w422hser73my5r4h6d0uvjjlxy69x6zupcyzefqc2p4dmdmkjfagdn6ex5p9dvyprgke92a06wlexrv7p08z9trz7zca54h5pwahlrzlm694r92lphfnwre52d64ne",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "sohighsquinteye",
+    "zcasher_id": 545,
+    "display_name": null,
+    "name": "sohighsquinteye",
+    "address": "u1hlzyq9pm9sty3qvwnaaql9yyxap2qvd0f2ttmw78e3ktfemacfwn64qcu0wchp57hq36072s49jg6v3l5jyxc6ladsl59kp7wh54zqxqvel38dmyxfjt3d7e95ayu7sqteg0pz97pk9k5x52a6npsefyh9q8zwsuwttpwv2xesjygcpw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "sosatm_",
+    "zcasher_id": 24,
+    "display_name": null,
+    "name": "SosaTm",
+    "address": "u1gkgdys576kf09w2lhc8y4gdkyulfdxt0azczzxhsu67y9340zml85ztaq7mfdkxepg2pgjm85gm84rql3wvkcj2nc2uh69q3a24wnqdmk9c73ghsnej0rcwdtl0mxsjvr9ke94zlyf7lmfc9g9wfkamqt7kecxv88qlw7r5l7vgws8mp",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "sovcoach",
+    "zcasher_id": 807,
+    "display_name": null,
+    "name": "Sovcoach",
+    "address": "u1gcccz08au0c0m7v2eqpefhsd50m0yd0pnw2utugntz4y7akef2fj8z5p3dwfq3hxgka3cytkkmwk09zwx5jz4yk0uqukfjc4d57ryu6g",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "squadrillions?s=21",
+    "zcasher_id": 754,
+    "display_name": null,
+    "name": "zillions",
+    "address": "u13hlzr65guw3cwae4qmvkw407arwwgntlh0fvlw5ty4nx8wzmcxgh7v40jqyfpyk7zup7h2w7c93nhqnhtxfz0tx4ssw3ghylxu0dvaadsz0rzfrafwz7r8s55ylpdjn38k5657ggahksr73wk74w687rjzydasd5nptfhrudu5l5p0dk",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "sssvuuu",
+    "zcasher_id": 717,
+    "display_name": null,
+    "name": "sssvuuu",
+    "address": "u14rn8pl9a8v5svj8evftn4atgvl3t0e8yq3xvec5lwfef969xq6tw2ukgadx4z85e763lnx5pzpjnxetp0lnq0rlkkh4tn3kh669334sjd43uu9280kjhchng0zu7k6hewgdku6j33eev946jvqdnf5guc7332r55u44w5p6enywndnv3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "steveblackwood",
+    "zcasher_id": 286,
+    "display_name": null,
+    "name": "Steve",
+    "address": "u1qdvze9l8lc0fxkf2y7799mauzn7ue9sse9yzr6cl0rlz5dxmsvc72l4zux08d29mgxf52625l0c3jrx0mrql2m6vcc7gnfxjtnvgy6798nzypq7t7ke3xw684fk4dhtuyzv4dp4z60s4jz4md6mc4y5dz5s8hemft6vg0kr2dq2d920s",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "suerw1n",
+    "zcasher_id": 833,
+    "display_name": null,
+    "name": "SuerW1n",
+    "address": "u1zmqrsdmmqnz7d6f528wzud7xpdpylzle9ym7u85sjrm9uzhr6mg05qksjq5xczj7wmn0ncn9v582klvd0tlcu4553jv4v2hy530v7x076yz94yu4lx9ajh0gwvuwm0wezs9jmcq5rfhp6p64sdzldmcyfl89ng2s8cp6kgkftsg63vac",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "supermario054",
+    "zcasher_id": 500,
+    "display_name": null,
+    "name": "doumaxyz",
+    "address": "u107ennnru4p7tkywqnrvvr9sccem9tl3fpnu0tpns7w2r3cy3gdrx5a54fn2rm6srakxcrl9rnasrpecd0urswquyc5ax9f7v5yk454jdnx4jlt84g4pcd2gjwdvlejuc94en2mgp430re7fke7hmk7gchdu0jph8r5hqlpurgu4zghkh",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "swiftlybo",
+    "zcasher_id": 1839,
+    "display_name": null,
+    "name": "Jennifer",
+    "address": "u1u405zmdrwcpk63868ncms6pyl9s2xq45nmagp43ul3kz6lyxt8pfg9dakdqjefy5dy8c95rwqvcslgwz4fe7lkzv5vesarrycqalqz566q3k8w2v2fkgtrhsrcytxnrdv5fehyv8tj9vjw4pa3w2r03a68p4wfg6umluzuspq5mlqe5c",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-27 02:21:58.934442+00"
+  },
+  {
+    "x_handle": "symbols___",
+    "zcasher_id": 1146,
+    "display_name": null,
+    "name": "Symbol",
+    "address": "u1m0gdpapddaxm7kfrg2sy3rzmevxvqdvrejfxmensqaejnste3k6h2rszmd9k0lwa59afy3cnj9evn5jvgjxcwh3v8vhnudx9q8v77r4jd4dkr72vfqy6x3w64ymcr82g5f3cqln6sf6yhlvtx9rg3jvnv2etrdfamhuku3n2f5y0lv59",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "symbols___?t=l5curjs_asx6egv9iwloaa&s=09",
+    "zcasher_id": 1146,
+    "display_name": null,
+    "name": "Symbol",
+    "address": "u1m0gdpapddaxm7kfrg2sy3rzmevxvqdvrejfxmensqaejnste3k6h2rszmd9k0lwa59afy3cnj9evn5jvgjxcwh3v8vhnudx9q8v77r4jd4dkr72vfqy6x3w64ymcr82g5f3cqln6sf6yhlvtx9rg3jvnv2etrdfamhuku3n2f5y0lv59",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "t31tran",
+    "zcasher_id": 20,
+    "display_name": null,
+    "name": "Tei",
+    "address": "u1h6s8ydllnq5urdsnwfw54glrfqdn3ujuhl8l9q7r55sxjuvdxg2tkggw6ndvangftv0wrfrlzzt3lv80vu6gal9eteq47u5vjfrks5d444dazl5smvc3e7x997f42gaga9rgush620fjuyycvsk595gvjuwkv06zp6yplyeeayfh66ptu1xa42kek08lh0klap3v5kamunke0j8q8ggamuylmr5kln4kntsuhhashjzg73n4avf5rpfs8ms2964a0024evk577k4ljg8vprtz5v450m2eqeme6stdah32s39d2469cupy4lnqyzk5xrh0g9aud4a9yawrqqx5dxmml4v5ekscm7t4nu1xa42kek08lh0klap3v5kamunke0j8q8ggamuylmr5kln4kntsuhhashjzg73n4avf5rpfs8ms2964a0024evk577k4ljg8vprtz5v450m2eqeme6stdah32s39d2469cupy4lnqyzk5xrh0g9aud4a9yawrqqx5dxmml4v5ekscm7t4n",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "t3shadow",
+    "zcasher_id": 1966,
+    "display_name": "Melody",
+    "name": "T3shadow",
+    "address": "u1elgpwjmamtgyxsgvxkw9vsvygdaeln6xlekxpyz38dm9akarp6n4wlfrayv22kmcaedf8kuc025rt0mxr7jqx6kv94m64yhpqu3vnpw4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-28 16:41:06.820602+00"
+  },
+  {
+    "x_handle": "tangowafers",
+    "zcasher_id": 446,
+    "display_name": null,
+    "name": "surya",
+    "address": "u1ttyaplc230zfau02regecphjmqq4saxa7l05dy9aceg5yxegu9u0pa6dtmjz7y6wjv0s5w6drfrav52adfc8xn8gv00kyc9j4tew72gunl3le626f4z029z7wv3hate6z843y7lwfxsn65jay54f9mkwkefx84039y3ssg3pk5hy5gtq",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "taowsers",
+    "zcasher_id": 1335,
+    "display_name": null,
+    "name": "taowzer",
+    "address": "u140u5ds0y4g4395g5d7g690uwrpnzwt2lrya2dpqehzc8xnzs882lmuz9t49nc8adrf7g2qs60cverxhdy4exm6dd309h6zk8vg0pr6nsdr6hypqynmyjszrjc0w4zyq2k2ek4t6cq83f85k4zy0qpjvy7hlzxwlr0vlaq5skayms7mn3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-07 15:34:46.883535+00"
+  },
+  {
+    "x_handle": "tecnopapapi",
+    "zcasher_id": 1765,
+    "display_name": null,
+    "name": "Tecnopapapi",
+    "address": "u1sa0tnr9ac7ul8ad3ftdk4pgcxuq8j9vagjwz7apf8lylryhhklu4j68745trlga62a68qtfaqllmmdpv6zghw560qgzgughejre4ekmqvzf6agtu82a8qx2s3nj3gu50ye6r06rce595rvp0k4t28ecn5kzqu53q99guuzmrej94hr4u6l34rctvwsyzdhtq2ap070qrnvcwg4tgj66",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-06 09:00:51.611545+00"
+  },
+  {
+    "x_handle": "the_pathfinder1?s=21",
+    "zcasher_id": 599,
+    "display_name": null,
+    "name": "Eke",
+    "address": "u13898rqn0u876nrm8dwj8yrhyrqzhc0lew5nseqfk3nlumnez9evwvd5nmplgl4tkauu23p3l45uxlh7gutrhk7cezkhf2x9q9l76d598q5eq4gfmnnhrzluajhqneq4xf5m9dqfvw7zeudg4na660c55djzd30n0qgy6lzd98q2a95m9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "thebackupkid0",
+    "zcasher_id": 1965,
+    "display_name": "Floki",
+    "name": "thebackupkid",
+    "address": "u1xgxmzgzn69p03ymaejsr70c4ps2sxgz3fwturtx4p8p8mm08ph3wfhef90xcp7j85hguuz6mjt9pg68e7jjj4tp9s7x4me866q3dtwz4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-28 15:49:08.366523+00"
+  },
+  {
+    "x_handle": "thechels001",
+    "zcasher_id": 9,
+    "display_name": null,
+    "name": "Adajeeee",
+    "address": "u19yc2yr87fgsl44nqn7n2yn3as2skamkf4zw07qvuhue50ukaudv9xuqsthn4cksksyl28c0k6rtkykeht3g4ws82a6jye7khnwmsuwtg8vhuz846g792q6vxc5vukspdk8w89nryqqxg77zt6am2jwmffu3yq02n4jp37aqjavc4sret",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-11-28 07:17:46.974156+00"
+  },
+  {
+    "x_handle": "thecrypteacher",
+    "zcasher_id": 1161,
+    "display_name": null,
+    "name": "Crypteacher",
+    "address": "u1j3lrqxnr05wtnc4q9h9j5gh00mqdde7zwxh5eutxys5rc7e3cg3vs0yu0jelkklevzfd0ssxthw05lcfl3n69rdmh6e4v97anvct0vhy2nh22x9jxufkferfjdcamfmumedpjj65s4c8kt98k594ys5mje0cts4uaw5n4t549g2tarjz",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "thefrankbraun",
+    "zcasher_id": 445,
+    "display_name": null,
+    "name": "frankbraun",
+    "address": "u1vlmjxm26758le2u8ud0std3t0w44ce9dqtfsjcff7366dshqsyax0ps5y84fstd83s6mgrze0yjpxuw82z07nllp5yy6v2ufdztre8yjf5tkhueqcw3a0x8mhn3y2q920x88x9hecrsrsm439lv0zvx7mpscl4ehf37kvmcpy5wlk829",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "thegreyhandler",
+    "zcasher_id": 1817,
+    "display_name": null,
+    "name": "KatDaddy",
+    "address": "u1elgp6lc5ppxc36ny0vgzv3t4jsfg06j7u2fqmk7579wcez85axylmpnm7z7tczkx6xtd9c64m2c0vyde2d69g2zelh0kf9upy4hzx837y5900m2wd2ycrhaq024jkc4h3hka3gm06ec8fyzqx0wjxqphyluu2pr8eagnldl7jq0qctg6",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-29 13:02:49.150449+00"
+  },
+  {
+    "x_handle": "thekroyx",
+    "zcasher_id": 1313,
+    "display_name": null,
+    "name": "Kroy",
+    "address": "u17vzl88cu0ny5nwyfszne8ynqczfld9reygwsqa90n0wz4v72eg4fyzfwj3tdcrmn0vaduy6t6a5wvcasj27knk56f3e8mm85hhpcrc9te6m9ucrq2yvha5mhk4ne8ccker3jvtz332pftkem7z3ju9w8neudezwymkrng55deep932mc4tzhlldtjvhukx0yy7fhqv96tpt0gee7lnv",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "themaximus73",
+    "zcasher_id": 1725,
+    "display_name": null,
+    "name": "Maximus",
+    "address": "u1cele6jk2u45sxjzxvveml3dnq6avremyguacw4te0eprp2xszzvk987hq4emefrnkjrttg9ph3409dg9kztcusgr4972dpty74q9n6579asgywjtj84hxjpkekzpqava8xvkfvgpgjgh9ncqsxq8mqat2new49z478xsd5l62ct3aghz",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-02 00:00:00+00"
+  },
+  {
+    "x_handle": "thenateinhof",
+    "zcasher_id": 487,
+    "display_name": null,
+    "name": "Nate",
+    "address": "u1f47jz7dh9ry0cmqqs3jfcl6vuhjdt4vmxzqzek49wq85vdquwekjy50an3vyrxwrsxgy9a66mqdwf9s9q4r4fmv76xhpsfpacdhyx98c5t63aczca9r7cayhxfv59y600s5nppatequuvmvpfcaes7ut00d3svvn2psl32un7ydllstx",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "timothycmay",
+    "zcasher_id": 1801,
+    "display_name": null,
+    "name": "Timothy C May",
+    "address": "u1lff6xhc9p2c3aefrms5624aqd5mdlys87xcu0u0g3rynnjfs4g5nf0u5q8sczex3jctc2xesauktvdr9gd77zauaejje3zrdpj4uppssdmzzu33lfkzc9y0hlq7rt94kt4rqpq6d4h8a0px597htclme3pav3wft4k94u4pqqn3h4dmdp8wcvvumgqak5ynwy7qm6e797t356ud38we",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "tom_jerryy_",
+    "zcasher_id": 1241,
+    "display_name": null,
+    "name": "Arooji",
+    "address": "u1leuwdgcvrzk8y8wlzjyju6hf687j57rk4jfpdj53ykjtjpmshsd4exalfmwnynx4ducxzh42dqv2g6rl39zsvsm0sqxwd5gh8z3rg295jfm4ce4ldpds2kk7e83cyu09aa3u6r4rhy28fen0v93zh7z3wyk8fe5ep0zza4hzrql5fhnf",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "tomlefevre",
+    "zcasher_id": 120,
+    "display_name": null,
+    "name": "tbl",
+    "address": "u1h8e0lhhnvd3wxzyf9ue3hw4lt3n9cgrdfh7juluqx32ruml86c4v66zsu5gpdwhpvw6e23399f86udlg7j5m0l7wndewrt2vuztrr83t473mne4h93y6g73epz9kjfycfv24yk329v2zatyudl92797c0h34gzhd7mft0f8v0vtp7ee6",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "tomzarebczan",
+    "zcasher_id": 1531,
+    "display_name": null,
+    "name": "Tom Zarebczan",
+    "address": "u18mhr6qn6eese84wcqtf43aja9scyp26dsw89a7yd0ndt2kf9j6f82a6te6pgwetw967vpnuy57pdfars2rcddqtmefrg8lrd44agek654v484qleafjgx8snr998g33zas7dqq43ye26kj8zux64jmxmv9853lsrmx6tf8u3eurglcg8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-11-28 03:47:43.913113+00"
+  },
+  {
+    "x_handle": "tonymargarit",
+    "zcasher_id": 159,
+    "display_name": null,
+    "name": "Tony Margarit",
+    "address": "u1sjt7urqqekjnkrmy825zg8qnld92f3vfc8uj3rwfczlx467q7dcq66ru4cesgt2ywnvdkvghg7m6wsmyn9eafxat0rqhpehmd887kwqmavtxj8vjnjeusnwwqjp3tr3mzm88n4lhj5fgk35xn3epxzzuenyfd9deftzmlzqnlcnd658v",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "traderandino",
+    "zcasher_id": 240,
+    "display_name": null,
+    "name": "Svegliare",
+    "address": "u1mlcknj5yuuwnl042mde8x2s7uuwa94ffvc5nrmhqalu7xfjfa46d9p5d5ryhwd7mrhsaqfthwalg2s2u36ffnh2t5nlw2muvugj077lta24vhq64vlujdaw32y9t3xvs9420yh0uvlpqmjssc3gv3edtqpl72mpqh89ywlsegqk4xrce",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "tradingisbae.",
+    "zcasher_id": 563,
+    "display_name": null,
+    "name": "Tradingisbae",
+    "address": "u1gxa8em982x88r62fv6l83h40p2as7dd6uqvvqfcfgx0l650ahzp3ra0nad3fdph93xkyjkssal56kzds2e2nxn38r526487lknge5wg2gcyswrwk9a9el60va55ln087ps23yya8y7574udpuflgd633twy0n06h99a2c4l8mscps7zu",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "tycothedude",
+    "zcasher_id": 1007,
+    "display_name": null,
+    "name": "Tyco",
+    "address": "u15esan7yfy0ezdj6t2ny8egk22k9kgazqjkjgh2yc77dda24h937l0dj0wushy6shq4hj4svc9wwjx3s4aezvze4urx5644r238dktwnskn9m6qanfaur3ndjku8tefq9ztwd7hyy23qp8m6xxxwpwn5aq3zymwaffv2lcdql85qvt4cj",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-10 05:14:08.832195+00"
+  },
+  {
+    "x_handle": "tyneslol",
+    "zcasher_id": 1900,
+    "display_name": "tynes",
+    "name": "tynes",
+    "address": "u1ql3h8lxcjr9txfara0vxa6eurahhwyvfpw29qj4ya8ca9z0k4ldtwyu24z6a977dhrmv66ypykuzy0eh09d0h5euq5sqalt0jcdnrkjkarw69g4clyexscvlzxqq0sa9rfvttsccy4ycl9qqupny02rq4xdm472aactdj9a8zs24whd7",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-15 16:09:36.673753+00"
+  },
+  {
+    "x_handle": "ulatpadi",
+    "zcasher_id": 583,
+    "display_name": null,
+    "name": "UlatPadi",
+    "address": "u1u9tzjc6kktt7ky3qk82y6n3t7lnfws5n9d3yd9qvcyh7vjkrnqp0h2gl45rgu7aag3aj9kw4yxernljz3z9j29f6sealck9pyqhs84p2dfg55wh2l3hfq47mq8d22z6vl45agnetudgaw8sf6t5n64jf46m9hq4ge0zjzf86yg337mma",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "unredacted_org",
+    "zcasher_id": 396,
+    "display_name": null,
+    "name": "Unredacted",
+    "address": "u1vuw4ne6wx0jzawsakafww6ll85vxefe2zg30v89hvp62wucr5cc9xdxv59fjjj25uqyedvk8h0024sx7kktzwvxhulhl2v8tp0hwmvgmn93utagyv4zfq5wf9qjkdv0m8tequfhle866vmcm2tk0y3w90ct7a53rydtkqpapf5cw2y3m",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "vazmoth",
+    "zcasher_id": 730,
+    "display_name": null,
+    "name": "VAzmoth",
+    "address": "u19j9lgma97uuxzlqh9lmq0y4nqwrxyc0ermmdy3x02auskjrsz5zrqh8y4q78egd9rumglaqyee7hdc8a628kyq6l0luzrzvkl323hq5uedvm28gkhj4t5sgjnvsnk0p8cq6dmkwwy4d50spkgc32nrgu7vupqam0yzeewvknnsk2m950",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "viczsc",
+    "zcasher_id": 138,
+    "display_name": "Victor (@viczsc)",
+    "name": "victor",
+    "address": "u17shz2h3m624evhtll47tfvkr5dzn08w4t5f5v5u887gmwyl7q29ds5jaxlumxrn6whxjtsvhzxg2s0l09fyfpqy0gp7hz48t7vjxy88d",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "vivekdevops",
+    "zcasher_id": 349,
+    "display_name": null,
+    "name": "vivek",
+    "address": "u1cd9daslexhhg2arejwf28wcsp5tr02g02m32wdrslcrnh3yd7jwfus37k53tlh9su4zvs6f577l2qvl437mynfqfnws2juj2pnlr862r4qq6l6kyle3alv34j3rnvatfyyaa3y5ypsf85mfjejye3v2peq8sjqy96jc8vhgzlsnry2k4",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "westrnvigilance",
+    "zcasher_id": 1209,
+    "display_name": null,
+    "name": "Western Vigilance",
+    "address": "u17lapfz0gmk6ptdpgaxvymjnfqzwhxq3pwkp8u675pkyx0cf69kcgpz76wdxvfuv95ywg8t52kgn3p5jtug7pk37lc0z7sawejqrj4490fxtkdhr6m487qf27tpt8vqf9k7x2s87259prhu568lduqzjqt0mcaruh59p5z9n6eya93sxt",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "xmisterdoctor",
+    "zcasher_id": 353,
+    "display_name": null,
+    "name": "Mister Doctor",
+    "address": "u10y8tuu6hx8pmfh8032ke0xh5crkq4twg8zq6ltrqqtpmeuhvulj664zpxt5fa7r7lz846ewfqx2l6n6u66y8xunmg3qlakk8npf0xpuc0fd8aeh4mds9y5hedfse5vvly5rwsgxp5hy8s886ehp7e7yaxlz5lu8urul3ff0mgq4x9yqs",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "yoditarzk",
+    "zcasher_id": 1307,
+    "display_name": null,
+    "name": "Yoditar",
+    "address": "u19qukz8tyzwx8hzve87zgv7d7jz63ess6mwcpy9v5a7wkq65mzgg3e9ctyts0xs25c7r8vnnhe7q4hhqque2x7p5mhfc5fdwm9uxn9dnw",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-15 19:07:34.916549+00"
+  },
+  {
+    "x_handle": "yoshi_v1",
+    "zcasher_id": 62,
+    "display_name": null,
+    "name": "yoshi",
+    "address": "u1skw4xkth5hmf3rjackv2gw50nlz62rt89h5uejtls4mjyyz83qk50k9lyvgj838fqy8lyfrcknrr9muahuh746kfwsyfautdt4pchsmtnyrc4mavycl8nss7dy382cftfyg5nquqas9t8yavxfuvt2t3t8kmep04exhrgt7gy5vwy9m8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "youdoubro",
+    "zcasher_id": 26,
+    "display_name": null,
+    "name": "Joe",
+    "address": "u16t64rgqv5t09ypdtd562xhultct974uwlpta9c2unqedvz49dfmylt0xf9k3mm0zk6vjhhemcf3dmx7w0d7g0s59w7gh5wwjypycv6mlcvmqlk0ky4r4ly9qflaa7wgrfmx9x9h3dhgyk8lsvss6gzgdl22h6f2dewduf32ywvracw80",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "z2zcash",
+    "zcasher_id": 1113,
+    "display_name": null,
+    "name": "z2zcash",
+    "address": "u1xapw3gd6mvqdpvrjsq368sq9yr7p2s5f9x4h9kf2n6x4rq6j48g2gtte566wrljaxhr8xngg5uy0ccu5uxgzg5rxcnznp3aaz9d9k4pc2kgl46g4qaa3cfum2evhw4y076jpqlun7zn00h2k84cp7kax9zsgmgxt26z2a4xlvg5jg9jh",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zcash_daily?s=21",
+    "zcasher_id": 1119,
+    "display_name": null,
+    "name": "AcidBurn",
+    "address": "u1exdaq0twemc77rvrc0u6d09yhkjlywwwwedeas6z7xsxps48sfg4uuv0qj28jcmufzw2s7wqx7r9sm7qer8fj0sss8pxqhe32v8t427ts4tqzlv2z2n7qd0l4r77hc2xja7ffgxhyw8ar5z60dgrqxmm87503r0mdvqkh67luv87lgf5",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zcashmaximalist",
+    "zcasher_id": 1305,
+    "display_name": null,
+    "name": "Max",
+    "address": "u1jnk8pcd78d38t3xacqyhdjrf22wzqd7482wyrq37mxjdv9vmuaz9pyyzlxm4hzwqfcmyfjn7j0wm8jjq4kysvzxkp5rterf2zgwr68je",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zcashme",
+    "zcasher_id": 415,
+    "display_name": "Encrypted James",
+    "name": "zechariah",
+    "address": "u1tdkyje8l5grq8h9ucnpsnkj4m2etmmwzmkyswfe84p03j64k0nuxclygulsrfdxhjc6h4xsk9kmd9g6zzmv4yften2x8ju873jrmglelcsmev63l3vcph3aqrl323m5unuxqlvxmyfcuh3ptvzpgucdhhtvgs66jw0jrdllvm5xegn0e",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-03-01 20:36:52.345+00"
+  },
+  {
+    "x_handle": "zcashme",
+    "zcasher_id": 262,
+    "display_name": null,
+    "name": "zemeeLILLI",
+    "address": "u1aydr34wwhu309r2kqrh349jzq6uzja3jw805lefrerznxh3at22qespxrjxnh8kggqne28mlpgfqwzp84uvvl3uqpm3kvus92fz4hs2a0jsy04p3sjzsdsasfjrn4aqzm4xlr6cqsjvncnepp5p03r0ev9krqpdzsq7znygvc69lpewx8rc949tw3hw9z6xsrtmwwtdfufx564r4xnu",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zcashme",
+    "zcasher_id": 117,
+    "display_name": null,
+    "name": "tony",
+    "address": "u16pfcgu3lgadanx8hfhut8zadwuy4gxxk3ky2sszw0rzwh8093lggvhj3wj2sztcs668nysjhpamkrzcc7hye4lce2jv9eq0s3yalj6rfeum52y075t6dqjkkauk8ge75k2qq3gqx3zlhxxa76phanzg9fp9fn7dsz2ylcqmsg5l8s2xg",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zcashme",
+    "zcasher_id": 263,
+    "display_name": null,
+    "name": "Jackson",
+    "address": "u1mdkjn88e8cyz92whgxcvy4ktnssljyl9z569n8nwsetutfancln5rxqld2kndjh8lpt30nlmuwjuxuv0635hfqlp5e5fq0ukryud6w8zz3esj2kw4gddz2c4q0szxv9t3tsy0822xwyd7vmrka7nzxkgmrhnmrr2v7xz5p4qnsg9hmns",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zcashsa",
+    "zcasher_id": 1217,
+    "display_name": null,
+    "name": "Zcash South Africa",
+    "address": "u1ahvydyve5cdqxlcu9uq4vu4whsen5ek79l8jneuxxraf7gvfxgx477vqtdr50z9dryn0cvze9nc98cn58z8hyzp7wxnuccy8vghrzsz9ekvfdlsmeggc7alphx4zxp295dpfw2muukhcle9m6dtn8ag6zcp0ve7vua6wvsf6lcznnzg8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-11 17:35:36.248749+00"
+  },
+  {
+    "x_handle": "zcashwin1",
+    "zcasher_id": 1035,
+    "display_name": null,
+    "name": "Zcashwin",
+    "address": "u1ylcszt3t5mdn9240uyekymql200rvssmp3urf7cftyzq5w5mywwn9f0tdd38uxpx5a0v4gukeqquhnf3dntyxl3ukd057g9ctct4w5hax29sgnv5wtz82979gu33cdklz7j8lshustxt53zd98rfww78wdsv465c09x04t20vnvnuyxrq8uhuqv6p7qg6vq5yemmt7v6slt7xma9k4m",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zchat_app",
+    "zcasher_id": 2022,
+    "display_name": "ZCHAT",
+    "name": "zchat",
+    "address": "u13q08avm64cvdpmu5g780ynlpdptjqvg25lfathmn7w4rf34ekdrul8eyywllmc62rml4ljtre9sztwvhu6c730g8mf9x0c404rgkl86lyf4rsycqg4kkaazam3m2hnqcy7lajncs4j0hstykpu52c620h7stnd2s5nkahgs2hqk7es6y",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zealzcash",
+    "zcasher_id": 1601,
+    "display_name": null,
+    "name": "Zeal",
+    "address": "u1u98c23lwa6z74nx57d62hmwzpz26dasala3qd9jpjg4hw98sfmt2kpc9fjplp2uk7hneky2s7s78haj63aqfwe54z6s2e7f6z8j8z2xtjfq0t3x0aestu86sd9h5xe5kqk9wdtskg25pt7x44zzqtvjecedr6hm3w0tdfshhc5ca0uhg",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-12-13 18:36:32.396152+00"
+  },
+  {
+    "x_handle": "zec_fi",
+    "zcasher_id": 1911,
+    "display_name": "ZecFi Capital",
+    "name": "ZecFiCapital",
+    "address": "u1dsvhhylv2h0z6escv7d4glwuendtuaxsn487qv6y3j6y3ltxuch8s2fn0a5gap664f6hmprvxa6vw8t0zds8fxqxfgusunt059jhu2fsahavfa4d89wc0myhevtcyej0ltvk84lvtrxfwclp63y9qrdypnwzm782gvl0ypmxrvd04q6u",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-03-01 17:30:35.5+00"
+  },
+  {
+    "x_handle": "zecgoddess/",
+    "zcasher_id": 726,
+    "display_name": null,
+    "name": "ZECgoddess",
+    "address": "u1nz0qtengdawsk3wtmm9pkydykdttpxrslkeysxqg7ns0uksyverstg5j4vfgulalcrrt2pyzmry6amsupfh9y8u69afms064twzgytmv37my4dqf7zxa2whj5q9xqxa462zz7ezwkwncq49qnaq60zhvz0aajlgjghnfvjxluu2jrtk3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zectardio",
+    "zcasher_id": 299,
+    "display_name": null,
+    "name": "zectardio",
+    "address": "u1nj4lkj9sm9z7gxk0ql6vy73a3u22pncuy6z8c5fr87fe4lqh57svcns7q84khcxwqrsrakxgqkunaasuph2lppt4ulcgaqlsle8t5kg9fv6q20nyahdmk8r47zwnhzlkd7c4nmwa94zh7wzsg6urlm7r39ntvv4ltpngqp34mv4f3yg5",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zer0guard",
+    "zcasher_id": 548,
+    "display_name": null,
+    "name": "ZeroGuard",
+    "address": "u1lczfqfxk4dnytrmxtgw4r8ls90uk9hp3ntypk6c6m22deg92ky6ywzz0ey79p7aa9396ps72pzqefhxz3p0wzfvqdhl8gfqzaraf0raejp8ddzdj9pa2zd0rx8jqhlrsu43894j0tem9cznz6cfvncfwg373f65v62lyzy74kv599nu9",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zerosp3c",
+    "zcasher_id": 109,
+    "display_name": null,
+    "name": "zeroo",
+    "address": "u16t7zdcqvqxgac4vl524r6k02q3vfgqs44l4pxh49m3ccm3n3urp9w3gkajz769l0tzfqdhur3jfzfzp08r6q7nxvxk2zm6t99g6t5yz90jhfhdpfns3whhhx98jdkgtwakvu37n23vxg5zp3yuugfvxf8ulyhdw7g7gnskce7cu9qmtl",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zjaffh",
+    "zcasher_id": 183,
+    "display_name": null,
+    "name": "jaff",
+    "address": "u1l4urwxs0chfrgse6c73huj7m3yj9zafr44yu5hqemuc4znhg7sxs7nx87r0n0y86hx7gxfr59l56393a9qg45u9gl20vfpyru4zlmckzeej8us05jp7t0a70t9qdf64wlstz0hclpeg5l6stuqgek5cu9z3pwfqd638jfea8fvags924",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zjess0",
+    "zcasher_id": 964,
+    "display_name": null,
+    "name": "zjess0",
+    "address": "u1v497fdg63fvj7jcvxqy4992z5ptzz4up3g6h35jqhap03r4qcl7p46m8chp627vhlh23au3z5rll3tj2e9dxrwp49wxczejlfx4mlw3zesxpaxxk45ejx477yu6k64eztmp9z632sp769mr34zyj8nh2f867um6g7cptdfjz4crg0sxd",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": null
+  },
+  {
+    "x_handle": "zksquirrel/",
+    "zcasher_id": 5,
+    "display_name": null,
+    "name": "squirrel",
+    "address": "u1z2tsxyd3f8zf738e579xxrq3hag06kha36en7d506ufshf0e9c6rukzce3wlh7hycpyue234hhpm5l7uzqlnx2eprz9rqe9a4q4pne27",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zodl2zillions",
+    "zcasher_id": 902,
+    "display_name": null,
+    "name": "ZODL",
+    "address": "u1ve9gc5fs7aamllv9c6slgcnq3ccu8wvyrlyysk0j3d05m32ldwqfn5yqqydzfa7dckf20hnwz496372fjthman76zjnj52gu804336qwdzgdmuc6a6qdzw6t6jkjdjn7nvueyhrcap8jm93wc0m94num5p2da9had826457vmvrskys3",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zolanamaxi",
+    "zcasher_id": 212,
+    "display_name": null,
+    "name": "Zolana",
+    "address": "u1ac3txp7gk93mprxr8rty7y0xh8snj69jtgj4fxyjwtn2ywka9atrs8evfkfthk5t9vv0uf62ecyrtplyz55fgu9l9kjmg9s6szr5z9fc72xtpq5vflpj26638k4s50edynhuk0pryzk5f5ssf0j088evhefn4evmazj977kvru5l4ah6",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zynpt\r\n",
+    "zcasher_id": 1080,
+    "display_name": null,
+    "name": "zYNpt",
+    "address": "u15yqnj9lnse56g2v6y4u68vm7z6prsd7akvzag3kngj86t864d8fjg47xh3x30p063rr8lglj9a5x73t744uevrv2ytm4j6prurak8wx2jfqauvlx9qcuft64lnztyt2sgmv0p8qyjnu69lr9nm54cv3dznd37s34y4lr38vnz56r9sx8",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2025-10-23 10:58:54.721199+00"
+  },
+  {
+    "x_handle": "zypherscan",
+    "zcasher_id": 1908,
+    "display_name": "Zypherscan",
+    "name": "zypherscan",
+    "address": "u1htqcdyp8lp9l3t0z4929zgc4fk7xnrk96s4rg6fwnev6l99zuy7nh6e73s67s24cvz7ra8897wu074tegslrq6e5f3nd7tz0sr4w8hz7rhafezu53p9dt9jfrj04ydjf8akadhjr08ztcznjynq2nqkuwv78a8cfsckfp8eps4309h9sjvx3rvauw8v50ef6up6alhllawf65ny69yk",
+    "address_verified": true,
+    "status_computed": "unclaimed",
+    "last_verified_at": "2026-01-20 08:47:30.706116+00"
+  }
+]

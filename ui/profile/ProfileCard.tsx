@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/common/buttons/CopyButton";
@@ -19,10 +20,13 @@ import { upsertVerifiedLink } from "@/ui/links/verifyLink";
 import { detectProviderFromUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import { enrichLink } from "@/lib/profile/profileLinks";
+import { resolveProfileCardColors, resolveProfilePageBackgroundColor } from "@/lib/profile/profileCardTheme";
+import { useEditsStore } from "@/ui/profile/store";
 import ProfileCardListView from "./ProfileCardListView";
 import ProfileCardActions from "./ProfileCardActions";
 import ProfileCardWarning from "./ProfileCardWarning";
 import ProfileLinkRow from "./ProfileLinkRow";
+import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
 import { AnimatePresence, motion } from "framer-motion";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
@@ -40,17 +44,40 @@ const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTI
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
+type RankPeriod = (typeof RANK_PERIODS)[number];
+type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
+type WindowWithSkipFeedback = Window & { skipZcashFeedbackScroll?: boolean };
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
   row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
   left: "flex items-center gap-2 shrink-0",
-  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] transition-colors",
+  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
   right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1",
   icon: "w-4 h-4 rounded-xs opacity-80",
   label: "font-medium text-gray-800 whitespace-nowrap",
   domain: "flex-1 min-w-0 truncate text-right",
   copyWrapper: "shrink-0",
 };
+
+const DARK_LINK_ROW_CLASSES: LinkRowClasses = {
+  row: "flex items-center gap-3 py-1 border-b border-white/20 last:border-0 min-w-0",
+  left: "flex items-center gap-2 shrink-0",
+  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
+  right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-white/80 justify-end flex-1",
+  icon: "w-4 h-4 rounded-xs opacity-90",
+  label: "font-medium text-white whitespace-nowrap",
+  domain: "flex-1 min-w-0 truncate text-right text-white/80",
+  copyWrapper: "shrink-0",
+};
+
+function isTruthyLikeAddressVerified(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
 
 export default function ProfileCard({
   profile,
@@ -59,6 +86,7 @@ export default function ProfileCard({
   onShowQR,
   onEditorModeChange,
   onGenerateVerificationQr,
+  onDesignPanelBackgroundChange,
   cardWidthPx,
 }: ProfileCardProps) {
   const router = useRouter();
@@ -66,19 +94,43 @@ export default function ProfileCard({
   const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
+  const [showDesignBack, setShowDesignBack] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
+  const { form } = useEditsStore();
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? linksArray.length;
-  const warningConfig = getWarningConfig({ profile, warning: true, verifiedAddress, verifiedLinks, totalLinks, hasDuplicateNames: duplicateNameCount > 1 });
+  const warningConfig = getWarningConfig({
+    profile,
+    warning: true,
+    verifiedAddress,
+    verifiedLinks,
+    totalLinks,
+    hasDuplicateNames: duplicateNameCount > 1,
+  });
   const hasAwards = RANK_PERIODS.some((p) => {
     const rank = profile[`rank_${p}`] ?? 0;
     return rank > 0 && rank <= 10;
   });
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
+  const hasDesignAccess = isMaxi;
+
+  const { theme: activeCardTheme, background: activeCardBackground, text: activeCardText } =
+    resolveProfileCardColors(profile.profile_card_theme);
+  const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
+  const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
+  const cardSurfaceColor = activeCardBackground;
+  const cardSurfaceBorderColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.26)" : "rgba(17, 24, 39, 0.16)";
+  const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
+  const designSideBackground = resolveProfilePageBackgroundColor(
+    showBack ? form.profile_page_bkgd : profile.profile_page_bkgd
+  ).background;
+  const linkRowClasses = activeCardTheme?.isDark ? DARK_LINK_ROW_CLASSES : LINK_ROW_CLASSES;
+
   const resolvedCardWidth = Number.isFinite(cardWidthPx)
     ? Math.min(760, Math.max(320, Math.round(cardWidthPx ?? 0)))
     : null;
@@ -105,7 +157,7 @@ export default function ProfileCard({
     } catch {
       setShowRedirect(false);
     }
-  }, [profile.id]);
+  }, [profile.address_verified, profile.id]);
 
   const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; avatarUrl?: string | null; accessToken: string }) => {
     setShowRedirect(false);
@@ -131,6 +183,17 @@ export default function ProfileCard({
   });
 
   useEffect(() => { onEditorModeChange?.(showBack); }, [showBack, onEditorModeChange]);
+  useEffect(() => {
+    if (!showBack) setShowDesignBack(false);
+  }, [showBack]);
+  useEffect(() => {
+    onDesignPanelBackgroundChange?.(showDesignBack ? designSideBackground : null);
+  }, [showDesignBack, designSideBackground, onDesignPanelBackgroundChange]);
+  useEffect(() => {
+    return () => {
+      onDesignPanelBackgroundChange?.(null);
+    };
+  }, [onDesignPanelBackgroundChange]);
 
   if (!fullView) return <ProfileCardListView profile={profile} />;
 
@@ -140,31 +203,43 @@ export default function ProfileCard({
         <VerifiedCardWrapper
           verifiedCount={(profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)}
           featured={!!profile.featured}
+          unstyled={showDesignBack}
           className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center w-full"
           style={{
             width: resolvedCardWidth ? `${resolvedCardWidth}px` : undefined,
             maxWidth: "100%",
+            backgroundColor: showDesignBack ? designSideBackground : activeCardBackground,
+            color: activeCardText,
           }}
           data-active-profile
           data-address={profile.address}
         >
-          {/* Hide top border segment behind overlapping transparent avatars */}
-          <div
-            className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full bg-[var(--color-background)]"
-            style={{ width: `${AVATAR_BORDER_MASK_WIDTH}px` }}
-            aria-hidden
-          />
+          {!showDesignBack && (
+            <div
+              className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full"
+              style={{
+                width: `${AVATAR_BORDER_MASK_WIDTH}px`,
+                backgroundColor: activeCardBackground,
+              }}
+              aria-hidden
+            />
+          )}
 
-          {/* Flip container */}
           <div
             className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""}`}
             style={{ transformOrigin: "top center", willChange: "transform" }}
           >
-            {/* FRONT */}
             <div
-              className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
+              className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full rounded-2xl`}
+              style={
+                {
+                  backgroundColor: activeCardBackground,
+                  color: activeCardText,
+                  "--profile-hover-color": activeCardText,
+                  "--profile-hover-bg": profileHoverBackgroundColor,
+                } as CSSProperties
+              }
             >
-              {/* Actions row */}
               <div
                 className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
                 style={{
@@ -184,7 +259,6 @@ export default function ProfileCard({
                 />
               </div>
 
-              {/* Avatar */}
               <div
                 className={`absolute left-1/2 top-0 z-20 transition-all duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
                 style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))` }}
@@ -194,7 +268,6 @@ export default function ProfileCard({
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
 
-              {/* Awards */}
               <AnimatePresence>
                 {showStats && (
                   <motion.div
@@ -208,89 +281,120 @@ export default function ProfileCard({
                     {RANK_PERIODS.map((period) => {
                       const rank = profile[`rank_${period}`];
                       if (!rank || rank <= 0) return null;
-                      return <ReferRankBadgeMulti key={period} rank={rank} period={period === "alltime" ? "all" : period as any} alwaysOpen />;
+                      const badgePeriod: RankBadgePeriod = period === "alltime" ? "all" : period;
+                      return <ReferRankBadgeMulti key={period} rank={rank} period={badgePeriod} alwaysOpen />;
                     })}
                   </motion.div>
                 )}
               </AnimatePresence>
 
-              {/* Identity */}
               <div className="mt-3 flex flex-col items-center">
-                <h2 className="text-3xl font-black text-gray-900 leading-tight flex items-center justify-center gap-2">
+                <h2
+                  className="text-3xl font-black leading-tight flex items-center justify-center gap-2"
+                  style={{ color: activeCardText }}
+                >
                   {displayName}
                   {isVerified && <VerifiedBadge verified />}
                 </h2>
-                <div className="text-base font-medium text-gray-500 mt-1">/{formatUsername(profile)}</div>
+                <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
+                  /{formatUsername(profile)}
+                </div>
               </div>
 
-              {/* Bio */}
               {profile.bio?.trim() && (
-                <p className="mt-1 text-sm text-gray-700 text-center max-w-[90%] mx-auto whitespace-pre-line break-words">{profile.bio}</p>
+                <p
+                  className="mt-1 text-sm text-center max-w-[90%] mx-auto whitespace-pre-line break-words"
+                  style={{ color: cardSecondaryTextColor }}
+                >
+                  {profile.bio}
+                </p>
               )}
 
-              {/* Dates */}
-              <p className="mt-3 text-xs text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5">
+              <p
+                className="mt-3 text-xs flex flex-wrap justify-center gap-x-1 gap-y-0.5"
+                style={{ color: cardSubtleTextColor }}
+              >
                 {profile.nearest_city_name && (
-                  <><span className="whitespace-nowrap">Near {profile.nearest_city_name}</span><span className="opacity-70" aria-hidden>•</span></>
+                  <>
+                    <span className="whitespace-nowrap">Near {profile.nearest_city_name}</span>
+                    <span className="opacity-70" aria-hidden>{"\u2022"}</span>
+                  </>
                 )}
                 <span className="whitespace-nowrap">
                   Joined {new Date(profile.joined_at || profile.created_at || profile.since || new Date().toISOString()).toLocaleString("default", { month: "short", year: "numeric" })}
                 </span>
                 {profile.address_verified === true && (
                   <>
-                    <span className="opacity-70" aria-hidden>•</span>
+                    <span className="opacity-70" aria-hidden>{"\u2022"}</span>
                     <span className="whitespace-nowrap">Active {getLastVerifiedLabel(profile.last_verified_at || profile.last_verified)}</span>
                   </>
                 )}
               </p>
 
-              {/* Address */}
               {profile.address ? (
                 <div className="mt-2 flex items-center justify-center">
-                  <div className="relative overflow-hidden flex items-center gap-2 border text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%] border-gray-300 bg-white/80">
+                  <div
+                    className="relative overflow-hidden flex items-center gap-2 border font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
+                    style={{
+                      color: cardSecondaryTextColor,
+                      borderColor: cardSurfaceBorderColor,
+                      backgroundColor: cardSurfaceColor,
+                    }}
+                  >
                     <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
                     <span className="select-all" title={profile.address}>
                       {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
                     </span>
                     <div className="flex items-center gap-1 whitespace-nowrap">
-                      <button onClick={onShowQR} className="group flex items-center justify-center text-gray-500 hover:text-[var(--color-brand-blue)] transition-all px-1 overflow-hidden" title="Show QR">
-                        ▣<span className="inline-block max-w-0 group-hover:max-w-[60px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out text-xs ml-1">QR</span>
+                      <button
+                        onClick={() => onShowQR?.()}
+                        className="group flex items-center justify-center hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-all px-1 overflow-hidden"
+                        style={{ color: cardSubtleTextColor }}
+                        title="Show QR"
+                      >
+                        QR
                       </button>
                       <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="mt-2 text-sm text-gray-500 italic">—</p>
+                <p className="mt-2 text-sm italic" style={{ color: cardSubtleTextColor }}>-</p>
               )}
 
-              {/* Links */}
               <div
-                className="relative flex flex-col items-center w-full mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
+                className="relative flex flex-col items-center w-full mx-auto transition-all overflow-hidden mt-5 pb-0"
                 style={{ maxWidth: `${linkTrayMaxWidthPx}px` }}
               >
-                <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
-                  <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
+                <div className="w-full text-sm transition-all duration-300 overflow-hidden" style={{ color: cardSecondaryTextColor }}>
+                  <div className="px-4 pt-2 pb-3 bg-transparent flex flex-col gap-2">
                     {linksArray.length > 0
-                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={LINK_ROW_CLASSES} onVerifyClick={profile.address_verified ? handleVerifyClick : undefined} />)
-                      : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
+                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={linkRowClasses} onVerifyClick={profile.address_verified ? handleVerifyClick : undefined} />)
+                      : <p className="italic text-center" style={{ color: cardSubtleTextColor }}>No contributed links yet.</p>}
                   </div>
                 </div>
               </div>
 
-              {/* Warning */}
               {warningConfig && <ProfileCardWarning config={warningConfig} />}
             </div>
 
-            {/* BACK */}
             <div
-              className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""} bg-white rounded-2xl border border-gray-300 shadow-inner p-5 flex flex-col items-center justify-start overflow-visible`}
-              style={{ pointerEvents: showBack ? "auto" : "none" }}
+              className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""} ${
+                showDesignBack
+                  ? "rounded-2xl border-0 bg-transparent shadow-none p-0"
+                  : "bg-white rounded-2xl border border-gray-300 shadow-inner p-5"
+              } flex flex-col items-center justify-start overflow-visible`}
+              style={{
+                pointerEvents: showBack ? "auto" : "none",
+                backgroundColor: showDesignBack ? designSideBackground : undefined,
+              }}
             >
               <div
-                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 ${showBack ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 ${
+                  showBack && !showDesignBack ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
                 style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px)) scaleX(-1)` }}
-                aria-hidden={!showBack}
+                aria-hidden={!showBack || showDesignBack}
               >
                 <ProfileAvatar
                   profile={profile}
@@ -300,20 +404,66 @@ export default function ProfileCard({
                 />
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
-              <div className="absolute top-4 left-4 z-10">
+
+              <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between gap-2">
                 <button
-                  onClick={() => { (window as any).skipZcashFeedbackScroll = true; setShowBack(false); }}
-                  title="Return to front"
-                  aria-label="Return to front"
+                  onClick={() => {
+                    if (showDesignBack) {
+                      setShowDesignBack(false);
+                      return;
+                    }
+                    (window as WindowWithSkipFeedback).skipZcashFeedbackScroll = true;
+                    setShowBack(false);
+                  }}
+                  title={showDesignBack ? "Return to editor" : "Return to front"}
+                  aria-label={showDesignBack ? "Return to editor" : "Return to front"}
                   className="flex items-center justify-center w-9 h-9 rounded-full bg-[var(--color-brand-blue)] text-white text-sm hover:bg-[var(--color-brand-blue)]/90 transition-all shadow-md"
-                >↺</button>
+                >
+                  {"\u21BA"}
+                </button>
+                {!showDesignBack && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!hasDesignAccess) return;
+                      setShowDesignBack(true);
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-full border px-3 h-9 text-sm font-semibold whitespace-nowrap transition-all ${
+                      hasDesignAccess
+                        ? "border-gray-300 bg-white/90 text-gray-700 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                        : "border-gray-300 bg-white/90 text-gray-500 cursor-default"
+                    }`}
+                    aria-label="Design Card"
+                    title={hasDesignAccess ? "Design Card" : "Design Card (Maxi required)"}
+                  >
+                    {!hasDesignAccess && <span aria-hidden>{"\uD83D\uDD12"}</span>}
+                    <span>Design Card</span>
+                  </button>
+                )}
               </div>
-              <ProfileEditor
-                profile={profile}
-                links={linksArray}
-                onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
-                onGenerateQr={onGenerateVerificationQr}
-              />
+
+              <div
+                className={`relative w-full transition-transform duration-300 transform-style-preserve-3d ${showDesignBack ? "rotate-y-neg-180" : "rotate-y-0"}`}
+                style={{ transformOrigin: "center center", willChange: "transform" }}
+              >
+                <div
+                  className={`${showDesignBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full`}
+                >
+                  <ProfileEditor
+                    profile={profile}
+                    links={linksArray}
+                    onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
+                    onGenerateQr={onGenerateVerificationQr}
+                  />
+                </div>
+
+                <div
+                  className={`absolute inset-0 rotate-y-neg-180 backface-hidden top-0 left-0 w-full ${showDesignBack ? "relative h-auto" : ""}`}
+                  style={{ pointerEvents: showDesignBack ? "auto" : "none" }}
+                >
+                  <ProfileCardDesignPanel profile={profile} onGenerateQr={onGenerateVerificationQr} />
+                </div>
+              </div>
             </div>
           </div>
 

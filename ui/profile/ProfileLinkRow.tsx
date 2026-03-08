@@ -84,7 +84,7 @@ export default function ProfileLinkRow({
               target="_blank"
               rel="noopener noreferrer"
               onClick={handleLinkClick}
-              className={`${classes.domain} hover:text-[var(--color-brand-blue)] transition-colors`}
+              className={`${classes.domain} hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors`}
               style={classes.domainStyle}
             >
               {extractDomain(link.url || "")}

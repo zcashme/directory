@@ -105,6 +105,8 @@ export interface ProfileEditsPayload {
   profile_image_url?: string;
   remove_profile_image?: boolean;
   nearest_city_name?: string;
+  profile_card_theme?: string;
+  profile_page_bkgd?: string;
   avatar_upload?: AvatarUploadPayload;
   links?: ProfileLinkEdit[];
 }

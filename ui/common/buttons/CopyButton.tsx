@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { MouseEvent } from "react";
+import type { CSSProperties } from "react";
 
 /**
  * Button that copies text to clipboard with visual feedback.
@@ -25,6 +26,8 @@ interface CopyButtonProps {
   expanded?: boolean;
   /** Base color for uncopied state */
   defaultColorClass?: string;
+  /** Hover color override (defaults to profile hover color or brand blue) */
+  hoverColor?: string;
 }
 
 /**
@@ -41,6 +44,7 @@ export default function CopyButton({
   size = "sm",
   expanded = false,
   defaultColorClass = "text-gray-500",
+  hoverColor,
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -65,9 +69,12 @@ export default function CopyButton({
     <button
       onClick={handleCopy}
       title={copied ? copiedLabel : label}
+      style={{
+        "--copy-hover-color": hoverColor ?? "var(--profile-hover-color, var(--color-brand-blue))",
+      } as CSSProperties}
       className={
         `group flex items-center justify-center transition-all px-1 ` +
-        (copied ? "text-green-600 hover:text-green-600" : `${defaultColorClass} hover:text-[var(--color-brand-blue)]`) +
+        (copied ? "text-green-600 hover:text-green-600" : `${defaultColorClass} hover:text-[var(--copy-hover-color)]`) +
         " " +
         sizeClasses[size] +
         " " +

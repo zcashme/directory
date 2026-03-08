@@ -16,6 +16,7 @@ import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 import SwapComposer from "@/ui/swap/SwapComposer";
+import { resolveProfilePageBackgroundColor } from "@/lib/profile/profileCardTheme";
 
 interface ProfilePageProps {
   initialProfile: Profile;
@@ -118,6 +119,10 @@ export default function ProfilePage({
   duplicateNameCount,
   initialPrefill,
 }: ProfilePageProps) {
+  const pageBackground = useMemo(
+    () => resolveProfilePageBackgroundColor(initialProfile.profile_page_bkgd).background,
+    [initialProfile.profile_page_bkgd]
+  );
   const hasAutoScrolledPrefillRef = useRef(false);
   const pageBottomSentinelRef = useRef<HTMLDivElement | null>(null);
   const prefilledOriginTokenId = resolvePrefillOriginTokenId(
@@ -176,6 +181,7 @@ export default function ProfilePage({
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
+  const [designPanelBackgroundPreview, setDesignPanelBackgroundPreview] = useState<string | null>(null);
   const [verificationGenerateQrTrigger, setVerificationGenerateQrTrigger] = useState(0);
 
   const [originTokenId, setOriginTokenId] = useState<string | null>(prefilledOriginTokenId);
@@ -185,6 +191,7 @@ export default function ProfilePage({
   const refundAddress = swapForm.refundAddress;
   const slippageTolerance = swapForm.slippageTolerance;
   const { quoteData, quotePreview, depositUri, statusKey, quoteStatus, swapError } = quoteState;
+  const effectivePageBackground = designPanelBackgroundPreview ?? pageBackground;
 
   // Token selection
   const zecToken = tokens.find((t) =>
@@ -426,10 +433,25 @@ export default function ProfilePage({
     });
   }, [hasInitialPrefill, runMultiPassScroll]);
 
+  useEffect(() => {
+    if (designPanelBackgroundPreview === null) return;
+
+    const previousBodyBackground = document.body.style.backgroundColor;
+    const previousHtmlBackground = document.documentElement.style.backgroundColor;
+
+    document.body.style.backgroundColor = designPanelBackgroundPreview;
+    document.documentElement.style.backgroundColor = designPanelBackgroundPreview;
+
+    return () => {
+      document.body.style.backgroundColor = previousBodyBackground;
+      document.documentElement.style.backgroundColor = previousHtmlBackground;
+    };
+  }, [designPanelBackgroundPreview]);
+
   return (
     <div
       className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen overflow-x-hidden"
-      style={{ backgroundColor: 'var(--color-background)' }}
+      style={{ backgroundColor: effectivePageBackground }}
     >
         <ProfileCard
           profile={initialProfile}
@@ -437,6 +459,7 @@ export default function ProfilePage({
           duplicateNameCount={duplicateNameCount}
           onShowQR={handleShowQR}
           onEditorModeChange={setIsProfileEditing}
+          onDesignPanelBackgroundChange={setDesignPanelBackgroundPreview}
           onGenerateVerificationQr={handleGenerateVerificationQr}
           cardWidthPx={PROFILE_CARD_DESKTOP_WIDTH_PX}
         />

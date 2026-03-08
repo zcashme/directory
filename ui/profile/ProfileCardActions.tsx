@@ -61,7 +61,7 @@ export default function ProfileCardActions({
           onClick={(e) => { e.stopPropagation(); setMenuOpen((p) => !p); }}
           aria-expanded={menuOpen}
           {...tapProps}
-          className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10 transition-all"
+          className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] hover:border-[var(--color-brand-blue)] hover:border-[var(--profile-hover-color)] hover:bg-[var(--color-brand-blue)]/10 hover:bg-[var(--profile-hover-bg)] transition-all"
           title="More options"
         >
           <span aria-hidden className={`inline-block transition-transform ${dur} ${menuOpen ? "rotate-90" : "rotate-0"}`}>{"\u2630"}</span>
@@ -94,7 +94,7 @@ export default function ProfileCardActions({
           alert("Profile link copied to clipboard!");
         }}
         {...tapProps}
-        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10 transition-all"
+        className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] hover:border-[var(--color-brand-blue)] hover:border-[var(--profile-hover-color)] hover:bg-[var(--color-brand-blue)]/10 hover:bg-[var(--profile-hover-bg)] transition-all"
         title={`Share ${displayName}`}
       >
         <img src="/assets/icons/share.svg" alt="Share" className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity" aria-hidden />

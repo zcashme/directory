@@ -4,6 +4,7 @@ interface VerifiedCardWrapperProps {
   verifiedCount?: number;
   featured?: boolean;
   onClick?: () => void;
+  unstyled?: boolean;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
@@ -13,16 +14,19 @@ export default function VerifiedCardWrapper({
   verifiedCount = 0,
   featured = false,
   onClick,
+  unstyled = false,
   className = "",
   style,
   children,
 }: VerifiedCardWrapperProps) {
-  const baseStyle =
-    "rounded-2xl p-3 border transition-all cursor-pointer shadow-xs";
+  const baseStyle = unstyled ? "" : "rounded-2xl p-3 border transition-all shadow-xs";
+  const clickStyle = onClick && !unstyled ? "cursor-pointer" : "";
 
   let tierStyle;
 
-  if (featured) {
+  if (unstyled) {
+    tierStyle = "";
+  } else if (featured) {
     // Featured glow takes priority
     tierStyle =
       "border-yellow-400 bg-yellow-50/40 hover:bg-yellow-50/60 hover:shadow-[0_0_10px_rgba(250,204,21,0.4)]";
@@ -43,11 +47,11 @@ export default function VerifiedCardWrapper({
   return (
     <div
       onClick={onClick}
-      className={`${baseStyle} ${tierStyle} verified-card-hover ${className}`}
+      className={`${baseStyle} ${clickStyle} ${unstyled ? "" : "verified-card-hover"} ${tierStyle} ${className}`}
       style={style}
     >
       {/* Animated gradient shimmer for top-tier verified */}
-      {verifiedCount >= 3 && !featured && (
+      {verifiedCount >= 3 && !featured && !unstyled && (
         <div
           className="absolute inset-0 rounded-2xl bg-linear-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md verified-card-shimmer"
           style={{

@@ -36,7 +36,12 @@ const reservedRoots = new Set([
 ]);
 
 export function proxy(request: NextRequest) {
-  const hostname = (request.headers.get('host') ?? '').toLowerCase();
+  const forwardedHost = request.headers.get('x-forwarded-host');
+  const directHost = request.headers.get('host');
+  const hostname = (forwardedHost ?? directHost ?? '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
   const url = request.nextUrl.clone();
   const pathname = url.pathname;
 

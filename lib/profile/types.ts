@@ -31,6 +31,9 @@ export interface Profile {
   is_ns?: boolean | string | number;
   is_ns_core?: boolean | string | number;
   is_ns_longterm?: boolean | string | number;
+  is_maxi?: boolean | string | number;
+  profile_card_theme?: string | null;
+  profile_page_bkgd?: string | null;
   country?: string;
   iso2?: string;
   link_search_text?: string;

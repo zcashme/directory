@@ -53,6 +53,14 @@ export default function ProfileVerification({
       edits.nearest_city_name = form.nearest_city_name;
       hasChanges = true;
     }
+    if (form.profile_card_theme !== original.profile_card_theme) {
+      edits.profile_card_theme = form.profile_card_theme;
+      hasChanges = true;
+    }
+    if (form.profile_page_bkgd !== original.profile_page_bkgd) {
+      edits.profile_page_bkgd = form.profile_page_bkgd;
+      hasChanges = true;
+    }
     if (pendingAvatarUpload) {
       edits.avatar_upload = pendingAvatarUpload;
       hasChanges = true;
@@ -182,6 +190,19 @@ export default function ProfileVerification({
           window.location.reload();
         }, 1000);
       } else {
+        const status =
+          response.data && typeof response.data === "object" && "status" in response.data
+            ? String((response.data as Record<string, unknown>).status ?? "")
+            : "";
+
+        if (status !== "invalid") {
+          setOtpResult({
+            ok: false,
+            message: response.error || "Verification failed. Please try again.",
+          });
+          return;
+        }
+
         const remaining = otpAttemptsLeft - 1;
         setOtpAttemptsLeft(remaining);
         setOtp("");

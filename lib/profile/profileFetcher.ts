@@ -136,5 +136,40 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
   // Attach links to profile
   profile.links = links?.data ?? [];
 
+  // Pull design/entitlement flags directly from base table so feature
+  // works even if zcasher_searchable view has not been updated yet.
+  const { data: profileMaxiData } = await supabase
+    .from("zcasher")
+    .select("is_maxi")
+    .eq("id", profile.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (profileMaxiData) {
+    profile.is_maxi = profileMaxiData.is_maxi as Profile["is_maxi"];
+  }
+
+  const { data: profileThemeData } = await supabase
+    .from("zcasher")
+    .select("profile_card_theme")
+    .eq("id", profile.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (profileThemeData) {
+    profile.profile_card_theme = profileThemeData.profile_card_theme as Profile["profile_card_theme"];
+  }
+
+  const { data: profilePageBackgroundData } = await supabase
+    .from("zcasher")
+    .select("profile_page_bkgd")
+    .eq("id", profile.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (profilePageBackgroundData) {
+    profile.profile_page_bkgd = profilePageBackgroundData.profile_page_bkgd as Profile["profile_page_bkgd"];
+  }
+
   return mergeRanks(profile, ranks);
 });
