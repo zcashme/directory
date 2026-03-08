@@ -9,6 +9,7 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileCardContent from "@/ui/profile/ProfileCardContent";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
+import { resolveProfileCardColors, getProfileCardBorder } from "@/lib/profile/profileCardTheme";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
 
 const SHOW_TEMP_CARD_TUNER = false;
@@ -77,6 +78,11 @@ function FannedCard({
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const { linksArray } = parseProfileLinks(profile);
+  const isMaxi = profile.is_maxi === true || profile.is_maxi === 1 || String(profile.is_maxi ?? "").toLowerCase() === "true";
+  const effectiveCardTheme = isMaxi ? profile.profile_card_theme : "none";
+  const effectiveBorderTheme = isMaxi ? profile.profile_card_border : null;
+  const { background: activeCardBackground } = resolveProfileCardColors(effectiveCardTheme);
+  const activeBorderColor = getProfileCardBorder(effectiveBorderTheme)?.color ?? "#111827";
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
     if (!cardRef.current || isMobile) return;
@@ -131,7 +137,8 @@ function FannedCard({
         <div
           className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative overflow-hidden ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
-            backgroundColor: 'var(--color-background)',
+            backgroundColor: activeCardBackground,
+            borderColor: activeBorderColor,
             minHeight: '360px',
             maxHeight: '400px',
             transform: isActive ? "scale(1)" : "scale(0.98)",
@@ -180,7 +187,8 @@ function FannedCard({
       <div
         className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative overflow-hidden ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
-          backgroundColor: 'var(--color-background)',
+          backgroundColor: activeCardBackground,
+          borderColor: activeBorderColor,
           minHeight: '400px',
           maxHeight: '460px',
           transform: isHovering

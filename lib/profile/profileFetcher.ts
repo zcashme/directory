@@ -171,5 +171,16 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
     profile.profile_page_bkgd = profilePageBackgroundData.profile_page_bkgd as Profile["profile_page_bkgd"];
   }
 
+  const { data: profileCardBorderData } = await supabase
+    .from("zcasher")
+    .select("profile_card_border")
+    .eq("id", profile.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (profileCardBorderData) {
+    profile.profile_card_border = profileCardBorderData.profile_card_border as Profile["profile_card_border"];
+  }
+
   return mergeRanks(profile, ranks);
 });

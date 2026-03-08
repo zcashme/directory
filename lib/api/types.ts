@@ -107,6 +107,7 @@ export interface ProfileEditsPayload {
   nearest_city_name?: string;
   profile_card_theme?: string;
   profile_page_bkgd?: string;
+  profile_card_border?: string;
   avatar_upload?: AvatarUploadPayload;
   links?: ProfileLinkEdit[];
 }

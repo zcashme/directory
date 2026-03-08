@@ -8,7 +8,9 @@ import Button from "@/ui/common/buttons/Button";
 import { validateZcashAddress } from "@/ui/signup/zcashAddress";
 import {
   PROFILE_CARD_THEMES,
-  normalizeProfileCardThemeId,
+  getProfileCardBorder,
+  normalizeProfileCardThemeSelectionId,
+  normalizeProfileCardBorderId,
   normalizeProfilePageBackgroundId,
   resolveProfileCardColors,
   resolveProfilePageBackgroundColor,
@@ -54,17 +56,6 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
   copyWrapper: "shrink-0",
 };
 
-const DARK_LINK_ROW_CLASSES: LinkRowClasses = {
-  row: "flex items-center gap-3 py-1 border-b border-white/20 last:border-0 min-w-0",
-  left: "flex items-center gap-2 shrink-0",
-  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
-  right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-white/80 justify-end flex-1",
-  icon: "w-4 h-4 rounded-xs opacity-90",
-  label: "font-medium text-white whitespace-nowrap",
-  domain: "flex-1 min-w-0 truncate text-right text-white/80",
-  copyWrapper: "shrink-0",
-};
-
 function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
   return links
     .filter((link) => !link._delete && (link.url ?? "").trim().length > 0)
@@ -82,7 +73,7 @@ function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
 }
 
 export default function ProfileCardDesignPanel({ profile, onGenerateQr }: ProfileCardDesignPanelProps) {
-  const { form, deletedFields, pendingAvatarUpload, updateField } = useEditsStore();
+  const { form, original, deletedFields, pendingAvatarUpload, updateField } = useEditsStore();
   const [showStats, setShowStats] = useState(false);
 
   const hasStoreValues = useMemo(() => {
@@ -101,6 +92,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
       form.profile_image_url !== "" ||
       form.profile_card_theme !== "" ||
       form.profile_page_bkgd !== "" ||
+      form.profile_card_border !== "" ||
       form.nearest_city_name !== "" ||
       form.links.length > 0
     );
@@ -112,6 +104,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     form.profile_image_url,
     form.profile_card_theme,
     form.profile_page_bkgd,
+    form.profile_card_border,
     form.nearest_city_name,
     form.links,
     deletedFields.address,
@@ -129,34 +122,37 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
   }, [pendingAvatarUpload]);
 
   const selectedCardThemeId = useMemo(() => {
-    if (!hasStoreValues) {
-      return normalizeProfileCardThemeId(profile.profile_card_theme);
-    }
-    return normalizeProfileCardThemeId(form.profile_card_theme);
-  }, [hasStoreValues, profile.profile_card_theme, form.profile_card_theme]);
+    const hasThemeEdit = form.profile_card_theme !== original.profile_card_theme;
+    const sourceValue = hasThemeEdit ? form.profile_card_theme : profile.profile_card_theme;
+    return normalizeProfileCardThemeSelectionId(sourceValue);
+  }, [form.profile_card_theme, original.profile_card_theme, profile.profile_card_theme]);
 
   const selectedPageBackgroundId = useMemo(() => {
-    if (!hasStoreValues) {
-      return normalizeProfilePageBackgroundId(profile.profile_page_bkgd);
-    }
-    return normalizeProfilePageBackgroundId(form.profile_page_bkgd);
-  }, [hasStoreValues, profile.profile_page_bkgd, form.profile_page_bkgd]);
+    const hasBackgroundEdit = form.profile_page_bkgd !== original.profile_page_bkgd;
+    const sourceValue = hasBackgroundEdit ? form.profile_page_bkgd : profile.profile_page_bkgd;
+    return normalizeProfilePageBackgroundId(sourceValue);
+  }, [form.profile_page_bkgd, original.profile_page_bkgd, profile.profile_page_bkgd]);
+  const selectedCardBorderId = useMemo(() => {
+    const hasBorderEdit = form.profile_card_border !== original.profile_card_border;
+    const sourceValue = hasBorderEdit ? form.profile_card_border : profile.profile_card_border;
+    return normalizeProfileCardBorderId(sourceValue);
+  }, [form.profile_card_border, original.profile_card_border, profile.profile_card_border]);
 
-  const previewName = hasStoreValues
-    ? (deletedFields.name ? "" : form.name)
-    : (profile.name ?? "");
-  const previewDisplayName = hasStoreValues
-    ? (deletedFields.display_name ? "" : form.display_name)
-    : (profile.display_name ?? "");
-  const previewBio = hasStoreValues
-    ? (deletedFields.bio ? "" : form.bio)
-    : (profile.bio ?? "");
-  const previewAddress = hasStoreValues
-    ? (deletedFields.address ? "" : form.address.trim())
-    : (profile.address ?? "");
-  const previewNearestCity = hasStoreValues
-    ? (deletedFields.nearest_city ? "" : form.nearest_city_name)
-    : (profile.nearest_city_name ?? "");
+  const previewName = deletedFields.name
+    ? ""
+    : ((form.name ?? "").trim() || (profile.name ?? ""));
+  const previewDisplayName = deletedFields.display_name
+    ? ""
+    : ((form.display_name ?? "").trim() || (profile.display_name ?? ""));
+  const previewBio = deletedFields.bio
+    ? ""
+    : ((form.bio ?? "").trim() || (profile.bio ?? ""));
+  const previewAddress = deletedFields.address
+    ? ""
+    : ((form.address ?? "").trim() || (profile.address ?? ""));
+  const previewNearestCity = deletedFields.nearest_city
+    ? ""
+    : ((form.nearest_city_name ?? "").trim() || (profile.nearest_city_name ?? ""));
   const previewImageUrl = hasStoreValues
     ? (
       deletedFields.profile_image_url
@@ -175,6 +171,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     profile_image_url: previewImageUrl || undefined,
     profile_card_theme: selectedCardThemeId,
     profile_page_bkgd: selectedPageBackgroundId,
+    profile_card_border: selectedCardBorderId,
   }), [
     profile,
     previewName,
@@ -185,14 +182,18 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     previewImageUrl,
     selectedCardThemeId,
     selectedPageBackgroundId,
+    selectedCardBorderId,
   ]);
 
   const linksArray = useMemo<EnrichedProfileLink[]>(() => {
-    const rawLinks = hasStoreValues
+    const hasFormLinkIntent = (form.links ?? []).some(
+      (link) => Boolean(link._delete) || (link.url ?? "").trim().length > 0
+    );
+    const rawLinks = hasFormLinkIntent
       ? mapFormLinksToProfileLinks(form.links)
       : (Array.isArray(profile.links) ? profile.links : []);
     return rawLinks.map(enrichLink);
-  }, [hasStoreValues, form.links, profile.links]);
+  }, [form.links, profile.links]);
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(previewProfile);
   const totalLinks = previewProfile.total_links ?? linksArray.length;
@@ -217,13 +218,14 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     resolveProfilePageBackgroundColor(selectedPageBackgroundId);
   const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
   const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
-  const cardSurfaceColor = activeCardBackground;
-  const cardSurfaceBorderColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.26)" : "rgba(17, 24, 39, 0.16)";
   const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
-  const previewDotColor = activePageBackgroundTheme?.isDark ? "rgba(229, 231, 235, 0.28)" : "rgba(148, 163, 184, 0.45)";
-  const linkRowClasses = activeCardTheme?.isDark ? DARK_LINK_ROW_CLASSES : LINK_ROW_CLASSES;
+  void activePageBackgroundTheme;
+  const linkRowClasses = LINK_ROW_CLASSES;
+  const selectedBorderColor = getProfileCardBorder(selectedCardBorderId)?.color ?? null;
 
-  const addressInput = hasStoreValues ? form.address.trim() : (profile.address ?? "").trim();
+  const addressInput = deletedFields.address
+    ? ""
+    : ((form.address ?? "").trim() || (profile.address ?? "").trim());
   const addressValidation = validateZcashAddress(addressInput);
   const addressReadyForVerification =
     !!addressInput &&
@@ -231,30 +233,112 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     addressValidation.type !== "tex" &&
     addressValidation.type !== "transparent";
 
+  const renderPaletteSection = ({
+    title,
+    resetAction,
+    resetLabel,
+    resetAria,
+    selectedId,
+    buttonKeyPrefix,
+    optionAriaSuffix,
+  }: {
+    title: string;
+    resetAction: () => void;
+    resetLabel: string;
+    resetAria: string;
+    selectedId: string | null;
+    buttonKeyPrefix: string;
+    optionAriaSuffix: string;
+  }) => (
+    <div className="mt-3 rounded-2xl border border-gray-300 bg-white/85 shadow-inner overflow-visible">
+      <div className="px-3 py-3">
+        <p className="mb-2 text-[11px] font-semibold tracking-wide text-gray-600 uppercase">{title}</p>
+        <div className="overflow-x-auto scrollbar-visible">
+          <div className="min-w-max flex items-start gap-3">
+            <button
+              type="button"
+              onClick={resetAction}
+              className="flex flex-col items-center gap-1.5 shrink-0"
+              aria-label={resetAria}
+              title={resetLabel}
+            >
+            <span
+                className="h-8 w-8 rounded-full border-2 transition-all"
+                style={{
+                  background:
+                    "repeating-linear-gradient(45deg, #ffffff, #ffffff 6px, #e5e7eb 6px, #e5e7eb 12px)",
+                  borderColor: selectedId ? "rgba(17,24,39,0.15)" : "#111827",
+                  boxShadow: selectedId ? "none" : "inset 0 0 0 2px rgba(17,24,39,0.35)",
+                }}
+              />
+              <span className="text-[11px] font-medium text-gray-600">Reset</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => updateField(buttonKeyPrefix === "fg" ? "profile_card_theme" : buttonKeyPrefix === "bg" ? "profile_page_bkgd" : "profile_card_border", "none")}
+              className="flex flex-col items-center gap-1.5 shrink-0"
+              aria-label={`Select none ${optionAriaSuffix}`}
+              title="None"
+            >
+              <span
+                className="h-8 w-8 rounded-full border-2 transition-all"
+                style={{
+                  background:
+                    "repeating-linear-gradient(45deg, #ffffff, #ffffff 5px, #f3f4f6 5px, #f3f4f6 10px)",
+                  borderColor: selectedId === "none" ? "#111827" : "rgba(17,24,39,0.15)",
+                  boxShadow: selectedId === "none" ? "inset 0 0 0 2px rgba(17,24,39,0.35)" : "none",
+                }}
+              />
+              <span className="text-[11px] font-medium text-gray-600">None</span>
+            </button>
+            {PROFILE_CARD_THEMES.map((theme) => {
+              const selected = theme.id === selectedId;
+              return (
+                <button
+                  key={`${buttonKeyPrefix}-${theme.id}`}
+                  type="button"
+                  onClick={() => updateField(buttonKeyPrefix === "fg" ? "profile_card_theme" : buttonKeyPrefix === "bg" ? "profile_page_bkgd" : "profile_card_border", theme.id)}
+                  className="flex flex-col items-center gap-1.5 shrink-0"
+                  aria-label={`Select ${theme.label} ${optionAriaSuffix}`}
+                  title={theme.label}
+                >
+                  <span
+                    className="h-8 w-8 rounded-full border-2 transition-all"
+                    style={{
+                      backgroundColor: theme.background,
+                      borderColor: selected ? "#111827" : "rgba(17,24,39,0.15)",
+                      boxShadow: selected ? "inset 0 0 0 2px rgba(17,24,39,0.35)" : "none",
+                    }}
+                  />
+                  <span className="text-[11px] font-medium text-gray-600">{theme.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
-      <div className="w-full max-w-xl bg-transparent overflow-visible">
-        <div
-          className="rounded-2xl overflow-hidden"
-          style={{ backgroundColor: activePageBackground }}
-        >
-          <div
-            className="relative min-h-[560px] overflow-visible px-2 pb-3"
-            style={{ backgroundColor: activePageBackground }}
-          >
+      <div className="w-full max-w-6xl bg-transparent overflow-visible">
+        <div className="w-full">
+          <div className="min-w-0">
             <div
-              aria-hidden
-              className="absolute inset-0 opacity-30"
-              style={{
-                backgroundImage: `radial-gradient(circle, ${previewDotColor} 1px, transparent 1px)`,
-                backgroundSize: "12px 12px",
-              }}
-            />
+              className="relative rounded-2xl overflow-visible"
+              style={{ backgroundColor: activePageBackground }}
+            >
 
+          <div
+            className="relative z-10 min-h-[560px] overflow-visible px-2 pb-3"
+            style={{ backgroundColor: "transparent" }}
+          >
             <div className="relative z-10 mx-auto w-full max-w-[460px]" style={{ marginTop: `${AVATAR_OVERLAP_Y + 8}px` }}>
               <VerifiedCardWrapper
                 verifiedCount={(previewProfile.verified_links_count ?? 0) + (previewProfile.address_verified ? 1 : 0)}
                 featured={!!previewProfile.featured}
+                borderAccentColor={selectedBorderColor}
                 className="relative overflow-visible mx-auto p-5 text-center w-full"
                 style={{
                   maxWidth: "100%",
@@ -303,6 +387,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       size={AVATAR_SIZE}
                       imageClassName="object-contain"
                       className="mx-auto shadow-xs flex items-center justify-center"
+                      borderColor={selectedBorderColor ?? "#111827"}
                     />
                   </div>
                   <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
@@ -373,12 +458,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                   {previewProfile.address ? (
                     <div className="mt-2 flex items-center justify-center">
                       <div
-                        className="relative overflow-hidden flex items-center gap-2 border font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
-                        style={{
-                          color: cardSecondaryTextColor,
-                          borderColor: cardSurfaceBorderColor,
-                          backgroundColor: cardSurfaceColor,
-                        }}
+                        className="relative overflow-hidden flex items-center gap-2 border border-gray-300 bg-white/80 text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
                       >
                         <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
                         <span className="select-all" title={previewProfile.address}>
@@ -389,12 +469,17 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                             type="button"
                             onClick={() => {}}
                             className="group flex items-center justify-center hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-all px-1 overflow-hidden"
-                            style={{ color: cardSubtleTextColor }}
+                            style={{ color: "#6b7280" }}
                             title="Show QR"
                           >
                             QR
                           </button>
-                          <CopyButton text={previewProfile.address} label="Copy" copiedLabel="Copied" />
+                          <CopyButton
+                            text={previewProfile.address}
+                            label="Copy"
+                            copiedLabel="Copied"
+                            hoverColor="var(--color-brand-blue)"
+                          />
                         </div>
                       </div>
                     </div>
@@ -403,11 +488,14 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                   )}
 
                   <div
-                    className="relative flex flex-col items-center w-full mx-auto transition-all overflow-hidden mt-5 pb-0"
-                    style={{ maxWidth: "448px" }}
+                    className="relative flex flex-col items-center w-full mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
+                    style={{
+                      maxWidth: "448px",
+                      "--profile-hover-color": "var(--color-brand-blue)",
+                    } as CSSProperties}
                   >
-                    <div className="w-full text-sm transition-all duration-300 overflow-hidden" style={{ color: cardSecondaryTextColor }}>
-                      <div className="px-4 pt-2 pb-3 bg-transparent flex flex-col gap-2">
+                    <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
+                      <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                         {linksArray.length > 0
                           ? linksArray.map((link) => (
                             <ProfileLinkRow
@@ -416,7 +504,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                               classes={linkRowClasses}
                             />
                           ))
-                          : <p className="italic text-center" style={{ color: cardSubtleTextColor }}>No contributed links yet.</p>}
+                          : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                       </div>
                     </div>
                   </div>
@@ -426,121 +514,57 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
               </VerifiedCardWrapper>
             </div>
           </div>
-
-          <div className="pt-3 border-t border-gray-200 overflow-x-auto scrollbar-visible bg-white/85">
-            <div className="px-1 pb-1">
-              <p className="mb-2 text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Card Foreground</p>
-              <div className="min-w-max flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => updateField("profile_card_theme", "")}
-                  className="flex flex-col items-center gap-1.5 shrink-0"
-                  aria-label="Reset card foreground theme"
-                  title="Reset card foreground"
-                >
-                  <span
-                    className={`h-8 w-8 rounded-full border-2 transition-transform ${selectedCardThemeId ? "scale-100" : "scale-110"}`}
-                    style={{
-                      background:
-                        "repeating-linear-gradient(45deg, #ffffff, #ffffff 6px, #e5e7eb 6px, #e5e7eb 12px)",
-                      borderColor: selectedCardThemeId ? "rgba(17,24,39,0.15)" : "#111827",
-                      boxShadow: selectedCardThemeId ? "none" : "0 0 0 3px rgba(17,24,39,0.12)",
-                    }}
-                  />
-                  <span className="text-[11px] font-medium text-gray-600">Reset</span>
-                </button>
-                {PROFILE_CARD_THEMES.map((theme) => {
-                  const selected = theme.id === selectedCardThemeId;
-                  return (
-                    <button
-                      key={`fg-${theme.id}`}
-                      type="button"
-                      onClick={() => updateField("profile_card_theme", theme.id)}
-                      className="flex flex-col items-center gap-1.5 shrink-0"
-                      aria-label={`Select ${theme.label} card theme`}
-                      title={theme.label}
-                    >
-                      <span
-                        className={`h-8 w-8 rounded-full border-2 transition-transform ${selected ? "scale-110" : "scale-100"}`}
-                        style={{
-                          backgroundColor: theme.background,
-                          borderColor: selected ? "#111827" : "rgba(17,24,39,0.15)",
-                          boxShadow: selected ? "0 0 0 3px rgba(17,24,39,0.12)" : "none",
-                        }}
-                      />
-                      <span className="text-[11px] font-medium text-gray-600">{theme.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-gray-200 overflow-x-auto scrollbar-visible bg-white/85">
-            <div className="px-1 pb-1">
-              <p className="mb-2 text-[11px] font-semibold tracking-wide text-gray-600 uppercase">Page Background</p>
-              <div className="min-w-max flex items-start gap-3">
-                <button
-                  type="button"
-                  onClick={() => updateField("profile_page_bkgd", "")}
-                  className="flex flex-col items-center gap-1.5 shrink-0"
-                  aria-label="Reset page background"
-                  title="Reset page background"
-                >
-                  <span
-                    className={`h-8 w-8 rounded-full border-2 transition-transform ${selectedPageBackgroundId ? "scale-100" : "scale-110"}`}
-                    style={{
-                      background:
-                        "repeating-linear-gradient(45deg, #faf6ed, #faf6ed 6px, #e5e7eb 6px, #e5e7eb 12px)",
-                      borderColor: selectedPageBackgroundId ? "rgba(17,24,39,0.15)" : "#111827",
-                      boxShadow: selectedPageBackgroundId ? "none" : "0 0 0 3px rgba(17,24,39,0.12)",
-                    }}
-                  />
-                  <span className="text-[11px] font-medium text-gray-600">Reset</span>
-                </button>
-                {PROFILE_CARD_THEMES.map((theme) => {
-                  const selected = theme.id === selectedPageBackgroundId;
-                  return (
-                    <button
-                      key={`bg-${theme.id}`}
-                      type="button"
-                      onClick={() => updateField("profile_page_bkgd", theme.id)}
-                      className="flex flex-col items-center gap-1.5 shrink-0"
-                      aria-label={`Select ${theme.label} page background`}
-                      title={theme.label}
-                    >
-                      <span
-                        className={`h-8 w-8 rounded-full border-2 transition-transform ${selected ? "scale-110" : "scale-100"}`}
-                        style={{
-                          backgroundColor: theme.background,
-                          borderColor: selected ? "#111827" : "rgba(17,24,39,0.15)",
-                          boxShadow: selected ? "0 0 0 3px rgba(17,24,39,0.12)" : "none",
-                        }}
-                      />
-                      <span className="text-[11px] font-medium text-gray-600">{theme.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <div className="mt-3">
+          {renderPaletteSection({
+            title: "Card Foreground",
+            resetAction: () => updateField("profile_card_theme", profile.profile_card_theme ?? ""),
+            resetLabel: "Reset card foreground",
+            resetAria: "Reset card foreground theme",
+            selectedId: selectedCardThemeId,
+            buttonKeyPrefix: "fg",
+            optionAriaSuffix: "card theme",
+          })}
 
-          <div className="mt-4 pt-3 border-t border-gray-200 bg-white/85">
-            <div className="flex justify-center">
-              <Button
-                type="button"
-                variant="secondary"
-                size="md"
-                onClick={() => {
-                  if (!addressReadyForVerification) return;
-                  onGenerateQr?.();
-                }}
-                disabled={!addressReadyForVerification}
-                className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-              >
-                Start Verification
-              </Button>
-            </div>
+          {renderPaletteSection({
+            title: "Page Background",
+            resetAction: () => updateField("profile_page_bkgd", profile.profile_page_bkgd ?? ""),
+            resetLabel: "Reset page background",
+            resetAria: "Reset page background",
+            selectedId: selectedPageBackgroundId,
+            buttonKeyPrefix: "bg",
+            optionAriaSuffix: "page background",
+          })}
+
+          {renderPaletteSection({
+            title: "Card Border",
+            resetAction: () => updateField("profile_card_border", profile.profile_card_border ?? ""),
+            resetLabel: "Reset card border",
+            resetAria: "Reset card border",
+            selectedId: selectedCardBorderId,
+            buttonKeyPrefix: "bd",
+            optionAriaSuffix: "card border",
+          })}
+          </div>
+        </div>
+
+        <div className="mt-3 rounded-2xl border border-gray-300 bg-white/85 shadow-inner overflow-visible max-w-md mx-auto">
+          <div className="px-3 py-3 flex justify-center">
+            <Button
+              type="button"
+              variant="secondary"
+              size="md"
+              onClick={() => {
+                if (!addressReadyForVerification) return;
+                onGenerateQr?.();
+              }}
+              disabled={!addressReadyForVerification}
+              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+            >
+              Start Verification
+            </Button>
           </div>
         </div>
       </div>

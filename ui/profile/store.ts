@@ -28,6 +28,7 @@ export interface FormState {
   profile_image_url: string;
   profile_card_theme: string;
   profile_page_bkgd: string;
+  profile_card_border: string;
   links: ParsedLink[];
   nearest_city_name: string;
 }
@@ -75,6 +76,7 @@ const emptyForm: FormState = {
   profile_image_url: '',
   profile_card_theme: '',
   profile_page_bkgd: '',
+  profile_card_border: '',
   links: [],
   nearest_city_name: '',
 };
@@ -150,6 +152,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         profile_image_url: profile.profile_image_url ?? '',
         profile_card_theme: profile.profile_card_theme ?? '',
         profile_page_bkgd: profile.profile_page_bkgd ?? '',
+        profile_card_border: profile.profile_card_border ?? '',
         links: links ?? [],
         nearest_city_name: profile.nearest_city_name ?? '',
       },
@@ -161,6 +164,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         profile_image_url: profile.profile_image_url ?? '',
         profile_card_theme: profile.profile_card_theme ?? '',
         profile_page_bkgd: profile.profile_page_bkgd ?? '',
+        profile_card_border: profile.profile_card_border ?? '',
         links: links ?? [],
         nearest_city_name: profile.nearest_city_name ?? '',
       },

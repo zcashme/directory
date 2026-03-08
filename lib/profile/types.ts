@@ -34,6 +34,7 @@ export interface Profile {
   is_maxi?: boolean | string | number;
   profile_card_theme?: string | null;
   profile_page_bkgd?: string | null;
+  profile_card_border?: string | null;
   country?: string;
   iso2?: string;
   link_search_text?: string;

@@ -6,7 +6,11 @@ export type ProfileCardThemeId =
   | "slate"
   | "noir";
 
+export type ProfileCardThemeSelectionId = ProfileCardThemeId | "none";
 export type ProfilePageBackgroundId = ProfileCardThemeId;
+export type ProfilePageBackgroundSelectionId = ProfilePageBackgroundId | "none";
+export type ProfileCardBorderId = ProfileCardThemeId;
+export type ProfileCardBorderSelectionId = ProfileCardBorderId | "none";
 
 export interface ProfileCardThemeDefinition {
   id: ProfileCardThemeId;
@@ -14,6 +18,12 @@ export interface ProfileCardThemeDefinition {
   background: string;
   text: string;
   isDark: boolean;
+}
+
+export interface ProfileCardBorderDefinition {
+  id: ProfileCardBorderSelectionId;
+  label: string;
+  color: string;
 }
 
 export const PROFILE_CARD_THEMES: readonly ProfileCardThemeDefinition[] = [
@@ -46,20 +56,60 @@ export function normalizeProfileCardThemeId(value: unknown): ProfileCardThemeId 
     : null;
 }
 
-export function normalizeProfilePageBackgroundId(value: unknown): ProfilePageBackgroundId | null {
-  return normalizeProfileCardThemeId(value);
+export function normalizeProfileCardThemeSelectionId(value: unknown): ProfileCardThemeSelectionId | null {
+  if (typeof value !== "string") return null;
+  const normalized = value
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+  if (!normalized) return null;
+  if (normalized === "none") return "none";
+  return normalizeProfileCardThemeId(normalized);
+}
+
+export function normalizeProfilePageBackgroundId(value: unknown): ProfilePageBackgroundSelectionId | null {
+  const normalized = normalizeProfileCardThemeSelectionId(value);
+  if (!normalized) return null;
+  return normalized;
 }
 
 export function getProfileCardTheme(value: unknown): ProfileCardThemeDefinition | null {
-  const normalized = normalizeProfileCardThemeId(value);
+  const normalized = normalizeProfileCardThemeSelectionId(value);
   if (!normalized) return null;
+  if (normalized === "none") return null;
   return THEME_ID_LOOKUP.get(normalized) ?? null;
 }
 
 export function getProfilePageBackground(value: unknown): ProfileCardThemeDefinition | null {
   const normalized = normalizeProfilePageBackgroundId(value);
   if (!normalized) return null;
+  if (normalized === "none") return null;
   return THEME_ID_LOOKUP.get(normalized) ?? null;
+}
+
+export function normalizeProfileCardBorderId(value: unknown): ProfileCardBorderSelectionId | null {
+  const normalized = normalizeProfileCardThemeSelectionId(value);
+  if (!normalized) return null;
+  return normalized;
+}
+
+export function getProfileCardBorder(value: unknown): ProfileCardBorderDefinition | null {
+  const normalized = normalizeProfileCardBorderId(value);
+  if (!normalized) return null;
+  if (normalized === "none") {
+    return {
+      id: "none",
+      label: "None",
+      color: "transparent",
+    };
+  }
+  const theme = THEME_ID_LOOKUP.get(normalized);
+  if (!theme) return null;
+  return {
+    id: theme.id,
+    label: theme.label,
+    color: theme.background,
+  };
 }
 
 export function resolveProfileCardColors(value: unknown): {
@@ -67,6 +117,14 @@ export function resolveProfileCardColors(value: unknown): {
   background: string;
   text: string;
 } {
+  const normalized = normalizeProfileCardThemeSelectionId(value);
+  if (normalized === "none") {
+    return {
+      theme: null,
+      background: "transparent",
+      text: DEFAULT_PROFILE_CARD_TEXT,
+    };
+  }
   const theme = getProfileCardTheme(value);
   if (!theme) {
     return {
@@ -87,6 +145,13 @@ export function resolveProfilePageBackgroundColor(value: unknown): {
   theme: ProfileCardThemeDefinition | null;
   background: string;
 } {
+  const normalized = normalizeProfilePageBackgroundId(value);
+  if (normalized === "none") {
+    return {
+      theme: null,
+      background: DEFAULT_PROFILE_PAGE_BACKGROUND,
+    };
+  }
   const theme = getProfilePageBackground(value);
   if (!theme) {
     return {

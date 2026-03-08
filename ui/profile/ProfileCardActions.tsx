@@ -100,7 +100,20 @@ export default function ProfileCardActions({
         className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] hover:border-[var(--color-brand-blue)] hover:border-[var(--profile-hover-color)] hover:bg-[var(--color-brand-blue)]/10 hover:bg-[var(--profile-hover-bg)] transition-all"
         title={`Share ${displayName}`}
       >
-        <img src="/assets/icons/share.svg" alt="Share" className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity" aria-hidden />
+        <span
+          aria-hidden
+          className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity bg-current"
+          style={{
+            WebkitMaskImage: "url('/assets/icons/share.svg')",
+            WebkitMaskRepeat: "no-repeat",
+            WebkitMaskPosition: "center",
+            WebkitMaskSize: "contain",
+            maskImage: "url('/assets/icons/share.svg')",
+            maskRepeat: "no-repeat",
+            maskPosition: "center",
+            maskSize: "contain",
+          }}
+        />
       </motion.button>
     </>
   );

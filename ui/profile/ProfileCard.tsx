@@ -21,7 +21,11 @@ import { upsertVerifiedLink } from "@/ui/links/verifyLink";
 import { detectProviderFromUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import { enrichLink } from "@/lib/profile/profileLinks";
-import { resolveProfileCardColors, resolveProfilePageBackgroundColor } from "@/lib/profile/profileCardTheme";
+import {
+  resolveProfileCardColors,
+  resolveProfilePageBackgroundColor,
+  getProfileCardBorder,
+} from "@/lib/profile/profileCardTheme";
 import { useEditsStore } from "@/ui/profile/store";
 import ProfileCardListView from "./ProfileCardListView";
 import ProfileCardActions from "./ProfileCardActions";
@@ -57,17 +61,6 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
   icon: "w-4 h-4 rounded-xs opacity-80",
   label: "font-medium text-gray-800 whitespace-nowrap",
   domain: "flex-1 min-w-0 truncate text-right",
-  copyWrapper: "shrink-0",
-};
-
-const DARK_LINK_ROW_CLASSES: LinkRowClasses = {
-  row: "flex items-center gap-3 py-1 border-b border-white/20 last:border-0 min-w-0",
-  left: "flex items-center gap-2 shrink-0",
-  leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
-  right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-white/80 justify-end flex-1",
-  icon: "w-4 h-4 rounded-xs opacity-90",
-  label: "font-medium text-white whitespace-nowrap",
-  domain: "flex-1 min-w-0 truncate text-right text-white/80",
   copyWrapper: "shrink-0",
 };
 
@@ -120,18 +113,20 @@ export default function ProfileCard({
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
   const hasDesignAccess = isMaxi;
+  const effectiveCardTheme = isMaxi ? profile.profile_card_theme : "none";
+  const effectivePageBackground = isMaxi
+    ? (showBack ? form.profile_page_bkgd : profile.profile_page_bkgd)
+    : "none";
+  const effectiveBorderTheme = isMaxi ? profile.profile_card_border : null;
 
   const { theme: activeCardTheme, background: activeCardBackground, text: activeCardText } =
-    resolveProfileCardColors(profile.profile_card_theme);
+    resolveProfileCardColors(effectiveCardTheme);
+  const selectedBorderColor = getProfileCardBorder(effectiveBorderTheme)?.color ?? null;
   const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
   const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
-  const cardSurfaceColor = activeCardBackground;
-  const cardSurfaceBorderColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.26)" : "rgba(17, 24, 39, 0.16)";
   const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
-  const designSideBackground = resolveProfilePageBackgroundColor(
-    showBack ? form.profile_page_bkgd : profile.profile_page_bkgd
-  ).background;
-  const linkRowClasses = activeCardTheme?.isDark ? DARK_LINK_ROW_CLASSES : LINK_ROW_CLASSES;
+  const designSideBackground = resolveProfilePageBackgroundColor(effectivePageBackground).background;
+  const linkRowClasses = LINK_ROW_CLASSES;
 
   const resolvedCardWidth = Number.isFinite(cardWidthPx)
     ? Math.min(760, Math.max(320, Math.round(cardWidthPx ?? 0)))
@@ -205,6 +200,7 @@ export default function ProfileCard({
         <VerifiedCardWrapper
           verifiedCount={(profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)}
           featured={!!profile.featured}
+          borderAccentColor={selectedBorderColor}
           unstyled={showDesignBack}
           className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center w-full"
           style={{
@@ -337,12 +333,7 @@ export default function ProfileCard({
               {profile.address ? (
                 <div className="mt-2 flex items-center justify-center">
                   <div
-                    className="relative overflow-hidden flex items-center gap-2 border font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
-                    style={{
-                      color: cardSecondaryTextColor,
-                      borderColor: cardSurfaceBorderColor,
-                      backgroundColor: cardSurfaceColor,
-                    }}
+                    className="relative overflow-hidden flex items-center gap-2 border border-gray-300 bg-white/80 text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
                   >
                     <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
                     <span className="select-all" title={profile.address}>
@@ -352,12 +343,17 @@ export default function ProfileCard({
                       <button
                         onClick={() => onShowQR?.()}
                         className="group flex items-center justify-center hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-all px-1 overflow-hidden"
-                        style={{ color: cardSubtleTextColor }}
+                        style={{ color: "#6b7280" }}
                         title="Show QR"
                       >
                         QR
                       </button>
-                      <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" />
+                      <CopyButton
+                        text={profile.address}
+                        label="Copy"
+                        copiedLabel="Copied"
+                        hoverColor="var(--color-brand-blue)"
+                      />
                     </div>
                   </div>
                 </div>
@@ -366,14 +362,17 @@ export default function ProfileCard({
               )}
 
               <div
-                className="relative flex flex-col items-center w-full mx-auto transition-all overflow-hidden mt-5 pb-0"
-                style={{ maxWidth: `${linkTrayMaxWidthPx}px` }}
+                className="relative flex flex-col items-center w-full mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
+                style={{
+                  maxWidth: `${linkTrayMaxWidthPx}px`,
+                  "--profile-hover-color": "var(--color-brand-blue)",
+                } as CSSProperties}
               >
-                <div className="w-full text-sm transition-all duration-300 overflow-hidden" style={{ color: cardSecondaryTextColor }}>
-                  <div className="px-4 pt-2 pb-3 bg-transparent flex flex-col gap-2">
+                <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
+                  <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                     {linksArray.length > 0
                       ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={linkRowClasses} onVerifyClick={profile.address_verified ? handleVerifyClick : undefined} />)
-                      : <p className="italic text-center" style={{ color: cardSubtleTextColor }}>No contributed links yet.</p>}
+                      : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                   </div>
                 </div>
               </div>

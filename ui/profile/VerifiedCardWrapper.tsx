@@ -5,9 +5,22 @@ interface VerifiedCardWrapperProps {
   featured?: boolean;
   onClick?: () => void;
   unstyled?: boolean;
+  borderAccentColor?: string | null;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
+}
+
+function hexToRgba(hex: string, alpha: number): string {
+  const trimmed = hex.trim().toLowerCase();
+  if (trimmed === "transparent") return `rgba(0, 0, 0, 0)`;
+  const value = trimmed.replace("#", "");
+  const isValid = /^[0-9a-fA-F]{6}$/.test(value);
+  if (!isValid) return `rgba(17, 24, 39, ${alpha})`;
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 export default function VerifiedCardWrapper({
@@ -15,51 +28,37 @@ export default function VerifiedCardWrapper({
   featured = false,
   onClick,
   unstyled = false,
+  borderAccentColor = null,
   className = "",
   style,
   children,
 }: VerifiedCardWrapperProps) {
   const baseStyle = unstyled ? "" : "rounded-2xl p-3 border transition-all shadow-xs";
   const clickStyle = onClick && !unstyled ? "cursor-pointer" : "";
+  const hasCustomBorder = !unstyled && typeof borderAccentColor === "string" && borderAccentColor.trim().length > 0;
+  // Keep API compatibility for existing callers; styling no longer depends on trust tiers.
+  void verifiedCount;
+  void featured;
 
-  let tierStyle;
-
-  if (unstyled) {
-    tierStyle = "";
-  } else if (featured) {
-    // Featured glow takes priority
-    tierStyle =
-      "border-yellow-400 bg-yellow-50/40 hover:bg-yellow-50/60 hover:shadow-[0_0_10px_rgba(250,204,21,0.4)]";
-  } else if (verifiedCount >= 3) {
-    tierStyle =
-      "border-green-400 bg-linear-to-r from-green-50/80 via-emerald-50/80 to-green-100/80 relative overflow-hidden";
-  } else if (verifiedCount === 2) {
-    tierStyle =
-      "border-green-400 bg-green-50/60 hover:bg-green-50 hover:shadow-[0_0_10px_rgba(34,197,94,0.25)]";
-  } else if (verifiedCount === 1) {
-    tierStyle =
-      "border-[var(--color-brand-blue)]/40 bg-[var(--color-brand-blue)]/12 hover:bg-[var(--color-brand-blue)]/10 hover:shadow-[0_0_8px_rgba(29,78,216,0.25)]";
-  } else {
-    tierStyle =
-      "border-gray-500 bg-transparent hover:bg-gray-100/10 hover:shadow-[0_0_4px_rgba(0,0,0,0.05)]";
-  }
+  const surfaceStyle = unstyled ? "" : "bg-transparent";
+  const defaultBorderStyle = unstyled ? "" : "border-black/70 hover:shadow-[0_0_8px_rgba(17,24,39,0.3)]";
+  const borderStyle = hasCustomBorder
+    ? "verified-card-custom-border"
+    : "";
+  const mergedStyle: CSSProperties = hasCustomBorder
+    ? {
+        ...(style || {}),
+        "--verified-card-border": borderAccentColor as string,
+        "--verified-card-glow": hexToRgba(borderAccentColor as string, 0.35),
+      } as CSSProperties
+    : (style || {});
 
   return (
     <div
       onClick={onClick}
-      className={`${baseStyle} ${clickStyle} ${unstyled ? "" : "verified-card-hover"} ${tierStyle} ${className}`}
-      style={style}
+      className={`${baseStyle} ${clickStyle} ${unstyled ? "" : "verified-card-hover"} ${surfaceStyle} ${hasCustomBorder ? "" : defaultBorderStyle} ${borderStyle} ${className}`}
+      style={mergedStyle}
     >
-      {/* Animated gradient shimmer for top-tier verified */}
-      {verifiedCount >= 3 && !featured && !unstyled && (
-        <div
-          className="absolute inset-0 rounded-2xl bg-linear-to-r from-green-300/10 via-emerald-400/20 to-green-300/10 blur-md verified-card-shimmer"
-          style={{
-            zIndex: 0,
-          }}
-        />
-      )}
-
       {/* Foreground content */}
       <div className="relative z-10">{children}</div>
     </div>

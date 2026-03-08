@@ -54,6 +54,15 @@ const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
   sol: 3,
 };
 
+function isTruthyLikeAddressVerified(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
+
 function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
   const chain = (blockchain ?? "").toLowerCase();
   if (chain.includes("zec") || chain.includes("zcash")) return "zec";
@@ -119,9 +128,10 @@ export default function ProfilePage({
   duplicateNameCount,
   initialPrefill,
 }: ProfilePageProps) {
+  const isMaxi = isTruthyLikeAddressVerified(initialProfile.is_maxi);
   const pageBackground = useMemo(
-    () => resolveProfilePageBackgroundColor(initialProfile.profile_page_bkgd).background,
-    [initialProfile.profile_page_bkgd]
+    () => resolveProfilePageBackgroundColor(isMaxi ? initialProfile.profile_page_bkgd : "none").background,
+    [isMaxi, initialProfile.profile_page_bkgd]
   );
   const hasAutoScrolledPrefillRef = useRef(false);
   const pageBottomSentinelRef = useRef<HTMLDivElement | null>(null);
@@ -434,25 +444,39 @@ export default function ProfilePage({
   }, [hasInitialPrefill, runMultiPassScroll]);
 
   useEffect(() => {
-    if (designPanelBackgroundPreview === null) return;
-
     const previousBodyBackground = document.body.style.backgroundColor;
     const previousHtmlBackground = document.documentElement.style.backgroundColor;
+    const previousColorBackgroundVar = document.documentElement.style.getPropertyValue("--color-background");
 
-    document.body.style.backgroundColor = designPanelBackgroundPreview;
-    document.documentElement.style.backgroundColor = designPanelBackgroundPreview;
+    document.body.style.backgroundColor = effectivePageBackground;
+    document.documentElement.style.backgroundColor = effectivePageBackground;
+    document.documentElement.style.setProperty("--color-background", effectivePageBackground);
+    document.body.style.backgroundImage = "";
+    document.documentElement.style.backgroundImage = "";
+    document.body.style.backgroundSize = "";
+    document.documentElement.style.backgroundSize = "";
 
     return () => {
       document.body.style.backgroundColor = previousBodyBackground;
       document.documentElement.style.backgroundColor = previousHtmlBackground;
+      document.body.style.backgroundImage = "";
+      document.documentElement.style.backgroundImage = "";
+      document.body.style.backgroundSize = "";
+      document.documentElement.style.backgroundSize = "";
+      if (previousColorBackgroundVar) {
+        document.documentElement.style.setProperty("--color-background", previousColorBackgroundVar);
+      } else {
+        document.documentElement.style.removeProperty("--color-background");
+      }
     };
-  }, [designPanelBackgroundPreview]);
+  }, [effectivePageBackground, designPanelBackgroundPreview]);
 
   return (
     <div
-      className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen overflow-x-hidden"
+      className="w-full min-h-screen overflow-x-hidden"
       style={{ backgroundColor: effectivePageBackground }}
     >
+      <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen">
         <ProfileCard
           profile={initialProfile}
           fullView
@@ -530,5 +554,6 @@ export default function ProfilePage({
         </div>
         <div ref={pageBottomSentinelRef} aria-hidden />
       </div>
+    </div>
   );
 }

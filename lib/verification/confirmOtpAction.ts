@@ -7,8 +7,10 @@ import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import {
   getProfileCardTheme,
+  getProfileCardBorder,
   getProfilePageBackground,
-  normalizeProfileCardThemeId,
+  normalizeProfileCardBorderId,
+  normalizeProfileCardThemeSelectionId,
   normalizeProfilePageBackgroundId,
 } from "@/lib/profile/profileCardTheme";
 import {
@@ -31,6 +33,15 @@ import {
 } from "@/lib/leaderboard/rewardProgram";
 
 const AVATAR_HISTORY_FOLDER = "avatar_history";
+
+function isTruthyLikeAddressVerified(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
 
 function formatTimestamp(): string {
   const d = new Date();
@@ -121,7 +132,7 @@ export async function confirmOtpAction(
       return {
         ok: false,
         error: "Invalid verification code.",
-        data: { status: "invalid" },
+        data: { status: "invalid_code" },
       };
     }
 
@@ -149,7 +160,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, is_maxi")
       .eq("id", profileId)
       .single();
 
@@ -167,11 +178,17 @@ export async function confirmOtpAction(
 
     // --- Apply profile update -----------------------------------------------
     const now = new Date().toISOString();
+    const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
     const profileUpdate: Record<string, unknown> = {
       address_verified: true,
       last_verified_at: now,
       ...(profile.first_verified_at ? {} : { first_verified_at: now }),
     };
+    if (!isMaxi) {
+      profileUpdate.profile_card_theme = "none";
+      profileUpdate.profile_page_bkgd = "none";
+      profileUpdate.profile_card_border = null;
+    }
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 
@@ -260,8 +277,8 @@ export async function confirmOtpAction(
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
-      if (edits.profile_card_theme !== undefined) {
-        const normalizedThemeId = normalizeProfileCardThemeId(edits.profile_card_theme);
+      if (isMaxi && edits.profile_card_theme !== undefined) {
+        const normalizedThemeId = normalizeProfileCardThemeSelectionId(edits.profile_card_theme);
         if (!normalizedThemeId && edits.profile_card_theme !== "") {
           return {
             ok: false,
@@ -269,10 +286,14 @@ export async function confirmOtpAction(
             data: { status: "invalid" },
           };
         }
-        const selectedTheme = getProfileCardTheme(normalizedThemeId);
-        profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
+        if (normalizedThemeId === "none") {
+          profileUpdate.profile_card_theme = "none";
+        } else {
+          const selectedTheme = getProfileCardTheme(normalizedThemeId);
+          profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
+        }
       }
-      if (edits.profile_page_bkgd !== undefined) {
+      if (isMaxi && edits.profile_page_bkgd !== undefined) {
         const normalizedBackgroundId = normalizeProfilePageBackgroundId(edits.profile_page_bkgd);
         if (!normalizedBackgroundId && edits.profile_page_bkgd !== "") {
           return {
@@ -281,8 +302,28 @@ export async function confirmOtpAction(
             data: { status: "invalid" },
           };
         }
-        const selectedBackground = getProfilePageBackground(normalizedBackgroundId);
-        profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
+        if (normalizedBackgroundId === "none") {
+          profileUpdate.profile_page_bkgd = "none";
+        } else {
+          const selectedBackground = getProfilePageBackground(normalizedBackgroundId);
+          profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
+        }
+      }
+      if (isMaxi && edits.profile_card_border !== undefined) {
+        const normalizedBorderId = normalizeProfileCardBorderId(edits.profile_card_border);
+        if (!normalizedBorderId && edits.profile_card_border !== "") {
+          return {
+            ok: false,
+            error: "Unsupported profile card border.",
+            data: { status: "invalid" },
+          };
+        }
+        if (normalizedBorderId === "none") {
+          profileUpdate.profile_card_border = "none";
+        } else {
+          const selectedBorder = getProfileCardBorder(normalizedBorderId);
+          profileUpdate.profile_card_border = selectedBorder?.id ?? null;
+        }
       }
       if (!removeProfileImage && !uploadedAvatarUrl && edits.profile_image_url !== undefined) {
         // Download external URL and store in Supabase bucket
@@ -300,10 +341,26 @@ export async function confirmOtpAction(
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
     }
 
-    const { error } = await supabase
+    let { error } = await supabase
       .from("zcasher")
       .update(profileUpdate)
       .eq("id", profileId);
+
+    if (error && Object.prototype.hasOwnProperty.call(profileUpdate, "profile_card_border")) {
+      const message = String(error.message || "").toLowerCase();
+      const missingBorderColumn =
+        message.includes("profile_card_border") &&
+        (message.includes("column") || message.includes("schema"));
+      if (missingBorderColumn) {
+        const fallbackUpdate = { ...profileUpdate };
+        delete fallbackUpdate.profile_card_border;
+        const fallbackResult = await supabase
+          .from("zcasher")
+          .update(fallbackUpdate)
+          .eq("id", profileId);
+        error = fallbackResult.error ?? null;
+      }
+    }
 
     if (error) {
       return {

@@ -7,6 +7,7 @@ interface ProfileAvatarProps {
   size?: number;
   imageClassName?: string;
   className?: string;
+  borderColor?: string;
   blink?: boolean;
   lookAround?: boolean;
 }
@@ -36,6 +37,7 @@ export default function ProfileAvatar({
   size = 32,
   imageClassName = "object-cover",
   className = "",
+  borderColor = "#111827",
   blink = true,
   lookAround = true,
 }: ProfileAvatarProps) {
@@ -75,7 +77,7 @@ export default function ProfileAvatar({
 
       <div
         className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)] ${className}`}
-        style={{ width: outerSize, height: outerSize }}
+        style={{ width: outerSize, height: outerSize, borderColor }}
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
           {avatarUrl ? (

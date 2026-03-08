@@ -61,6 +61,10 @@ export default function ProfileVerification({
       edits.profile_page_bkgd = form.profile_page_bkgd;
       hasChanges = true;
     }
+    if (form.profile_card_border !== original.profile_card_border) {
+      edits.profile_card_border = form.profile_card_border;
+      hasChanges = true;
+    }
     if (pendingAvatarUpload) {
       edits.avatar_upload = pendingAvatarUpload;
       hasChanges = true;
@@ -195,7 +199,7 @@ export default function ProfileVerification({
             ? String((response.data as Record<string, unknown>).status ?? "")
             : "";
 
-        if (status !== "invalid") {
+        if (status !== "invalid_code") {
           setOtpResult({
             ok: false,
             message: response.error || "Verification failed. Please try again.",

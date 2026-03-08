@@ -330,6 +330,14 @@ body {
   transform: scale(1.02);
 }
 
+.verified-card-custom-border {
+  border-color: var(--verified-card-border);
+}
+
+.verified-card-custom-border:hover {
+  box-shadow: 0 0 10px var(--verified-card-glow);
+}
+
 /* Verified card shimmer animation (replaces Framer Motion) */
 @keyframes verified-card-shimmer {
   0% { background-position: 0% 50%; }
