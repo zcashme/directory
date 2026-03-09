@@ -48,8 +48,8 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <footer className="relative border-t border-gray-200" style={{ backgroundColor: "var(--color-background)" }}>
           <div className="w-full h-12 flex items-stretch">
             <div className="hidden sm:block w-12 flex-shrink-0" />
-            <div className="flex-1 min-w-0 px-4 flex items-center justify-between gap-3">
-              <div className="flex items-center justify-start gap-4 text-gray-500">
+            <div className="flex-1 min-w-0 border-l border-gray-200/50 px-4 flex items-center justify-between gap-3">
+              <div className="h-12 border-r border-gray-200/50 pr-4 flex items-center justify-start gap-4 text-gray-500">
                 {SOCIAL_LINKS.map((link) => (
                   <a
                     key={link.href}
@@ -81,13 +81,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                   </a>
                 ))}
               </div>
-              <div className="ml-auto flex items-center justify-end gap-4 text-xs text-gray-500">
+              <div className="ml-auto h-12 border-l border-gray-200/50 pl-4 flex items-center justify-end gap-4 text-xs text-gray-500">
                 <Link href="/terms" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Terms</Link>
                 <Link href="/privacy" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Privacy</Link>
-                <span>&copy; 2026 ZcashMe, Inc.</span>
+                <div className="h-12 border-l border-gray-200/50 pl-4 flex items-center">
+                  <span>&copy; 2026 ZcashMe</span>
+                </div>
               </div>
             </div>
-            <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 flex-shrink-0 border-l border-gray-200/50 items-center justify-center">
               <Link href="/" aria-label="Go to homepage" className="flex items-center justify-center h-full w-full">
                 <img
                   src="/assets/icons/zcashme-logo.svg"
