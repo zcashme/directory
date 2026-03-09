@@ -109,6 +109,11 @@ export default function SwapComposer({
   const autoConfirmKeyRef = useRef("");
   const wasRefundValidRef = useRef(false);
   const previousFlowStepRef = useRef("none");
+  const isTouchingRef = useRef(false);
+  const lastUserScrollIntentAtRef = useRef(0);
+  const programmaticScrollUntilRef = useRef(0);
+  const autoScrollTimeoutsRef = useRef<number[]>([]);
+  const autoScrollRafRef = useRef<number | null>(null);
 
   // Format tokens for selector
   const formattedTokenOptions = tokenOptions.map((token) => ({
@@ -263,8 +268,71 @@ export default function SwapComposer({
     return () => window.cancelAnimationFrame(raf);
   }, []);
 
+  const markUserScrollIntent = () => {
+    lastUserScrollIntentAtRef.current = Date.now();
+  };
+
+  const clearPendingAutoScrollJobs = () => {
+    if (autoScrollRafRef.current !== null) {
+      window.cancelAnimationFrame(autoScrollRafRef.current);
+      autoScrollRafRef.current = null;
+    }
+    for (const timeoutId of autoScrollTimeoutsRef.current) {
+      window.clearTimeout(timeoutId);
+    }
+    autoScrollTimeoutsRef.current = [];
+  };
+
+  const shouldAllowAutoScroll = () => {
+    const AUTO_SCROLL_COOLDOWN_MS = 700;
+    return !isTouchingRef.current && Date.now() - lastUserScrollIntentAtRef.current >= AUTO_SCROLL_COOLDOWN_MS;
+  };
+
+  useEffect(() => {
+    const onTouchStart = () => {
+      isTouchingRef.current = true;
+      markUserScrollIntent();
+      clearPendingAutoScrollJobs();
+    };
+    const onTouchMove = () => {
+      isTouchingRef.current = true;
+      markUserScrollIntent();
+      clearPendingAutoScrollJobs();
+    };
+    const onTouchEnd = () => {
+      isTouchingRef.current = false;
+      markUserScrollIntent();
+    };
+    const onWheel = () => markUserScrollIntent();
+    const onScroll = () => {
+      if (Date.now() < programmaticScrollUntilRef.current) return;
+      markUserScrollIntent();
+      clearPendingAutoScrollJobs();
+    };
+
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("scroll", onScroll, { passive: true });
+
+    return () => {
+      clearPendingAutoScrollJobs();
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("touchend", onTouchEnd);
+      window.removeEventListener("touchcancel", onTouchEnd);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
   const scrollToAbsoluteBottom = () => {
+    clearPendingAutoScrollJobs();
+
     const scrollOnePass = () => {
+      if (!shouldAllowAutoScroll()) return;
       const root = rootRef.current;
       const seen = new Set<HTMLElement>();
       const scrollables: HTMLElement[] = [];
@@ -289,14 +357,17 @@ export default function SwapComposer({
         document.documentElement.scrollHeight,
         document.body.scrollHeight
       );
+      programmaticScrollUntilRef.current = Date.now() + 450;
       window.scrollTo({ top: bottom, behavior: "auto" });
     };
 
     scrollOnePass();
-    window.requestAnimationFrame(scrollOnePass);
-    window.setTimeout(scrollOnePass, 80);
-    window.setTimeout(scrollOnePass, 180);
-    window.setTimeout(scrollOnePass, 320);
+    autoScrollRafRef.current = window.requestAnimationFrame(() => {
+      autoScrollRafRef.current = null;
+      scrollOnePass();
+    });
+    autoScrollTimeoutsRef.current.push(window.setTimeout(scrollOnePass, 90));
+    autoScrollTimeoutsRef.current.push(window.setTimeout(scrollOnePass, 220));
   };
 
   useEffect(() => {
