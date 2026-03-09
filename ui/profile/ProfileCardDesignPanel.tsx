@@ -375,6 +375,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       onEdit={() => {}}
                       onVerify={() => {}}
                       onCreatePrefillUrl={() => {}}
+                      onUpgrade={() => {}}
                     />
                   </div>
 
