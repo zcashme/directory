@@ -78,7 +78,19 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
           className="relative flex items-stretch w-full border-x border-t border-gray-200/50"
           style={{ backgroundColor: "var(--color-background)" }}
         >
-          <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center" />
+          <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
+            <button
+              onClick={() => router.push("/")}
+              className="flex items-center justify-center h-full w-full"
+              aria-label="Go to homepage"
+            >
+              <img
+                src="/assets/icons/zcashme-logo.svg"
+                alt="Zcash.me logo"
+                className="h-10 w-10 object-contain translate-y-0.5"
+              />
+            </button>
+          </div>
 
           <div className="h-12 flex items-center px-3 flex-shrink-0 sm:border-l border-gray-200/50">
             <button

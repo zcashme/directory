@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
@@ -8,6 +9,14 @@ import "./globals.css";
 interface RootLayoutProps {
   children: ReactNode;
 }
+
+export const metadata: Metadata = {
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/icon.png",
+    apple: "/apple-icon.png",
+  },
+};
 
 const SHOW_FLOATING_SIDEBAR_MENU = false;
 
@@ -78,7 +87,15 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 <span>&copy; 2026 ZcashMe, Inc.</span>
               </div>
             </div>
-            <div className="hidden sm:block w-12 flex-shrink-0" />
+            <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
+              <Link href="/" aria-label="Go to homepage" className="flex items-center justify-center h-full w-full">
+                <img
+                  src="/assets/icons/zcashme-logo.svg"
+                  alt="Zcash.me logo"
+                  className="h-10 w-10 object-contain translate-y-0.5"
+                />
+              </Link>
+            </div>
           </div>
         </footer>
       </body>
