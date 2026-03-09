@@ -665,6 +665,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   const typedPrefix = animatedHeadline.slice(0, Math.min(animatedHeadline.length, headlinePrefix.length));
   const typedTail = animatedHeadline.slice(headlinePrefix.length);
   const isTypedProfileClickable = isTypedNameComplete && currentTypedProfileIndex !== null;
+  const mobileDownshiftPx = isMobile ? 48 : 0;
   const handleTypedNameClick = () => {
     if (!isTypedProfileClickable || currentTypedProfileIndex === null) return;
     const selectedProfile = profiles[currentTypedProfileIndex];
@@ -674,7 +675,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
   return (
     <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
-      <div className="mb-10 md:mb-12 text-center" style={{ transform: `translateY(${layoutTune.headlineY}px)` }}>
+      <div className="mb-10 md:mb-12 text-center" style={{ transform: `translateY(${layoutTune.headlineY + mobileDownshiftPx}px)` }}>
         <h2 className="text-2xl md:text-4xl font-semibold text-gray-900 tracking-tight">
           {typedPrefix}
           <span className="block md:inline min-h-[1.3em]">
@@ -692,7 +693,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
           </span>
         </h2>
       </div>
-      <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY}px)` }}>
+      <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY + mobileDownshiftPx}px)` }}>
         <div
           className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20"
           style={{ overflowX: "clip", touchAction: isMobile ? "pan-y" : undefined }}
@@ -865,8 +866,8 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
   );
 
   return (
-    <div className="flex flex-col" style={{ backgroundColor: 'var(--color-background)' }}>
-      <div className="flex-1">
+    <div className="flex flex-col min-h-[calc(100dvh-96px)] overflow-hidden" style={{ backgroundColor: 'var(--color-background)' }}>
+      <div className="flex-1 overflow-hidden">
         <FeaturedCardsSection profiles={initialFeaturedProfiles} onCardClick={handleCardClick} />
       </div>
     </div>
