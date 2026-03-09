@@ -82,6 +82,10 @@ function FannedCard({
   const effectiveCardTheme = isMaxi ? profile.profile_card_theme : "none";
   const effectiveBorderTheme = isMaxi ? profile.profile_card_border : null;
   const { background: activeCardBackground } = resolveProfileCardColors(effectiveCardTheme);
+  const resolvedCardBackground =
+    activeCardBackground === "transparent" || /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)$/i.test(activeCardBackground)
+      ? "var(--color-background)"
+      : activeCardBackground;
   const activeBorderColor = getProfileCardBorder(effectiveBorderTheme)?.color ?? "#111827";
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
@@ -137,7 +141,7 @@ function FannedCard({
         <div
           className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative overflow-hidden ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
-            backgroundColor: activeCardBackground,
+            backgroundColor: resolvedCardBackground,
             borderColor: activeBorderColor,
             minHeight: '360px',
             maxHeight: '400px',
@@ -187,7 +191,7 @@ function FannedCard({
       <div
         className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative overflow-hidden ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
-          backgroundColor: activeCardBackground,
+          backgroundColor: resolvedCardBackground,
           borderColor: activeBorderColor,
           minHeight: '400px',
           maxHeight: '460px',
