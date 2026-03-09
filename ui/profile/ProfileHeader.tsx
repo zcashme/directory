@@ -18,7 +18,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
   const [search, setSearch] = useState("");
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
@@ -76,12 +75,8 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
       <div className="w-full">
         <div
           ref={headerBarRef}
-          className="relative flex items-stretch w-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-x border-t border-gray-200/50 transition-colors"
-          style={{
-            backgroundColor: isSearchFocused
-              ? "var(--color-background)"
-              : "color-mix(in srgb, var(--color-background) 88%, transparent)",
-          }}
+          className="relative flex items-stretch w-full border-x border-t border-gray-200/50"
+          style={{ backgroundColor: "var(--color-background)" }}
         >
           <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center" />
 
@@ -134,7 +129,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 setPrefillUsername(username);
                 setIsJoinOpen(true);
               }}
-              onFocusChange={setIsSearchFocused}
               dropdownContainerRef={headerBarRef}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
               className="block w-full h-full min-w-0 px-3 py-[13px] text-sm leading-5 bg-transparent text-gray-800 placeholder-gray-400 outline-none"

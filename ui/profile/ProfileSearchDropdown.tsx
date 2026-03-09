@@ -50,7 +50,6 @@ interface ProfileSearchDropdownProps {
   onChange: (value: string | Profile) => void; // eslint-disable-line no-unused-vars
   placeholder?: string;
   onClaimClick?: (username: string) => void; // eslint-disable-line no-unused-vars
-  onFocusChange?: (focused: boolean) => void; // eslint-disable-line no-unused-vars
   showUsernameAvailability?: boolean;
   className?: string;
   dropdownContainerRef?: RefObject<HTMLElement | null>;
@@ -61,7 +60,6 @@ export default function ProfileSearchDropdown({
   onChange,
   placeholder = "Search",
   onClaimClick,
-  onFocusChange,
   showUsernameAvailability = true,
   className = `w-full rounded-2xl border px-3 py-2 text-sm bg-transparent outline-hidden text-gray-800 placeholder-gray-400 ${withFieldBorderState("border-[#0a1126]/60")}`,
   dropdownContainerRef,
@@ -201,10 +199,7 @@ export default function ProfileSearchDropdown({
           }}
           onFocus={() => {
             if (value?.trim()) setShow(true);
-            onFocusChange?.(true);
           }}
-          onBlur={() => onFocusChange?.(false)}
-          onClick={() => onFocusChange?.(true)}
           placeholder={placeholder}
           autoComplete="off"
           className={className}
