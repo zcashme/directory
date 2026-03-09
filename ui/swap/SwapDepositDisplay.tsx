@@ -46,7 +46,7 @@ export default function SwapDepositDisplay({
   };
 
   return (
-    <div className="p-4 animate-fadeIn" style={{ backgroundColor: "#faf6ed" }}>
+    <div className="p-4 animate-fadeIn" style={{ backgroundColor: "var(--color-background)" }}>
       <p className="text-lg font-bold text-gray-900 mb-1 text-center">
         Send exactly {amountDecimal} {originSymbol} below.
       </p>
@@ -66,7 +66,7 @@ export default function SwapDepositDisplay({
           value={qrValue}
           size={250}
           includeMargin={true}
-          bgColor="#faf6ed"
+          bgColor="var(--color-background)"
           fgColor="#000000"
         />
       </div>
@@ -77,7 +77,7 @@ export default function SwapDepositDisplay({
           <p className="absolute -top-[20px] left-0 text-xs text-[var(--color-brand-blue)]">
             {originSymbol} deposit address:
           </p>
-          <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: "#faf6ed" }}>
+          <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: "var(--color-background)" }}>
           <p className="text-sm font-mono text-gray-900 break-all flex-1">
             {depositAddress}
           </p>
