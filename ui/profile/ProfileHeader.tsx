@@ -18,6 +18,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
   const [search, setSearch] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
@@ -70,16 +71,21 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   return (
     <div
       data-global-header
-      className="sticky top-0 z-[1200] pb-2"
-      style={{ paddingTop: "max(env(safe-area-inset-top), 1rem)" }}
+      className="sticky top-0 z-[1200]"
     >
-      <div className="flex justify-center px-4">
+      <div className="w-full">
         <div
           ref={headerBarRef}
-          className="relative flex items-center gap-3 px-4 py-2.5 w-full max-w-[720px] shadow-[0_8px_30px_rgb(0,0,0,0.12)] rounded-full border border-gray-200/50"
-          style={{ backgroundColor: "var(--color-background)" }}
+          className="relative flex items-stretch w-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] border-x border-t border-gray-200/50 transition-colors"
+          style={{
+            backgroundColor: isSearchFocused
+              ? "var(--color-background)"
+              : "color-mix(in srgb, var(--color-background) 88%, transparent)",
+          }}
         >
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center" />
+
+          <div className="h-12 flex items-center px-3 flex-shrink-0 sm:border-l border-gray-200/50">
             <button
               onClick={() => {
                 const host = window.location.hostname;
@@ -100,7 +106,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             </button>
           </div>
 
-          <div className="flex-1 min-w-0 relative">
+          <div className="flex-1 min-w-0 h-12 border-l border-gray-200/50 relative">
             <ProfileSearchDropdown
               value={search}
               onChange={(v) => {
@@ -128,25 +134,36 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 setPrefillUsername(username);
                 setIsJoinOpen(true);
               }}
+              onFocusChange={setIsSearchFocused}
               dropdownContainerRef={headerBarRef}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
-              className="w-full min-w-0 pl-3 pt-2.5 pb-1.5 pr-3 text-sm leading-none bg-transparent text-gray-800 placeholder-gray-400 outline-none"
+              className="block w-full h-full min-w-0 px-3 py-[13px] text-sm leading-5 bg-transparent text-gray-800 placeholder-gray-400 outline-none"
             />
           </div>
 
-          <motion.button
-            onClick={() => {
-              setIsJoinOpen(true);
-            }}
-            whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
-            transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
-            className="flex-shrink-0 flex items-center justify-center bg-green-600 text-white px-4 rounded-full text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
+          <div className="h-12 border-l border-gray-200/50 flex-shrink-0 flex items-center px-2">
+            <motion.button
+              onClick={() => {
+                setIsJoinOpen(true);
+              }}
+              whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
+              transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
+              className="h-8 rounded-md flex items-center justify-center bg-green-600 text-white px-4 text-sm font-semibold shadow-md whitespace-nowrap animate-joinPulse hover:shadow-[0_0_12px_rgba(34,197,94,0.7)] hover:bg-green-500"
+            >
+              Join
+            </motion.button>
+          </div>
+
+          <div className="hidden sm:block w-12 h-12 flex-shrink-0 border-l border-gray-200/50" />
+
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-0 left-0 right-0 h-px"
             style={{
-              height: '32px',
+              backgroundImage:
+                "linear-gradient(90deg, rgba(229,231,235,0) 0%, rgba(229,231,235,0.5) 36px, rgba(229,231,235,0.5) calc(100% - 36px), rgba(229,231,235,0) 100%)",
             }}
-          >
-            Join
-          </motion.button>
+          />
 
         </div>
       </div>
