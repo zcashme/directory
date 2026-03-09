@@ -78,7 +78,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
           className="relative flex items-stretch w-full border-x border-t border-gray-200/50"
           style={{ backgroundColor: "var(--color-background)" }}
         >
-          <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
+          <div className="flex w-12 h-12 flex-shrink-0 items-center justify-center">
             <button
               onClick={() => router.push("/")}
               className="flex items-center justify-center h-full w-full"
@@ -92,7 +92,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             </button>
           </div>
 
-          <div className="h-12 flex items-center px-3 flex-shrink-0 sm:border-l border-gray-200/50">
+          <div className="h-12 flex items-center px-3 flex-shrink-0 border-l border-gray-200/50">
             <button
               onClick={() => {
                 const host = window.location.hostname;
