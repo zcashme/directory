@@ -435,7 +435,10 @@ export default function ProfileCard({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!hasDesignAccess) return;
+                      if (!hasDesignAccess) {
+                        setIsUpgradeOpen(true);
+                        return;
+                      }
                       setShowDesignBack(true);
                     }}
                     className={`inline-flex items-center gap-1 rounded-full border px-3 h-9 text-sm font-semibold whitespace-nowrap transition-all ${
@@ -443,11 +446,11 @@ export default function ProfileCard({
                         ? "border-gray-300 bg-white/90 text-gray-700 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
                         : "border-gray-300 bg-white/90 text-gray-500 cursor-default"
                     }`}
-                    aria-label="Design Card"
-                    title={hasDesignAccess ? "Design Card" : "Design Card (Maxi required)"}
+                    aria-label="Design"
+                    title={hasDesignAccess ? "Design" : "Design (Maxi required)"}
                   >
                     {!hasDesignAccess && <span aria-hidden>{"\uD83D\uDD12"}</span>}
-                    <span>Design Card</span>
+                    <span>Design</span>
                   </button>
                 )}
               </div>
