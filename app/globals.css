@@ -348,6 +348,16 @@ body {
   animation: verified-card-shimmer 6s linear infinite;
 }
 
+/* Maxi modal holographic shimmer (smooth ping-pong loop) */
+@keyframes maxi-holo-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.maxi-holo-shimmer {
+  background-size: 220% 220%;
+  animation: maxi-holo-shimmer 4.5s ease-in-out infinite alternate;
+}
+
 /* Hide scrollbar */
 .scrollbar-hide {
   -ms-overflow-style: none;

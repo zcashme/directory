@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { Profile } from "@/lib/profile/types";
 import { generateMaxiMemoAction } from "@/lib/verification/generateMaxiMemoAction";
 import { confirmMaxiOtpAction } from "@/lib/verification/confirmMaxiOtpAction";
@@ -12,9 +12,11 @@ import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 interface MaxiUpgradeProps {
   profile: Profile;
   onClose?: () => void;
+  onFlowExpandedChange?: (expanded: boolean) => void;
+  onRegisterCollapseAction?: (action: () => void) => void;
 }
 
-export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
+export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterCollapseAction }: MaxiUpgradeProps) {
   const [qrVisible, setQrVisible] = useState(false);
   const [currentMemo, setCurrentMemo] = useState("");
   const [currentUri, setCurrentUri] = useState("");
@@ -27,6 +29,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
 
   const handleGenerateQr = useCallback(async () => {
     if (!profile?.id) return;
+    onFlowExpandedChange?.(true);
     setError("");
     setOtpResult(null);
     setOtp("");
@@ -42,13 +45,15 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
         setQrVisible(true);
       } else {
         setError(result.error ?? "Failed to generate QR code.");
+        onFlowExpandedChange?.(false);
       }
     } catch {
       setError("Failed to generate QR code. Please try again.");
+      onFlowExpandedChange?.(false);
     } finally {
       setIsGenerating(false);
     }
-  }, [profile?.id]);
+  }, [profile?.id, onFlowExpandedChange]);
 
   const handleSubmitOtp = useCallback(async () => {
     const otpValue = otp.trim();
@@ -77,6 +82,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
         if (remaining <= 0) {
           setOtpResult({ ok: false, message: "Too many attempts. Please generate a new QR code." });
           setQrVisible(false);
+          onFlowExpandedChange?.(false);
         } else {
           setOtpResult({
             ok: false,
@@ -89,7 +95,22 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id, currentMemo, otpAttemptsLeft]);
+  }, [otp, profile.id, currentMemo, otpAttemptsLeft, onFlowExpandedChange]);
+
+  const collapseToPayButton = useCallback(() => {
+    setQrVisible(false);
+    setCurrentMemo("");
+    setCurrentUri("");
+    setOtp("");
+    setOtpAttemptsLeft(5);
+    setOtpResult(null);
+    setError("");
+    onFlowExpandedChange?.(false);
+  }, [onFlowExpandedChange]);
+
+  useEffect(() => {
+    onRegisterCollapseAction?.(collapseToPayButton);
+  }, [onRegisterCollapseAction, collapseToPayButton]);
 
   const handleOtpChange = useCallback((value: string) => {
     setOtp(value.replace(/\D/g, ""));
@@ -106,9 +127,9 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
             type="button"
             onClick={handleGenerateQr}
             disabled={isGenerating}
-            className="w-full py-3 rounded-xl bg-[var(--color-brand-blue)] text-white font-semibold hover:bg-[var(--color-brand-blue)]/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-3 rounded-xl border border-amber-100/50 bg-[linear-gradient(135deg,rgba(21,128,61,0.96)_0%,rgba(16,185,129,0.92)_55%,rgba(234,179,8,0.75)_100%)] text-amber-50 font-semibold shadow-[0_10px_26px_-14px_rgba(234,179,8,0.8),inset_0_1px_0_rgba(255,255,255,0.24)] hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isGenerating ? "Generating..." : "Pay 1 ZEC to Upgrade"}
+            {isGenerating ? "Generating..." : "Pay 1 ZEC to Unlock"}
           </button>
         </div>
       )}
@@ -118,7 +139,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
       )}
 
       <div className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${showQrSection ? "mt-1 pt-1 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="flex justify-center mb-4">
+        <div className="relative mb-4 flex w-full flex-col items-center overflow-hidden rounded-2xl border border-white/45 bg-white/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <QrUriBlock
             uri={currentUri}
             profileName="maxi-upgrade"
@@ -128,7 +149,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
           />
         </div>
 
-        <div className="relative w-full max-w-[300px] mx-auto border border-gray-800 rounded-xl p-3 bg-transparent">
+        <div className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/45 bg-white/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <div className="space-y-3">
             <OtpInput
               id="maxi-otp"
@@ -143,7 +164,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
             <button
               type="button"
               onClick={handleSubmitOtp}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 border-amber-100/50 text-amber-50 bg-[linear-gradient(140deg,rgba(21,128,61,0.96)_0%,rgba(234,179,8,0.68)_100%)] hover:brightness-110 font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
               disabled={!isOtpComplete || isSubmitting}
             >
               {isSubmitting ? "Upgrading..." : "Confirm Upgrade"}
@@ -151,7 +172,7 @@ export default function MaxiUpgrade({ profile }: MaxiUpgradeProps) {
           </div>
 
           {otpResult && (
-            <div className={`mt-3 text-sm font-semibold ${otpResult.ok ? "text-green-700" : "text-red-600"}`}>
+            <div className={`mt-3 text-sm font-semibold ${otpResult.ok ? "text-emerald-200" : "text-rose-300"}`}>
               {otpResult.message}
             </div>
           )}

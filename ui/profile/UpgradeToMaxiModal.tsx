@@ -1,15 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import ReactDOM from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
+import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
 const FEATURES = [
-  "Priority placement in the directory",
-  "Gold verified badge on your profile",
-  "Enhanced referral commission rates",
-  "Custom profile themes",
+  {
+    title: "Claim Your Name.zcash First",
+    description: "Get early access to the .zcash namespace before public launch.",
+  },
+  {
+    title: "Get Up to 0.5 ZEC Back",
+    description: "Receive monthly ZEC rewards when you complete at least one verification.",
+  },
+  {
+    title: "Free Verifications",
+    description: "Receive one-time passcodes without sending the minimum ZEC amount.",
+  },
+  {
+    title: "Colorful Profiles",
+    description: "Customize your profile with premium colors and themes.",
+  },
+  {
+    title: "More Referral Rewards",
+    description: "Earn up to 80% of verification fees and 20% from referred users who become maxis.",
+  },
+  {
+    title: "Showcase Badges",
+    description: "Display a Gold Zcash Maxi (ZM) badge or request an affiliate badge on your profile.",
+  },
+  {
+    title: "Featured on Homepage",
+    description: "Request a featured listing on the ZcashMe homepage.",
+  },
+  {
+    title: "Early Access to New Features",
+    description: "Test upcoming tools such as notifications and the ZM social wallet before public release.",
+  },
+  {
+    title: "More Features Coming Soon",
+    description: "Premium features will continue to expand.",
+  },
 ];
+
+const AVATAR_SIZE = 120;
+const AVATAR_SPACER = 64;
+const ACTION_BUTTONS_TOP = 16;
+const ACTION_BUTTONS_HEIGHT = 36;
+const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
+const AVATAR_TUNE_Y = 20;
 
 interface UpgradeToMaxiModalProps {
   isOpen: boolean;
@@ -18,42 +59,131 @@ interface UpgradeToMaxiModalProps {
 }
 
 export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: UpgradeToMaxiModalProps) {
+  const [isPaymentFlowExpanded, setIsPaymentFlowExpanded] = useState(false);
+  const [collapsePaymentFlow, setCollapsePaymentFlow] = useState<(() => void) | null>(null);
+  const [expandedFeatureTitle, setExpandedFeatureTitle] = useState<string | null>(null);
+
   if (!isOpen || typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
-      <div className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200 my-4">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition-colors"
-          aria-label="Close"
+      <div
+        className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200 my-4"
+        style={{ transform: `translateY(${AVATAR_OVERLAP_Y}px)` }}
+      >
+        <div
+          className="absolute left-1/2 top-0 z-30"
+          style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px + ${AVATAR_TUNE_Y}px))` }}
         >
-          ✕
-        </button>
+          <ProfileAvatar
+            profile={profile}
+            size={AVATAR_SIZE}
+            imageClassName="object-contain"
+            className="mx-auto shadow-xs flex items-center justify-center"
+            borderColor="rgba(253, 230, 138, 0.7)"
+          />
+        </div>
 
-        <div className="p-6">
-          <div className="text-center mb-6">
-            <div className="text-3xl mb-2">★</div>
-            <h2 className="text-xl font-bold text-gray-900">Upgrade to Maxi</h2>
-          </div>
+        <div className="relative h-[min(700px,calc(100vh-2.5rem))] overflow-hidden rounded-[26px] border border-amber-200/70 shadow-[0_22px_60px_-18px_rgba(0,0,0,0.65),0_0_35px_rgba(234,179,8,0.25)]">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_15%_10%,rgba(250,204,21,0.28),transparent_45%),radial-gradient(circle_at_85%_14%,rgba(34,197,94,0.35),transparent_52%),linear-gradient(155deg,rgba(7,61,34,0.95)_0%,rgba(6,78,59,0.96)_44%,rgba(101,163,13,0.9)_100%)]" />
+          <div className="maxi-holo-shimmer absolute inset-0 opacity-60 mix-blend-screen bg-[linear-gradient(120deg,rgba(250,204,21,0.24)_0%,rgba(187,247,208,0.24)_20%,rgba(134,239,172,0.2)_36%,rgba(250,204,21,0.14)_55%,rgba(125,211,252,0.22)_76%,rgba(250,204,21,0.3)_100%)]" />
+          <div className="absolute inset-0 opacity-30 bg-[repeating-linear-gradient(115deg,rgba(255,255,255,0.12)_0px,rgba(255,255,255,0.12)_1px,transparent_1px,transparent_9px)]" />
+          <div className="absolute inset-[1px] rounded-[24px] border border-white/25 pointer-events-none" />
 
-          <div className="space-y-3 mb-6">
-            {FEATURES.map((f) => (
-              <div key={f} className="flex items-start gap-3 text-sm">
-                <span className="text-[var(--color-brand-blue)] mt-0.5">✓</span>
-                <span className="text-gray-700">{f}</span>
-              </div>
-            ))}
-          </div>
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 z-20 rounded-full px-3 py-1 text-sm font-semibold text-amber-50/90 hover:bg-amber-300/20 hover:text-white transition-colors"
+            aria-label="Close"
+          >
+            Close
+          </button>
+          {isPaymentFlowExpanded && (
+            <button
+              type="button"
+              onClick={() => collapsePaymentFlow?.()}
+              className="absolute top-3 left-3 z-20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold text-amber-50/90 hover:bg-amber-300/20 hover:text-white transition-colors"
+              aria-label="Collapse payment section"
+              title="Back"
+            >
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 20 20"
+                className="h-4 w-4"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M8 5l-5 5 5 5" />
+                <path d="M4 10h13" />
+              </svg>
+              <span>Back</span>
+            </button>
+          )}
 
-          <div className="border-t border-gray-200 pt-4">
-            <div className="text-center mb-4">
-              <span className="text-2xl font-bold text-gray-900">1 ZEC</span>
-              <span className="text-sm text-gray-500 ml-1">one-time</span>
+          <div className="relative z-10 flex h-full flex-col overflow-y-auto p-6">
+            <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
+            <div
+              className={`overflow-hidden text-center transition-[max-height,opacity,margin] duration-300 ${
+                isPaymentFlowExpanded ? "mb-0 max-h-0 opacity-0" : "mb-3 max-h-40 opacity-100"
+              }`}
+            >
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">Zcash.me Premium</p>
+              <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-amber-50">Unlock Maxi Mode</h2>
+              <p className="mt-2 text-sm text-emerald-50/80">Exclusive ways to earn more, spend less, be early,   <br /> and look great doing it.</p>
             </div>
-            <MaxiUpgrade profile={profile} onClose={onClose} />
+
+            <div className="pt-1">
+              <MaxiUpgrade
+                profile={profile}
+                onClose={onClose}
+                onFlowExpandedChange={setIsPaymentFlowExpanded}
+                onRegisterCollapseAction={(action) => setCollapsePaymentFlow(() => action)}
+              />
+            </div>
+
+            <div
+              className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ${
+                isPaymentFlowExpanded ? "mt-0 max-h-0 opacity-0" : "mt-6 flex-1 min-h-0 max-h-[1000px] opacity-100 border-t border-amber-100/25 pt-4"
+              }`}
+            >
+              <div className="h-full min-h-0 space-y-2.5 overflow-y-auto pr-1 pb-4">
+                {FEATURES.map((feature) => {
+                  const isExpanded = expandedFeatureTitle === feature.title;
+                  return (
+                    <div
+                      key={feature.title}
+                      className="rounded-xl border border-emerald-100/20 bg-black/10 px-3 py-2.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => setExpandedFeatureTitle((prev) => (prev === feature.title ? null : feature.title))}
+                        className="flex w-full items-center gap-3 text-left"
+                        aria-expanded={isExpanded}
+                      >
+                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-100/40 bg-amber-300/20 text-xs font-bold text-amber-100">
+                          ✓
+                        </span>
+                        <span className="font-semibold text-emerald-50/95">{feature.title}</span>
+                        <span className="ml-auto text-base font-semibold leading-none text-amber-100/90">
+                          {isExpanded ? "-" : "+"}
+                        </span>
+                      </button>
+                      <div
+                        className={`overflow-hidden transition-[max-height,opacity,margin] duration-250 ${
+                          isExpanded && feature.description ? "mt-2 max-h-40 opacity-100" : "mt-0 max-h-0 opacity-0"
+                        }`}
+                      >
+                        <p className="text-xs leading-relaxed text-emerald-50/80">{feature.description}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       </div>
