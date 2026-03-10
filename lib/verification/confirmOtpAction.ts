@@ -185,8 +185,8 @@ export async function confirmOtpAction(
       ...(profile.first_verified_at ? {} : { first_verified_at: now }),
     };
     if (!isMaxi) {
-      profileUpdate.profile_card_theme = "none";
-      profileUpdate.profile_page_bkgd = "none";
+      profileUpdate.profile_card_theme = null;
+      profileUpdate.profile_page_bkgd = null;
       profileUpdate.profile_card_border = null;
     }
     let uploadedAvatarUrl: string | null = null;
@@ -287,7 +287,7 @@ export async function confirmOtpAction(
           };
         }
         if (normalizedThemeId === "none") {
-          profileUpdate.profile_card_theme = "none";
+          profileUpdate.profile_card_theme = null;
         } else {
           const selectedTheme = getProfileCardTheme(normalizedThemeId);
           profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
@@ -303,7 +303,7 @@ export async function confirmOtpAction(
           };
         }
         if (normalizedBackgroundId === "none") {
-          profileUpdate.profile_page_bkgd = "none";
+          profileUpdate.profile_page_bkgd = null;
         } else {
           const selectedBackground = getProfilePageBackground(normalizedBackgroundId);
           profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
@@ -319,7 +319,7 @@ export async function confirmOtpAction(
           };
         }
         if (normalizedBorderId === "none") {
-          profileUpdate.profile_card_border = "none";
+          profileUpdate.profile_card_border = null;
         } else {
           const selectedBorder = getProfileCardBorder(normalizedBorderId);
           profileUpdate.profile_card_border = selectedBorder?.id ?? null;
@@ -339,6 +339,13 @@ export async function confirmOtpAction(
         }
       }
       if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
+    }
+
+    // DB constraints for style fields may not allow sentinel values like "none" or empty strings.
+    for (const key of ["profile_card_theme", "profile_page_bkgd", "profile_card_border"] as const) {
+      if (profileUpdate[key] === "none" || profileUpdate[key] === "") {
+        profileUpdate[key] = null;
+      }
     }
 
     let { error } = await supabase
