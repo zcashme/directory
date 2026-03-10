@@ -122,6 +122,7 @@ export default function ProfileCard({
   const { theme: activeCardTheme, background: activeCardBackground, text: activeCardText } =
     resolveProfileCardColors(effectiveCardTheme);
   const selectedBorderColor = getProfileCardBorder(effectiveBorderTheme)?.color ?? null;
+  const avatarBorderColor = selectedBorderColor ?? "#111827";
   const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
   const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
   const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
@@ -200,9 +201,9 @@ export default function ProfileCard({
         <VerifiedCardWrapper
           verifiedCount={(profile.verified_links_count ?? 0) + (profile.address_verified ? 1 : 0)}
           featured={!!profile.featured}
-          borderAccentColor={selectedBorderColor}
+          borderAccentColor={avatarBorderColor}
           unstyled={showDesignBack}
-          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center w-full"
+          className="relative overflow-visible mx-auto mb-8 p-6 animate-fadeIn text-center w-full !rounded-[26px]"
           style={{
             width: resolvedCardWidth ? `${resolvedCardWidth}px` : undefined,
             maxWidth: "100%",
@@ -228,7 +229,7 @@ export default function ProfileCard({
             style={{ transformOrigin: "top center", willChange: "transform" }}
           >
             <div
-              className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full rounded-2xl`}
+              className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full rounded-[26px]`}
               style={
                 {
                   backgroundColor: activeCardBackground,
@@ -263,7 +264,13 @@ export default function ProfileCard({
                 style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))` }}
                 aria-hidden={showBack}
               >
-                <ProfileAvatar profile={profile} size={AVATAR_SIZE} imageClassName="object-contain" className="mx-auto shadow-xs flex items-center justify-center" />
+                <ProfileAvatar
+                  profile={profile}
+                  size={AVATAR_SIZE}
+                  imageClassName="object-contain"
+                  className="mx-auto shadow-xs flex items-center justify-center"
+                  borderColor={avatarBorderColor}
+                />
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
 
@@ -383,8 +390,8 @@ export default function ProfileCard({
             <div
               className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""} ${
                 showDesignBack
-                  ? "rounded-2xl border-0 bg-transparent shadow-none p-0"
-                  : "bg-white rounded-2xl border border-gray-300 shadow-inner p-5"
+                  ? "rounded-[26px] border-0 bg-transparent shadow-none p-0"
+                  : "bg-white rounded-[26px] border border-gray-300 shadow-inner p-5"
               } flex flex-col items-center justify-start overflow-visible`}
               style={{
                 pointerEvents: showBack ? "auto" : "none",
@@ -403,6 +410,7 @@ export default function ProfileCard({
                   size={AVATAR_SIZE}
                   imageClassName="object-contain"
                   className="mx-auto shadow-xs flex items-center justify-center"
+                  borderColor={avatarBorderColor}
                 />
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />

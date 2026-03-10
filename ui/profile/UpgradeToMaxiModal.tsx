@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
@@ -62,11 +62,13 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
   const [isPaymentFlowExpanded, setIsPaymentFlowExpanded] = useState(false);
   const [collapsePaymentFlow, setCollapsePaymentFlow] = useState<(() => void) | null>(null);
   const [expandedFeatureTitle, setExpandedFeatureTitle] = useState<string | null>(null);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const featureListRef = useRef<HTMLDivElement | null>(null);
 
   if (!isOpen || typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-4 py-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       <div
@@ -147,10 +149,14 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
 
             <div
               className={`overflow-hidden transition-[max-height,opacity,margin] duration-300 ${
-                isPaymentFlowExpanded ? "mt-0 max-h-0 opacity-0" : "mt-6 flex-1 min-h-0 max-h-[1000px] opacity-100 border-t border-amber-100/25 pt-4"
+                isPaymentFlowExpanded ? "mt-0 max-h-0 opacity-0" : "mt-6 flex flex-1 min-h-0 max-h-[1000px] flex-col opacity-100 border-t border-amber-100/25 pt-4"
               }`}
             >
-              <div className="h-full min-h-0 space-y-2.5 overflow-y-auto pr-1 pb-4">
+              <div
+                ref={featureListRef}
+                onScroll={(event) => setShowBackToTop(event.currentTarget.scrollTop > 40)}
+                className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 pb-4"
+              >
                 {FEATURES.map((feature) => {
                   const isExpanded = expandedFeatureTitle === feature.title;
                   return (
@@ -182,6 +188,19 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                     </div>
                   );
                 })}
+              </div>
+              <div
+                className={`pt-2 pb-1 flex justify-center border-t border-amber-100/20 transition-opacity ${
+                  showBackToTop ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => featureListRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
+                  className="text-xs font-semibold text-amber-100/95 underline decoration-amber-100/70 underline-offset-2 hover:text-amber-50 transition-colors"
+                >
+                  Back to top
+                </button>
               </div>
             </div>
           </div>

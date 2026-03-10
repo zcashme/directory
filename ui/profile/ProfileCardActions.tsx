@@ -74,8 +74,6 @@ export default function ProfileCardActions({
         >
           {menuItem(showStats ? "⭔ Hide Awards" : "⭔ Show Awards", onToggleStats, !showStats && !hasAwards)}
           {menuItem("↺ Edit Profile", onEdit)}
-          {menuItem("✓ Verify Profile", onVerify)}
-          {menuItem("★ Upgrade to Maxi", onUpgrade)}
           {menuItem("\u26D3 Create Paylink", onCreatePrefillUrl)}
           {menuItem("⤴ Copy Refer Link", async () => {
             const baseUrl = buildShareUrl(profile);
@@ -83,6 +81,8 @@ export default function ProfileCardActions({
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
+          {menuItem("✓ Verify Profile", onVerify)}
+          {menuItem("★ Unlock Maxi Mode", onUpgrade)}
         </div>
       </div>
 
