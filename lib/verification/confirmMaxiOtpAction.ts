@@ -49,7 +49,7 @@ export async function confirmMaxiOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, is_maxi")
+      .select("address, is_maxi, first_verified_at")
       .eq("id", profileId)
       .single();
 
@@ -65,11 +65,16 @@ export async function confirmMaxiOtpAction(
       return { ok: false, error: "Profile is already upgraded to Maxi." };
     }
 
+    const now = new Date().toISOString();
+
     // Upgrade to Maxi and apply the fixed package theme.
     const { error } = await supabase
       .from("zcasher")
       .update({
         is_maxi: true,
+        address_verified: true,
+        last_verified_at: now,
+        ...(profile.first_verified_at ? {} : { first_verified_at: now }),
         profile_theme_package: "maxi_theme",
         profile_card_theme: null,
         profile_page_bkgd: null,
