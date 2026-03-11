@@ -12,7 +12,7 @@ interface ConfirmMaxiResult {
 /**
  * Server action: confirm a Maxi upgrade OTP.
  * Verifies the 6-digit code against the 24-digit session memo,
- * then sets is_maxi = true on the profile.
+ * then upgrades the profile to Maxi + applies the fixed Maxi theme package.
  */
 export async function confirmMaxiOtpAction(
   profileId: number,
@@ -65,10 +65,16 @@ export async function confirmMaxiOtpAction(
       return { ok: false, error: "Profile is already upgraded to Maxi." };
     }
 
-    // Upgrade to Maxi
+    // Upgrade to Maxi and apply the fixed package theme.
     const { error } = await supabase
       .from("zcasher")
-      .update({ is_maxi: true })
+      .update({
+        is_maxi: true,
+        profile_theme_package: "maxi_theme",
+        profile_card_theme: null,
+        profile_page_bkgd: null,
+        profile_card_border: null,
+      })
       .eq("id", profileId);
 
     if (error) {

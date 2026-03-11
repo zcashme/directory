@@ -12,6 +12,7 @@ import {
   normalizeProfileCardBorderId,
   normalizeProfileCardThemeSelectionId,
   normalizeProfilePageBackgroundId,
+  normalizeProfileThemePackageSelectionId,
 } from "@/lib/profile/profileCardTheme";
 import {
   AVATAR_BUCKET,
@@ -160,7 +161,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, is_maxi")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, is_maxi, profile_theme_package")
       .eq("id", profileId)
       .single();
 
@@ -185,6 +186,7 @@ export async function confirmOtpAction(
       ...(profile.first_verified_at ? {} : { first_verified_at: now }),
     };
     if (!isMaxi) {
+      profileUpdate.profile_theme_package = null;
       profileUpdate.profile_card_theme = null;
       profileUpdate.profile_page_bkgd = null;
       profileUpdate.profile_card_border = null;
@@ -277,7 +279,34 @@ export async function confirmOtpAction(
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
-      if (isMaxi && edits.profile_card_theme !== undefined) {
+      const currentThemePackageSelection = normalizeProfileThemePackageSelectionId(profile.profile_theme_package);
+      let activeThemePackage: "maxi_theme" | null = currentThemePackageSelection === "maxi_theme" ? "maxi_theme" : null;
+
+      if (isMaxi && edits.profile_theme_package !== undefined) {
+        const normalizedThemePackage = normalizeProfileThemePackageSelectionId(edits.profile_theme_package);
+        if (!normalizedThemePackage && edits.profile_theme_package !== "") {
+          return {
+            ok: false,
+            error: "Unsupported profile theme package.",
+            data: { status: "invalid" },
+          };
+        }
+        if (normalizedThemePackage === "none") {
+          profileUpdate.profile_theme_package = null;
+          activeThemePackage = null;
+        } else {
+          profileUpdate.profile_theme_package = normalizedThemePackage ?? null;
+          activeThemePackage = normalizedThemePackage === "maxi_theme" ? "maxi_theme" : null;
+        }
+      }
+
+      if (activeThemePackage === "maxi_theme") {
+        profileUpdate.profile_card_theme = null;
+        profileUpdate.profile_page_bkgd = null;
+        profileUpdate.profile_card_border = null;
+      }
+
+      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_card_theme !== undefined) {
         const normalizedThemeId = normalizeProfileCardThemeSelectionId(edits.profile_card_theme);
         if (!normalizedThemeId && edits.profile_card_theme !== "") {
           return {
@@ -293,7 +322,7 @@ export async function confirmOtpAction(
           profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
         }
       }
-      if (isMaxi && edits.profile_page_bkgd !== undefined) {
+      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_page_bkgd !== undefined) {
         const normalizedBackgroundId = normalizeProfilePageBackgroundId(edits.profile_page_bkgd);
         if (!normalizedBackgroundId && edits.profile_page_bkgd !== "") {
           return {
@@ -309,7 +338,7 @@ export async function confirmOtpAction(
           profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
         }
       }
-      if (isMaxi && edits.profile_card_border !== undefined) {
+      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_card_border !== undefined) {
         const normalizedBorderId = normalizeProfileCardBorderId(edits.profile_card_border);
         if (!normalizedBorderId && edits.profile_card_border !== "") {
           return {
@@ -342,7 +371,7 @@ export async function confirmOtpAction(
     }
 
     // DB constraints for style fields may not allow sentinel values like "none" or empty strings.
-    for (const key of ["profile_card_theme", "profile_page_bkgd", "profile_card_border"] as const) {
+    for (const key of ["profile_theme_package", "profile_card_theme", "profile_page_bkgd", "profile_card_border"] as const) {
       if (profileUpdate[key] === "none" || profileUpdate[key] === "") {
         profileUpdate[key] = null;
       }
@@ -353,14 +382,18 @@ export async function confirmOtpAction(
       .update(profileUpdate)
       .eq("id", profileId);
 
-    if (error && Object.prototype.hasOwnProperty.call(profileUpdate, "profile_card_border")) {
+    if (error) {
       const message = String(error.message || "").toLowerCase();
-      const missingBorderColumn =
-        message.includes("profile_card_border") &&
-        (message.includes("column") || message.includes("schema"));
-      if (missingBorderColumn) {
+      const missingStyleColumns = (["profile_card_border", "profile_theme_package"] as const).filter((column) =>
+        Object.prototype.hasOwnProperty.call(profileUpdate, column) &&
+        message.includes(column) &&
+        (message.includes("column") || message.includes("schema"))
+      );
+      if (missingStyleColumns.length > 0) {
         const fallbackUpdate = { ...profileUpdate };
-        delete fallbackUpdate.profile_card_border;
+        for (const column of missingStyleColumns) {
+          delete fallbackUpdate[column];
+        }
         const fallbackResult = await supabase
           .from("zcasher")
           .update(fallbackUpdate)

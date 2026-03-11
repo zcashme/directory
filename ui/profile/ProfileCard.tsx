@@ -1,6 +1,6 @@
-"use client";
+﻿"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
@@ -22,9 +22,8 @@ import { detectProviderFromUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import {
-  resolveProfileCardColors,
-  resolveProfilePageBackgroundColor,
-  getProfileCardBorder,
+  normalizeProfileThemePackageSelectionId,
+  resolveProfileVisualTheme,
 } from "@/lib/profile/profileCardTheme";
 import { useEditsStore } from "@/ui/profile/store";
 import ProfileCardListView from "./ProfileCardListView";
@@ -90,9 +89,11 @@ export default function ProfileCard({
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [showDesignBack, setShowDesignBack] = useState(false);
+  const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
-  const { form } = useEditsStore();
+  const themeMenuRef = useRef<HTMLDivElement | null>(null);
+  const { form, original, updateField } = useEditsStore();
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
@@ -113,20 +114,58 @@ export default function ProfileCard({
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
   const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
   const hasDesignAccess = isMaxi;
-  const effectiveCardTheme = isMaxi ? profile.profile_card_theme : "none";
-  const effectivePageBackground = isMaxi
-    ? (showBack ? form.profile_page_bkgd : profile.profile_page_bkgd)
-    : "none";
-  const effectiveBorderTheme = isMaxi ? profile.profile_card_border : null;
+  const selectedThemePackageId = useMemo(() => {
+    const hasThemePackageEdit = form.profile_theme_package !== original.profile_theme_package;
+    const sourceValue = hasThemePackageEdit ? form.profile_theme_package : profile.profile_theme_package;
+    return normalizeProfileThemePackageSelectionId(sourceValue) ?? "none";
+  }, [
+    form.profile_theme_package,
+    original.profile_theme_package,
+    profile.profile_theme_package,
+  ]);
 
-  const { theme: activeCardTheme, background: activeCardBackground, text: activeCardText } =
-    resolveProfileCardColors(effectiveCardTheme);
-  const selectedBorderColor = getProfileCardBorder(effectiveBorderTheme)?.color ?? null;
-  const avatarBorderColor = selectedBorderColor ?? "#111827";
-  const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
-  const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
-  const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
-  const designSideBackground = resolveProfilePageBackgroundColor(effectivePageBackground).background;
+  const persistedTheme = useMemo(() => resolveProfileVisualTheme({
+    isMaxi,
+    profileThemePackage: profile.profile_theme_package,
+    profileCardTheme: profile.profile_card_theme,
+    profilePageBackground: profile.profile_page_bkgd,
+    profileCardBorder: profile.profile_card_border,
+  }), [
+    isMaxi,
+    profile.profile_theme_package,
+    profile.profile_card_theme,
+    profile.profile_page_bkgd,
+    profile.profile_card_border,
+  ]);
+
+  const editingTheme = useMemo(() => resolveProfileVisualTheme({
+    isMaxi,
+    profileThemePackage: selectedThemePackageId,
+    profileCardTheme: form.profile_card_theme,
+    profilePageBackground: form.profile_page_bkgd,
+    profileCardBorder: form.profile_card_border,
+  }), [
+    isMaxi,
+    selectedThemePackageId,
+    form.profile_card_theme,
+    form.profile_page_bkgd,
+    form.profile_card_border,
+  ]);
+
+  const activeCardBackground = persistedTheme.cardSurface;
+  const activeCardBackgroundSolid = persistedTheme.cardSurfaceSolid;
+  const activeCardText = persistedTheme.cardText;
+  const avatarBorderColor = persistedTheme.borderColor ?? "#111827";
+  const cardSecondaryTextColor = persistedTheme.cardIsDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
+  const cardSubtleTextColor = persistedTheme.cardIsDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
+  const profileHoverBackgroundColor = persistedTheme.cardIsDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
+  const designSideBackground = showBack ? editingTheme.pageBackground : persistedTheme.pageBackground;
+  const hasMaxiPackage = persistedTheme.packageId === "maxi_theme";
+  const wrapperBackground = showDesignBack
+    ? designSideBackground
+    : hasMaxiPackage
+      ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${activeCardBackground}`
+      : activeCardBackground;
   const linkRowClasses = LINK_ROW_CLASSES;
 
   const resolvedCardWidth = Number.isFinite(cardWidthPx)
@@ -138,6 +177,7 @@ export default function ProfileCard({
   const linkTrayMaxWidthPx = resolvedCardWidth
     ? Math.max(240, Math.round(resolvedCardWidth - 56))
     : 448;
+  const selectedThemePackageLabel = selectedThemePackageId === "maxi_theme" ? "Maxi Theme" : "No Theme";
 
   const handleVerifyClick = useCallback(async (link: { url: string }) => {
     if (!profile.address_verified) return;
@@ -185,6 +225,18 @@ export default function ProfileCard({
     if (!showBack) setShowDesignBack(false);
   }, [showBack]);
   useEffect(() => {
+    if (!showDesignBack) setThemeMenuOpen(false);
+  }, [showDesignBack]);
+  useEffect(() => {
+    if (!themeMenuOpen) return;
+    const onPointer = (event: PointerEvent) => {
+      if (themeMenuRef.current?.contains(event.target as Node)) return;
+      setThemeMenuOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointer);
+    return () => document.removeEventListener("pointerdown", onPointer);
+  }, [themeMenuOpen]);
+  useEffect(() => {
     onDesignPanelBackgroundChange?.(showDesignBack ? designSideBackground : null);
   }, [showDesignBack, designSideBackground, onDesignPanelBackgroundChange]);
   useEffect(() => {
@@ -207,7 +259,7 @@ export default function ProfileCard({
           style={{
             width: resolvedCardWidth ? `${resolvedCardWidth}px` : undefined,
             maxWidth: "100%",
-            backgroundColor: showDesignBack ? designSideBackground : activeCardBackground,
+            background: wrapperBackground,
             color: activeCardText,
           }}
           data-active-profile
@@ -218,7 +270,7 @@ export default function ProfileCard({
               className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full"
               style={{
                 width: `${AVATAR_BORDER_MASK_WIDTH}px`,
-                backgroundColor: activeCardBackground,
+                backgroundColor: activeCardBackgroundSolid,
               }}
               aria-hidden
             />
@@ -232,7 +284,7 @@ export default function ProfileCard({
               className={`${showBack ? "absolute inset-0" : "relative h-auto"} backface-hidden top-0 left-0 w-full rounded-[26px]`}
               style={
                 {
-                  backgroundColor: activeCardBackground,
+                  background: activeCardBackground,
                   color: activeCardText,
                   "--profile-hover-color": activeCardText,
                   "--profile-hover-bg": profileHoverBackgroundColor,
@@ -395,7 +447,7 @@ export default function ProfileCard({
               } flex flex-col items-center justify-start overflow-visible`}
               style={{
                 pointerEvents: showBack ? "auto" : "none",
-                backgroundColor: showDesignBack ? designSideBackground : undefined,
+                background: showDesignBack ? designSideBackground : undefined,
               }}
             >
               <div
@@ -431,7 +483,60 @@ export default function ProfileCard({
                 >
                   {"\u21BA"}
                 </button>
-                {!showDesignBack && (
+                {showDesignBack ? (
+                  <div ref={themeMenuRef} className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setThemeMenuOpen((prev) => !prev)}
+                      className="inline-flex items-center gap-2 rounded-full border px-3 h-9 text-sm font-semibold whitespace-nowrap transition-all border-gray-300 bg-white/90 text-gray-700 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                      aria-haspopup="menu"
+                      aria-expanded={themeMenuOpen}
+                      aria-label="Themes"
+                      title="Themes"
+                    >
+                      <span>{selectedThemePackageLabel}</span>
+                      <span
+                        aria-hidden
+                        className={`inline-block text-xl leading-none transition-transform ${themeMenuOpen ? "rotate-180" : "rotate-0"}`}
+                      >
+                        {"\u25BE"}
+                      </span>
+                    </button>
+                    <div
+                      aria-hidden={!themeMenuOpen}
+                      className={`absolute right-0 top-full mt-1 inline-flex w-max min-w-full flex-col items-stretch origin-top-right rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700 transition-all duration-200 ${
+                        themeMenuOpen ? "max-h-40 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateField("profile_theme_package", "maxi_theme");
+                          setThemeMenuOpen(false);
+                        }}
+                        role="menuitem"
+                        className={`w-full whitespace-nowrap text-center px-3 py-2 transition-colors text-gray-800 hover:bg-[var(--color-brand-blue)]/10 ${
+                          selectedThemePackageId === "maxi_theme" ? "bg-[var(--color-brand-blue)]/10 font-semibold" : ""
+                        }`}
+                      >
+                        Maxi Theme
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          updateField("profile_theme_package", "none");
+                          setThemeMenuOpen(false);
+                        }}
+                        role="menuitem"
+                        className={`w-full whitespace-nowrap text-center px-3 py-2 transition-colors text-gray-800 hover:bg-[var(--color-brand-blue)]/10 ${
+                          selectedThemePackageId === "none" ? "bg-[var(--color-brand-blue)]/10 font-semibold" : ""
+                        }`}
+                      >
+                        No Theme
+                      </button>
+                    </div>
+                  </div>
+                ) : (
                   <button
                     type="button"
                     onClick={() => {
@@ -502,3 +607,4 @@ export default function ProfileCard({
     </div>
   );
 }
+

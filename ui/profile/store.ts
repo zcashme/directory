@@ -26,6 +26,7 @@ export interface FormState {
   display_name: string;
   bio: string;
   profile_image_url: string;
+  profile_theme_package: string;
   profile_card_theme: string;
   profile_page_bkgd: string;
   profile_card_border: string;
@@ -74,6 +75,7 @@ const emptyForm: FormState = {
   display_name: '',
   bio: '',
   profile_image_url: '',
+  profile_theme_package: '',
   profile_card_theme: '',
   profile_page_bkgd: '',
   profile_card_border: '',
@@ -150,6 +152,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         display_name: profile.display_name ?? '',
         bio: profile.bio ?? '',
         profile_image_url: profile.profile_image_url ?? '',
+        profile_theme_package: profile.profile_theme_package ?? '',
         profile_card_theme: profile.profile_card_theme ?? '',
         profile_page_bkgd: profile.profile_page_bkgd ?? '',
         profile_card_border: profile.profile_card_border ?? '',
@@ -162,6 +165,7 @@ export const useEditsStore = create<EditsState>((set) => ({
         display_name: profile.display_name ?? '',
         bio: profile.bio ?? '',
         profile_image_url: profile.profile_image_url ?? '',
+        profile_theme_package: profile.profile_theme_package ?? '',
         profile_card_theme: profile.profile_card_theme ?? '',
         profile_page_bkgd: profile.profile_page_bkgd ?? '',
         profile_card_border: profile.profile_card_border ?? '',

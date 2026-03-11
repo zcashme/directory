@@ -8,12 +8,11 @@ import Button from "@/ui/common/buttons/Button";
 import { validateZcashAddress } from "@/ui/signup/zcashAddress";
 import {
   PROFILE_CARD_THEMES,
-  getProfileCardBorder,
   normalizeProfileCardThemeSelectionId,
   normalizeProfileCardBorderId,
   normalizeProfilePageBackgroundId,
-  resolveProfileCardColors,
-  resolveProfilePageBackgroundColor,
+  normalizeProfileThemePackageSelectionId,
+  resolveProfileVisualTheme,
 } from "@/lib/profile/profileCardTheme";
 import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import { enrichLink } from "@/lib/profile/profileLinks";
@@ -56,6 +55,15 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
   copyWrapper: "shrink-0",
 };
 
+function isTruthyLikeAddressVerified(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
+
 function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
   return links
     .filter((link) => !link._delete && (link.url ?? "").trim().length > 0)
@@ -90,6 +98,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
       form.display_name !== "" ||
       form.bio !== "" ||
       form.profile_image_url !== "" ||
+      form.profile_theme_package !== "" ||
       form.profile_card_theme !== "" ||
       form.profile_page_bkgd !== "" ||
       form.profile_card_border !== "" ||
@@ -102,6 +111,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     form.display_name,
     form.bio,
     form.profile_image_url,
+    form.profile_theme_package,
     form.profile_card_theme,
     form.profile_page_bkgd,
     form.profile_card_border,
@@ -126,6 +136,12 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     const sourceValue = hasThemeEdit ? form.profile_card_theme : profile.profile_card_theme;
     return normalizeProfileCardThemeSelectionId(sourceValue);
   }, [form.profile_card_theme, original.profile_card_theme, profile.profile_card_theme]);
+
+  const selectedThemePackageId = useMemo(() => {
+    const hasThemePackageEdit = form.profile_theme_package !== original.profile_theme_package;
+    const sourceValue = hasThemePackageEdit ? form.profile_theme_package : profile.profile_theme_package;
+    return normalizeProfileThemePackageSelectionId(sourceValue) ?? "none";
+  }, [form.profile_theme_package, original.profile_theme_package, profile.profile_theme_package]);
 
   const selectedPageBackgroundId = useMemo(() => {
     const hasBackgroundEdit = form.profile_page_bkgd !== original.profile_page_bkgd;
@@ -169,6 +185,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     address: previewAddress,
     nearest_city_name: previewNearestCity,
     profile_image_url: previewImageUrl || undefined,
+    profile_theme_package: selectedThemePackageId === "none" ? null : selectedThemePackageId,
     profile_card_theme: selectedCardThemeId,
     profile_page_bkgd: selectedPageBackgroundId,
     profile_card_border: selectedCardBorderId,
@@ -180,6 +197,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     previewAddress,
     previewNearestCity,
     previewImageUrl,
+    selectedThemePackageId,
     selectedCardThemeId,
     selectedPageBackgroundId,
     selectedCardBorderId,
@@ -212,16 +230,27 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
   const displayName = previewProfile.display_name || previewProfile.name || "";
   const isVerified = previewProfile.address_verified || (previewProfile.verified_links_count ?? 0) > 0;
 
-  const { theme: activeCardTheme, background: activeCardBackground, text: activeCardText } =
-    resolveProfileCardColors(selectedCardThemeId);
-  const { theme: activePageBackgroundTheme, background: activePageBackground } =
-    resolveProfilePageBackgroundColor(selectedPageBackgroundId);
-  const cardSecondaryTextColor = activeCardTheme?.isDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
-  const cardSubtleTextColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
-  const profileHoverBackgroundColor = activeCardTheme?.isDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
-  void activePageBackgroundTheme;
+  const isMaxi = isTruthyLikeAddressVerified(previewProfile.is_maxi);
+  const resolvedPreviewTheme = resolveProfileVisualTheme({
+    isMaxi,
+    profileThemePackage: selectedThemePackageId,
+    profileCardTheme: selectedCardThemeId,
+    profilePageBackground: selectedPageBackgroundId,
+    profileCardBorder: selectedCardBorderId,
+  });
+  const activeCardBackground = resolvedPreviewTheme.cardSurface;
+  const activeCardBackgroundSolid = resolvedPreviewTheme.cardSurfaceSolid;
+  const activeCardText = resolvedPreviewTheme.cardText;
+  const activePageBackground = resolvedPreviewTheme.pageBackground;
+  const cardSecondaryTextColor = resolvedPreviewTheme.cardIsDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
+  const cardSubtleTextColor = resolvedPreviewTheme.cardIsDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
+  const profileHoverBackgroundColor = resolvedPreviewTheme.cardIsDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
   const linkRowClasses = LINK_ROW_CLASSES;
-  const selectedBorderColor = getProfileCardBorder(selectedCardBorderId)?.color ?? null;
+  const selectedBorderColor = resolvedPreviewTheme.borderColor;
+  const hasMaxiPackage = resolvedPreviewTheme.packageId === "maxi_theme";
+  const wrapperBackground = hasMaxiPackage
+    ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${activeCardBackground}`
+    : activeCardBackground;
 
   const addressInput = deletedFields.address
     ? ""
@@ -232,6 +261,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     addressValidation.valid &&
     addressValidation.type !== "tex" &&
     addressValidation.type !== "transparent";
+  const isThemePackageLocked = selectedThemePackageId === "maxi_theme";
 
   const renderPaletteSection = ({
     title,
@@ -241,6 +271,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     selectedId,
     buttonKeyPrefix,
     optionAriaSuffix,
+    disabled = false,
   }: {
     title: string;
     resetAction: () => void;
@@ -249,8 +280,9 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     selectedId: string | null;
     buttonKeyPrefix: string;
     optionAriaSuffix: string;
+    disabled?: boolean;
   }) => (
-    <div className="mt-3 rounded-2xl border border-gray-300 bg-white/85 shadow-inner overflow-visible">
+    <div className={`mt-3 rounded-2xl border border-gray-300 bg-white/85 shadow-inner overflow-visible ${disabled ? "opacity-60" : ""}`}>
       <div className="px-3 py-3">
         <p className="mb-2 text-[11px] font-semibold tracking-wide text-gray-600 uppercase">{title}</p>
         <div className="overflow-x-auto scrollbar-visible">
@@ -258,9 +290,10 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
             <button
               type="button"
               onClick={resetAction}
-              className="flex flex-col items-center gap-1.5 shrink-0"
+              className={`flex flex-col items-center gap-1.5 shrink-0 ${disabled ? "cursor-not-allowed" : ""}`}
               aria-label={resetAria}
               title={resetLabel}
+              disabled={disabled}
             >
             <span
                 className="h-8 w-8 rounded-full border-2 transition-all"
@@ -276,9 +309,10 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
             <button
               type="button"
               onClick={() => updateField(buttonKeyPrefix === "fg" ? "profile_card_theme" : buttonKeyPrefix === "bg" ? "profile_page_bkgd" : "profile_card_border", "none")}
-              className="flex flex-col items-center gap-1.5 shrink-0"
+              className={`flex flex-col items-center gap-1.5 shrink-0 ${disabled ? "cursor-not-allowed" : ""}`}
               aria-label={`Select none ${optionAriaSuffix}`}
               title="None"
+              disabled={disabled}
             >
               <span
                 className="h-8 w-8 rounded-full border-2 transition-all"
@@ -298,9 +332,10 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                   key={`${buttonKeyPrefix}-${theme.id}`}
                   type="button"
                   onClick={() => updateField(buttonKeyPrefix === "fg" ? "profile_card_theme" : buttonKeyPrefix === "bg" ? "profile_page_bkgd" : "profile_card_border", theme.id)}
-                  className="flex flex-col items-center gap-1.5 shrink-0"
+                  className={`flex flex-col items-center gap-1.5 shrink-0 ${disabled ? "cursor-not-allowed" : ""}`}
                   aria-label={`Select ${theme.label} ${optionAriaSuffix}`}
                   title={theme.label}
+                  disabled={disabled}
                 >
                   <span
                     className="h-8 w-8 rounded-full border-2 transition-all"
@@ -327,7 +362,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
           <div className="min-w-0">
             <div
               className="relative rounded-2xl overflow-visible"
-              style={{ backgroundColor: activePageBackground }}
+              style={{ background: activePageBackground }}
             >
 
           <div
@@ -342,13 +377,13 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                 className="relative overflow-visible mx-auto p-5 text-center w-full"
                 style={{
                   maxWidth: "100%",
-                  backgroundColor: activeCardBackground,
+                  background: wrapperBackground,
                   color: activeCardText,
                 }}
               >
                 <div
                   className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full"
-                  style={{ width: `${AVATAR_BORDER_MASK_WIDTH}px`, backgroundColor: activeCardBackground }}
+                  style={{ width: `${AVATAR_BORDER_MASK_WIDTH}px`, backgroundColor: activeCardBackgroundSolid }}
                   aria-hidden
                 />
 
@@ -356,7 +391,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                   className="relative h-auto backface-hidden top-0 left-0 w-full rounded-2xl"
                   style={
                     {
-                      backgroundColor: activeCardBackground,
+                      background: activeCardBackground,
                       color: activeCardText,
                       "--profile-hover-color": activeCardText,
                       "--profile-hover-bg": profileHoverBackgroundColor,
@@ -519,6 +554,11 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
           </div>
 
           <div className="mt-3">
+          {isThemePackageLocked && (
+            <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
+              Maxi Theme is a fixed package. Select <strong>No Theme</strong> in the Themes dropdown to re-enable individual color controls.
+            </div>
+          )}
           {renderPaletteSection({
             title: "Card Foreground",
             resetAction: () => updateField("profile_card_theme", profile.profile_card_theme ?? ""),
@@ -527,6 +567,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
             selectedId: selectedCardThemeId,
             buttonKeyPrefix: "fg",
             optionAriaSuffix: "card theme",
+            disabled: isThemePackageLocked,
           })}
 
           {renderPaletteSection({
@@ -537,6 +578,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
             selectedId: selectedPageBackgroundId,
             buttonKeyPrefix: "bg",
             optionAriaSuffix: "page background",
+            disabled: isThemePackageLocked,
           })}
 
           {renderPaletteSection({
@@ -547,6 +589,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
             selectedId: selectedCardBorderId,
             buttonKeyPrefix: "bd",
             optionAriaSuffix: "card border",
+            disabled: isThemePackageLocked,
           })}
           </div>
         </div>

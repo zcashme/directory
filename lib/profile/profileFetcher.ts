@@ -182,5 +182,16 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
     profile.profile_card_border = profileCardBorderData.profile_card_border as Profile["profile_card_border"];
   }
 
+  const { data: profileThemePackageData } = await supabase
+    .from("zcasher")
+    .select("profile_theme_package")
+    .eq("id", profile.id)
+    .limit(1)
+    .maybeSingle();
+
+  if (profileThemePackageData) {
+    profile.profile_theme_package = profileThemePackageData.profile_theme_package as Profile["profile_theme_package"];
+  }
+
   return mergeRanks(profile, ranks);
 });

@@ -32,6 +32,7 @@ export interface Profile {
   is_ns_core?: boolean | string | number;
   is_ns_longterm?: boolean | string | number;
   is_maxi?: boolean | string | number;
+  profile_theme_package?: string | null;
   profile_card_theme?: string | null;
   profile_page_bkgd?: string | null;
   profile_card_border?: string | null;

@@ -53,6 +53,10 @@ export default function ProfileVerification({
       edits.nearest_city_name = form.nearest_city_name;
       hasChanges = true;
     }
+    if (form.profile_theme_package !== original.profile_theme_package) {
+      edits.profile_theme_package = form.profile_theme_package;
+      hasChanges = true;
+    }
     if (form.profile_card_theme !== original.profile_card_theme) {
       edits.profile_card_theme = form.profile_card_theme;
       hasChanges = true;

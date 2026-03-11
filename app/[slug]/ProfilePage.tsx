@@ -16,7 +16,7 @@ import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 import SwapComposer from "@/ui/swap/SwapComposer";
-import { resolveProfilePageBackgroundColor } from "@/lib/profile/profileCardTheme";
+import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 
 interface ProfilePageProps {
   initialProfile: Profile;
@@ -130,8 +130,20 @@ export default function ProfilePage({
 }: ProfilePageProps) {
   const isMaxi = isTruthyLikeAddressVerified(initialProfile.is_maxi);
   const pageBackground = useMemo(
-    () => resolveProfilePageBackgroundColor(isMaxi ? initialProfile.profile_page_bkgd : "none").background,
-    [isMaxi, initialProfile.profile_page_bkgd]
+    () => resolveProfileVisualTheme({
+      isMaxi,
+      profileThemePackage: initialProfile.profile_theme_package,
+      profileCardTheme: initialProfile.profile_card_theme,
+      profilePageBackground: initialProfile.profile_page_bkgd,
+      profileCardBorder: initialProfile.profile_card_border,
+    }).pageBackground,
+    [
+      isMaxi,
+      initialProfile.profile_theme_package,
+      initialProfile.profile_card_theme,
+      initialProfile.profile_page_bkgd,
+      initialProfile.profile_card_border,
+    ]
   );
   const hasAutoScrolledPrefillRef = useRef(false);
   const pageBottomSentinelRef = useRef<HTMLDivElement | null>(null);
