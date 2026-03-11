@@ -30,6 +30,11 @@ export default function ProfileCardActions({
   const shouldReduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = profile.display_name || profile.name || "";
+  const isMaxi =
+    profile.is_maxi === true ||
+    profile.is_maxi === 1 ||
+    (typeof profile.is_maxi === "string" &&
+      ["true", "yes", "1", "y", "t"].includes(profile.is_maxi.trim().toLowerCase()));
   const tapProps = shouldReduceMotion
     ? {}
     : { whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" }, transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 } };
@@ -82,7 +87,7 @@ export default function ProfileCardActions({
             alert("Referral link copied to clipboard!");
           })}
           {menuItem("✓ Verify Profile", onVerify)}
-          {menuItem("★ Unlock Maxi Mode", onUpgrade)}
+          {menuItem("★ Unlock Maxi Mode", onUpgrade, isMaxi)}
         </div>
       </div>
 
@@ -118,3 +123,4 @@ export default function ProfileCardActions({
     </>
   );
 }
+
