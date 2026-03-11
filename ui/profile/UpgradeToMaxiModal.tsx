@@ -8,41 +8,41 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
 const FEATURES = [
   {
-    title: "Claim Your Name.zcash First",
-    description: "Get early access to the .zcash namespace before public launch.",
+    title: "Earn Up to 0.5 ZEC Every Month",
+    description: "Complete at least one verification and receive up to 0.5 ZEC back on the last Sunday of each month.",
   },
   {
-    title: "Get Up to 0.5 ZEC Back",
-    description: "Receive monthly ZEC rewards when you complete at least one verification.",
+    title: "Verify Without Sending ZEC",
+    description: "Receive one-time passcodes for free without sending the minimum ZEC verification amount.",
   },
   {
-    title: "Free Verifications",
-    description: "Receive one-time passcodes without sending the minimum ZEC amount.",
+    title: "Earn More From Referrals",
+    description: "Collect up to 80% of verification fees plus 20% from users you refer who upgrade to Maxi.",
   },
   {
-    title: "Colorful Profiles",
-    description: "Customize your profile with premium colors and themes.",
+    title: "Reserve Your .zcash Name Early",
+    description: "Get priority access to claim your Name.zcash before the namespace opens to the public.",
   },
   {
-    title: "More Referral Rewards",
-    description: "Earn up to 80% of verification fees and 20% from referred users who become maxis.",
+    title: "Show Your Zcash Maxi Status",
+    description: "Display the Gold Zcash Maxi badge or request an affiliate badge directly on your profile.",
   },
   {
-    title: "Showcase Badges",
-    description: "Display a Gold Zcash Maxi (ZM) badge or request an affiliate badge on your profile.",
+    title: "Get Early Access to New Tools",
+    description: "Try upcoming features like notifications and the ZM social wallet before public release.",
   },
   {
-    title: "Featured on Homepage",
-    description: "Request a featured listing on the ZcashMe homepage.",
+    title: "Customize Your Profile",
+    description: "Personalize your ZcashMe profile with custom colors and themes.",
   },
   {
-    title: "Early Access to New Features",
-    description: "Test upcoming tools such as notifications and the ZM social wallet before public release.",
+    title: "Get Featured on the Homepage",
+    description: "Request a featured placement on the ZcashMe homepage to increase profile visibility.",
   },
   {
-    title: "More Features Coming Soon",
-    description: "Premium features will continue to expand.",
-  },
+    title: "Fund Zcash Development",
+    description: "Part of every Maxi upgrade supports Zcash Foundation research and infrastructure such as Zebra and FROST.",
+  }
 ];
 
 const AVATAR_SIZE = 120;
