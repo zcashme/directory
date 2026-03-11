@@ -14,7 +14,10 @@ function buildZcashUri(address: string, amount: string = "0", memo: string = "")
   if (!address) return "";
   const base = `zcash:${address}`;
   const params: string[] = [];
-  if (amount && Number(amount) > 0) params.push(`amount=${amount}`);
+  const numericAmount = Number(amount);
+  if (amount && Number.isFinite(numericAmount) && numericAmount >= 0) {
+    params.push(`amount=${amount}`);
+  }
   if (memo) params.push(`memo=${toBase64Url(memo)}`);
   return params.length ? `${base}?${params.join("&")}` : base;
 }
@@ -25,6 +28,14 @@ const SIGNIN_ADDR =
 
 const MIN_AMOUNT = 0.002;
 
+function isTruthyLikeMaxi(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
 
 interface GenerateMemoResult {
   ok: boolean;
@@ -44,11 +55,8 @@ export async function generateMemoAction(
   amount: string
 ): Promise<GenerateMemoResult> {
   try {
-    // Validate amount
-    const numAmount = parseFloat(amount);
-    if (!Number.isFinite(numAmount) || numAmount < MIN_AMOUNT) {
-      return { ok: false, error: `Amount must be at least ${MIN_AMOUNT} ZEC` };
-    }
+    const cleanAmount = amount.replace(/[^\d.]/g, "");
+    const numAmount = parseFloat(cleanAmount);
 
     // Look up profile address
     const supabase = createSupabaseServerClient();
@@ -58,7 +66,7 @@ export async function generateMemoAction(
 
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address")
+      .select("address, is_maxi")
       .eq("id", profileId)
       .single();
 
@@ -66,10 +74,16 @@ export async function generateMemoAction(
       return { ok: false, error: "Profile not found" };
     }
 
+    const minAmount = isTruthyLikeMaxi(profile.is_maxi) ? 0 : MIN_AMOUNT;
+
+    // Validate amount after profile fetch because minimum is tier-dependent.
+    if (!Number.isFinite(numAmount) || numAmount < minAmount) {
+      return { ok: false, error: `Amount must be at least ${minAmount} ZEC` };
+    }
+
     // Generate server-side memo
     const sessionId = generateSessionId();
     const memo = buildZvsMemo(sessionId, profile.address);
-    const cleanAmount = amount.replace(/[^\d.]/g, "");
     const uri = buildZcashUri(SIGNIN_ADDR, cleanAmount, memo);
 
     return { ok: true, memo, uri };

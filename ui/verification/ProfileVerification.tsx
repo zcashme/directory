@@ -9,7 +9,14 @@ import Alert from "@/ui/common/feedback/Alert";
 import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
 
-const QR_AMOUNT_ZEC = "0.004";
+function isTruthyLikeMaxi(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
 
 interface ProfileVerificationProps {
   profile: Profile;
@@ -123,6 +130,11 @@ export default function ProfileVerification({
   const [currentUri, setCurrentUri] = useState("");
   const [otpAttemptsLeft, setOtpAttemptsLeft] = useState(5);
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
+  const isMaxi = isTruthyLikeMaxi(profile?.is_maxi);
+  const verificationAmountZec = isMaxi ? "0" : "0.004";
+  const minAmountHint = isMaxi
+    ? "No minimum amount required."
+    : "Include a minimum of 0.002 ZEC.";
 
   // Generate QR - calls the server to create memo + URI
   const handleGenerateQr = useCallback(async () => {
@@ -134,7 +146,7 @@ export default function ProfileVerification({
     setOtpAttemptsLeft(5);
 
     try {
-      const result = await generateMemoAction(profile.id, QR_AMOUNT_ZEC);
+      const result = await generateMemoAction(profile.id, verificationAmountZec);
 
       if (result.ok && result.memo && result.uri) {
         setCurrentMemo(result.memo);
@@ -146,7 +158,7 @@ export default function ProfileVerification({
     } catch {
       setError("Failed to generate QR code. Please try again.");
     }
-  }, [profile?.id]);
+  }, [profile?.id, verificationAmountZec]);
 
   useEffect(() => {
     if (!generateQrTrigger) return;
@@ -264,7 +276,7 @@ export default function ProfileVerification({
             profileName="verification"
             qrTopHintText="Send transaction to receive code."
             qrTopHintDetails={[
-              "Include a minimum of 0.002 ZEC.",
+              minAmountHint,
               "Do not leave the page before entering the code.",
             ]}
             qrTopHintToggleLabel="Tips"
