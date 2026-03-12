@@ -14,6 +14,7 @@ interface DirectoryApiResult {
   address: string | null;
   address_verified: boolean;
   verified_at: string | null;
+  is_maxi: boolean | string | number | null;
   authenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
   unauthenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
 }
@@ -38,6 +39,7 @@ export function toProfile(r: DirectoryApiResult): Profile {
     nearest_city_name: r.nearest_city_name ?? undefined,
     address: r.address ?? "",
     address_verified: r.address_verified,
+    is_maxi: r.is_maxi ?? undefined,
     last_verified_at: r.verified_at ?? undefined,
     verified_links_count: r.authenticated_links.length,
     links: [...r.authenticated_links, ...r.unauthenticated_links],

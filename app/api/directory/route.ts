@@ -23,6 +23,11 @@ interface ZcasherLink {
   zcasher_id: number;
 }
 
+interface ZcasherStyleRow {
+  id: number;
+  is_maxi: boolean | string | number | null;
+}
+
 interface LinkOutput {
   id: number;
   label: string;
@@ -41,6 +46,7 @@ interface DirectoryResult {
   address: string | null;
   address_verified: boolean;
   verified_at: string | null;
+  is_maxi: boolean | string | number | null;
   authenticated_links: LinkOutput[];
   unauthenticated_links: LinkOutput[];
 }
@@ -269,7 +275,8 @@ export async function GET(request: Request): Promise<Response> {
 
   // Fetch links for all profiles in batch
   const profileIds = resultsToReturn.map((p) => p.id);
-  let linksMap: Map<number, ZcasherLink[]> = new Map();
+  const linksMap: Map<number, ZcasherLink[]> = new Map();
+  const maxiMap: Map<number, boolean | string | number | null> = new Map();
 
   if (profileIds.length > 0) {
     const { data: links, error: linksError } = await supabase
@@ -283,10 +290,25 @@ export async function GET(request: Request): Promise<Response> {
 
     // Group links by zcasher_id
     for (const link of (links || []) as ZcasherLink[]) {
-      if (!linksMap.has(link.zcasher_id)) {
-        linksMap.set(link.zcasher_id, []);
+      const existing = linksMap.get(link.zcasher_id);
+      if (existing) {
+        existing.push(link);
+      } else {
+        linksMap.set(link.zcasher_id, [link]);
       }
-      linksMap.get(link.zcasher_id)!.push(link);
+    }
+
+    const { data: maxiRows, error: maxiError } = await supabase
+      .from("zcasher")
+      .select("id,is_maxi")
+      .in("id", profileIds);
+
+    if (maxiError) {
+      return jsonResponse({ error: "maxi_lookup_failed" }, 500);
+    }
+
+    for (const row of (maxiRows || []) as ZcasherStyleRow[]) {
+      maxiMap.set(row.id, row.is_maxi);
     }
   }
 
@@ -310,6 +332,7 @@ export async function GET(request: Request): Promise<Response> {
       address: p.address,
       address_verified: p.address_verified,
       verified_at: p.last_verified_at,
+      is_maxi: maxiMap.get(p.id) ?? null,
       authenticated_links,
       unauthenticated_links,
     };

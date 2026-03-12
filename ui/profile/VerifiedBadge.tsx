@@ -1,8 +1,10 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { MouseEventHandler } from "react";
 
 interface VerifiedBadgeProps {
   verified?: boolean;
+  variant?: "verified" | "maxi";
+  collapsedOnly?: boolean;
   verifiedLabel?: string;
   unverifiedLabel?: string;
   onClick?: MouseEventHandler<HTMLSpanElement>;
@@ -10,13 +12,14 @@ interface VerifiedBadgeProps {
 
 export default function VerifiedBadge({
   verified = true,
-  verifiedLabel = "Verified",
+  variant = "verified",
+  collapsedOnly = false,
+  verifiedLabel,
   unverifiedLabel = "Unverified",
   onClick,
 }: VerifiedBadgeProps) {
-  // Start collapsed by default
+  // Always start closed; open only via hover or click when allowed.
   const [open, setOpen] = useState(false);
-
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setHasMounted(true));
@@ -25,11 +28,11 @@ export default function VerifiedBadge({
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
-    if (open) {
+    if (open && !collapsedOnly) {
       timer = setTimeout(() => setOpen(false), 2000);
     }
     return () => clearTimeout(timer);
-  }, [open]);
+  }, [collapsedOnly, open]);
 
   const baseClasses =
     "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold tracking-wide select-none whitespace-nowrap align-middle";
@@ -48,49 +51,71 @@ export default function VerifiedBadge({
     </span>
   );
 
-  const verifiedLabelMax =
-    verifiedLabel.length > 9 ? "max-w-[120px]" : "max-w-[70px]";
+  const renderStar = (color: string) => (
+    <span className="relative flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-3.5 w-3.5 ${color} drop-shadow-xs`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path d="M9.049 2.927a1 1 0 011.902 0l1.197 3.688a1 1 0 00.95.69h3.878a1 1 0 01.588 1.809l-3.138 2.28a1 1 0 00-.364 1.118l1.198 3.688a1 1 0 01-1.539 1.118l-3.138-2.28a1 1 0 00-1.176 0l-3.138 2.28a1 1 0 01-1.539-1.118l1.198-3.688a1 1 0 00-.364-1.118L2.436 9.114a1 1 0 01.588-1.809h3.878a1 1 0 00.95-.69l1.197-3.688z" />
+      </svg>
+    </span>
+  );
+
+  const resolvedVerifiedLabel = verifiedLabel ?? (variant === "maxi" ? "Maxi Mode" : "Verified");
   const verifiedLabelHoverMax =
-    verifiedLabel.length > 9
+    resolvedVerifiedLabel.length > 9
       ? "group-hover/badge:max-w-[120px]"
       : "group-hover/badge:max-w-[70px]";
-  const unverifiedLabelMax =
-    unverifiedLabel.length > 11 ? "max-w-[140px]" : "max-w-[80px]";
+  const verifiedLabelMax =
+    resolvedVerifiedLabel.length > 9 ? "max-w-[120px]" : "max-w-[70px]";
   const unverifiedLabelHoverMax =
     unverifiedLabel.length > 11
       ? "group-hover/badge:max-w-[140px]"
       : "group-hover/badge:max-w-[80px]";
+  const unverifiedLabelMax =
+    unverifiedLabel.length > 11 ? "max-w-[140px]" : "max-w-[80px]";
 
   const handleBadgeClick: MouseEventHandler<HTMLSpanElement> = (event) => {
-    setOpen(true);
+    if (!collapsedOnly) setOpen(true);
     onClick?.(event);
   };
 
   if (verified) {
+    const gapClasses = collapsedOnly
+      ? "gap-0"
+      : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300";
+    const verifiedRevealClasses = collapsedOnly
+      ? "max-w-0 opacity-0"
+      : open
+        ? `${verifiedLabelMax} opacity-100`
+        : `max-w-0 opacity-0 ${verifiedLabelHoverMax} group-hover/badge:opacity-100`;
+    const verifiedClasses = variant === "maxi"
+      ? `text-amber-900 bg-linear-to-r from-amber-100 to-yellow-200 border-amber-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`
+      : `text-green-800 bg-linear-to-r from-green-100 to-green-200 border-green-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`;
     return (
     <span
       onClick={handleBadgeClick}
-      aria-label={verifiedLabel}
+      aria-label={resolvedVerifiedLabel}
       className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-green-800 bg-linear-to-r from-green-100 to-green-200 border-green-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
+      ${verifiedClasses}`}
       style={{ fontFamily: "inherit" }}
     >
-        <div className="flex items-center justify-center gap-0 group-hover/badge:gap-1 transition-[gap] duration-300">
+        <div className={`flex items-center justify-center ${gapClasses}`}>
 
-          {renderCheckmark("text-green-600")}
+          {variant === "maxi" ? renderStar("text-amber-900") : renderCheckmark("text-green-600")}
 
           <span
             className={`
     overflow-hidden inline-block ease-in-out whitespace-nowrap
     transition-all duration-300
-    ${
-              open
-                ? `${verifiedLabelHoverMax} group-hover/badge:opacity-100 ${verifiedLabelMax} opacity-100`
-                : `max-w-0 opacity-0 ${verifiedLabelHoverMax} group-hover/badge:opacity-100`
-              }
+    ${verifiedRevealClasses}
   `}
           >
-            {verifiedLabel}
+            {resolvedVerifiedLabel}
           </span>
 
         </div>
@@ -104,10 +129,10 @@ export default function VerifiedBadge({
       onClick={handleBadgeClick}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]${onClick ? " cursor-pointer" : ""}`}
+      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
-      <div className="flex items-center justify-center gap-0 group-hover/badge:gap-1 transition-[gap] duration-300">
+      <div className={`flex items-center justify-center ${collapsedOnly ? "gap-0" : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300"}`}>
         <svg
           xmlns="http://www.w3.org/2000/svg"
           className="h-3.5 w-3.5 text-gray-400"
@@ -120,9 +145,11 @@ export default function VerifiedBadge({
           className={`
             overflow-hidden inline-block ease-in-out whitespace-nowrap
             ${hasMounted ? "transition-all duration-300" : ""}
-            ${open
-              ? `${unverifiedLabelMax} opacity-100`
-              : `max-w-0 opacity-0 ${unverifiedLabelHoverMax} group-hover/badge:opacity-100`
+            ${collapsedOnly
+              ? "max-w-0 opacity-0"
+              : open
+                ? `${unverifiedLabelMax} opacity-100`
+                : `max-w-0 opacity-0 ${unverifiedLabelHoverMax} group-hover/badge:opacity-100`
             }
           `}
         >

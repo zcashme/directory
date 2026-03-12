@@ -5,6 +5,7 @@ import ReactDOM from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
 const FEATURES = [
   {
@@ -155,7 +156,10 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
               }`}
             >
               <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">Zcash.me Premium</p>
-              <h2 className="mt-1 text-2xl font-extrabold tracking-tight text-amber-50">Unlock Maxi Mode</h2>
+              <h2 className="mt-1 text-center text-2xl font-extrabold tracking-tight text-amber-50 inline-flex items-center justify-center gap-2">
+                <span>Unlock Maxi Mode</span>
+                <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" />
+              </h2>
               <p className="mt-2 text-sm text-emerald-50/80">Exclusive ways to earn more, spend less, be early,   <br /> and look great doing it.</p>
             </div>
 

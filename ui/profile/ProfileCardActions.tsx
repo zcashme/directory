@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import type { ReactNode } from "react";
 import { buildShareUrl } from "@/lib/profile/profileUtils";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
+import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
 interface ProfileCardActionsProps {
   profile: Profile;
@@ -54,7 +56,7 @@ export default function ProfileCardActions({
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [menuOpen]);
 
-  const menuItem = (icon: string, label: string, onClick: () => void, disabled = false) => (
+  const menuItem = (icon: ReactNode, label: string, onClick: () => void, disabled = false) => (
     <button
       onClick={() => {
         onClick();
@@ -68,7 +70,7 @@ export default function ProfileCardActions({
       }`}
     >
       <span className="flex items-center gap-2">
-        <span aria-hidden className="inline-flex w-4 shrink-0 justify-center">
+        <span aria-hidden className="inline-flex w-4 shrink-0 justify-center overflow-visible">
           {icon}
         </span>
         <span>{label}</span>
@@ -101,7 +103,7 @@ export default function ProfileCardActions({
         </motion.button>
         <div
           aria-hidden={!menuOpen}
-          className={`absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-hidden z-50 text-sm text-gray-700 transition-all ${dur} ${
+          className={`absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-visible z-50 text-sm text-gray-700 transition-all ${dur} ${
             menuOpen ? "max-h-64 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
           }`}
         >
@@ -125,8 +127,21 @@ export default function ProfileCardActions({
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
-          {menuItem("\u2713", "Verify Profile", onVerify)}
-          {menuItem("\u2605", "Unlock Maxi Mode", onUpgrade, isMaxi)}
+          {menuItem(
+            <span className="inline-flex scale-[0.78] pointer-events-none">
+              <VerifiedBadge verified collapsedOnly />
+            </span>,
+            "Verify Profile",
+            onVerify
+          )}
+          {menuItem(
+            <span className="inline-flex scale-[0.78] origin-left">
+              <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />
+            </span>,
+            "Unlock Maxi Mode",
+            onUpgrade,
+            isMaxi
+          )}
         </div>
       </div>
 

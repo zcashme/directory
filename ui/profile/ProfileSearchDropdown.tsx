@@ -16,6 +16,15 @@ const fmtUsername = (p: Partial<Profile>) =>
 const displayName = (p: Partial<Profile>) =>
   p.display_name || p.name || "";
 
+function isTruthyLikeMaxi(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+}
+
 /** Highlight the first occurrence of `query` inside `text` (case-insensitive). */
 function Highlight({ text, query }: { text: string; query: string }) {
   if (!query) return <>{text}</>;
@@ -248,30 +257,33 @@ export default function ProfileSearchDropdown({
                 )}
 
                 {/* Results */}
-                {results.map((p) => (
-                  <Command.Item
-                    key={`${p.name}-${p.id}`}
-                    value={`profile-${p.id}`}
-                    onSelect={() => { onChange(p); setShow(false); }}
-                    className="group px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-[var(--color-brand-blue)]/90 hover:text-white data-[selected=true]:bg-[var(--color-brand-blue)]/90 data-[selected=true]:text-white"
-                  >
-                    <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
+                {results.map((p) => {
+                  const isMaxi = isTruthyLikeMaxi(p.is_maxi);
+                  return (
+                    <Command.Item
+                      key={`${p.name}-${p.id}`}
+                      value={`profile-${p.id}`}
+                      onSelect={() => { onChange(p); setShow(false); }}
+                      className="group px-3 py-2 text-sm cursor-pointer flex items-center gap-3 text-gray-800 font-semibold transition-colors hover:bg-[var(--color-brand-blue)]/90 hover:text-white data-[selected=true]:bg-[var(--color-brand-blue)]/90 data-[selected=true]:text-white"
+                    >
+                      <ProfileAvatar profile={p} size={32} imageClassName="object-cover" />
 
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="truncate">
-                        <Highlight text={displayName(p)} query={query} />
-                      </span>
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="truncate">
+                          <Highlight text={displayName(p)} query={query} />
+                        </span>
 
-                      {p.address_verified && (
-                        <VerifiedBadge verified />
-                      )}
+                        {(p.address_verified || isMaxi) && (
+                          <VerifiedBadge verified variant={isMaxi ? "maxi" : "verified"} />
+                        )}
 
-                      <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
-                        /<Highlight text={fmtUsername(p)} query={query} />
-                      </span>
-                    </div>
-                  </Command.Item>
-                ))}
+                        <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
+                          /<Highlight text={fmtUsername(p)} query={query} />
+                        </span>
+                      </div>
+                    </Command.Item>
+                  );
+                })}
 
               </Command.List>
             </motion.div>

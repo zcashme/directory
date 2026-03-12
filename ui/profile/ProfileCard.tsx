@@ -348,13 +348,13 @@ export default function ProfileCard({
                 )}
               </AnimatePresence>
 
-              <div className="mt-3 flex flex-col items-center">
+              <div className="mt-3 flex w-full flex-col items-center">
                 <h2
-                  className="text-3xl font-black leading-tight flex items-center justify-center gap-2"
+                  className="max-w-[92%] text-center text-3xl font-black leading-tight break-words inline-flex items-center justify-center gap-2"
                   style={{ color: activeCardText }}
                 >
-                  {displayName}
-                  {isVerified && <VerifiedBadge verified />}
+                  <span>{displayName}</span>
+                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "maxi" : "verified"} />}
                 </h2>
                 <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                   /{formatUsername(profile)}
