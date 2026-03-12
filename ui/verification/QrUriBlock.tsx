@@ -56,6 +56,8 @@ export default function QrUriBlock({
   hideButtonClassName,
 }: QrUriBlockProps) {
   const qrRef = useRef<SVGSVGElement>(null);
+  const uriBlockRef = useRef<HTMLDivElement>(null);
+  const uriActionsRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
   const hintTransitionClasses = shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out";
   const [showQR, setShowQR] = useState(defaultShowQR);
@@ -86,6 +88,18 @@ export default function QrUriBlock({
   useEffect(() => {
     if (!hasTopHintDetails && showTopHintDetails) setShowTopHintDetails(false);
   }, [hasTopHintDetails, showTopHintDetails]);
+
+  useEffect(() => {
+    if (!showFull || typeof window === "undefined") return;
+    if (!window.matchMedia("(max-width: 768px)").matches) return;
+
+    const timeoutId = window.setTimeout(() => {
+      const target = uriActionsRef.current ?? uriBlockRef.current;
+      target?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, shouldReduceMotion ? 40 : 340);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [showFull, shouldReduceMotion]);
 
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -402,6 +416,7 @@ export default function QrUriBlock({
         {showFull && (
           <motion.div
             key="uri-block"
+            ref={uriBlockRef}
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
@@ -416,7 +431,7 @@ export default function QrUriBlock({
             >
               {uri}
             </a>
-            <div className="flex flex-wrap items-center justify-center gap-2">
+            <div ref={uriActionsRef} className="flex flex-wrap items-center justify-center gap-2">
               <motion.button
                 onClick={handleCopyAddress}
                 {...copyTapProps}
