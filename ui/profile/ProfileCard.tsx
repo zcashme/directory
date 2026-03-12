@@ -439,14 +439,15 @@ export default function ProfileCard({
               {warningConfig && <ProfileCardWarning config={warningConfig} />}
             </div>
 
+            {showBack ? (
             <div
-              className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full ${showBack ? "relative h-auto" : ""} ${
+              className={`absolute inset-0 rotate-y-180 backface-hidden top-0 left-0 w-full relative h-auto ${
                 showDesignBack
                   ? "rounded-[26px] border-0 bg-transparent shadow-none p-0"
                   : "bg-white rounded-[26px] border border-gray-300 shadow-inner p-5"
               } flex flex-col items-center justify-start overflow-visible`}
               style={{
-                pointerEvents: showBack ? "auto" : "none",
+                pointerEvents: "auto",
                 background: showDesignBack ? designSideBackground : undefined,
               }}
             >
@@ -566,30 +567,35 @@ export default function ProfileCard({
               >
                 <div
                   className={`${
-                    showDesignBack
+                    !showBack || showDesignBack
                       ? "absolute inset-0 z-0 opacity-0 pointer-events-none"
                       : "relative h-auto z-10 opacity-100 pointer-events-auto"
                   } backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
-                  <ProfileEditor
-                    profile={profile}
-                    links={linksArray}
-                    onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
-                    onGenerateQr={onGenerateVerificationQr}
-                  />
+                  {showBack ? (
+                    <ProfileEditor
+                      profile={profile}
+                      links={linksArray}
+                      onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
+                      onGenerateQr={onGenerateVerificationQr}
+                    />
+                  ) : null}
                 </div>
 
                 <div
                   className={`${
-                    showDesignBack
+                    showBack && showDesignBack
                       ? "relative h-auto z-10 opacity-100 pointer-events-auto"
                       : "absolute inset-0 z-0 opacity-0 pointer-events-none"
                   } rotate-y-neg-180 backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
-                  <ProfileCardDesignPanel profile={profile} onGenerateQr={onGenerateVerificationQr} />
+                  {showBack && showDesignBack ? (
+                    <ProfileCardDesignPanel profile={profile} onGenerateQr={onGenerateVerificationQr} />
+                  ) : null}
                 </div>
               </div>
             </div>
+            ) : null}
           </div>
 
           {isVerifyOpen && <VerifyProfileModal isOpen={isVerifyOpen} onClose={() => setIsVerifyOpen(false)} profile={profile} />}

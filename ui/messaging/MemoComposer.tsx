@@ -238,8 +238,8 @@ export default function MemoComposer({
               : `Write a shielded message to ${recipientName}`
           }
           className={`border px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden ${disabled
-              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed pb-8"
-              : `${withFieldBorderState("border-gray-800")} pl-8 pb-8`
+              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed pb-8 overflow-hidden"
+              : `${withFieldBorderState("border-gray-800")} pl-8 pb-8 overflow-hidden`
             }`}
         />
 

@@ -147,11 +147,6 @@ export default function ProfilePage({
   );
   const hasAutoScrolledPrefillRef = useRef(false);
   const pageBottomSentinelRef = useRef<HTMLDivElement | null>(null);
-  const isTouchingRef = useRef(false);
-  const lastUserScrollIntentAtRef = useRef(0);
-  const programmaticScrollUntilRef = useRef(0);
-  const autoScrollTimeoutsRef = useRef<number[]>([]);
-  const autoScrollRafRef = useRef<number | null>(null);
   const prefilledOriginTokenId = resolvePrefillOriginTokenId(
     tokens,
     initialPrefill?.swapTicker ?? "",
@@ -272,83 +267,13 @@ export default function ProfilePage({
       return aSymbol.localeCompare(bSymbol);
     });
   }, [tokens]);
-  const markUserScrollIntent = useCallback(() => {
-    lastUserScrollIntentAtRef.current = Date.now();
-  }, []);
-
-  const clearPendingAutoScrollJobs = useCallback(() => {
-    if (autoScrollRafRef.current !== null) {
-      window.cancelAnimationFrame(autoScrollRafRef.current);
-      autoScrollRafRef.current = null;
-    }
-    for (const timeoutId of autoScrollTimeoutsRef.current) {
-      window.clearTimeout(timeoutId);
-    }
-    autoScrollTimeoutsRef.current = [];
-  }, []);
-
-  const shouldAllowAutoScroll = useCallback(() => {
-    const AUTO_SCROLL_COOLDOWN_MS = 700;
-    return !isTouchingRef.current && Date.now() - lastUserScrollIntentAtRef.current >= AUTO_SCROLL_COOLDOWN_MS;
-  }, []);
 
   const runMultiPassScroll = useCallback((scrollFn: () => void) => {
-    clearPendingAutoScrollJobs();
-
-    const runPass = () => {
-      if (!shouldAllowAutoScroll()) return;
-      programmaticScrollUntilRef.current = Date.now() + 450;
-      scrollFn();
-    };
-
-    runPass();
-    autoScrollRafRef.current = window.requestAnimationFrame(() => {
-      autoScrollRafRef.current = null;
-      runPass();
-    });
-    autoScrollTimeoutsRef.current.push(window.setTimeout(runPass, 120));
-    autoScrollTimeoutsRef.current.push(window.setTimeout(runPass, 280));
-  }, [clearPendingAutoScrollJobs, shouldAllowAutoScroll]);
-
-  useEffect(() => {
-    const onTouchStart = () => {
-      isTouchingRef.current = true;
-      markUserScrollIntent();
-      clearPendingAutoScrollJobs();
-    };
-    const onTouchMove = () => {
-      isTouchingRef.current = true;
-      markUserScrollIntent();
-      clearPendingAutoScrollJobs();
-    };
-    const onTouchEnd = () => {
-      isTouchingRef.current = false;
-      markUserScrollIntent();
-    };
-    const onWheel = () => markUserScrollIntent();
-    const onScroll = () => {
-      if (Date.now() < programmaticScrollUntilRef.current) return;
-      markUserScrollIntent();
-      clearPendingAutoScrollJobs();
-    };
-
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: true });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
-    window.addEventListener("touchcancel", onTouchEnd, { passive: true });
-    window.addEventListener("wheel", onWheel, { passive: true });
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    return () => {
-      clearPendingAutoScrollJobs();
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
-      window.removeEventListener("touchcancel", onTouchEnd);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("scroll", onScroll);
-    };
-  }, [clearPendingAutoScrollJobs, markUserScrollIntent]);
+    scrollFn();
+    window.requestAnimationFrame(scrollFn);
+    window.setTimeout(scrollFn, 120);
+    window.setTimeout(scrollFn, 280);
+  }, []);
 
   // Handlers
   const handleGenerateVerificationQr = useCallback(() => {
@@ -509,6 +434,7 @@ export default function ProfilePage({
       });
     }, 200);
   }, [runMultiPassScroll]);
+
 
   useEffect(() => {
     if (!hasInitialPrefill) return;

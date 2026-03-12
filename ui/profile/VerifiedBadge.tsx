@@ -61,14 +61,15 @@ export default function VerifiedBadge({
       ? "group-hover/badge:max-w-[140px]"
       : "group-hover/badge:max-w-[80px]";
 
+  const handleBadgeClick: MouseEventHandler<HTMLSpanElement> = (event) => {
+    setOpen(true);
+    onClick?.(event);
+  };
+
   if (verified) {
     return (
     <span
-      onClick={onClick}
-      onTouchStart={(e) => {
-        e.stopPropagation();
-        setOpen(true);
-      }}
+      onClick={handleBadgeClick}
       aria-label={verifiedLabel}
       className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
       text-green-800 bg-linear-to-r from-green-100 to-green-200 border-green-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]`}
@@ -100,11 +101,7 @@ export default function VerifiedBadge({
   // Unverified unchanged
   return (
     <span
-      onClick={onClick}
-      onTouchStart={(e) => {
-        e.stopPropagation();
-        setOpen(true);
-      }}
+      onClick={handleBadgeClick}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
       text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] hover:px-[0.5rem] py-[0.1rem]${onClick ? " cursor-pointer" : ""}`}
