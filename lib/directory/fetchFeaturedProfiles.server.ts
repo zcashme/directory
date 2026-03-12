@@ -2,28 +2,34 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
 
+function hasNonEmptyText(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
 export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Profile[]> {
   const supabase = createSupabaseServerClient();
   if (!supabase) return [];
 
-  // First, get count of all featured profiles
-  const { count } = await supabase
-    .from("zcasher_searchable")
-    .select("*", { count: "exact", head: true })
-    .eq("featured", true);
-
-  if (!count || count === 0) return [];
-
-  // Fetch all featured profiles and randomly select
   const { data: profiles } = await supabase
     .from("zcasher_searchable")
     .select("*")
-    .eq("featured", true);
+    .eq("featured", true)
+    .eq("address_verified", true)
+    .not("profile_image_url", "is", null)
+    .not("bio", "is", null);
 
   if (!profiles || profiles.length === 0) return [];
 
+  const eligibleCandidates = profiles.filter((profile) =>
+    profile.address_verified === true &&
+    hasNonEmptyText(profile.profile_image_url) &&
+    hasNonEmptyText(profile.bio)
+  );
+
+  if (eligibleCandidates.length === 0) return [];
+
   // Get all profile IDs
-  const profileIds = profiles.map((p) => p.id).filter((id): id is number => id !== null);
+  const profileIds = eligibleCandidates.map((p) => p.id).filter((id): id is number => id !== null);
 
   // Fetch all links for these profiles
   const linksByProfileId: Record<number, EnrichedProfileLink[]> = {};
@@ -69,7 +75,7 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
     }
   }
 
-  const enriched = profiles.map((p): Profile => {
+  const enriched = eligibleCandidates.map((p): Profile => {
     const linkList = linksByProfileId[p.id] || [];
     const linkVerifiedCount =
       p.verified_links_count ?? linkList.filter((l) => l.is_verified).length;
@@ -83,5 +89,7 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
     } as Profile;
   });
 
-  return enriched.sort(() => Math.random() - 0.5).slice(0, limit);
+  const eligibleProfiles = enriched.filter((profile) => profile.address_verified === true && (profile.links?.length ?? 0) > 0);
+
+  return eligibleProfiles.sort(() => Math.random() - 0.5).slice(0, limit);
 }

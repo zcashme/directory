@@ -256,6 +256,14 @@ interface FeaturedCardsSectionProps {
   onCardClick: (profile: Profile) => void;
 }
 
+function isTypingInEditableField(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  const tag = target.tagName;
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  if (target.isContentEditable) return true;
+  return !!target.closest("[contenteditable='true'], [contenteditable='']");
+}
+
 function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionProps) {
   type TunerScale = ProfileCardTextScale & { avatar: number };
   type TunerKey = keyof TunerScale;
@@ -294,6 +302,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     { key: "avatar", label: "Avatar" },
   ];
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const [hasTouchInput, setHasTouchInput] = useState<boolean>(false);
   const [activeCardIndex, setActiveCardIndex] = useState<number>(0);
   const [scale, setScale] = useState<TunerScale>(defaultScale);
   const [layoutTune, setLayoutTune] = useState<LayoutTunerValues>({ headlineY: -64, carouselY: -40 });
@@ -335,10 +344,13 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   }, [centerIndex]);
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 768);
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
+    const updateViewportCapabilities = () => {
+      setIsMobile(window.innerWidth < 768);
+      setHasTouchInput("ontouchstart" in window || navigator.maxTouchPoints > 0);
+    };
+    updateViewportCapabilities();
+    window.addEventListener("resize", updateViewportCapabilities);
+    return () => window.removeEventListener("resize", updateViewportCapabilities);
   }, []);
 
   useEffect(() => {
@@ -474,11 +486,6 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     };
   }, [typedTargetsKey, centerIndex, headlinePrefix]);
 
-
-  if (!profiles.length) {
-    return null;
-  }
-
   const getDesktopPosition = (index: number) => {
     const count = profiles.length;
     const centerIdx = Math.floor(count / 2);
@@ -502,15 +509,12 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     return (index - activeCardIndex + count) % count;
   };
 
-  const getWrappedIndex = (index: number) => {
-    const count = profiles.length;
-    if (count <= 0) return 0;
-    return ((index % count) + count) % count;
-  };
+  const canTouchSwipe = hasTouchInput && profiles.length > 1;
 
-  const shiftActiveCard = (delta: number) => {
-    if (profiles.length <= 1) return;
-    const nextIndex = getWrappedIndex(activeCardIndexRef.current + delta);
+  const shiftActiveCard = useCallback((delta: number) => {
+    const count = profiles.length;
+    if (count <= 1) return;
+    const nextIndex = ((activeCardIndexRef.current + delta) % count + count) % count;
     const selectedProfile = profiles[nextIndex];
     let selectedName: string | null = null;
     if (selectedProfile) {
@@ -535,10 +539,24 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       setCurrentTypedProfileIndex(nextIndex);
       manualResumeTargetRef.current = { index: nextIndex, name: selectedName };
     }
-  };
+  }, [profiles, headlinePrefix]);
+
+  useEffect(() => {
+    if (isMobile || profiles.length <= 1) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
+      if (isTypingInEditableField(event.target)) return;
+      event.preventDefault();
+      shiftActiveCard(event.key === "ArrowRight" ? 1 : -1);
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isMobile, profiles.length, shiftActiveCard]);
 
   const handleCarouselTouchStart = (event: ReactTouchEvent<HTMLDivElement>) => {
-    if (!isMobile || profiles.length <= 1) return;
+    if (!canTouchSwipe) return;
     const touch = event.touches[0];
     if (!touch) return;
     swipeStartRef.current = { x: touch.clientX, y: touch.clientY };
@@ -546,7 +564,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   };
 
   const handleCarouselTouchMove = (event: ReactTouchEvent<HTMLDivElement>) => {
-    if (!isMobile || profiles.length <= 1) return;
+    if (!canTouchSwipe) return;
     const start = swipeStartRef.current;
     if (!start) return;
 
@@ -566,7 +584,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
   };
 
   const handleCarouselTouchEnd = () => {
-    if (!isMobile || profiles.length <= 1) {
+    if (!canTouchSwipe) {
       swipeStartRef.current = null;
       swipeDeltaRef.current = { x: 0, y: 0 };
       return;
@@ -701,6 +719,10 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
     onCardClick(selectedProfile);
   };
 
+  if (!profiles.length) {
+    return null;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 pt-20 md:pt-32">
       <div className="mb-10 md:mb-12 text-center" style={{ transform: `translateY(${layoutTune.headlineY + mobileDownshiftPx}px)` }}>
@@ -724,7 +746,7 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
       <div className="mb-16 mt-2 md:mt-3" style={{ overflowX: "clip", transform: `translateY(${layoutTune.carouselY + mobileDownshiftPx}px)` }}>
         <div
           className="relative flex justify-center items-start h-[400px] md:h-[480px] pt-14 md:pt-20"
-          style={{ overflowX: "clip", touchAction: isMobile ? "pan-y" : undefined }}
+          style={{ overflowX: "clip", touchAction: canTouchSwipe ? "pan-y" : undefined }}
           onTouchStart={handleCarouselTouchStart}
           onTouchMove={handleCarouselTouchMove}
           onTouchEnd={handleCarouselTouchEnd}
