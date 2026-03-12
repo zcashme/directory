@@ -7,6 +7,7 @@ import { buildShareUrl } from "@/lib/profile/profileUtils";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
 import { getRateAction } from "@/lib/rates/getRateAction";
+import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import { CURRENCIES, FIAT_TICKERS } from "@/ui/verification/AmountAndWallet";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 
@@ -41,6 +42,12 @@ const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
   btc: 1,
   eth: 2,
   sol: 3,
+};
+const NATIVE_TICKER_BY_BASE_LAYER: Record<BaseLayerKey, string> = {
+  zec: "ZEC",
+  btc: "BTC",
+  eth: "ETH",
+  sol: "SOL",
 };
 
 function fitToMaxBytes(text: string, maxBytes: number): string {
@@ -168,11 +175,38 @@ export default function CreatePrefillUrlModal({
   const [lastModifiedField, setLastModifiedField] =
     useState<LastModifiedField>("crypto");
   const [rate, setRate] = useState<number>(0);
-  const [zecRate, setZecRate] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
   const tokenSelectorRef = useRef<HTMLDivElement | null>(null);
   const fiatSelectorRef = useRef<HTMLDivElement | null>(null);
+  const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const resizeMemoTextarea = useCallback((textarea?: HTMLTextAreaElement | null) => {
+    const el = textarea ?? memoTextareaRef.current;
+    if (!el) return;
+
+    el.style.height = "auto";
+    const style = window.getComputedStyle(el);
+    const parsedLineHeight = Number.parseFloat(style.lineHeight);
+    const parsedFontSize = Number.parseFloat(style.fontSize);
+    const lineHeight = Number.isFinite(parsedLineHeight)
+      ? parsedLineHeight
+      : Number.isFinite(parsedFontSize)
+        ? parsedFontSize * 1.5
+        : 20;
+    const verticalPadding =
+      Number.parseFloat(style.paddingTop) + Number.parseFloat(style.paddingBottom);
+    const verticalBorder =
+      Number.parseFloat(style.borderTopWidth) + Number.parseFloat(style.borderBottomWidth);
+    const minHeight = lineHeight * 2 + verticalPadding + verticalBorder;
+    const nextHeight = Math.max(el.scrollHeight + lineHeight, minHeight);
+    el.style.height = `${nextHeight}px`;
+  }, []);
+
+  const emoji = useEmojiAutocomplete({
+    textareaRef: memoTextareaRef,
+    value: memo,
+    setValue: setMemo,
+  });
 
   const selectedCryptoOption = useMemo(
     () =>
@@ -183,6 +217,10 @@ export default function CreatePrefillUrlModal({
       cryptoOptions[0],
     [selectedTicker, selectedBaseLayer, cryptoOptions]
   );
+  const shouldShowSelectedBaseLayerInField = useMemo(() => {
+    if (!selectedCryptoOption) return false;
+    return NATIVE_TICKER_BY_BASE_LAYER[selectedCryptoOption.baseLayer] !== selectedCryptoOption.ticker;
+  }, [selectedCryptoOption]);
 
   const tickerBaseLayerCounts = useMemo(() => {
     const counts = new Map<string, number>();
@@ -252,7 +290,7 @@ export default function CreatePrefillUrlModal({
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
+      if (event.key === "Escape" && !event.defaultPrevented) onClose();
     };
 
     document.addEventListener("keydown", onKeyDown);
@@ -266,12 +304,7 @@ export default function CreatePrefillUrlModal({
 
     const loadRate = async () => {
       try {
-        const [result, zecResult] = await Promise.all([
-          getRateAction(fiatTicker, selectedTicker).catch(() => null),
-          selectedTicker === ZEC_TICKER
-            ? Promise.resolve(null)
-            : getRateAction(fiatTicker, ZEC_TICKER).catch(() => null),
-        ]);
+        const result = await getRateAction(fiatTicker, selectedTicker).catch(() => null);
         if (cancelled) return;
 
         const nextRate =
@@ -283,25 +316,9 @@ export default function CreatePrefillUrlModal({
             ? result.rate
             : 0;
         setRate(nextRate);
-
-        if (selectedTicker === ZEC_TICKER) {
-          setZecRate(nextRate);
-          return;
-        }
-
-        const nextZecRate =
-          zecResult &&
-          zecResult.ok &&
-          zecResult.rate &&
-          Number.isFinite(zecResult.rate) &&
-          zecResult.rate > 0
-            ? zecResult.rate
-            : 0;
-        setZecRate(nextZecRate);
       } catch {
         if (!cancelled) {
           setRate(0);
-          setZecRate(0);
         }
       }
     };
@@ -312,6 +329,11 @@ export default function CreatePrefillUrlModal({
       cancelled = true;
     };
   }, [isOpen, fiatTicker, selectedTicker]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    resizeMemoTextarea();
+  }, [isOpen, memo, resizeMemoTextarea]);
 
   const convertCryptoToFiat = useCallback(
     (nextCrypto: string) => {
@@ -396,48 +418,6 @@ export default function CreatePrefillUrlModal({
     [fiatAmount]
   );
   const hasDisplayAmounts = Boolean(cryptoAmountValue && fiatAmountValue);
-  const zecAmountValue = useMemo(() => {
-    if (
-      !hasDisplayAmounts ||
-      selectedTicker === ZEC_TICKER ||
-      !rate ||
-      rate <= 0 ||
-      !zecRate ||
-      zecRate <= 0
-    ) {
-      return "";
-    }
-
-    const cryptoNum = Number.parseFloat(cryptoAmountValue);
-    if (!Number.isFinite(cryptoNum) || cryptoNum <= 0) return "";
-
-    const zecAmount = (cryptoNum * rate) / zecRate;
-    if (!Number.isFinite(zecAmount) || zecAmount <= 0) return "";
-
-    return formatCryptoAmount(zecAmount);
-  }, [hasDisplayAmounts, selectedTicker, rate, zecRate, cryptoAmountValue]);
-  const conversionDisplay = useMemo(() => {
-    if (!hasDisplayAmounts) return "";
-
-    const base =
-      lastModifiedField === "fiat"
-        ? `${fiatAmountValue} ${fiatTicker} = ${cryptoAmountValue} ${selectedTicker}`
-        : `${cryptoAmountValue} ${selectedTicker} = ${fiatAmountValue} ${fiatTicker}`;
-
-    if (selectedTicker !== ZEC_TICKER && zecAmountValue) {
-      return `${base} = ${zecAmountValue} ZEC`;
-    }
-
-    return base;
-  }, [
-    hasDisplayAmounts,
-    lastModifiedField,
-    fiatAmountValue,
-    fiatTicker,
-    cryptoAmountValue,
-    selectedTicker,
-    zecAmountValue,
-  ]);
   const requestDisplay = useMemo(() => {
     if (!hasDisplayAmounts) return "";
 
@@ -585,28 +565,25 @@ export default function CreatePrefillUrlModal({
       />
 
       <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200 my-4">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
               Create Paylink
             </h2>
-            <p className="text-xs text-gray-500">
-              Build and preview a shareable paylink for this profile.
-            </p>
           </div>
           <motion.button
             type="button"
             onClick={onClose}
             {...tapProps}
-            className="h-10 px-2 text-sm font-bold text-gray-700 transition-colors hover:text-[var(--color-brand-blue)]"
+            className="inline-flex h-8 items-center self-center px-2 text-sm font-medium text-gray-700 transition-colors hover:text-[var(--color-brand-blue)]"
           >
             Close
           </motion.button>
         </div>
 
         <div className="p-5 space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <label className="block text-sm text-gray-700">
+          <div className="grid grid-cols-2 gap-3">
+            <label className="block min-w-0 text-sm text-gray-700">
               <span className="mb-1 block font-medium">Amount ({selectedTicker})</span>
               <div ref={tokenSelectorRef} className="relative">
                 <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 focus-within:ring-1 focus-within:ring-[var(--color-brand-blue)]">
@@ -631,9 +608,11 @@ export default function CreatePrefillUrlModal({
                   >
                     <span className="inline-flex items-center gap-1 leading-none">
                       <span className="leading-none">{selectedTicker}</span>
-                      <span className="max-w-24 truncate text-xs leading-none text-gray-500">
-                        {selectedCryptoOption?.chainLabel ?? ""}
-                      </span>
+                      {shouldShowSelectedBaseLayerInField && (
+                        <span className="max-w-24 truncate text-xs leading-none text-gray-500">
+                          {selectedCryptoOption?.chainLabel ?? ""}
+                        </span>
+                      )}
                     </span>
                     <span
                       className={`inline-flex h-6 w-4 items-center justify-center text-2xl leading-none transition-transform ${
@@ -649,7 +628,7 @@ export default function CreatePrefillUrlModal({
                 </div>
 
                 {isTokenOpen && (
-                  <div className="absolute right-0 top-full mt-1 z-[10000] w-72 max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full mt-1 z-[10000] w-72 max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
                     <div className="border-b border-gray-200 p-2">
                       <input
                         type="text"
@@ -703,7 +682,7 @@ export default function CreatePrefillUrlModal({
               </div>
             </label>
 
-            <label className="block text-sm text-gray-700">
+            <label className="block min-w-0 text-sm text-gray-700">
               <span className="mb-1 block font-medium">Amount ({fiatTicker})</span>
               <div ref={fiatSelectorRef} className="relative">
                 <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 focus-within:ring-1 focus-within:ring-[var(--color-brand-blue)]">
@@ -795,7 +774,7 @@ export default function CreatePrefillUrlModal({
           </div>
 
           <AnimatePresence initial={false}>
-            {conversionDisplay && requestDisplay && (
+            {requestDisplay && (
               <motion.div
                 initial={{ opacity: 0, y: -8, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -807,34 +786,76 @@ export default function CreatePrefillUrlModal({
                 }
                 className="overflow-hidden"
               >
-                <div className="space-y-2">
-                  <p className="text-xs text-gray-500">{conversionDisplay}</p>
-                  <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
-                    {requestDisplay}
-                  </div>
+                <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
+                  {requestDisplay}
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div>
+          <div className="relative">
             <div className="mb-1">
               <label className="block text-sm font-medium text-gray-700">
                 Memo
               </label>
             </div>
             <textarea
+              ref={memoTextareaRef}
               value={memo}
-              onChange={(event) => setMemo(event.target.value)}
-              rows={3}
+              onChange={(event) => {
+                setMemo(event.target.value);
+                emoji.update();
+                resizeMemoTextarea(event.target);
+              }}
+              onBlur={emoji.close}
+              onKeyDown={emoji.handleKeyDown}
+              rows={1}
               placeholder={canUseMemo ? "Thanks" : "Memo disabled for non-ZEC paylinks"}
               disabled={!canUseMemo}
-              className={`w-full rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
+              className={`w-full resize-none overflow-hidden rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
                 canUseMemo
                   ? "border-gray-300 text-gray-900"
                   : "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
               }`}
             />
+
+            {emoji.results.length > 0 && canUseMemo && (
+              <div
+                className={`absolute left-0 z-[10000] w-[240px] max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-lg ${
+                  emoji.placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
+                }`}
+              >
+                {emoji.results.map((item, idx) => (
+                  <button
+                    key={`${item.ch}-${item.label}-${idx}`}
+                    ref={(el) => emoji.setOptionRef(idx, el)}
+                    type="button"
+                    className={`group flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                      emoji.highlightedIndex === idx
+                        ? "bg-[var(--color-brand-blue)]/90 text-white"
+                        : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
+                    }`}
+                    onMouseEnter={() => emoji.setHighlightedIndex(idx)}
+                    onFocus={() => emoji.setHighlightedIndex(idx)}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                      emoji.insert(item);
+                    }}
+                  >
+                    <span className="text-lg">{item.ch}</span>
+                    <span
+                      className={`truncate ${
+                        emoji.highlightedIndex === idx
+                          ? "text-white"
+                          : "text-gray-700 group-hover:text-white"
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {notes.length > 0 && (
@@ -846,19 +867,17 @@ export default function CreatePrefillUrlModal({
           )}
         </div>
 
-        <div className="flex flex-col gap-3 border-t border-gray-200 px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
-          <div className="w-full sm:max-w-[56%]">
-            <label className="mb-1 block text-xs font-medium text-gray-700">
+        <div className="border-t border-gray-200 px-5 py-4">
+          <div className="w-full">
+            <label className="mb-1 block text-sm font-medium text-gray-700">
               Preview
             </label>
-            <input
-              readOnly
-              value={previewUrl}
-              className="w-full rounded-xl border border-gray-300 bg-transparent px-3 py-2 text-xs text-gray-700"
-            />
+            <p className="text-xs text-gray-700 break-all">
+              {previewUrl}
+            </p>
           </div>
 
-          <div className="flex items-center justify-center gap-2 sm:justify-end">
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 pt-4">
             <motion.button
               type="button"
               onClick={handleOpenPreview}
