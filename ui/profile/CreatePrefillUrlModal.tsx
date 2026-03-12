@@ -217,7 +217,7 @@ export default function CreatePrefillUrlModal({
       cryptoOptions[0],
     [selectedTicker, selectedBaseLayer, cryptoOptions]
   );
-  const shouldShowSelectedBaseLayerInField = useMemo(() => {
+  const shouldShowSelectedBaseLayerInLabel = useMemo(() => {
     if (!selectedCryptoOption) return false;
     return NATIVE_TICKER_BY_BASE_LAYER[selectedCryptoOption.baseLayer] !== selectedCryptoOption.ticker;
   }, [selectedCryptoOption]);
@@ -584,7 +584,14 @@ export default function CreatePrefillUrlModal({
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <label className="block min-w-0 text-sm text-gray-700">
-              <span className="mb-1 block font-medium">Amount ({selectedTicker})</span>
+              <span className="mb-1 block font-medium">
+                Amount ({selectedTicker})
+                {shouldShowSelectedBaseLayerInLabel && (
+                  <span className="ml-1 text-xs font-normal text-gray-500">
+                    {selectedCryptoOption?.chainLabel ?? ""}
+                  </span>
+                )}
+              </span>
               <div ref={tokenSelectorRef} className="relative">
                 <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 focus-within:ring-1 focus-within:ring-[var(--color-brand-blue)]">
                   <input
@@ -606,14 +613,7 @@ export default function CreatePrefillUrlModal({
                     aria-label="Choose crypto ticker"
                     aria-expanded={isTokenOpen}
                   >
-                    <span className="inline-flex items-center gap-1 leading-none">
-                      <span className="leading-none">{selectedTicker}</span>
-                      {shouldShowSelectedBaseLayerInField && (
-                        <span className="max-w-24 truncate text-xs leading-none text-gray-500">
-                          {selectedCryptoOption?.chainLabel ?? ""}
-                        </span>
-                      )}
-                    </span>
+                    <span className="leading-none">{selectedTicker}</span>
                     <span
                       className={`inline-flex h-6 w-4 items-center justify-center text-2xl leading-none transition-transform ${
                         shouldReduceMotion
@@ -628,7 +628,7 @@ export default function CreatePrefillUrlModal({
                 </div>
 
                 {isTokenOpen && (
-                  <div className="absolute left-0 top-full mt-1 z-[10000] w-72 max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
                     <div className="border-b border-gray-200 p-2">
                       <input
                         type="text"
@@ -720,7 +720,7 @@ export default function CreatePrefillUrlModal({
                 </div>
 
                 {isCurrencyOpen && (
-                  <div className="absolute right-0 top-full mt-1 z-[10000] w-72 max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
                     <div className="border-b border-gray-200 p-2">
                       <input
                         type="text"
