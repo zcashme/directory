@@ -205,6 +205,8 @@ export default function ProfilePage({
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [designPanelBackgroundPreview, setDesignPanelBackgroundPreview] = useState<string | null>(null);
   const [verificationGenerateQrTrigger, setVerificationGenerateQrTrigger] = useState(0);
+  const [isVerificationGenerating, setIsVerificationGenerating] = useState(false);
+  const [pendingVerificationScroll, setPendingVerificationScroll] = useState(false);
 
   const [originTokenId, setOriginTokenId] = useState<string | null>(prefilledOriginTokenId);
 
@@ -277,14 +279,39 @@ export default function ProfilePage({
 
   // Handlers
   const handleGenerateVerificationQr = useCallback(() => {
+    setPendingVerificationScroll(true);
     setVerificationGenerateQrTrigger((prev) => prev + 1);
+  }, []);
+
+  const handleVerificationQrReady = useCallback(() => {
+    if (!pendingVerificationScroll) return;
+    runMultiPassScroll(() => {
+      const el = document.getElementById("zcash-feedback");
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+    setPendingVerificationScroll(false);
+  }, [pendingVerificationScroll, runMultiPassScroll]);
+
+  const handleVerificationLoadingStateChange = useCallback((isLoading: boolean) => {
+    setIsVerificationGenerating(isLoading);
+  }, []);
+
+  useEffect(() => {
+    if (mode !== "verification") {
+      setIsVerificationGenerating(false);
+      setPendingVerificationScroll(false);
+    }
+  }, [mode]);
+
+  const handleShowQR = useCallback(() => {
+    setForceShowQR(true);
     setTimeout(() => {
       runMultiPassScroll(() => {
         const el = document.getElementById("zcash-feedback");
-        if (!el) return;
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
       });
-    }, 500);
+    }, 200);
   }, [runMultiPassScroll]);
 
   const handleSetAsset = useCallback((tokenId: string) => {
@@ -425,17 +452,6 @@ export default function ProfilePage({
     }));
   }, []);
 
-  const handleShowQR = useCallback(() => {
-    setForceShowQR(true);
-    setTimeout(() => {
-      runMultiPassScroll(() => {
-        const el = document.getElementById("zcash-feedback");
-        if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-      });
-    }, 200);
-  }, [runMultiPassScroll]);
-
-
   useEffect(() => {
     if (!hasInitialPrefill) return;
     if (hasAutoScrolledPrefillRef.current) return;
@@ -494,6 +510,7 @@ export default function ProfilePage({
           onEditorModeChange={setIsProfileEditing}
           onDesignPanelBackgroundChange={setDesignPanelBackgroundPreview}
           onGenerateVerificationQr={handleGenerateVerificationQr}
+          isVerificationGenerating={isVerificationGenerating}
           cardWidthPx={PROFILE_CARD_DESKTOP_WIDTH_PX}
         />
 
@@ -511,6 +528,8 @@ export default function ProfilePage({
                 <ProfileVerification
                   profile={initialProfile}
                   generateQrTrigger={verificationGenerateQrTrigger}
+                  onLoadingStateChange={handleVerificationLoadingStateChange}
+                  onQrReady={handleVerificationQrReady}
                 />
               ) : mode === "swap" ? (
                 <div className="p-0">

@@ -78,6 +78,7 @@ export interface ProfileCardProps {
   onShowQR?: () => void;
   onEditorModeChange?: (isEditorOpen: boolean) => void;
   onGenerateVerificationQr?: () => void;
+  isVerificationGenerating?: boolean;
   onDesignPanelBackgroundChange?: (backgroundColor: string | null) => void;
   cardWidthPx?: number;
 }

@@ -80,6 +80,7 @@ export default function ProfileCard({
   onShowQR,
   onEditorModeChange,
   onGenerateVerificationQr,
+  isVerificationGenerating = false,
   onDesignPanelBackgroundChange,
   cardWidthPx,
 }: ProfileCardProps) {
@@ -548,16 +549,27 @@ export default function ProfileCard({
                       }
                       setShowDesignBack(true);
                     }}
-                    className={`inline-flex items-center gap-1 rounded-full border px-3 h-9 text-sm font-semibold whitespace-nowrap transition-all ${
+                    className={`inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all shadow-md ${
                       hasDesignAccess
-                        ? "border-gray-300 bg-white/90 text-gray-700 hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                        : "border-gray-300 bg-white/90 text-gray-500 cursor-default"
+                        ? "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                        : "border-gray-300 bg-white/90 text-gray-500"
                     }`}
                     aria-label="Design"
                     title={hasDesignAccess ? "Design" : "Design (Maxi required)"}
                   >
-                    {!hasDesignAccess && <span aria-hidden>{"\uD83D\uDD12"}</span>}
-                    <span>Design</span>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 320 320"
+                      fill="none"
+                      className="h-4 w-4"
+                      aria-hidden
+                    >
+                      <g fill="currentColor">
+                        <rect x="153" y="22" width="52" height="194" rx="26" transform="rotate(36 153 22)" />
+                        <rect x="114" y="136" width="42" height="86" rx="21" transform="rotate(36 114 136)" />
+                        <path d="M36 288C58 264 63 237 64 220C65 203 71 188 82 178C100 161 127 157 147 170C167 183 176 210 170 233C166 247 157 260 145 269C132 279 117 283 102 284C84 286 62 289 36 288Z" />
+                      </g>
+                    </svg>
                   </button>
                 )}
               </div>
@@ -579,6 +591,7 @@ export default function ProfileCard({
                       links={linksArray}
                       onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
                       onGenerateQr={onGenerateVerificationQr}
+                      isVerificationGenerating={isVerificationGenerating}
                     />
                   ) : null}
                 </div>

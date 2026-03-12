@@ -23,12 +23,14 @@ interface ProfileVerificationProps {
   generateQrTrigger?: number;
   onClose?: () => void;
   onLoadingStateChange?: (isLoading: boolean) => void;
+  onQrReady?: () => void;
 }
 
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
   onLoadingStateChange,
+  onQrReady,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
@@ -133,6 +135,7 @@ export default function ProfileVerification({
   const [currentUri, setCurrentUri] = useState("");
   const [otpAttemptsLeft, setOtpAttemptsLeft] = useState(5);
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
+  const lastShowQrSectionRef = useRef(false);
   const isMaxi = isTruthyLikeMaxi(profile?.is_maxi);
   const verificationAmountZec = isMaxi ? "0" : "0.004";
   const minAmountHint = isMaxi
@@ -272,6 +275,14 @@ export default function ProfileVerification({
     ? "mt-1 pt-1 max-h-[1200px] opacity-100"
     : "max-h-0 opacity-0";
 
+  useEffect(() => {
+    const wasVisible = lastShowQrSectionRef.current;
+    if (!wasVisible && showQrSection) {
+      onQrReady?.();
+    }
+    lastShowQrSectionRef.current = showQrSection;
+  }, [onQrReady, showQrSection]);
+
   return (
     <div className="w-full bg-transparent border-none shadow-none p-0">
       {/* Error display (for memo generation errors) */}
@@ -286,6 +297,7 @@ export default function ProfileVerification({
         <div className="flex justify-center mb-4">
           <QrUriBlock
             uri={currentUri}
+            memoText={currentMemo}
             profileName={`${profile.name}-verification`}
             qrTopHintText={"Send transaction to receive code.\n"}
             qrTopHintDetails={[

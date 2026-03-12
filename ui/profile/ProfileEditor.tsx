@@ -185,13 +185,20 @@ interface ProfileEditorProps {
   links?: EnrichedProfileLink[];
   onAuthenticateLink?: (link: { url: string }) => void;
   onGenerateQr?: () => void;
+  isVerificationGenerating?: boolean;
 }
 
 
 const escapeRegex = (value: string) =>
   value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-export default function ProfileEditor({ profile, links, onAuthenticateLink, onGenerateQr }: ProfileEditorProps) {
+export default function ProfileEditor({
+  profile,
+  links,
+  onAuthenticateLink,
+  onGenerateQr,
+  isVerificationGenerating = false,
+}: ProfileEditorProps) {
   const {
     form,
     deletedFields,
@@ -376,6 +383,9 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
 
   const handleStartVerification = () => {
     if (!addressReadyForVerification) {
+      return;
+    }
+    if (isVerificationGenerating) {
       return;
     }
     onGenerateQr?.();
@@ -979,10 +989,19 @@ export default function ProfileEditor({ profile, links, onAuthenticateLink, onGe
               variant="secondary"
               size="md"
               onClick={handleStartVerification}
-              disabled={!addressReadyForVerification}
-              className="hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+              disabled={!addressReadyForVerification || isVerificationGenerating}
+              className={`relative overflow-hidden rounded-xl hover:border-[var(--color-brand-blue)] ${
+                isVerificationGenerating ? "text-white border-[var(--color-brand-blue)] bg-white" : "hover:text-[var(--color-brand-blue)]"
+              }`}
             >
-              Start Verification
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-0 bg-[var(--color-brand-blue)] transition-[height] duration-500 ease-out"
+                style={{ height: isVerificationGenerating ? "100%" : "0%" }}
+              />
+              <span className="relative z-10 font-semibold">
+                Start Verification
+              </span>
             </Button>
           </div>
         </div>
