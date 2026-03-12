@@ -1181,7 +1181,7 @@ export default function AmountAndWallet({
                   }
                   className="block text-sm font-medium text-gray-700 mb-1 overflow-hidden"
                 >
-                  {asset} is returned if {recipientName} does not receive ZEC.
+                  {asset} is returned to you if swap fails ({recipientName} does not receive ZEC).
                 </motion.label>
               )}
             </AnimatePresence>
