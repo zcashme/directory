@@ -28,6 +28,10 @@ interface CryptoOption {
   chainLabel: string;
 }
 
+interface MemoLeftIconProps {
+  text: string;
+}
+
 const MAX_MEMO_BYTES = 512;
 const ZEC_TICKER = "ZEC";
 const SUPPORTED_TICKERS = ["ZEC", "BTC", "ETH", "SOL", "USDC", "USDT"];
@@ -105,6 +109,61 @@ function formatFiatAmount(value: number): string {
 
 function formatCryptoAmount(value: number): string {
   return value.toFixed(8).replace(/\.?0+$/, "");
+}
+
+function MemoLeftIcon({ text }: MemoLeftIconProps) {
+  const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
+  const showCircle = bytes > 128;
+
+  if (!showCircle) {
+    return (
+      <svg width="16" height="16" viewBox="0 0 14 14" aria-hidden="true">
+        <path
+          d="M3 11L4 8L9.5 2.5C9.9 2.1 10.5 2.1 10.9 2.5L11.5 3.1C11.9 3.5 11.9 4.1 11.5 4.5L6 10L3 11Z"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          strokeLinejoin="round"
+        />
+      </svg>
+    );
+  }
+
+  const remaining = Math.max(0, MAX_MEMO_BYTES - bytes);
+  const remainingRatio = remaining / MAX_MEMO_BYTES;
+  const radius = 6;
+  const circumference = 2 * Math.PI * radius;
+  const dashOffset = circumference * (1 - remainingRatio);
+
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke="rgba(156, 163, 175, 0.35)"
+        strokeWidth="2"
+      />
+      <circle
+        cx="7"
+        cy="7"
+        r={radius}
+        fill="none"
+        stroke="var(--color-brand-blue)"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeDasharray={circumference}
+        strokeDashoffset={dashOffset}
+        className="transition-[stroke-dashoffset] duration-200 ease-out"
+        style={{
+          transform: "rotate(-90deg)",
+          transformOrigin: "50% 50%",
+          transformBox: "fill-box",
+        }}
+      />
+    </svg>
+  );
 }
 
 export default function CreatePrefillUrlModal({
@@ -799,25 +858,32 @@ export default function CreatePrefillUrlModal({
                 Memo
               </label>
             </div>
-            <textarea
-              ref={memoTextareaRef}
-              value={memo}
-              onChange={(event) => {
-                setMemo(event.target.value);
-                emoji.update();
-                resizeMemoTextarea(event.target);
-              }}
-              onBlur={emoji.close}
-              onKeyDown={emoji.handleKeyDown}
-              rows={1}
-              placeholder={canUseMemo ? "Thanks" : "Memo disabled for non-ZEC paylinks"}
-              disabled={!canUseMemo}
-              className={`w-full resize-none overflow-hidden rounded-xl border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
-                canUseMemo
-                  ? "border-gray-300 text-gray-900"
-                  : "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed"
-              }`}
-            />
+            <div className="relative">
+              {canUseMemo && (
+                <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
+                  <MemoLeftIcon text={memo} />
+                </div>
+              )}
+              <textarea
+                ref={memoTextareaRef}
+                value={memo}
+                onChange={(event) => {
+                  setMemo(event.target.value);
+                  emoji.update();
+                  resizeMemoTextarea(event.target);
+                }}
+                onBlur={emoji.close}
+                onKeyDown={emoji.handleKeyDown}
+                rows={1}
+                placeholder={canUseMemo ? "Thanks" : "Memo disabled for non-ZEC paylinks"}
+                disabled={!canUseMemo}
+                className={`w-full resize-none overflow-hidden rounded-xl border py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
+                  canUseMemo
+                    ? "border-gray-300 text-gray-900 pl-8 pr-3"
+                    : "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed px-3"
+                }`}
+              />
+            </div>
 
             {emoji.results.length > 0 && canUseMemo && (
               <div
