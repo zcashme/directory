@@ -1,10 +1,11 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useMemo } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { INLINE_ACTION_BUTTON_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 
 interface QrUriBlockProps {
   uri: string;
+  memoText?: string;
   profileName?: string;
   qrTopHintText?: string;
   qrTopHintDetails?: string[];
@@ -20,8 +21,13 @@ interface QrUriBlockProps {
   hideButtonClassName?: string;
 }
 
+type MemoCopyLabel = "Copy Memo" | "Copied" | "No Memo";
+type AddressCopyLabel = "Copy Address" | "Copied" | "No Address";
+type AmountCopyLabel = "Copy Amount" | "Copied" | "No Amount";
+
 export default function QrUriBlock({
   uri,
+  memoText,
   profileName,
   qrTopHintText,
   qrTopHintDetails,
@@ -49,6 +55,12 @@ export default function QrUriBlock({
         whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
         transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
       };
+  const copyTapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+      };
 
   useEffect(() => {
     if (forceShowQR) setShowQR(true);
@@ -64,11 +76,73 @@ export default function QrUriBlock({
 
   const [copied, setCopied] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [addressCopyLabel, setAddressCopyLabel] = useState<AddressCopyLabel>("Copy Address");
+  const [memoCopyLabel, setMemoCopyLabel] = useState<MemoCopyLabel>("Copy Memo");
+  const [amountCopyLabel, setAmountCopyLabel] = useState<AmountCopyLabel>("Copy Amount");
+
+  const { addressFromUri, amountFromUri } = useMemo(() => {
+    const withoutScheme = uri.replace(/^zcash:/i, "");
+    const [addressPart, queryPart = ""] = withoutScheme.split("?");
+    const addressValue = addressPart.trim();
+    const address = addressValue.length > 0 ? addressValue : null;
+    const params = new URLSearchParams(queryPart);
+    const amountValue = params.get("amount")?.trim();
+    const amount = amountValue && amountValue.length > 0 ? amountValue : null;
+    return { addressFromUri: address, amountFromUri: amount };
+  }, [uri]);
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(uri);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleCopyMemo = async () => {
+    if (!memoText) {
+      setMemoCopyLabel("No Memo");
+      setTimeout(() => setMemoCopyLabel("Copy Memo"), 1500);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(memoText);
+      setMemoCopyLabel("Copied");
+      setTimeout(() => setMemoCopyLabel("Copy Memo"), 1500);
+    } catch {
+      setMemoCopyLabel("Copy Memo");
+    }
+  };
+
+  const handleCopyAddress = async () => {
+    if (!addressFromUri) {
+      setAddressCopyLabel("No Address");
+      setTimeout(() => setAddressCopyLabel("Copy Address"), 1500);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(addressFromUri);
+      setAddressCopyLabel("Copied");
+      setTimeout(() => setAddressCopyLabel("Copy Address"), 1500);
+    } catch {
+      setAddressCopyLabel("Copy Address");
+    }
+  };
+
+  const handleCopyAmount = async () => {
+    if (!amountFromUri) {
+      setAmountCopyLabel("No Amount");
+      setTimeout(() => setAmountCopyLabel("Copy Amount"), 1500);
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(amountFromUri);
+      setAmountCopyLabel("Copied");
+      setTimeout(() => setAmountCopyLabel("Copy Amount"), 1500);
+    } catch {
+      setAmountCopyLabel("Copy Amount");
+    }
   };
 
   const handleSaveQR = async () => {
@@ -147,6 +221,10 @@ export default function QrUriBlock({
   const hideButtonClasses =
     hideButtonClassName ??
     INLINE_ACTION_BUTTON_CLASSES;
+  const centeredCopyButtonClass = "justify-center";
+  const copyButtonHeightClass = "h-[42px]";
+  const copyUriWidthClass = "w-[10ch]";
+  const copyActionWidthClass = "w-[14ch]";
 
   return (
     <div className={`flex flex-col items-center gap-4 ${compactTopSpacing ? "mt-0" : "mt-6"} animate-fadeIn`}>
@@ -270,8 +348,8 @@ export default function QrUriBlock({
           <div className="flex items-center gap-0">
             <motion.button
               onClick={handleCopy}
-              {...tapProps}
-              className={actionButtonClasses}
+              {...copyTapProps}
+              className={`${actionButtonClasses} ${centeredCopyButtonClass} ${copyButtonHeightClass} ${copyUriWidthClass}`}
             >
               {copied ? "Copied" : "Copy URI"}
             </motion.button>
@@ -303,7 +381,7 @@ export default function QrUriBlock({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
+            className="flex w-full max-w-full flex-col items-center gap-4 overflow-hidden"
           >
             <a
               href={uri}
@@ -313,6 +391,29 @@ export default function QrUriBlock({
             >
               {uri}
             </a>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <motion.button
+                onClick={handleCopyAddress}
+                {...copyTapProps}
+                className={`${actionButtonClasses} ${centeredCopyButtonClass} ${copyButtonHeightClass} ${copyActionWidthClass}`}
+              >
+                {addressCopyLabel}
+              </motion.button>
+              <motion.button
+                onClick={handleCopyMemo}
+                {...copyTapProps}
+                className={`${actionButtonClasses} ${centeredCopyButtonClass} ${copyButtonHeightClass} ${copyActionWidthClass}`}
+              >
+                {memoCopyLabel}
+              </motion.button>
+              <motion.button
+                onClick={handleCopyAmount}
+                {...copyTapProps}
+                className={`${actionButtonClasses} ${centeredCopyButtonClass} ${copyButtonHeightClass} ${copyActionWidthClass}`}
+              >
+                {amountCopyLabel}
+              </motion.button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
