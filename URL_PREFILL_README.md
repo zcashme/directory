@@ -127,18 +127,17 @@ The modal is opened from `Create Paylink` in the profile menu.
 
 Current builder behavior:
 
-1. Crypto ticker is fixed to `ZEC` (no crypto/base-layer selector in builder).
-2. User can edit `Amount (ZEC)` and/or `Amount (fiat)` with fiat ticker selection.
-3. Fiat and ZEC amounts stay synchronized using current rate.
-4. Last modified amount field controls URL amount params:
-   1. Last modified ZEC field -> `ticker=ZEC&amount=...`
+1. User can choose request `ticker` from: `ZEC`, `BTC`, `ETH`, `SOL`, `USDC`, `USDT`.
+2. For tickers with multiple chains (for example some stablecoins), a `Network` selector appears and builder emits `base_layer=...`.
+3. User can edit `Amount (<ticker>)` and/or `Amount (fiat)` with fiat ticker selection.
+4. Fiat and crypto amounts stay synchronized using current rate for selected ticker.
+5. Last modified amount field controls URL amount params:
+   1. Last modified crypto field -> `amount=...`
    2. Last modified fiat field -> `fiat=...&fiat_amount=...`
-5. Memo input is available and capped to 512 bytes.
-6. Builder includes `Close`, `Open URL`, `Copy URL`, `Share URL`.
-
-UI note shown in builder:
-
-`Payable in ZEC, BTC, SOL, USDT, USDC - you will receive ZEC.`
+6. For non-`ZEC` links, `ticker` is always included (even when fiat is last modified).
+7. Memo input is capped to 512 bytes but only active for `ZEC` links.
+8. If ticker is non-`ZEC`, memo is disabled in builder and excluded from URL.
+9. Builder includes `Close`, `Open URL`, `Copy URL`, `Share URL`.
 
 ## Example URLs
 
@@ -149,6 +148,14 @@ UI note shown in builder:
 ### Builder output when fiat amount is last modified
 
 `http://localhost:3000/SaveZcash?memo=Thanks&fiat=USD&fiat_amount=25.00`
+
+### Builder output when non-ZEC ticker + fiat amount are used
+
+`http://localhost:3000/SaveZcash?ticker=BTC&fiat=USD&fiat_amount=25.00`
+
+### Builder output when non-ZEC ticker has a selected network
+
+`http://localhost:3000/SaveZcash?ticker=USDT&base_layer=eth&amount=50`
 
 ### Manual swap URL (still supported by parser)
 

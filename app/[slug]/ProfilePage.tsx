@@ -487,6 +487,7 @@ export default function ProfilePage({
       <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen">
         <ProfileCard
           profile={initialProfile}
+          tokens={tokens}
           fullView
           duplicateNameCount={duplicateNameCount}
           onShowQR={handleShowQR}

@@ -74,6 +74,7 @@ function isTruthyLikeAddressVerified(value: unknown): boolean {
 
 export default function ProfileCard({
   profile,
+  tokens,
   fullView = false,
   duplicateNameCount = 0,
   onShowQR,
@@ -604,6 +605,7 @@ export default function ProfileCard({
               isOpen={isPrefillUrlOpen}
               onClose={() => setIsPrefillUrlOpen(false)}
               profile={profile}
+              tokens={tokens}
             />
           )}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
