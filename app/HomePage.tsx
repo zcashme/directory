@@ -11,6 +11,7 @@ import { buildSlug } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
+import { emitNavigationProgressStart } from "@/lib/navigation/navigationProgress";
 
 const SHOW_TEMP_CARD_TUNER = false;
 const SHOW_LAYOUT_POSITION_TUNER = false;
@@ -865,7 +866,9 @@ export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
   const handleCardClick = useCallback(
     (profile: Profile) => {
       const slug = buildSlug(profile);
-      if (slug) router.push(`/${slug}`);
+      if (!slug) return;
+      emitNavigationProgressStart();
+      router.push(`/${slug}`);
     },
     [router]
   );
