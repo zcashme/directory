@@ -69,28 +69,72 @@ export default function QrUriBlock({
     setTimeout(() => setCopied(false), 1500);
   };
 
-  const handleSaveQR = () => {
+  const handleSaveQR = async () => {
     const svg = qrRef.current;
     if (!svg) return;
 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     const svgData = new XMLSerializer().serializeToString(clone);
-    const blob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
 
-    const link = document.createElement("a");
     const safeName = (profileName ?? "recipient")
       .trim()
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-");
 
-    link.download = `zcashme-${safeName}-qr.svg`;
-    link.href = url;
-    link.click();
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Failed to load QR image"));
+        image.src = svgUrl;
+      });
 
-    URL.revokeObjectURL(url);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
+      const exportSize = 2048;
+      const canvas = document.createElement("canvas");
+      canvas.width = exportSize;
+      canvas.height = exportSize;
+
+      const context = canvas.getContext("2d");
+      if (!context) return;
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, exportSize, exportSize);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, 0, 0, exportSize, exportSize);
+
+      // Keep the export strictly black/white for smaller PNG files.
+      const imageData = context.getImageData(0, 0, exportSize, exportSize);
+      const pixels = imageData.data;
+      for (let i = 0; i < pixels.length; i += 4) {
+        const blackOrWhite = pixels[i] < 128 ? 0 : 255;
+        pixels[i] = blackOrWhite;
+        pixels[i + 1] = blackOrWhite;
+        pixels[i + 2] = blackOrWhite;
+        pixels[i + 3] = 255;
+      }
+      context.putImageData(imageData, 0, 0);
+
+      const pngBlob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!pngBlob) return;
+
+      const downloadUrl = URL.createObjectURL(pngBlob);
+      const link = document.createElement("a");
+      link.download = `zcashme-${safeName}-qr.png`;
+      link.href = downloadUrl;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
+
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch {
+      // No-op: skip download if the browser cannot rasterize the SVG.
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
   };
 
   if (!uri) return null;
@@ -119,7 +163,7 @@ export default function QrUriBlock({
             {qrTopHintText && (
               <div className="mb-1 flex flex-col items-center text-center text-sm font-semibold text-[var(--color-brand-blue)]">
                 <div className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
-                  <span>{qrTopHintText}</span>
+                  <span className="whitespace-pre-line">{qrTopHintText}</span>
                   {hasTopHintDetails && (
                     <button
                       type="button"

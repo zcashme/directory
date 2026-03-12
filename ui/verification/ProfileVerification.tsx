@@ -273,8 +273,8 @@ export default function ProfileVerification({
         <div className="flex justify-center mb-4">
           <QrUriBlock
             uri={currentUri}
-            profileName="verification"
-            qrTopHintText="Send transaction to receive code."
+            profileName={`${profile.name}-verification`}
+            qrTopHintText={"Send transaction to receive code.\n"}
             qrTopHintDetails={[
               minAmountHint,
               "Do not leave the page before entering the code.",
@@ -287,6 +287,9 @@ export default function ProfileVerification({
 
         <div className="relative w-full max-w-[300px] mx-auto border border-gray-800 rounded-xl p-3 bg-transparent">
           <div className="space-y-3">
+            <p className="text-center text-xs font-normal text-gray-700">
+              Code will be sent to address on profile.
+            </p>
             <OtpInput
               id="verification-otp"
               value={otp}
