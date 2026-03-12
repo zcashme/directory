@@ -9,7 +9,7 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
 const FEATURES = [
   {
-    title: "Earn Up to 0.5 ZEC Every Month",
+    title: "Earn Up to 0.5 ZEC Per Year",
     description: "Complete at least one verification and receive up to 0.5 ZEC back on the last Sunday of each month.",
   },
   {
@@ -21,7 +21,7 @@ const FEATURES = [
     description: "Collect up to 80% of verification fees plus 20% from users you refer who upgrade to Maxi.",
   },
   {
-    title: "Reserve Your .zcash Name Early",
+    title: "Reserve Any .zcash Name Early",
     description: "Get priority access to claim your Name.zcash before the namespace opens to the public.",
   },
   {
@@ -29,12 +29,12 @@ const FEATURES = [
     description: "Display the Gold Zcash Maxi badge or request an affiliate badge directly on your profile.",
   },
   {
-    title: "Get Early Access to New Tools",
-    description: "Try upcoming features like notifications and the ZM social wallet before public release.",
-  },
-  {
     title: "Customize Your Profile",
     description: "Personalize your ZcashMe profile with custom colors and themes.",
+  },
+  {
+    title: "Get Early Access to New Tools",
+    description: "Try upcoming features like notifications and the ZM social wallet before public release.",
   },
   {
     title: "Get Featured on the Homepage",
@@ -155,12 +155,12 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                 isPaymentFlowExpanded ? "mb-0 max-h-0 opacity-0" : "mb-3 max-h-40 opacity-100"
               }`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">Zcash.me Premium</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">Annual Plan</p>
               <h2 className="mt-1 text-center text-2xl font-extrabold tracking-tight text-amber-50 inline-flex items-center justify-center gap-2">
                 <span>Unlock Maxi Mode</span>
                 <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" />
               </h2>
-              <p className="mt-2 text-sm text-emerald-50/80">Exclusive ways to earn more, spend less, be early,   <br /> and look great doing it.</p>
+              <p className="mt-2 text-sm text-emerald-50/80">Exclusive ways to earn more, spend less, be early,   <br /> and look great doing it. </p>
             </div>
 
             <div className="pt-1">
@@ -195,8 +195,8 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                         className="flex w-full items-center gap-3 text-left"
                         aria-expanded={isExpanded}
                       >
-                        <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full border border-amber-100/40 bg-amber-300/20 text-xs font-bold text-amber-100">
-                          ✓
+                        <span className="mt-0.5 inline-flex shrink-0 scale-[0.78] items-center justify-center pointer-events-none">
+                          <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />
                         </span>
                         <span className="font-semibold text-emerald-50/95">{feature.title}</span>
                         <span className="ml-auto text-base font-semibold leading-none text-amber-100/90">
