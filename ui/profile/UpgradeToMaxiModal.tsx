@@ -10,7 +10,7 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 const FEATURES = [
   {
     title: "Earn Up to 0.5 ZEC Per Year",
-    description: "Complete at least one verification and receive up to 0.5 ZEC back on the last Sunday of each month.",
+    description: "Complete at least one verification and receive ZEC back on the last Sunday of each month.",
   },
   {
     title: "Verify Without Sending ZEC",
