@@ -25,6 +25,19 @@ type MemoCopyLabel = "Copy Memo" | "Copied" | "No Memo";
 type AddressCopyLabel = "Copy Address" | "Copied" | "No Address";
 type AmountCopyLabel = "Copy Amount" | "Copied" | "No Amount";
 
+function decodeBase64UrlToUtf8(value: string): string | null {
+  try {
+    const normalized = value.replace(/-/g, "+").replace(/_/g, "/");
+    const paddingLength = normalized.length % 4 === 0 ? 0 : 4 - (normalized.length % 4);
+    const padded = normalized + "=".repeat(paddingLength);
+    const binary = atob(padded);
+    const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return null;
+  }
+}
+
 export default function QrUriBlock({
   uri,
   memoText,
@@ -80,16 +93,28 @@ export default function QrUriBlock({
   const [memoCopyLabel, setMemoCopyLabel] = useState<MemoCopyLabel>("Copy Memo");
   const [amountCopyLabel, setAmountCopyLabel] = useState<AmountCopyLabel>("Copy Amount");
 
-  const { addressFromUri, amountFromUri } = useMemo(() => {
+  const { addressFromUri, amountFromUri, memoFromUriRaw, memoFromUriDecoded } = useMemo(() => {
     const withoutScheme = uri.replace(/^zcash:/i, "");
     const [addressPart, queryPart = ""] = withoutScheme.split("?");
     const addressValue = addressPart.trim();
     const address = addressValue.length > 0 ? addressValue : null;
     const params = new URLSearchParams(queryPart);
     const amountValue = params.get("amount")?.trim();
+    const memoValue = params.get("memo")?.trim();
     const amount = amountValue && amountValue.length > 0 ? amountValue : null;
-    return { addressFromUri: address, amountFromUri: amount };
+    const memoRaw = memoValue && memoValue.length > 0 ? memoValue : null;
+    const memoDecoded = memoRaw ? decodeBase64UrlToUtf8(memoRaw) : null;
+    return {
+      addressFromUri: address,
+      amountFromUri: amount,
+      memoFromUriRaw: memoRaw,
+      memoFromUriDecoded: memoDecoded,
+    };
   }, [uri]);
+  const hasMemoText = typeof memoText === "string" && memoText.trim().length > 0;
+  const effectiveMemo = hasMemoText
+    ? memoText
+    : (memoFromUriDecoded ?? memoFromUriRaw);
 
   const handleCopy = () => {
     void navigator.clipboard.writeText(uri);
@@ -98,14 +123,14 @@ export default function QrUriBlock({
   };
 
   const handleCopyMemo = async () => {
-    if (!memoText) {
+    if (!effectiveMemo) {
       setMemoCopyLabel("No Memo");
       setTimeout(() => setMemoCopyLabel("Copy Memo"), 1500);
       return;
     }
 
     try {
-      await navigator.clipboard.writeText(memoText);
+      await navigator.clipboard.writeText(effectiveMemo);
       setMemoCopyLabel("Copied");
       setTimeout(() => setMemoCopyLabel("Copy Memo"), 1500);
     } catch {

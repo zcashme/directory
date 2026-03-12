@@ -143,6 +143,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
         <div className="relative mb-3 flex w-full flex-col items-center overflow-hidden rounded-2xl border border-white/45 bg-white/28 px-3 pb-2 pt-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <QrUriBlock
             uri={currentUri}
+            memoText={currentMemo}
             profileName="maxi-upgrade"
             qrTopHintText="Send transaction to receive code."
             qrTopHintDetails={[
