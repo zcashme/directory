@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
@@ -67,11 +67,30 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
   const featureListRef = useRef<HTMLDivElement | null>(null);
   const topSpacer = isPaymentFlowExpanded ? PAYMENT_FLOW_SPACER : AVATAR_SPACER;
 
+  const resetModalUiState = useCallback(() => {
+    setIsPaymentFlowExpanded(false);
+    setCollapsePaymentFlow(null);
+    setExpandedFeatureTitle(null);
+    setShowBackToTop(false);
+    featureListRef.current?.scrollTo({ top: 0 });
+  }, []);
+
+  const handleClose = useCallback(() => {
+    collapsePaymentFlow?.();
+    resetModalUiState();
+    onClose();
+  }, [collapsePaymentFlow, onClose, resetModalUiState]);
+
+  useEffect(() => {
+    if (isOpen) return;
+    resetModalUiState();
+  }, [isOpen, resetModalUiState]);
+
   if (!isOpen || typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto px-4 py-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={handleClose} />
 
       <div
         className="relative w-full max-w-md animate-in fade-in zoom-in-95 duration-200 my-4"
@@ -97,7 +116,7 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
           <div className="absolute inset-[1px] rounded-[24px] border border-white/25 pointer-events-none" />
 
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="absolute top-3 right-3 z-20 rounded-full px-3 py-1 text-sm font-semibold text-amber-50/90 hover:bg-amber-300/20 hover:text-white transition-colors"
             aria-label="Close"
           >
