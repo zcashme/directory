@@ -552,23 +552,23 @@ export default function ProfileCard({
                     className={`inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all shadow-md ${
                       hasDesignAccess
                         ? "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                        : "border-gray-300 bg-white/90 text-gray-500"
+                        : "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
                     }`}
                     aria-label="Design"
                     title={hasDesignAccess ? "Design" : "Design (Maxi required)"}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 320 320"
+                      viewBox="42 14 238 238"
                       fill="none"
                       className="h-4 w-4"
                       aria-hidden
                     >
-                      <g fill="currentColor">
-                        <rect x="153" y="22" width="52" height="194" rx="26" transform="rotate(36 153 22)" />
-                        <rect x="114" y="136" width="42" height="86" rx="21" transform="rotate(36 114 136)" />
-                        <path d="M36 288C58 264 63 237 64 220C65 203 71 188 82 178C100 161 127 157 147 170C167 183 176 210 170 233C166 247 157 260 145 269C132 279 117 283 102 284C84 286 62 289 36 288Z" />
-                      </g>
+                      <path
+                        fill="currentColor"
+                        fillRule="evenodd"
+                        d="M112 93L93 111L92 119L115 145L116 152L114 158L106 166L53 201L46 209L42 218L42 229L47 240L54 247L64 252L77 252L90 245L97 237L127 190L135 181L140 179L149 179L177 203L185 200L201 183ZM70 211L77 213L83 220L81 230L74 235L65 233L60 227L60 219L65 213ZM192 14L188 16L126 78L125 81L214 170L280 104L280 98L264 82L255 83L233 98L232 96L248 73L248 66L219 37L213 36L209 38L209 28L198 16Z"
+                      />
                     </svg>
                   </button>
                 )}
