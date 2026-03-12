@@ -30,6 +30,7 @@ export default function ProfileCardActions({
   const shouldReduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = profile.display_name || profile.name || "";
+  const referDisplayName = (profile.display_name || profile.name || "a friend").trim();
   const isMaxi =
     profile.is_maxi === true ||
     profile.is_maxi === 1 ||
@@ -107,9 +108,20 @@ export default function ProfileCardActions({
           {menuItem("\u2B54", showStats ? "Hide Awards" : "Show Awards", onToggleStats, !showStats && !hasAwards)}
           {menuItem("\u21BA", "Edit Profile", onEdit)}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
-          {menuItem("\u2934", "Copy Refer Link", async () => {
+          {menuItem("\u2934", "Share Refer Link", async () => {
             const baseUrl = buildShareUrl(profile);
             const referUrl = `${baseUrl}/refer`;
+            const referTitle = `Invited by ${referDisplayName} to Zcash.me`;
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: referTitle,
+                  text: referTitle,
+                  url: referUrl,
+                });
+                return;
+              } catch {}
+            }
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
