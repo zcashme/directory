@@ -154,6 +154,21 @@ export default function MemoComposer({
 }: MemoComposerProps) {
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const resizeMemoTextarea = useCallback((el?: HTMLTextAreaElement | null) => {
+    const target = el ?? textareaRef.current;
+    if (!target) return;
+
+    const style = window.getComputedStyle(target);
+    const lineHeight = Number.parseFloat(style.lineHeight) || 20;
+    const paddingTop = Number.parseFloat(style.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
+    const minHeight = (lineHeight * 2) + paddingTop + paddingBottom;
+
+    target.style.height = "auto";
+    const nextHeight = Math.max(target.scrollHeight + lineHeight, minHeight);
+    target.style.height = `${nextHeight}px`;
+  }, []);
+
   const setMemoCapped = useCallback((value: string) => {
     setMemo(fitToMaxBytes(value, MAX_MEMO_BYTES));
   }, [setMemo]);
@@ -168,12 +183,8 @@ export default function MemoComposer({
   };
 
   useEffect(() => {
-    const el = textareaRef.current;
-    if (el) {
-      el.style.height = "auto";
-      el.style.height = el.scrollHeight + "px";
-    }
-  }, [memo]);
+    resizeMemoTextarea();
+  }, [memo, resizeMemoTextarea]);
 
   // Memo disabled: transparent addresses only
   const disabled = profile?.address?.startsWith("t");
@@ -220,14 +231,13 @@ export default function MemoComposer({
 
         <textarea
           ref={textareaRef}
-          rows={3}
+          rows={1}
           value={memo}
           disabled={disabled}
           onChange={(e) => {
             const el = e.target;
             setMemoCapped(el.value);
-            el.style.height = "auto";
-            el.style.height = el.scrollHeight + "px";
+            resizeMemoTextarea(el);
             emoji.update();
           }}
           onBlur={emoji.close}
@@ -322,6 +332,7 @@ export default function MemoComposer({
       <div className="-mt-4">
         <QrUriBlock
           uri={uri}
+          memoText={memo}
           profileName={
             profile?.display_name ||
             profile?.name ||
