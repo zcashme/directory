@@ -22,11 +22,13 @@ interface ProfileVerificationProps {
   profile: Profile;
   generateQrTrigger?: number;
   onClose?: () => void;
+  onLoadingStateChange?: (isLoading: boolean) => void;
 }
 
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
+  onLoadingStateChange,
 }: ProfileVerificationProps) {
   // Get edits from store
   const { form, original, deletedFields, pendingAvatarUpload, clearPendingAvatarUpload, updateField } = useEditsStore();
@@ -122,6 +124,7 @@ export default function ProfileVerification({
   const [qrVisible, setQrVisible] = useState(false);
   const [otp, setOtp] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
 
@@ -138,8 +141,12 @@ export default function ProfileVerification({
 
   // Generate QR - calls the server to create memo + URI
   const handleGenerateQr = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id) {
+      setIsGeneratingQr(false);
+      return;
+    }
 
+    setIsGeneratingQr(true);
     setError("");
     setOtpResult(null);
     setOtp("");
@@ -157,6 +164,8 @@ export default function ProfileVerification({
       }
     } catch {
       setError("Failed to generate QR code. Please try again.");
+    } finally {
+      setIsGeneratingQr(false);
     }
   }, [profile?.id, verificationAmountZec]);
 
@@ -167,6 +176,10 @@ export default function ProfileVerification({
     lastGenerateTriggerRef.current = generateQrTrigger;
     void handleGenerateQr();
   }, [generateQrTrigger, handleGenerateQr]);
+
+  useEffect(() => {
+    onLoadingStateChange?.(isGeneratingQr);
+  }, [isGeneratingQr, onLoadingStateChange]);
 
   // Handle OTP submission
   const handleSubmitOtp = useCallback(async () => {
@@ -279,7 +292,7 @@ export default function ProfileVerification({
               minAmountHint,
               "Do not leave the page before entering the code.",
             ]}
-            qrTopHintToggleLabel="Tips"
+            qrTopHintToggleLabel="Help"
             qrHintText="Scan or Tap QR"
             compactTopSpacing
           />
@@ -303,7 +316,7 @@ export default function ProfileVerification({
             <button
               type="button"
               onClick={handleSubmitOtp}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 hover:!text-white active:!text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
               disabled={!isOtpComplete || isSubmitting}
             >
               {isSubmitting ? "Verifying..." : "Verify Code"}

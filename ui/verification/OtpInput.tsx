@@ -119,13 +119,14 @@ export function OtpInput({
             return (
               <div
                 key={`otp-slot-${idx}`}
-                className={`h-12 rounded-lg border text-lg font-semibold leading-none flex items-center justify-center transition-colors ${
+                className={`h-12 rounded-lg text-lg font-semibold leading-none flex items-center justify-center transition-colors ${
                   error
                     ? "border-red-400 bg-transparent text-red-600"
                     : isActive
                       ? "border-[var(--color-brand-blue)] bg-transparent text-[var(--color-brand-blue)]"
                       : "border-gray-800 bg-transparent text-gray-700"
                 } ${disabled ? "border-black/20 bg-transparent text-gray-400" : ""}`}
+                style={{ borderStyle: "solid", borderWidth: error ? 2 : isActive ? 3 : 1 }}
                 aria-hidden="true"
               >
                 {digit}

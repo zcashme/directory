@@ -169,9 +169,9 @@ export default function QrUriBlock({
                       type="button"
                       onClick={() => setShowTopHintDetails((prev) => !prev)}
                       aria-expanded={showTopHintDetails}
-                      className="ml-1 inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-[var(--color-brand-blue)] hover:underline"
+                      className="ml-1 inline-flex items-center gap-1 whitespace-nowrap text-xs font-semibold text-gray-700 hover:text-gray-700 hover:underline"
                     >
-                      <span>{showTopHintDetails ? "Hide" : (qrTopHintToggleLabel ?? "Tips")}</span>
+                      <span>{showTopHintDetails ? "Hide" : (qrTopHintToggleLabel ?? "Help")}</span>
                       <span
                         aria-hidden
                         className={`inline-block transition-transform ${hintTransitionClasses} ${showTopHintDetails ? "rotate-180" : "rotate-0"}`}
