@@ -10,6 +10,7 @@ interface QrUriBlockProps {
   qrTopHintDetails?: string[];
   qrTopHintToggleLabel?: string;
   qrHintText?: string;
+  compactTopHintToQrSpacing?: boolean;
   compactTopSpacing?: boolean;
   forceShowQR?: boolean;
   forceShowURI?: boolean;
@@ -26,6 +27,7 @@ export default function QrUriBlock({
   qrTopHintDetails,
   qrTopHintToggleLabel,
   qrHintText,
+  compactTopHintToQrSpacing = false,
   compactTopSpacing = false,
   forceShowQR,
   forceShowURI,
@@ -158,10 +160,14 @@ export default function QrUriBlock({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex w-full max-w-full flex-col items-center gap-2 overflow-hidden"
+            className={`flex w-full max-w-full flex-col items-center ${
+              compactTopHintToQrSpacing ? "gap-1" : "gap-2"
+            } overflow-hidden`}
           >
             {qrTopHintText && (
-              <div className="mb-1 flex flex-col items-center text-center text-sm font-semibold text-[var(--color-brand-blue)]">
+              <div className={`flex flex-col items-center text-center text-sm font-semibold text-[var(--color-brand-blue)] ${
+                compactTopHintToQrSpacing ? "mb-0" : "mb-1"
+              }`}>
                 <div className="inline-flex flex-wrap items-center justify-center gap-x-1 gap-y-0.5">
                   <span className="whitespace-pre-line">{qrTopHintText}</span>
                   {hasTopHintDetails && (

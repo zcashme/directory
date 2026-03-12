@@ -29,7 +29,6 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
 
   const handleGenerateQr = useCallback(async () => {
     if (!profile?.id) return;
-    onFlowExpandedChange?.(true);
     setError("");
     setOtpResult(null);
     setOtp("");
@@ -42,6 +41,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
       if (result.ok && result.memo && result.uri) {
         setCurrentMemo(result.memo);
         setCurrentUri(result.uri);
+        onFlowExpandedChange?.(true);
         setQrVisible(true);
       } else {
         setError(result.error ?? "Failed to generate QR code.");
@@ -118,6 +118,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
 
   const isOtpComplete = otp.trim().length === 6;
   const showQrSection = qrVisible && !!currentUri;
+  const maxiAmountHint = "Send 1 ZEC to unlock Maxi mode.";
 
   return (
     <div className="w-full bg-transparent border-none shadow-none p-0">
@@ -138,19 +139,28 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
         <Alert variant="error" size="sm" message={error} className="mt-2" />
       )}
 
-      <div className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${showQrSection ? "mt-1 pt-1 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="relative mb-4 flex w-full flex-col items-center overflow-hidden rounded-2xl border border-white/45 bg-white/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
+      <div className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${showQrSection ? "mt-3 pt-1 max-h-[1200px] opacity-100" : "max-h-0 opacity-0"}`}>
+        <div className="relative mb-3 flex w-full flex-col items-center overflow-hidden rounded-2xl border border-white/45 bg-white/28 px-3 pb-2 pt-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <QrUriBlock
             uri={currentUri}
             profileName="maxi-upgrade"
-            qrTopHintText="Send 1 ZEC to receive your upgrade code."
+            qrTopHintText="Send transaction to receive code."
+            qrTopHintDetails={[
+              maxiAmountHint,
+              "Do not leave the page before entering the code.",
+            ]}
+            qrTopHintToggleLabel="Help"
             qrHintText="Scan or Tap QR"
+            compactTopHintToQrSpacing
             compactTopSpacing
           />
         </div>
 
         <div className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/45 bg-white/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <div className="space-y-3">
+            <p className="text-center text-xs font-normal text-gray-700">
+              Code will be sent to address on profile.
+            </p>
             <OtpInput
               id="maxi-otp"
               value={otp}

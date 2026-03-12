@@ -47,6 +47,7 @@ const FEATURES = [
 
 const AVATAR_SIZE = 120;
 const AVATAR_SPACER = 64;
+const PAYMENT_FLOW_SPACER = 40;
 const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
@@ -64,6 +65,7 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
   const [expandedFeatureTitle, setExpandedFeatureTitle] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const featureListRef = useRef<HTMLDivElement | null>(null);
+  const topSpacer = isPaymentFlowExpanded ? PAYMENT_FLOW_SPACER : AVATAR_SPACER;
 
   if (!isOpen || typeof document === "undefined") return null;
 
@@ -126,8 +128,8 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
             </button>
           )}
 
-          <div className="relative z-10 flex h-full flex-col overflow-y-auto p-6">
-            <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
+          <div className={`relative z-10 flex h-full flex-col overflow-y-auto px-6 pt-6 ${isPaymentFlowExpanded ? "pb-3" : "pb-6"}`}>
+            <div style={{ paddingTop: `${topSpacer}px` }} aria-hidden />
             <div
               className={`overflow-hidden text-center transition-[max-height,opacity,margin] duration-300 ${
                 isPaymentFlowExpanded ? "mb-0 max-h-0 opacity-0" : "mb-3 max-h-40 opacity-100"
