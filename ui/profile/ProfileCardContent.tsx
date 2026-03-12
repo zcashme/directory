@@ -21,6 +21,7 @@ export default function ProfileCardContent({
   hideLinkBadges = false,
   className = "",
   textScaleOverrides,
+  textColors,
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
@@ -118,6 +119,11 @@ export default function ProfileCardContent({
     verified: linkVariant === "simple" ? "Auth" : "Authenticated",
     unverified: linkVariant === "simple" ? "Not Auth" : "Not Authenticated",
   };
+  const resolvedTextColors = {
+    primary: textColors?.primary ?? "#111827",
+    secondary: textColors?.secondary ?? "#374151",
+    subtle: textColors?.subtle ?? "#6b7280",
+  };
   const copyButtonSize = "xs";
   const linkRowClasses: LinkRowClasses = {
     row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`,
@@ -140,7 +146,10 @@ export default function ProfileCardContent({
       <div className={`relative z-10 flex items-center justify-center gap-1.5`}>
         <span
           className={`${s.name} font-bold text-gray-900 truncate max-w-full`}
-          style={{ fontSize: `${(basePx.displayName * scale.displayName).toFixed(1)}px` }}
+          style={{
+            color: resolvedTextColors.primary,
+            fontSize: `${(basePx.displayName * scale.displayName).toFixed(1)}px`,
+          }}
         >
           {profile.display_name || profile.name}
         </span>
@@ -157,7 +166,10 @@ export default function ProfileCardContent({
       {/* Username */}
       <p
         className={`mt-1 ${s.username} text-gray-600 relative z-10`}
-        style={{ fontSize: `${(basePx.username * scale.username).toFixed(1)}px` }}
+        style={{
+          color: resolvedTextColors.subtle,
+          fontSize: `${(basePx.username * scale.username).toFixed(1)}px`,
+        }}
       >
         /{formatUsername(profile)}
       </p>
@@ -166,7 +178,10 @@ export default function ProfileCardContent({
       {showBio && profile.bio && profile.bio.trim() !== "" && (
         <p
           className={`mt-1 ${s.bio} text-gray-700 line-clamp-2 leading-relaxed px-1 relative z-10 break-words`}
-          style={{ fontSize: `${(basePx.bio * scale.bio).toFixed(1)}px` }}
+          style={{
+            color: resolvedTextColors.secondary,
+            fontSize: `${(basePx.bio * scale.bio).toFixed(1)}px`,
+          }}
         >
           {profile.bio}
         </p>
@@ -176,7 +191,10 @@ export default function ProfileCardContent({
       {showDates && (
         <p
           className={`mt-3 ${s.dates} text-gray-500 flex flex-wrap justify-center gap-x-1 gap-y-0.5 relative z-10`}
-          style={{ fontSize: `${(basePx.meta * scale.meta).toFixed(1)}px` }}
+          style={{
+            color: resolvedTextColors.subtle,
+            fontSize: `${(basePx.meta * scale.meta).toFixed(1)}px`,
+          }}
         >
           {profile.nearest_city_name && (
             <>

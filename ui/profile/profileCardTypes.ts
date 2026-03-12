@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
+import type { Token } from "@/lib/swap/types";
 
 type Variant = "default" | "mobile";
 type LinkVariant = "default" | "simple";
@@ -45,6 +46,12 @@ export interface ProfileCardTextScale {
   viewProfile: number;
 }
 
+export interface ProfileCardContentTextColors {
+  primary?: string;
+  secondary?: string;
+  subtle?: string;
+}
+
 export interface ProfileCardContentProps {
   profile: Profile;
   linksArray?: EnrichedProfileLink[];
@@ -59,11 +66,13 @@ export interface ProfileCardContentProps {
   hideLinkBadges?: boolean;
   className?: string;
   textScaleOverrides?: Partial<ProfileCardTextScale>;
+  textColors?: ProfileCardContentTextColors;
   showDisplayNameVerifiedBadge?: boolean;
 }
 
 export interface ProfileCardProps {
   profile: Profile;
+  tokens: Token[];
   fullView?: boolean;
   duplicateNameCount?: number;
   onShowQR?: () => void;

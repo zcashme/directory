@@ -60,6 +60,14 @@ interface FannedCardProps {
   avatarScale?: number;
 }
 
+function isTransparentCardSurface(value: string): boolean {
+  const trimmed = value.trim().toLowerCase();
+  return (
+    trimmed === "transparent" ||
+    /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0(?:\.0+)?\s*\)$/i.test(trimmed)
+  );
+}
+
 function FannedCard({
   profile,
   rotation,
@@ -87,11 +95,13 @@ function FannedCard({
     profilePageBackground: profile.profile_page_bkgd,
     profileCardBorder: profile.profile_card_border,
   });
-  const activeCardBackground = resolvedTheme.cardSurface;
-  const resolvedCardBackground =
-    activeCardBackground === "transparent" || /^rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)$/i.test(activeCardBackground)
-      ? "var(--color-background)"
-      : activeCardBackground;
+  const carouselCardThemeFill = resolvedTheme.cardSurface;
+  const carouselCardBaseColor = isTransparentCardSurface(resolvedTheme.cardSurfaceSolid)
+    ? "var(--color-background)"
+    : resolvedTheme.cardSurfaceSolid;
+  const carouselPrimaryTextColor = resolvedTheme.cardText;
+  const carouselSecondaryTextColor = resolvedTheme.cardIsDark ? "rgba(243, 244, 246, 0.86)" : "rgba(55, 65, 81, 0.9)";
+  const carouselSubtleTextColor = resolvedTheme.cardIsDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
   const activeBorderColor = resolvedTheme.borderColor ?? "#111827";
 
   const handleMouseMove = useCallback((e: ReactMouseEvent<HTMLDivElement>) => {
@@ -147,7 +157,8 @@ function FannedCard({
         <div
           className={`w-[240px] rounded-2xl border border-gray-500 p-4 pt-16 shadow-xl text-center flex flex-col relative overflow-hidden ${isActive && shimmerSpeed ? "card-shimmer" : ""}`}
           style={{
-            background: resolvedCardBackground,
+            background: carouselCardThemeFill,
+            backgroundColor: carouselCardBaseColor,
             borderColor: activeBorderColor,
             minHeight: '360px',
             maxHeight: '400px',
@@ -165,6 +176,11 @@ function FannedCard({
             linkVariant="simple"
             hideLinkBadges={true}
             textScaleOverrides={textScaleOverrides}
+            textColors={{
+              primary: carouselPrimaryTextColor,
+              secondary: carouselSecondaryTextColor,
+              subtle: carouselSubtleTextColor,
+            }}
             showDisplayNameVerifiedBadge={false}
           />
         </div>
@@ -197,7 +213,8 @@ function FannedCard({
       <div
         className={`w-[280px] rounded-2xl border border-gray-500 p-5 pt-20 text-center shadow-2xl flex flex-col relative overflow-hidden ${isSpotlit && !isHovering && shimmerSpeed ? "card-shimmer" : ""}`}
         style={{
-          background: resolvedCardBackground,
+          background: carouselCardThemeFill,
+          backgroundColor: carouselCardBaseColor,
           borderColor: activeBorderColor,
           minHeight: '400px',
           maxHeight: '460px',
@@ -222,6 +239,11 @@ function FannedCard({
           linkVariant="simple"
           hideLinkBadges={true}
           textScaleOverrides={textScaleOverrides}
+          textColors={{
+            primary: carouselPrimaryTextColor,
+            secondary: carouselSecondaryTextColor,
+            subtle: carouselSubtleTextColor,
+          }}
           showDisplayNameVerifiedBadge={false}
         />
       </div>
