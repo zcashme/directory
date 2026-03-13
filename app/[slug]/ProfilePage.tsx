@@ -174,7 +174,7 @@ export default function ProfilePage({
   const [swapForm, setSwapForm] = useState(() => ({
     amount: initialPrefill?.swapAmount ?? '',
     refundAddress: '',
-    slippageTolerance: '1',
+    slippageTolerance: '2',
   }));
 
   // Local quote state

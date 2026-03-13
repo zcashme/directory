@@ -329,7 +329,7 @@ export default function SwapAppClient({
   const [toAmount, setToAmount] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
   const [destAddress, setDestAddress] = useState("");
-  const [slippageTolerance, setSlippageTolerance] = useState("1");
+  const [slippageTolerance, setSlippageTolerance] = useState("2");
 
   // Quote state
   const [quote, setQuote] = useState<SwapQuoteDisplayType | null>(null);
