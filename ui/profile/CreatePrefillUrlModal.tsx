@@ -6,7 +6,7 @@ import ReactDOM from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { buildShareUrl } from "@/lib/profile/profileUtils";
-import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
+import { DEFAULT_PROFILE_PAGE_BACKGROUND, resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
 import { getRateAction } from "@/lib/rates/getRateAction";
@@ -632,6 +632,33 @@ export default function CreatePrefillUrlModal({
     profile.profile_page_bkgd,
     profile.profile_card_border,
   ]);
+  const shouldUseDefaultQrCardBackground = useMemo(() => {
+    const normalizedSurface = qrCardTheme.cardSurface.trim().toLowerCase();
+    return (
+      !qrCardTheme.packageId &&
+      (
+        normalizedSurface === "transparent" ||
+        normalizedSurface === "rgba(0,0,0,0)" ||
+        normalizedSurface === "rgba(0, 0, 0, 0)"
+      )
+    );
+  }, [qrCardTheme.packageId, qrCardTheme.cardSurface]);
+  const effectiveQrCardSurface = useMemo(
+    () => (shouldUseDefaultQrCardBackground ? DEFAULT_PROFILE_PAGE_BACKGROUND : qrCardTheme.cardSurface),
+    [shouldUseDefaultQrCardBackground, qrCardTheme.cardSurface]
+  );
+  const effectiveQrCardSurfaceSolid = useMemo(
+    () => (shouldUseDefaultQrCardBackground ? DEFAULT_PROFILE_PAGE_BACKGROUND : qrCardTheme.cardSurfaceSolid),
+    [shouldUseDefaultQrCardBackground, qrCardTheme.cardSurfaceSolid]
+  );
+  const qrPreviewCardBackground = useMemo(
+    () => (
+      qrCardTheme.packageId
+        ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${effectiveQrCardSurface}`
+        : effectiveQrCardSurface
+    ),
+    [qrCardTheme.packageId, effectiveQrCardSurface]
+  );
   const cardUsername = useMemo(() => {
     const value = (profile.name ?? "").trim();
     return value.length > 0 ? value : "recipient";
@@ -844,13 +871,14 @@ export default function CreatePrefillUrlModal({
       context.fillRect(0, 0, exportWidth, exportHeight);
 
       drawRoundedRect(context, cardX, cardY, cardWidth, cardHeight, 96);
-      context.fillStyle = qrCardTheme.cardSurfaceSolid;
+      context.fillStyle = effectiveQrCardSurfaceSolid;
       context.fill();
       context.strokeStyle = qrCardTheme.borderColor ?? "#111827";
       context.lineWidth = 6;
       context.stroke();
 
       const avatarRadius = 100;
+      const avatarInnerRadius = avatarRadius - 6;
       const avatarCenterX = exportWidth / 2;
       const avatarCenterY = cardY;
       const avatarUrl = profile.profile_image_url?.trim();
@@ -858,8 +886,37 @@ export default function CreatePrefillUrlModal({
       context.beginPath();
       context.arc(avatarCenterX, avatarCenterY, avatarRadius, 0, Math.PI * 2);
       context.closePath();
-      context.fillStyle = "#f3f4f6";
+      context.fillStyle = DEFAULT_PROFILE_PAGE_BACKGROUND;
       context.fill();
+      let avatarImageDrawn = false;
+      const drawDefaultAvatarFace = () => {
+        const scale = (avatarInnerRadius * 2) / 64;
+        context.save();
+        context.beginPath();
+        context.arc(avatarCenterX, avatarCenterY, avatarInnerRadius, 0, Math.PI * 2);
+        context.closePath();
+        context.clip();
+        context.fillStyle = "rgba(0,0,0,0.65)";
+        context.beginPath();
+        context.arc(avatarCenterX + (24 - 32) * scale, avatarCenterY + (26 - 32) * scale, 4 * scale, 0, Math.PI * 2);
+        context.fill();
+        context.beginPath();
+        context.arc(avatarCenterX + (40 - 32) * scale, avatarCenterY + (26 - 32) * scale, 4 * scale, 0, Math.PI * 2);
+        context.fill();
+        context.strokeStyle = "rgba(0,0,0,0.65)";
+        context.lineWidth = 4 * scale;
+        context.lineCap = "round";
+        context.beginPath();
+        context.moveTo(avatarCenterX + (24 - 32) * scale, avatarCenterY + (40 - 32) * scale);
+        context.quadraticCurveTo(
+          avatarCenterX + (32 - 32) * scale,
+          avatarCenterY + (47 - 32) * scale,
+          avatarCenterX + (40 - 32) * scale,
+          avatarCenterY + (40 - 32) * scale
+        );
+        context.stroke();
+        context.restore();
+      };
       if (avatarUrl) {
         try {
           const avatarImage = new Image();
@@ -871,20 +928,24 @@ export default function CreatePrefillUrlModal({
           });
           context.save();
           context.beginPath();
-          context.arc(avatarCenterX, avatarCenterY, avatarRadius - 6, 0, Math.PI * 2);
+          context.arc(avatarCenterX, avatarCenterY, avatarInnerRadius, 0, Math.PI * 2);
           context.closePath();
           context.clip();
           context.drawImage(
             avatarImage,
-            avatarCenterX - avatarRadius + 6,
-            avatarCenterY - avatarRadius + 6,
-            (avatarRadius - 6) * 2,
-            (avatarRadius - 6) * 2
+            avatarCenterX - avatarInnerRadius,
+            avatarCenterY - avatarInnerRadius,
+            avatarInnerRadius * 2,
+            avatarInnerRadius * 2
           );
           context.restore();
+          avatarImageDrawn = true;
         } catch {
-          // Keep neutral avatar background fallback.
+          // Fall back to the default smiley avatar.
         }
+      }
+      if (!avatarImageDrawn) {
+        drawDefaultAvatarFace();
       }
       context.strokeStyle = qrCardTheme.borderColor ?? "#111827";
       context.lineWidth = 6;
@@ -904,11 +965,27 @@ export default function CreatePrefillUrlModal({
       context.fillText(headerText || cardDisplayName, exportWidth / 2, cardY + 195);
 
       drawRoundedRect(context, qrPanelX, qrPanelY, qrPanelSize, qrPanelSize, 62);
-      context.fillStyle = "rgba(255,255,255,0.92)";
+      context.fillStyle = "rgba(255,255,255,0.80)";
       context.fill();
       context.strokeStyle = "#d1d5db";
       context.lineWidth = 4;
       context.stroke();
+      // Match the profile link tray's inset feel (`shadow-inner`) in canvas export.
+      context.save();
+      drawRoundedRect(context, qrPanelX, qrPanelY, qrPanelSize, qrPanelSize, 62);
+      context.clip();
+      drawRoundedRect(context, qrPanelX + 3, qrPanelY + 3, qrPanelSize - 6, qrPanelSize - 6, 59);
+      context.strokeStyle = "rgba(17,24,39,0.12)";
+      context.lineWidth = 6;
+      context.stroke();
+      const trayHighlight = context.createLinearGradient(0, qrPanelY, 0, qrPanelY + qrPanelSize);
+      trayHighlight.addColorStop(0, "rgba(255,255,255,0.42)");
+      trayHighlight.addColorStop(0.22, "rgba(255,255,255,0)");
+      trayHighlight.addColorStop(1, "rgba(17,24,39,0.06)");
+      context.fillStyle = trayHighlight;
+      drawRoundedRect(context, qrPanelX + 2, qrPanelY + 2, qrPanelSize - 4, qrPanelSize - 4, 60);
+      context.fill();
+      context.restore();
 
       if (qrMemoLabel) {
         context.save();
@@ -1024,9 +1101,9 @@ export default function CreatePrefillUrlModal({
     profile.profile_image_url,
     qrAmountForFilename,
     qrCardTheme.borderColor,
-    qrCardTheme.cardSurfaceSolid,
     qrCardTheme.cardText,
     qrDetails,
+    effectiveQrCardSurfaceSolid,
     selectedTicker,
   ]);
 
@@ -1076,6 +1153,8 @@ export default function CreatePrefillUrlModal({
   const qrTextBandTopHeightPx = isWideLayout ? 24 : 24;
   const qrTextBandBottomHeightPx = isWideLayout ? 24 : 24;
   const qrMatrixSizePx = isWideLayout ? 200 : 228;
+  const qrAvatarSizePx = isWideLayout ? 48 : 56;
+  const qrAvatarMaskWidthPx = qrAvatarSizePx + 6;
   const qrInlineFrameHeightPx = qrTextBandTopHeightPx + qrMatrixSizePx + qrTextBandBottomHeightPx;
   const qrTextBandTextClass = isWideLayout ? "text-[10px]" : "text-[11px]";
   const qrTextInsetPx = isWideLayout ? 3 : 4;
@@ -1097,9 +1176,7 @@ export default function CreatePrefillUrlModal({
           qrCardTheme.borderColor ? "verified-card-custom-border" : "border-black/70"
         }`}
         style={{
-          background: qrCardTheme.packageId
-            ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${qrCardTheme.cardSurface}`
-            : qrCardTheme.cardSurface,
+          background: qrPreviewCardBackground,
           color: qrCardTheme.cardText,
           "--verified-card-border": qrCardTheme.borderColor ?? undefined,
           "--verified-card-glow": qrCardTheme.borderColor ?? undefined,
@@ -1108,15 +1185,15 @@ export default function CreatePrefillUrlModal({
         <div
           className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full"
           style={{
-            width: "74px",
-            backgroundColor: qrCardTheme.cardSurfaceSolid,
+            width: `${qrAvatarMaskWidthPx}px`,
+            backgroundColor: effectiveQrCardSurfaceSolid,
           }}
           aria-hidden
         />
         <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
           <ProfileAvatar
             profile={profile}
-            size={isWideLayout ? 48 : 56}
+            size={qrAvatarSizePx}
             borderColor={qrCardTheme.borderColor ?? "#111827"}
             lookAround={false}
           />
@@ -1127,7 +1204,7 @@ export default function CreatePrefillUrlModal({
         >
           {cardDisplayName}
         </p>
-        <div className={`mx-auto flex w-full items-center justify-center rounded-2xl border border-gray-300 bg-white/90 px-2 py-2 shadow-inner ${
+        <div className={`relative mx-auto flex w-full items-center justify-center overflow-hidden rounded-2xl border border-gray-300 bg-white/80 px-2 py-2 shadow-inner transition-all ${
           isWideLayout ? "max-w-[240px]" : "max-w-[21rem]"
         }`}>
           <div className="relative w-full overflow-hidden" style={{ height: `${qrInlineFrameHeightPx}px` }}>
