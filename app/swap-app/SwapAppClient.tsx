@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { validate as validateMultichainAddress } from "multichain-address-validator";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import SwapAddressInput from "@/ui/swap/SwapAddressInput";
+import { getZcashAddressHint, validateZcashAddress } from "@/ui/signup/zcashAddress";
 import SwapQuoteDisplay from "@/ui/swap/SwapQuoteDisplay";
-import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
+import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import {
   getSwapQuote,
   confirmSwap,
@@ -28,6 +30,127 @@ const STATUS_CONFIG = {
   PENDING_DEPOSIT: { color: "bg-[var(--color-brand-blue)]/15 text-[var(--color-brand-blue)]", label: "Pending" },
 } as const;
 
+const getTokenKey = (token: Token | null | undefined): string =>
+  token?.id || token?.assetId || token?.symbol || "";
+
+function toProperCaseLabel(value: string): string {
+  return value
+    .replace(/[_./-]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
+}
+
+function getBaseLayerLabel(blockchain?: string): string {
+  const chain = (blockchain ?? "").trim().toLowerCase();
+  if (!chain) return "";
+  if (chain.includes("zec") || chain.includes("zcash")) return "Zcash";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "Bitcoin";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "Ethereum";
+  if (chain.includes("sol") || chain.includes("solana")) return "Solana";
+  if (chain.includes("tron")) return "Tron";
+  if (chain.includes("stellar") || chain.includes("xlm")) return "Stellar";
+  if (chain.includes("ripple") || chain.includes("xrp")) return "Ripple";
+  return blockchain ? toProperCaseLabel(blockchain) : "";
+}
+
+function resolveValidationChain(assetSymbol: string, chainHint: string): string {
+  const symbol = assetSymbol.toLowerCase();
+  const chain = chainHint.toLowerCase().trim();
+
+  // Prefer chain/base-layer hints from the selected token over symbol fallbacks.
+  if (chain.includes("zec") || chain.includes("zcash")) return "zec";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "bitcoin";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "ethereum";
+  if (chain.includes("sol") || chain.includes("solana")) return "solana";
+  if (chain.includes("tron") || chain.includes("trc")) return "tron";
+  if (chain.includes("stellar") || chain.includes("xlm")) return "stellar";
+  if (chain.includes("ripple") || chain.includes("xrp")) return "ripple";
+  if (
+    chain.includes("arb") ||
+    chain.includes("base") ||
+    chain.includes("optimism") ||
+    chain.includes("avalanche") ||
+    chain.includes("bsc") ||
+    chain.includes("binance")
+  ) {
+    return "ethereum";
+  }
+
+  if (symbol === "btc") return "bitcoin";
+  if (symbol === "eth") return "ethereum";
+  if (symbol === "sol") return "solana";
+  if (symbol === "zec") return "zec";
+  if (symbol === "xrp") return "ripple";
+  if (symbol === "xlm") return "stellar";
+  if (symbol === "usdc" || symbol === "usdt") return "ethereum";
+
+  return symbol;
+}
+
+function validateAddressForToken(
+  address: string,
+  token: Token | null,
+  addressType: "refund" | "destination",
+): {
+  isValid: boolean;
+  message: string;
+  state: "valid" | "invalid" | "warning" | "none";
+} {
+  const trimmedAddress = address.trim();
+  if (!token || !trimmedAddress) {
+    return {
+      isValid: false,
+      message: "",
+      state: "none",
+    };
+  }
+
+  try {
+    const symbol = token.symbol.toLowerCase();
+    const chain = resolveValidationChain(token.symbol, token.blockchain ?? "");
+    const baseLayer = getBaseLayerLabel(token.blockchain) || token.symbol;
+    const context = addressType === "refund" ? "refund" : "recipient";
+
+    if (symbol === "zec") {
+      const zecValidation = validateZcashAddress(trimmedAddress);
+      const isTransparentType =
+        zecValidation.type === "tex" || zecValidation.type === "transparent";
+      const isValid = zecValidation.valid;
+      const context = addressType === "refund" ? "refund" : "recipient";
+
+      return {
+        isValid,
+        message: isValid
+          ? isTransparentType
+            ? `${token.symbol} ${context} address looks valid. Careful, this is a transparent address. Consider using a shielded address instead (u1...).`
+            : `${token.symbol} ${context} address looks valid.`
+          : getZcashAddressHint(trimmedAddress),
+        state: isValid ? (isTransparentType ? "warning" : "valid") : "invalid",
+      };
+    }
+
+    const isValid = validateMultichainAddress(trimmedAddress, chain);
+
+    return {
+      isValid,
+      message: isValid
+        ? `${token.symbol} ${context} address looks valid.`
+        : `${baseLayer} ${context} address is not valid.`,
+      state: isValid ? "valid" : "invalid",
+    };
+  } catch {
+    const baseLayer = getBaseLayerLabel(token.blockchain) || token.symbol;
+    const context = addressType === "refund" ? "refund" : "recipient";
+    return {
+      isValid: false,
+      message: `${baseLayer} ${context} address is not valid.`,
+      state: "invalid",
+    };
+  }
+}
+
 function SwapStatusDisplay({
   initialDepositAddress,
 }: {
@@ -36,7 +159,18 @@ function SwapStatusDisplay({
   const [depositAddress, setDepositAddress] = useState(initialDepositAddress);
   const [inputValue, setInputValue] = useState(initialDepositAddress);
   const [showInput, setShowInput] = useState(!initialDepositAddress);
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(!!initialDepositAddress);
+
+  // Keep local state in sync when a new tracked deposit address is passed in.
+  useEffect(() => {
+    const nextAddress = (initialDepositAddress ?? "").trim();
+    if (!nextAddress) return;
+
+    setInputValue(nextAddress);
+    setDepositAddress(nextAddress);
+    setShowInput(false);
+    setDetailsOpen(true);
+  }, [initialDepositAddress]);
 
   // Poll swap status every 5 seconds
   const { data: statusResult, error } = useQuery({
@@ -76,7 +210,12 @@ function SwapStatusDisplay({
     "REFUNDED",
     "INCOMPLETE_DEPOSIT",
   ].includes(status);
-
+  const activityLabel =
+    status === "PENDING_DEPOSIT"
+      ? "Receiving"
+      : status === "PROCESSING"
+        ? "Swapping"
+        : "Updating";
   const details = statusData?.swapDetails;
   const quote = statusData?.quoteResponse?.quote;
   const request = statusData?.quoteResponse?.quoteRequest;
@@ -88,6 +227,7 @@ function SwapStatusDisplay({
     if (inputValue.trim()) {
       setDepositAddress(inputValue.trim());
       setShowInput(false);
+      setDetailsOpen(true);
     }
   };
 
@@ -134,27 +274,26 @@ function SwapStatusDisplay({
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-2">
-          <h1 className="text-md font-semibold">Swap Status</h1>
-          <span
-            className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}
-          >
-            {config.label}
-          </span>
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span
+              className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}
+            >
+              {config.label}
+            </span>
+          </div>
           {isPolling && (
             <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5">
+              <div className="flex gap-0.5" aria-hidden="true">
                 {[0, 0.1, 0.2].map((delay, i) => (
                   <div
                     key={i}
-                    className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                    className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce"
                     style={{ animationDelay: `${delay}s` }}
                   />
                 ))}
               </div>
-              <span className="text-xs text-gray-600">
-                {status === "PENDING_DEPOSIT" ? "Receiving" : "Swapping"}
-              </span>
+              <span className="text-xs text-gray-600">{activityLabel}</span>
             </div>
           )}
         </div>
@@ -165,7 +304,7 @@ function SwapStatusDisplay({
               fromSymbol={fromSymbol}
               toSymbol={toSymbol}
               size="lg"
-              showLabel={true}
+              showLabel={false}
             />
           </div>
         )}
@@ -222,7 +361,7 @@ function SwapStatusDisplay({
                   : null,
               },
               {
-                label: "Destination Asset",
+                label: "Recipient Asset",
                 value: request?.destinationAsset
                   ? parseTokenSymbol(request.destinationAsset)
                   : null,
@@ -277,7 +416,7 @@ function SwapStatusDisplay({
             setInputValue("");
             setShowInput(true);
           }}
-          className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+          className="flex-1 bg-transparent border border-gray-800 px-4 py-2 rounded-xl font-semibold transition-colors hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)]"
         >
           Check Another
         </button>
@@ -299,7 +438,7 @@ function SwapStatusDisplay({
             await navigator.clipboard.writeText(shareUrl);
             alert("Link copied to clipboard!");
           }}
-          className="flex-1 border border-gray-800 px-4 py-2 rounded-xl font-semibold hover:bg-gray-50"
+          className="flex-1 bg-transparent border border-gray-800 px-4 py-2 rounded-xl font-semibold transition-colors hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)]"
         >
           Share
         </button>
@@ -315,20 +454,44 @@ export default function SwapAppClient({
   initialDepositAddress: string | null;
   initialTokens: Token[];
 }) {
+  const flipCardRootRef = useRef<HTMLDivElement | null>(null);
+  const depositSectionRef = useRef<HTMLDivElement | null>(null);
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
   const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(
     initialDepositAddress || "",
   );
 
   const tokens = initialTokens;
+  const defaultToToken = useMemo(() => {
+    if (tokens.length === 0) return null;
+
+    const nativeZecToken = tokens.find(
+      (token) =>
+        token.symbol.toUpperCase() === "ZEC" &&
+        token.blockchain.toLowerCase().includes("zec"),
+    );
+    const anyZecToken = tokens.find(
+      (token) => token.symbol.toUpperCase() === "ZEC",
+    );
+    return nativeZecToken ?? anyZecToken ?? tokens[1] ?? tokens[0] ?? null;
+  }, [tokens]);
+  const defaultFromToken = useMemo(() => {
+    if (tokens.length === 0) return null;
+    return (
+      tokens.find((token) => getTokenKey(token) !== getTokenKey(defaultToToken)) ??
+      tokens[0] ??
+      null
+    );
+  }, [tokens, defaultToToken]);
 
   // Swap form state
-  const [fromToken, setFromToken] = useState<Token | null>(tokens[0] ?? null);
-  const [toToken, setToToken] = useState<Token | null>(tokens[1] ?? null);
+  const [fromToken, setFromToken] = useState<Token | null>(defaultFromToken);
+  const [toToken, setToToken] = useState<Token | null>(defaultToToken);
   const [fromAmount, setFromAmount] = useState("");
-  const [toAmount, setToAmount] = useState("");
   const [refundAddress, setRefundAddress] = useState("");
   const [destAddress, setDestAddress] = useState("");
+  const [refundTouched, setRefundTouched] = useState(false);
+  const [destTouched, setDestTouched] = useState(false);
   const [slippageTolerance, setSlippageTolerance] = useState("2");
 
   // Quote state
@@ -343,6 +506,8 @@ export default function SwapAppClient({
     null,
   );
   const [depositAmountDecimal, setDepositAmountDecimal] = useState("");
+  const autoQuoteKeyRef = useRef("");
+  const autoConfirmKeyRef = useRef("");
 
   // Load tracking deposit address from localStorage on mount
   useEffect(() => {
@@ -364,8 +529,109 @@ export default function SwapAppClient({
     }
   }, [trackingDepositAddress]);
 
-  const fetchQuote = async () => {
-    if (!fromToken || !toToken) return;
+  const scrollToAbsoluteTop = useCallback(() => {
+    // Scroll any scrollable parent containers that may wrap this card.
+    const seen = new Set<HTMLElement>();
+    let node: HTMLElement | null = flipCardRootRef.current;
+    while (node && !seen.has(node)) {
+      seen.add(node);
+      const style = window.getComputedStyle(node);
+      const canScrollY =
+        (style.overflowY === "auto" || style.overflowY === "scroll") &&
+        node.scrollHeight > node.clientHeight;
+      if (canScrollY) {
+        node.scrollTop = 0;
+      }
+      node = node.parentElement;
+    }
+
+    // Scroll page-level containers.
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
+  useEffect(() => {
+    if (!isStatus) return;
+    const scrollOnce = () => {
+      scrollToAbsoluteTop();
+    };
+
+    scrollOnce();
+    const raf = window.requestAnimationFrame(scrollOnce);
+    const t1 = window.setTimeout(scrollOnce, 80);
+    const t2 = window.setTimeout(scrollOnce, 220);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [isStatus, scrollToAbsoluteTop]);
+
+  const scrollToDepositSection = useCallback(() => {
+    const section = depositSectionRef.current;
+    if (!section) return;
+    section.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  }, []);
+
+  useEffect(() => {
+    if (!statusKey?.depositAddress || isStatus) return;
+
+    const run = () => {
+      scrollToDepositSection();
+    };
+
+    run();
+    const raf = window.requestAnimationFrame(run);
+    const t1 = window.setTimeout(run, 120);
+    const t2 = window.setTimeout(run, 280);
+
+    return () => {
+      window.cancelAnimationFrame(raf);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, [statusKey?.depositAddress, isStatus, scrollToDepositSection]);
+
+  const resetSwapProgress = useCallback(() => {
+    setQuote(null);
+    setQuoteError(null);
+    setDepositUri("");
+    setStatusKey(null);
+    setDepositAmountDecimal("");
+    autoQuoteKeyRef.current = "";
+    autoConfirmKeyRef.current = "";
+  }, []);
+
+  const hasFromAmount = Number.parseFloat(fromAmount) > 0;
+  const refundValidation = useMemo(
+    () => validateAddressForToken(refundAddress, fromToken, "refund"),
+    [refundAddress, fromToken],
+  );
+  const destinationValidation = useMemo(
+    () => validateAddressForToken(destAddress, toToken, "destination"),
+    [destAddress, toToken],
+  );
+  const canExecuteSwapFlow =
+    hasFromAmount &&
+    refundValidation.isValid &&
+    destinationValidation.isValid &&
+    !!fromToken &&
+    !!toToken;
+
+  const fetchQuote = useCallback(async () => {
+    if (!fromToken || !toToken || !canExecuteSwapFlow) return;
+
+    const currentQuoteKey = [
+      getTokenKey(fromToken),
+      getTokenKey(toToken),
+      fromAmount,
+      refundAddress.trim(),
+      destAddress.trim(),
+      slippageTolerance,
+    ].join("|");
+    autoQuoteKeyRef.current = currentQuoteKey;
 
     setQuoteLoading(true);
     setQuoteError(null);
@@ -383,23 +649,41 @@ export default function SwapAppClient({
 
       if (result.ok) {
         setQuote(result.data.display);
-        setToAmount(result.data.display.amountOutFormatted);
       } else {
         setQuote(null);
-        setToAmount("");
         setQuoteError(result.error);
       }
     } catch {
       setQuote(null);
-      setToAmount("");
       setQuoteError("Failed to get quote");
     } finally {
       setQuoteLoading(false);
     }
-  };
+  }, [
+    fromToken,
+    toToken,
+    canExecuteSwapFlow,
+    fromAmount,
+    destAddress,
+    refundAddress,
+    slippageTolerance,
+    tokens,
+  ]);
 
-  const confirmQuote = async () => {
-    if (!quote || !fromToken || !toToken) return;
+  const confirmQuote = useCallback(async () => {
+    if (!quote || !fromToken || !toToken || !canExecuteSwapFlow) return;
+
+    const currentConfirmKey = [
+      getTokenKey(fromToken),
+      getTokenKey(toToken),
+      fromAmount,
+      refundAddress.trim(),
+      destAddress.trim(),
+      slippageTolerance,
+      quote.amountOutFormatted || "",
+      quote.timeEstimate || "",
+    ].join("|");
+    autoConfirmKeyRef.current = currentConfirmKey;
 
     setConfirmLoading(true);
     setQuoteError(null);
@@ -427,28 +711,17 @@ export default function SwapAppClient({
     } finally {
       setConfirmLoading(false);
     }
-  };
-
-  const handleSwapDirection = () => {
-    const tempFrom = fromToken;
-    const tempTo = toToken;
-    const tempFromAmount = fromAmount;
-    const tempToAmount = toAmount;
-
-    setFromToken(tempTo);
-    setToToken(tempFrom);
-    setFromAmount(tempToAmount);
-    setToAmount(tempFromAmount);
-
-    // Swap addresses too
-    const tempRefund = refundAddress;
-    setRefundAddress(destAddress);
-    setDestAddress(tempRefund);
-
-    // Clear quote since direction changed
-    setQuote(null);
-    setQuoteError(null);
-  };
+  }, [
+    quote,
+    fromToken,
+    toToken,
+    canExecuteSwapFlow,
+    fromAmount,
+    destAddress,
+    refundAddress,
+    slippageTolerance,
+    tokens,
+  ]);
 
   const handleFromTokenChange = (tokenId: string) => {
     const token = tokens.find(
@@ -456,8 +729,7 @@ export default function SwapAppClient({
     );
     if (token) {
       setFromToken(token);
-      setQuote(null);
-      setQuoteError(null);
+      resetSwapProgress();
     }
   };
 
@@ -467,17 +739,29 @@ export default function SwapAppClient({
     );
     if (token) {
       setToToken(token);
-      setQuote(null);
-      setQuoteError(null);
+      resetSwapProgress();
     }
   };
 
   const handleFromAmountChange = (amount: string) => {
     setFromAmount(amount);
-    if (quote) {
-      setQuote(null);
-      setToAmount("");
-    }
+    resetSwapProgress();
+  };
+
+  const handleRefundAddressChange = (value: string) => {
+    setRefundAddress(value);
+    resetSwapProgress();
+  };
+
+  const handleDestinationAddressChange = (value: string) => {
+    setDestAddress(value);
+    resetSwapProgress();
+  };
+
+  const handleSlippageChange = (value: string) => {
+    if (value === slippageTolerance) return;
+    setSlippageTolerance(value);
+    resetSwapProgress();
   };
 
   const handleSentFunds = () => {
@@ -487,6 +771,92 @@ export default function SwapAppClient({
     }
   };
 
+  useEffect(() => {
+    const canAutoQuote =
+      canExecuteSwapFlow &&
+      !statusKey?.depositAddress;
+
+    if (!canAutoQuote) {
+      autoQuoteKeyRef.current = "";
+      return;
+    }
+
+    const nextQuoteKey = [
+      getTokenKey(fromToken),
+      getTokenKey(toToken),
+      fromAmount,
+      refundAddress.trim(),
+      destAddress.trim(),
+      slippageTolerance,
+    ].join("|");
+
+    if (
+      autoQuoteKeyRef.current === nextQuoteKey ||
+      quoteLoading ||
+      confirmLoading
+    ) {
+      return;
+    }
+    autoQuoteKeyRef.current = nextQuoteKey;
+
+    void fetchQuote();
+  }, [
+    canExecuteSwapFlow,
+    quoteLoading,
+    confirmLoading,
+    statusKey?.depositAddress,
+    fromToken,
+    toToken,
+    fromAmount,
+    refundAddress,
+    destAddress,
+    slippageTolerance,
+    fetchQuote,
+  ]);
+
+  useEffect(() => {
+    const canAutoConfirm =
+      !!quote &&
+      canExecuteSwapFlow &&
+      !quoteLoading &&
+      !confirmLoading &&
+      !statusKey?.depositAddress;
+
+    if (!canAutoConfirm) {
+      if (!quote) autoConfirmKeyRef.current = "";
+      return;
+    }
+
+    const nextConfirmKey = [
+      getTokenKey(fromToken),
+      getTokenKey(toToken),
+      fromAmount,
+      refundAddress.trim(),
+      destAddress.trim(),
+      slippageTolerance,
+      quote?.amountOutFormatted || "",
+      quote?.timeEstimate || "",
+    ].join("|");
+
+    if (autoConfirmKeyRef.current === nextConfirmKey) return;
+    autoConfirmKeyRef.current = nextConfirmKey;
+
+    void confirmQuote();
+  }, [
+    quote,
+    canExecuteSwapFlow,
+    quoteLoading,
+    confirmLoading,
+    statusKey?.depositAddress,
+    fromToken,
+    toToken,
+    fromAmount,
+    refundAddress,
+    destAddress,
+    slippageTolerance,
+    confirmQuote,
+  ]);
+
   // Format tokens for AmountAndWallet
   const formattedTokens = tokens.map((token) => ({
     id: token.id || token.assetId || token.symbol,
@@ -494,11 +864,78 @@ export default function SwapAppClient({
     chain: token.blockchain,
     logo: token.logo || "",
   }));
+  const showRefundAddressInput = hasFromAmount;
+  const showDestinationAddressInput = hasFromAmount;
+  const showRefundValidation =
+    showRefundAddressInput && (refundTouched || refundAddress.trim().length > 0);
+  const showDestinationValidation =
+    showDestinationAddressInput && (destTouched || destAddress.trim().length > 0);
+  const fromBaseLayerLabel =
+    getBaseLayerLabel(fromToken?.blockchain) || fromToken?.blockchain || "";
+  const toBaseLayerLabel =
+    getBaseLayerLabel(toToken?.blockchain) || toToken?.blockchain || "";
+  const refundAddressLabel = fromBaseLayerLabel
+    ? `${fromBaseLayerLabel} Refund Address`
+    : "Refund Address";
+  const destinationAddressLabel = toBaseLayerLabel
+    ? `${toBaseLayerLabel} Recipient Address`
+    : "Recipient Address";
+  const showFlowPanel =
+    quoteLoading || confirmLoading || !!quote || !!statusKey?.depositAddress || !!quoteError;
+  const toTokenBaseLabel = getBaseLayerLabel(toToken?.blockchain) || toToken?.blockchain || "";
+  const toTokenDisplayLabel = toToken
+    ? toTokenBaseLabel
+      ? `${toToken.symbol} on ${toTokenBaseLabel}`
+      : toToken.symbol
+    : "";
+  const fromTokenTickerLabel = fromToken?.symbol || "";
+  const toTokenTickerLabel = toToken?.symbol || "";
+
+  const getAddressPlaceholder = (
+    token: Token | null,
+    emptyFallback: string,
+    useBaseLayerOnly = false,
+  ) => {
+    if (!token) return emptyFallback;
+
+    const baseLayer = getBaseLayerLabel(token.blockchain);
+    if (useBaseLayerOnly && baseLayer) {
+      return `${baseLayer} address...`;
+    }
+
+    const displaySymbol = baseLayer ? `${token.symbol} (${baseLayer})` : token.symbol;
+
+    return `${displaySymbol} address...`;
+  };
 
   return (
     <>
+      {!isStatus && (
+        <div className="mb-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => setIsStatus(true)}
+            className="bg-transparent px-3 py-1.5 text-sm font-semibold text-gray-900 border border-gray-800 rounded-lg transition-colors hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)]"
+          >
+            Check Status of Swap
+          </button>
+        </div>
+      )}
+      {isStatus && (
+        <div className="mb-3 flex justify-start">
+          <button
+            type="button"
+            onClick={() => setIsStatus(false)}
+            className="bg-transparent px-3 py-1.5 text-sm font-semibold text-gray-700 border border-gray-800 rounded-lg transition-colors hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)]"
+          >
+            ← Back to Swap
+          </button>
+        </div>
+      )}
+
       {/* Flip Card Container */}
       <div
+        ref={flipCardRootRef}
         className="relative overflow-visible"
         style={{ perspective: "1000px" }}
       >
@@ -506,13 +943,13 @@ export default function SwapAppClient({
           className="relative w-full transition-transform duration-300 overflow-visible"
           style={{
             transformStyle: "preserve-3d",
-            transform: isStatus ? "rotateX(180deg)" : "rotateX(0deg)",
+            transform: isStatus ? "rotateY(180deg)" : "rotateY(0deg)",
           }}
         >
           {/* Front Side - Main Swap Card */}
           <div
             className={`rounded-3xl border border-gray-800 p-4 md:p-6 shadow-lg overflow-visible ${
-              isStatus ? "absolute top-0 left-0 w-full" : ""
+              isStatus ? "absolute top-0 left-0 w-full" : "relative"
             }`}
             style={{
               backgroundColor: "var(--color-background)",
@@ -520,37 +957,6 @@ export default function SwapAppClient({
               WebkitBackfaceVisibility: "hidden",
             }}
           >
-            {/* Info Icon with Tooltip */}
-            <div className="absolute top-4 right-4 md:top-6 md:right-6 group">
-              <button
-                type="button"
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </button>
-              <div className="hidden group-hover:block absolute top-8 right-0 w-64 p-3 rounded-xl border border-gray-300 bg-white shadow-lg z-10">
-                <p className="text-sm text-gray-700 font-semibold mb-1">
-                  Powered by Near Intents
-                </p>
-                <p className="text-xs text-gray-600">
-                  This swap interface uses the Near Intents 1Click API to
-                  provide cross-chain cryptocurrency swaps with competitive
-                  rates and fast execution.
-                </p>
-              </div>
-            </div>
             {/* Currency Swap Section */}
             <div className="mb-6">
               <div className="flex flex-col md:flex-row gap-3 md:gap-3 items-stretch">
@@ -565,46 +971,29 @@ export default function SwapAppClient({
                       setAmount={handleFromAmountChange}
                       showUsdPill={true}
                       showOpenWallet={false}
-                      asset={fromToken?.symbol || ""}
+                      asset={fromToken ? getTokenKey(fromToken) : ""}
+                      assetDisplayLabel={fromTokenTickerLabel}
                       assetOptions={formattedTokens}
                       setAsset={handleFromTokenChange}
+                      filterAllowedBaseLayers={false}
                     />
                   </div>
                 </div>
-
-                {/* Swap Direction Button */}
-                <div className="flex items-center justify-center md:pt-7">
-                  <button
-                    type="button"
-                    onClick={handleSwapDirection}
-                    disabled={!fromToken || !toToken}
-                    className={`p-2 rounded-xl transition-colors border border-gray-800 ${
-                      fromToken && toToken
-                        ? "hover:bg-gray-100 text-gray-600"
-                        : "opacity-50 cursor-not-allowed text-gray-400"
-                    }`}
-                    title="Swap direction"
-                    style={
-                      fromToken && toToken
-                        ? { backgroundColor: "var(--color-background)" }
-                        : {}
-                    }
-                  >
-                    <svg
-                      className="w-6 h-6 rotate-90 md:rotate-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-                      />
-                    </svg>
-                  </button>
-                </div>
+                {showRefundAddressInput && (
+                  <div className="md:hidden">
+                    <SwapAddressInput
+                      label={refundAddressLabel}
+                      value={refundAddress}
+                      onChange={handleRefundAddressChange}
+                      onBlur={() => setRefundTouched(true)}
+                      placeholder={getAddressPlaceholder(fromToken, "Select from token first", true)}
+                      disabled={!fromToken}
+                      validationMessage={refundValidation.message}
+                      validationState={refundValidation.state}
+                      showValidation={showRefundValidation}
+                    />
+                  </div>
+                )}
 
                 {/* To Section */}
                 <div className="flex-1">
@@ -613,133 +1002,171 @@ export default function SwapAppClient({
                       To
                     </label>
                     <AmountAndWallet
-                      amount={toAmount}
-                      setAmount={setToAmount}
-                      showUsdPill={false}
+                      amount={toTokenDisplayLabel}
+                      setAmount={() => {}}
                       showOpenWallet={false}
-                      asset={toToken?.symbol || ""}
+                      showUsdPill={false}
+                      amountPlaceholder={toTokenDisplayLabel}
+                      readOnlyAmount={true}
+                      asset={toToken ? getTokenKey(toToken) : ""}
+                      assetDisplayLabel={toTokenTickerLabel}
                       assetOptions={formattedTokens}
                       setAsset={handleToTokenChange}
+                      filterAllowedBaseLayers={false}
+                      tokenSelectorAlign="right"
                     />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Address Inputs Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <SwapAddressInput
-                label="Refund Address"
-                value={refundAddress}
-                onChange={setRefundAddress}
-                placeholder={
-                  fromToken
-                    ? `${fromToken.symbol} address...`
-                    : "Select from token first"
-                }
-                disabled={!fromToken}
-              />
-              <SwapAddressInput
-                label="Destination Address"
-                value={destAddress}
-                onChange={setDestAddress}
-                placeholder={
-                  toToken
-                    ? `${toToken.symbol} address...`
-                    : "Select to token first"
-                }
-                disabled={!toToken}
-              />
-            </div>
-
-            {/* Quote Display */}
-            {quote && <SwapQuoteDisplay quote={quote} className="mb-6" />}
-
-            {/* Swap Deposit Display */}
-            <SwapDepositDisplay
-              depositUri={depositUri}
-              depositAddress={statusKey?.depositAddress}
-              amountDecimal={depositAmountDecimal}
-              originSymbol={fromToken?.symbol || ""}
-              onSentFunds={handleSentFunds}
-            />
-
-            {/* Error Display */}
-            {quoteError && (
+            {/* Desktop Address Inputs Section */}
+            {(showRefundAddressInput || showDestinationAddressInput) && (
               <div
-                className="mb-6 p-4 rounded-xl border border-gray-800 text-gray-900 text-sm"
-                style={{ backgroundColor: "var(--color-background)" }}
+                className={`hidden md:grid gap-4 mb-6 ${
+                  showRefundAddressInput && showDestinationAddressInput
+                    ? "md:grid-cols-2"
+                    : "md:grid-cols-1"
+                }`}
               >
-                {quoteError}
+                {showRefundAddressInput && (
+                  <SwapAddressInput
+                    label={refundAddressLabel}
+                    value={refundAddress}
+                    onChange={handleRefundAddressChange}
+                    onBlur={() => setRefundTouched(true)}
+                    placeholder={getAddressPlaceholder(fromToken, "Select from token first", true)}
+                    disabled={!fromToken}
+                    validationMessage={refundValidation.message}
+                    validationState={refundValidation.state}
+                    showValidation={showRefundValidation}
+                  />
+                )}
+                {showDestinationAddressInput && (
+                  <SwapAddressInput
+                    label={destinationAddressLabel}
+                    value={destAddress}
+                    onChange={handleDestinationAddressChange}
+                    onBlur={() => setDestTouched(true)}
+                    placeholder={getAddressPlaceholder(toToken, "Select to token first")}
+                    disabled={!toToken}
+                    validationMessage={destinationValidation.message}
+                    validationState={destinationValidation.state}
+                    showValidation={showDestinationValidation}
+                  />
+                )}
               </div>
             )}
-
-            {/* Quote Action Buttons */}
-            {!statusKey?.depositAddress && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  type="button"
-                  onClick={fetchQuote}
-                  disabled={quoteLoading}
-                  className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
-                    !quoteLoading
-                      ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
-                      : "bg-gray-100 text-gray-400 border border-gray-300"
-                  }`}
-                  style={
-                    !quoteLoading
-                      ? { backgroundColor: "var(--color-background)" }
-                      : {}
-                  }
-                >
-                  {quoteLoading ? "Getting quote..." : "Get a quote"}
-                </button>
-                <button
-                  type="button"
-                  onClick={confirmQuote}
-                  disabled={!quote || confirmLoading}
-                  className={`flex-1 px-4 py-3 text-md font-semibold rounded-xl ${
-                    quote && !confirmLoading
-                      ? "text-gray-900 transition-colors cursor-pointer border border-gray-800"
-                      : "bg-gray-100 text-gray-400 border border-gray-300"
-                  }`}
-                  style={
-                    quote && !confirmLoading
-                      ? { backgroundColor: "var(--color-background)" }
-                      : {}
-                  }
-                >
-                  {confirmLoading ? "Confirming..." : "Confirm quote"}
-                </button>
-              </div>
-            )}
-
-            {/* Slippage Settings */}
-            {!statusKey?.depositAddress && (
-              <div className="mt-4">
-                <SwapSlippageControl
-                  value={slippageTolerance}
-                  onChange={setSlippageTolerance}
-                  variant="inline"
+            {showDestinationAddressInput && (
+              <div className="md:hidden mb-6">
+                <SwapAddressInput
+                  label={destinationAddressLabel}
+                  value={destAddress}
+                  onChange={handleDestinationAddressChange}
+                  onBlur={() => setDestTouched(true)}
+                  placeholder={getAddressPlaceholder(toToken, "Select to token first")}
+                  disabled={!toToken}
+                  validationMessage={destinationValidation.message}
+                  validationState={destinationValidation.state}
+                  showValidation={showDestinationValidation}
                 />
               </div>
             )}
 
-            {/* Check Swap Link */}
-            {!statusKey?.depositAddress && (
-              <div className="text-center text-sm text-gray-600 mt-3">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setIsStatus(true);
-                  }}
-                  className="text-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)] underline"
-                >
-                  Check Swap
-                </a>
+            {/* Quote + Confirm + Deposit Flow Panel */}
+            {showFlowPanel && (
+              <div
+                className="mb-6 p-4 rounded-xl border border-gray-800 space-y-3"
+                style={{ backgroundColor: "var(--color-background)" }}
+              >
+                {quoteLoading && !quote && !statusKey?.depositAddress && (
+                  <div className="flex flex-col items-center justify-center gap-1.5 min-h-16">
+                    <div className="flex gap-0.5">
+                      {[0, 0.1, 0.2].map((delay, i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                          style={{ animationDelay: `${delay}s` }}
+                        />
+                      ))}
+                    </div>
+                    <span className="text-xs text-gray-600">Getting quote</span>
+                  </div>
+                )}
+
+                {quote && !statusKey?.depositAddress && (
+                  <div className="space-y-3">
+                    <SwapQuoteDisplay
+                      quote={quote}
+                      showAmounts={true}
+                      selectedSlippage={slippageTolerance}
+                      className="border-0 rounded-none p-0"
+                    />
+                    {confirmLoading && (
+                      <div className="flex flex-col items-center justify-center gap-1.5 min-h-14">
+                        <div className="flex gap-0.5">
+                          {[0, 0.1, 0.2].map((delay, i) => (
+                            <div
+                              key={i}
+                              className="w-1.5 h-1.5 bg-gray-800 rounded-full animate-bounce"
+                              style={{ animationDelay: `${delay}s` }}
+                            />
+                          ))}
+                        </div>
+                        <span className="text-xs text-gray-600">
+                          Confirming quote
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div ref={depositSectionRef}>
+                  <SwapDepositDisplay
+                    depositUri={depositUri}
+                    depositAddress={statusKey?.depositAddress}
+                    amountDecimal={depositAmountDecimal}
+                    originSymbol={fromToken?.symbol || ""}
+                    receivedAmount={quote?.amountOutFormatted}
+                    receivedSymbol={quote?.toSymbol || "ZEC"}
+                    minimumReceived={quote?.minAmountOut}
+                    estimatedTime={quote?.timeEstimate}
+                    onSentFunds={handleSentFunds}
+                  />
+                </div>
+
+                {quoteError && (
+                  <div
+                    className="p-3 rounded-lg border border-gray-800 text-gray-900 text-sm"
+                    style={{ backgroundColor: "var(--color-background)" }}
+                  >
+                    {quoteError}
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Slippage Utility Row */}
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <div className="w-[220px]">
+                <SwapSlippageControl
+                  value={slippageTolerance || "2"}
+                  onChange={handleSlippageChange}
+                  variant="collapsible"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 text-center">
+              <p className="text-xs text-gray-600 mb-1">Brought to you by</p>
+              <img
+                src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
+                alt="NEAR Protocol"
+                className="h-5 mx-auto object-contain"
+                loading="lazy"
+                referrerPolicy="no-referrer"
+              />
+            </div>
           </div>
 
           {/* Back Side - Swap Status Checker */}
@@ -751,23 +1178,26 @@ export default function SwapAppClient({
               backgroundColor: "var(--color-background)",
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
-              transform: "rotateX(180deg)",
+              transform: "rotateY(180deg)",
             }}
           >
             <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-lg font-semibold">Check Swap Status</h2>
-                <button
-                  onClick={() => setIsStatus(false)}
-                  className="text-sm text-gray-600 hover:text-gray-800"
-                >
-                  ← Back to Swap
-                </button>
-              </div>
+              <h2 className="text-lg font-semibold">Swap Status</h2>
 
               <SwapStatusDisplay
                 initialDepositAddress={trackingDepositAddress}
               />
+
+              <div className="mt-6 text-center">
+                <p className="text-xs text-gray-600 mb-1">Brought to you by</p>
+                <img
+                  src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
+                  alt="NEAR Protocol"
+                  className="h-5 mx-auto object-contain"
+                  loading="lazy"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
             </div>
           </div>
         </div>

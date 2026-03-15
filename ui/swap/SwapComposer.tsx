@@ -524,6 +524,17 @@ export default function SwapComposer({
         </div>
       )}
 
+      <div className="mt-6 text-center">
+        <p className="text-xs text-gray-600 mb-1">Brought to you by</p>
+        <img
+          src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
+          alt="NEAR Protocol"
+          className="h-5 mx-auto object-contain"
+          loading="lazy"
+          referrerPolicy="no-referrer"
+        />
+      </div>
+
     </div>
   );
 }

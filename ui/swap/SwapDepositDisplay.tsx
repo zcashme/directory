@@ -47,21 +47,49 @@ export default function SwapDepositDisplay({
 
   return (
     <div className="p-4 animate-fadeIn" style={{ backgroundColor: "var(--color-background)" }}>
-      <p className="text-lg font-bold text-gray-900 mb-1 text-center">
-        Send exactly {amountDecimal} {originSymbol} below.
-      </p>
-      <p className="text-sm text-gray-600 mb-1 text-center flex flex-wrap items-baseline justify-center gap-x-1">
-        <span>{recipientName ?? "Recipient"} receives</span>
-        <span className="font-bold whitespace-nowrap">
-          {minimumReceived ?? "-"} - {receivedAmount ?? "-"} {receivedSymbol}
-        </span>
-      </p>
-      <p className="text-xs text-gray-500 mb-4 text-center">
-        Estimated time {estimatedTime ?? "Unknown"}
-      </p>
+      <div className="mb-3 space-y-2 text-center">
+        <p className="text-lg font-bold text-gray-900">Send</p>
+        <div>
+          <div
+            className="p-3 rounded-lg border border-gray-800 flex items-center gap-2"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
+            <p className="text-sm font-mono text-gray-900 break-all flex-1">
+              {depositAddress}
+            </p>
+            <div className="h-6 w-px bg-gray-800/40" aria-hidden="true" />
+            <CopyButton
+              text={depositAddress}
+              label="Copy"
+              copiedLabel="Copied"
+              expanded
+              defaultColorClass="text-gray-900"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="text-lg font-bold text-gray-900">exactly</span>
+          <div
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-800 px-3 py-2.5"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
+            <span className="text-md font-semibold text-gray-900 whitespace-nowrap">
+              {amountDecimal ?? "-"} {originSymbol}
+            </span>
+            <div className="h-5 w-px bg-gray-800/40" aria-hidden="true" />
+            <CopyButton
+              text={amountDecimal ?? ""}
+              label="Copy"
+              copiedLabel="Copied"
+              expanded
+              defaultColorClass="text-gray-900"
+            />
+          </div>
+        </div>
+      </div>
 
       {/* QR Code */}
-      <div className="flex flex-col items-center gap-2 mb-4 -mt-3">
+      <div className="flex flex-col items-center gap-2 mb-4 mt-1">
         <QRCodeSVG
           value={qrValue}
           size={250}
@@ -69,28 +97,6 @@ export default function SwapDepositDisplay({
           bgColor="var(--color-background)"
           fgColor="#000000"
         />
-      </div>
-
-      {/* Address display */}
-      <div className="mb-4">
-        <div className="relative">
-          <p className="absolute -top-[20px] left-0 text-xs text-[var(--color-brand-blue)]">
-            {originSymbol} deposit address:
-          </p>
-          <div className="p-3 rounded-lg border border-gray-800 flex items-center gap-2" style={{ backgroundColor: "var(--color-background)" }}>
-          <p className="text-sm font-mono text-gray-900 break-all flex-1">
-            {depositAddress}
-          </p>
-          <div className="h-6 w-px bg-gray-800/40" aria-hidden="true" />
-          <CopyButton
-            text={depositAddress}
-            label="Copy"
-            copiedLabel="Copied"
-            expanded
-            defaultColorClass="text-gray-900"
-          />
-        </div>
-        </div>
       </div>
 
       {/* Final actions */}
@@ -109,6 +115,16 @@ export default function SwapDepositDisplay({
           I Sent It!
         </button>
       </div>
+
+      <p className="text-sm text-gray-600 mt-4 mb-1 text-center flex flex-wrap items-baseline justify-center gap-x-1">
+        <span>{recipientName ?? "Recipient"} receives</span>
+        <span className="font-bold whitespace-nowrap">
+          {minimumReceived ?? "-"} - {receivedAmount ?? "-"} {receivedSymbol}
+        </span>
+      </p>
+      <p className="text-xs text-gray-500 text-center">
+        Estimated time {estimatedTime ?? "Unknown"}
+      </p>
     </div>
   );
 }

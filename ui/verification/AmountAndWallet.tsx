@@ -116,8 +116,15 @@ function getBaseLayerLabel(chainHint?: string): string {
   if (chain.includes("eth") || chain.includes("ethereum")) return "Ethereum";
   if (chain.includes("sol") || chain.includes("solana")) return "Solana";
   if (chain.includes("tron")) return "Tron";
+  if (chain.includes("stellar") || chain.includes("xlm")) return "Stellar";
+  if (chain.includes("ripple") || chain.includes("xrp")) return "Ripple";
 
-  return raw;
+  return raw
+    .replace(/[_./-]+/g, " ")
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
 }
 
 interface AmountAndWalletProps {
@@ -137,8 +144,13 @@ interface AmountAndWalletProps {
 
   // Token selector props (optional)
   asset?: string;
+  assetDisplayLabel?: string;
   assetOptions?: TokenOption[];
   setAsset?: (_asset: string) => void;
+  amountPlaceholder?: string;
+  readOnlyAmount?: boolean;
+  filterAllowedBaseLayers?: boolean;
+  tokenSelectorAlign?: "right" | "left";
 
   // Refund address props (optional)
   showRefund?: boolean;
@@ -152,12 +164,24 @@ interface AmountAndWalletProps {
 
 function resolveValidationChain(assetSymbol: string, chainHint: string): string {
   const symbol = assetSymbol.toLowerCase();
-  const chain = chainHint.toLowerCase();
+  const chain = chainHint.toLowerCase().trim();
 
-  if (symbol === "usdc" || symbol === "usdt") {
-    if (chain.includes("sol")) return "solana";
-    if (chain.includes("tron")) return "tron";
-    if (chain.includes("btc")) return "bitcoin";
+  // Prefer base-layer info from selected token chain first.
+  if (chain.includes("zec") || chain.includes("zcash")) return "zec";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "bitcoin";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "ethereum";
+  if (chain.includes("sol") || chain.includes("solana")) return "solana";
+  if (chain.includes("tron") || chain.includes("trc")) return "tron";
+  if (chain.includes("stellar") || chain.includes("xlm")) return "stellar";
+  if (chain.includes("ripple") || chain.includes("xrp")) return "ripple";
+  if (
+    chain.includes("arb") ||
+    chain.includes("base") ||
+    chain.includes("optimism") ||
+    chain.includes("avalanche") ||
+    chain.includes("bsc") ||
+    chain.includes("binance")
+  ) {
     return "ethereum";
   }
 
@@ -166,6 +190,8 @@ function resolveValidationChain(assetSymbol: string, chainHint: string): string 
   if (symbol === "sol") return "solana";
   if (symbol === "zec") return "zec";
   if (symbol === "xrp") return "ripple";
+  if (symbol === "xlm") return "stellar";
+  if (symbol === "usdc" || symbol === "usdt") return "ethereum";
 
   return symbol;
 }
@@ -183,8 +209,13 @@ export default function AmountAndWallet({
   initialFiatAmount = "",
   // Token selector props (optional)
   asset = "ZEC",
+  assetDisplayLabel,
   assetOptions = [],
   setAsset,
+  amountPlaceholder = "0.0000",
+  readOnlyAmount = false,
+  filterAllowedBaseLayers = true,
+  tokenSelectorAlign = "right",
   // Refund address props (optional)
   showRefund = false,
   refundAddress = "",
@@ -510,12 +541,18 @@ export default function AmountAndWallet({
     const term = tokenSearch.toLowerCase();
     if (token.symbol?.toLowerCase().includes(term)) return true;
     if (token.label?.toLowerCase().includes(term)) return true;
+    if (token.chain?.toLowerCase().includes(term)) return true;
+    const chainLabel = getBaseLayerLabel(token.chain).toLowerCase();
+    if (chainLabel.includes(term)) return true;
     return false;
   };
 
   const filteredTokenOptions = useMemo(
-    () => assetOptions.filter(isAllowedTokenBaseLayer).filter(matchesTokenSearch),
-    [assetOptions, tokenSearch], // eslint-disable-line react-hooks/exhaustive-deps
+    () =>
+      assetOptions
+        .filter((token) => !filterAllowedBaseLayers || isAllowedTokenBaseLayer(token))
+        .filter(matchesTokenSearch),
+    [assetOptions, tokenSearch, filterAllowedBaseLayers], // eslint-disable-line react-hooks/exhaustive-deps
   );
   const displayTokenOptions = useMemo(
     () =>
@@ -537,12 +574,19 @@ export default function AmountAndWallet({
     );
   }, [fiatSearch]);
   const selectedToken = useMemo(
-    () => assetOptions.find((token) => asset === (token.symbol ?? token.ticker)),
+    () =>
+      assetOptions.find(
+        (token) => asset === token.id || asset === (token.symbol ?? token.ticker),
+      ),
     [assetOptions, asset]
   );
   const refundValidationChain = useMemo(
     () => resolveValidationChain(asset, selectedToken?.chain ?? ""),
     [asset, selectedToken?.chain]
+  );
+  const refundValidationLabel = useMemo(
+    () => getBaseLayerLabel(selectedToken?.chain) || asset,
+    [selectedToken?.chain, asset]
   );
   const refundValidation = useMemo(() => {
     const trimmed = (refundAddress ?? "").trim();
@@ -556,15 +600,15 @@ export default function AmountAndWallet({
         isValid: valid,
         message: valid
           ? `${asset} refund address looks valid.`
-          : `${asset} refund address is not valid.`,
+          : `${refundValidationLabel} refund address is not valid.`,
       };
     } catch {
       return {
         isValid: false,
-        message: `${asset} refund address is not valid.`,
+        message: `${refundValidationLabel} refund address is not valid.`,
       };
     }
-  }, [refundAddress, showRefund, refundValidationChain, asset]);
+  }, [refundAddress, showRefund, refundValidationChain, asset, refundValidationLabel]);
 
   useEffect(() => {
     onRefundValidationChange?.(refundValidation.isValid);
@@ -572,7 +616,7 @@ export default function AmountAndWallet({
 
   const getCurrentTokenIndex = () =>
     displayTokenOptions.findIndex(
-      (token) => asset === (token.symbol ?? token.ticker),
+      (token) => asset === token.id || asset === (token.symbol ?? token.ticker),
     );
 
   const selectTokenAtIndex = (index: number) => {
@@ -750,10 +794,13 @@ export default function AmountAndWallet({
           >
             <input
               type="text"
-              inputMode="decimal"
-              placeholder="0.0000"
+              inputMode={readOnlyAmount ? "text" : "decimal"}
+              placeholder={amountPlaceholder}
               value={amount || ""}
+              readOnly={readOnlyAmount}
+              disabled={disabled}
               onChange={(e) => {
+                if (disabled || readOnlyAmount) return;
                 const val = e.target.value;
 
                 // Allow empty string
@@ -794,12 +841,20 @@ export default function AmountAndWallet({
                 }
               }}
               className={`border px-3 rounded-xl w-full h-11
-                         text-md pr-12 md:pr-16 text-gray-900
-                         pl-3 outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")}`}
+                         text-md ${
+                           tokenSelectorAlign === "left"
+                             ? "pr-3 md:pr-3 pl-3"
+                             : "pr-12 md:pr-16 pl-3"
+                         } text-gray-900
+                         outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")} ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
             />
 
             {/* Right-side token selector */}
-            <div className="absolute right-3 md:right-4 top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none">
+            <div
+              className={`absolute top-1/2 -translate-y-1/2 flex items-center text-gray-500 text-md token-selector pointer-events-none ${
+                tokenSelectorAlign === "left" ? "left-3 md:left-4" : "right-3 md:right-4"
+              }`}
+            >
               {setAsset && assetOptions.length > 0 ? (
                 <div className="pointer-events-auto">
                   <button
@@ -811,7 +866,7 @@ export default function AmountAndWallet({
                     onKeyDown={handleTokenDropdownKeyDown}
                     className="flex items-center gap-1 hover:text-[var(--color-brand-blue)] cursor-pointer"
                   >
-                    <span>{asset}</span>
+                    <span>{assetDisplayLabel ?? asset}</span>
                     <span
                       className={`inline-block transition-transform ${
                         shouldReduceMotion
@@ -853,7 +908,8 @@ export default function AmountAndWallet({
                     {displayTokenOptions
                       .map((token, tokenIndex) => {
                         const isRowActive = highlightedTokenIndex === tokenIndex;
-                        const isSelectedToken = asset === (token.symbol ?? token.ticker);
+                        const isSelectedToken =
+                          asset === token.id || asset === (token.symbol ?? token.ticker);
                         return (
                         <motion.button
                           key={token.id}
@@ -1191,7 +1247,7 @@ export default function AmountAndWallet({
               onChange={(e) => setRefundAddress?.(e.target.value)}
               onFocus={() => setIsRefundFocused(true)}
               onBlur={() => setIsRefundFocused(false)}
-              placeholder={`${asset} address for refunds`}
+              placeholder={`${refundValidationLabel} address for refunds`}
               className={`w-full border px-3 py-2 rounded-xl text-md text-gray-900 outline-hidden ${withFieldBorderState("border-gray-800")}`}
             />
             <AnimatePresence initial={false}>

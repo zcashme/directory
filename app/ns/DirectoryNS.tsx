@@ -408,6 +408,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
               <div className="mt-4 directoryns-qr directoryns-fieldset">
                 <QrUriBlock
                   uri={uri}
+                  memoText={memo}
                   profileName={activeProfileName}
                   forceShowQR={forceShowQR}
                   defaultShowQR={false}

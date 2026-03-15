@@ -75,16 +75,32 @@ export function baseUnitsToDecimal(amountBase: string | number | bigint, decimal
 export function parseTokenSymbol(assetId?: string): string {
   if (!assetId) return "";
 
-  const parts = assetId.split(".");
-  if (parts.length === 0) return "";
-
-  // Handle chain prefix like "nep141:eth"
-  let symbol = parts[0];
+  // Handle chain prefixes like "nep141:eth.omft"
+  let symbol = assetId.trim();
   if (symbol.includes(":")) {
-    symbol = symbol.split(":")[1] || symbol;
+    const parts = symbol.split(":");
+    symbol = parts[parts.length - 1] || symbol;
   }
 
-  return symbol.toUpperCase();
+  // Trim common asset-id separators (chain, contract, network suffixes)
+  for (const sep of [".", "/", "-", "_"]) {
+    if (symbol.includes(sep)) {
+      symbol = symbol.split(sep)[0] || symbol;
+    }
+  }
+
+  symbol = symbol.replace(/[^a-zA-Z0-9]/g, "");
+  const upper = symbol.toUpperCase();
+
+  // Normalize known chain names to ticker symbols
+  if (upper === "ETHEREUM") return "ETH";
+  if (upper === "BITCOIN") return "BTC";
+  if (upper === "SOLANA") return "SOL";
+  if (upper === "ZCASH") return "ZEC";
+  if (upper === "RIPPLE") return "XRP";
+  if (upper === "STELLAR") return "XLM";
+
+  return upper;
 }
 
 /**
