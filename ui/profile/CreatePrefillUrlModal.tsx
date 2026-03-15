@@ -683,11 +683,14 @@ export default function CreatePrefillUrlModal({
   const showNoAmountSelectedWarning = useMemo(() => !hasEnteredAmount, [hasEnteredAmount]);
   const qrRequestLine = useMemo(() => {
     if (!hasEnteredAmount) return null;
-    if (requestDisplay) {
-      return requestDisplay.replace(/^Request\s+/i, `${cardDisplayName} requests `);
-    }
     if (lastModifiedField === "fiat" && fiatAmountValue) {
       return `${cardDisplayName} requests ${fiatAmountValue} ${fiatTicker}`;
+    }
+    if (lastModifiedField === "crypto" && cryptoAmountValue) {
+      return `${cardDisplayName} requests ${cryptoAmountValue} ${selectedTicker}`;
+    }
+    if (requestDisplay) {
+      return requestDisplay.replace(/^Request\s+/i, `${cardDisplayName} requests `);
     }
     if (cryptoAmountValue) {
       return `${cardDisplayName} requests ${cryptoAmountValue} ${selectedTicker}`;
