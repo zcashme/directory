@@ -1,9 +1,10 @@
 "use client";
 
+import type { ReactNode } from "react";
 import FormField from "@/ui/common/forms/FormField";
 
 interface SwapAddressInputProps {
-  label: string;
+  label: ReactNode;
   value: string;
   onChange: (value: string) => void;
   onBlur?: () => void;

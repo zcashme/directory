@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { validate as validateMultichainAddress } from "multichain-address-validator";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
@@ -460,6 +460,7 @@ export default function SwapAppClient({
 }) {
   const flipCardRootRef = useRef<HTMLDivElement | null>(null);
   const depositSectionRef = useRef<HTMLDivElement | null>(null);
+  const lastScrolledDepositAddressRef = useRef("");
   const [isStatus, setIsStatus] = useState(!!initialDepositAddress);
   const [trackingDepositAddress, setTrackingDepositAddress] = useState<string>(
     initialDepositAddress || "",
@@ -580,7 +581,14 @@ export default function SwapAppClient({
   }, []);
 
   useEffect(() => {
-    if (!statusKey?.depositAddress || isStatus) return;
+    const currentAddress = statusKey?.depositAddress ?? "";
+    if (!currentAddress) {
+      lastScrolledDepositAddressRef.current = "";
+      return;
+    }
+    if (isStatus) return;
+    if (lastScrolledDepositAddressRef.current === currentAddress) return;
+    lastScrolledDepositAddressRef.current = currentAddress;
 
     const run = () => {
       scrollToDepositSection();
@@ -878,10 +886,10 @@ export default function SwapAppClient({
     getBaseLayerLabel(fromToken?.blockchain) || fromToken?.blockchain || "";
   const toBaseLayerLabel =
     getBaseLayerLabel(toToken?.blockchain) || toToken?.blockchain || "";
-  const refundAddressLabel = fromBaseLayerLabel
+  const refundAddressLabel: ReactNode = fromBaseLayerLabel
     ? `${fromBaseLayerLabel} Refund Address`
     : "Refund Address";
-  const destinationAddressLabel = toBaseLayerLabel
+  const destinationAddressLabel: ReactNode = toBaseLayerLabel
     ? `${toBaseLayerLabel} Recipient Address`
     : "Recipient Address";
   const showFlowPanel =
@@ -892,6 +900,10 @@ export default function SwapAppClient({
       ? `${toToken.symbol} on ${toTokenBaseLabel}`
       : toToken.symbol
     : "";
+  const collapseFromFiatPillSignal =
+    confirmLoading || !!statusKey?.depositAddress
+      ? `${confirmLoading ? "confirming" : "deposit"}:${statusKey?.depositAddress ?? ""}`
+      : undefined;
   const fromTokenTickerLabel = fromToken?.symbol || "";
   const toTokenTickerLabel = toToken?.symbol || "";
 
@@ -982,12 +994,18 @@ export default function SwapAppClient({
                 <div className="flex-1">
                   <div className="space-y-2">
                     <label className="text-sm font-semibold text-gray-700">
-                      From
+                      From{" "}
+                      {fromTokenTickerLabel && fromBaseLayerLabel && (
+                        <span>
+                          {fromTokenTickerLabel} on {fromBaseLayerLabel}
+                        </span>
+                      )}
                     </label>
                     <AmountAndWallet
                       amount={fromAmount}
                       setAmount={handleFromAmountChange}
                       showUsdPill={true}
+                      collapseUsdPillSignal={collapseFromFiatPillSignal}
                       showOpenWallet={false}
                       asset={fromToken ? getTokenKey(fromToken) : ""}
                       assetDisplayLabel={fromTokenTickerLabel}
@@ -1066,7 +1084,7 @@ export default function SwapAppClient({
                     value={destAddress}
                     onChange={handleDestinationAddressChange}
                     onBlur={() => setDestTouched(true)}
-                    placeholder={getAddressPlaceholder(toToken, "Select to token first")}
+                    placeholder={getAddressPlaceholder(toToken, "Select to token first", true)}
                     disabled={!toToken}
                     validationMessage={destinationValidation.message}
                     validationState={destinationValidation.state}
@@ -1082,7 +1100,7 @@ export default function SwapAppClient({
                   value={destAddress}
                   onChange={handleDestinationAddressChange}
                   onBlur={() => setDestTouched(true)}
-                  placeholder={getAddressPlaceholder(toToken, "Select to token first")}
+                  placeholder={getAddressPlaceholder(toToken, "Select to token first", true)}
                   disabled={!toToken}
                   validationMessage={destinationValidation.message}
                   validationState={destinationValidation.state}

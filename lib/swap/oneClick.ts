@@ -69,6 +69,64 @@ function toToken(t: TokenResponse): Token {
   };
 }
 
+function getBaseLayerSortKey(blockchain: string): string {
+  const chain = blockchain.toLowerCase().trim();
+  if (chain.includes("zec") || chain.includes("zcash")) return "zcash";
+  if (chain.includes("btc") || chain.includes("bitcoin")) return "bitcoin";
+  if (chain.includes("eth") || chain.includes("ethereum")) return "ethereum";
+  if (chain.includes("sol") || chain.includes("solana")) return "solana";
+  if (chain.includes("avax") || chain.includes("avalanche")) return "avalanche";
+  if (chain.includes("bsc") || chain.includes("binance") || chain.includes("bnb")) return "bsc";
+  if (chain.includes("tron") || chain.includes("trx")) return "tron";
+  if (chain.includes("stellar") || chain.includes("xlm")) return "stellar";
+  if (chain.includes("ripple") || chain.includes("xrp")) return "ripple";
+  if (chain.includes("dash")) return "dash";
+  if (chain.includes("doge")) return "dogecoin";
+  if (chain.includes("stark") || chain === "strk") return "starknet";
+  if (chain.includes("ton")) return "ton";
+  if (chain.includes("optimism") || chain === "op") return "optimism";
+  if (chain.includes("arbitrum") || chain === "arb") return "arbitrum";
+  if (chain.includes("polygon") || chain === "pol") return "polygon";
+  if (chain === "near" || chain.startsWith("near.")) return "near";
+  return chain;
+}
+
+function isNativeTokenOnBaseLayer(symbol: string, baseLayer: string): boolean {
+  const s = symbol.toUpperCase();
+  switch (s) {
+    case "ZEC":
+      return baseLayer === "zcash";
+    case "BTC":
+      return baseLayer === "bitcoin";
+    case "ETH":
+      return baseLayer === "ethereum";
+    case "SOL":
+      return baseLayer === "solana";
+    case "AVAX":
+      return baseLayer === "avalanche";
+    case "BNB":
+      return baseLayer === "bsc";
+    case "DASH":
+      return baseLayer === "dash";
+    case "DOGE":
+      return baseLayer === "dogecoin" || baseLayer === "doge";
+    case "NEAR":
+      return baseLayer === "near";
+    case "TON":
+      return baseLayer === "ton";
+    case "TRX":
+      return baseLayer === "tron";
+    case "XLM":
+      return baseLayer === "stellar";
+    case "XRP":
+      return baseLayer === "ripple";
+    case "STRK":
+      return baseLayer === "starknet";
+    default:
+      return false;
+  }
+}
+
 /**
  * Helper: Generate ISO deadline timestamp
  */
@@ -185,35 +243,100 @@ export async function getSwapTokens(): Promise<Result<Token[]>> {
   try {
     const allTokens = await OneClickService.getTokens();
 
-    // Filter to allowed symbols
-    const allowedSymbols = new Set(["ZEC", "BTC", "ETH", "USDC", "USDT", "SOL"]);
-    const filtered = allTokens.filter((t) => allowedSymbols.has(t.symbol));
+    // Keep only configured symbols.
+    const allowedSymbols = new Set([
+      "ZEC",
+      "BTC",
+      "ETH",
+      "USDC",
+      "USDT",
+      "SOL",
+      "AVAX",
+      "BNB",
+      "DAI",
+      "DASH",
+      "DOGE",
+      "EURE",
+      "INX",
+      "KNC",
+      "LINK",
+      "NEAR",
+      "PENGU",
+      "PEPE",
+      "RHEA",
+      "SHIB",
+      "STRK",
+      "TON",
+      "TRUMP",
+      "MELANIA",
+      "TRX",
+      "UNI",
+      "XLM",
+      "XRP",
+    ]);
 
-    // Filter to mainnet only
-    const mainnetOnly = filtered.filter(
+    // Explicitly include these ZEC non-native routes.
+    const explicitIncludes = new Set(["zec|sol", "zec|near"]);
+
+    // Exclude near base-chain entries for these symbols.
+    const nearExclusionSymbols = new Set(["ETH", "BTC", "USDC", "USDT"]);
+
+    const filtered = allTokens.filter(
       (token) =>
-        token.blockchain &&
-        !token.blockchain.toLowerCase().includes("testnet") &&
-        !token.blockchain.toLowerCase().includes("test")
+        Boolean(token.symbol && token.blockchain && token.assetId) &&
+        allowedSymbols.has(token.symbol.toUpperCase())
     );
 
-    // Filter out NEAR and restrict ZEC to native chain
+    const mainnetOnly = filtered.filter((token) => {
+      const chain = token.blockchain.toLowerCase();
+      return !chain.includes("testnet") && !chain.includes("test");
+    });
+
     const finalFiltered = mainnetOnly.filter((token) => {
-      const blockchain = token.blockchain.toLowerCase();
-      const symbol = token.symbol;
+      const symbol = token.symbol.toUpperCase();
+      const chain = token.blockchain.toLowerCase();
+      const key = `${symbol.toLowerCase()}|${chain}`;
 
-      if (blockchain === "near" || blockchain.startsWith("near.")) {
-        return false;
-      }
+      if (explicitIncludes.has(key)) return true;
 
-      if (symbol === "ZEC" && !blockchain.includes("zec")) {
+      const isNearBaseChain = chain === "near" || chain.startsWith("near.");
+      if (isNearBaseChain && nearExclusionSymbols.has(symbol)) {
         return false;
       }
 
       return true;
     });
 
-    return { ok: true, data: finalFiltered.map(toToken) };
+    const validTokens = finalFiltered.filter(
+      (token) => Boolean(token.symbol && token.blockchain && token.assetId)
+    );
+    const sortedTokens = [...validTokens].sort((a, b) => {
+      const symbolA = a.symbol.toUpperCase();
+      const symbolB = b.symbol.toUpperCase();
+      const baseA = getBaseLayerSortKey(a.blockchain);
+      const baseB = getBaseLayerSortKey(b.blockchain);
+      const nativeA = isNativeTokenOnBaseLayer(symbolA, baseA);
+      const nativeB = isNativeTokenOnBaseLayer(symbolB, baseB);
+
+      // First: native pairs, with ZEC native pinned to the very top.
+      if (nativeA !== nativeB) {
+        return nativeA ? -1 : 1;
+      }
+      if (nativeA && nativeB) {
+        if (symbolA === "ZEC") return -1;
+        if (symbolB === "ZEC") return 1;
+      }
+
+      // Then: token symbol, then base layer.
+      if (symbolA !== symbolB) return symbolA.localeCompare(symbolB);
+
+      const baseSort = baseA.localeCompare(baseB);
+      if (baseSort !== 0) return baseSort;
+
+      return (a.assetId || "").localeCompare(b.assetId || "");
+    });
+
+    return { ok: true, data: sortedTokens.map(toToken) };
   } catch (err) {
     return { ok: false, error: extractErrorMessage(err) || "Failed to load tokens" };
   }

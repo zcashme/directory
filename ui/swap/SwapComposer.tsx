@@ -232,6 +232,10 @@ export default function SwapComposer({
   const isQuoteVisible = !!quotePreview && !isConfirming && !statusKey?.depositAddress;
   const isConfirmingVisible = !!quotePreview && isConfirming && !statusKey?.depositAddress;
   const isDepositVisible = !!statusKey?.depositAddress && !!quotePreview;
+  const collapseFromFiatPillSignal =
+    isConfirming || !!statusKey?.depositAddress
+      ? `${isConfirming ? "confirming" : "deposit"}:${statusKey?.depositAddress ?? ""}`
+      : undefined;
   const currentFlowStep = !isRefundAddressValid
     ? "none"
     : isDepositVisible
@@ -364,6 +368,7 @@ export default function SwapComposer({
         openWallet={undefined}
         showOpenWallet={false}
         showUsdPill={true}
+        collapseUsdPillSignal={collapseFromFiatPillSignal}
         asset={originSymbol}
         assetOptions={formattedTokenOptions}
         setAsset={handleTokenChange}

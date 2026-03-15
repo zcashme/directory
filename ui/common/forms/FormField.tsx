@@ -55,8 +55,8 @@ import HelpIcon from "@/ui/common/HelpIcon";
  * ```
  */
 interface FormFieldProps {
-  /** Field label text */
-  label: string;
+  /** Field label content */
+  label: ReactNode;
   /** HTML for attribute to associate label with input */
   htmlFor?: string;
   /** Help text explaining the field (shown with help icon) */

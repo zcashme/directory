@@ -141,6 +141,7 @@ interface AmountAndWalletProps {
   initialAutoOpenFiatFromAmount?: boolean;
   initialFiatTicker?: string;
   initialFiatAmount?: string;
+  collapseUsdPillSignal?: string | number;
 
   // Token selector props (optional)
   asset?: string;
@@ -207,6 +208,7 @@ export default function AmountAndWallet({
   initialAutoOpenFiatFromAmount = false,
   initialFiatTicker = "",
   initialFiatAmount = "",
+  collapseUsdPillSignal,
   // Token selector props (optional)
   asset = "ZEC",
   assetDisplayLabel,
@@ -254,6 +256,9 @@ export default function AmountAndWallet({
   const hasAppliedInitialFiatPrefill = useRef(false);
   const hasRequestedInitialAutoFiat = useRef(false);
   const hasAppliedInitialAutoFiat = useRef(false);
+  const lastCollapseUsdPillSignal = useRef<string | number | undefined>(undefined);
+  const shouldFocusUsdOnOpenRef = useRef(false);
+  const usdInputRef = useRef<HTMLInputElement>(null);
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -268,10 +273,23 @@ export default function AmountAndWallet({
   const overlayWidth = "2.25rem";
   const overlayHalf = "1.125rem";
   const overlayRightOffset = `calc(${overlayRight} - ${overlayHalf})`;
+  const resolveRateAssetSymbol = (assetValue: string) => {
+    const normalized = (assetValue || "").trim();
+    if (!normalized) return "ZEC";
+
+    const matched = assetOptions.find(
+      (token) =>
+        normalized === token.id ||
+        normalized === (token.symbol ?? token.ticker)
+    );
+
+    return (matched?.symbol || normalized).toUpperCase();
+  };
 
   const fetchRate = async (nextFiat: string, nextAsset: string) => {
     try {
-      const result = await getRateAction(nextFiat || "USD", nextAsset || "ZEC");
+      const rateAsset = resolveRateAssetSymbol(nextAsset);
+      const result = await getRateAction(nextFiat || "USD", rateAsset);
       if (
         result.ok &&
         result.rate &&
@@ -289,20 +307,37 @@ export default function AmountAndWallet({
   };
 
   useEffect(() => {
-    if (!rateRequested) return;
+    if (!showUsdPill || !rateRequested) return;
     const id = setInterval(() => {
       if (document.visibilityState !== "visible") return;
       void fetchRate(fiat, asset);
     }, 60000);
     return () => clearInterval(id);
-  }, [rateRequested, fiat, asset]);
+  }, [showUsdPill, rateRequested, fiat, asset]);
 
   useEffect(() => {
-    if (!rateFetched || !isUsdOpen || isTypingFiat || preferFiatValue) return;
+    if (!showUsdPill || !rateFetched || !isUsdOpen || isTypingFiat || preferFiatValue) return;
     const num = parseFloat(amount || "0");
     if (Number.isNaN(num)) return;
     setUsdInput(formatDecimal(num * rate));
-  }, [amount, rate, rateFetched, isUsdOpen, isTypingFiat, preferFiatValue]);
+  }, [showUsdPill, amount, rate, rateFetched, isUsdOpen, isTypingFiat, preferFiatValue]);
+
+  useEffect(() => {
+    if (!isUsdOpen || !rateFetched || !shouldFocusUsdOnOpenRef.current) return;
+    shouldFocusUsdOnOpenRef.current = false;
+    const el = usdInputRef.current;
+    if (!el) return;
+    el.focus();
+    el.select();
+  }, [isUsdOpen, rateFetched]);
+
+  useEffect(() => {
+    if (showUsdPill) return;
+    setIsUsdOpen(false);
+    setIsCurrencyOpen(false);
+    setRateRequested(false);
+    setIsTypingFiat(false);
+  }, [showUsdPill]);
 
   useEffect(() => {
     if (!isUsdOpen) {
@@ -359,6 +394,15 @@ export default function AmountAndWallet({
     initialFiatAmount,
     asset,
   ]);
+
+  useEffect(() => {
+    if (collapseUsdPillSignal === undefined || collapseUsdPillSignal === null) return;
+    if (lastCollapseUsdPillSignal.current === collapseUsdPillSignal) return;
+    lastCollapseUsdPillSignal.current = collapseUsdPillSignal;
+    setIsUsdOpen(false);
+    setIsCurrencyOpen(false);
+    setIsTypingFiat(false);
+  }, [collapseUsdPillSignal]);
 
   useEffect(() => {
     if (!showUsdPill || !fiatStateHydrated) return;
@@ -448,13 +492,13 @@ export default function AmountAndWallet({
   }, [isCurrencyOpen]);
 
   useEffect(() => {
-    if (!rateRequested) return;
+    if (!showUsdPill || !rateRequested) return;
     setRateFetched(false);
     void fetchRate(fiat, asset);
-  }, [fiat, asset, rateRequested]);
+  }, [showUsdPill, fiat, asset, rateRequested]);
 
   useEffect(() => {
-    if (!rateFetched || !isUsdOpen || !preferFiatValue) return;
+    if (!showUsdPill || !rateFetched || !isUsdOpen || !preferFiatValue) return;
     if (!usdInput || usdInput.endsWith(".")) return;
     const num = parseFloat(usdInput);
     if (!Number.isFinite(num)) return;
@@ -463,14 +507,25 @@ export default function AmountAndWallet({
     const formatted = cryptoAmount.toFixed(8).replace(/\.?0+$/, "");
     if (formatted === (amount || "")) return;
     setAmount(formatted);
-  }, [rateFetched, isUsdOpen, preferFiatValue, usdInput, rate, amount, setAmount]);
+  }, [showUsdPill, rateFetched, isUsdOpen, preferFiatValue, usdInput, rate, amount, setAmount]);
 
   const handleToggleUsd = () => {
-    if (!rateRequested) {
-      setRateRequested(true);
-      void fetchRate(fiat, asset);
+    const nextOpen = !isUsdOpen;
+
+    if (nextOpen) {
+      shouldFocusUsdOnOpenRef.current = true;
+      // Reopening fiat should not retrigger flows until the user actually edits the value.
+      setPreferFiatValue(false);
+
+      if (!rateRequested) {
+        setRateRequested(true);
+        void fetchRate(fiat, asset);
+      }
+    } else {
+      shouldFocusUsdOnOpenRef.current = false;
     }
-    setIsUsdOpen((prev) => !prev);
+
+    setIsUsdOpen(nextOpen);
   };
 
   const handleToggleCurrency = () => {
@@ -1022,6 +1077,7 @@ export default function AmountAndWallet({
                 {isUsdOpen && (
                   <>
                     <input
+                      ref={usdInputRef}
                       type="text"
                       inputMode="decimal"
                       value={usdInput}

@@ -48,7 +48,26 @@ export default function SwapDepositDisplay({
   return (
     <div className="p-4 animate-fadeIn" style={{ backgroundColor: "var(--color-background)" }}>
       <div className="mb-3 space-y-2 text-center">
-        <p className="text-lg font-bold text-gray-900">Send</p>
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <p className="text-lg font-bold text-gray-900">Send</p>
+          <div
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-800 px-3 py-2.5"
+            style={{ backgroundColor: "var(--color-background)" }}
+          >
+            <span className="text-md font-semibold text-gray-900 whitespace-nowrap">
+              {amountDecimal ?? "-"} {originSymbol}
+            </span>
+            <div className="h-5 w-px bg-gray-800/40" aria-hidden="true" />
+            <CopyButton
+              text={amountDecimal ?? ""}
+              label="Copy"
+              copiedLabel="Copied"
+              expanded={false}
+              defaultColorClass="text-gray-900"
+            />
+          </div>
+          <p className="text-lg font-bold text-gray-900">to</p>
+        </div>
         <div>
           <div
             className="p-3 rounded-lg border border-gray-800 flex items-center gap-2"
@@ -62,26 +81,7 @@ export default function SwapDepositDisplay({
               text={depositAddress}
               label="Copy"
               copiedLabel="Copied"
-              expanded
-              defaultColorClass="text-gray-900"
-            />
-          </div>
-        </div>
-        <div className="flex flex-wrap items-center justify-center gap-2">
-          <span className="text-lg font-bold text-gray-900">exactly</span>
-          <div
-            className="inline-flex items-center gap-2 rounded-lg border border-gray-800 px-3 py-2.5"
-            style={{ backgroundColor: "var(--color-background)" }}
-          >
-            <span className="text-md font-semibold text-gray-900 whitespace-nowrap">
-              {amountDecimal ?? "-"} {originSymbol}
-            </span>
-            <div className="h-5 w-px bg-gray-800/40" aria-hidden="true" />
-            <CopyButton
-              text={amountDecimal ?? ""}
-              label="Copy"
-              copiedLabel="Copied"
-              expanded
+              expanded={false}
               defaultColorClass="text-gray-900"
             />
           </div>
