@@ -1129,7 +1129,7 @@ export default function CreatePrefillUrlModal({
               {qrRequestInlineText && (
                 <p
                   className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
-                  title={qrRequestLine}
+                  title={qrRequestLine ?? undefined}
                 >
                   {qrRequestInlineText}
                 </p>
@@ -1161,7 +1161,7 @@ export default function CreatePrefillUrlModal({
               {qrMemoInlineText && (
                 <p
                   className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
-                  title={qrMemoLabel}
+                  title={qrMemoLabel ?? undefined}
                 >
                   {qrMemoInlineText}
                 </p>
