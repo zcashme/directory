@@ -798,7 +798,7 @@ export default function CreatePrefillUrlModal({
       const qrSize = qrPanelSize - qrTextBandHeight * 2;
       const qrX = (exportWidth - qrSize) / 2;
       const qrY = qrPanelY + qrTextBandHeight;
-      const qrTextInset = Math.max(16, Math.round(qrTextBandHeight * 0.22));
+      const qrTextBandMidpoint = qrTextBandHeight / 2;
       const detailsLineHeight = 68;
       const detailsStartY = qrPanelY + qrPanelSize + 92;
       const detailsBottomY =
@@ -921,7 +921,7 @@ export default function CreatePrefillUrlModal({
         while (qrMemoExportText.length > 0 && context.measureText(qrMemoExportText).width > maxInlineMemoWidth) {
           qrMemoExportText = `${qrMemoExportText.slice(0, -2).trimEnd()}...`;
         }
-        context.fillText(qrMemoExportText ?? qrMemoLabel, exportWidth / 2, qrY - qrTextInset);
+        context.fillText(qrMemoExportText ?? qrMemoLabel, exportWidth / 2, qrPanelY + qrTextBandMidpoint);
         context.restore();
       }
 
@@ -976,7 +976,11 @@ export default function CreatePrefillUrlModal({
         while (requestLineText.length > 0 && context.measureText(requestLineText).width > maxRequestWidth) {
           requestLineText = `${requestLineText.slice(0, -2).trimEnd()}...`;
         }
-        context.fillText(requestLineText ?? qrRequestLine, exportWidth / 2, qrY + qrSize + qrTextInset);
+        context.fillText(
+          requestLineText ?? qrRequestLine,
+          exportWidth / 2,
+          qrPanelY + qrPanelSize - qrTextBandMidpoint
+        );
         context.restore();
       }
 
