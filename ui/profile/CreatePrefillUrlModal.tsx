@@ -798,6 +798,7 @@ export default function CreatePrefillUrlModal({
       const qrSize = qrPanelSize - qrTextBandHeight * 2;
       const qrX = (exportWidth - qrSize) / 2;
       const qrY = qrPanelY + qrTextBandHeight;
+      const qrTextInset = Math.max(16, Math.round(qrTextBandHeight * 0.22));
       const detailsLineHeight = 68;
       const detailsStartY = qrPanelY + qrPanelSize + 92;
       const detailsBottomY =
@@ -909,18 +910,18 @@ export default function CreatePrefillUrlModal({
       context.lineWidth = 4;
       context.stroke();
 
-      if (qrRequestLine) {
+      if (qrMemoLabel) {
         context.save();
         context.fillStyle = "#374151";
-        context.font = "500 40px Arial";
+        context.font = "500 44px Arial";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        const maxRequestWidth = qrPanelSize - 120;
-        let requestLineText = qrRequestLine;
-        while (requestLineText.length > 0 && context.measureText(requestLineText).width > maxRequestWidth) {
-          requestLineText = `${requestLineText.slice(0, -2).trimEnd()}...`;
+        const maxInlineMemoWidth = qrPanelSize - 120;
+        let qrMemoExportText = qrMemoLabel;
+        while (qrMemoExportText.length > 0 && context.measureText(qrMemoExportText).width > maxInlineMemoWidth) {
+          qrMemoExportText = `${qrMemoExportText.slice(0, -2).trimEnd()}...`;
         }
-        context.fillText(requestLineText ?? qrRequestLine, exportWidth / 2, qrPanelY + qrTextBandHeight / 2);
+        context.fillText(qrMemoExportText ?? qrMemoLabel, exportWidth / 2, qrY - qrTextInset);
         context.restore();
       }
 
@@ -964,18 +965,18 @@ export default function CreatePrefillUrlModal({
       context.imageSmoothingEnabled = false;
       context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, qrX, qrY, qrSize, qrSize);
 
-      if (qrMemoLabel) {
+      if (qrRequestLine) {
         context.save();
         context.fillStyle = "#374151";
-        context.font = "500 44px Arial";
+        context.font = "500 40px Arial";
         context.textAlign = "center";
         context.textBaseline = "middle";
-        const maxInlineMemoWidth = qrPanelSize - 120;
-        let qrMemoExportText = qrMemoLabel;
-        while (qrMemoExportText.length > 0 && context.measureText(qrMemoExportText).width > maxInlineMemoWidth) {
-          qrMemoExportText = `${qrMemoExportText.slice(0, -2).trimEnd()}...`;
+        const maxRequestWidth = qrPanelSize - 120;
+        let requestLineText = qrRequestLine;
+        while (requestLineText.length > 0 && context.measureText(requestLineText).width > maxRequestWidth) {
+          requestLineText = `${requestLineText.slice(0, -2).trimEnd()}...`;
         }
-        context.fillText(qrMemoExportText ?? qrMemoLabel, exportWidth / 2, qrY + qrSize + qrTextBandHeight / 2);
+        context.fillText(requestLineText ?? qrRequestLine, exportWidth / 2, qrY + qrSize + qrTextInset);
         context.restore();
       }
 
@@ -1073,6 +1074,7 @@ export default function CreatePrefillUrlModal({
   const qrMatrixSizePx = isWideLayout ? 200 : 228;
   const qrInlineFrameHeightPx = qrTextBandTopHeightPx + qrMatrixSizePx + qrTextBandBottomHeightPx;
   const qrTextBandTextClass = isWideLayout ? "text-[10px]" : "text-[11px]";
+  const qrTextInsetPx = isWideLayout ? 3 : 4;
   const qrRequestInlineText = useMemo(
     () => (qrRequestLine ? formatQrInlineText(qrRequestLine, isWideLayout ? 38 : 52) : null),
     [qrRequestLine, isWideLayout]
@@ -1126,15 +1128,15 @@ export default function CreatePrefillUrlModal({
         }`}>
           <div className="relative w-full overflow-hidden" style={{ height: `${qrInlineFrameHeightPx}px` }}>
             <div
-              className={`absolute inset-x-0 top-0 flex items-center justify-center overflow-hidden px-1 leading-none ${qrTextBandTextClass}`}
-              style={{ height: `${qrTextBandTopHeightPx}px` }}
+              className={`absolute inset-x-0 top-0 flex items-end justify-center overflow-hidden px-1 ${qrTextBandTextClass}`}
+              style={{ height: `${qrTextBandTopHeightPx}px`, paddingBottom: `${qrTextInsetPx}px` }}
             >
-              {qrRequestInlineText && (
+              {qrMemoInlineText && (
                 <p
-                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
-                  title={qrRequestLine ?? undefined}
+                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-tight"
+                  title={qrMemoLabel ?? undefined}
                 >
-                  {qrRequestInlineText}
+                  {qrMemoInlineText}
                 </p>
               )}
             </div>
@@ -1158,15 +1160,15 @@ export default function CreatePrefillUrlModal({
               />
             </div>
             <div
-              className={`absolute inset-x-0 bottom-0 flex items-center justify-center overflow-hidden px-1 leading-none ${qrTextBandTextClass}`}
-              style={{ height: `${qrTextBandBottomHeightPx}px` }}
+              className={`absolute inset-x-0 bottom-0 flex items-start justify-center overflow-hidden px-1 ${qrTextBandTextClass}`}
+              style={{ height: `${qrTextBandBottomHeightPx}px`, paddingTop: `${qrTextInsetPx}px` }}
             >
-              {qrMemoInlineText && (
+              {qrRequestInlineText && (
                 <p
-                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
-                  title={qrMemoLabel ?? undefined}
+                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-tight"
+                  title={qrRequestLine ?? undefined}
                 >
-                  {qrMemoInlineText}
+                  {qrRequestInlineText}
                 </p>
               )}
             </div>
