@@ -1,15 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import ReactDOM from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { QRCodeSVG } from "qrcode.react";
 import { buildShareUrl } from "@/lib/profile/profileUtils";
+import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import { CURRENCIES, FIAT_TICKERS } from "@/ui/verification/AmountAndWallet";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
+import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
 interface CreatePrefillUrlModalProps {
   isOpen: boolean;
@@ -109,6 +113,21 @@ function formatFiatAmount(value: number): string {
 
 function formatCryptoAmount(value: number): string {
   return value.toFixed(8).replace(/\.?0+$/, "");
+}
+
+function formatQrInlineText(text: string, maxChars: number): string {
+  const normalized = text.replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxChars) return normalized;
+  return `${normalized.slice(0, Math.max(1, maxChars - 3)).trimEnd()}...`;
+}
+
+function isTruthyLike(value: unknown): boolean {
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
 }
 
 function MemoLeftIcon({ text }: MemoLeftIconProps) {
@@ -236,6 +255,11 @@ export default function CreatePrefillUrlModal({
   const [rate, setRate] = useState<number>(0);
   const [copied, setCopied] = useState(false);
   const [shared, setShared] = useState(false);
+  const [showQr, setShowQr] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [sharedQr, setSharedQr] = useState(false);
+  const [isWideLayout, setIsWideLayout] = useState(false);
+  const qrRef = useRef<SVGSVGElement | null>(null);
   const tokenSelectorRef = useRef<HTMLDivElement | null>(null);
   const fiatSelectorRef = useRef<HTMLDivElement | null>(null);
   const memoTextareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -323,14 +347,31 @@ export default function CreatePrefillUrlModal({
   }, [selectedTicker, selectedBaseLayer, selectedCryptoOption]);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mediaQuery = window.matchMedia("(min-width: 480px)");
+    const syncLayout = () => setIsWideLayout(mediaQuery.matches);
+    syncLayout();
+    mediaQuery.addEventListener("change", syncLayout);
+    return () => mediaQuery.removeEventListener("change", syncLayout);
+  }, []);
+
+  useEffect(() => {
     if (!isOpen) return;
     setCopied(false);
     setShared(false);
+    setShowQr(isWideLayout);
+    setSaved(false);
+    setSharedQr(false);
     setIsTokenOpen(false);
     setTokenSearch("");
     setIsCurrencyOpen(false);
     setFiatSearch("");
-  }, [isOpen]);
+  }, [isOpen, isWideLayout]);
+
+  useEffect(() => {
+    if (!isOpen || !isWideLayout) return;
+    setShowQr(true);
+  }, [isOpen, isWideLayout]);
 
   useEffect(() => {
     if (!isTokenOpen && !isCurrencyOpen) return;
@@ -564,9 +605,6 @@ export default function CreatePrefillUrlModal({
     if (fiatAmount && !fiatAmountValue) {
       next.push("Fiat amount must be a positive decimal with up to 2 decimal places.");
     }
-    if (!rate || rate <= 0) {
-      next.push(`Rate unavailable right now. Fiat/${selectedTicker} sync may not auto-convert.`);
-    }
 
     return next;
   }, [
@@ -578,8 +616,118 @@ export default function CreatePrefillUrlModal({
     cryptoAmountValue,
     fiatAmount,
     fiatAmountValue,
-    rate,
   ]);
+
+  const isMaxi = useMemo(() => isTruthyLike(profile.is_maxi), [profile.is_maxi]);
+  const qrCardTheme = useMemo(() => resolveProfileVisualTheme({
+    isMaxi,
+    profileThemePackage: profile.profile_theme_package,
+    profileCardTheme: profile.profile_card_theme,
+    profilePageBackground: profile.profile_page_bkgd,
+    profileCardBorder: profile.profile_card_border,
+  }), [
+    isMaxi,
+    profile.profile_theme_package,
+    profile.profile_card_theme,
+    profile.profile_page_bkgd,
+    profile.profile_card_border,
+  ]);
+  const cardUsername = useMemo(() => {
+    const value = (profile.name ?? "").trim();
+    return value.length > 0 ? value : "recipient";
+  }, [profile.name]);
+  const cardDisplayName = useMemo(() => {
+    const value = (profile.display_name ?? profile.name ?? "").trim();
+    return value.length > 0 ? value : "Recipient";
+  }, [profile.display_name, profile.name]);
+  const qrMemoLabel = useMemo(() => {
+    if (!canUseMemo || !memoValue) return null;
+    return `"${memoValue}"`;
+  }, [canUseMemo, memoValue]);
+  const qrAmountForFilename = useMemo(() => {
+    if (lastModifiedField === "fiat" && fiatAmountValue) {
+      return `${fiatAmountValue}-${fiatTicker}`;
+    }
+    if (cryptoAmountValue) {
+      return `${cryptoAmountValue}-${selectedTicker}`;
+    }
+    if (fiatAmountValue) {
+      return `${fiatAmountValue}-${fiatTicker}`;
+    }
+    return "amount";
+  }, [
+    lastModifiedField,
+    fiatAmountValue,
+    fiatTicker,
+    cryptoAmountValue,
+    selectedTicker,
+  ]);
+  const memoFilenameSnippet = useMemo(() => {
+    if (!canUseMemo || !memoValue) return "memo";
+    const words = memoValue
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .slice(0, 4)
+      .join("-");
+    return words || "memo";
+  }, [canUseMemo, memoValue]);
+  const hasEnteredAmount = useMemo(
+    () => Boolean(cryptoAmountValue || fiatAmountValue),
+    [cryptoAmountValue, fiatAmountValue]
+  );
+  const rateUnavailable = useMemo(
+    () => !rate || rate <= 0,
+    [rate]
+  );
+  const showNoAmountSelectedWarning = useMemo(() => !hasEnteredAmount, [hasEnteredAmount]);
+  const qrRequestLine = useMemo(() => {
+    if (!hasEnteredAmount) return null;
+    if (requestDisplay) {
+      return requestDisplay.replace(/^Request\s+/i, `${cardDisplayName} requests `);
+    }
+    if (lastModifiedField === "fiat" && fiatAmountValue) {
+      return `${cardDisplayName} requests ${fiatAmountValue} ${fiatTicker}`;
+    }
+    if (cryptoAmountValue) {
+      return `${cardDisplayName} requests ${cryptoAmountValue} ${selectedTicker}`;
+    }
+    if (fiatAmountValue) {
+      return `${cardDisplayName} requests ${fiatAmountValue} ${fiatTicker}`;
+    }
+    return null;
+  }, [
+    hasEnteredAmount,
+    requestDisplay,
+    cardDisplayName,
+    lastModifiedField,
+    fiatAmountValue,
+    fiatTicker,
+    cryptoAmountValue,
+    selectedTicker,
+  ]);
+  const qrUriLabel = useMemo(() => `Zcash.me/${cardUsername}`, [cardUsername]);
+  const qrDetails = useMemo(() => {
+    const details: string[] = [];
+    details.push(qrUriLabel);
+    return details;
+  }, [qrUriLabel]);
+  const preMemoWarnings = useMemo(() => {
+    const warnings: Array<{ key: string; text: string; tone: "info" | "warning" }> = [];
+    if (requestDisplay) {
+      warnings.push({ key: "request", text: requestDisplay, tone: "info" });
+    } else if (showNoAmountSelectedWarning) {
+      warnings.push({ key: "no-amount", text: "No amount selected", tone: "warning" });
+    }
+    if (rateUnavailable) {
+      warnings.push({
+        key: "rate-unavailable",
+        text: `Rate unavailable right now. Fiat/${selectedTicker} sync may not auto-convert.`,
+        tone: "warning",
+      });
+    }
+    return warnings;
+  }, [requestDisplay, showNoAmountSelectedWarning, rateUnavailable, selectedTicker]);
 
   const handleCopy = useCallback(async () => {
     try {
@@ -613,17 +761,454 @@ export default function CreatePrefillUrlModal({
     }
   }, [previewUrl]);
 
+  const buildQrExport = useCallback(async (): Promise<{ blob: Blob; filename: string } | null> => {
+    const svg = qrRef.current;
+    if (!svg) return null;
+
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    const svgData = new XMLSerializer().serializeToString(clone);
+    const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+    const svgUrl = URL.createObjectURL(svgBlob);
+
+    const safeName = (profile.display_name ?? profile.name ?? "recipient")
+      .trim()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/\s+/g, "-");
+
+    try {
+      const image = new Image();
+      await new Promise<void>((resolve, reject) => {
+        image.onload = () => resolve();
+        image.onerror = () => reject(new Error("Failed to load QR image"));
+        image.src = svgUrl;
+      });
+
+      const exportWidth = 1600;
+      const cardHorizontalInset = 120;
+      const cardX = cardHorizontalInset;
+      const cardY = 140;
+      const cardWidth = exportWidth - cardHorizontalInset * 2;
+      const qrPanelSize = Math.round(cardWidth * 0.83);
+      const qrPanelX = (exportWidth - qrPanelSize) / 2;
+      const qrPanelY = cardY + 260;
+      const qrTextBandHeight = Math.round(qrPanelSize * 0.11);
+      const qrSize = qrPanelSize - qrTextBandHeight * 2;
+      const qrX = (exportWidth - qrSize) / 2;
+      const qrY = qrPanelY + qrTextBandHeight;
+      const detailsLineHeight = 68;
+      const detailsStartY = qrPanelY + qrPanelSize + 92;
+      const detailsBottomY =
+        qrDetails.length > 0
+          ? detailsStartY + (qrDetails.length - 1) * detailsLineHeight
+          : qrPanelY + qrPanelSize;
+      const cardBottomPadding = 88;
+      const cardBottomY = detailsBottomY + cardBottomPadding;
+      const cardHeight = cardBottomY - cardY;
+      const exportBottomPadding = 72;
+      const exportHeight = cardBottomY + exportBottomPadding;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = exportWidth;
+      canvas.height = exportHeight;
+
+      const context = canvas.getContext("2d");
+      if (!context) return null;
+
+      const drawRoundedRect = (
+        ctx: CanvasRenderingContext2D,
+        x: number,
+        y: number,
+        width: number,
+        height: number,
+        radius: number
+      ) => {
+        const r = Math.min(radius, width / 2, height / 2);
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.lineTo(x + width - r, y);
+        ctx.arcTo(x + width, y, x + width, y + r, r);
+        ctx.lineTo(x + width, y + height - r);
+        ctx.arcTo(x + width, y + height, x + width - r, y + height, r);
+        ctx.lineTo(x + r, y + height);
+        ctx.arcTo(x, y + height, x, y + height - r, r);
+        ctx.lineTo(x, y + r);
+        ctx.arcTo(x, y, x + r, y, r);
+        ctx.closePath();
+      };
+
+      context.fillStyle = "#ffffff";
+      context.fillRect(0, 0, exportWidth, exportHeight);
+
+      drawRoundedRect(context, cardX, cardY, cardWidth, cardHeight, 96);
+      context.fillStyle = qrCardTheme.cardSurfaceSolid;
+      context.fill();
+      context.strokeStyle = qrCardTheme.borderColor ?? "#111827";
+      context.lineWidth = 6;
+      context.stroke();
+
+      const avatarRadius = 100;
+      const avatarCenterX = exportWidth / 2;
+      const avatarCenterY = cardY;
+      const avatarUrl = profile.profile_image_url?.trim();
+      context.save();
+      context.beginPath();
+      context.arc(avatarCenterX, avatarCenterY, avatarRadius, 0, Math.PI * 2);
+      context.closePath();
+      context.fillStyle = "#f3f4f6";
+      context.fill();
+      if (avatarUrl) {
+        try {
+          const avatarImage = new Image();
+          avatarImage.crossOrigin = "anonymous";
+          await new Promise<void>((resolve, reject) => {
+            avatarImage.onload = () => resolve();
+            avatarImage.onerror = () => reject(new Error("Failed to load avatar image"));
+            avatarImage.src = avatarUrl;
+          });
+          context.save();
+          context.beginPath();
+          context.arc(avatarCenterX, avatarCenterY, avatarRadius - 6, 0, Math.PI * 2);
+          context.closePath();
+          context.clip();
+          context.drawImage(
+            avatarImage,
+            avatarCenterX - avatarRadius + 6,
+            avatarCenterY - avatarRadius + 6,
+            (avatarRadius - 6) * 2,
+            (avatarRadius - 6) * 2
+          );
+          context.restore();
+        } catch {
+          // Keep neutral avatar background fallback.
+        }
+      }
+      context.strokeStyle = qrCardTheme.borderColor ?? "#111827";
+      context.lineWidth = 6;
+      context.beginPath();
+      context.arc(avatarCenterX, avatarCenterY, avatarRadius, 0, Math.PI * 2);
+      context.stroke();
+      context.restore();
+
+      context.fillStyle = qrCardTheme.cardText;
+      context.textAlign = "center";
+      context.font = "600 52px Arial";
+      const maxHeaderWidth = cardWidth - 180;
+      let headerText = cardDisplayName;
+      while (headerText.length > 0 && context.measureText(headerText).width > maxHeaderWidth) {
+        headerText = `${headerText.slice(0, -2).trimEnd()}...`;
+      }
+      context.fillText(headerText || cardDisplayName, exportWidth / 2, cardY + 195);
+
+      drawRoundedRect(context, qrPanelX, qrPanelY, qrPanelSize, qrPanelSize, 62);
+      context.fillStyle = "rgba(255,255,255,0.92)";
+      context.fill();
+      context.strokeStyle = "#d1d5db";
+      context.lineWidth = 4;
+      context.stroke();
+
+      if (qrRequestLine) {
+        context.save();
+        context.fillStyle = "#374151";
+        context.font = "500 40px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        const maxRequestWidth = qrPanelSize - 120;
+        let requestLineText = qrRequestLine;
+        while (requestLineText.length > 0 && context.measureText(requestLineText).width > maxRequestWidth) {
+          requestLineText = `${requestLineText.slice(0, -2).trimEnd()}...`;
+        }
+        context.fillText(requestLineText ?? qrRequestLine, exportWidth / 2, qrPanelY + qrTextBandHeight / 2);
+        context.restore();
+      }
+
+      let sourceX = 0;
+      let sourceY = 0;
+      let sourceWidth = image.width;
+      let sourceHeight = image.height;
+      const sourceCanvas = document.createElement("canvas");
+      sourceCanvas.width = image.width;
+      sourceCanvas.height = image.height;
+      const sourceContext = sourceCanvas.getContext("2d");
+      if (sourceContext) {
+        sourceContext.drawImage(image, 0, 0);
+        const pixels = sourceContext.getImageData(0, 0, image.width, image.height).data;
+        let minX = image.width;
+        let minY = image.height;
+        let maxX = -1;
+        let maxY = -1;
+        for (let y = 0; y < image.height; y += 1) {
+          for (let x = 0; x < image.width; x += 1) {
+            const idx = (y * image.width + x) * 4;
+            const alpha = pixels[idx + 3];
+            if (alpha === 0) continue;
+            const red = pixels[idx];
+            const green = pixels[idx + 1];
+            const blue = pixels[idx + 2];
+            if (red > 245 && green > 245 && blue > 245) continue;
+            if (x < minX) minX = x;
+            if (y < minY) minY = y;
+            if (x > maxX) maxX = x;
+            if (y > maxY) maxY = y;
+          }
+        }
+        if (maxX >= minX && maxY >= minY) {
+          sourceX = minX;
+          sourceY = minY;
+          sourceWidth = maxX - minX + 1;
+          sourceHeight = maxY - minY + 1;
+        }
+      }
+      context.imageSmoothingEnabled = false;
+      context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, qrX, qrY, qrSize, qrSize);
+
+      if (qrMemoLabel) {
+        context.save();
+        context.fillStyle = "#374151";
+        context.font = "500 44px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        const maxInlineMemoWidth = qrPanelSize - 120;
+        let qrMemoExportText = qrMemoLabel;
+        while (qrMemoExportText.length > 0 && context.measureText(qrMemoExportText).width > maxInlineMemoWidth) {
+          qrMemoExportText = `${qrMemoExportText.slice(0, -2).trimEnd()}...`;
+        }
+        context.fillText(qrMemoExportText ?? qrMemoLabel, exportWidth / 2, qrY + qrSize + qrTextBandHeight / 2);
+        context.restore();
+      }
+
+      if (qrDetails.length > 0) {
+        context.fillStyle = qrCardTheme.cardText;
+        context.font = "500 52px Arial";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        const maxDetailWidth = qrPanelSize - 120;
+        qrDetails.forEach((line, index) => {
+          let detailLine = line;
+          while (detailLine.length > 0 && context.measureText(detailLine).width > maxDetailWidth) {
+            detailLine = `${detailLine.slice(0, -2).trimEnd()}...`;
+          }
+          context.fillText(detailLine || line, exportWidth / 2, detailsStartY + index * detailsLineHeight);
+        });
+      }
+
+      const pngBlob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png")
+      );
+      if (!pngBlob) return null;
+
+      const filenameTicker = selectedTicker || "ticker";
+      const filenameMemo = memoFilenameSnippet;
+      const filenameAmount = qrAmountForFilename;
+      const filename = `zcashme-${safeName || "recipient"}-${filenameTicker}-${filenameAmount}-${filenameMemo}-qr.png`;
+      return { blob: pngBlob, filename };
+    } catch {
+      return null;
+    } finally {
+      URL.revokeObjectURL(svgUrl);
+    }
+  }, [
+    qrMemoLabel,
+    qrRequestLine,
+    cardDisplayName,
+    memoFilenameSnippet,
+    profile.display_name,
+    profile.name,
+    profile.profile_image_url,
+    qrAmountForFilename,
+    qrCardTheme.borderColor,
+    qrCardTheme.cardSurfaceSolid,
+    qrCardTheme.cardText,
+    qrDetails,
+    selectedTicker,
+  ]);
+
+  const handleSaveQr = useCallback(async () => {
+    const exportData = await buildQrExport();
+    if (!exportData) return;
+    const downloadUrl = URL.createObjectURL(exportData.blob);
+    const link = document.createElement("a");
+    link.download = exportData.filename;
+    link.href = downloadUrl;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1500);
+  }, [buildQrExport]);
+
+  const handleShareQr = useCallback(async () => {
+    try {
+      const exportData = await buildQrExport();
+      if (!exportData) return;
+      const file = new File([exportData.blob], exportData.filename, { type: "image/png" });
+      if (navigator.share && navigator.canShare?.({ files: [file] })) {
+        await navigator.share({
+          title: "Zcash.me QR card",
+          files: [file],
+        });
+      } else {
+        const downloadUrl = URL.createObjectURL(exportData.blob);
+        const link = document.createElement("a");
+        link.download = exportData.filename;
+        link.href = downloadUrl;
+        link.click();
+        URL.revokeObjectURL(downloadUrl);
+      }
+
+      setSharedQr(true);
+      window.setTimeout(() => setSharedQr(false), 1500);
+    } catch {
+      setSharedQr(false);
+    }
+  }, [
+    buildQrExport,
+  ]);
+  const qrActionButtonSizeClass = isWideLayout ? "h-8 text-sm" : "h-9";
+  const isMobileQrOpen = !isWideLayout && showQr;
+  const qrTextBandTopHeightPx = isWideLayout ? 24 : 24;
+  const qrTextBandBottomHeightPx = isWideLayout ? 24 : 24;
+  const qrMatrixSizePx = isWideLayout ? 200 : 228;
+  const qrInlineFrameHeightPx = qrTextBandTopHeightPx + qrMatrixSizePx + qrTextBandBottomHeightPx;
+  const qrTextBandTextClass = isWideLayout ? "text-[10px]" : "text-[11px]";
+  const qrRequestInlineText = useMemo(
+    () => (qrRequestLine ? formatQrInlineText(qrRequestLine, isWideLayout ? 38 : 52) : null),
+    [qrRequestLine, isWideLayout]
+  );
+  const qrMemoInlineText = useMemo(
+    () => (qrMemoLabel ? formatQrInlineText(qrMemoLabel, isWideLayout ? 42 : 56) : null),
+    [qrMemoLabel, isWideLayout]
+  );
+
+  const qrPreviewPanel = (
+    <div className="flex w-full flex-col items-center gap-2">
+      <div
+        className={`relative mx-auto w-full rounded-[26px] border p-3 text-center shadow-xs ${
+          isWideLayout ? "mt-2 max-w-[300px] pt-8" : "mt-3 w-full max-w-[24rem] pt-8"
+        } ${
+          qrCardTheme.borderColor ? "verified-card-custom-border" : "border-black/70"
+        }`}
+        style={{
+          background: qrCardTheme.packageId
+            ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${qrCardTheme.cardSurface}`
+            : qrCardTheme.cardSurface,
+          color: qrCardTheme.cardText,
+          "--verified-card-border": qrCardTheme.borderColor ?? undefined,
+          "--verified-card-glow": qrCardTheme.borderColor ?? undefined,
+        } as CSSProperties}
+      >
+        <div
+          className="pointer-events-none absolute -top-[2px] left-1/2 z-0 h-[6px] -translate-x-1/2 rounded-b-full"
+          style={{
+            width: "74px",
+            backgroundColor: qrCardTheme.cardSurfaceSolid,
+          }}
+          aria-hidden
+        />
+        <div className="absolute left-1/2 top-0 z-20 -translate-x-1/2 -translate-y-1/2">
+          <ProfileAvatar
+            profile={profile}
+            size={isWideLayout ? 48 : 56}
+            borderColor={qrCardTheme.borderColor ?? "#111827"}
+            lookAround={false}
+          />
+        </div>
+        <p
+          className={`font-semibold tracking-wide ${isWideLayout ? "mb-2 text-[11px]" : "mb-3 text-xs"} truncate`}
+          title={cardDisplayName}
+        >
+          {cardDisplayName}
+        </p>
+        <div className={`mx-auto flex w-full items-center justify-center rounded-2xl border border-gray-300 bg-white/90 px-2 py-2 shadow-inner ${
+          isWideLayout ? "max-w-[240px]" : "max-w-[21rem]"
+        }`}>
+          <div className="relative w-full overflow-hidden" style={{ height: `${qrInlineFrameHeightPx}px` }}>
+            <div
+              className={`absolute inset-x-0 top-0 flex items-center justify-center overflow-hidden px-1 leading-none ${qrTextBandTextClass}`}
+              style={{ height: `${qrTextBandTopHeightPx}px` }}
+            >
+              {qrRequestInlineText && (
+                <p
+                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
+                  title={qrRequestLine}
+                >
+                  {qrRequestInlineText}
+                </p>
+              )}
+            </div>
+            <div
+              className="absolute left-1/2 -translate-x-1/2"
+              style={{
+                top: `${qrTextBandTopHeightPx}px`,
+                width: `${qrMatrixSizePx}px`,
+                height: `${qrMatrixSizePx}px`,
+              }}
+            >
+              <QRCodeSVG
+                ref={qrRef}
+                value={previewUrl}
+                size={qrMatrixSizePx}
+                includeMargin={true}
+                bgColor="transparent"
+                fgColor="#000000"
+                className="block"
+                style={{ width: "100%", height: "100%" }}
+              />
+            </div>
+            <div
+              className={`absolute inset-x-0 bottom-0 flex items-center justify-center overflow-hidden px-1 leading-none ${qrTextBandTextClass}`}
+              style={{ height: `${qrTextBandBottomHeightPx}px` }}
+            >
+              {qrMemoInlineText && (
+                <p
+                  className="w-full overflow-hidden text-ellipsis whitespace-nowrap text-center text-gray-700 leading-none"
+                  title={qrMemoLabel}
+                >
+                  {qrMemoInlineText}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+        {qrDetails.length > 0 && (
+          <div className={`border-t border-white/30 pt-2 ${isWideLayout ? "mt-2 text-[11px]" : "mt-3 text-xs"}`}>
+            {qrDetails.map((line) => (
+              <p key={line} className="truncate">{line}</p>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex items-center gap-2 flex-row">
+        <motion.button
+          type="button"
+          onClick={handleSaveQr}
+          {...tapProps}
+          className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+        >
+          {saved ? "Saved" : "Save QR"}
+        </motion.button>
+        <motion.button
+          type="button"
+          onClick={handleShareQr}
+          {...tapProps}
+          className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+        >
+          {sharedQr ? "Shared" : "Share QR"}
+        </motion.button>
+      </div>
+    </div>
+  );
+
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[9999] flex justify-center px-4 items-start sm:items-center pt-[6vh] sm:pt-0 overflow-y-auto">
+    <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto px-2 pb-2 pt-[6vh] sm:px-4 sm:pb-4 sm:items-center sm:pt-0">
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={onClose}
       />
 
-      <div className="relative w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-in fade-in zoom-in-95 duration-200 my-4">
+      <div className="relative my-4 w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-black/30 bg-white/90 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
         <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
@@ -640,8 +1225,21 @@ export default function CreatePrefillUrlModal({
           </motion.button>
         </div>
 
-        <div className="p-5 space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+        <div className={isMobileQrOpen ? "p-3 sm:p-5" : "p-5"}>
+          <div className={isWideLayout ? "grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)] items-start gap-2" : "space-y-4"}>
+            <div className="min-w-0">
+          <motion.div
+            initial={false}
+            animate={isMobileQrOpen ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
+            transition={
+              shouldReduceMotion
+                ? { duration: 0.08 }
+                : { duration: 0.22, ease: "easeOut" as const }
+            }
+            className="overflow-hidden"
+          >
+            <div className="space-y-4">
+          <div className="space-y-3">
             <label className="block min-w-0 text-sm text-gray-700">
               <span className="mb-1 block font-medium">
                 Amount ({selectedTicker})
@@ -651,8 +1249,8 @@ export default function CreatePrefillUrlModal({
                   </span>
                 )}
               </span>
-              <div ref={tokenSelectorRef} className="relative">
-                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 focus-within:ring-1 focus-within:ring-[var(--color-brand-blue)]">
+              <div ref={tokenSelectorRef} className="relative w-full">
+                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 transition-colors focus-within:border-[var(--color-brand-blue)]">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -743,8 +1341,8 @@ export default function CreatePrefillUrlModal({
 
             <label className="block min-w-0 text-sm text-gray-700">
               <span className="mb-1 block font-medium">Amount ({fiatTicker})</span>
-              <div ref={fiatSelectorRef} className="relative">
-                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 focus-within:ring-1 focus-within:ring-[var(--color-brand-blue)]">
+              <div ref={fiatSelectorRef} className="relative w-full">
+                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 transition-colors focus-within:border-[var(--color-brand-blue)]">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -833,7 +1431,7 @@ export default function CreatePrefillUrlModal({
           </div>
 
           <AnimatePresence initial={false}>
-            {requestDisplay && (
+            {preMemoWarnings.length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: -8, height: 0 }}
                 animate={{ opacity: 1, y: 0, height: "auto" }}
@@ -845,8 +1443,19 @@ export default function CreatePrefillUrlModal({
                 }
                 className="overflow-hidden"
               >
-                <div className="rounded-xl border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-900">
-                  {requestDisplay}
+                <div className="space-y-2">
+                  {preMemoWarnings.map((warning) => (
+                    <div
+                      key={warning.key}
+                      className={`rounded-xl border px-3 py-2 text-xs ${
+                        warning.tone === "info"
+                          ? "border-blue-200 bg-blue-50 text-blue-900"
+                          : "border-amber-300 bg-amber-50 text-amber-800"
+                      }`}
+                    >
+                      {warning.text}
+                    </div>
+                  ))}
                 </div>
               </motion.div>
             )}
@@ -877,7 +1486,7 @@ export default function CreatePrefillUrlModal({
                 rows={1}
                 placeholder={canUseMemo ? "Thanks" : "Memo disabled for non-ZEC paylinks"}
                 disabled={!canUseMemo}
-                className={`w-full resize-none overflow-hidden rounded-xl border py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)] ${
+                className={`w-full resize-none overflow-hidden rounded-xl border py-2 text-sm focus:outline-none focus:border-[var(--color-brand-blue)] ${
                   canUseMemo
                     ? "border-gray-300 text-gray-900 pl-8 pr-3"
                     : "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed px-3"
@@ -887,7 +1496,7 @@ export default function CreatePrefillUrlModal({
 
             {emoji.results.length > 0 && canUseMemo && (
               <div
-                className={`absolute left-0 z-[10000] w-[240px] max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-lg ${
+                className={`absolute left-0 z-[10000] w-full max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-lg ${
                   emoji.placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                 }`}
               >
@@ -931,45 +1540,94 @@ export default function CreatePrefillUrlModal({
               ))}
             </div>
           )}
+          <div className="space-y-3">
+            <div className="w-full">
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Preview
+              </label>
+              <p className="text-xs text-gray-700 break-all">
+                {previewUrl}
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <motion.button
+                type="button"
+                onClick={handleOpenPreview}
+                {...tapProps}
+                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+              >
+                Open URL
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={handleCopy}
+                {...tapProps}
+                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+              >
+                {copied ? "Copied" : "Copy URL"}
+              </motion.button>
+              <motion.button
+                type="button"
+                onClick={handleShare}
+                {...tapProps}
+                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+              >
+                {shared ? "Shared" : "Share URL"}
+              </motion.button>
+              {!isWideLayout && (
+                <motion.button
+                  type="button"
+                  onClick={() => setShowQr((prev) => !prev)}
+                  {...tapProps}
+                  className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                >
+                  {showQr ? "Hide QR" : "View QR"}
+                </motion.button>
+              )}
+            </div>
+
+          </div>
+            </div>
+          </motion.div>
+
+          <AnimatePresence initial={false}>
+            {isMobileQrOpen && (
+              <motion.div
+                key="mobile-qr-only"
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0.08 }
+                    : { duration: 0.22, ease: "easeOut" as const }
+                }
+                className="overflow-hidden"
+              >
+                <div className="mt-2 flex w-full max-h-[calc(100dvh-10rem)] flex-col items-center gap-2 overflow-y-auto pt-6 pb-1">
+                  {qrPreviewPanel}
+                  <motion.button
+                    type="button"
+                    onClick={() => setShowQr(false)}
+                    {...tapProps}
+                    className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                  >
+                    Edit
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+            </div>
+            {isWideLayout && (
+              <div className="border-l border-gray-200 pl-2">
+                {qrPreviewPanel}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="border-t border-gray-200 px-5 py-4">
-          <div className="w-full">
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Preview
-            </label>
-            <p className="text-xs text-gray-700 break-all">
-              {previewUrl}
-            </p>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 border-t border-gray-200 pt-4">
-            <motion.button
-              type="button"
-              onClick={handleOpenPreview}
-              {...tapProps}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} h-10`}
-            >
-              Open URL
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={handleCopy}
-              {...tapProps}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} h-10`}
-            >
-              {copied ? "Copied" : "Copy URL"}
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={handleShare}
-              {...tapProps}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} h-10`}
-            >
-              {shared ? "Shared" : "Share URL"}
-            </motion.button>
-          </div>
-        </div>
       </div>
     </div>,
     document.body
