@@ -230,11 +230,38 @@ function SwapStatusDisplay({
       setDetailsOpen(true);
     }
   };
+  const statusHeader = (
+    <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2">
+        <h2 className="text-lg font-semibold">Swap Status</h2>
+        <span
+          className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}
+        >
+          {config.label}
+        </span>
+      </div>
+      {isPolling && (
+        <div className="flex items-center gap-1.5">
+          <div className="flex gap-0.5" aria-hidden="true">
+            {[0, 0.1, 0.2].map((delay, i) => (
+              <div
+                key={i}
+                className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce"
+                style={{ animationDelay: `${delay}s` }}
+              />
+            ))}
+          </div>
+          <span className="text-xs text-gray-600">{activityLabel}</span>
+        </div>
+      )}
+    </div>
+  );
 
   // Show input form when no deposit address is being tracked
   if (showInput) {
     return (
       <div className="space-y-6">
+        {statusHeader}
         <p className="text-sm text-gray-600">
           Enter the deposit address from your swap to check its status.
         </p>
@@ -273,31 +300,8 @@ function SwapStatusDisplay({
 
   return (
     <div className="space-y-6">
+      {statusHeader}
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className={`text-xs font-semibold px-3 py-1 rounded-full ${config.color}`}
-            >
-              {config.label}
-            </span>
-          </div>
-          {isPolling && (
-            <div className="flex items-center gap-1.5">
-              <div className="flex gap-0.5" aria-hidden="true">
-                {[0, 0.1, 0.2].map((delay, i) => (
-                  <div
-                    key={i}
-                    className="w-1.5 h-1.5 rounded-full bg-gray-600 animate-bounce"
-                    style={{ animationDelay: `${delay}s` }}
-                  />
-                ))}
-              </div>
-              <span className="text-xs text-gray-600">{activityLabel}</span>
-            </div>
-          )}
-        </div>
-
         {fromSymbol && toSymbol && (
           <div className="flex justify-center py-4">
             <SwapCurrencyPair
@@ -338,10 +342,10 @@ function SwapStatusDisplay({
         </div>
       </div>
 
-      <div className="border border-gray-800 rounded-xl overflow-hidden">
+      <div className="border border-gray-800 rounded-xl overflow-hidden transition-colors hover:border-[var(--color-brand-blue)]">
         <button
           onClick={() => setDetailsOpen(!detailsOpen)}
-          className="w-full px-4 py-3 flex justify-between items-center hover:bg-gray-50 font-semibold"
+          className="w-full px-4 py-3 flex justify-between items-center font-semibold transition-colors hover:text-[var(--color-brand-blue)]"
         >
           <span>Swap Details</span>
           <span
@@ -907,11 +911,24 @@ export default function SwapAppClient({
 
     return `${displaySymbol} address...`;
   };
+  const broughtByNear = (
+    <div className="flex items-center gap-2 text-sm text-gray-600 whitespace-nowrap">
+      <span>Brought to you by</span>
+      <img
+        src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
+        alt="NEAR Protocol"
+        className="h-5 w-auto object-contain"
+        loading="lazy"
+        referrerPolicy="no-referrer"
+      />
+    </div>
+  );
 
   return (
     <>
       {!isStatus && (
-        <div className="mb-3 flex justify-end">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          {broughtByNear}
           <button
             type="button"
             onClick={() => setIsStatus(true)}
@@ -922,14 +939,15 @@ export default function SwapAppClient({
         </div>
       )}
       {isStatus && (
-        <div className="mb-3 flex justify-start">
+        <div className="mb-3 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setIsStatus(false)}
             className="bg-transparent px-3 py-1.5 text-sm font-semibold text-gray-700 border border-gray-800 rounded-lg transition-colors hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)]"
           >
-            ← Back to Swap
+            Back to Swap
           </button>
+          {broughtByNear}
         </div>
       )}
 
@@ -1157,16 +1175,6 @@ export default function SwapAppClient({
               </div>
             </div>
 
-            <div className="mt-6 text-center">
-              <p className="text-xs text-gray-600 mb-1">Brought to you by</p>
-              <img
-                src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
-                alt="NEAR Protocol"
-                className="h-5 mx-auto object-contain"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-            </div>
           </div>
 
           {/* Back Side - Swap Status Checker */}
@@ -1182,22 +1190,10 @@ export default function SwapAppClient({
             }}
           >
             <div className="space-y-6">
-              <h2 className="text-lg font-semibold">Swap Status</h2>
-
               <SwapStatusDisplay
                 initialDepositAddress={trackingDepositAddress}
               />
 
-              <div className="mt-6 text-center">
-                <p className="text-xs text-gray-600 mb-1">Brought to you by</p>
-                <img
-                  src="https://upload.wikimedia.org/wikipedia/fr/thumb/c/c0/Logo_Near_protocol.png/960px-Logo_Near_protocol.png?_=20231215095140"
-                  alt="NEAR Protocol"
-                  className="h-5 mx-auto object-contain"
-                  loading="lazy"
-                  referrerPolicy="no-referrer"
-                />
-              </div>
             </div>
           </div>
         </div>
