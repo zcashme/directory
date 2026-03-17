@@ -408,7 +408,6 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       showStats={showStats}
                       onToggleStats={() => setShowStats((prev) => !prev)}
                       onEdit={() => {}}
-                      onVerify={() => {}}
                       onCreatePrefillUrl={() => {}}
                       onUpgrade={() => {}}
                     />

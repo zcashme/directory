@@ -13,7 +13,6 @@ interface ProfileCardActionsProps {
   showStats: boolean;
   onToggleStats: () => void;
   onEdit: () => void;
-  onVerify: () => void;
   onCreatePrefillUrl: () => void;
   onUpgrade: () => void;
 }
@@ -24,7 +23,6 @@ export default function ProfileCardActions({
   showStats,
   onToggleStats,
   onEdit,
-  onVerify,
   onCreatePrefillUrl,
   onUpgrade,
 }: ProfileCardActionsProps) {
@@ -108,7 +106,13 @@ export default function ProfileCardActions({
           }`}
         >
           {menuItem("\u2B54", showStats ? "Hide Awards" : "Show Awards", onToggleStats, !showStats && !hasAwards)}
-          {menuItem("\u21BA", "Edit Profile", onEdit)}
+          {menuItem(
+            <span className="inline-flex scale-[0.78] pointer-events-none">
+              <VerifiedBadge verified collapsedOnly />
+            </span>,
+            "Edit Profile",
+            onEdit
+          )}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
           {menuItem("\u2934", "Share Refer Link", async () => {
             const baseUrl = buildShareUrl(profile);
@@ -127,13 +131,6 @@ export default function ProfileCardActions({
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
-          {menuItem(
-            <span className="inline-flex scale-[0.78] pointer-events-none">
-              <VerifiedBadge verified collapsedOnly />
-            </span>,
-            "Verify Profile",
-            onVerify
-          )}
           {menuItem(
             <span className="inline-flex scale-[0.78] origin-left">
               <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />

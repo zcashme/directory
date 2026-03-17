@@ -307,7 +307,6 @@ export default function ProfileCard({
                   showStats={showStats}
                   onToggleStats={() => setShowStats((p) => !p)}
                   onEdit={() => setShowBack(true)}
-                  onVerify={() => setIsVerifyOpen(true)}
                   onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
                   onUpgrade={() => setIsUpgradeOpen(true)}
                 />
