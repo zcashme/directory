@@ -14,7 +14,7 @@ import {
   checkAddressTakenAction,
   checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
@@ -34,6 +34,13 @@ import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameN
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
+import {
+  PROFILE_CARD_ICON_BUTTON_CLASSES,
+  PROFILE_CARD_MODAL_CHROME_CLASSES,
+  PROFILE_CARD_PRIMARY_GREEN_ACTION_BUTTON_CLASSES,
+  PROFILE_CARD_SECONDARY_ACTION_BUTTON_CLASSES,
+  getProfileCardTapMotionProps,
+} from "@/ui/common/buttons/styles";
 import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
 
 interface Referrer {
@@ -90,6 +97,8 @@ export default function AddUserForm({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLDivElement | null>(null);
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -501,7 +510,7 @@ export default function AddUserForm({
 
   const StepName = (
     <StepContainer stepKey="step-name" dir={dir}>
-      <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
+      <label htmlFor="name" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
         Username
       </label>
       <div
@@ -509,7 +518,7 @@ export default function AddUserForm({
           withFieldFocusWithinBorderState("border-black/30", nameConflict?.type === "error")
         }`}
       >
-        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+        <span className="pl-3 pr-1 text-sm text-gray-600 select-none whitespace-nowrap">Zcash.me/</span>
         <input
           id="name"
           value={name}
@@ -527,7 +536,7 @@ export default function AddUserForm({
           ? "text-red-600"
           : nameConflict?.type === "info"
             ? "text-green-600"
-            : "text-gray-500"
+            : "text-gray-600"
           }`}
       >
         {nameConflict?.text
@@ -540,7 +549,7 @@ export default function AddUserForm({
             ? "text-red-600"
             : addressConflict?.type === "info"
               ? "text-green-600"
-              : "text-gray-600"
+              : "text-gray-700"
             }`}
         >
           {addressConflict?.text || ""}
@@ -548,7 +557,7 @@ export default function AddUserForm({
       )}
 
       {/* Display Name */}
-      <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1 mt-4">
+      <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1 mt-4">
         Display Name
       </label>
       <input
@@ -559,7 +568,7 @@ export default function AddUserForm({
         placeholder="Enter display name"
         autoComplete="off"
       />
-      <p className="mt-1 text-xs text-gray-500">Shown on your profile instead of your username.</p>
+      <p className="mt-1 text-xs text-gray-600">Shown on your profile instead of your username.</p>
 
       {/* Short Bio disabled during signup */}
       {/*
@@ -593,7 +602,7 @@ export default function AddUserForm({
             ? "text-red-600"
             : addressConflict?.type === "info"
               ? "text-green-600"
-              : "text-gray-600"
+              : "text-gray-700"
             }`}
         >
           {typeof addressConflict === "object"
@@ -605,15 +614,15 @@ export default function AddUserForm({
       )}
 
 
-      <p className="mt-4 text-xs text-gray-500">
-        <span className="font-bold text-gray-700">Did you know?</span> This Zcash address and its activity cannot be found on-chain.
+      <p className="mt-4 text-xs text-gray-600">
+        <span className="font-bold text-gray-800">Did you know?</span> This Zcash address and its activity cannot be found on-chain.
       </p>
     </StepContainer>
   );
 
   const StepCity = (
     <StepContainer stepKey="step-city" dir={dir}>
-      <FormField label="Nearest City" htmlFor="nearest-city" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-600" className="mb-0">
+      <FormField label="Nearest City" htmlFor="nearest-city" labelClassName="block text-xs font-medium uppercase tracking-wide text-gray-700" className="mb-0">
         <div className="relative w-full">
           <CitySearchDropdown
             value={nearestCityInput}
@@ -639,7 +648,7 @@ export default function AddUserForm({
         </div>
       </FormField>
 
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-xs text-gray-600">
         Optional. Helps Zcashers find other Zcashers around them.
       </p>
     </StepContainer>
@@ -647,7 +656,7 @@ export default function AddUserForm({
 
   const StepReferrer = (
     <StepContainer stepKey="step-ref" dir={dir}>
-      <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">
+      <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
         Referred by Zcash.me/
       </label>
 
@@ -656,7 +665,7 @@ export default function AddUserForm({
           withFieldFocusWithinBorderState("border-black/30", referrerConflict?.type === "error")
         }`}
       >
-        <span className="pl-3 pr-1 text-sm text-gray-500 select-none whitespace-nowrap">Zcash.me/</span>
+        <span className="pl-3 pr-1 text-sm text-gray-600 select-none whitespace-nowrap">Zcash.me/</span>
         <div className="relative flex-1">
           <ProfileSearchDropdown
             value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
@@ -673,7 +682,7 @@ export default function AddUserForm({
         </div>
       </div>
 
-      <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-500"}`}>
+      <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-600"}`}>
         {referrerConflict?.text || "Optional. Helps us reward members who refer new members."}
       </p>
     </StepContainer>
@@ -681,7 +690,7 @@ export default function AddUserForm({
 
   const StepLinks = (
     <StepContainer stepKey="step-links" dir={dir}>
-      <label className="block text-xs font-medium uppercase tracking-wide text-gray-600 mb-1">Add social links to help others identify you</label>
+      <label className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">Add social links to help others identify you</label>
 
       {links.map((link, index) => (
         <SocialLinkInput
@@ -695,7 +704,7 @@ export default function AddUserForm({
       <button type="button" onClick={addLinkField} className="text-sm font-semibold text-green-700 hover:underline mt-1">
         ＋ Add more links
       </button>
-      <p className="mt-2 text-xs text-gray-500">
+      <p className="mt-2 text-xs text-gray-600">
         Tip: You can authenticate links from Edit Profile after verifying your Zcash address.
       </p>
     </StepContainer>
@@ -705,30 +714,30 @@ export default function AddUserForm({
     <StepContainer stepKey="step-review" dir={dir}>
       <div className="space-y-2 text-sm">
         <div>
-          <span className="font-semibold text-gray-700">Username:</span>{" "}
+          <span className="font-semibold text-gray-800">Username:</span>{" "}
           <span className="font-mono">{name || "—"}</span>
         </div>
         <div>
-          <span className="font-semibold text-gray-700">Display Name:</span>{" "}
+          <span className="font-semibold text-gray-800">Display Name:</span>{" "}
           <span className="font-mono">{displayName || "—"}</span>
         </div>
         {/* Short Bio disabled during signup */}
         <div>
-          <span className="font-semibold text-gray-700">Zcash Address:</span>{" "}
+          <span className="font-semibold text-gray-800">Zcash Address:</span>{" "}
           <span className="font-mono break-all">{address || "—"}</span>
         </div>
 
         <div>
-          <span className="font-semibold text-gray-700">Nearest City:</span>{" "}
+          <span className="font-semibold text-gray-800">Nearest City:</span>{" "}
           <span>{nearestCity?.city_ascii || nearestCity?.city || "—"}</span>
 
         </div>
         <div>
-          <span className="font-semibold text-gray-700">Referred by:</span>{" "}
+          <span className="font-semibold text-gray-800">Referred by:</span>{" "}
           <span>{typeof referrer === "object" ? referrer?.name || "—" : "—"}</span>
         </div>
         <div>
-          <span className="font-semibold text-gray-700">Links:</span>
+          <span className="font-semibold text-gray-800">Links:</span>
           {builtLinks.length ? (
             <ul className="mt-1 list-disc list-inside space-y-1">
               {builtLinks.map((u, i) => (
@@ -742,7 +751,7 @@ export default function AddUserForm({
           )}
         </div>
       </div>
-      <p className="mt-3 text-xs text-gray-500">
+      <p className="mt-3 text-xs text-gray-600">
         By submitting, you agree that these items will be listed publicly. You can add and remove items later.
       </p>
     </StepContainer>
@@ -763,10 +772,10 @@ export default function AddUserForm({
       {/* Modal */}
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md bg-white/85 backdrop-blur-md rounded-2xl shadow-xl border border-black/30 animate-fadeIn"
+        className={`relative w-full max-w-md animate-fadeIn ${PROFILE_CARD_MODAL_CHROME_CLASSES}`}
       >
         {/* Header */}
-        <div className="relative border-b border-black/10 overflow-hidden rounded-t-2xl">
+        <div className="relative overflow-hidden rounded-t-[26px] border-b border-black/10">
           {/* Progress Bar Background */}
           <div
             className="absolute top-0 left-0 bottom-0 transition-all duration-700 ease-in-out opacity-80"
@@ -780,18 +789,20 @@ export default function AddUserForm({
 
           <div className="relative flex items-center justify-between px-5 py-4">
             <div>
-              <h2 className="text-lg font-semibold text-gray-800 leading-tight">Zcash is better with friends</h2>
-              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-700 mt-0.5">
+              <h2 className="text-lg font-semibold text-gray-900 leading-tight">Zcash is better with friends</h2>
+              <p className="text-[10px] font-bold uppercase tracking-wider text-gray-800 mt-0.5">
                 Step {step + 1} of 6
               </p>
             </div>
-            <button
+            <motion.button
+              type="button"
               onClick={onClose}
-              className="w-8 h-8 rounded-full hover:bg-black/5 flex items-center justify-center transition-colors"
+              {...tapProps}
+              className={`${PROFILE_CARD_ICON_BUTTON_CLASSES} h-8 w-8`}
               aria-label="Close"
             >
-              <XIcon className="w-4 h-4 text-gray-600" />
-            </button>
+              <XIcon className="w-4 h-4 text-gray-700" />
+            </motion.button>
           </div>
         </div>
 
@@ -827,47 +838,48 @@ export default function AddUserForm({
         <div className="flex items-center justify-between gap-3 px-5 py-4 border-t border-black/10">
           <div className="flex-1">
             {step > 0 ? (
-              <button
+              <motion.button
                 type="button"
                 onClick={goBack}
-                className="w-full py-2.5 rounded-xl border border-black/30 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                {...tapProps}
+                className={"w-full " + PROFILE_CARD_SECONDARY_ACTION_BUTTON_CLASSES}
               >
                 ← Back
-              </button>
+              </motion.button>
             ) : (
-              <button
+              <motion.button
                 type="button"
                 onClick={onClose}
-                className="w-full py-2.5 rounded-xl border border-black/30 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                {...tapProps}
+                className={"w-full " + PROFILE_CARD_SECONDARY_ACTION_BUTTON_CLASSES}
               >
                 Cancel
-              </button>
+              </motion.button>
             )}
           </div>
 
           <div className="flex-1">
             {step < 5 ? (
-              <button
+              <motion.button
                 type="button"
                 onClick={goNext}
                 disabled={!stepIsValid}
                 title={!stepIsValid && nameConflict?.type === "error" ? "This name is already used by a verified profile." : ""}
-                className={`w-full py-2.5 rounded-xl border text-sm font-semibold ${stepIsValid
-                  ? "border-black/30 text-green-700 hover:border-green-600 hover:bg-green-50"
-                  : "border-black/20 text-gray-400 cursor-not-allowed opacity-60"
-                  }`}
+                {...tapProps}
+                className={"w-full " + PROFILE_CARD_PRIMARY_GREEN_ACTION_BUTTON_CLASSES}
               >
                 Next →
-              </button>
+              </motion.button>
             ) : (
-              <button
+              <motion.button
                 type="button"
                 onClick={handleSubmit}
                 disabled={isLoading || !stepIsValid}
-                className="w-full py-2.5 rounded-xl border border-black/30 text-sm font-semibold text-green-700 hover:border-green-600 hover:bg-green-50 disabled:opacity-60"
+                {...tapProps}
+                className={"w-full " + PROFILE_CARD_PRIMARY_GREEN_ACTION_BUTTON_CLASSES}
               >
                 {isLoading ? "Adding..." : "Add Name"}
-              </button>
+              </motion.button>
             )}
           </div>
         </div>

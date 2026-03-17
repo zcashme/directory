@@ -12,7 +12,13 @@ import type { Token } from "@/lib/swap/types";
 import { getRateAction } from "@/lib/rates/getRateAction";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import { CURRENCIES, FIAT_TICKERS } from "@/ui/verification/AmountAndWallet";
-import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
+import {
+  PROFILE_CARD_ICON_BUTTON_CLASSES,
+  PROFILE_CARD_INLINE_SELECTOR_TRIGGER_CLASSES,
+  PROFILE_CARD_MODAL_CHROME_CLASSES,
+  PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES,
+  getProfileCardTapMotionProps,
+} from "@/ui/common/buttons/styles";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 
 interface CreatePrefillUrlModalProps {
@@ -191,13 +197,8 @@ export default function CreatePrefillUrlModal({
   profile,
   tokens,
 }: CreatePrefillUrlModalProps) {
-  const shouldReduceMotion = useReducedMotion();
-  const tapProps = shouldReduceMotion
-    ? {}
-    : {
-      whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
-      transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
-    };
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
 
   const cryptoOptions = useMemo<CryptoOption[]>(() => {
     const seen = new Set<string>();
@@ -1268,7 +1269,7 @@ export default function CreatePrefillUrlModal({
           type="button"
           onClick={handleSaveQr}
           {...tapProps}
-          className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+          className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
         >
           {saved ? "Saved" : "Save QR"}
         </motion.button>
@@ -1276,7 +1277,7 @@ export default function CreatePrefillUrlModal({
           type="button"
           onClick={handleShareQr}
           {...tapProps}
-          className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+          className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
         >
           {sharedQr ? "Shared" : "Share QR"}
         </motion.button>
@@ -1294,8 +1295,8 @@ export default function CreatePrefillUrlModal({
         onClick={onClose}
       />
 
-      <div className="relative my-4 w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-black/30 bg-white/90 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+      <div className={`relative my-4 w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-y-auto animate-in fade-in zoom-in-95 duration-200 ${PROFILE_CARD_MODAL_CHROME_CLASSES}`}>
+        <div className="flex items-center justify-between border-b border-black/10 px-5 py-3">
           <div>
             <h2 className="text-lg font-semibold text-gray-900">
               Create Paylink
@@ -1305,9 +1306,18 @@ export default function CreatePrefillUrlModal({
             type="button"
             onClick={onClose}
             {...tapProps}
-            className="inline-flex h-8 items-center self-center px-2 text-sm font-medium text-gray-700 transition-colors hover:text-[var(--color-brand-blue)]"
+            className={`${PROFILE_CARD_ICON_BUTTON_CLASSES} h-8 w-8 self-center`}
+            aria-label="Close"
           >
-            Close
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </motion.button>
         </div>
 
@@ -1336,7 +1346,7 @@ export default function CreatePrefillUrlModal({
                 )}
               </span>
               <div ref={tokenSelectorRef} className="relative w-full">
-                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 transition-colors focus-within:border-[var(--color-brand-blue)]">
+                <div className="flex h-11 items-center rounded-xl border border-black/30 bg-white/80 px-3 text-sm text-gray-900 shadow-xs transition-all focus-within:border-[var(--color-brand-blue)] focus-within:shadow-[0_0_0_2px_rgba(29,78,216,0.2)]">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -1352,7 +1362,7 @@ export default function CreatePrefillUrlModal({
                       setIsCurrencyOpen(false);
                       setFiatSearch("");
                     }}
-                    className={`${INLINE_SELECTOR_TRIGGER_CLASSES} ml-2 h-6 shrink-0 text-md leading-none`}
+                    className={`${PROFILE_CARD_INLINE_SELECTOR_TRIGGER_CLASSES} ml-2 h-6 shrink-0 text-md leading-none`}
                     aria-label="Choose crypto ticker"
                     aria-expanded={isTokenOpen}
                   >
@@ -1371,14 +1381,14 @@ export default function CreatePrefillUrlModal({
                 </div>
 
                 {isTokenOpen && (
-                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
-                    <div className="border-b border-gray-200 p-2">
+                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-black/30 bg-white/95 shadow-xl backdrop-blur-xs">
+                    <div className="border-b border-black/10 p-2">
                       <input
                         type="text"
                         value={tokenSearch}
                         onChange={(event) => setTokenSearch(event.target.value)}
                         placeholder="Search tokens..."
-                        className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
+                        className="w-full rounded-lg border border-black/20 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-blue)]/30"
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1">
@@ -1391,7 +1401,7 @@ export default function CreatePrefillUrlModal({
                             key={option.key}
                             type="button"
                             onClick={() => handleSelectCryptoOption(option)}
-                            className={`group flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                            className={`group flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 focus-visible:ring-inset ${
                               isSelected
                                 ? "bg-[var(--color-brand-blue)] text-white"
                                 : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
@@ -1428,7 +1438,7 @@ export default function CreatePrefillUrlModal({
             <label className="block min-w-0 text-sm text-gray-700">
               <span className="mb-1 block font-medium">Amount ({fiatTicker})</span>
               <div ref={fiatSelectorRef} className="relative w-full">
-                <div className="flex h-11 items-center rounded-xl border border-gray-300 px-3 text-sm text-gray-900 transition-colors focus-within:border-[var(--color-brand-blue)]">
+                <div className="flex h-11 items-center rounded-xl border border-black/30 bg-white/80 px-3 text-sm text-gray-900 shadow-xs transition-all focus-within:border-[var(--color-brand-blue)] focus-within:shadow-[0_0_0_2px_rgba(29,78,216,0.2)]">
                   <input
                     type="text"
                     inputMode="decimal"
@@ -1444,7 +1454,7 @@ export default function CreatePrefillUrlModal({
                       setIsTokenOpen(false);
                       setTokenSearch("");
                     }}
-                    className={`${INLINE_SELECTOR_TRIGGER_CLASSES} ml-2 h-6 shrink-0 text-md leading-none`}
+                    className={`${PROFILE_CARD_INLINE_SELECTOR_TRIGGER_CLASSES} ml-2 h-6 shrink-0 text-md leading-none`}
                     aria-label="Choose fiat currency"
                     aria-expanded={isCurrencyOpen}
                   >
@@ -1463,14 +1473,14 @@ export default function CreatePrefillUrlModal({
                 </div>
 
                 {isCurrencyOpen && (
-                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-gray-300 bg-white shadow-lg">
-                    <div className="border-b border-gray-200 p-2">
+                  <div className="absolute left-0 top-full mt-1 z-[10000] w-full max-h-72 overflow-hidden rounded-xl border border-black/30 bg-white/95 shadow-xl backdrop-blur-xs">
+                    <div className="border-b border-black/10 p-2">
                       <input
                         type="text"
                         value={fiatSearch}
                         onChange={(event) => setFiatSearch(event.target.value)}
                         placeholder="Search currencies..."
-                        className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-[var(--color-brand-blue)]"
+                        className="w-full rounded-lg border border-black/20 bg-white px-2 py-1.5 text-sm text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-blue)]/30"
                       />
                     </div>
                     <div className="max-h-60 overflow-y-auto py-1">
@@ -1481,7 +1491,7 @@ export default function CreatePrefillUrlModal({
                             key={ticker}
                             type="button"
                             onClick={() => handleSelectFiatTicker(ticker)}
-                            className={`group flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                            className={`group flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 focus-visible:ring-inset ${
                               isSelected
                                 ? "bg-[var(--color-brand-blue)] text-white"
                                 : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
@@ -1572,7 +1582,7 @@ export default function CreatePrefillUrlModal({
                 rows={1}
                 placeholder={canUseMemo ? "Thanks" : "Memo disabled for non-ZEC paylinks"}
                 disabled={!canUseMemo}
-                className={`w-full resize-none overflow-hidden rounded-xl border py-2 text-sm focus:outline-none focus:border-[var(--color-brand-blue)] ${
+                className={`w-full resize-none overflow-hidden rounded-xl border bg-white/80 py-2 text-sm shadow-xs focus:outline-none focus:border-[var(--color-brand-blue)] focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 ${
                   canUseMemo
                     ? "border-gray-300 text-gray-900 pl-8 pr-3"
                     : "border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed px-3"
@@ -1582,7 +1592,7 @@ export default function CreatePrefillUrlModal({
 
             {emoji.results.length > 0 && canUseMemo && (
               <div
-                className={`absolute left-0 z-[10000] w-full max-h-48 overflow-y-auto rounded-xl border border-gray-300 bg-white shadow-lg ${
+                className={`absolute left-0 z-[10000] w-full max-h-48 overflow-y-auto rounded-xl border border-black/30 bg-white/95 shadow-xl backdrop-blur-xs ${
                   emoji.placement === "top" ? "bottom-full mb-1" : "top-full mt-1"
                 }`}
               >
@@ -1591,7 +1601,7 @@ export default function CreatePrefillUrlModal({
                     key={`${item.ch}-${item.label}-${idx}`}
                     ref={(el) => emoji.setOptionRef(idx, el)}
                     type="button"
-                    className={`group flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors ${
+                    className={`group flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/30 focus-visible:ring-inset ${
                       emoji.highlightedIndex === idx
                         ? "bg-[var(--color-brand-blue)]/90 text-white"
                         : "text-gray-700 hover:bg-[var(--color-brand-blue)]/90 hover:text-white"
@@ -1641,7 +1651,7 @@ export default function CreatePrefillUrlModal({
                 type="button"
                 onClick={handleOpenPreview}
                 {...tapProps}
-                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
               >
                 Open URL
               </motion.button>
@@ -1649,7 +1659,7 @@ export default function CreatePrefillUrlModal({
                 type="button"
                 onClick={handleCopy}
                 {...tapProps}
-                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
               >
                 {copied ? "Copied" : "Copy URL"}
               </motion.button>
@@ -1657,7 +1667,7 @@ export default function CreatePrefillUrlModal({
                 type="button"
                 onClick={handleShare}
                 {...tapProps}
-                className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
               >
                 {shared ? "Shared" : "Share URL"}
               </motion.button>
@@ -1666,7 +1676,7 @@ export default function CreatePrefillUrlModal({
                   type="button"
                   onClick={() => setShowQr((prev) => !prev)}
                   {...tapProps}
-                  className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                  className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
                 >
                   {showQr ? "Hide QR" : "View QR"}
                 </motion.button>
@@ -1697,7 +1707,7 @@ export default function CreatePrefillUrlModal({
                     type="button"
                     onClick={() => setShowQr(false)}
                     {...tapProps}
-                    className={`${OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
+                    className={`${PROFILE_CARD_OUTLINE_ACTION_BUTTON_CLASSES} ${qrActionButtonSizeClass}`}
                   >
                     Edit
                   </motion.button>
