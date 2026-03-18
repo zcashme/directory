@@ -7,43 +7,39 @@ import MaxiUpgrade from "@/ui/profile/MaxiUpgrade";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
-const FEATURES = [
+const COMPARISON_ROWS = [
   {
-    title: "Earn Up to 0.5 ZEC Per Year",
-    description: "Complete at least one verification and receive ZEC back on the last Sunday of each month.",
+    title: "{profile.name}.zcash",
+    description: "Your name is easier to remember and share as Zcash.me/{profile.name} instead of Zcash.me/{profile.name}-{profile.id}.",
   },
   {
-    title: "Verify Without Sending ZEC",
-    description: "Receive one-time passcodes for free without sending the minimum ZEC verification amount.",
+    title: "Sign in with your name",
+    description: "Access your profile without repeated OTP to make changes instantly.",
   },
   {
-    title: "Earn More From Referrals",
-    description: "Collect up to 80% of verification fees plus 20% from users you refer who upgrade to Maxi.",
+    title: "You own it. No renewal fees.",
+    description: "Your name is registered to you on-chain. Just sign in once every 90 days to keep it active.",
   },
   {
-    title: "Reserve Any .zcash Name Early",
-    description: "Get priority access to claim your Name.zcash before the namespace opens to the public.",
+    title: "Buy and sell names",
+    description: "List your .zcash name for sale or get another in our upcoming marketplace.",
   },
   {
-    title: "Show Your Zcash Maxi Status",
-    description: "Display the Gold Zcash Maxi badge or request an affiliate badge directly on your profile.",
+    title: "Works across apps",
+    description: "Use the same name in a growing number of wallets and apps supporting .zcash names.",
   },
   {
-    title: "Customize Your Profile",
-    description: "Personalize your ZcashMe profile with custom colors and themes.",
+    title: "Don't trust us, verify us on-chain.",
+    description: "Your name points to your address. You can see that on-chain with our view-key.",
   },
   {
-    title: "Get Early Access to New Tools",
-    description: "Try upcoming features like notifications and the ZM social wallet before public release.",
+    title: "Customize your profile",
+    description: ".zcash name owners can add themes and badges after sign-in or verification.",
   },
   {
-    title: "Get Featured on the Homepage",
-    description: "Request a featured placement on the ZcashMe homepage to increase profile visibility.",
+    title: "Earn from referring others",
+    description: "Get commission when others mention your name while claiming their own.",
   },
-  {
-    title: "Fund Zcash Development",
-    description: "Part of every Maxi upgrade supports Zcash Foundation research and infrastructure such as Zebra and FROST.",
-  }
 ];
 
 const AVATAR_SIZE = 120;
@@ -63,15 +59,51 @@ interface UpgradeToMaxiModalProps {
 export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: UpgradeToMaxiModalProps) {
   const [isPaymentFlowExpanded, setIsPaymentFlowExpanded] = useState(false);
   const [collapsePaymentFlow, setCollapsePaymentFlow] = useState<(() => void) | null>(null);
-  const [expandedFeatureTitle, setExpandedFeatureTitle] = useState<string | null>(null);
+  const [expandedFeature, setExpandedFeature] = useState<string | null>(null);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const featureListRef = useRef<HTMLDivElement | null>(null);
   const topSpacer = isPaymentFlowExpanded ? PAYMENT_FLOW_SPACER : AVATAR_SPACER;
+  const profileNameRaw = (profile.name ?? "").trim() || "zcasher.name";
+  const profileName = profileNameRaw.charAt(0).toUpperCase() + profileNameRaw.slice(1).toLowerCase();
+  const profileId = profile.id !== null && profile.id !== undefined ? String(profile.id) : "zcasher.id";
+  const headerKicker = `Claim your .zcash name`;
+  const headerTitle = `${profileName}.zcash`;
+  const comparisonRows = COMPARISON_ROWS.map((row, idx) => {
+    if (idx === 0) {
+      return {
+        ...row,
+        title: `/${profileName} without -${profileId}`,
+        description: `Zcash.me/${profileName} instead of /${profileName}-${profileId}. Soon, ${profileName}.zcash.`,
+      };
+    }
+    if (idx === 1) {
+      return { ...row, title: `Sign in with ${profileName}` };
+    }
+    if (idx === 2) {
+      return { ...row, title: `No renewal fees` };
+    }
+    if (idx === 3) {
+      return { ...row, title: `Buy and sell names like ${profileName}` };
+    }
+    if (idx === 4) {
+      return { ...row, title: `${profileName} works across apps` };
+    }
+    if (idx === 5) {
+      return { ...row, title: `Don't trust us, verify ${profileName} on-chain` };
+    }
+    if (idx === 6) {
+      return { ...row, title: `Premium  profile for ${profileName}` };
+    }
+    if (idx === 7) {
+      return { ...row, description: `Get rewards when others mention ${profileName} while claiming their own.` };
+    }
+    return row;
+  });
 
   const resetModalUiState = useCallback(() => {
     setIsPaymentFlowExpanded(false);
     setCollapsePaymentFlow(null);
-    setExpandedFeatureTitle(null);
+    setExpandedFeature(null);
     setShowBackToTop(false);
     featureListRef.current?.scrollTo({ top: 0 });
   }, []);
@@ -155,12 +187,14 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                 isPaymentFlowExpanded ? "mb-0 max-h-0 opacity-0" : "mb-3 max-h-40 opacity-100"
               }`}
             >
-              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">Annual Plan</p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-amber-100/85">{headerKicker}</p>
               <h2 className="mt-1 text-center text-2xl font-extrabold tracking-tight text-amber-50 inline-flex items-center justify-center gap-2">
-                <span>Unlock Maxi Mode</span>
-                <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" />
+                <span>{headerTitle}</span>
+                <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" />
               </h2>
-              <p className="mt-2 text-sm text-emerald-50/80">Exclusive ways to earn more, spend less, be early,   <br /> and look great doing it. </p>
+              <p className="mt-2 text-sm text-emerald-50/80">
+                Make your name your address.
+              </p>
             </div>
 
             <div className="pt-1">
@@ -182,33 +216,38 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                 onScroll={(event) => setShowBackToTop(event.currentTarget.scrollTop > 40)}
                 className="flex-1 min-h-0 space-y-2.5 overflow-y-auto pr-1 pb-4"
               >
-                {FEATURES.map((feature) => {
-                  const isExpanded = expandedFeatureTitle === feature.title;
+                {comparisonRows.map((row) => {
+                  const isExpanded = expandedFeature === row.title;
+
                   return (
                     <div
-                      key={feature.title}
+                      key={row.title}
                       className="rounded-xl border border-emerald-100/20 bg-black/10 px-3 py-2.5 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
                     >
                       <button
                         type="button"
-                        onClick={() => setExpandedFeatureTitle((prev) => (prev === feature.title ? null : feature.title))}
-                        className="flex w-full items-center gap-3 text-left"
+                        onClick={() => setExpandedFeature((prev) => (prev === row.title ? null : row.title))}
                         aria-expanded={isExpanded}
+                        className="flex w-full items-start gap-3 text-left"
                       >
-                        <span className="mt-0.5 inline-flex shrink-0 scale-[0.78] items-center justify-center pointer-events-none">
-                          <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />
+                        <span className="mt-0.5 inline-flex w-5 shrink-0 justify-center scale-[0.78] pointer-events-none">
+                          <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
                         </span>
-                        <span className="font-semibold text-emerald-50/95">{feature.title}</span>
-                        <span className="ml-auto text-base font-semibold leading-none text-amber-100/90">
+                        <span className="min-w-0 flex-1">
+                          <span className="block font-semibold text-emerald-50/95">{row.title}</span>
+                        </span>
+                        <span className="pt-0.5 inline-flex w-4 shrink-0 justify-center text-base font-semibold leading-none text-amber-100/90">
                           {isExpanded ? "-" : "+"}
                         </span>
                       </button>
                       <div
                         className={`overflow-hidden transition-[max-height,opacity,margin] duration-250 ${
-                          isExpanded && feature.description ? "mt-2 max-h-40 opacity-100" : "mt-0 max-h-0 opacity-0"
+                          isExpanded ? "mt-2 max-h-36 opacity-100" : "mt-0 max-h-0 opacity-0"
                         }`}
                       >
-                        <p className="text-xs leading-relaxed text-emerald-50/80">{feature.description}</p>
+                        <p className="ml-8 text-xs leading-relaxed text-emerald-50/85">
+                          {row.description}
+                        </p>
                       </div>
                     </div>
                   );
@@ -224,7 +263,7 @@ export default function UpgradeToMaxiModal({ isOpen, onClose, profile }: Upgrade
                   onClick={() => featureListRef.current?.scrollTo({ top: 0, behavior: "smooth" })}
                   className="text-xs font-semibold text-amber-100/95 underline decoration-amber-100/70 underline-offset-2 hover:text-amber-50 transition-colors"
                 >
-                  Back to top
+                  Top
                 </button>
               </div>
             </div>

@@ -28,6 +28,8 @@ interface CopyButtonProps {
   defaultColorClass?: string;
   /** Hover color override (defaults to profile hover color or brand blue) */
   hoverColor?: string;
+  /** Position of label relative to icon */
+  labelPosition?: "right" | "left";
 }
 
 /**
@@ -45,6 +47,7 @@ export default function CopyButton({
   expanded = false,
   defaultColorClass = "text-gray-500",
   hoverColor,
+  labelPosition = "right",
 }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -81,16 +84,29 @@ export default function CopyButton({
         className
       }
     >
+      {labelPosition === "left" && (
+        <span
+          className={`inline-block overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-xs mr-1 ${
+            expanded
+              ? "max-w-none opacity-100"
+              : "max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          {copied ? copiedLabel : label}
+        </span>
+      )}
       {copied ? copiedIcon : icon}
-      <span
-        className={`inline-block overflow-hidden transition-all duration-300 ease-in-out text-xs ml-1 ${
-          expanded
-            ? "max-w-[50px] opacity-100"
-            : "max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100"
-        }`}
-      >
-        {copied ? copiedLabel : label}
-      </span>
+      {labelPosition === "right" && (
+        <span
+          className={`inline-block overflow-hidden whitespace-nowrap transition-all duration-300 ease-in-out text-xs ml-1 ${
+            expanded
+              ? "max-w-none opacity-100"
+              : "max-w-0 group-hover:max-w-[50px] opacity-0 group-hover:opacity-100"
+          }`}
+        >
+          {copied ? copiedLabel : label}
+        </span>
+      )}
     </button>
   );
 }

@@ -308,6 +308,7 @@ export default function TempZip321Page() {
                         <div className="mx-auto max-w-[360px]">
                           <QrUriBlock
                             uri={row.uri}
+                            memoText={row.memo}
                             profileName={row.name}
                             forceShowQR
                             defaultShowQR

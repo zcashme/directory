@@ -44,11 +44,11 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
         onFlowExpandedChange?.(true);
         setQrVisible(true);
       } else {
-        setError(result.error ?? "Failed to generate QR code.");
+        setError(result.error ?? "Failed to generate QR code. Try again.");
         onFlowExpandedChange?.(false);
       }
     } catch {
-      setError("Failed to generate QR code. Please try again.");
+      setError("Failed to generate QR code. Try again.");
       onFlowExpandedChange?.(false);
     } finally {
       setIsGenerating(false);
@@ -60,7 +60,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
     if (otpValue.length !== 6 || !profile.id || !currentMemo) return;
 
     if (otpAttemptsLeft <= 0) {
-      setOtpResult({ ok: false, message: "Too many attempts. Please generate a new QR code." });
+      setOtpResult({ ok: false, message: "Too many attempts. Generate a new QR." });
       return;
     }
 
@@ -72,7 +72,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
       const response = await confirmMaxiOtpAction(profile.id, otpValue, currentMemo);
 
       if (response.ok) {
-        setOtpResult({ ok: true, message: "Upgrade successful! Refreshing..." });
+        setOtpResult({ ok: true, message: "You own your name. Refreshing..." });
         setTimeout(() => window.location.reload(), 1000);
       } else {
         const remaining = otpAttemptsLeft - 1;
@@ -80,18 +80,18 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
         setOtp("");
 
         if (remaining <= 0) {
-          setOtpResult({ ok: false, message: "Too many attempts. Please generate a new QR code." });
+          setOtpResult({ ok: false, message: "Too many attempts. Generate a new QR." });
           setQrVisible(false);
           onFlowExpandedChange?.(false);
         } else {
           setOtpResult({
             ok: false,
-            message: `Invalid code. ${remaining} attempt${remaining === 1 ? "" : "s"} remaining.`,
+            message: `Invalid code. ${remaining} attempt${remaining === 1 ? "" : "s"} left.`,
           });
         }
       }
     } catch {
-      setOtpResult({ ok: false, message: "An error occurred. Please try again." });
+      setOtpResult({ ok: false, message: "Something went wrong. Try again." });
     } finally {
       setIsSubmitting(false);
     }
@@ -118,7 +118,9 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
 
   const isOtpComplete = otp.trim().length === 6;
   const showQrSection = qrVisible && !!currentUri;
-  const maxiAmountHint = "Send 1 ZEC to unlock Maxi mode.";
+  const nameRegistrationHint = "Send 1 ZEC to register your name on-chain.";
+  const claimNameRaw = (profile.name ?? "").trim() || "zcasher.name";
+  const claimName = claimNameRaw.charAt(0).toUpperCase() + claimNameRaw.slice(1).toLowerCase();
 
   return (
     <div className="w-full bg-transparent border-none shadow-none p-0">
@@ -130,7 +132,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
             disabled={isGenerating}
             className="w-full py-3 rounded-xl border border-amber-100/50 bg-[linear-gradient(135deg,rgba(21,128,61,0.96)_0%,rgba(16,185,129,0.92)_55%,rgba(234,179,8,0.75)_100%)] text-amber-50 font-semibold shadow-[0_10px_26px_-14px_rgba(234,179,8,0.8),inset_0_1px_0_rgba(255,255,255,0.24)] hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isGenerating ? "Generating..." : "Pay 1 ZEC to Unlock"}
+            {isGenerating ? "Generating..." : `Pay 1 ZEC to Upgrade`}
           </button>
         </div>
       )}
@@ -145,13 +147,13 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
             uri={currentUri}
             memoText={currentMemo}
             profileName="maxi-upgrade"
-            qrTopHintText="Send transaction to receive code."
+            qrTopHintText="Send to claim your name"
             qrTopHintDetails={[
-              maxiAmountHint,
-              "Do not leave the page before entering the code.",
+              nameRegistrationHint,
+              "Stay on this page to enter your code.",
             ]}
             qrTopHintToggleLabel="Help"
-            qrHintText="Scan or Tap QR"
+            qrHintText="Scan or tap QR"
             compactTopHintToQrSpacing
             compactTopSpacing
           />
@@ -160,7 +162,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
         <div className="relative mx-auto w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/45 bg-white/28 p-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)] backdrop-blur-sm transition-all">
           <div className="space-y-3">
             <p className="text-center text-xs font-normal text-gray-700">
-              Code will be sent to address on profile.
+              Enter the code sent to your address.
             </p>
             <OtpInput
               id="maxi-otp"
@@ -178,7 +180,7 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
               className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 border-amber-100/50 text-amber-50 bg-[linear-gradient(140deg,rgba(21,128,61,0.96)_0%,rgba(234,179,8,0.68)_100%)] hover:brightness-110 font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
               disabled={!isOtpComplete || isSubmitting}
             >
-              {isSubmitting ? "Upgrading..." : "Confirm Upgrade"}
+              {isSubmitting ? "Claiming..." : "Confirm and Claim"}
             </button>
           </div>
 

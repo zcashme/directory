@@ -3,6 +3,7 @@ import type { Profile } from "@/lib/profile/types";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
+import CopyButton from "@/ui/common/buttons/CopyButton";
 
 const MAX_MEMO_BYTES = 512;
 
@@ -109,7 +110,7 @@ function MemoCounter({ text }: MemoCounterProps) {
   return (
     <>
       {showRemaining && (
-        <span className="absolute bottom-3 right-3 text-xs text-gray-500">
+        <span className="absolute bottom-3 left-3 text-xs text-gray-500">
           {remaining} bytes remaining
         </span>
       )}
@@ -191,6 +192,7 @@ export default function MemoComposer({
 
   const recipientName =
     profile?.display_name || profile?.name || "Recipient";
+  const hasMemoText = memo.trim().length > 0;
 
   useEffect(() => {
     if (!forceShowQR) return;
@@ -219,7 +221,20 @@ export default function MemoComposer({
   return (
     <div className="bg-transparent border-none shadow-none p-0 relative z-10">
 
-
+      {!disabled && hasMemoText && (
+        <div className="mb-1 flex justify-end">
+          <CopyButton
+            text={memo}
+            label="Copy Memo"
+            copiedLabel="Copied"
+            size="xs"
+            expanded
+            labelPosition="left"
+            hoverColor="var(--color-brand-blue)"
+            className="h-6 rounded-md bg-transparent px-2"
+          />
+        </div>
+      )}
 
       {/* MEMO FIELD */}
       <div className="relative mb-2">
@@ -291,21 +306,26 @@ export default function MemoComposer({
           </div>
         )}
 
-        {memo && !disabled && (
-          <button
-            onClick={() => setMemo("")}
-            className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 h-5 w-5 leading-none flex items-center justify-center"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
-              <path
-                d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          </button>
+        {!disabled && (
+          <div className="absolute right-3 top-2.5 flex items-center gap-1.5">
+            {memo && (
+              <button
+                type="button"
+                onClick={() => setMemo("")}
+                className="text-gray-400 hover:text-gray-600 h-5 w-5 leading-none flex items-center justify-center"
+              >
+                <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+                  <path
+                    d="M3.5 3.5L10.5 10.5M10.5 3.5L3.5 10.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            )}
+          </div>
         )}
 
         <MemoCounter text={memo} />

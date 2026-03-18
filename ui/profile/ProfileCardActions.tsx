@@ -135,7 +135,7 @@ export default function ProfileCardActions({
             <span className="inline-flex scale-[0.78] origin-left">
               <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />
             </span>,
-            "Unlock Maxi Mode",
+            "Claim Name",
             onUpgrade,
             isMaxi
           )}

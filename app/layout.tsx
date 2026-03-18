@@ -47,49 +47,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
         <div className="flex-1">{children}</div>
         <footer className="relative border-t border-gray-200" style={{ backgroundColor: "var(--color-background)" }}>
           <div className="w-full h-12 flex items-stretch">
-            <div className="hidden sm:block w-12 flex-shrink-0" />
-            <div className="flex-1 min-w-0 border-l border-gray-200/50 px-4 flex items-center justify-between gap-3">
-              <div className="h-12 border-r border-gray-200/50 pr-4 flex items-center justify-start gap-4 text-gray-500">
-                {SOCIAL_LINKS.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-gray-500 hover:text-[var(--color-brand-blue)] transition-colors"
-                    aria-label={link.label}
-                  >
-                    {link.kind === "path" ? (
-                      <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
-                      </svg>
-                    ) : (
-                      <span
-                        className="block w-5 h-5 bg-current"
-                        style={{
-                          maskImage: `url('${link.src}')`,
-                          WebkitMaskImage: `url('${link.src}')`,
-                          maskRepeat: "no-repeat",
-                          WebkitMaskRepeat: "no-repeat",
-                          maskPosition: "center",
-                          WebkitMaskPosition: "center",
-                          maskSize: "contain",
-                          WebkitMaskSize: "contain",
-                        }}
-                      />
-                    )}
-                  </a>
-                ))}
-              </div>
-              <div className="ml-auto h-12 pl-4 flex items-center justify-end gap-4 text-xs text-gray-500">
-                <Link href="/terms" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Terms</Link>
-                <Link href="/privacy" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Privacy</Link>
-                <div className="h-12 border-l border-gray-200/50 pl-4 flex items-center">
-                  <span>&copy; 2026 ZcashMe</span>
-                </div>
-              </div>
-            </div>
-            <div className="hidden sm:flex w-12 h-12 flex-shrink-0 border-l border-gray-200/50 items-center justify-center">
+            <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
               <Link href="/" aria-label="Go to homepage" className="flex items-center justify-center h-full w-full">
                 <img
                   src="/assets/icons/zcashme-logo.svg"
@@ -98,6 +56,50 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 />
               </Link>
             </div>
+            <div className="flex-1 min-w-0 border-l border-gray-200/50 px-4 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+              <div className="h-12 border-r border-gray-200/50 pr-4 flex items-center justify-start text-xs text-gray-500 whitespace-nowrap">
+                <span>&copy; 2026 ZcashMe</span>
+              </div>
+              <div className="h-12 flex items-center justify-center text-gray-500">
+                <div className="flex items-center justify-center gap-4">
+                  {SOCIAL_LINKS.map((link) => (
+                    <a
+                      key={link.href}
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-500 hover:text-[var(--color-brand-blue)] transition-colors"
+                      aria-label={link.label}
+                    >
+                      {link.kind === "path" ? (
+                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path {...(link.evenodd && { fillRule: "evenodd", clipRule: "evenodd" })} d={link.path} />
+                        </svg>
+                      ) : (
+                        <span
+                          className="block w-5 h-5 bg-current"
+                          style={{
+                            maskImage: `url('${link.src}')`,
+                            WebkitMaskImage: `url('${link.src}')`,
+                            maskRepeat: "no-repeat",
+                            WebkitMaskRepeat: "no-repeat",
+                            maskPosition: "center",
+                            WebkitMaskPosition: "center",
+                            maskSize: "contain",
+                            WebkitMaskSize: "contain",
+                          }}
+                        />
+                      )}
+                    </a>
+                  ))}
+                </div>
+              </div>
+              <div className="h-12 border-l border-gray-200/50 pl-4 flex items-center justify-end gap-4 text-xs text-gray-500 whitespace-nowrap">
+                <Link href="/terms" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Terms</Link>
+                <Link href="/privacy" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Privacy</Link>
+              </div>
+            </div>
+            <div className="hidden sm:block w-12 h-12 flex-shrink-0 border-l border-gray-200/50" />
           </div>
         </footer>
       </body>

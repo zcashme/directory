@@ -3,7 +3,7 @@ import type { MouseEventHandler } from "react";
 
 interface VerifiedBadgeProps {
   verified?: boolean;
-  variant?: "verified" | "maxi";
+  variant?: "verified" | "maxi" | "zcashName";
   collapsedOnly?: boolean;
   verifiedLabel?: string;
   unverifiedLabel?: string;
@@ -65,7 +65,25 @@ export default function VerifiedBadge({
     </span>
   );
 
-  const resolvedVerifiedLabel = verifiedLabel ?? (variant === "maxi" ? "Maxi Mode" : "Verified");
+  const renderZcashSymbol = (color: string) => (
+    <span className="relative flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-3.5 w-3.5 ${color} drop-shadow-xs`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+        style={{ transform: "scaleX(-1) rotate(90deg)", transformOrigin: "50% 50%" }}
+      >
+        <path d="M4 4.6h12v2H7.2l8.8 6.6v2.2H4v-2h8.8L4 6.8V4.6z" />
+        <path d="M9.2 2.5h1.6v3H9.2zm0 12h1.6v3H9.2z" />
+      </svg>
+    </span>
+  );
+
+  const resolvedVerifiedLabel = verifiedLabel ?? (
+    variant === "maxi" ? "Maxi Mode" : variant === "zcashName" ? "Zcash Name" : "Verified"
+  );
   const verifiedLabelHoverMax =
     resolvedVerifiedLabel.length > 9
       ? "group-hover/badge:max-w-[120px]"
@@ -93,7 +111,7 @@ export default function VerifiedBadge({
       : open
         ? `${verifiedLabelMax} opacity-100`
         : `max-w-0 opacity-0 ${verifiedLabelHoverMax} group-hover/badge:opacity-100`;
-    const verifiedClasses = variant === "maxi"
+    const verifiedClasses = variant === "maxi" || variant === "zcashName"
       ? `text-amber-900 bg-linear-to-r from-amber-100 to-yellow-200 border-amber-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`
       : `text-green-800 bg-linear-to-r from-green-100 to-green-200 border-green-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`;
     return (
@@ -106,7 +124,11 @@ export default function VerifiedBadge({
     >
         <div className={`flex items-center justify-center ${gapClasses}`}>
 
-          {variant === "maxi" ? renderStar("text-amber-900") : renderCheckmark("text-green-600")}
+          {variant === "maxi"
+            ? renderStar("text-amber-900")
+            : variant === "zcashName"
+              ? renderZcashSymbol("text-amber-900")
+              : renderCheckmark("text-green-600")}
 
           <span
             className={`
