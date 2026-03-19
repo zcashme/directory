@@ -119,8 +119,6 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
   const isOtpComplete = otp.trim().length === 6;
   const showQrSection = qrVisible && !!currentUri;
   const nameRegistrationHint = "Send 1 ZEC to register your name on-chain.";
-  const claimNameRaw = (profile.name ?? "").trim() || "zcasher.name";
-  const claimName = claimNameRaw.charAt(0).toUpperCase() + claimNameRaw.slice(1).toLowerCase();
 
   return (
     <div className="w-full bg-transparent border-none shadow-none p-0">
