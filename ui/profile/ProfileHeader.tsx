@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
@@ -22,11 +22,9 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const shouldReduceMotion = useReducedMotion();
   const [search, setSearch] = useState("");
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const [isLoginCalloutOpen, setIsLoginCalloutOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
   const headerBarRef = useRef<HTMLDivElement | null>(null);
-  const logoCalloutRef = useRef<HTMLDivElement | null>(null);
   const [isRouteNavigationLoading, setIsRouteNavigationLoading] = useState(false);
   const [routeNavigationProgress, setRouteNavigationProgress] = useState(0);
   const [routeNavigationDirection, setRouteNavigationDirection] = useState<NavigationProgressDirection>("ltr");
@@ -158,7 +156,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
 
   useEffect(() => {
     lastResolvedPathnameRef.current = pathname ?? "/";
-    setIsLoginCalloutOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -260,28 +257,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     },
     [clearRouteNavigationAnimation]
   );
-
-  useEffect(() => {
-    if (!isLoginCalloutOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (logoCalloutRef.current?.contains(event.target as Node)) return;
-      setIsLoginCalloutOpen(false);
-    };
-
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsLoginCalloutOpen(false);
-      }
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleEscape);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleEscape);
-    };
-  }, [isLoginCalloutOpen]);
 
   const isNsRoute = pathname === "/ns" || pathname?.startsWith("/ns/");
   if (isNsRoute) {
@@ -397,68 +372,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
             >
               Join
             </motion.button>
-          </div>
-
-          <div
-            ref={logoCalloutRef}
-            className="relative w-12 h-12 flex-shrink-0 border-l border-gray-200/50 flex items-center justify-center"
-          >
-            <button
-              onClick={() => {
-                setIsLoginCalloutOpen((prev) => !prev);
-              }}
-              className="flex items-center justify-center h-full w-full"
-              aria-label="Show login status"
-              aria-expanded={isLoginCalloutOpen}
-              aria-controls="header-login-coming-soon"
-            >
-              <img
-                src="/assets/icons/zcashme-logo.svg"
-                alt="Zcash.me logo"
-                className="h-10 w-10 object-contain translate-y-0.5"
-              />
-            </button>
-            <AnimatePresence>
-              {isLoginCalloutOpen && (
-                <motion.div
-                  id="header-login-coming-soon"
-                  initial={shouldReduceMotion ? { opacity: 1 } : { opacity: 0, y: -10, scaleY: 0.18, scaleX: 0.86 }}
-                  animate={
-                    shouldReduceMotion
-                      ? { opacity: 1 }
-                      : { opacity: 1, y: 0, scaleY: 1, scaleX: 1 }
-                  }
-                  exit={
-                    shouldReduceMotion
-                      ? { opacity: 0 }
-                      : {
-                          opacity: 0,
-                          scaleX: 0.86,
-                          scaleY: 0.18,
-                          transition: {
-                            duration: 0.2,
-                            ease: "easeIn",
-                          },
-                        }
-                  }
-                  transition={
-                    shouldReduceMotion
-                      ? { duration: 0.12 }
-                      : {
-                          opacity: { duration: 0.16, ease: "easeOut" },
-                          y: { type: "spring", stiffness: 640, damping: 34, mass: 0.38 },
-                          scaleY: { type: "spring", stiffness: 560, damping: 24, mass: 0.4 },
-                          scaleX: { type: "spring", stiffness: 500, damping: 20, mass: 0.44, delay: 0.075 },
-                        }
-                  }
-                  className="absolute right-0 top-full z-40 mt-2 w-64 max-w-[calc(100vw-1rem)] origin-top-right"
-                >
-                  <div className="rounded-[26px] border border-black/70 bg-transparent px-4 py-3 text-center shadow-xs">
-                    <p className="text-sm font-semibold text-gray-800">Log in coming soon</p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
 
           <div
