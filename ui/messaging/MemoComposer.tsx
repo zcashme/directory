@@ -3,7 +3,10 @@ import type { Profile } from "@/lib/profile/types";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
-import CopyButton from "@/ui/common/buttons/CopyButton";
+import {
+  MEMO_FIELD_MIN_HEIGHT_PX,
+  ZEC_MEMO_AMOUNT_OVERLAP_PX,
+} from "@/ui/messaging/memoLayout";
 
 const MAX_MEMO_BYTES = 512;
 
@@ -41,6 +44,7 @@ import { withFieldBorderState } from "@/ui/common/forms/styles";
 
 interface MemoCounterProps {
   text: string;
+  className?: string;
 }
 
 interface MemoLeftIconProps {
@@ -102,7 +106,7 @@ function MemoLeftIcon({ text }: MemoLeftIconProps) {
   );
 }
 
-function MemoCounter({ text }: MemoCounterProps) {
+function MemoCounter({ text, className = "" }: MemoCounterProps) {
   const bytes = useMemo(() => new TextEncoder().encode(text || "").length, [text]);
   const remaining = MAX_MEMO_BYTES - bytes;
   const showRemaining = remaining <= 20;
@@ -110,7 +114,7 @@ function MemoCounter({ text }: MemoCounterProps) {
   return (
     <>
       {showRemaining && (
-        <span className="absolute bottom-3 left-3 text-xs text-gray-500">
+        <span className={className}>
           {remaining} bytes remaining
         </span>
       )}
@@ -163,10 +167,19 @@ export default function MemoComposer({
     const lineHeight = Number.parseFloat(style.lineHeight) || 20;
     const paddingTop = Number.parseFloat(style.paddingTop) || 0;
     const paddingBottom = Number.parseFloat(style.paddingBottom) || 0;
-    const minHeight = (lineHeight * 2) + paddingTop + paddingBottom;
+    const minHeight = Math.max(
+      MEMO_FIELD_MIN_HEIGHT_PX,
+      (lineHeight * 2) + paddingTop + paddingBottom
+    );
+    const rawText = target.value ?? "";
 
     target.style.height = "auto";
-    const nextHeight = Math.max(target.scrollHeight + lineHeight, minHeight);
+    if (!rawText.trim()) {
+      target.style.height = `${MEMO_FIELD_MIN_HEIGHT_PX}px`;
+      return;
+    }
+    // Keep one and a half trailing blank visual lines while typing.
+    const nextHeight = Math.max(target.scrollHeight + (lineHeight * 1.5), minHeight);
     target.style.height = `${nextHeight}px`;
   }, []);
 
@@ -191,8 +204,7 @@ export default function MemoComposer({
   const disabled = profile?.address?.startsWith("t");
 
   const recipientName =
-    profile?.display_name || profile?.name || "Recipient";
-  const hasMemoText = memo.trim().length > 0;
+    profile?.display_name ?? profile?.name ?? "Recipient";
 
   useEffect(() => {
     if (!forceShowQR) return;
@@ -220,22 +232,6 @@ export default function MemoComposer({
 
   return (
     <div className="bg-transparent border-none shadow-none p-0 relative z-10">
-
-      {!disabled && hasMemoText && (
-        <div className="mb-1 flex justify-end">
-          <CopyButton
-            text={memo}
-            label="Copy Memo"
-            copiedLabel="Copied"
-            size="xs"
-            expanded
-            labelPosition="left"
-            hoverColor="var(--color-brand-blue)"
-            className="h-6 rounded-md bg-transparent px-2"
-          />
-        </div>
-      )}
-
       {/* MEMO FIELD */}
       <div className="relative mb-2">
         {!disabled && (
@@ -262,10 +258,15 @@ export default function MemoComposer({
               ? "Memos are not supported for transparent addresses"
               : `Write a shielded message to ${recipientName}`
           }
-          className={`border px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden ${disabled
-              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed pb-8 overflow-hidden"
-              : `${withFieldBorderState("border-gray-800")} pl-8 pb-8 overflow-hidden`
+          className={`border-t border-l border-r px-3 py-2 rounded-xl w-full text-md resize-none pr-7 text-gray-700 outline-hidden pl-8 pb-8 overflow-hidden ${disabled
+              ? "border-gray-800 bg-gray-100 text-gray-400 cursor-not-allowed"
+              : `${withFieldBorderState("border-gray-800").replace("border", "border-t border-l border-r")}`
             }`}
+        />
+
+        <MemoCounter
+          text={memo}
+          className="pointer-events-none absolute right-5 bottom-14 z-30 max-w-[170px] text-xs text-right text-gray-500"
         />
 
         {emoji.results.length > 0 && !disabled && (
@@ -328,22 +329,26 @@ export default function MemoComposer({
           </div>
         )}
 
-        <MemoCounter text={memo} />
       </div>
 
       {/* AMOUNT + WALLET */}
-      <AmountAndWallet
-        amount={amount}
-        setAmount={setAmount}
-        openWallet={openWallet}
-        showOpenWallet={false}
-        showUsdPill
-        asset={asset}
-        assetOptions={assetOptions}
-        setAsset={onSetAsset}
-        initialFiatTicker={prefillFiatTicker}
-        initialFiatAmount={prefillFiatAmount}
-      />
+      <div
+        className="relative z-20 min-h-[52px]"
+        style={{ marginTop: -ZEC_MEMO_AMOUNT_OVERLAP_PX }}
+      >
+        <AmountAndWallet
+          amount={amount}
+          setAmount={setAmount}
+          openWallet={openWallet}
+          showOpenWallet={false}
+          showUsdPill
+          asset={asset}
+          assetOptions={assetOptions}
+          setAsset={onSetAsset}
+          initialFiatTicker={prefillFiatTicker}
+          initialFiatAmount={prefillFiatAmount}
+        />
+      </div>
 
       {/* Divider line like Verify */}
       <div className="border-t border-gray-300 my-4"></div>
@@ -354,8 +359,8 @@ export default function MemoComposer({
           uri={uri}
           memoText={memo}
           profileName={
-            profile?.display_name ||
-            profile?.name ||
+            profile?.display_name ??
+            profile?.name ??
             "recipient"
           }
           forceShowQR={forceShowQR}

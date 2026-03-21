@@ -152,6 +152,7 @@ interface AmountAndWalletProps {
   readOnlyAmount?: boolean;
   filterAllowedBaseLayers?: boolean;
   tokenSelectorAlign?: "right" | "left";
+  fieldBackgroundClassName?: string;
 
   // Refund address props (optional)
   showRefund?: boolean;
@@ -218,6 +219,7 @@ export default function AmountAndWallet({
   readOnlyAmount = false,
   filterAllowedBaseLayers = true,
   tokenSelectorAlign = "right",
+  fieldBackgroundClassName = "",
   // Refund address props (optional)
   showRefund = false,
   refundAddress = "",
@@ -901,7 +903,7 @@ export default function AmountAndWallet({
                              ? "pr-3 md:pr-3 pl-3"
                              : "pr-12 md:pr-16 pl-3"
                          } text-gray-900
-                         outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")} ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : ""}`}
+                         outline-hidden [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${withFieldBorderState("border-gray-800")} ${disabled ? "bg-gray-100 text-gray-500 cursor-not-allowed" : fieldBackgroundClassName}`}
             />
 
             {/* Right-side token selector */}
@@ -1051,7 +1053,7 @@ export default function AmountAndWallet({
           {showUsdPill && (
             <div
               className={`relative flex items-center border border-l-0 border-gray-800 rounded-r-xl text-gray-500 text-md h-11 min-w-0 max-w-full transition-[width] duration-200 box-border ${isUsdOpen ? "px-3" : "px-3 justify-center"
-                }`}
+                } ${fieldBackgroundClassName}`}
               style={{ width: rightPillWidth }}
               aria-expanded={isUsdOpen}
             >

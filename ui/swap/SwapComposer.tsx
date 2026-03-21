@@ -18,6 +18,10 @@ import SwapDepositDisplay from "@/ui/swap/SwapDepositDisplay";
 import SwapQuoteDisplayComponent from "@/ui/swap/SwapQuoteDisplay";
 import SwapSlippageControl from "@/ui/swap/SwapSlippageControl";
 import { getTokenId } from "@/lib/swap/utils";
+import {
+  MEMO_FIELD_MIN_HEIGHT_PX,
+  NON_ZEC_MEMO_AMOUNT_OVERLAP_PX,
+} from "@/ui/messaging/memoLayout";
 
 interface SwapComposerProps {
   profile: Profile;
@@ -104,7 +108,6 @@ export default function SwapComposer({
   const confirmedQuote = isConfirmSuccess(quoteData) ? quoteData : null;
   const depositAmountDecimal = confirmedQuote?.data?.deposit?.amountDecimal ?? "";
   const [isRefundAddressValid, setIsRefundAddressValid] = useState(false);
-  const [isMemoCompact, setIsMemoCompact] = useState(false);
   const autoQuoteKeyRef = useRef("");
   const autoConfirmKeyRef = useRef("");
   const wasRefundValidRef = useRef(false);
@@ -151,7 +154,7 @@ export default function SwapComposer({
       swapAmount,
       trimmedRefundAddress,
       slippageTolerance,
-      profile?.address || "",
+      profile?.address ?? "",
     ].join("|");
 
     if (autoQuoteKeyRef.current === nextQuoteKey || isGettingQuote) {
@@ -161,7 +164,7 @@ export default function SwapComposer({
     autoQuoteKeyRef.current = nextQuoteKey;
     void getQuote({
       amountIn: swapAmount,
-      destAddress: profile?.address || "",
+      destAddress: profile?.address ?? "",
       refund: trimmedRefundAddress,
       slippage: slippageTolerance,
     });
@@ -195,7 +198,7 @@ export default function SwapComposer({
       swapAmount,
       trimmedRefundAddress,
       slippageTolerance,
-      profile?.address || "",
+      profile?.address ?? "",
     ].join("|");
 
     if (autoConfirmKeyRef.current === nextConfirmKey) return;
@@ -203,7 +206,7 @@ export default function SwapComposer({
 
     void confirmSwap({
       amountIn: swapAmount,
-      destAddress: profile?.address || "",
+      destAddress: profile?.address ?? "",
       refund: trimmedRefundAddress,
       slippage: slippageTolerance,
     });
@@ -248,24 +251,18 @@ export default function SwapComposer({
             ? "getting-quote"
             : "refund-valid";
   const showInlineSlippage = Number.parseFloat(swapAmount) > 0;
-  const hasFlowContentBeforeError =
-    (isGettingQuote && !quotePreview && !statusKey?.depositAddress) ||
-    !!quotePreview ||
-    (quotePreview && isConfirming && !statusKey?.depositAddress) ||
-    (!!statusKey?.depositAddress && !!quotePreview);
+  const hasFlowContentBeforeError = [
+    isGettingQuote && !quotePreview && !statusKey?.depositAddress,
+    Boolean(quotePreview),
+    Boolean(quotePreview && isConfirming && !statusKey?.depositAddress),
+    Boolean(statusKey?.depositAddress && quotePreview),
+  ].some(Boolean);
   const isWarningStatus = /too low|warning|insufficient|min(imum)?|at least/i.test(quoteStatus);
   const handleGetNewQuote = () => {
     autoQuoteKeyRef.current = "";
     autoConfirmKeyRef.current = "";
     resetSwapProgress();
   };
-
-  useEffect(() => {
-    const raf = window.requestAnimationFrame(() => {
-      setIsMemoCompact(true);
-    });
-    return () => window.cancelAnimationFrame(raf);
-  }, []);
 
   const scrollToAbsoluteBottom = () => {
     const scrollOnePass = () => {
@@ -329,9 +326,9 @@ export default function SwapComposer({
       {/* DISABLED MEMO FIELD */}
       <motion.div
         initial={false}
-        animate={{ height: isMemoCompact ? 44 : 96 }}
+        animate={{ height: MEMO_FIELD_MIN_HEIGHT_PX }}
         transition={{ duration: 0.24, ease: "easeOut" }}
-        className="relative mb-4 overflow-hidden"
+        className="relative mb-2 overflow-hidden"
       >
         <div className="relative h-full">
           <div className="absolute left-3 top-3 pointer-events-none text-gray-500 h-5 w-5 flex items-center justify-center">
@@ -356,41 +353,47 @@ export default function SwapComposer({
               e.currentTarget.blur();
               returnToZec();
             }}
-            className="border border-gray-800 px-3 py-2 rounded-xl w-full h-full text-md resize-none pr-7 pl-8 bg-gray-100 text-gray-400 outline-hidden cursor-not-allowed overflow-hidden"
+            className="border-t border-l border-r border-gray-800 px-3 py-2 rounded-xl w-full h-full text-md resize-none pr-7 pl-8 bg-gray-100 text-gray-400 outline-hidden cursor-not-allowed overflow-hidden"
           />
         </div>
       </motion.div>
 
       {/* AMOUNT INPUT + TOKEN SELECTOR + USD DISPLAY */}
-      <AmountAndWallet
-        amount={swapAmount}
-        setAmount={setSwapAmount}
-        openWallet={undefined}
-        showOpenWallet={false}
-        showUsdPill={true}
-        collapseUsdPillSignal={collapseFromFiatPillSignal}
-        asset={originSymbol}
-        assetOptions={formattedTokenOptions}
-        setAsset={handleTokenChange}
-        initialAutoOpenFiatFromAmount={autoOpenFiatFromAmount}
-        initialFiatTicker={prefillFiatTicker}
-        initialFiatAmount={prefillFiatAmount}
-        showRefund={Number.parseFloat(swapAmount) > 0}
-        refundAddress={refundAddress}
-        setRefundAddress={setRefundAddress}
-        recipientName={recipientName}
-        onRefundValidationChange={setIsRefundAddressValid}
-        validationTrigger={slippageTolerance}
-        betweenAmountAndRefund={
-          showInlineSlippage ? (
-            <SwapSlippageControl
-              value={slippageTolerance}
-              onChange={setSlippageTolerance}
-              variant="collapsible"
-            />
-          ) : null
-        }
-      />
+      <div
+        className="relative z-20 min-h-[52px]"
+        style={{ marginTop: -NON_ZEC_MEMO_AMOUNT_OVERLAP_PX }}
+      >
+        <AmountAndWallet
+          amount={swapAmount}
+          setAmount={setSwapAmount}
+          openWallet={undefined}
+          showOpenWallet={false}
+          showUsdPill={true}
+          fieldBackgroundClassName="bg-[var(--color-background)]"
+          collapseUsdPillSignal={collapseFromFiatPillSignal}
+          asset={originSymbol}
+          assetOptions={formattedTokenOptions}
+          setAsset={handleTokenChange}
+          initialAutoOpenFiatFromAmount={autoOpenFiatFromAmount}
+          initialFiatTicker={prefillFiatTicker}
+          initialFiatAmount={prefillFiatAmount}
+          showRefund={Number.parseFloat(swapAmount) > 0}
+          refundAddress={refundAddress}
+          setRefundAddress={setRefundAddress}
+          recipientName={recipientName}
+          onRefundValidationChange={setIsRefundAddressValid}
+          validationTrigger={slippageTolerance}
+          betweenAmountAndRefund={
+            showInlineSlippage ? (
+              <SwapSlippageControl
+                value={slippageTolerance}
+                onChange={setSlippageTolerance}
+                variant="collapsible"
+              />
+            ) : null
+          }
+        />
+      </div>
 
       <AnimatePresence initial={false}>
         {showFlowBox && (
