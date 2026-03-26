@@ -5,7 +5,7 @@
  * This matches the ZVS backend (Rust) implementation in otp_rules.rs.
  */
 
-import { parseZvsMemo, parseMaxiZvsMemo } from './session';
+import { parseZvsMemo, parseMaxiZvsMemo, parseMaxiOtpZvsMemo } from './session';
 
 /**
  * Get the secret seed as hex-decoded bytes (matches ZVS backend)
@@ -39,8 +39,8 @@ function hexToBytes(hex: string): Uint8Array {
  */
 async function generateOtp(memo: string): Promise<string> {
   // Extract session_id and user_address from memo
-  // Auto-detect: try 16-digit standard memo first, then 24-digit maxi memo
-  const parsed = parseZvsMemo(memo) ?? parseMaxiZvsMemo(memo);
+  // Auto-detect: try 48-digit maxi OTP, then 24-digit maxi upgrade, then 16-digit standard
+  const parsed = parseMaxiOtpZvsMemo(memo) ?? parseMaxiZvsMemo(memo) ?? parseZvsMemo(memo);
   if (!parsed) {
     throw new Error('Invalid memo format');
   }

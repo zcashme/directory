@@ -1,7 +1,7 @@
 "use server";
 
 import { verifyOtp } from "@/lib/verification/otp";
-import { parseZvsMemo } from "@/lib/verification/session";
+import { parseZvsMemo, parseMaxiOtpZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
@@ -139,8 +139,8 @@ export async function confirmOtpAction(
 
     // --- OTP valid — proceed with verification ------------------------------
 
-    // Parse memo to extract address
-    const parsed = parseZvsMemo(trimmedMemo);
+    // Parse memo to extract address (48-digit maxi OTP or 16-digit standard)
+    const parsed = parseMaxiOtpZvsMemo(trimmedMemo) ?? parseZvsMemo(trimmedMemo);
     if (!parsed) {
       return {
         ok: false,

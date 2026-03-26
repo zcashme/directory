@@ -81,8 +81,9 @@ export async function generateMemoAction(
       return { ok: false, error: `Amount must be at least ${minAmount} ZEC` };
     }
 
-    // Generate server-side memo
-    const sessionId = generateSessionId();
+    // Generate server-side memo (48-digit session for Maxi, 16-digit for standard)
+    const isMaxi = isTruthyLikeMaxi(profile.is_maxi);
+    const sessionId = generateSessionId(isMaxi ? 48 : 16);
     const memo = buildZvsMemo(sessionId, profile.address);
     const uri = buildZcashUri(SIGNIN_ADDR, cleanAmount, memo);
 

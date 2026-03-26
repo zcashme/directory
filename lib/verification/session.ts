@@ -40,11 +40,25 @@ export function parseZvsMemo(memo: string): { sessionId: string; userAddress: st
 }
 
 /**
- * Parse a Maxi ZVS memo string (24-digit session ID)
+ * Parse a Maxi upgrade ZVS memo string (24-digit session ID)
  * Returns null if the memo format is invalid
  */
 export function parseMaxiZvsMemo(memo: string): { sessionId: string; userAddress: string } | null {
   const match = memo.match(/\{zvs\/(\d{24}),(.+)\}$/);
+  if (!match) return null;
+
+  return {
+    sessionId: match[1],
+    userAddress: match[2],
+  };
+}
+
+/**
+ * Parse a Maxi OTP ZVS memo string (48-digit session ID)
+ * Returns null if the memo format is invalid
+ */
+export function parseMaxiOtpZvsMemo(memo: string): { sessionId: string; userAddress: string } | null {
+  const match = memo.match(/\{zvs\/(\d{48}),(.+)\}$/);
   if (!match) return null;
 
   return {
