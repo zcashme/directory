@@ -11,20 +11,8 @@ const jsonResponse = (body: Record<string, unknown>, status: number, cacheSecond
     status,
     headers: withCacheHeaders({
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
     }, cacheSeconds),
   });
-
-export async function OPTIONS(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-    },
-  });
-}
 
 export async function GET(
   request: NextRequest,

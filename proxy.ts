@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
+// ── CORS policy (applied to all /api/* routes) ────────────────────────────────
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, X-API-Key, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
+
 // Single source of truth for all subdomain-routed apps.
 // To add a new app, add one entry here — everything else derives from it.
 const apps: Record<string, { path: string; aliases?: string[] }> = {
@@ -36,14 +44,27 @@ const reservedRoots = new Set([
 ]);
 
 export function proxy(request: NextRequest) {
+  const url = request.nextUrl.clone();
+  const pathname = url.pathname;
+
+  // ── CORS for API routes ────────────────────────────────────────────────────
+  if (pathname.startsWith('/api/')) {
+    if (request.method === 'OPTIONS') {
+      return new NextResponse(null, { status: 204, headers: corsHeaders });
+    }
+    const response = NextResponse.next();
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      response.headers.set(key, value);
+    }
+    return response;
+  }
+
   const forwardedHost = request.headers.get('x-forwarded-host');
   const directHost = request.headers.get('host');
   const hostname = (forwardedHost ?? directHost ?? '')
     .split(',')[0]
     .trim()
     .toLowerCase();
-  const url = request.nextUrl.clone();
-  const pathname = url.pathname;
 
   // Canonicalize /ns route casing so /NS and /Ns resolve to /ns.
   const nsPrefixMatch = pathname.match(/^\/ns(?=\/|$)/i);
@@ -122,6 +143,6 @@ export const config = {
      * - public files (images, etc.)
      * - api routes (they should remain path-based)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)',
   ],
 };

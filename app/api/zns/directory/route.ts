@@ -11,22 +11,10 @@ const json = (body: Record<string, unknown>, status = 200): Response =>
     headers: withCacheHeaders(
       {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "GET, OPTIONS",
       },
       status === 200 ? CACHE_SECONDS : 0
     ),
   });
-
-export async function OPTIONS(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-    },
-  });
-}
 
 /**
  * GET /api/zns/directory?q=ali&limit=25&cursor=

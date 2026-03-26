@@ -84,9 +84,6 @@ const jsonResponse = (
     status,
     headers: withCacheHeaders({
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
     }, cacheSeconds),
   });
 
@@ -140,17 +137,6 @@ function computeRankTier(profile: DirectoryProfile, query: string): number {
 
   // Fallback (shouldn't happen if search filter worked correctly)
   return 5;
-}
-
-export async function OPTIONS(): Promise<Response> {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, X-API-Key",
-    },
-  });
 }
 
 export async function GET(request: Request): Promise<Response> {
