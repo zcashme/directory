@@ -38,18 +38,24 @@ function hexToBytes(hex: string): Uint8Array {
  * @returns 6-digit OTP string
  */
 async function generateOtp(memo: string): Promise<string> {
-  // Extract session_id from memo (ZVS only hashes session_id, not full memo)
+  // Extract session_id and user_address from memo
   // Auto-detect: try 16-digit standard memo first, then 24-digit maxi memo
   const parsed = parseZvsMemo(memo) ?? parseMaxiZvsMemo(memo);
   if (!parsed) {
     throw new Error('Invalid memo format');
   }
   const sessionId = parsed.sessionId;
+  const userAddress = parsed.userAddress;
 
   const encoder = new TextEncoder();
   // Use .slice() to get a Uint8Array backed by ArrayBuffer (not ArrayBufferLike)
   const keyData = getSecretSeedBytes().slice();
-  const messageData = encoder.encode(sessionId);
+  // Must hash session_id + user_address to match ZVS Rust backend (otp_rules.rs)
+  const sessionBytes = encoder.encode(sessionId);
+  const addressBytes = encoder.encode(userAddress);
+  const messageData = new Uint8Array(sessionBytes.length + addressBytes.length);
+  messageData.set(sessionBytes, 0);
+  messageData.set(addressBytes, sessionBytes.length);
 
   // Import the secret key for HMAC
   const key = await crypto.subtle.importKey(
