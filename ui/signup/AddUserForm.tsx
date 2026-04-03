@@ -541,7 +541,7 @@ export default function AddUserForm({
       >
         {nameConflict?.text
           ? nameConflict.text
-          : nameHelp || "Use letters, numbers, underscores, or dashes. Spaces become underscores."}
+          : nameHelp || "Use letters, numbers, or underscores. Spaces become underscores."}
       </p>
       {addressConflict && (
         <p
