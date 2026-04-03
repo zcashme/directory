@@ -143,12 +143,19 @@ export function getLastVerifiedLabel(input: string | number | Profile | null | u
   if (!ts) return "n/a";
   const ms = new Date(ts).getTime();
   if (Number.isNaN(ms)) return "n/a";
-  const weeks = (Date.now() - ms) / (1000 * 60 * 60 * 24 * 7);
+  const diffMs = Date.now() - ms;
+  const weeks = diffMs / (1000 * 60 * 60 * 24 * 7);
   if (weeks < 1) return "<1 week ago";
   if (weeks < 2) return "<2 weeks ago";
   if (weeks < 3) return "<3 weeks ago";
   if (weeks < 4) return "<4 weeks ago";
-  return "<1 month ago";
+  const months = diffMs / (1000 * 60 * 60 * 24 * 30);
+  if (months < 2) return "<2 months ago";
+  if (months < 3) return "<3 months ago";
+  if (months < 6) return "<6 months ago";
+  if (months < 12) return "<1 year ago";
+  const years = Math.floor(months / 12);
+  return years === 1 ? "~1 year ago" : `~${years} years ago`;
 }
 
 /**
