@@ -133,7 +133,7 @@ export default function ProfileCardActions({
           })}
           {menuItem(
             <span className="inline-flex scale-[0.78] origin-left">
-              <VerifiedBadge verified variant="maxi" verifiedLabel="Maxi Mode" collapsedOnly />
+              <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
             </span>,
             "Claim Name",
             onUpgrade,

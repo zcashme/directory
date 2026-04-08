@@ -18,8 +18,10 @@ import UpgradeToMaxiModal from "@/ui/profile/UpgradeToMaxiModal";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
 import { upsertVerifiedLink } from "@/ui/links/verifyLink";
-import { detectProviderFromUrl } from "@/ui/links/providers";
+import { detectProviderFromUrl, isDomainUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
+import DomainVerifyModal from "@/ui/links/DomainVerifyModal";
+import { buildSlug } from "@/lib/profile/profileUtils";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import {
   normalizeProfileThemePackageSelectionId,
@@ -94,6 +96,7 @@ export default function ProfileCard({
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
+  const [domainModalUrl, setDomainModalUrl] = useState<string | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const { form, original, updateField } = useEditsStore();
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
@@ -183,6 +186,12 @@ export default function ProfileCard({
 
   const handleVerifyClick = useCallback(async (link: { url: string }) => {
     if (!profile.address_verified) return;
+
+    if (isDomainUrl(link.url || "")) {
+      setDomainModalUrl(link.url);
+      return;
+    }
+
     const providerKey = detectProviderFromUrl(link.url || "");
     if (!providerKey || !PROVIDERS[providerKey]) return;
 
@@ -198,6 +207,15 @@ export default function ProfileCard({
       setShowRedirect(false);
     }
   }, [profile.address_verified, profile.id]);
+
+  const handleDomainVerified = useCallback((verifiedUrl: string) => {
+    setLinksArray((prev) =>
+      prev.map((l) =>
+        l.url === verifiedUrl ? enrichLink({ ...l, is_verified: true, platform: "Domain" }) : l
+      )
+    );
+    router.refresh();
+  }, [setLinksArray, router]);
 
   const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; avatarUrl?: string | null; accessToken: string }) => {
     setShowRedirect(false);
@@ -353,7 +371,7 @@ export default function ProfileCard({
                   style={{ color: activeCardText }}
                 >
                   <span>{displayName}</span>
-                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "maxi" : "verified"} />}
+                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />}
                 </h2>
                 <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                   /{formatUsername(profile)}
@@ -622,6 +640,16 @@ export default function ProfileCard({
           )}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
           <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} profile={profile} />
+          {domainModalUrl && (
+            <DomainVerifyModal
+              isOpen={!!domainModalUrl}
+              onClose={() => setDomainModalUrl(null)}
+              profileId={profile.id}
+              profileSlug={buildSlug(profile)}
+              url={domainModalUrl}
+              onVerified={handleDomainVerified}
+            />
+          )}
         </VerifiedCardWrapper>
       </div>
     </div>
