@@ -453,7 +453,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       style={{ color: activeCardText }}
                     >
                       <span>{displayName}</span>
-                      {isVerified && <VerifiedBadge verified variant={isMaxi ? "maxi" : "verified"} />}
+                      {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />}
                     </h2>
                     <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                       /{formatUsername(previewProfile)}

@@ -274,7 +274,7 @@ export default function ProfileSearchDropdown({
                         </span>
 
                         {(p.address_verified || isMaxi) && (
-                          <VerifiedBadge verified variant={isMaxi ? "maxi" : "verified"} />
+                          <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />
                         )}
 
                         <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
