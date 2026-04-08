@@ -99,6 +99,7 @@ export default function ProfileCard({
   const [domainModalUrl, setDomainModalUrl] = useState<string | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const { form, original, updateField } = useEditsStore();
+  const setEditsStore = useEditsStore.setState;
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
@@ -214,8 +215,26 @@ export default function ProfileCard({
         l.url === verifiedUrl ? enrichLink({ ...l, is_verified: true, platform: "Domain" }) : l
       )
     );
+    // Flip the matching row in BOTH form and original so the editor's
+    // [Authenticate] button re-renders as the disabled green "Authenticated"
+    // state ([ProfileEditor.tsx:886-897](ui/profile/ProfileEditor.tsx#L886-L897))
+    // and the change isn't picked up as a pending edit.
+    setEditsStore((state) => ({
+      form: {
+        ...state.form,
+        links: state.form.links.map((l) =>
+          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const } : l
+        ),
+      },
+      original: {
+        ...state.original,
+        links: state.original.links.map((l) =>
+          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const } : l
+        ),
+      },
+    }));
     router.refresh();
-  }, [setLinksArray, router]);
+  }, [setLinksArray, setEditsStore, router]);
 
   const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; avatarUrl?: string | null; accessToken: string }) => {
     setShowRedirect(false);

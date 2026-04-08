@@ -219,17 +219,30 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
     };
   }
 
+  // For authenticated custom-domain links (verified via the rel="me" flow),
+  // use the domain's own favicon instead of the generic fallback icon.
+  const useDomainFavicon = !!domain && !!link.is_verified;
+  const icon = useDomainFavicon ? buildFaviconUrl(domain!) : FALLBACK_ICON;
+
   return {
     ...link,
     label:
       (shouldUseHandle ? handle : dbLabel) ??
       domain ??
       "Unknown",
-    icon: FALLBACK_ICON,
+    icon,
     domain,
     handle,
     platform,
   };
+}
+
+/**
+ * Returns a favicon URL for an arbitrary domain via Google's S2 favicon service.
+ * Used for authenticated custom-domain links.
+ */
+function buildFaviconUrl(domain: string): string {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
 }
 
 /**

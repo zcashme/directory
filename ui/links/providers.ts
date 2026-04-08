@@ -85,6 +85,52 @@ export function detectProviderFromUrl(url: string): string | null {
 }
 
 /**
+ * Normalize a user-entered URL or bare hostname to a canonical https://host/ form.
+ * Returns null if the input cannot be parsed as a homepage URL.
+ *
+ * Accepts inputs like:
+ *   - "example.com"
+ *   - "https://example.com"
+ *   - "https://Example.COM/"
+ * Rejects inputs with paths, query strings, or hash fragments.
+ */
+export function normalizeDomainUrl(input: string): string | null {
+  if (!input) return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const withScheme = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  let parsed: URL;
+  try {
+    parsed = new URL(withScheme);
+  } catch {
+    return null;
+  }
+  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+  const host = parsed.hostname.toLowerCase();
+  if (!host.includes(".")) return null;
+  if (host === "localhost" || host.endsWith(".localhost")) return null;
+  if (/^[0-9.]+$/.test(host)) return null;
+  if (host.startsWith("[") || host.includes(":")) return null;
+  const path = parsed.pathname || "/";
+  if (path !== "/" && path !== "") return null;
+  if (parsed.search || parsed.hash) return null;
+  return `https://${host}/`;
+}
+
+/**
+ * Returns true when the URL looks like a bare custom-domain homepage
+ * (verifiable via HTML rel="me"), as opposed to an OAuth provider URL or a deep link.
+ *
+ * Accepts both "https://example.com" and bare "example.com".
+ */
+export function isDomainUrl(url: string): boolean {
+  if (!url) return false;
+  // Reject known OAuth provider hosts before normalizing.
+  if (detectProviderFromUrl(url)) return false;
+  return normalizeDomainUrl(url) !== null;
+}
+
+/**
  * Extract handle from a social URL.
  */
 export function extractHandleFromUrl(url: string): string | null {
