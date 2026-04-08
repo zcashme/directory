@@ -11,4 +11,14 @@ export type VerifyDomainError =
   | "timeout"
   | "no-rel-me-tag"
   | "rel-me-mismatch"
+  | "dns-lookup-failed"
+  | "no-txt-record"
+  | "txt-mismatch"
   | "internal-error";
+
+export interface DomainDnsInstructions {
+  /** Full record name to add, e.g. "_zcashme.example.com" */
+  name: string;
+  /** Full record value to add, e.g. "verify=abc123def456789" */
+  value: string;
+}
