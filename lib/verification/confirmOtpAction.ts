@@ -5,6 +5,9 @@ import { parseZvsMemo, parseMaxiOtpZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
+import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
+import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
+import { normalizeUrl } from "@/lib/profile/urlValidation";
 import {
   getProfileCardTheme,
   getProfileCardBorder,
@@ -88,6 +91,53 @@ function decodeBase64ToBytes(base64Data: string): Uint8Array | null {
   } catch {
     return null;
   }
+}
+
+const SOCIAL_PLATFORMS = new Set<SocialPlatform>([
+  "X",
+  "GitHub",
+  "Instagram",
+  "Reddit",
+  "LinkedIn",
+  "Discord",
+  "TikTok",
+  "Bluesky",
+  "Mastodon",
+  "Snapchat",
+  "Telegram",
+  "Other",
+]);
+
+function isSocialPlatform(value: string): value is SocialPlatform {
+  return SOCIAL_PLATFORMS.has(value as SocialPlatform);
+}
+
+function toPrettyDomain(rawUrl: string): string {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return "";
+  const normalized = normalizeUrl(trimmed);
+  try {
+    const host = new URL(normalized).hostname || "";
+    return host.replace(/^www\./i, "") || trimmed;
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  }
+}
+
+function deriveLinkLabelForSave(link: { url: string; label?: string; platform?: string }): string {
+  const explicit = (link.label ?? "").trim();
+  if (explicit) return explicit;
+
+  const url = (link.url ?? "").trim();
+  if (!url) return "";
+
+  const inferredPlatform = (link.platform ?? derivePlatform(url) ?? "Other").trim();
+  if (!isSocialPlatform(inferredPlatform) || inferredPlatform === "Other") {
+    return toPrettyDomain(url);
+  }
+
+  const handle = normalizeSocialUsername(url, inferredPlatform);
+  return handle || toPrettyDomain(url);
 }
 
 /**
@@ -497,22 +547,34 @@ export async function confirmOtpAction(
             .eq("zcasher_id", profileId);
           if (delErr) linkErrors.push(`delete link ${link.id}: ${delErr.message}`);
         } else if (link.id) {
+          const resolvedPlatform = link.platform ?? derivePlatform(link.url);
+          const resolvedLabel = deriveLinkLabelForSave({
+            url: link.url,
+            label: link.label,
+            platform: resolvedPlatform,
+          });
           const { error: updErr } = await supabase
             .from("zcasher_links")
             .update({
               url: link.url,
-              label: link.label || "",
-              platform: link.platform ?? derivePlatform(link.url),
+              label: resolvedLabel,
+              platform: resolvedPlatform,
             })
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
           if (updErr) linkErrors.push(`update link ${link.id}: ${updErr.message}`);
         } else if (!link._delete) {
+          const resolvedPlatform = link.platform ?? derivePlatform(link.url);
+          const resolvedLabel = deriveLinkLabelForSave({
+            url: link.url,
+            label: link.label,
+            platform: resolvedPlatform,
+          });
           const { error: insErr } = await supabase.from("zcasher_links").insert({
             zcasher_id: profileId,
             url: link.url,
-            label: link.label || "",
-            platform: link.platform ?? derivePlatform(link.url),
+            label: resolvedLabel,
+            platform: resolvedPlatform,
             is_verified: false,
           });
           if (insErr) linkErrors.push(`insert link: ${insErr.message}`);

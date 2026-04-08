@@ -8,7 +8,7 @@ import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileActio
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
-import { isValidUrl } from "@/lib/profile/urlValidation";
+import { isValidUrl, normalizeUrl } from "@/lib/profile/urlValidation";
 import { isUsernameVerified } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
@@ -48,6 +48,48 @@ function parseSocialUrl(rawUrl: string | null | undefined): {
     username: normalizeSocialUsername(trimmed, platform as SocialPlatform),
     otherUrl: "",
   };
+}
+
+function toPrettyDomain(rawUrl: string): string {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return "";
+  const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : normalizeUrl(trimmed);
+  try {
+    const host = new URL(normalized).hostname || "";
+    return host.replace(/^www\./i, "") || trimmed;
+  } catch {
+    return trimmed.replace(/^https?:\/\//i, "").replace(/\/$/, "");
+  }
+}
+
+function canonicalizeHttpsUrl(rawUrl: string): string | null {
+  const trimmed = (rawUrl || "").trim();
+  if (!trimmed) return null;
+  const normalized = normalizeUrl(trimmed);
+  try {
+    return new URL(normalized).toString();
+  } catch {
+    return null;
+  }
+}
+
+function deriveEditedLinkLabel(value: {
+  platform?: string;
+  username?: string;
+  otherUrl?: string;
+  url?: string;
+}): string {
+  const platform = (value.platform || "X") as SocialPlatform;
+  if (platform === "Other") {
+    const raw = (value.otherUrl || value.url || "").trim();
+    if (!raw) return "";
+    return toPrettyDomain(raw);
+  }
+
+  const username = (value.username || "").trim();
+  if (!username) return "";
+  if (platform === "Discord") return username;
+  return normalizeSocialUsername(username, platform);
 }
 
 const FIELD_CLASS =
@@ -180,6 +222,17 @@ function CharCounter({ text }: CharCounterProps) {
   );
 }
 
+/**
+ * Small italicized hint shown below an edited field to remind the user that
+ * pending changes only persist after OTP verification ("Start Verification").
+ */
+function VerifyHint({ show }: { show: boolean }) {
+  if (!show) return null;
+  return (
+    <p className="mt-1 text-xs italic text-gray-500">Verify to apply changes</p>
+  );
+}
+
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
@@ -201,6 +254,7 @@ export default function ProfileEditor({
 }: ProfileEditorProps) {
   const {
     form,
+    original,
     deletedFields,
     pendingAvatarUpload,
     setForm,
@@ -231,6 +285,7 @@ export default function ProfileEditor({
       return {
         id: l.id ?? null,
         url: l.url ?? "",
+        label: l.label ?? "",
         ...parsed,
         username: prefersLabel ? l.label : parsed.username,
         previewUrl: prefersLabel ? (l.url ?? "") : "",
@@ -451,14 +506,17 @@ export default function ProfileEditor({
   };
 
   const handleSocialLinkChange = (uid: string, value: any) => {
+    const rawOtherUrl = (value.otherUrl ?? "").trim();
+    const canonicalOtherUrl = canonicalizeHttpsUrl(rawOtherUrl);
     const nextUrl =
       value.platform === "Other"
-        ? (value.otherUrl ?? "").trim()
+        ? (canonicalOtherUrl ?? rawOtherUrl)
         : buildSocialUrl(value.platform, (value.username ?? "").trim()) ?? "";
+    const nextLabel = deriveEditedLinkLabel({ ...value, url: nextUrl });
     setForm((prev) => ({
       ...prev,
       links: prev.links.map((l) =>
-        l._uid === uid ? { ...l, ...value, url: nextUrl } : l
+        l._uid === uid ? { ...l, ...value, url: nextUrl, label: nextLabel } : l
       ),
     }));
   };
@@ -552,6 +610,21 @@ export default function ProfileEditor({
     setNearestCityDisplay(nextDeleted ? "" : (profile.nearest_city_name ?? ""));
   };
 
+  // Per-field dirtiness flags. Each is true when the form value diverges from
+  // the original snapshot stored at initializeForm() time. When true and the
+  // field is NOT already showing a deletion alert (which already mentions OTP),
+  // we render a "Verify to apply changes" hint below the field.
+  const isAvatarDirty =
+    !!pendingAvatarUpload ||
+    deletedFields.profile_image_url ||
+    form.profile_image_url !== original.profile_image_url;
+  const isNameDirty = deletedFields.name || form.name !== original.name;
+  const isDisplayNameDirty =
+    deletedFields.display_name || form.display_name !== original.display_name;
+  const isBioDirty = deletedFields.bio || form.bio !== original.bio;
+  const isNearestCityDirty =
+    deletedFields.nearest_city || form.nearest_city_name !== original.nearest_city_name;
+
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
       <div className="w-full max-w-xl bg-transparent overflow-visible">
@@ -631,6 +704,7 @@ export default function ProfileEditor({
           {avatarUploadError && (
             <Alert variant="error" size="sm" message={avatarUploadError} className="mt-1" />
           )}
+          <VerifyHint show={isAvatarDirty && !deletedFields.profile_image_url} />
         </ProfileField>
 
         {/* ZCASH ADDRESS */}
@@ -664,7 +738,11 @@ export default function ProfileEditor({
         <ProfileField
           label="Username"
           htmlFor="name"
-          helpText="Your unique handle on Zcash.me."
+          helpText={
+            usernameLockedSuffix
+              ? `Your unique handle on Zcash.me. Start verification to remove ${usernameLockedSuffix}`
+              : "Your unique handle on Zcash.me."
+          }
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}
           onDelete={toggleNameDelete}
@@ -729,6 +807,7 @@ export default function ProfileEditor({
           {!usernameConflict && usernameTouched && usernameInput && usernameStatus === "available" && (
             <p className="mt-1 text-xs text-green-600">This name is available.</p>
           )}
+          <VerifyHint show={isNameDirty && !deletedFields.name && !usernameConflict} />
         </ProfileField>
 
         {/* DISPLAY NAME */}
@@ -756,6 +835,7 @@ export default function ProfileEditor({
               className="mt-1"
             />
           )}
+          <VerifyHint show={isDisplayNameDirty && !deletedFields.display_name} />
         </ProfileField>
 
         {/* BIOGRAPHY */}
@@ -792,6 +872,7 @@ export default function ProfileEditor({
               className="mt-1"
             />
           )}
+          <VerifyHint show={isBioDirty && !deletedFields.bio} />
         </ProfileField>
 
         {/* NEAREST CITY */}
@@ -834,6 +915,7 @@ export default function ProfileEditor({
               className="mt-1"
             />
           )}
+          <VerifyHint show={isNearestCityDirty && !deletedFields.nearest_city} />
         </ProfileField>
 
         {/* Links */}
@@ -862,10 +944,22 @@ export default function ProfileEditor({
         </div>
 
         {form.links.map((row) => {
-          const original = originalLinks.find((o) => o.id === row.id) ?? {} as ParsedLink;
+          const originalRow = originalLinks.find((o) => o.id === row.id) ?? ({} as ParsedLink);
           const isVerified = !!row.is_verified;
           const isMarkedForDeletion = row.id !== null && !!row._delete;
           const currentUrl = (row.url ?? "").trim();
+          // A row is "dirty" if it's brand new (no DB id), edited from its
+          // original (url/label/platform), or marked for deletion. In any of
+          // these states the [Authenticate] button is invalid because the DB
+          // row doesn't yet match what's on screen — show "Verify to apply
+          // changes" in its place. The user has to OTP-verify first to commit.
+          const isNewRow = row.id === null;
+          const isLinkDirty =
+            isNewRow ||
+            isMarkedForDeletion ||
+            (originalRow.url ?? "") !== row.url ||
+            (originalRow.label ?? "") !== (row.label ?? "") ||
+            (originalRow.platform ?? "") !== (row.platform ?? "");
 
           const rowConflict =
             (!isMarkedForDeletion && !isVerified && row.valid === false) ||
@@ -895,8 +989,26 @@ export default function ProfileEditor({
                       Authenticated
                     </Button>
                   </div>
+                ) : isLinkDirty ? (
+                  <span className="text-xs italic text-gray-500">
+                    Verify to apply changes
+                  </span>
                 ) : row.id !== null && !isMarkedForDeletion ? (
-                  profile.address_verified && onAuthenticateLink ? (
+                  !isValidUrl(currentUrl).valid ? (
+                    <div className="flex items-center gap-2">
+                      <Button
+                        type="button"
+                        variant="primary"
+                        size="xs"
+                        disabled
+                      >
+                        Authenticate
+                      </Button>
+                      <span className="text-xs text-red-600">
+                        Not a valid URL
+                      </span>
+                    </div>
+                  ) : profile.address_verified && onAuthenticateLink ? (
                     <Button
                       type="button"
                       variant="primary"
@@ -934,7 +1046,7 @@ export default function ProfileEditor({
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
                     readOnly={true}
-                    placeholder={original?.url ?? "example.com"}
+                    placeholder={originalRow?.url ?? "example.com"}
                     showValidation={false}
                     inputClassName="border-0 px-0 py-0 bg-transparent"
                   />
@@ -952,7 +1064,7 @@ export default function ProfileEditor({
                     value={row.url}
                     onChange={(v) => handleLinkChange(row._uid, v)}
                     readOnly={true}
-                    placeholder={original?.url ?? "example.com"}
+                    placeholder={originalRow?.url ?? "example.com"}
                     showValidation={false}
                     inputClassName="border-0 px-0 py-0 bg-transparent"
                   />

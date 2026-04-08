@@ -29,7 +29,7 @@ function XIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
-import { isValidUrl } from "@/lib/profile/urlValidation";
+import { isValidUrl, normalizeUrl } from "@/lib/profile/urlValidation";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
@@ -414,15 +414,28 @@ export default function AddUserForm({
       }
     };
 
+    const canonicalizeHttpsUrl = (rawUrl: string): string | null => {
+      const trimmed = (rawUrl || "").trim();
+      if (!trimmed) return null;
+      const normalized = normalizeUrl(trimmed);
+      try {
+        return new URL(normalized).toString();
+      } catch {
+        return null;
+      }
+    };
+
     const finalLinkEntries = links
       .map((l) => {
         if (l.platform === "Other") {
-          const url = l.otherUrl?.trim() || "";
-          const res = isValidUrl(url);
-          if (!url || !res.valid) return null;
+          const rawUrl = l.otherUrl?.trim() || "";
+          const res = isValidUrl(rawUrl);
+          if (!rawUrl || !res.valid) return null;
+          const canonicalUrl = canonicalizeHttpsUrl(rawUrl);
+          if (!canonicalUrl) return null;
           return {
-            url,
-            label: toPrettyDomain(url),
+            url: canonicalUrl,
+            label: toPrettyDomain(canonicalUrl),
             platform: "Other",
           };
         }

@@ -188,6 +188,8 @@ export const getSocialDisplay = (link: ProfileLink): string => {
 export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   const domain = extractDomain(link.url);
   const dbLabel = (link.label ?? "").trim();
+  const platform = link.platform ?? null;
+  const isCustomDomainLink = platform === "Other" || platform === null;
   const handle = getSocialHandle(link.url ?? "", link.platform);
   const normalizedDomain = (domain ?? "").toLowerCase();
   const normalizedHandle = (handle ?? "").toLowerCase();
@@ -197,6 +199,7 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
     normalizedHandle === `www.${normalizedDomain}`;
   const domainLabel = (KNOWN_DOMAINS[domain]?.label ?? "").toLowerCase();
   const shouldUseHandle =
+    !isCustomDomainLink &&
     !!handle &&
     !isHandleDomain &&
     (!dbLabel ||
@@ -205,8 +208,6 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
       normalizedLabel === domainLabel ||
       normalizedLabel.startsWith(`${normalizedDomain}/`) ||
       normalizedLabel.startsWith(`www.${normalizedDomain}/`));
-
-  const platform = link.platform ?? null;
 
   if (KNOWN_DOMAINS[domain]) {
     return {
