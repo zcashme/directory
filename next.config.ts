@@ -23,6 +23,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Global security headers (applied to all routes)
+        source: "/(.*)",
+        headers: [
+          // Clickjacking protection: prevent framing by external sites
+          { key: "X-Frame-Options", value: "DENY" },
+          // CSP frame-ancestors (modern clickjacking defense)
+          { key: "Content-Security-Policy", value: "frame-ancestors 'none';" },
+          // Prevent MIME-type sniffing (UI redressing attacks)
+          { key: "X-Content-Type-Options", value: "nosniff" },
+        ],
+      },
+      {
         // Rule 1: Aggressive no-store for documents only
         // Excludes static assets/API to preserve their standard caching behavior
         source: "/((?!_next/static|_next/image|api|favicon.ico).*)",
