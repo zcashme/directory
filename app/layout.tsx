@@ -95,6 +95,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
                 </div>
               </div>
               <div className="h-12 border-l border-gray-200/50 pl-4 flex items-center justify-end gap-4 text-xs text-gray-500 whitespace-nowrap">
+                <Link href="/docs/api" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">API</Link>
                 <Link href="/terms" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Terms</Link>
                 <Link href="/privacy" className="hover:text-[var(--color-brand-blue)] transition-colors leading-relaxed">Privacy</Link>
               </div>
