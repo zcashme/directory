@@ -67,6 +67,7 @@ interface AddUserFormProps {
   onUserAdded?: (_profile: Profile) => void;
   prefillUsername?: string | null;
   prefillReferrer?: string | null;
+  prefillReferrerId?: number | null;
   isNsSignup?: boolean;
 }
 
@@ -76,6 +77,7 @@ export default function AddUserForm({
   onUserAdded,
   prefillUsername = null,
   prefillReferrer = null,
+  prefillReferrerId = null,
   isNsSignup = false,
 }: AddUserFormProps) {
   const [step, setStep] = useState(0);
@@ -101,20 +103,6 @@ export default function AddUserForm({
   const shouldReduceMotion = useReducedMotion() ?? false;
   const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
 
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const customEvent = e as CustomEvent<Referrer>;
-      if (!customEvent.detail) return;
-      const { id, name } = customEvent.detail;
-      if (id && name) {
-        setReferrer({ id, name });
-        (window as any).lastReferrer = { id, name };
-      }
-    };
-
-    window.addEventListener("prefillReferrer", handler as unknown as EventListener);
-    return () => window.removeEventListener("prefillReferrer", handler as unknown as EventListener);
-  }, []);
 
 
   useEffect(() => {
@@ -129,22 +117,18 @@ export default function AddUserForm({
       setAddress("");
       setAddressHelp("");
       setAddressConflict(null);
-      setReferrer(prefillReferrer || "");
-      setReferrerConflict(null);
-
-      const fromEvent = (window as any).lastReferrer;
-      if (fromEvent?.id && fromEvent?.name) {
-        setReferrer({
-          id: fromEvent.id,
-          name: fromEvent.name,
-        });
+      if (prefillReferrerId && prefillReferrer) {
+        setReferrer({ id: prefillReferrerId, name: prefillReferrer });
+      } else {
+        setReferrer(prefillReferrer || "");
       }
+      setReferrerConflict(null);
 
       setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
       setError("");
       setIsLoading(false);
     })();
-  }, [isOpen, prefillReferrer, prefillUsername]);
+  }, [isOpen, prefillReferrer, prefillReferrerId, prefillUsername]);
 
   useEffect(() => {
     if (!name) {

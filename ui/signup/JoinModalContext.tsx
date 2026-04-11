@@ -7,10 +7,12 @@ interface JoinModalState {
   isJoinOpen: boolean;
   prefillUsername: string | null;
   prefillReferrer: string | null;
+  prefillReferrerId: number | null;
   justCreatedSlug: string | null;
-  openJoin: (opts?: { prefillUsername?: string | null; prefillReferrer?: string | null }) => void;
+  openJoin: (opts?: { prefillUsername?: string | null; prefillReferrer?: string | null; prefillReferrerId?: number | null }) => void;
   closeJoin: () => void;
   notifyCreated: (slug: string) => void;
+  clearJustCreated: () => void;
 }
 
 const JoinModalContext = createContext<JoinModalState | null>(null);
@@ -19,11 +21,13 @@ export function JoinModalProvider({ children }: { children: ReactNode }) {
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
   const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
+  const [prefillReferrerId, setPrefillReferrerId] = useState<number | null>(null);
   const [justCreatedSlug, setJustCreatedSlug] = useState<string | null>(null);
 
-  const openJoin = (opts?: { prefillUsername?: string | null; prefillReferrer?: string | null }) => {
+  const openJoin = (opts?: { prefillUsername?: string | null; prefillReferrer?: string | null; prefillReferrerId?: number | null }) => {
     setPrefillUsername(opts?.prefillUsername ?? null);
     setPrefillReferrer(opts?.prefillReferrer ?? null);
+    setPrefillReferrerId(opts?.prefillReferrerId ?? null);
     setIsJoinOpen(true);
   };
 
@@ -31,6 +35,7 @@ export function JoinModalProvider({ children }: { children: ReactNode }) {
     setIsJoinOpen(false);
     setPrefillUsername(null);
     setPrefillReferrer(null);
+    setPrefillReferrerId(null);
   };
 
   const notifyCreated = (slug: string) => {
@@ -38,8 +43,10 @@ export function JoinModalProvider({ children }: { children: ReactNode }) {
     closeJoin();
   };
 
+  const clearJustCreated = () => setJustCreatedSlug(null);
+
   return (
-    <JoinModalContext.Provider value={{ isJoinOpen, prefillUsername, prefillReferrer, justCreatedSlug, openJoin, closeJoin, notifyCreated }}>
+    <JoinModalContext.Provider value={{ isJoinOpen, prefillUsername, prefillReferrer, prefillReferrerId, justCreatedSlug, openJoin, closeJoin, notifyCreated, clearJustCreated }}>
       {children}
     </JoinModalContext.Provider>
   );

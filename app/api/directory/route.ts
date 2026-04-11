@@ -322,5 +322,6 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
-  return jsonResponse({ results, next_cursor: nextCursor, exists }, 200, cacheSeconds);
+  const responseBody: DirectoryResponse = { results, next_cursor: nextCursor, exists };
+  return jsonResponse(responseBody, 200, cacheSeconds);
 }

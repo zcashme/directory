@@ -12,6 +12,7 @@ import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
 import { emitNavigationProgressStart } from "@/lib/navigation/navigationProgress";
+import { useJoinModal } from "@/ui/signup/JoinModalContext";
 
 const SHOW_TEMP_CARD_TUNER = false;
 const SHOW_LAYOUT_POSITION_TUNER = false;
@@ -903,10 +904,20 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
 interface HomePageProps {
   initialFeaturedProfiles: Profile[];
+  initialJoinParams?: { prefillReferrer: string; prefillReferrerId: number } | null;
 }
 
-export default function HomePage({ initialFeaturedProfiles }: HomePageProps) {
+export default function HomePage({ initialFeaturedProfiles, initialJoinParams }: HomePageProps) {
   const router = useRouter();
+  const { openJoin } = useJoinModal();
+
+  useEffect(() => {
+    if (initialJoinParams) {
+      openJoin(initialJoinParams);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCardClick = useCallback(
     (profile: Profile) => {
       const slug = buildSlug(profile);

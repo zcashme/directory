@@ -118,31 +118,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     startRouteNavigationProgress(startPathname);
   }, [resolveInternalPathname, startRouteNavigationProgress]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const shouldOpenJoin = params.get("join") === "1";
-    if (!shouldOpenJoin) return;
-
-    const referredBy = (params.get("referred_by") || "").trim();
-    const referredByIdRaw = (params.get("referred_by_id") || "").trim();
-    const referredById = Number(referredByIdRaw);
-
-    if (referredBy && Number.isInteger(referredById) && referredById > 0) {
-      (window as any).lastReferrer = { id: referredById, name: referredBy };
-    } else {
-      (window as any).lastReferrer = null;
-    }
-
-    // TODO: move to server-side searchParams reading in Step 2
-    openJoin({ prefillReferrer: referredBy || null });
-
-    const nextSearch = new URLSearchParams(params.toString());
-    nextSearch.delete("join");
-    nextSearch.delete("referred_by");
-    nextSearch.delete("referred_by_id");
-    const nextUrl = `${pathname ?? "/"}${nextSearch.toString() ? `?${nextSearch.toString()}` : ""}`;
-    router.replace(nextUrl);
-  }, [pathname, router]);
 
   useEffect(() => {
     lastResolvedPathnameRef.current = pathname ?? "/";

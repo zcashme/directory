@@ -17,6 +17,8 @@ import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
 import SwapComposer from "@/ui/swap/SwapComposer";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
+import { useJoinModal } from "@/ui/signup/JoinModalContext";
+import { buildSlug } from "@/lib/profile/profileUtils";
 
 interface ProfilePageProps {
   initialProfile: Profile;
@@ -203,6 +205,15 @@ export default function ProfilePage({
   // Force show QR state
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
+
+  const { justCreatedSlug, clearJustCreated } = useJoinModal();
+  const [showVerificationBanner, setShowVerificationBanner] = useState(
+    () => justCreatedSlug === buildSlug(initialProfile) && !initialProfile.address_verified
+  );
+  useEffect(() => {
+    if (showVerificationBanner) clearJustCreated();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [designPanelBackgroundPreview, setDesignPanelBackgroundPreview] = useState<string | null>(null);
   const [verificationGenerateQrTrigger, setVerificationGenerateQrTrigger] = useState(0);
   const [isVerificationGenerating, setIsVerificationGenerating] = useState(false);
@@ -501,6 +512,35 @@ export default function ProfilePage({
       style={{ backgroundColor: effectivePageBackground }}
     >
       <div className="relative max-w-3xl mx-auto p-4 pb-24 pt-10 -mt-6 min-h-screen">
+        {showVerificationBanner && (
+          <div className="mb-6 flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+            <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <circle cx="12" cy="12" r="10" />
+              <path strokeLinecap="round" d="M12 8v4m0 4h.01" />
+            </svg>
+            <span className="flex-1">Your Zcash address isn&apos;t verified yet.</span>
+            <button
+              onClick={() => {
+                setShowVerificationBanner(false);
+                setIsProfileEditing(true);
+                handleGenerateVerificationQr();
+              }}
+              className="font-semibold underline underline-offset-2 hover:text-blue-700 whitespace-nowrap"
+            >
+              Verify now
+            </button>
+            <button
+              onClick={() => setShowVerificationBanner(false)}
+              aria-label="Dismiss"
+              className="ml-1 hover:text-blue-700"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
+
         <ProfileCard
           profile={initialProfile}
           tokens={tokens}
