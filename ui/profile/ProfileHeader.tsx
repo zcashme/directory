@@ -6,7 +6,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
-import AddUserForm from "@/ui/signup/AddUserForm";
+import { useJoinModal } from "@/ui/signup/JoinModalContext";
 import { buildSlug } from "@/lib/profile/profileUtils";
 import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation/navigationProgress";
 
@@ -21,9 +21,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const pathname = usePathname();
   const shouldReduceMotion = useReducedMotion();
   const [search, setSearch] = useState("");
-  const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const [prefillUsername, setPrefillUsername] = useState<string | null>(null);
-  const [prefillReferrer, setPrefillReferrer] = useState<string | null>(null);
+  const { isJoinOpen, openJoin } = useJoinModal();
   const headerBarRef = useRef<HTMLDivElement | null>(null);
   const [isRouteNavigationLoading, setIsRouteNavigationLoading] = useState(false);
   const [routeNavigationProgress, setRouteNavigationProgress] = useState(0);
@@ -36,16 +34,10 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
   const lastResolvedPathnameRef = useRef(pathname ?? "/");
   const isRouteNavigationLoadingRef = useRef(false);
 
-  const resetSearch = () => {
-    setSearch("");
-  };
-
-  const closeForm = () => {
-    setIsJoinOpen(false);
-    setPrefillUsername(null);
-    setPrefillReferrer(null);
-    resetSearch();
-  };
+  // TODO: revisit search state ownership (see backlog)
+  useEffect(() => {
+    if (!isJoinOpen) setSearch("");
+  }, [isJoinOpen]);
 
   const resolveInternalPathname = useCallback((candidate: string | URL | null | undefined): string | null => {
     if (!candidate) return null;
@@ -135,16 +127,14 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     const referredByIdRaw = (params.get("referred_by_id") || "").trim();
     const referredById = Number(referredByIdRaw);
 
-    setPrefillUsername(null);
-    setPrefillReferrer(referredBy || null);
-
     if (referredBy && Number.isInteger(referredById) && referredById > 0) {
       (window as any).lastReferrer = { id: referredById, name: referredBy };
     } else {
       (window as any).lastReferrer = null;
     }
 
-    setIsJoinOpen(true);
+    // TODO: move to server-side searchParams reading in Step 2
+    openJoin({ prefillReferrer: referredBy || null });
 
     const nextSearch = new URLSearchParams(params.toString());
     nextSearch.delete("join");
@@ -352,8 +342,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
                 }
               }}
               onClaimClick={(username: string) => {
-                setPrefillUsername(username);
-                setIsJoinOpen(true);
+                openJoin({ prefillUsername: username });
               }}
               dropdownContainerRef={headerBarRef}
               placeholder={profileCount > 1 ? `search ${profileCount} names` : "search names"}
@@ -364,7 +353,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
           <div className="h-12 border-l border-gray-200/50 flex-shrink-0 flex items-center px-2">
             <motion.button
               onClick={() => {
-                setIsJoinOpen(true);
+                openJoin();
               }}
               whileTap={shouldReduceMotion ? undefined : { scale: 0.94, y: 1, filter: "brightness(0.95)" }}
               transition={{ type: "spring", stiffness: 550, damping: 24, mass: 0.35 }}
@@ -386,13 +375,6 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
         </div>
       </div>
 
-      <AddUserForm
-        isOpen={isJoinOpen}
-        prefillUsername={prefillUsername}
-        prefillReferrer={prefillReferrer}
-        onClose={closeForm}
-        onUserAdded={closeForm}
-      />
     </div>
   );
 }
