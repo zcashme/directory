@@ -18,6 +18,23 @@ import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 import { validateZcashAddress } from "@/ui/signup/zcashAddress";
 
+const MAX_DISPLAY_NAME_LENGTH = 32;
+
+function validateDisplayName(value: string): { valid: boolean; error?: string } {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { valid: true }; // Display name is optional in edit
+  }
+  // Check for control characters (newlines, tabs, etc.)
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(trimmed)) {
+    return { valid: false, error: "Display name contains invalid characters." };
+  }
+  if (trimmed.length > MAX_DISPLAY_NAME_LENGTH) {
+    return { valid: false, error: `Display name must be ${MAX_DISPLAY_NAME_LENGTH} characters or less.` };
+  }
+  return { valid: true };
+}
+
 function detectPlatformFromUrl(rawUrl: string | null | undefined): string | null {
   const trimmed = (rawUrl || "").trim();
   if (!trimmed) return null;
@@ -274,6 +291,10 @@ export default function ProfileEditor({
   // Display value for city search input (local UI state)
   const [nearestCityDisplay, setNearestCityDisplay] = useState(profile.nearest_city_name ?? "");
   const [isBioActive, setIsBioActive] = useState(false);
+
+  // Display name validation
+  const displayNameValidation = useMemo(() => validateDisplayName(form.display_name), [form.display_name]);
+  const displayNameError = displayNameValidation.valid ? null : displayNameValidation.error;
 
   // Normalize incoming DB links
   const originalLinks = useMemo(() => {
@@ -825,8 +846,12 @@ export default function ProfileEditor({
             value={form.display_name}
             placeholder={deletedFields.display_name ? "" : (originals.display_name ?? "Enter display name")}
             onChange={(e) => handleChange("display_name", e.target.value)}
-            className={FIELD_CLASS}
+            maxLength={MAX_DISPLAY_NAME_LENGTH + 5}
+            className={`${FIELD_CLASS} ${displayNameError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : ''}`}
           />
+          {displayNameError && (
+            <p className="mt-1 text-xs text-red-600">{displayNameError}</p>
+          )}
           {deletedFields.display_name && (
             <Alert
               variant="error"
@@ -835,7 +860,7 @@ export default function ProfileEditor({
               className="mt-1"
             />
           )}
-          <VerifyHint show={isDisplayNameDirty && !deletedFields.display_name} />
+          <VerifyHint show={isDisplayNameDirty && !deletedFields.display_name && !displayNameError} />
         </ProfileField>
 
         {/* BIOGRAPHY */}

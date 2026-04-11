@@ -1,91 +1,89 @@
-# AGENT.md Rewrite — Handoff Document
+# Handoff
 
-**Branch:** `dev/jules-agents-rewrite`
-**Base:** `main`
-**Date:** 2026-03-05
-**Status:** Complete — all 21 files rewritten
+## Feature: New Profile Verification Reminder Banner
 
----
-
-## What This Work Is
-
-The zcash.me codebase has 21 `AGENT.md` files spread across `/app`, `/lib`, and `/ui` directories. These files serve as onboarding documentation for AI agents (and humans) working in the codebase. They were originally generated but contained significant inaccuracies, missing context, and a code-first rather than user-first orientation.
-
-This PR rewrites every `AGENT.md` file to be accurate, user-story-driven, and useful for someone who has never seen the codebase before.
+After a user creates a new profile, show a blue banner on their profile page reminding them their Zcash address is unverified, with a CTA to start the OTP verification flow.
 
 ---
 
-## Files Changed
+## Steps
 
-All 21 AGENT.md files:
+### Step 1 — Lift Join Modal State out of ProfileHeader ✅ Done
+Modal state (`isJoinOpen`, `prefillUsername`, `prefillReferrer`) moved into `JoinModalContext`. `AddUserForm` moved to root layout. ProfileHeader now only calls `openJoin()`.
 
-### Root & App
-- `AGENT.md` — multi-app architecture, subdomain routing, tech stack
-- `app/AGENT.md` — all pages, API routes, proxy.ts routing rules
+### Step 2 — Server-Side Referral Validation ✅ Done
+`app/page.tsx` reads `searchParams` server-side (lines 24-48). Validates that the referrer exists in the DB. Passes clean, trusted referral data down to `HomePage` → `openJoin()`.
 
-### lib/ (Server Logic)
-- `lib/AGENT.md` — overview of all lib folders + key server actions
-- `lib/profile/AGENT.md` — types, fetching, validation, avatar storage, trust/warnings
-- `lib/directory/AGENT.md` — homepage carousel, search, city search, NS directory
-- `lib/signup/AGENT.md` — profile creation flow, real-time validation
-- `lib/verification/AGENT.md` — stateless HMAC OTP, edit persistence, reward snapshots
-- `lib/swap/AGENT.md` — 1Click/Defuse SDK, quote/confirm/status flow
-- `lib/leaderboard/AGENT.md` — commission model, leaderboard rankings, referrer stats
-- `lib/thread/AGENT.md` — discussion board [WIP, all stubbed]
-- `lib/api/AGENT.md` — API guard, response types
-- `lib/supabase/AGENT.md` — database clients, key tables, avatar storage
+### Step 3 — Replace `window.location.assign()` with `router.push()` ✅ Done
+`AddUserForm.tsx` line 478 uses `router.push()` for navigation to the new profile page. React state is preserved during navigation so context survives the redirect.
 
-### ui/ (React Components)
-- `ui/AGENT.md` — overview of all UI folders
-- `ui/profile/AGENT.md` — profile card, editor, avatar, badges, Maxi upgrade [WIP]
-- `ui/signup/AGENT.md` — 6-step signup modal
-- `ui/verification/AGENT.md` — QR display, OTP input, attempt tracking
-- `ui/links/AGENT.md` — OAuth social link authentication
-- `ui/swap/AGENT.md` — swap composer, auto-flow, deposit display
-- `ui/thread/AGENT.md` — discussion board UI [WIP, backend stubbed]
-- `ui/common/AGENT.md` — design system components
-- `ui/messaging/AGENT.md` — memo composer, emoji autocomplete
+### Step 4 — Banner Signal from Modal Close ✅ Done
+`JoinModal.tsx` line 17 passes `onUserAdded={(profile) => notifyCreated(buildSlug(profile))}` to `AddUserForm`. When form submits successfully:
+1. `notifyCreated(slug)` sets `justCreatedSlug` in context
+2. `closeJoin()` closes the modal
+3. `ProfilePage` detects `justCreatedSlug` match and shows banner
+
+### Step 5 — Blue Verification Reminder Banner ✅ Done
+`ProfilePage.tsx` lines 209-216:
+- Detects newly created profile via `justCreatedSlug === buildSlug(initialProfile)`
+- Only shows if `!initialProfile.address_verified`
+- Blue styling: `bg-blue-50`, `border-blue-200`, `text-blue-900`
+- CTA button triggers `setIsProfileEditing(true)` + `handleGenerateVerificationQr()`
+- Dismissible via X button
+- Auto-clears `justCreatedSlug` from context via `clearJustCreated()`
 
 ---
 
-## Key Issues Fixed
+## Display Name Validation ✅ Done (32 char max)
 
-### Fabricated Content Removed
-- Fake `social-lookup.ts` reference (lib/profile)
-- Fake `types.ts` reference (lib/directory)
-- Fake `AvatarPreviewModal` (ui/profile)
-- Fake "Use Avatar" button feature (ui/links)
-- Fake "in-memory store" and `status: "exhausted"` flow (ui/verification)
-- Fake "Testing Harness" sections across 10+ files (no tests exist)
-- Fake commission model ("User A earns X% commission on payments") replaced with accurate per-verification model
-- Wrong import path (`@anthropic/defuse-one-click-sdk`) in lib/swap
+**Data Analysis:**
+- 268 profiles with display names in database
+- 99.6% of users have names ≤ 30 chars (76.5% under 10 chars)
+- Max legitimate: 30 chars ("Ser Niccolo Soroushianno VII")
+- 1 outlier deleted: "lollipop" entry with 178-char Zcash address as display_name
 
-### Missing Content Added
-- 12+ files not documented in their AGENT.md (profileQueries.ts, profileUtils.ts, urlValidation.ts, avatarStorage.ts, etc.)
-- Subdomain routing via proxy.ts (was completely absent)
-- Status tags ([live], [WIP], [stub]) on every feature
-- 6 missing API routes (resolve query, health, openstatus) and 4 missing pages (blog, status, terms, privacy)
-- Reward snapshot logic in confirmOtpAction
-- Commission model with correct rates, caps, and lock-in behavior
-- Cross-references between lib/ and ui/ counterparts
+**Validation Rules (32 chars):**
+| Rule | Implementation |
+|------|----------------|
+| Max length | 32 characters (covers 99.6% of users) |
+| Min length | 1 character (if provided) |
+| Strip newlines | Yes - control chars rejected |
+| Allow unicode | Yes - accents, international chars |
+| Allow emoji | Yes - ~1% of users use them |
+| Trim whitespace | Yes - automatically trimmed |
 
-### Inaccuracies Corrected
-- Profile.id type: string -> number
-- Signup form: 4 steps -> 6 steps
-- Username policy: claimed profanity filter (not implemented)
-- Verification: claimed server-side attempt tracking (actually client-side only)
-- Leaderboard: claimed "second-tier" referrals (only direct referrals exist)
+**Files Modified:**
+- `ui/signup/AddUserForm.tsx` - Added `validateDisplayName()` function + real-time validation
+- `ui/profile/ProfileEditor.tsx` - Added display name validation with error display
 
 ---
 
-## The Pattern
+## Files Modified
 
-Every AGENT.md follows a consistent structure:
-1. **Title** — `# /path - Short Description`
-2. **Purpose** — one or two sentences
-3. **User stories** — what the user sees and does (outside-in)
-4. **Database** — tables read/written (where relevant)
-5. **File -> Feature Map** — every file mapped to its user-facing feature
-6. **See Also** — cross-references to related AGENT.md files
+| File | Purpose |
+|------|---------|
+| `ui/signup/JoinModalContext.tsx` | Holds modal state + `justCreatedSlug` signal |
+| `ui/signup/JoinModal.tsx` | Bridge: passes `notifyCreated` callback to form |
+| `ui/signup/AddUserForm.tsx` | Calls `onUserAdded`, display name validation (32 chars max) |
+| `app/page.tsx` | Server-side referral validation from `searchParams` |
+| `app/HomePage.tsx` | Consumes `initialJoinParams`, calls `openJoin()` |
+| `app/[slug]/ProfilePage.tsx` | Reads `justCreatedSlug`, renders verification banner |
+| `app/layout.tsx` | Wraps app in `JoinModalProvider`, renders `<JoinModal />` |
+| `ui/profile/ProfileEditor.tsx` | Display name validation in edit mode |
 
-Principles: user story first, no fabrication, no duplication of source code, include status tags, keep it readable in under 60 seconds.
+---
+
+## Flow Summary
+
+1. User visits `/?join=1&referred_by_id=123` → server validates referrer → `HomePage` opens join modal with prefill
+2. User completes 6-step signup form → `AddUserForm` calls `createProfileAction` → success
+3. `onUserAdded` callback → `notifyCreated(slug)` → `justCreatedSlug` stored in context → modal closes
+4. `router.push(/${slug})` navigates to new profile page
+5. `ProfilePage` detects `justCreatedSlug` matches current profile → shows blue verification banner
+6. User clicks "Verify now" → enters verification mode → banner disappears
+
+---
+
+## Database Cleanup
+
+- Deleted entry id: 2141 ("lollipop") with 178-char display_name containing a Zcash unified address

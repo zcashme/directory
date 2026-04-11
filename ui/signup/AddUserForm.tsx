@@ -44,6 +44,23 @@ import {
 } from "@/ui/common/buttons/styles";
 import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
 
+const MAX_DISPLAY_NAME_LENGTH = 32;
+
+function validateDisplayName(value: string): { valid: boolean; error?: string } {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { valid: false, error: "Display name is required." };
+  }
+  // Check for control characters (newlines, tabs, etc.)
+  if (/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(trimmed)) {
+    return { valid: false, error: "Display name contains invalid characters." };
+  }
+  if (trimmed.length > MAX_DISPLAY_NAME_LENGTH) {
+    return { valid: false, error: `Display name must be ${MAX_DISPLAY_NAME_LENGTH} characters or less.` };
+  }
+  return { valid: true };
+}
+
 interface Referrer {
   id: number;
   name: string;
@@ -84,6 +101,7 @@ export default function AddUserForm({
   const [dir, setDir] = useState(1);
   const [name, setName] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [displayNameError, setDisplayNameError] = useState<string | null>(null);
   const [nameHelp, setNameHelp] = useState("");
   const [nameConflict, setNameConflict] = useState<ConflictInfo | null>(null);
   const [address, setAddress] = useState("");
@@ -307,8 +325,10 @@ export default function AddUserForm({
 
   const stepIsValid = (() => {
     switch (step) {
-      case 0:
-        return !!name.trim() && !!displayName.trim() && (!nameConflict || nameConflict.type !== "error");
+      case 0: {
+        const displayNameValidation = validateDisplayName(displayName);
+        return !!name.trim() && displayNameValidation.valid && (!nameConflict || nameConflict.type !== "error");
+      }
 
 
       case 1: {
@@ -560,12 +580,20 @@ export default function AddUserForm({
       <input
         id="displayName"
         value={displayName}
-        onChange={(e) => setDisplayName(e.target.value)}
-        className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent ${withFieldBorderState("border-black/30")}`}
+        onChange={(e) => {
+          const newValue = e.target.value;
+          setDisplayName(newValue);
+          const validation = validateDisplayName(newValue);
+          setDisplayNameError(validation.valid ? null : validation.error || null);
+        }}
+        className={`w-full rounded-2xl border px-3 py-2 text-sm outline-hidden bg-transparent ${withFieldBorderState("border-black/30", !!displayNameError)}`}
         placeholder="Enter display name"
         autoComplete="off"
+        maxLength={MAX_DISPLAY_NAME_LENGTH + 5}
       />
-      <p className="mt-1 text-xs text-gray-600">Shown on your profile instead of your username.</p>
+      <p className={`mt-1 text-xs ${displayNameError ? "text-red-600" : "text-gray-600"}`}>
+        {displayNameError || "Shown on your profile instead of your username."}
+      </p>
 
       {/* Short Bio disabled during signup */}
       {/*
