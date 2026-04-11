@@ -6,7 +6,8 @@ import { createPortal } from "react-dom";
 import type { Profile } from "@/lib/profile/types";
 import type { City } from "@/lib/directory/searchCitiesAction";
 import { validateZcashAddress } from "./zcashAddress";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import type { SVGProps, FormEvent } from "react";
 import {
   createProfileAction,
@@ -96,7 +97,7 @@ export default function AddUserForm({
   const [links, setLinks] = useState<SocialLink[]>([{ platform: "X", username: "", otherUrl: "", valid: true }]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
 
@@ -142,8 +143,6 @@ export default function AddUserForm({
       setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
       setError("");
       setIsLoading(false);
-
-      setTimeout(() => dialogRef.current?.querySelector<HTMLInputElement>("#name")?.focus(), 50);
     })();
   }, [isOpen, prefillReferrer, prefillUsername]);
 
@@ -492,7 +491,7 @@ export default function AddUserForm({
       onUserAdded?.(profile);
       onClose?.();
 
-      window.location.assign(`/${slug}`);
+      router.push(`/${slug}`);
 
 
 
@@ -534,6 +533,7 @@ export default function AddUserForm({
         <span className="pl-3 pr-1 text-sm text-gray-600 select-none whitespace-nowrap">Zcash.me/</span>
         <input
           id="name"
+          autoFocus
           value={name}
           onChange={(e) => {
             const filtered = sanitizeUsernameInput(e.target.value);
@@ -784,7 +784,6 @@ export default function AddUserForm({
 
       {/* Modal */}
       <div
-        ref={dialogRef}
         className={`relative w-full max-w-md animate-fadeIn ${PROFILE_CARD_MODAL_CHROME_CLASSES}`}
       >
         {/* Header */}

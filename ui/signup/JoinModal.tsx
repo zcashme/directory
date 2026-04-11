@@ -2,9 +2,10 @@
 
 import AddUserForm from "@/ui/signup/AddUserForm";
 import { useJoinModal } from "@/ui/signup/JoinModalContext";
+import { buildSlug } from "@/lib/profile/profileUtils";
 
 export default function JoinModal() {
-  const { isJoinOpen, prefillUsername, prefillReferrer, closeJoin } = useJoinModal();
+  const { isJoinOpen, prefillUsername, prefillReferrer, closeJoin, notifyCreated } = useJoinModal();
 
   return (
     <AddUserForm
@@ -12,7 +13,7 @@ export default function JoinModal() {
       prefillUsername={prefillUsername}
       prefillReferrer={prefillReferrer}
       onClose={closeJoin}
-      onUserAdded={closeJoin}
+      onUserAdded={(profile) => notifyCreated(buildSlug(profile))}
     />
   );
 }
