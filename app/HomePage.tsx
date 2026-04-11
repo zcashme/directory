@@ -914,6 +914,7 @@ export default function HomePage({ initialFeaturedProfiles, initialJoinParams }:
   useEffect(() => {
     if (initialJoinParams) {
       openJoin(initialJoinParams);
+      router.replace("/");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
