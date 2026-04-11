@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
+import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
 
 function hasNonEmptyText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
@@ -41,26 +42,17 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
     profile_theme_package: Profile["profile_theme_package"];
   }> = {};
   if (profileIds.length > 0) {
-    const { data: linksData } = await supabase
-      .from("zcasher_links")
-      .select("id,label,url,platform,is_verified,zcasher_id")
-      .in("zcasher_id", profileIds)
-      .order("id", { ascending: true });
+    const [{ data: linksById }, { data: styleData }] = await Promise.all([
+      fetchLinksByProfileIds(supabase, profileIds),
+      supabase
+        .from("zcasher")
+        .select("id,is_maxi,profile_card_theme,profile_page_bkgd,profile_card_border,profile_theme_package")
+        .in("id", profileIds),
+    ]);
 
-    const { data: styleData } = await supabase
-      .from("zcasher")
-      .select("id,is_maxi,profile_card_theme,profile_page_bkgd,profile_card_border,profile_theme_package")
-      .in("id", profileIds);
-
-    // Group links by profile ID
-    if (linksData) {
-      linksData.forEach((link) => {
-        if (!linksByProfileId[link.zcasher_id]) {
-          linksByProfileId[link.zcasher_id] = [];
-        }
-        linksByProfileId[link.zcasher_id].push(enrichLink(link));
-      });
-    }
+    linksById.forEach((links, id) => {
+      linksByProfileId[id] = links.map(enrichLink);
+    });
 
     if (styleData) {
       styleData.forEach((styleRow) => {

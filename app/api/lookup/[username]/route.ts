@@ -1,18 +1,10 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
+import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
 
 interface RouteParams {
   username: string;
 }
-
-const jsonResponse = (body: Record<string, unknown>, status: number, cacheSeconds: number = 0): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: withCacheHeaders({
-      "Content-Type": "application/json",
-    }, cacheSeconds),
-  });
 
 export async function GET(
   request: NextRequest,

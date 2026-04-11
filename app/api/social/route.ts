@@ -1,5 +1,5 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
+import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
 import { normalizeSocialUsername, type SocialPlatform } from "@/lib/profile/usernameNormalizer";
 
 const PLATFORM_ALIASES: Record<string, SocialPlatform> = {
@@ -17,12 +17,6 @@ const PLATFORM_ALIASES: Record<string, SocialPlatform> = {
   telegram: "Telegram",
 };
 
-const json = (body: Record<string, unknown>, status: number, cacheSeconds = 0): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: withCacheHeaders({ "Content-Type": "application/json" }, cacheSeconds),
-  });
-
 export async function GET(request: Request): Promise<Response> {
   const guard = await enforceApiGuard(request, { cacheSeconds: 300 });
   if (guard instanceof Response) return guard;
@@ -33,17 +27,17 @@ export async function GET(request: Request): Promise<Response> {
 
   const platform = PLATFORM_ALIASES[rawPlatform];
   if (!platform) {
-    return json({ error: "unsupported_platform", address: null, handle: null }, 400);
+    return jsonResponse({ error: "unsupported_platform", address: null, handle: null }, 400);
   }
 
   const handle = normalizeSocialUsername(rawHandle, platform);
   if (!handle) {
-    return json({ error: "invalid_handle", address: null, handle: null }, 400);
+    return jsonResponse({ error: "invalid_handle", address: null, handle: null }, 400);
   }
 
   const supabase = createSupabaseServerClient();
   if (!supabase) {
-    return json({ error: "server_misconfigured", address: null, handle }, 500);
+    return jsonResponse({ error: "server_misconfigured", address: null, handle }, 500);
   }
 
   // Query by platform column + handle match on label or url tail
@@ -56,11 +50,11 @@ export async function GET(request: Request): Promise<Response> {
     .limit(25);
 
   if (linksError) {
-    return json({ error: "lookup_failed", address: null, handle }, 500);
+    return jsonResponse({ error: "lookup_failed", address: null, handle }, 500);
   }
 
   if (!links || !links.length) {
-    return json({ error: "not_found", address: null, handle }, 404);
+    return jsonResponse({ error: "not_found", address: null, handle }, 404);
   }
 
   // Fetch profiles for matched links
@@ -71,7 +65,7 @@ export async function GET(request: Request): Promise<Response> {
     .in("id", ids);
 
   if (profileError || !profiles?.length) {
-    return json({ error: "profile_lookup_failed", address: null, handle }, 500);
+    return jsonResponse({ error: "profile_lookup_failed", address: null, handle }, 500);
   }
 
   const profilesById = new Map(profiles.map((p) => [p.id, p]));
@@ -90,10 +84,10 @@ export async function GET(request: Request): Promise<Response> {
     })[0];
 
   if (!best) {
-    return json({ error: "address_missing", address: null, handle }, 404);
+    return jsonResponse({ error: "address_missing", address: null, handle }, 404);
   }
 
-  return json(
+  return jsonResponse(
     {
       link: {
         platform: platform.toLowerCase(),

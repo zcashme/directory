@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
+import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
+import { fetchLinksForProfileId } from "@/lib/profile/linksRepository";
 
 interface ZcasherProfile {
   id: number;
@@ -14,23 +15,9 @@ interface ZcasherProfile {
   last_verified_at: string | null;
 }
 
-interface ZcasherLink {
-  id: number;
-  label: string;
-  url: string;
-  platform?: string;
-  is_verified: boolean;
-}
-
 interface RouteParams {
   username: string;
 }
-
-const jsonResponse = (body: Record<string, unknown>, status: number = 200, cacheSeconds: number = 0): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: withCacheHeaders({ "Content-Type": "application/json" }, cacheSeconds),
-  });
 
 export async function GET(
   request: NextRequest,
@@ -72,18 +59,12 @@ export async function GET(
 
   const typedProfile = profile as ZcasherProfile;
 
-  const { data: links, error: linksError } = await supabase
-    .from("zcasher_links")
-    .select("id,label,url,platform,is_verified")
-    .eq("zcasher_id", typedProfile.id);
-
+  const { data: allLinks, error: linksError } = await fetchLinksForProfileId(supabase, typedProfile.id);
   if (linksError) {
     return jsonResponse({ error: "links_lookup_failed", username: typedProfile.name }, 500);
   }
-
-  const allLinks = (links || []) as ZcasherLink[];
-  const authenticated_links = allLinks.filter((link) => link.is_verified);
-  const unauthenticated_links = allLinks.filter((link) => !link.is_verified);
+  const authenticated_links = allLinks.filter((l) => l.is_verified);
+  const unauthenticated_links = allLinks.filter((l) => !l.is_verified);
 
   return jsonResponse(
     {

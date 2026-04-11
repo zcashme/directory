@@ -51,3 +51,13 @@ export const withCacheHeaders = (
   headers["Cache-Control"] = `s-maxage=${cacheSeconds}, stale-while-revalidate=${cacheSeconds * 2}`;
   return headers;
 };
+
+export const jsonResponse = (
+  body: Record<string, unknown>,
+  status = 200,
+  cacheSeconds = 0
+): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: withCacheHeaders({ "Content-Type": "application/json" }, cacheSeconds),
+  });

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { Profile } from "@/lib/profile/types";
+import { fetchLinksForProfileId } from "@/lib/profile/linksRepository";
 
 const normalize = (value: string = ""): string =>
   value
@@ -99,32 +100,27 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
   type RankResult = { data: { rank_alltime?: number } | null; error: unknown };
   type WeeklyRankResult = { data: { rank_weekly?: number } | null; error: unknown };
   type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
-  type LinksResult = { data: Array<{ id: number; label?: string; url: string; platform?: string; is_verified: boolean; zcasher_id: number }> | null; error: unknown };
 
-  const [alltime, weekly, monthly, links]: [RankResult, WeeklyRankResult, MonthlyRankResult, LinksResult] = await Promise.all([
+  const [alltime, weekly, monthly, { data: profileLinks }] = await Promise.all([
     supabase
       .from("referrer_ranked_alltime")
       .select("rank_alltime")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle(),
+      .maybeSingle() as Promise<RankResult>,
     supabase
       .from("referrer_ranked_weekly")
       .select("rank_weekly")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle(),
+      .maybeSingle() as Promise<WeeklyRankResult>,
     supabase
       .from("referrer_ranked_monthly")
       .select("rank_monthly")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("zcasher_links")
-      .select("id,label,url,platform,is_verified,zcasher_id")
-      .eq("zcasher_id", profile.id)
-      .order("id", { ascending: true }),
+      .maybeSingle() as Promise<MonthlyRankResult>,
+    fetchLinksForProfileId(supabase, profile.id),
   ]);
 
   const ranks: RankData = {
@@ -133,8 +129,7 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
     rank_monthly: monthly?.data?.rank_monthly ?? 0,
   };
 
-  // Attach links to profile
-  profile.links = links?.data ?? [];
+  profile.links = profileLinks;
 
   // Pull design/entitlement flags directly from base table so feature
   // works even if zcasher_searchable view has not been updated yet.

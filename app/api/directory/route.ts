@@ -1,5 +1,6 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { enforceApiGuard, withCacheHeaders } from "@/lib/api/guard";
+import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
+import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
 
 interface DirectoryProfile {
   id: number;
@@ -74,18 +75,6 @@ const PROFILE_FIELDS = [
   "last_verified_at",
   "link_search_text",
 ].join(",");
-
-const jsonResponse = (
-  body: DirectoryResponse | ErrorResponse,
-  status: number = 200,
-  cacheSeconds: number = 0
-): Response =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: withCacheHeaders({
-      "Content-Type": "application/json",
-    }, cacheSeconds),
-  });
 
 const encodeCursor = (lastName: string, lastId: number): string =>
   Buffer.from(JSON.stringify({ name: lastName, id: lastId })).toString("base64");
@@ -265,24 +254,11 @@ export async function GET(request: Request): Promise<Response> {
   const maxiMap: Map<number, boolean | string | number | null> = new Map();
 
   if (profileIds.length > 0) {
-    const { data: links, error: linksError } = await supabase
-      .from("zcasher_links")
-      .select("id,label,url,platform,is_verified,zcasher_id")
-      .in("zcasher_id", profileIds);
-
+    const { data: linksById, error: linksError } = await fetchLinksByProfileIds(supabase, profileIds);
     if (linksError) {
       return jsonResponse({ error: "links_lookup_failed" }, 500);
     }
-
-    // Group links by zcasher_id
-    for (const link of (links || []) as ZcasherLink[]) {
-      const existing = linksMap.get(link.zcasher_id);
-      if (existing) {
-        existing.push(link);
-      } else {
-        linksMap.set(link.zcasher_id, [link]);
-      }
-    }
+    linksById.forEach((links, id) => linksMap.set(id, links as ZcasherLink[]));
 
     const { data: maxiRows, error: maxiError } = await supabase
       .from("zcasher")

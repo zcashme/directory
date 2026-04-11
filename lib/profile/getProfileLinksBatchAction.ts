@@ -3,6 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { GetProfileLinksBatchResponse } from "@/lib/api/types";
 import type { ProfileLink } from "@/lib/profile/types";
+import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
 
 /**
  * Server Action for fetching profile links for multiple profiles
@@ -19,31 +20,14 @@ export async function getProfileLinksBatchAction(zcasherIds: number[]): Promise<
       return { ok: false, error: "Database connection error", data: {} };
     }
 
-    const { data, error } = await supabase
-      .from("zcasher_links")
-      .select("id,label,url,platform,is_verified,zcasher_id")
-      .in("zcasher_id", zcasherIds);
-
-    if (error) {
-      return {
-        ok: false,
-        error: error.message || "Failed to fetch profile links",
-        data: {},
-      };
+    const { data: linksById, error: linksError } = await fetchLinksByProfileIds(supabase, zcasherIds);
+    if (linksError) {
+      return { ok: false, error: linksError, data: {} };
     }
-
-    // Group links by zcasher_id
-    const linksByProfileId: Record<string, ProfileLink[]> = {};
-    (data || []).forEach((link) => {
-      if (!linksByProfileId[link.zcasher_id]) {
-        linksByProfileId[link.zcasher_id] = [];
-      }
-      linksByProfileId[link.zcasher_id].push(link);
-    });
 
     return {
       ok: true,
-      data: linksByProfileId,
+      data: Object.fromEntries(linksById) as Record<string, ProfileLink[]>,
     };
   } catch (error) {
     return {
