@@ -31,11 +31,6 @@ export default function ProfileCardActions({
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = profile.display_name || profile.name || "";
   const referDisplayName = (profile.display_name || profile.name || "a friend").trim();
-  const isMaxi =
-    profile.is_maxi === true ||
-    profile.is_maxi === 1 ||
-    (typeof profile.is_maxi === "string" &&
-      ["true", "yes", "1", "y", "t"].includes(profile.is_maxi.trim().toLowerCase()));
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -137,7 +132,7 @@ export default function ProfileCardActions({
             </span>,
             "Claim Name",
             onUpgrade,
-            isMaxi
+            true
           )}
         </div>
       </div>
