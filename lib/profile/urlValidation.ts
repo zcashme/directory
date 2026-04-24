@@ -58,6 +58,13 @@ export function isValidUrl(raw: string): { valid: boolean; reason: string | null
     return { valid: false, reason: 'Local network or IP-address URLs are not allowed.' };
   }
 
+  // Single-label hostnames ("ZcashNames") and trailing-dot hostnames ("ZcashNames.")
+  // parse as valid URLs but can't resolve on the public internet — require a
+  // TLD-like suffix (at least 2 letters after the last dot).
+  if (!/\.[a-z]{2,}$/i.test(hostname)) {
+    return { valid: false, reason: 'URL is not correctly formatted.' };
+  }
+
   if (BLOCKED_REDIRECTORS.has(hostname)) {
     return { valid: false, reason: 'Link shorteners or redirect URLs (like bit.ly) are not allowed.' };
   }

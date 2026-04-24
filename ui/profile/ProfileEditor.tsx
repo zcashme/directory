@@ -442,11 +442,6 @@ export default function ProfileEditor({
   };
 
   const addressValidation = validateZcashAddress(form.address.trim());
-  const addressReadyForVerification =
-    !!form.address.trim() &&
-    addressValidation.valid &&
-    addressValidation.type !== "tex" &&
-    addressValidation.type !== "transparent";
 
   const getAddressFieldError = () => {
     if (!form.address.trim()) return "Zcash Address is required to start verification.";
@@ -456,9 +451,21 @@ export default function ProfileEditor({
     return null;
   };
   const addressFieldError = getAddressFieldError();
+  const hasInvalidLinks = useMemo(() => {
+    return form.links.some((row) => {
+      const isVerified = !!row.is_verified;
+      const isMarkedForDeletion = row.id !== null && !!row._delete;
+      const currentUrl = (row.url ?? "").trim();
+      return (
+        (!isMarkedForDeletion && !isVerified && row.valid === false) ||
+        (!isMarkedForDeletion && isVerified && currentUrl.length > 0 && !isValidUrl(currentUrl).valid)
+      );
+    });
+  }, [form.links]);
+  const hasInvalidFields = Boolean(addressFieldError || usernameConflict || displayNameError || hasInvalidLinks);
 
   const handleStartVerification = () => {
-    if (!addressReadyForVerification) {
+    if (hasInvalidFields) {
       return;
     }
     if (isVerificationGenerating) {
@@ -748,7 +755,7 @@ export default function ProfileEditor({
             value={form.address}
             placeholder={originals.address}
             onChange={(e) => handleChange("address", e.target.value)}
-            className={`${FIELD_CLASS} font-mono`}
+            className={`${FIELD_CLASS} font-mono ${addressFieldError ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
           />
           {addressFieldError && (
             <p className="mt-1 text-xs text-red-600">{addressFieldError}</p>
@@ -1126,7 +1133,7 @@ export default function ProfileEditor({
               variant="secondary"
               size="md"
               onClick={handleStartVerification}
-              disabled={!addressReadyForVerification || isVerificationGenerating}
+              disabled={hasInvalidFields || isVerificationGenerating}
               className={`relative overflow-hidden rounded-xl hover:border-[var(--color-brand-blue)] ${
                 isVerificationGenerating ? "text-white border-[var(--color-brand-blue)] bg-white" : "hover:text-[var(--color-brand-blue)]"
               }`}
@@ -1141,6 +1148,11 @@ export default function ProfileEditor({
               </span>
             </Button>
           </div>
+          {hasInvalidFields && (
+            <p className="mt-2 text-center text-xs text-red-600">
+              Fix invalid fields before applying changes.
+            </p>
+          )}
         </div>
 
       </div>
