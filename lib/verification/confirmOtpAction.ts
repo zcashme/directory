@@ -326,6 +326,17 @@ export async function confirmOtpAction(
     }
 
     if (edits) {
+      if (edits.address !== undefined) {
+        const normalizedAddress = edits.address.trim();
+        if (!normalizedAddress) {
+          return {
+            ok: false,
+            error: "Address cannot be empty.",
+            data: { status: "invalid" },
+          };
+        }
+        profileUpdate.address = normalizedAddress;
+      }
       if (edits.name !== undefined) profileUpdate.name = edits.name;
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;

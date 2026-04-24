@@ -99,6 +99,7 @@ export interface CheckUsernameAvailabilityResponse {
  * Profile edits payload for saving after OTP verification
  */
 export interface ProfileEditsPayload {
+  address?: string;
   name?: string;
   display_name?: string;
   bio?: string;

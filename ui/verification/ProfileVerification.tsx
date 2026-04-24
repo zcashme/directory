@@ -26,6 +26,16 @@ interface ProfileVerificationProps {
   onQrReady?: () => void;
 }
 
+function formatLinkChange(count: number, action: "added" | "updated" | "removed"): string | null {
+  if (count <= 0) return null;
+  const noun = count === 1 ? "link" : "links";
+  return `${count} ${noun} ${action}`;
+}
+
+function buildSavedSummaryText(items: string[]): string {
+  return items.join(", ");
+}
+
 export default function ProfileVerification({
   profile,
   generateQrTrigger = 0,
@@ -39,8 +49,14 @@ export default function ProfileVerification({
   const buildEditsPayload = useCallback((): ProfileEditsPayload | undefined => {
     const edits: ProfileEditsPayload = {};
     let hasChanges = false;
+    const nextAddress = form.address.trim();
+    const originalAddress = original.address.trim();
 
     // Compare scalar fields
+    if (nextAddress !== originalAddress) {
+      edits.address = nextAddress;
+      hasChanges = true;
+    }
     if (form.name !== original.name) {
       edits.name = form.name;
       hasChanges = true;
@@ -120,6 +136,70 @@ export default function ProfileVerification({
     }
 
     return hasChanges ? edits : undefined;
+  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload]);
+
+  const buildEditsSummary = useCallback((): string[] => {
+    const summary: string[] = [];
+
+    if (form.name !== original.name) summary.push("Username");
+    if (form.display_name !== original.display_name) summary.push("Display name");
+    if (form.bio !== original.bio) summary.push("Bio");
+    if (form.address !== original.address) summary.push("Address");
+    if (form.nearest_city_name !== original.nearest_city_name) summary.push("Location");
+
+    if (deletedFields.profile_image_url) {
+      summary.push("Avatar removed");
+    } else if (pendingAvatarUpload) {
+      summary.push("Avatar uploaded");
+    } else if (form.profile_image_url !== original.profile_image_url) {
+      summary.push(form.profile_image_url ? "Avatar updated" : "Avatar removed");
+    }
+
+    if (form.profile_theme_package !== original.profile_theme_package) {
+      summary.push("Theme package");
+    }
+    if (form.profile_card_theme !== original.profile_card_theme) {
+      summary.push("Card theme");
+    }
+    if (form.profile_page_bkgd !== original.profile_page_bkgd) {
+      summary.push("Page background");
+    }
+    if (form.profile_card_border !== original.profile_card_border) {
+      summary.push("Card border");
+    }
+
+    const activeFormLinkIds = new Set(form.links.filter((l) => !l._delete).map((l) => l.id));
+    let linksRemoved = 0;
+    let linksAdded = 0;
+    let linksUpdated = 0;
+
+    for (const origLink of original.links) {
+      const markedForDeletion = form.links.find((l) => l.id === origLink.id)?._delete === true;
+      if (origLink.id && (!activeFormLinkIds.has(origLink.id) || markedForDeletion)) {
+        linksRemoved += 1;
+      }
+    }
+
+    for (const formLink of form.links) {
+      if (formLink._delete) continue;
+      if (!formLink.id) {
+        linksAdded += 1;
+      } else {
+        const origLink = original.links.find((l) => l.id === formLink.id);
+        if (origLink && (origLink.url !== formLink.url || origLink.label !== formLink.label)) {
+          linksUpdated += 1;
+        }
+      }
+    }
+
+    const addedSummary = formatLinkChange(linksAdded, "added");
+    const updatedSummary = formatLinkChange(linksUpdated, "updated");
+    const removedSummary = formatLinkChange(linksRemoved, "removed");
+    if (addedSummary) summary.push(addedSummary);
+    if (updatedSummary) summary.push(updatedSummary);
+    if (removedSummary) summary.push(removedSummary);
+
+    return summary;
   }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload]);
 
   // Local UI state
@@ -218,9 +298,12 @@ export default function ProfileVerification({
           updateField("profile_image_url", nextProfileImageUrl);
           clearPendingAvatarUpload();
         }
-        const message = edits
-          ? "Verification successful! Changes saved. Refreshing..."
-          : "Verification successful! Refreshing...";
+        const editSummaryItems = buildEditsSummary();
+        const message = editSummaryItems.length > 0
+          ? `Verification successful! Saved: ${buildSavedSummaryText(editSummaryItems)}. Refreshing...`
+          : edits
+            ? "Verification successful! Changes saved. Refreshing..."
+            : "Verification successful! Refreshing...";
         setOtpResult({ ok: true, message });
         setTimeout(() => {
           window.location.reload();
@@ -261,7 +344,7 @@ export default function ProfileVerification({
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, profile.id, currentMemo, otpAttemptsLeft, buildEditsPayload, clearPendingAvatarUpload, updateField]);
+  }, [otp, profile.id, currentMemo, otpAttemptsLeft, buildEditsPayload, buildEditsSummary, clearPendingAvatarUpload, updateField]);
 
   // Handle OTP input change - strip non-digits
   const handleOtpChange = useCallback((value: string) => {
