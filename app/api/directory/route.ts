@@ -52,14 +52,10 @@ interface DirectoryResult {
   unauthenticated_links: LinkOutput[];
 }
 
-interface DirectoryResponse {
+interface DirectoryResponse extends Record<string, unknown> {
   results: DirectoryResult[];
   next_cursor: string | null;
   exists?: boolean;
-}
-
-interface ErrorResponse {
-  error: string;
 }
 
 // Fields to select from zcasher_searchable

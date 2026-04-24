@@ -97,29 +97,25 @@ export const fetchProfileForSlug = cache(async function fetchProfileForSlug(rawS
 
   const idKey = String(profile.id);
 
-  type RankResult = { data: { rank_alltime?: number } | null; error: unknown };
-  type WeeklyRankResult = { data: { rank_weekly?: number } | null; error: unknown };
-  type MonthlyRankResult = { data: { rank_monthly?: number } | null; error: unknown };
-
   const [alltime, weekly, monthly, { data: profileLinks }] = await Promise.all([
     supabase
       .from("referrer_ranked_alltime")
       .select("rank_alltime")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle() as Promise<RankResult>,
+      .maybeSingle(),
     supabase
       .from("referrer_ranked_weekly")
       .select("rank_weekly")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle() as Promise<WeeklyRankResult>,
+      .maybeSingle(),
     supabase
       .from("referrer_ranked_monthly")
       .select("rank_monthly")
       .eq("referred_by_zcasher_id", idKey)
       .limit(1)
-      .maybeSingle() as Promise<MonthlyRankResult>,
+      .maybeSingle(),
     fetchLinksForProfileId(supabase, profile.id),
   ]);
 
