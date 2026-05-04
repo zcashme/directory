@@ -8,6 +8,7 @@ export interface City {
   city_ascii: string;
   admin_name: string;
   country: string;
+  iso2: string;
 }
 
 export async function searchCitiesAction(query: string): Promise<APIResponse<City[]>> {
@@ -22,6 +23,7 @@ export async function searchCitiesAction(query: string): Promise<APIResponse<Cit
       city_ascii: r.city,
       admin_name: r.province || "",
       country: r.country,
+      iso2: r.iso2 || "",
     }));
 
     return { ok: true, data };

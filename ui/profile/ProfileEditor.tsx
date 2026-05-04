@@ -651,7 +651,10 @@ export default function ProfileEditor({
     deletedFields.display_name || form.display_name !== original.display_name;
   const isBioDirty = deletedFields.bio || form.bio !== original.bio;
   const isNearestCityDirty =
-    deletedFields.nearest_city || form.nearest_city_name !== original.nearest_city_name;
+    deletedFields.nearest_city ||
+    form.nearest_city_name !== original.nearest_city_name ||
+    form.country !== original.country ||
+    form.iso2 !== original.iso2;
 
   return (
     <div className="w-full flex justify-center bg-transparent text-left text-sm text-gray-800 overflow-visible">
@@ -936,6 +939,8 @@ export default function ProfileEditor({
                 }
                 setNearestCityDisplay(val.fullLabel ?? "");
                 updateField('nearest_city_name', val.fullLabel ?? "");
+                updateField("country", val.country ?? "");
+                updateField("iso2", val.iso2 ?? "");
               }
             }}
           />

@@ -2,7 +2,7 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import type { Profile } from "@/lib/profile/types";
 
 import {
-  getCountryFlag,
+  getCountryFlagSrc,
   getCountryName,
   getProfileLocation,
   getProfileTags,
@@ -23,7 +23,7 @@ type FilterKey = keyof FilterState;
 
 export interface LocationOption {
   country: string;
-  flag: string;
+  flagSrc: string;
   cities: string[];
 }
 
@@ -101,13 +101,13 @@ export default function useNsFilters(
   const anyFilterActive = Object.values(filters).some(Boolean);
 
   const locationOptions = useMemo<LocationOption[]>(() => {
-    const map = new Map<string, { country: string; flag: string; cities: Set<string> }>();
+    const map = new Map<string, { country: string; flagSrc: string; cities: Set<string> }>();
     profiles
       .filter((profile) => isNsProfile(profile))
       .forEach((profile) => {
         const city = getProfileLocation(profile);
         if (!city) return;
-    const countryName = getCountryName(profile) ?? "Unknown";
+        const countryName = getCountryName(profile) ?? "Unknown";
         const countryCode =
           profile?.iso2 ??
           (typeof profile?.country === "string" && profile.country.trim().length === 2
@@ -117,7 +117,7 @@ export default function useNsFilters(
         if (!map.has(key)) {
           map.set(key, {
             country: countryName,
-            flag: getCountryFlag(countryCode ?? ""),
+            flagSrc: getCountryFlagSrc(countryCode ?? ""),
             cities: new Set<string>(),
           });
         }
@@ -221,7 +221,7 @@ export default function useNsFilters(
       filtered = filtered.filter((profile) => {
         const city = getProfileLocation(profile);
         if (!city) return false;
-    const countryName = getCountryName(profile) ?? "Unknown";
+        const countryName = getCountryName(profile) ?? "Unknown";
         const key = `${countryName}|||${city}`;
         return selected.has(key);
       });

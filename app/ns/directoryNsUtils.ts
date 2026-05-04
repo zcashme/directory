@@ -34,6 +34,12 @@ export const getCountryFlag = (country: string = ""): string => {
   );
 };
 
+export const getCountryFlagSrc = (country: string = ""): string => {
+  const code = country.trim().toLowerCase();
+  if (code.length !== 2) return "";
+  return `/flags/${code}.svg`;
+};
+
 export const getCountryName = (profile: Profile | undefined): string =>
   (profile?.country ?? "").trim();
 

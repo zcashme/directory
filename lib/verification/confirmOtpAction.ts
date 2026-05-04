@@ -428,7 +428,18 @@ export async function confirmOtpAction(
           profileUpdate.profile_image_url = null;
         }
       }
-      if (edits.nearest_city_name !== undefined) profileUpdate.nearest_city_name = edits.nearest_city_name;
+      if (edits.nearest_city_name !== undefined) {
+        const nextCity = edits.nearest_city_name.trim();
+        profileUpdate.nearest_city_name = nextCity || null;
+      }
+      if (edits.country !== undefined) {
+        const nextCountry = (edits.country ?? "").trim();
+        profileUpdate.country = nextCountry || null;
+      }
+      if (edits.iso2 !== undefined) {
+        const nextIso2 = (edits.iso2 ?? "").trim().toUpperCase();
+        profileUpdate.iso2 = nextIso2 || null;
+      }
     }
 
     // DB constraints for style fields may not allow sentinel values like "none" or empty strings.

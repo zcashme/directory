@@ -76,8 +76,14 @@ export default function ProfileVerification({
       edits.profile_image_url = form.profile_image_url;
       hasChanges = true;
     }
-    if (form.nearest_city_name !== original.nearest_city_name) {
+    if (
+      form.nearest_city_name !== original.nearest_city_name ||
+      form.country !== original.country ||
+      form.iso2 !== original.iso2
+    ) {
       edits.nearest_city_name = form.nearest_city_name;
+      edits.country = form.country || null;
+      edits.iso2 = form.iso2 || null;
       hasChanges = true;
     }
     if (form.profile_theme_package !== original.profile_theme_package) {
@@ -145,7 +151,13 @@ export default function ProfileVerification({
     if (form.display_name !== original.display_name) summary.push("Display name");
     if (form.bio !== original.bio) summary.push("Bio");
     if (form.address !== original.address) summary.push("Address");
-    if (form.nearest_city_name !== original.nearest_city_name) summary.push("Location");
+    if (
+      form.nearest_city_name !== original.nearest_city_name ||
+      form.country !== original.country ||
+      form.iso2 !== original.iso2
+    ) {
+      summary.push("Location");
+    }
 
     if (deletedFields.profile_image_url) {
       summary.push("Avatar removed");

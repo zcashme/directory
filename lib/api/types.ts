@@ -58,6 +58,8 @@ export interface CreateProfilePayload {
   bio?: string;
   address: string;
   nearest_city_name?: string;
+  country?: string;
+  iso2?: string;
   referred_by?: string;
   referred_by_zcasher_id?: number;
   is_ns?: boolean;
@@ -106,6 +108,8 @@ export interface ProfileEditsPayload {
   profile_image_url?: string;
   remove_profile_image?: boolean;
   nearest_city_name?: string;
+  country?: string | null;
+  iso2?: string | null;
   profile_theme_package?: string;
   profile_card_theme?: string;
   profile_page_bkgd?: string;

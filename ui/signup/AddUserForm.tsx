@@ -678,6 +678,8 @@ export default function AddUserForm({
         nearest_city_name: nearestCity
           ? [nearestCity.city_ascii || nearestCity.city, nearestCity.admin_name, nearestCity.country].filter(Boolean).join(", ")
           : undefined,
+        country: nearestCity?.country || undefined,
+        iso2: nearestCity?.iso2 || undefined,
         referred_by:
           typeof referrer === "object"
             ? referrer?.name || undefined

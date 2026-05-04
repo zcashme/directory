@@ -32,6 +32,8 @@ export interface FormState {
   profile_card_border: string;
   links: ParsedLink[];
   nearest_city_name: string;
+  country: string;
+  iso2: string;
 }
 
 export interface PendingAvatarUpload {
@@ -81,6 +83,8 @@ const emptyForm: FormState = {
   profile_card_border: '',
   links: [],
   nearest_city_name: '',
+  country: '',
+  iso2: '',
 };
 
 const emptyDeletedFields: DeletedFields = {
@@ -117,8 +121,12 @@ export const useEditsStore = create<EditsState>((set) => ({
       if (field === 'nearest_city') {
         if (value) {
           newForm.nearest_city_name = '';
+          newForm.country = '';
+          newForm.iso2 = '';
         } else {
           newForm.nearest_city_name = state.original.nearest_city_name;
+          newForm.country = state.original.country;
+          newForm.iso2 = state.original.iso2;
         }
       } else {
         if (value) {
@@ -158,6 +166,8 @@ export const useEditsStore = create<EditsState>((set) => ({
         profile_card_border: profile.profile_card_border ?? '',
         links: links ?? [],
         nearest_city_name: profile.nearest_city_name ?? '',
+        country: profile.country ?? '',
+        iso2: profile.iso2 ?? '',
       },
       original: {
         address: profile.address ?? '',
@@ -171,6 +181,8 @@ export const useEditsStore = create<EditsState>((set) => ({
         profile_card_border: profile.profile_card_border ?? '',
         links: links ?? [],
         nearest_city_name: profile.nearest_city_name ?? '',
+        country: profile.country ?? '',
+        iso2: profile.iso2 ?? '',
       },
       deletedFields: emptyDeletedFields,
       pendingAvatarUpload: null,

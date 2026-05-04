@@ -67,8 +67,14 @@ export default function NsLocationFilterModal({
           </button>
           {filteredLocationOptions.map((group) => (
             <div key={group.country} className="mt-3">
-              <div className="text-xs font-semibold uppercase text-gray-500">
-                {group.flag ? `${group.flag} ` : ""}
+              <div className="flex items-center gap-2 text-xs font-semibold uppercase text-gray-500">
+                {group.flagSrc ? (
+                  <img
+                    src={group.flagSrc}
+                    alt={`${group.country} flag`}
+                    className="h-3 w-4 border border-gray-300 object-cover"
+                  />
+                ) : null}
                 {group.country}
               </div>
               <div className="mt-2 flex flex-col gap-1">

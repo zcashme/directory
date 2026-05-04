@@ -7,7 +7,7 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
 import {
-  getCountryFlag,
+  getCountryFlagSrc,
   getLastVerifiedLabel,
   getProfileLocation,
   getProfileTags,
@@ -35,13 +35,14 @@ export default function NsRow({
   onForceShowQR,
   onUnverifiedLink,
 }: NsRowProps) {
-  const location = getProfileLocation(profile) ?? "-";
+  const rawLocation = getProfileLocation(profile);
+  const location = rawLocation.trim();
   const countryCode =
     profile?.iso2 ??
     (typeof profile?.country === "string" && profile.country.trim().length === 2
       ? profile.country
       : "");
-  const countryFlag = getCountryFlag(countryCode ?? "");
+  const countryFlagSrc = getCountryFlagSrc(countryCode ?? "");
   const tags = getProfileTags(profile);
   const lastVerified = getLastVerifiedLabel(profile);
   const addressValue = profile?.address ?? "";
@@ -62,9 +63,7 @@ export default function NsRow({
       className="w-full text-left transition-transform duration-150 hover:scale-[1.01]"
       onClick={(event: React.MouseEvent) => {
         const target = event.target as HTMLElement;
-        const interactive = target.closest(
-          "a,button,input,textarea,label,svg"
-        );
+        const interactive = target.closest("a,button,input,textarea,label,svg");
         if (interactive) return;
         window.location.assign(`https://zcash.me/${profileSlug}`);
       }}
@@ -85,16 +84,16 @@ export default function NsRow({
               </div>
               <TagBadges tags={tags} idPrefix={`${profile?.id}-`} />
             </div>
-              <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
-                <a
-                  href={`https://zcash.me/${profileSlug}`}
+            <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
+              <a
+                href={`https://zcash.me/${profileSlug}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={(event) => event.stopPropagation()}
                 className="flex max-w-full items-baseline gap-0 text-left hover:underline"
               >
                 <span>Zcash.me/</span>
-                  <span>{profileUsername}</span>
+                <span>{profileUsername}</span>
               </a>
             </div>
           </div>
@@ -110,7 +109,7 @@ export default function NsRow({
           </div>
           {canShowAddressBar ? (
             <div className="mt-1 inline-flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-[10px] font-mono text-gray-700 rounded-none">
-                <span title={addressValue ?? addressDisplay}>{addressDisplay}</span>
+              <span title={addressValue ?? addressDisplay}>{addressDisplay}</span>
               <div className="flex items-center gap-2 whitespace-nowrap">
                 <button
                   type="button"
@@ -160,31 +159,18 @@ export default function NsRow({
           <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
             Nearest City
           </div>
-          {location === "-" ? (
-            <span
-              className="mt-1 inline-flex h-7 items-center border border-gray-900 bg-gray-100 px-2 py-1 text-sm leading-none rounded-none"
-              aria-label="No nearest city"
-              title="No nearest city"
-            >
-              🌐
-            </span>
-          ) : (
+          {location ? (
             <span className="mt-1 inline-flex h-7 items-center gap-2 border border-gray-900 bg-gray-100 px-2 py-1 text-[10px] break-words rounded-none">
-              {countryFlag ? (
-                <span
-                  className="text-sm leading-none"
-                  style={{
-                    fontFamily:
-                      "Apple Color Emoji, Segoe UI Emoji, Noto Color Emoji, Twemoji Mozilla, sans-serif",
-                  }}
-                  aria-hidden="true"
-                >
-                  {countryFlag}
-                </span>
+              {countryFlagSrc ? (
+                <img
+                  src={countryFlagSrc}
+                  alt={`${countryCode.toUpperCase()} flag`}
+                  className="h-3 w-4 border border-gray-300 object-cover"
+                />
               ) : null}
               {location}
             </span>
-          )}
+          ) : null}
         </div>
         <div className="min-w-0 md:col-start-5 md:row-start-1 md:self-start md:justify-self-start md:pt-1">
           <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500 md:hidden">
