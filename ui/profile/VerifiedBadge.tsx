@@ -8,6 +8,7 @@ interface VerifiedBadgeProps {
   verifiedLabel?: string;
   unverifiedLabel?: string;
   onClick?: MouseEventHandler<HTMLSpanElement>;
+  href?: string;
 }
 
 export default function VerifiedBadge({
@@ -17,9 +18,11 @@ export default function VerifiedBadge({
   verifiedLabel,
   unverifiedLabel = "Unverified",
   onClick,
+  href,
 }: VerifiedBadgeProps) {
   // Always start closed; open only via hover or click when allowed.
   const [open, setOpen] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const [hasMounted, setHasMounted] = useState(false);
   useEffect(() => {
     const t = requestAnimationFrame(() => setHasMounted(true));
@@ -96,10 +99,19 @@ export default function VerifiedBadge({
       : "group-hover/badge:max-w-[80px]";
   const unverifiedLabelMax =
     unverifiedLabel.length > 11 ? "max-w-[140px]" : "max-w-[80px]";
+  const isExpanded = !collapsedOnly && (open || hovered);
 
   const handleBadgeClick: MouseEventHandler<HTMLSpanElement> = (event) => {
-    if (!collapsedOnly) setOpen(true);
+    if (href && !isExpanded) {
+      event.preventDefault();
+      setOpen(true);
+    }
     onClick?.(event);
+    if (event.defaultPrevented) return;
+    if (!collapsedOnly) setOpen(true);
+    if (href && typeof window !== "undefined") {
+      window.open(href, "_blank", "noopener,noreferrer");
+    }
   };
 
   if (verified) {
@@ -117,9 +129,11 @@ export default function VerifiedBadge({
     return (
     <span
       onClick={handleBadgeClick}
+      onMouseEnter={() => !collapsedOnly && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       aria-label={resolvedVerifiedLabel}
       className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      ${verifiedClasses}`}
+      ${verifiedClasses}${onClick || href ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
         <div className={`flex items-center justify-center ${gapClasses}`}>
@@ -149,9 +163,11 @@ export default function VerifiedBadge({
   return (
     <span
       onClick={handleBadgeClick}
+      onMouseEnter={() => !collapsedOnly && setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick ? " cursor-pointer" : ""}`}
+      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick || href ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
       <div className={`flex items-center justify-center ${collapsedOnly ? "gap-0" : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300"}`}>

@@ -36,7 +36,8 @@ import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
 import { AnimatePresence, motion } from "framer-motion";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
-import { formatUsername } from "./profileCardUtils";
+import { formatUsername, isTruthyProfileFlag } from "./profileCardUtils";
+import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 
 export type { ProfileCardTextScale } from "./profileCardTypes";
 
@@ -48,6 +49,8 @@ const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
+const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
+const ZCASH_NAMES_HREF = "https://zcashnames.com";
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 type RankPeriod = (typeof RANK_PERIODS)[number];
@@ -118,6 +121,7 @@ export default function ProfileCard({
   });
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const isNs = isTruthyProfileFlag(profile.is_ns);
   const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
   const hasDesignAccess = isMaxi;
   const selectedThemePackageId = useMemo(() => {
@@ -390,7 +394,8 @@ export default function ProfileCard({
                   style={{ color: activeCardText }}
                 >
                   <span>{displayName}</span>
-                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />}
+                  {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
+                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />}
                 </h2>
                 <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                   /{formatUsername(profile)}

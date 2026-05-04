@@ -9,12 +9,16 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import Spinner from "@/ui/common/feedback/Spinner";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
+import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
+import { isTruthyProfileFlag } from "./profileCardUtils";
 
 const fmtUsername = (p: Partial<Profile>) =>
   getUsernameWithDiscriminator(p).replace(/\s+/g, "_");
 
 const displayName = (p: Partial<Profile>) =>
   p.display_name || p.name || "";
+const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
+const ZCASH_NAMES_HREF = "https://zcashnames.com";
 
 function isTruthyLikeMaxi(value: unknown): boolean {
   if (value === true || value === 1) return true;
@@ -259,6 +263,7 @@ export default function ProfileSearchDropdown({
                 {/* Results */}
                 {results.map((p) => {
                   const isMaxi = isTruthyLikeMaxi(p.is_maxi);
+                  const isNs = isTruthyProfileFlag(p.is_ns);
                   return (
                     <Command.Item
                       key={`${p.name}-${p.id}`}
@@ -273,8 +278,9 @@ export default function ProfileSearchDropdown({
                           <Highlight text={displayName(p)} query={query} />
                         </span>
 
+                        {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
                         {(p.address_verified || isMaxi) && (
-                          <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />
+                          <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />
                         )}
 
                         <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">

@@ -23,10 +23,11 @@ import ProfileCardWarning from "@/ui/profile/ProfileCardWarning";
 import ProfileLinkRow from "@/ui/profile/ProfileLinkRow";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
+import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LinkRowClasses } from "@/ui/profile/profileCardTypes";
-import { formatUsername } from "@/ui/profile/profileCardUtils";
+import { formatUsername, isTruthyProfileFlag } from "@/ui/profile/profileCardUtils";
 
 interface ProfileCardDesignPanelProps {
   profile: Profile;
@@ -41,6 +42,8 @@ const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTI
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
+const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
+const ZCASH_NAMES_HREF = "https://zcashnames.com";
 type RankPeriod = (typeof RANK_PERIODS)[number];
 type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 
@@ -229,6 +232,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
   });
   const displayName = previewProfile.display_name || previewProfile.name || "";
   const isVerified = previewProfile.address_verified || (previewProfile.verified_links_count ?? 0) > 0;
+  const isNs = isTruthyProfileFlag(previewProfile.is_ns);
 
   const isMaxi = isTruthyLikeAddressVerified(previewProfile.is_maxi);
   const resolvedPreviewTheme = resolveProfileVisualTheme({
@@ -453,7 +457,8 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       style={{ color: activeCardText }}
                     >
                       <span>{displayName}</span>
-                      {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} />}
+                      {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
+                      {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />}
                     </h2>
                     <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                       /{formatUsername(previewProfile)}

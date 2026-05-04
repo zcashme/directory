@@ -8,6 +8,7 @@ interface DirectoryProfile {
   display_name: string | null;
   address: string | null;
   address_verified: boolean;
+  is_ns: boolean | string | number | null;
   profile_image_url: string | null;
   bio: string | null;
   nearest_city_name: string | null;
@@ -26,6 +27,7 @@ interface ZcasherLink {
 
 interface ZcasherStyleRow {
   id: number;
+  is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
 }
 
@@ -47,6 +49,7 @@ interface DirectoryResult {
   address: string | null;
   address_verified: boolean;
   verified_at: string | null;
+  is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
   authenticated_links: LinkOutput[];
   unauthenticated_links: LinkOutput[];
@@ -65,6 +68,7 @@ const PROFILE_FIELDS = [
   "display_name",
   "address",
   "address_verified",
+  "is_ns",
   "profile_image_url",
   "bio",
   "nearest_city_name",
@@ -247,7 +251,7 @@ export async function GET(request: Request): Promise<Response> {
   // Fetch links for all profiles in batch
   const profileIds = resultsToReturn.map((p) => p.id);
   const linksMap: Map<number, ZcasherLink[]> = new Map();
-  const maxiMap: Map<number, boolean | string | number | null> = new Map();
+  const styleMap: Map<number, ZcasherStyleRow> = new Map();
 
   if (profileIds.length > 0) {
     const { data: linksById, error: linksError } = await fetchLinksByProfileIds(supabase, profileIds);
@@ -258,7 +262,7 @@ export async function GET(request: Request): Promise<Response> {
 
     const { data: maxiRows, error: maxiError } = await supabase
       .from("zcasher")
-      .select("id,is_maxi")
+      .select("id,is_ns,is_maxi")
       .in("id", profileIds);
 
     if (maxiError) {
@@ -266,7 +270,7 @@ export async function GET(request: Request): Promise<Response> {
     }
 
     for (const row of (maxiRows || []) as ZcasherStyleRow[]) {
-      maxiMap.set(row.id, row.is_maxi);
+      styleMap.set(row.id, row);
     }
   }
 
@@ -279,6 +283,7 @@ export async function GET(request: Request): Promise<Response> {
     const unauthenticated_links: LinkOutput[] = profileLinks
       .filter((l) => !l.is_verified)
       .map((l) => ({ id: l.id, label: l.label, url: l.url, platform: l.platform, is_verified: l.is_verified }));
+    const styleRow = styleMap.get(p.id);
 
     return {
       id: p.id,
@@ -290,7 +295,8 @@ export async function GET(request: Request): Promise<Response> {
       address: p.address,
       address_verified: p.address_verified,
       verified_at: p.last_verified_at,
-      is_maxi: maxiMap.get(p.id) ?? null,
+      is_ns: styleRow?.is_ns ?? p.is_ns ?? null,
+      is_maxi: styleRow?.is_maxi ?? null,
       authenticated_links,
       unauthenticated_links,
     };

@@ -5,8 +5,9 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 import type { Profile } from "@/lib/profile/types";
-import { formatUsername } from "./profileCardUtils";
+import { formatUsername, isTruthyProfileFlag } from "./profileCardUtils";
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 
@@ -14,9 +15,12 @@ interface ProfileCardListViewProps {
   profile: Profile;
 }
 
+const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
+
 export default function ProfileCardListView({ profile }: ProfileCardListViewProps) {
   const displayName = profile.display_name || profile.name || "";
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const isNs = isTruthyProfileFlag(profile.is_ns);
 
   return (
     <VerifiedCardWrapper
@@ -30,6 +34,7 @@ export default function ProfileCardListView({ profile }: ProfileCardListViewProp
         <div className="flex flex-col grow overflow-hidden min-w-0">
           <span className="font-semibold text-[var(--color-brand-blue)] leading-tight truncate flex items-center gap-2">
             <span className="truncate">{displayName}</span>
+            {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
             {isVerified && <VerifiedBadge verified />}
             {isNewProfile(profile) && (
               <span className="text-xs bg-yellow-400 text-black font-bold px-2 py-0.5 rounded-full shadow-xs shrink-0">NEW</span>

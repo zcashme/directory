@@ -3,9 +3,12 @@
 import { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
+import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 import ProfileLinkRow from "./ProfileLinkRow";
 import type { ProfileCardContentProps, LinkRowClasses } from "./profileCardTypes";
-import { formatUsername } from "./profileCardUtils";
+import { formatUsername, isTruthyProfileFlag } from "./profileCardUtils";
+
+const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
 
 export default function ProfileCardContent({
   profile,
@@ -25,6 +28,7 @@ export default function ProfileCardContent({
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
+  const isNs = isTruthyProfileFlag(profile.is_ns);
 
   const sizes = {
     mobile: {
@@ -153,6 +157,14 @@ export default function ProfileCardContent({
         >
           {profile.display_name || profile.name}
         </span>
+        {isNs && showDisplayNameVerifiedBadge && (
+          <span
+            className="flex-shrink-0 origin-center"
+            style={{ transform: `scale(${0.6 * scale.verifiedBadge})` }}
+          >
+            <NetworkSchoolBadge href={NETWORK_STATE_HREF} />
+          </span>
+        )}
         {isVerified && showDisplayNameVerifiedBadge && (
           <span
             className="flex-shrink-0 origin-center"
