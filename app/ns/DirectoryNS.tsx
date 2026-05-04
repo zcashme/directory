@@ -42,6 +42,7 @@ import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 import { hasPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
 import { nsLandingOrder, nsLandingPages } from "./nsLandingContent";
+import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
 
 export default function DirectoryAlt({
   initialProfiles = null,
@@ -140,6 +141,12 @@ export default function DirectoryAlt({
     .map((slug) => nsLandingPages[slug].primaryAction.href === `/ns/${slug}`
       ? { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow }
       : { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow });
+  extraLandingActions.push({
+    href: "https://discord.com/channels/900827411917201418/1454104981320892591",
+    label: "Join the Discord",
+    external: true,
+    iconSrc: typeof discordFavicon === "string" ? discordFavicon : discordFavicon.src,
+  });
 
   useEffect(() => {
     if (!initialActiveUsername || activeProfile) return;
@@ -172,10 +179,6 @@ export default function DirectoryAlt({
       />
 
       <NsHeader
-        search={search}
-        onSearchChange={setSearch}
-        loading={loading}
-        nsCount={nsCount}
         onJoinClick={() => setIsJoinOpen(true)}
       />
 
@@ -256,6 +259,19 @@ export default function DirectoryAlt({
           >
             <></>
           </NsDirectoryHero>
+        </div>
+
+        <div className="mt-4">
+          <label className="sr-only" htmlFor="directory-search">
+            Search profiles
+          </label>
+          <input
+            id="directory-search"
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder={loading || nsCount <= 1 ? "Search" : `Search ${nsCount} names`}
+            className="h-10 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-hidden rounded-none"
+          />
         </div>
 
         <NsFilters

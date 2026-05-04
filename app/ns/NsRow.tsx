@@ -66,12 +66,7 @@ export default function NsRow({
           "a,button,input,textarea,label,svg"
         );
         if (interactive) return;
-        if (!profile?.address) return;
-        onSelectAddress(profile.address);
-        if (selectedAddress !== profile.address) {
-          onSetDraftMemo("");
-        }
-        onOpenProfile(profile);
+        window.location.assign(`https://zcash.me/${profileSlug}`);
       }}
     >
       <div className="relative mt-3 grid items-center gap-3 border border-gray-900 bg-white px-4 py-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.8fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.4fr)] md:items-start rounded-none">

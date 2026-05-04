@@ -51,8 +51,11 @@ interface UseNsFiltersReturn {
   isFiltering: boolean;
 }
 
-export default function useNsFilters(profiles: Profile[]): UseNsFiltersReturn {
-  const [search, setSearch] = useState<string>("");
+export default function useNsFilters(
+  profiles: Profile[],
+  initialSearch: string = ""
+): UseNsFiltersReturn {
+  const [search, setSearch] = useState<string>(initialSearch);
   const [locationFilter, setLocationFilter] = useState<string[]>([]);
   const [tagFilter, setTagFilter] = useState<string>("all");
   const [locationSearch, setLocationSearch] = useState<string>("");

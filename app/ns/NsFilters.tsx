@@ -3,7 +3,6 @@ import type { StaticImageData } from "next/image";
 import allIcon from "./assets/network-state-plus-flag-avatar-logo-black.png";
 import coreIcon from "./assets/network-state-plus-flag-avatar-logo-core-team.png";
 import longTermIcon from "./assets/network-state-plus-flag-avatar-logo-long-term.png";
-import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
 import { FILTER_BASE, FILTER_CONTENT } from "./directoryNsStyles";
 
 const getFilterButtonClass = (active: boolean, activeClass: string, hoverClass: string): string => {
@@ -141,17 +140,6 @@ export default function NsFilters({
           </button>
         </div>
       </div>
-      <a
-        href="https://discord.com/channels/900827411917201418/1454104981320892591"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="border border-gray-900 px-3 py-2 text-xs font-semibold uppercase transition-transform duration-150 hover:scale-[1.03] rounded-none sm:ml-auto"
-      >
-        <span className="flex w-full items-center justify-center gap-2 text-center">
-          <img src={resolveIconSrc(discordFavicon)} alt="Discord" className="h-4 w-auto" />
-          Join the Discord
-        </span>
-      </a>
     </div>
   );
 }
