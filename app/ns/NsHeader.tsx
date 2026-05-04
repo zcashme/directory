@@ -4,6 +4,7 @@ import Link from "next/link";
 import znsFlag from "./assets/zns-flag.png";
 import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
 import { nsLandingOrder, nsLandingPages, type NsLandingAction } from "./nsLandingContent";
+import { getNsActionIconKeyFromHref, NsActionIcon } from "./nsActionIcons";
 
 interface NsHeaderProps {
   onJoinClick: () => void;
@@ -26,9 +27,16 @@ export default function NsHeader({
       iconSrc: typeof discordFavicon === "string" ? discordFavicon : discordFavicon.src,
     },
   ];
+  const renderMenuIcon = (href: string) => {
+    const iconKey = getNsActionIconKeyFromHref(href);
+    return iconKey ? <NsActionIcon iconKey={iconKey} /> : null;
+  };
 
   return (
-    <div className="fixed left-0 right-0 top-0 z-30 border-b border-gray-300 bg-[#f7f7f2]/80 backdrop-blur">
+    <div
+      data-ns-site-header
+      className="fixed left-0 right-0 top-0 z-30 border-b border-gray-300 bg-[#f7f7f2]/80 backdrop-blur"
+    >
       <div className="mx-auto w-full max-w-6xl px-5">
         <div className="py-3">
           <div className="flex items-center justify-between gap-3 text-xs font-semibold uppercase tracking-wide">
@@ -93,6 +101,7 @@ export default function NsHeader({
                       {link.iconSrc ? (
                         <img src={link.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" />
                       ) : null}
+                      {!link.iconSrc ? renderMenuIcon(link.href) : null}
                       {link.label}
                     </a>
                   ) : (
@@ -100,10 +109,11 @@ export default function NsHeader({
                       key={link.href}
                       href={link.href}
                       onClick={() => setMenuOpen(false)}
-                      className={`px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-900 transition-colors hover:bg-[#fff3cc] ${
+                      className={`flex items-center gap-2 px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-900 transition-colors hover:bg-[#fff3cc] ${
                         index < menuLinks.length - 1 ? "border-b border-gray-200" : ""
                       } sm:border-b sm:border-gray-200`}
                   >
+                    {renderMenuIcon(link.href)}
                     {link.label}
                   </Link>
                 )

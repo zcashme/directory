@@ -1,9 +1,11 @@
 "use client";
 import React from "react";
+import { QRCodeSVG } from "qrcode.react";
 import type { Profile } from "@/lib/profile/types";
 import type { EnrichedLink } from "./useNsDirectory";
 import type { UnverifiedLinkData } from "./types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
+import InlineCopyButton from "./InlineCopyButton";
 import SocialLinks from "./SocialLinks";
 import TagBadges from "./TagBadges";
 import {
@@ -17,23 +19,17 @@ import {
 interface NsRowProps {
   profile: Profile;
   links: EnrichedLink[];
-  selectedAddress: string | null;
-  onSelectAddress: (_address: string | null) => void;
-  onSetDraftMemo: (_memo: string) => void;
-  onOpenProfile: (_profile: Profile) => void;
-  onForceShowQR: (_show: boolean) => void;
   onUnverifiedLink: (_link: UnverifiedLinkData | null) => void;
+  isQrExpanded: boolean;
+  onToggleInlineQr: (_address: string) => void;
 }
 
 export default function NsRow({
   profile,
   links,
-  selectedAddress,
-  onSelectAddress,
-  onSetDraftMemo,
-  onOpenProfile,
-  onForceShowQR,
   onUnverifiedLink,
+  isQrExpanded,
+  onToggleInlineQr,
 }: NsRowProps) {
   const rawLocation = getProfileLocation(profile);
   const location = rawLocation.trim();
@@ -57,6 +53,7 @@ export default function NsRow({
   const profileUsername = (profile?.name || "").trim();
   if (!profileUsername) return null;
   const profileSlug = normalizeSlug(profileUsername);
+  const qrValue = addressValue ? `zcash:${addressValue}` : "";
 
   return (
     <div
@@ -108,42 +105,48 @@ export default function NsRow({
             Address
           </div>
           {canShowAddressBar ? (
-            <div className="mt-1 inline-flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-[10px] font-mono text-gray-700 rounded-none">
-              <span title={addressValue ?? addressDisplay}>{addressDisplay}</span>
-              <div className="flex items-center gap-2 whitespace-nowrap">
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    if (!addressValue) return;
-                    onSelectAddress(addressValue);
-                    if (selectedAddress !== addressValue) {
-                      onSetDraftMemo("");
-                    }
-                    onOpenProfile(profile);
-                    onForceShowQR(true);
-                  }}
-                  className={`flex items-center gap-1 px-1 text-xs transition-colors ${
-                    addressValue
-                      ? "text-gray-500 hover:text-[var(--color-brand-blue)]"
-                      : "cursor-not-allowed text-gray-300"
-                  }`}
-                  title="Show QR"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    className="h-4 w-4"
-                    aria-hidden="true"
+            <div className="mt-1 flex flex-col items-start gap-2">
+              <div className="inline-flex h-7 max-w-full items-center gap-2 border border-gray-900 bg-gray-50 px-3 text-[10px] font-mono text-gray-700 rounded-none">
+                <span title={addressValue ?? addressDisplay}>{addressDisplay}</span>
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      if (!addressValue) return;
+                      onToggleInlineQr(addressValue);
+                    }}
+                    className={`flex items-center gap-1 px-1 text-xs transition-colors ${
+                      addressValue
+                        ? "text-gray-500 hover:text-[var(--color-brand-blue)]"
+                        : "cursor-not-allowed text-gray-300"
+                    }`}
+                    title={isQrExpanded ? "Hide QR" : "Show QR"}
                   >
-                    <path
-                      d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h3v3h-3zM18 14h2v6h-2zM14 18h3v2h-3z"
-                      fill="currentColor"
-                    />
-                  </svg>
-                  <span>QR</span>
-                </button>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path
+                        d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h3v3h-3zM18 14h2v6h-2zM14 18h3v2h-3z"
+                        fill="currentColor"
+                      />
+                    </svg>
+                    <span>{isQrExpanded ? "Hide" : "QR"}</span>
+                  </button>
+                  <InlineCopyButton text={addressValue} />
+                </div>
               </div>
+              {isQrExpanded ? (
+                <div
+                  className="border border-gray-900 bg-white p-3 rounded-none"
+                  onClick={(event) => event.stopPropagation()}
+                >
+                  <QRCodeSVG value={qrValue} size={132} includeMargin />
+                </div>
+              ) : null}
             </div>
           ) : (
             <div className="mt-1 text-xs text-gray-500">-</div>

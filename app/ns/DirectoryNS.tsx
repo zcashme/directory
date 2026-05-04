@@ -56,7 +56,6 @@ export default function DirectoryAlt({
   const pathname = usePathname();
   // Local state
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-  const [forceShowQR, setForceShowQR] = useState(false);
   const [memo, setMemo] = useState('');
   const [amount, setAmount] = useState('');
   const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
@@ -103,26 +102,25 @@ export default function DirectoryAlt({
 
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [showLocationFilter, setShowLocationFilter] = useState(false);
-  const [showBackToTop, setShowBackToTop] = useState(false);
+  const [isTableHeaderSticky, setIsTableHeaderSticky] = useState(false);
   const activeTags = useMemo(
     () => (activeProfile ? getProfileTags(activeProfile) : []),
     [activeProfile]
   );
 
   useEffect(() => {
-    const handleScroll = () => {
-      setShowBackToTop(window.scrollY > 240);
-    };
-    handleScroll();
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  useEffect(() => {
     if (hasPendingNsSignupDiscord()) {
       setIsJoinOpen(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!activeProfile?.address) {
+      setSelectedAddress(null);
+      return;
+    }
+    setSelectedAddress(activeProfile.address);
+  }, [activeProfile]);
 
   const activeLinks: EnrichedLink[] = activeProfile
     ? linksByProfileId[activeProfile.id] ?? []
@@ -246,12 +244,8 @@ export default function DirectoryAlt({
           loading={loading}
           filteredProfiles={filteredProfiles}
           linksByProfileId={linksByProfileId}
-          selectedAddress={selectedAddress}
-          setSelectedAddress={setSelectedAddress}
-          setDraftMemo={setDraftMemo}
-          setActiveProfile={setActiveProfile}
-          setForceShowQR={setForceShowQR}
           setUnverifiedLink={setUnverifiedLink}
+          onStickyStateChange={setIsTableHeaderSticky}
         />
 
         {showLocationFilter && (
@@ -421,7 +415,6 @@ export default function DirectoryAlt({
                   uri={uri}
                   memoText={memo}
                   profileName={activeProfileName}
-                  forceShowQR={forceShowQR}
                   defaultShowQR={false}
                   defaultShowURI={false}
                   actionButtonClassName="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
@@ -443,11 +436,11 @@ export default function DirectoryAlt({
           setIsJoinOpen(false);
         }}
       />
-      {showBackToTop && !activeProfile && (
+      {isTableHeaderSticky && !activeProfile && (
         <button
           type="button"
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          className="fixed bottom-6 right-6 z-50 border border-gray-900 bg-gray-900 px-4 py-2 text-xs font-semibold uppercase text-white transition-transform duration-150 hover:scale-[1.04] active:scale-[0.98] rounded-none md:hidden"
+          className="fixed bottom-6 right-6 z-50 border border-gray-900 bg-gray-900 px-4 py-2 text-xs font-semibold uppercase text-white transition-transform duration-150 hover:scale-[1.04] active:scale-[0.98] rounded-none"
         >
           Back to top
         </button>

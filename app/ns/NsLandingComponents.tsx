@@ -11,16 +11,21 @@ import {
   type NsLandingStep,
   type NsLandingWallet,
 } from "./nsLandingContent";
+import { FILTER_BASE } from "./directoryNsStyles";
+import { getNsActionIconKeyFromHref, NsActionIcon } from "./nsActionIcons";
 
 function NsActionLink({ action, primary = false }: { action: NsLandingAction; primary?: boolean }) {
+  const iconKey = getNsActionIconKeyFromHref(action.href);
+  const interactionClassName = `${FILTER_BASE} justify-center gap-2 tracking-[0.18em] md:hover:scale-[1.03] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900`;
   const className = primary
-    ? "inline-flex items-center justify-center gap-2 border border-gray-900 bg-[#f6b223] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-900 transition-colors hover:bg-white hover:text-gray-900"
-    : "inline-flex items-center justify-center gap-2 border border-gray-900 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-gray-900 transition-colors hover:bg-gray-900 hover:text-white";
+    ? `${interactionClassName} bg-[#f6b223] text-gray-900 md:hover:bg-[#ffd36b] active:bg-[#efb63a]`
+    : `${interactionClassName} bg-white text-gray-900 md:hover:bg-[#fff3cc] active:bg-[#f2e3ad]`;
 
   if (action.external) {
     return (
       <a href={action.href} target="_blank" rel="noopener noreferrer" className={className}>
         {action.iconSrc ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
+        {!action.iconSrc && iconKey ? <NsActionIcon iconKey={iconKey} /> : null}
         {action.label}
       </a>
     );
@@ -29,6 +34,7 @@ function NsActionLink({ action, primary = false }: { action: NsLandingAction; pr
   return (
     <Link href={action.href} className={className}>
       {action.iconSrc ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
+      {!action.iconSrc && iconKey ? <NsActionIcon iconKey={iconKey} /> : null}
       {action.label}
     </Link>
   );
