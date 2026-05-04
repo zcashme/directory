@@ -79,8 +79,8 @@ export const nsLandingOrder: NsLandingPageKey[] = [
 export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
   directory: {
     slug: "directory",
-    title: "Name Service Directory - Zcash.me",
-    description: "Browse Zcash profiles with verified name service entries.",
+    title: "Pay with Zcash at Network School - Zcash.me",
+    description: "Browse Network School profiles and pay people with Zcash through zcash.me.",
     eyebrow: "Network School Directory",
     headline: "The peer-to-peer electronic cash of The Network School",
     intro:
