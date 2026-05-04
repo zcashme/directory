@@ -10,6 +10,7 @@ interface ProfileAvatarProps {
   borderColor?: string;
   blink?: boolean;
   lookAround?: boolean;
+  fallbackVariant?: "default" | "ns-transparent";
 }
 
 // Random eye positions the smiley can glance toward
@@ -40,10 +41,14 @@ export default function ProfileAvatar({
   borderColor = "#111827",
   blink = true,
   lookAround = true,
+  fallbackVariant = "default",
 }: ProfileAvatarProps) {
   const outerSize = size + 6; // border + padding
   const avatarUrl = (profile.profile_image_url)?.trim() || "";
   const [eyeOffset, setEyeOffset] = useState({ x: 0, y: 0 });
+  const isNsTransparentFallback = fallbackVariant === "ns-transparent";
+  const fallbackBackgroundClass = isNsTransparentFallback ? "bg-transparent" : "bg-[var(--color-background)]";
+  const fallbackFaceColor = "rgba(0,0,0,0.65)";
 
   // Randomly shift eyes every 5-9s when no avatar image is set
   useEffect(() => {
@@ -76,7 +81,7 @@ export default function ProfileAvatar({
       `}</style>
 
       <div
-        className={`relative rounded-full overflow-hidden shrink-0 border border-black bg-[var(--color-background)] ${className}`}
+        className={`relative rounded-full overflow-hidden shrink-0 border border-black ${fallbackBackgroundClass} ${className}`}
         style={{ width: outerSize, height: outerSize, borderColor }}
       >
         <div className="absolute inset-[2px] rounded-full overflow-hidden flex items-center justify-center">
@@ -97,13 +102,13 @@ export default function ProfileAvatar({
                   style={{ transformOrigin: "center", transformBox: "fill-box" as any }}
                   className={blink ? "animate-[avatar-blink_5s_infinite]" : ""}
                 >
-                  <circle cx="24" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
-                  <circle cx="40" cy="26" r="4" fill="rgba(0,0,0,0.65)" />
+                  <circle cx="24" cy="26" r="4" fill={fallbackFaceColor} />
+                  <circle cx="40" cy="26" r="4" fill={fallbackFaceColor} />
                 </g>
               </g>
               <path
                 d="M24 40c3 4 13 4 16 0"
-                stroke="rgba(0,0,0,0.65)"
+                stroke={fallbackFaceColor}
                 strokeWidth="4"
                 strokeLinecap="round"
                 fill="none"
