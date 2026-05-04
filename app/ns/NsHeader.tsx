@@ -3,7 +3,7 @@ import { useState } from "react";
 import Link from "next/link";
 import znsFlag from "./assets/zns-flag.png";
 import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
-import { nsLandingOrder, nsLandingPages } from "./nsLandingContent";
+import { nsLandingOrder, nsLandingPages, type NsLandingAction } from "./nsLandingContent";
 
 interface NsHeaderProps {
   onJoinClick: () => void;
@@ -13,7 +13,7 @@ export default function NsHeader({
   onJoinClick,
 }: NsHeaderProps) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const menuLinks = [
+  const menuLinks: NsLandingAction[] = [
     { href: "/ns", label: "Directory" },
     ...nsLandingOrder.map((slug) => ({
       href: `/ns/${slug}`,

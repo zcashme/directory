@@ -34,14 +34,13 @@ import NsLocationFilterModal from "./NsLocationFilterModal";
 import NsTable from "./NsTable";
 import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
 import { NsDirectoryHero, NsPageFrame } from "./NsLandingComponents";
-import useFlightPaths from "./useFlightPaths";
 import useNsCounts from "./useNsCounts";
 import useNsDirectory, { type EnrichedLink } from "./useNsDirectory";
 import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 import { hasPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
-import { nsLandingOrder, nsLandingPages } from "./nsLandingContent";
+import { nsLandingOrder, nsLandingPages, type NsLandingAction } from "./nsLandingContent";
 import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
 
 export default function DirectoryAlt({
@@ -89,8 +88,6 @@ export default function DirectoryAlt({
     unverifiedLink,
     setUnverifiedLink,
   } = useProfileModal();
-  const flightPaths = useFlightPaths();
-
   const setDraftMemo = (memoValue: string) => {
     setMemo(memoValue);
   };
@@ -136,7 +133,7 @@ export default function DirectoryAlt({
   const activeProfileHref = activeProfileSlug ? `https://zcash.me/${activeProfileSlug}` : "";
 
 
-  const extraLandingActions = nsLandingOrder
+  const extraLandingActions: NsLandingAction[] = nsLandingOrder
     .filter((slug) => slug !== "start" && slug !== "learn")
     .map((slug) => nsLandingPages[slug].primaryAction.href === `/ns/${slug}`
       ? { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow }
@@ -184,51 +181,6 @@ export default function DirectoryAlt({
 
       <div className="pt-0">
         <div className="mt-6 relative">
-          <div className="pointer-events-none absolute left-1/2 -top-16 z-0 h-36 w-36 -translate-x-1/2 opacity-70">
-            <svg
-              viewBox="0 0 200 200"
-              className="h-full w-full"
-              aria-hidden="true"
-            >
-              <defs>
-                <radialGradient id="globeFade" cx="50%" cy="45%" r="55%">
-                  <stop offset="0%" stopColor="#f2f2f2" />
-                  <stop offset="100%" stopColor="#d9d9d9" />
-                </radialGradient>
-                <linearGradient id="globeMask" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ffffff" />
-                  <stop offset="55%" stopColor="#ffffff" />
-                  <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-                </linearGradient>
-                <mask id="fadeMask">
-                  <rect x="0" y="0" width="200" height="200" fill="url(#globeMask)" />
-                </mask>
-              </defs>
-              <g mask="url(#fadeMask)">
-                <circle cx="100" cy="100" r="90" fill="url(#globeFade)" stroke="#cfcfcf" strokeWidth="2" />
-                <path d="M20 100 C60 80, 140 80, 180 100" fill="none" stroke="#c7c7c7" strokeWidth="1" />
-                <path d="M20 100 C60 120, 140 120, 180 100" fill="none" stroke="#c7c7c7" strokeWidth="1" />
-                <path d="M100 10 C120 60, 120 140, 100 190" fill="none" stroke="#c7c7c7" strokeWidth="1" />
-                <path d="M100 10 C80 60, 80 140, 100 190" fill="none" stroke="#c7c7c7" strokeWidth="1" />
-                {flightPaths.map((path) => (
-                  <path
-                    key={`${path.id}-${path.d}`}
-                    d={path.d}
-                    fill="none"
-                    stroke="#bdbdbd"
-                    strokeWidth="2"
-                    pathLength="1"
-                    strokeDasharray={`${path.dashRatio} 1`}
-                    className="flight-path"
-                    style={{
-                      animationDuration: `${path.duration}s, ${path.duration}s`,
-                      animationDelay: `${path.delay}s, ${path.delay}s`,
-                    }}
-                  />
-                ))}
-              </g>
-            </svg>
-          </div>
           <NsDirectoryHero
             countSummary={
               <>
