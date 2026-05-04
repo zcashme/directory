@@ -70,25 +70,6 @@ export default function NsRow({
       }}
     >
       <div className="relative mt-3 grid items-center gap-3 border border-gray-900 bg-white px-4 py-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.8fr)_minmax(0,0.9fr)_minmax(0,1fr)_minmax(0,1.4fr)] md:items-start rounded-none">
-        <a
-          href={`https://zcash.me/${profileSlug}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(event) => event.stopPropagation()}
-          className="absolute right-3 top-3 inline-flex h-7 items-center gap-1 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase tracking-wide text-gray-900 transition-transform duration-150 hover:scale-[1.04] hover:text-[var(--color-brand-blue)] rounded-none"
-        >
-          <span>Go to profile</span>
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-            className="h-3.5 w-3.5"
-            aria-hidden="true"
-          >
-            <path d="M12.5 3a.75.75 0 0 0 0 1.5h1.94L8.22 10.72a.75.75 0 1 0 1.06 1.06l6.22-6.22V7.5a.75.75 0 0 0 1.5 0V3.75A.75.75 0 0 0 16.25 3H12.5Z" />
-            <path d="M5.5 4.25A2.25 2.25 0 0 0 3.25 6.5v8A2.25 2.25 0 0 0 5.5 16.75h8a2.25 2.25 0 0 0 2.25-2.25V11a.75.75 0 0 0-1.5 0v3.5c0 .414-.336.75-.75.75h-8a.75.75 0 0 1-.75-.75v-8c0-.414.336-.75.75-.75H9a.75.75 0 0 0 0-1.5H5.5Z" />
-          </svg>
-        </a>
         <div className="flex min-w-0 items-center gap-3 overflow-hidden md:col-start-1 md:row-start-1">
           <ProfileAvatar
             profile={profile}
@@ -104,7 +85,7 @@ export default function NsRow({
               </div>
               <TagBadges tags={tags} idPrefix={`${profile?.id}-`} />
             </div>
-              <div className="pr-28 text-[10px] font-bold uppercase tracking-wide text-gray-500">
+              <div className="text-[10px] font-bold uppercase tracking-wide text-gray-500">
                 <a
                   href={`https://zcash.me/${profileSlug}`}
                 target="_blank"

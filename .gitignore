@@ -33,3 +33,13 @@ lint/
 coverage/
 README_STYLE_GUIDE.md
 app/temp-zip321/
+
+# Local admin/internal tooling (not for commit)
+.claude/settings.local.json
+app/admin/
+backup-latest-commit.patch
+beta-testers.json
+components/emails/BetaInviteEmail.tsx
+lib/beta/
+lib/email/beta-invite.ts
+sql/

@@ -17,7 +17,7 @@ export default function NsStaticPageShell({ children }: NsStaticPageShellProps) 
       <NsHeader
         onJoinClick={() => setIsJoinOpen(true)}
       />
-      <div className="pt-20 sm:pt-24">{children}</div>
+      <div>{children}</div>
       <AddUserForm
         isOpen={isJoinOpen}
         isNsSignup
