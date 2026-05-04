@@ -1,16 +1,21 @@
-import type { Metadata } from "next";
 import DirectoryNS from "./DirectoryNS";
 import { fetchProfilesWithRanks } from "./profileRanker";
+import { buildNsMetadata } from "./nsLandingContent";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Name Service Directory - Zcash.me",
-  description: "Browse Zcash profiles with verified name service entries.",
-};
+export const metadata = buildNsMetadata("directory");
 
-export default async function NsPage() {
+interface NsPageProps {
+  searchParams?: Promise<{
+    search?: string;
+  }>;
+}
+
+export default async function NsPage({ searchParams }: NsPageProps) {
   const profiles = await fetchProfilesWithRanks();
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
+  const initialSearch = resolvedSearchParams?.search?.trim() ?? "";
 
-  return <DirectoryNS initialProfiles={profiles} />;
+  return <DirectoryNS initialProfiles={profiles} initialSearch={initialSearch} />;
 }

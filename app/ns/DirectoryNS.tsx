@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import type { Profile } from "@/lib/profile/types";
 
 import AddUserForm from "@/ui/signup/AddUserForm";
@@ -32,6 +33,7 @@ import NsHeader from "./NsHeader";
 import NsLocationFilterModal from "./NsLocationFilterModal";
 import NsTable from "./NsTable";
 import NsUnverifiedLinkModal from "./NsUnverifiedLinkModal";
+import { NsDirectoryHero, NsPageFrame } from "./NsLandingComponents";
 import useFlightPaths from "./useFlightPaths";
 import useNsCounts from "./useNsCounts";
 import useNsDirectory, { type EnrichedLink } from "./useNsDirectory";
@@ -39,8 +41,19 @@ import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 import { hasPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
+import { nsLandingOrder, nsLandingPages } from "./nsLandingContent";
 
-export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
+export default function DirectoryAlt({
+  initialProfiles = null,
+  initialActiveUsername = null,
+  initialSearch = "",
+}: {
+  initialProfiles?: Profile[] | null;
+  initialActiveUsername?: string | null;
+  initialSearch?: string;
+}) {
+  const router = useRouter();
+  const pathname = usePathname();
   // Local state
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
   const [forceShowQR, setForceShowQR] = useState(false);
@@ -64,7 +77,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     filteredProfiles,
     filteredCount,
     isFiltering,
-  } = useNsFilters(profiles);
+  } = useNsFilters(profiles, initialSearch);
   const { nsCount, verifiedCount, rankedCount, coreCount, longtermCount } =
     useNsCounts(profiles);
   const {
@@ -90,15 +103,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     return buildZcashUri(selectedAddress ?? "", finalAmount, memo);
   }, [memo, amount, selectedAddress]);
 
-  const announcementConfig = {
-    enabled: true,
-    message: "Zcash Office Hours",
-    actionLabel: "Action",
-    dismissLabel: "Dismiss",
-  };
-
   const [isJoinOpen, setIsJoinOpen] = useState(false);
-  const [isBannerDismissed, setIsBannerDismissed] = useState(false);
   const [showLocationFilter, setShowLocationFilter] = useState(false);
   const [showBackToTop, setShowBackToTop] = useState(false);
   const activeTags = useMemo(
@@ -127,21 +132,46 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
   const activeProfileName = activeProfile?.display_name ?? activeProfile?.name ?? "Unnamed";
   const activeProfileUsername = (activeProfile?.name || "").trim();
   const activeProfileSlug = normalizeSlug(activeProfileUsername);
+  const activeProfileHref = activeProfileSlug ? `https://zcash.me/${activeProfileSlug}` : "";
 
 
-  const showAnnouncement = announcementConfig.enabled && !isBannerDismissed;
+  const extraLandingActions = nsLandingOrder
+    .filter((slug) => slug !== "start" && slug !== "learn")
+    .map((slug) => nsLandingPages[slug].primaryAction.href === `/ns/${slug}`
+      ? { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow }
+      : { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow });
+
+  useEffect(() => {
+    if (!initialActiveUsername || activeProfile) return;
+    const decoded = decodeURIComponent(initialActiveUsername).trim().toLowerCase();
+    if (!decoded) return;
+    const match = profiles.find((profile) => normalizeSlug((profile.name || "").trim()) === decoded);
+    if (match) {
+      setActiveProfile(match);
+    }
+  }, [activeProfile, initialActiveUsername, profiles, setActiveProfile]);
+
+  useEffect(() => {
+    if (!activeProfileSlug) return;
+    if (pathname === `/ns/${activeProfileSlug}`) return;
+    router.replace(`/ns/${activeProfileSlug}`, { scroll: false });
+  }, [activeProfileSlug, pathname, router]);
+
+  useEffect(() => {
+    if (activeProfile) return;
+    if (pathname === "/ns") return;
+    if (!pathname?.startsWith("/ns/")) return;
+    router.replace("/ns", { scroll: false });
+  }, [activeProfile, pathname, router]);
 
   return (
-    <div className="min-h-screen bg-[#f7f7f2] text-gray-900 overflow-x-hidden">
+    <NsPageFrame>
       <NsUnverifiedLinkModal
         unverifiedLink={unverifiedLink}
         onClose={() => setUnverifiedLink(null)}
       />
 
       <NsHeader
-        showAnnouncement={showAnnouncement}
-        announcementConfig={announcementConfig}
-        onDismissAnnouncement={() => setIsBannerDismissed(true)}
         search={search}
         onSearchChange={setSearch}
         loading={loading}
@@ -149,10 +179,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
         onJoinClick={() => setIsJoinOpen(true)}
       />
 
-      <div
-        className={`mx-auto w-full max-w-6xl px-5 pb-16 pt-6 ${showAnnouncement ? "pt-32 sm:pt-36" : "pt-20 sm:pt-24"
-          }`}
-      >
+      <div className="pt-0">
         <div className="mt-6 relative">
           <div className="pointer-events-none absolute left-1/2 -top-16 z-0 h-36 w-36 -translate-x-1/2 opacity-70">
             <svg
@@ -199,48 +226,36 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
               </g>
             </svg>
           </div>
-          <h1 className="relative z-10 text-3xl font-black uppercase tracking-tight sm:text-4xl">
-            The peer-to-peer electronic cash of The Network School
-          </h1>
-          <div className="mt-4 md:hidden">
-            <label className="sr-only" htmlFor="directory-search-card">
-              Search profiles
-            </label>
-            <input
-              id="directory-search-card"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={
-                loading || nsCount <= 1
-                  ? "Search"
-                  : `Search ${nsCount} names`
-              }
-              className="h-9 w-full border border-gray-900 bg-white px-3 text-sm focus:outline-hidden rounded-none"
-            />
-          </div>
-          <p className="mt-2 max-w-2xl text-sm text-gray-700">
-            This is a directory of Zcash users at{" "}
-            <a
-              href="https://ns.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-semibold underline underline-offset-2"
-            >
-              Network School
-            </a>
-            . Now features{" "}
-            <span className="font-semibold">
-              {isFiltering ? `${filteredCount} of ${nsCount}` : nsCount}
-            </span>{" "}
-            names.{" "}
-            <button
-              type="button"
-              onClick={() => window.alert("Coming Soon. Not affiliated with ns.com (at least, not yet).")}
-              className="font-semibold underline underline-offset-2"
-            >
-              Frequently Asked Questions
-            </button>
-          </p>
+          <NsDirectoryHero
+            countSummary={
+              <>
+                This is a directory of Zcash users at{" "}
+                <a
+                  href="https://ns.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Network School
+                </a>
+                . Now features{" "}
+                <span className="font-semibold">
+                  {isFiltering ? `${filteredCount} of ${nsCount}` : nsCount}
+                </span>{" "}
+                names.{" "}
+                <button
+                  type="button"
+                  onClick={() => window.alert("Coming Soon. Not affiliated with ns.com (at least, not yet).")}
+                  className="font-semibold underline underline-offset-2"
+                >
+                  Frequently Asked Questions
+                </button>
+              </>
+            }
+            extraActions={extraLandingActions}
+          >
+            <></>
+          </NsDirectoryHero>
         </div>
 
         <NsFilters
@@ -299,6 +314,7 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                   size={72}
                   imageClassName="object-contain"
                   className="shadow-xs"
+                  fallbackVariant="ns-transparent"
                 />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center justify-between gap-3">
@@ -346,20 +362,40 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
                       </button>
                     </div>
                   </div>
-                    <a
-                      href={`https://zcash.me/${activeProfileSlug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-baseline gap-0 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
-                    >
-                      <span>Zcash.me/</span>
-                      <span>{activeProfileUsername}</span>
-                    </a>
-                    <SocialLinks
-                      links={activeLinks}
-                      onUnverifiedClick={setUnverifiedLink}
-                      stopPropagation
-                    />
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <a
+                        href={activeProfileHref}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
+                      >
+                        <span>Zcash.me/</span>
+                        <span>{activeProfileUsername}</span>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                          className="h-3.5 w-3.5"
+                          aria-hidden="true"
+                        >
+                          <path d="M12.5 3a.75.75 0 0 0 0 1.5h1.94L8.22 10.72a.75.75 0 1 0 1.06 1.06l6.22-6.22V7.5a.75.75 0 0 0 1.5 0V3.75A.75.75 0 0 0 16.25 3H12.5Z" />
+                          <path d="M5.5 4.25A2.25 2.25 0 0 0 3.25 6.5v8A2.25 2.25 0 0 0 5.5 16.75h8a2.25 2.25 0 0 0 2.25-2.25V11a.75.75 0 0 0-1.5 0v3.5c0 .414-.336.75-.75.75h-8a.75.75 0 0 1-.75-.75v-8c0-.414.336-.75.75-.75H9a.75.75 0 0 0 0-1.5H5.5Z" />
+                        </svg>
+                      </a>
+                    </div>
+                    <div className="mt-2">
+                      <SocialLinks
+                        links={activeLinks}
+                        onUnverifiedClick={setUnverifiedLink}
+                        stopPropagation
+                        prependLink={activeProfileHref ? {
+                          href: activeProfileHref,
+                          label: activeProfileUsername,
+                          title: "Zcash.me profile",
+                          iconSrc: "/assets/icons/zcashme-logo.svg",
+                        } : undefined}
+                      />
+                    </div>
                 </div>
               </div>
 
@@ -448,6 +484,6 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
           Back to top
         </button>
       )}
-    </div>
+    </NsPageFrame>
   );
 }

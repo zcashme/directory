@@ -11,6 +11,12 @@ interface SocialLinksProps {
   stopPropagation?: boolean;
   className?: string;
   linkClassName?: string;
+  prependLink?: {
+    href: string;
+    label: string;
+    title: string;
+    iconSrc: string;
+  };
 }
 
 function resolveImageSrc(icon: StaticImageData | string | undefined): string | undefined {
@@ -25,8 +31,9 @@ export default function SocialLinks({
   stopPropagation = false,
   className = "mt-2 flex flex-wrap content-start gap-2",
   linkClassName = "flex h-7 items-center gap-2 border border-gray-900 bg-white px-2 text-[10px] font-semibold uppercase transition-transform duration-150 hover:scale-[1.05] rounded-none",
+  prependLink,
 }: SocialLinksProps) {
-  if (!links.length) return null;
+  if (!links.length && !prependLink) return null;
 
   const handleStop = stopPropagation
     ? (event: React.MouseEvent) => event.stopPropagation()
@@ -34,6 +41,23 @@ export default function SocialLinks({
 
   return (
     <div className={className}>
+      {prependLink ? (
+        <a
+          href={prependLink.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={handleStop}
+          className={linkClassName}
+          title={prependLink.title}
+        >
+          <img
+            src={prependLink.iconSrc}
+            alt={prependLink.title}
+            className="h-4 w-4"
+          />
+          <span className="max-w-[140px] truncate">{prependLink.label}</span>
+        </a>
+      ) : null}
       {links.map((link) => {
         const isDiscord = link.platform === "Discord";
         const isVerified = Boolean(link.is_verified);
