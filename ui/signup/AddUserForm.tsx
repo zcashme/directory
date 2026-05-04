@@ -12,6 +12,7 @@ import type { SVGProps, FormEvent } from "react";
 import {
   createProfileAction,
   insertProfileLinksAction,
+  insertVerifiedSignupDiscordLinkAction,
   checkAddressTakenAction,
   checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
@@ -43,6 +44,9 @@ import {
   getProfileCardTapMotionProps,
 } from "@/ui/common/buttons/styles";
 import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
+import { supabase } from "@/lib/supabase/supabase-client";
+import { connectDiscordForNsSignup, clearPendingNsSignupDiscord, getPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
+import { getProviderByKey } from "@/ui/links/providers";
 
 const MAX_DISPLAY_NAME_LENGTH = 32;
 
@@ -76,6 +80,48 @@ interface SocialLink {
 interface ConflictInfo {
   type: "error" | "info";
   text: string;
+}
+
+interface DiscordSignupIdentity {
+  userId: string;
+  label: string;
+  url: string;
+}
+
+interface NsSignupDraft {
+  step: number;
+  name: string;
+  displayName: string;
+  address: string;
+  referrer: Referrer | string;
+  nearestCity: City | null;
+  nearestCityInput: string;
+  links: SocialLink[];
+  discordIdentity: DiscordSignupIdentity | null;
+}
+
+const NS_SIGNUP_DRAFT_KEY = "nsSignupJoinDraft";
+
+function loadNsSignupDraft(): NsSignupDraft | null {
+  if (typeof window === "undefined") return null;
+  const raw = sessionStorage.getItem(NS_SIGNUP_DRAFT_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as NsSignupDraft;
+  } catch {
+    sessionStorage.removeItem(NS_SIGNUP_DRAFT_KEY);
+    return null;
+  }
+}
+
+function saveNsSignupDraft(draft: NsSignupDraft): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.setItem(NS_SIGNUP_DRAFT_KEY, JSON.stringify(draft));
+}
+
+function clearNsSignupDraft(): void {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(NS_SIGNUP_DRAFT_KEY);
 }
 
 interface AddUserFormProps {
@@ -115,17 +161,51 @@ export default function AddUserForm({
   const [nearestCityInput, setNearestCityInput] = useState("");
 
   const [links, setLinks] = useState<SocialLink[]>([{ platform: "X", username: "", otherUrl: "", valid: true }]);
+  const [discordIdentity, setDiscordIdentity] = useState<DiscordSignupIdentity | null>(null);
+  const [isDiscordAuthLoading, setIsDiscordAuthLoading] = useState(false);
+  const [discordAuthError, setDiscordAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
+  const totalSteps = isNsSignup ? 7 : 6;
+  const addressStepIndex = 1;
+  const discordStepIndex = isNsSignup ? 2 : -1;
+  const linksStepIndex = isNsSignup ? 3 : 2;
+  const cityStepIndex = isNsSignup ? 4 : 3;
+  const referrerStepIndex = isNsSignup ? 5 : 4;
+  const reviewStepIndex = isNsSignup ? 6 : 5;
 
 
 
   useEffect(() => {
     if (!isOpen) return;
     (async () => {
+      const nsDraft = isNsSignup ? loadNsSignupDraft() : null;
+      if (nsDraft) {
+        setStep(Math.min(reviewStepIndex, Math.max(0, nsDraft.step || 0)));
+        setDir(1);
+        setName(nsDraft.name || "");
+        setDisplayName(nsDraft.displayName || "");
+        setNameHelp("");
+        setNameConflict(null);
+        setAddress(nsDraft.address || "");
+        setAddressHelp("");
+        setAddressConflict(null);
+        setReferrer(nsDraft.referrer || "");
+        setReferrerConflict(null);
+        setNearestCity(nsDraft.nearestCity || null);
+        setNearestCityInput(nsDraft.nearestCityInput || "");
+        setLinks(nsDraft.links?.length ? nsDraft.links : [{ platform: "X", username: "", otherUrl: "", valid: true }]);
+        setDiscordIdentity(nsDraft.discordIdentity || null);
+        setDiscordAuthError(null);
+        setIsDiscordAuthLoading(false);
+        setError("");
+        setIsLoading(false);
+        return;
+      }
+
       setStep(0);
       setDir(1);
       setName(prefillUsername || "");
@@ -141,12 +221,105 @@ export default function AddUserForm({
         setReferrer(prefillReferrer || "");
       }
       setReferrerConflict(null);
-
+      setNearestCity(null);
+      setNearestCityInput("");
       setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
+      setDiscordIdentity(null);
+      setDiscordAuthError(null);
+      setIsDiscordAuthLoading(false);
       setError("");
       setIsLoading(false);
     })();
-  }, [isOpen, prefillReferrer, prefillReferrerId, prefillUsername]);
+  }, [isOpen, isNsSignup, prefillReferrer, prefillReferrerId, prefillUsername, reviewStepIndex]);
+
+  useEffect(() => {
+    if (!isOpen || !isNsSignup) return;
+    saveNsSignupDraft({
+      step,
+      name,
+      displayName,
+      address,
+      referrer,
+      nearestCity,
+      nearestCityInput,
+      links,
+      discordIdentity,
+    });
+  }, [isOpen, isNsSignup, step, name, displayName, address, referrer, nearestCity, nearestCityInput, links, discordIdentity]);
+
+  useEffect(() => {
+    if (!isOpen || !isNsSignup) return;
+    if (!getPendingNsSignupDiscord()) return;
+
+    const discordProvider = getProviderByKey("discord");
+    if (!discordProvider) {
+      setDiscordAuthError("Discord login is temporarily unavailable.");
+      setIsDiscordAuthLoading(false);
+      return;
+    }
+
+    let active = true;
+    const resolveDiscordIdentity = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!active) return;
+      const session = data.session;
+      if (!session) {
+        setIsDiscordAuthLoading(false);
+        return;
+      }
+
+      const identity = session.user.identities?.find((item) => item.provider === discordProvider.key);
+      const identityData = identity?.identity_data as Record<string, unknown> | undefined;
+      const userId = identityData ? discordProvider.getHandle(identityData) : null;
+      if (!userId) {
+        setDiscordAuthError("Discord login did not return a usable account. Try again.");
+        setIsDiscordAuthLoading(false);
+        return;
+      }
+
+      const label =
+        (identityData ? discordProvider.getUsername?.(identityData) : null) ||
+        (identityData?.full_name as string | undefined) ||
+        userId;
+
+      setDiscordIdentity({
+        userId,
+        label,
+        url: discordProvider.buildUrl(userId),
+      });
+      setDiscordAuthError(null);
+      setIsDiscordAuthLoading(false);
+      clearPendingNsSignupDiscord();
+    };
+
+    setIsDiscordAuthLoading(true);
+    void resolveDiscordIdentity();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!active || !session) return;
+      const identity = session.user.identities?.find((item) => item.provider === discordProvider.key);
+      const identityData = identity?.identity_data as Record<string, unknown> | undefined;
+      const userId = identityData ? discordProvider.getHandle(identityData) : null;
+      if (!userId) return;
+      const label =
+        (identityData ? discordProvider.getUsername?.(identityData) : null) ||
+        (identityData?.full_name as string | undefined) ||
+        userId;
+      setDiscordIdentity({
+        userId,
+        label,
+        url: discordProvider.buildUrl(userId),
+      });
+      setDiscordAuthError(null);
+      setIsDiscordAuthLoading(false);
+      clearPendingNsSignupDiscord();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  }, [isOpen, isNsSignup]);
 
   useEffect(() => {
     if (!name) {
@@ -293,6 +466,16 @@ export default function AddUserForm({
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
+  function handleClose() {
+    if (isNsSignup) {
+      clearNsSignupDraft();
+      clearPendingNsSignupDiscord();
+      setDiscordIdentity(null);
+      setDiscordAuthError(null);
+      setIsDiscordAuthLoading(false);
+    }
+    onClose();
+  }
 
   function updateLink(index: number, patch: Partial<SocialLink>) {
     setLinks((prev) => {
@@ -310,18 +493,22 @@ export default function AddUserForm({
     setLinks(links.filter((_, i) => i !== index));
   }
 
-  const builtLinks = links
-    .map((l) => {
-      if (l.platform === "Other") {
-        return l.otherUrl?.trim() || "";
-      }
-      return buildSocialUrl(l.platform as SocialPlatform, (l.username || "").trim()) || "";
-    })
-    .filter((url) => {
-      if (!url) return false;
-      const res = isValidUrl(url);
-      return res.valid;
-    });
+  const reviewLinks = [
+    ...(discordIdentity ? [discordIdentity.url] : []),
+    ...links
+      .filter((l) => !(isNsSignup && l.platform === "Discord"))
+      .map((l) => {
+        if (l.platform === "Other") {
+          return l.otherUrl?.trim() || "";
+        }
+        return buildSocialUrl(l.platform as SocialPlatform, (l.username || "").trim()) || "";
+      })
+      .filter((url) => {
+        if (!url) return false;
+        const res = isValidUrl(url);
+        return res.valid;
+      }),
+  ];
 
   const stepIsValid = (() => {
     switch (step) {
@@ -340,14 +527,30 @@ export default function AddUserForm({
 
 
       case 2:
+        if (isNsSignup) return !!discordIdentity && !isDiscordAuthLoading;
         return links.every((l) => l.valid !== false);
       case 3:
+        if (isNsSignup) return links.every((l) => l.valid !== false);
         return true;
       case 4:
         return true;
       case 5: {
+        if (isNsSignup) return true;
         const res = validateZcashAddress(address.trim());
         return (
+          !!name.trim() &&
+          !!address.trim() &&
+          (!nameConflict || nameConflict.type !== "error") &&
+          (!addressConflict || addressConflict.type !== "error") &&
+          res.valid &&
+          res.type !== "tex" &&
+          res.type !== "transparent"
+        );
+      }
+      case 6: {
+        const res = validateZcashAddress(address.trim());
+        return (
+          !!discordIdentity &&
           !!name.trim() &&
           !!address.trim() &&
           (!nameConflict || nameConflict.type !== "error") &&
@@ -370,7 +573,15 @@ export default function AddUserForm({
     e.preventDefault();
     setError("");
 
+    if (isNsSignup && !discordIdentity) {
+      setError("Log in with Discord to continue.");
+      return;
+    }
+
     const invalid = links.some((l) => {
+      if (isNsSignup && l.platform === "Discord") {
+        return false;
+      }
       if (l.platform === "Other") {
         return l.otherUrl && !isValidUrl(l.otherUrl.trim());
       } else {
@@ -430,6 +641,9 @@ export default function AddUserForm({
 
     const finalLinkEntries = links
       .map((l) => {
+        if (isNsSignup && l.platform === "Discord") {
+          return null;
+        }
         if (l.platform === "Other") {
           const rawUrl = l.otherUrl?.trim() || "";
           const res = isValidUrl(rawUrl);
@@ -481,6 +695,14 @@ export default function AddUserForm({
 
       const profile = profileResult.data;
 
+      if (isNsSignup && discordIdentity) {
+        await insertVerifiedSignupDiscordLinkAction(profile.id, {
+          url: discordIdentity.url,
+          label: discordIdentity.label,
+          platform: "Discord",
+        });
+      }
+
       const linksResult = await insertProfileLinksAction(profile.id, finalLinkEntries);
       if (!linksResult.ok) {
         // Continue anyway - profile is created
@@ -493,6 +715,10 @@ export default function AddUserForm({
       const slug = `${slugBase}-${profile.id}`;
 
       onUserAdded?.(profile);
+      if (isNsSignup) {
+        clearNsSignupDraft();
+        clearPendingNsSignupDiscord();
+      }
       onClose?.();
 
       router.push(`/${slug}`);
@@ -515,7 +741,7 @@ export default function AddUserForm({
   const goNext = () => {
     if (!stepIsValid) return;
     setDir(1);
-    setStep((s) => Math.min(5, s + 1));
+    setStep((s) => Math.min(reviewStepIndex, s + 1));
   };
   const goBack = () => {
     setDir(-1);
@@ -679,6 +905,64 @@ export default function AddUserForm({
     </StepContainer>
   );
 
+  const StepDiscord = isNsSignup ? (
+    <StepContainer stepKey="step-discord" dir={dir}>
+      <label className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
+        Log in with Discord
+      </label>
+      <p className="text-sm text-gray-700">
+        Network School signup requires Discord verification before optional socials.
+      </p>
+      <div className="mt-4 rounded-2xl border border-black/20 bg-white/70 p-4">
+        {discordIdentity ? (
+          <div className="space-y-2 text-sm">
+            <p className="font-semibold text-green-700">Discord connected</p>
+            <p>
+              <span className="font-semibold text-gray-800">Display name:</span>{" "}
+              <span className="font-mono">{discordIdentity.label}</span>
+            </p>
+            <p>
+              <span className="font-semibold text-gray-800">User ID:</span>{" "}
+              <span className="font-mono break-all">{discordIdentity.userId}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm text-gray-700">
+            <p>
+              This adds your canonical Discord profile link and marks it authenticated during signup.
+            </p>
+            <motion.button
+              type="button"
+              onClick={async () => {
+                setDiscordAuthError(null);
+                setIsDiscordAuthLoading(true);
+                try {
+                  await connectDiscordForNsSignup("/ns");
+                } catch (err: any) {
+                  setDiscordAuthError(err?.message || "Discord login failed. Try again.");
+                  setIsDiscordAuthLoading(false);
+                }
+              }}
+              disabled={isDiscordAuthLoading}
+              {...tapProps}
+              className={"w-full " + PROFILE_CARD_PRIMARY_GREEN_ACTION_BUTTON_CLASSES}
+            >
+              {isDiscordAuthLoading ? "Connecting..." : "Log in with Discord"}
+            </motion.button>
+          </div>
+        )}
+        {discordAuthError && (
+          <p className="mt-3 text-xs text-red-600">{discordAuthError}</p>
+        )}
+        {!discordIdentity && !discordAuthError && (
+          <p className="mt-3 text-xs text-gray-600">
+            If the Discord redirect is cancelled, reopen this step and try again.
+          </p>
+        )}
+      </div>
+    </StepContainer>
+  ) : null;
+
   const StepReferrer = (
     <StepContainer stepKey="step-ref" dir={dir}>
       <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
@@ -717,6 +1001,12 @@ export default function AddUserForm({
     <StepContainer stepKey="step-links" dir={dir}>
       <label className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">Add social links to help others identify you</label>
 
+      {isNsSignup && discordIdentity && (
+        <div className="mb-3 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-xs text-green-800">
+          Discord is already added. Feel free to add another.
+        </div>
+      )}
+
       {links.map((link, index) => (
         <SocialLinkInput
           key={index}
@@ -724,6 +1014,7 @@ export default function AddUserForm({
           onChange={(nextValue) => updateLink(index, nextValue)}
           allowRemove={links.length > 1}
           onRemove={() => removeLinkField(index)}
+          excludePlatforms={isNsSignup ? ["Discord"] : []}
         />
       ))}
       <button type="button" onClick={addLinkField} className="text-sm font-semibold text-green-700 hover:underline mt-1">
@@ -763,9 +1054,9 @@ export default function AddUserForm({
         </div>
         <div>
           <span className="font-semibold text-gray-800">Links:</span>
-          {builtLinks.length ? (
+          {reviewLinks.length ? (
             <ul className="mt-1 list-disc list-inside space-y-1">
-              {builtLinks.map((u, i) => (
+              {reviewLinks.map((u, i) => (
                 <li key={i} className="font-mono break-all">
                   {u}
                 </li>
@@ -790,7 +1081,7 @@ export default function AddUserForm({
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={(e) => {
-          if (e.target === e.currentTarget) onClose();
+          if (e.target === e.currentTarget) handleClose();
         }}
       />
 
@@ -804,7 +1095,7 @@ export default function AddUserForm({
           <div
             className="absolute top-0 left-0 bottom-0 transition-all duration-700 ease-in-out opacity-80"
             style={{
-              width: `${((step + 1) / 6) * 100}%`,
+              width: `${((step + 1) / totalSteps) * 100}%`,
               backgroundImage: 'linear-gradient(90deg, #fde047, #4ade80, #22c55e, #fde047)',
               backgroundSize: '200% 100%',
               animation: 'slideGradient 15s linear infinite'
@@ -815,12 +1106,12 @@ export default function AddUserForm({
             <div>
               <h2 className="text-lg font-semibold text-gray-900 leading-tight">Zcash is better with friends</h2>
               <p className="text-[10px] font-bold uppercase tracking-wider text-gray-800 mt-0.5">
-                Step {step + 1} of 6
+                Step {step + 1} of {totalSteps}
               </p>
             </div>
             <motion.button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               {...tapProps}
               className={`${PROFILE_CARD_ICON_BUTTON_CLASSES} h-8 w-8`}
               aria-label="Close"
@@ -836,7 +1127,7 @@ export default function AddUserForm({
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              if (step < 5 && stepIsValid) {
+              if (step < reviewStepIndex && stepIsValid) {
                 goNext();
               }
 
@@ -850,11 +1141,12 @@ export default function AddUserForm({
 
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             {step === 0 && StepName}
-            {step === 1 && StepAddress}
-            {step === 2 && StepLinks}
-            {step === 3 && StepCity}
-            {step === 4 && StepReferrer}
-            {step === 5 && StepReview}
+            {step === addressStepIndex && StepAddress}
+            {isNsSignup && step === discordStepIndex && StepDiscord}
+            {step === linksStepIndex && StepLinks}
+            {step === cityStepIndex && StepCity}
+            {step === referrerStepIndex && StepReferrer}
+            {step === reviewStepIndex && StepReview}
           </AnimatePresence>
         </form>
 
@@ -873,7 +1165,7 @@ export default function AddUserForm({
             ) : (
               <motion.button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 {...tapProps}
                 className={"w-full " + PROFILE_CARD_SECONDARY_ACTION_BUTTON_CLASSES}
               >
@@ -883,7 +1175,7 @@ export default function AddUserForm({
           </div>
 
           <div className="flex-1">
-            {step < 5 ? (
+            {step < reviewStepIndex ? (
               <motion.button
                 type="button"
                 onClick={goNext}

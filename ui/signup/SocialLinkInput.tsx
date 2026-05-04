@@ -81,6 +81,7 @@ interface SocialLinkInputProps {
   containerClassName?: string;
   selectClassName?: string;
   inputClassName?: string;
+  excludePlatforms?: string[];
 }
 
 export default function SocialLinkInput({
@@ -92,6 +93,7 @@ export default function SocialLinkInput({
   containerClassName = "",
   selectClassName = "",
   inputClassName = "",
+  excludePlatforms = [],
 }: SocialLinkInputProps) {
   const current = value || {
     platform: "X",
@@ -124,6 +126,7 @@ export default function SocialLinkInput({
   const showDiscordHelp = current.platform === "Discord" && !isOther;
   const discordHelpText =
     "Your Discord username is used for authentication. After successful authentication, the link updates to your user ID.";
+  const availablePlatformOptions = PLATFORM_OPTIONS.filter((p) => !excludePlatforms.includes(p.key));
 
   return (
     <div
@@ -143,7 +146,7 @@ export default function SocialLinkInput({
               : `rounded-xl border px-3 py-2 text-sm bg-white outline-hidden ${withFieldBorderState("border-black/30")}`
           }
         >
-          {PLATFORM_OPTIONS.map((p) => (
+          {availablePlatformOptions.map((p) => (
             <option key={p.key} value={p.key}>
               {p.label}
             </option>

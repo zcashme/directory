@@ -43,3 +43,16 @@ export async function insertProfileLinks(zcasherId: number, links: ProfileLinkIn
     }]);
   }
 }
+
+export async function insertVerifiedProfileLink(zcasherId: number, link: ProfileLinkInput): Promise<void> {
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return;
+
+  await supabase.from("zcasher_links").insert([{
+    zcasher_id: zcasherId,
+    label: link.label,
+    url: link.url,
+    platform: link.platform ?? derivePlatform(link.url),
+    is_verified: true,
+  }]);
+}

@@ -1,6 +1,6 @@
 "use server";
 
-import { createProfile, insertProfileLinks, checkAddressTaken } from "@/lib/signup/createProfile";
+import { createProfile, insertProfileLinks, insertVerifiedProfileLink, checkAddressTaken } from "@/lib/signup/createProfile";
 import {
   getUsernameAvailability,
 } from "@/lib/profile/profileQueries";
@@ -47,6 +47,18 @@ export async function createProfileAction(profileData: CreateProfilePayload): Pr
 export async function insertProfileLinksAction(zcasherId: number, links: ProfileLinkInput[]): Promise<VoidActionResult> {
   try {
     await insertProfileLinks(zcasherId, links);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: String((error as Error)?.message || error),
+    };
+  }
+}
+
+export async function insertVerifiedSignupDiscordLinkAction(zcasherId: number, link: ProfileLinkInput): Promise<VoidActionResult> {
+  try {
+    await insertVerifiedProfileLink(zcasherId, link);
     return { ok: true };
   } catch (error) {
     return {

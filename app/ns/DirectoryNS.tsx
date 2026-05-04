@@ -38,6 +38,7 @@ import useNsDirectory, { type EnrichedLink } from "./useNsDirectory";
 import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
+import { hasPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
 
 export default function DirectoryAlt({ initialProfiles = null }: { initialProfiles?: Profile[] | null }) {
   // Local state
@@ -112,6 +113,12 @@ export default function DirectoryAlt({ initialProfiles = null }: { initialProfil
     handleScroll();
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    if (hasPendingNsSignupDiscord()) {
+      setIsJoinOpen(true);
+    }
   }, []);
 
   const activeLinks: EnrichedLink[] = activeProfile
