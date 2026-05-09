@@ -7,29 +7,29 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "ZcashNames | Personal names for shielded addresses",
-  description: "Claim yours.",
+  title: "Zcash.me | Verified Zcash identities",
+  description: "Verified Zcash identities. Shielded by default.",
   alternates: {
-    canonical: "https://www.zcashnames.com/",
+    canonical: "https://zcash.me/",
   },
   openGraph: {
-    title: "ZcashNames",
-    description: "Personal names for shielded addresses.",
-    url: "https://www.zcashnames.com/",
+    title: "Zcash.me",
+    description: "Verified Zcash identities. Shielded by default.",
+    url: "https://zcash.me/",
     images: [
       {
-        url: "https://www.zcashnames.com/og/home.png",
+        url: "https://zcash.me/opengraph-image",
         width: 1200,
         height: 630,
-        alt: "ZcashNames homepage preview",
+        alt: "Zcash.me homepage preview with verified profile card and zebra fingerprint",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ZcashNames",
-    description: "Personal names for shielded addresses.",
-    images: ["https://www.zcashnames.com/og/home.png"],
+    title: "Zcash.me",
+    description: "Verified Zcash identities. Shielded by default.",
+    images: ["https://zcash.me/opengraph-image"],
   },
 };
 
