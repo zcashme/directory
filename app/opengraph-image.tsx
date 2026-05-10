@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { ImageResponse } from "next/og";
 
 export const runtime = "nodejs";
@@ -13,31 +15,36 @@ const CARD_WIDTH = Math.round(COMPOSER_MAX_WIDTH_PX * PROFILE_CARD_DESKTOP_WIDTH
 const PREVIEW_SIDE_MARGIN = 108;
 const COPY_BLOCK_WIDTH = 380;
 const CARD_RIGHT_INSET = 138;
-const ACTION_INSET = 24;
+const ACTION_INSET = 28;
+const CARD_TOP_EXTENSION = 17;
+const CARD_BASE_HEIGHT = 458;
+const CARD_HEIGHT = CARD_BASE_HEIGHT + CARD_TOP_EXTENSION;
 
-const ACTION_BUTTONS_TOP = 20;
+const AVATAR_REFERENCE_TOP = 22;
+const ACTION_BUTTONS_TOP = AVATAR_REFERENCE_TOP + CARD_TOP_EXTENSION;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_SIZE = 120;
 const AVATAR_OUTER_SIZE = AVATAR_SIZE + 6;
-const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
-const AVATAR_SHIFT_DOWN = 4;
+const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (AVATAR_REFERENCE_TOP + ACTION_BUTTONS_HEIGHT));
+const AVATAR_SHIFT_DOWN = 18;
 const AVATAR_TRANSFORM_Y = Math.round(AVATAR_OUTER_SIZE / 2 + AVATAR_OVERLAP_Y);
-const AVATAR_BORDER_MASK_WIDTH = AVATAR_OUTER_SIZE + 28;
+const AVATAR_BORDER_MASK_WIDTH = AVATAR_OUTER_SIZE + 76;
 const CARD_TOP_MARGIN = 64;
 const CARD_OFFSET_Y = 7;
 const CARD_COMPONENT_TOP_PADDING = CARD_TOP_MARGIN + CARD_OFFSET_Y + AVATAR_OVERLAP_Y;
-const CONTENT_SHIFT_DOWN = 6;
+const CONTENT_SHIFT_DOWN = 8;
+const PREVIEW_BACKGROUND = "#faf6ed";
 
 const FONT_STACK =
   "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif";
-const CARD_BORDER_COLOR = "rgba(17,24,39,0.82)";
+const OG_FONT_FAMILY = "SegoeUIOG";
+const CARD_BORDER_COLOR = "#111827";
 const CARD_SURFACE = "rgba(255, 255, 255, 0.10)";
-const TRAY_SURFACE = "rgba(249, 250, 251, 0.52)";
 const TRAY_BORDER_COLOR = "#d1d5db";
 const SUCCESS_BORDER_COLOR = "#86efac";
 const LOWER_SECTION_GAP = 20;
-const CARD_STROKE_WIDTH = 1.6;
-const AVATAR_STROKE_WIDTH = 1.6;
+const CARD_STROKE_WIDTH = 2.8;
+const AVATAR_STROKE_WIDTH = 2.8;
 const TRAY_FRAME_HEIGHT = 120;
 
 const SAMPLE = {
@@ -47,6 +54,10 @@ const SAMPLE = {
   meta: "Near NYC \u2022 Joined Jul 2025 \u2022 Active <2 weeks ago",
   address: "u1qk7m0p9z8y7x6w5v4u3t2s1r0q",
 } as const;
+
+const seguiRegular = readFile(path.join(process.cwd(), "og-segoeui.ttf"));
+const seguiBold = readFile(path.join(process.cwd(), "og-segoeuib.ttf"));
+const seguiBlack = readFile(path.join(process.cwd(), "og-seguibl.ttf"));
 
 
 function FeatureItem({
@@ -155,6 +166,7 @@ function VerifiedIcon() {
 }
 
 function CopyIcon() {
+  return null;
   return (
     <div
       style={{
@@ -163,6 +175,44 @@ function CopyIcon() {
         justifyContent: "center",
         color: "#94a3b8",
         fontSize: 13,
+        lineHeight: 1,
+      }}
+    >
+      ⧉
+    </div>
+  );
+}
+
+function CopyGlyph({ size = 14 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <rect
+        x="5"
+        y="3.5"
+        width="7"
+        height="8"
+        rx="1.35"
+        stroke="#94a3b8"
+        strokeWidth="1.35"
+      />
+      <path
+        d="M3.75 10.4V5.8C3.75 4.97157 4.42157 4.3 5.25 4.3H9.65"
+        stroke="#94a3b8"
+        strokeWidth="1.35"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#94a3b8",
+        fontFamily: FONT_STACK,
+        fontSize: size,
+        fontWeight: 500,
         lineHeight: 1,
       }}
     >
@@ -287,23 +337,35 @@ function WarningFrame() {
 }
 
 function CardFrame() {
+  const radius = 26;
+  const gapHalf = Math.round((AVATAR_BORDER_MASK_WIDTH + 6) / 2);
+  const gapStart = Math.round(CARD_WIDTH / 2 - gapHalf);
+  const gapEnd = Math.round(CARD_WIDTH / 2 + gapHalf);
+
   return (
     <svg
       width={CARD_WIDTH}
-      height={458}
-      viewBox={`0 0 ${CARD_WIDTH} 458`}
+      height={CARD_HEIGHT}
+      viewBox={`0 0 ${CARD_WIDTH} ${CARD_HEIGHT}`}
       fill="none"
       style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 8 }}
     >
-      <rect
-        x="0.5"
-        y="0.5"
-        width={CARD_WIDTH - 1}
-        height="457"
-        rx="26"
-        ry="26"
+      <path
+        d={[
+          `M ${radius} 0.5 H ${gapStart}`,
+          `M ${gapEnd} 0.5 H ${CARD_WIDTH - radius}`,
+          `A ${radius - 0.5} ${radius - 0.5} 0 0 1 ${CARD_WIDTH - 0.5} ${radius}`,
+          `V ${CARD_HEIGHT - radius}`,
+          `A ${radius - 0.5} ${radius - 0.5} 0 0 1 ${CARD_WIDTH - radius} ${CARD_HEIGHT - 0.5}`,
+          `H ${radius}`,
+          `A ${radius - 0.5} ${radius - 0.5} 0 0 1 0.5 ${CARD_HEIGHT - radius}`,
+          `V ${radius}`,
+          `A ${radius - 0.5} ${radius - 0.5} 0 0 1 ${radius} 0.5`,
+        ].join(" ")}
         stroke={CARD_BORDER_COLOR}
         strokeWidth={CARD_STROKE_WIDTH}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -388,7 +450,7 @@ function LinkRow({
             flexShrink: 0,
           }}
         >
-          <CopyIcon />
+          <CopyGlyph size={15} />
         </div>
       </div>
     </div>
@@ -397,7 +459,13 @@ function LinkRow({
 
 function AvaAvatarArt() {
   return (
-    <svg width={AVATAR_SIZE} height={AVATAR_SIZE} viewBox="0 0 240 240" fill="none">
+    <svg
+      width={AVATAR_OUTER_SIZE}
+      height={AVATAR_OUTER_SIZE}
+      viewBox="0 0 240 240"
+      fill="none"
+      style={{ display: "block" }}
+    >
       <rect width="240" height="240" rx="120" fill="#0F4AA5" />
       <path d="M0 180C44 154 72 144 116 146C154 148 184 160 240 194V240H0V180Z" fill="#BFD5E7" />
       <path d="M84 78C95 56 121 45 150 49C169 52 184 61 194 74L187 81L166 86L152 82L141 69L126 62L110 64L95 74L84 78Z" fill="#111827" />
@@ -467,7 +535,7 @@ function AddressPill() {
           }}
         >
           <div style={{ display: "flex", alignItems: "center" }}>QR</div>
-          <CopyIcon />
+          <CopyGlyph size={15} />
         </div>
       </div>
     </div>
@@ -556,22 +624,37 @@ function OpenGraphCard() {
         background: CARD_SURFACE,
         boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
         overflow: "visible",
-        height: 458,
+        height: CARD_HEIGHT,
+        marginTop: -CARD_TOP_EXTENSION,
         paddingBottom: 24,
       }}
     >
       <div
         style={{
           position: "absolute",
-          top: -2,
+          top: -4,
           left: "50%",
           transform: "translateX(-50%)",
           width: AVATAR_BORDER_MASK_WIDTH,
-          height: 10,
+          height: 14,
           borderBottomLeftRadius: 999,
           borderBottomRightRadius: 999,
-          background: "#faf6ed",
-          zIndex: 9,
+          background: PREVIEW_BACKGROUND,
+          zIndex: 11,
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: 0,
+          width: AVATAR_OUTER_SIZE + 22,
+          height: AVATAR_OUTER_SIZE + 22,
+          transform: `translate(-50%, -${AVATAR_TRANSFORM_Y - AVATAR_SHIFT_DOWN + 11}px)`,
+          borderRadius: 999,
+          background: PREVIEW_BACKGROUND,
+          zIndex: 11,
         }}
       />
 
@@ -601,13 +684,13 @@ function OpenGraphCard() {
           transform: `translate(-50%, -${AVATAR_TRANSFORM_Y - AVATAR_SHIFT_DOWN}px)`,
           borderRadius: 999,
           border: `${AVATAR_STROKE_WIDTH}px solid #111827`,
-          background: "#faf6ed",
+          background: "#0F4AA5",
           overflow: "hidden",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-          zIndex: 10,
+          zIndex: 12,
         }}
       >
         <AvaAvatarArt />
@@ -621,7 +704,7 @@ function OpenGraphCard() {
           alignItems: "center",
           paddingLeft: 24,
           paddingRight: 24,
-          paddingTop: 64 + CONTENT_SHIFT_DOWN,
+          paddingTop: 64 + CONTENT_SHIFT_DOWN + CARD_TOP_EXTENSION,
         }}
       >
         <div
@@ -647,10 +730,10 @@ function OpenGraphCard() {
                 display: "flex",
                 alignItems: "center",
                 color: "#111827",
-                fontSize: 32,
-                fontWeight: 1000,
-                lineHeight: 1.08,
-                letterSpacing: "-0.05em",
+                fontSize: 33,
+                fontWeight: 950,
+                lineHeight: 1.1,
+                letterSpacing: "-0.042em",
                 textAlign: "center",
               }}
             >
@@ -727,7 +810,13 @@ function OpenGraphCard() {
   );
 }
 
-export default function OpenGraphImage() {
+export default async function OpenGraphImage() {
+  const [fontRegular, fontBold, fontBlack] = await Promise.all([
+    seguiRegular,
+    seguiBold,
+    seguiBlack,
+  ]);
+
   return new ImageResponse(
     (
       <div
@@ -739,7 +828,7 @@ export default function OpenGraphImage() {
           overflow: "hidden",
           background: "#faf6ed",
           color: "#111827",
-          fontFamily: FONT_STACK,
+          fontFamily: OG_FONT_FAMILY,
         }}
       >
         <div
@@ -759,10 +848,11 @@ export default function OpenGraphImage() {
           style={{
             display: "flex",
             alignItems: "center",
-            fontSize: 74,
+            fontFamily: OG_FONT_FAMILY,
+            fontSize: 70,
             lineHeight: 0.94,
-            letterSpacing: "-0.072em",
-            fontWeight: 1000,
+            letterSpacing: "-0.065em",
+            fontWeight: 950,
             color: "#1d4ed8",
           }}
           >
@@ -825,6 +915,28 @@ export default function OpenGraphImage() {
         </div>
       </div>
     ),
-    size
+    {
+      ...size,
+      fonts: [
+        {
+          name: OG_FONT_FAMILY,
+          data: fontRegular,
+          weight: 400,
+          style: "normal",
+        },
+        {
+          name: OG_FONT_FAMILY,
+          data: fontBold,
+          weight: 700,
+          style: "normal",
+        },
+        {
+          name: OG_FONT_FAMILY,
+          data: fontBlack,
+          weight: 900,
+          style: "normal",
+        },
+      ],
+    }
   );
 }
