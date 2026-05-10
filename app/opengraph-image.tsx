@@ -165,7 +165,8 @@ function VerifiedIcon() {
   );
 }
 
-function CopyIcon() {
+// Removed dead CopyIcon helper.
+/*
   return null;
   return (
     <div
@@ -183,6 +184,8 @@ function CopyIcon() {
   );
 }
 void CopyIcon;
+*/
+//
 
 function CopyGlyph({ size = 14 }: { size?: number }) {
   return (
@@ -204,6 +207,7 @@ function CopyGlyph({ size = 14 }: { size?: number }) {
       />
     </svg>
   );
+  /*
   return (
     <div
       style={{
@@ -220,9 +224,11 @@ function CopyGlyph({ size = 14 }: { size?: number }) {
       ⧉
     </div>
   );
+*/
 }
 
-function QrIcon() {
+// Removed dead QrIcon helper.
+/*
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="2" width="4" height="4" rx="0.8" stroke="#6b7280" strokeWidth="1.2" />
@@ -234,6 +240,9 @@ function QrIcon() {
     </svg>
   );
 }
+void QrIcon;
+*/
+//
 
 function PlatformIcon({ kind }: { kind: "x" | "github" | "site" }) {
   if (kind === "x") {
