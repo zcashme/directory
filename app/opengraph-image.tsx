@@ -182,6 +182,7 @@ function CopyIcon() {
     </div>
   );
 }
+void CopyIcon;
 
 function CopyGlyph({ size = 14 }: { size?: number }) {
   return (
