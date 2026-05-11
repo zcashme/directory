@@ -86,24 +86,25 @@ function FeatureItem({
           justifyContent: "center",
           color: "#2563eb",
           flexShrink: 0,
+          position: "relative",
         }}
       >
         {kind === "shield" ? (
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3L19 6V11C19 15.4 16 19.4 12 21C8 19.4 5 15.4 5 11V6L12 3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
-            <path d="M9 12.3L11.1 14.4L15.3 10.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", top: 3, left: 3 }}>
+            <path d="M12 3L19 6V11C19 15.4 16 19.4 12 21C8 19.4 5 15.4 5 11V6L12 3Z" stroke="#2563eb" strokeWidth="1.8" strokeLinejoin="round" />
+            <path d="M9 12.3L11.1 14.4L15.3 10.2" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : kind === "coin" ? (
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none">
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M8.6 12.1L10.8 14.3L15.4 9.7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", top: 3, left: 3 }}>
+            <circle cx="12" cy="12" r="9" stroke="#2563eb" strokeWidth="1.8" />
+            <path d="M8.6 12.1L10.8 14.3L15.4 9.7" stroke="#2563eb" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         ) : (
-          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ transform: "scaleX(-1)" }}>
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.8" />
-            <path d="M8.5 8.4H15.5V10H10.6L15.5 13.6V15.3H8.5V13.7H13.4L8.5 10.1V8.4Z" fill="currentColor" />
-            <path d="M11.3 6.6H12.7V8.6H11.3V6.6Z" fill="currentColor" />
-            <path d="M11.3 15.4H12.7V17.4H11.3V15.4Z" fill="currentColor" />
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" style={{ position: "absolute", top: 3, left: 3 }}>
+            <circle cx="12" cy="12" r="9" stroke="#2563eb" strokeWidth="1.8" />
+            <path d="M8.5 8.4H15.5V10H10.6L15.5 13.6V15.3H8.5V13.7H13.4L8.5 10.1V8.4Z" fill="#2563eb" />
+            <path d="M11.3 6.6H12.7V8.6H11.3V6.6Z" fill="#2563eb" />
+            <path d="M11.3 15.4H12.7V17.4H11.3V15.4Z" fill="#2563eb" />
           </svg>
         )}
       </div>
@@ -139,16 +140,17 @@ function ControlButton({ kind }: { kind: "menu" | "share" }) {
         background: "rgba(255,255,255,0.88)",
         boxShadow: "0 1px 2px rgba(15,23,42,0.08)",
         color: "#64748b",
+        position: "relative",
       }}
     >
       {kind === "menu" ? (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M4 4.25H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M4 8H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          <path d="M4 11.75H12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", top: 10, left: 10 }}>
+          <path d="M4 4.25H12" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M4 8H12" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
+          <path d="M4 11.75H12" stroke="#64748b" strokeWidth="1.5" strokeLinecap="round" />
         </svg>
       ) : (
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", top: 10, left: 10 }}>
           <path d="M8 10.75V3.5" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" />
           <path d="M5.5 6L8 3.5L10.5 6" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M4.75 9.25V11.25C4.75 11.6642 5.08579 12 5.5 12H10.5C10.9142 12 11.25 11.6642 11.25 11.25V9.25" stroke="#9ca3af" strokeWidth="1.5" strokeLinecap="round" />
@@ -160,10 +162,12 @@ function ControlButton({ kind }: { kind: "menu" | "share" }) {
 
 function VerifiedIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="9.8" fill="#dcfce7" stroke={SUCCESS_BORDER_COLOR} strokeWidth="1.4" />
-      <path d="M7.4 11.3L9.6 13.5L14.5 8.4" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div style={{ position: "relative", width: 22, height: 22, flexShrink: 0 }}>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ position: "absolute", top: 0, left: 0 }}>
+        <circle cx="11" cy="11" r="9.8" fill="#dcfce7" stroke={SUCCESS_BORDER_COLOR} strokeWidth="1.4" />
+        <path d="M7.4 11.3L9.6 13.5L14.5 8.4" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
   );
 }
 
@@ -191,23 +195,12 @@ void CopyIcon;
 
 function CopyGlyph({ size = 14 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <rect
-        x="5"
-        y="3.5"
-        width="7"
-        height="8"
-        rx="1.35"
-        stroke="#94a3b8"
-        strokeWidth="1.35"
-      />
-      <path
-        d="M3.75 10.4V5.8C3.75 4.97157 4.42157 4.3 5.25 4.3H9.65"
-        stroke="#94a3b8"
-        strokeWidth="1.35"
-        strokeLinecap="round"
-      />
-    </svg>
+    <div style={{ position: "relative", width: size, height: size, flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox="0 0 16 16" fill="none" style={{ position: "absolute", top: 0, left: 0 }}>
+        <rect x="5" y="3.5" width="7" height="8" rx="1.35" stroke="#94a3b8" strokeWidth="1.35" />
+        <path d="M3.75 10.4V5.8C3.75 4.97157 4.42157 4.3 5.25 4.3H9.65" stroke="#94a3b8" strokeWidth="1.35" strokeLinecap="round" />
+      </svg>
+    </div>
   );
   /*
   return (
@@ -271,34 +264,40 @@ function PlatformIcon({ kind }: { kind: "x" | "github" | "site" }) {
 
   if (kind === "github") {
     return (
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <path
-          d="M8 1.7C4.52 1.7 1.7 4.52 1.7 8C1.7 10.78 3.5 13.13 6 13.96C6.31 14.02 6.43 13.83 6.43 13.67V12.67C4.67 13.05 4.3 11.92 4.3 11.92C4.01 11.18 3.59 10.99 3.59 10.99C3 10.6 3.63 10.61 3.63 10.61C4.28 10.66 4.62 11.28 4.62 11.28C5.2 12.26 6.15 11.98 6.52 11.81C6.58 11.39 6.75 11.11 6.94 10.95C5.54 10.79 4.08 10.25 4.08 7.86C4.08 7.18 4.32 6.63 4.73 6.21C4.67 6.05 4.46 5.41 4.79 4.55C4.79 4.55 5.33 4.38 6.42 5.12C6.93 4.98 7.48 4.91 8.03 4.91C8.58 4.91 9.13 4.98 9.64 5.12C10.73 4.38 11.27 4.55 11.27 4.55C11.6 5.41 11.39 6.05 11.33 6.21C11.74 6.63 11.98 7.18 11.98 7.86C11.98 10.25 10.51 10.78 9.11 10.95C9.36 11.16 9.58 11.58 9.58 12.23V13.67C9.58 13.84 9.7 14.02 10.02 13.96C12.51 13.12 14.3 10.78 14.3 8C14.3 4.52 11.48 1.7 8 1.7Z"
-          fill="#4b5563"
-        />
-      </svg>
+      <div style={{ position: "relative", width: 16, height: 16, flexShrink: 0 }}>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", top: 0, left: 0 }}>
+          <path
+            d="M8 1.7C4.52 1.7 1.7 4.52 1.7 8C1.7 10.78 3.5 13.13 6 13.96C6.31 14.02 6.43 13.83 6.43 13.67V12.67C4.67 13.05 4.3 11.92 4.3 11.92C4.01 11.18 3.59 10.99 3.59 10.99C3 10.6 3.63 10.61 3.63 10.61C4.28 10.66 4.62 11.28 4.62 11.28C5.2 12.26 6.15 11.98 6.52 11.81C6.58 11.39 6.75 11.11 6.94 10.95C5.54 10.79 4.08 10.25 4.08 7.86C4.08 7.18 4.32 6.63 4.73 6.21C4.67 6.05 4.46 5.41 4.79 4.55C4.79 4.55 5.33 4.38 6.42 5.12C6.93 4.98 7.48 4.91 8.03 4.91C8.58 4.91 9.13 4.98 9.64 5.12C10.73 4.38 11.27 4.55 11.27 4.55C11.6 5.41 11.39 6.05 11.33 6.21C11.74 6.63 11.98 7.18 11.98 7.86C11.98 10.25 10.51 10.78 9.11 10.95C9.36 11.16 9.58 11.58 9.58 12.23V13.67C9.58 13.84 9.7 14.02 10.02 13.96C12.51 13.12 14.3 10.78 14.3 8C14.3 4.52 11.48 1.7 8 1.7Z"
+            fill="#4b5563"
+          />
+        </svg>
+      </div>
     );
   }
 
   return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="6.2" stroke="#9ca3af" strokeWidth="1.2" />
-      <path d="M2.8 8H13.2" stroke="#9ca3af" strokeWidth="1.2" strokeLinecap="round" />
-      <path
-        d="M8 1.9C9.85 3.52 10.9 5.68 10.9 8C10.9 10.32 9.85 12.48 8 14.1C6.15 12.48 5.1 10.32 5.1 8C5.1 5.68 6.15 3.52 8 1.9Z"
-        stroke="#9ca3af"
-        strokeWidth="1.2"
-      />
-    </svg>
+    <div style={{ position: "relative", width: 16, height: 16, flexShrink: 0 }}>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ position: "absolute", top: 0, left: 0 }}>
+        <circle cx="8" cy="8" r="6.2" stroke="#9ca3af" strokeWidth="1.2" />
+        <path d="M2.8 8H13.2" stroke="#9ca3af" strokeWidth="1.2" strokeLinecap="round" />
+        <path
+          d="M8 1.9C9.85 3.52 10.9 5.68 10.9 8C10.9 10.32 9.85 12.48 8 14.1C6.15 12.48 5.1 10.32 5.1 8C5.1 5.68 6.15 3.52 8 1.9Z"
+          stroke="#9ca3af"
+          strokeWidth="1.2"
+        />
+      </svg>
+    </div>
   );
 }
 
 function LinkVerifiedIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-      <circle cx="11" cy="11" r="9.8" fill="#dcfce7" stroke={SUCCESS_BORDER_COLOR} strokeWidth="1.4" />
-      <path d="M7.4 11.3L9.6 13.5L14.5 8.4" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
+    <div style={{ position: "relative", width: 22, height: 22, flexShrink: 0 }}>
+      <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ position: "absolute", top: 0, left: 0 }}>
+        <circle cx="11" cy="11" r="9.8" fill="#dcfce7" stroke={SUCCESS_BORDER_COLOR} strokeWidth="1.4" />
+        <path d="M7.4 11.3L9.6 13.5L14.5 8.4" stroke="#16a34a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    </div>
   );
 }
 
@@ -481,7 +480,7 @@ function AvaAvatarArt() {
       height={AVATAR_OUTER_SIZE}
       viewBox="0 0 240 240"
       fill="none"
-      style={{ display: "block" }}
+      style={{ position: "absolute", top: 0, left: 0 }}
     >
       <rect width="240" height="240" rx="120" fill="#0F4AA5" />
       <path d="M0 180C44 154 72 144 116 146C154 148 184 160 240 194V240H0V180Z" fill="#BFD5E7" />
