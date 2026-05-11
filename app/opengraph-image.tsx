@@ -363,8 +363,13 @@ function CardFrame() {
       style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 8 }}
     >
       <path
+        d={`M ${radius} 0.5 H ${gapStart}`}
+        stroke={CARD_BORDER_COLOR}
+        strokeWidth={CARD_STROKE_WIDTH}
+        strokeLinecap="round"
+      />
+      <path
         d={[
-          `M ${radius} 0.5 H ${gapStart}`,
           `M ${gapEnd} 0.5 H ${CARD_WIDTH - radius}`,
           `A ${radius - 0.5} ${radius - 0.5} 0 0 1 ${CARD_WIDTH - 0.5} ${radius}`,
           `V ${CARD_HEIGHT - radius}`,
