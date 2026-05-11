@@ -57,9 +57,9 @@ const SAMPLE = {
   address: "u1qk7m0p9z8y7x6w5v4u3t2s1r0q",
 } as const;
 
-const seguiRegular = readFile(path.join(process.cwd(), "og-segoeui.ttf"));
-const seguiBold = readFile(path.join(process.cwd(), "og-segoeuib.ttf"));
-const seguiBlack = readFile(path.join(process.cwd(), "og-seguibl.ttf"));
+const seguiRegular = readFile(path.join(process.cwd(), "public", "og-segoeui.ttf"));
+const seguiBold = readFile(path.join(process.cwd(), "public", "og-segoeuib.ttf"));
+const seguiBlack = readFile(path.join(process.cwd(), "public", "og-seguibl.ttf"));
 
 
 function FeatureItem({
