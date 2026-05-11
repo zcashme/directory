@@ -15,9 +15,6 @@ const nextConfig: NextConfig = {
       },
     ],
   },
-  outputFileTracingIncludes: {
-    "/opengraph-image": ["./og-*.ttf"],
-  },
   experimental: {
     serverActions: {
       bodySizeLimit: "4mb",
