@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ThreadBoard } from '@/ui/thread/ThreadBoard';
-import { ThreadMessage, Board } from '@/lib/thread/types';
+import type { ThreadMessage, Board } from '@/lib/thread/types';
 import {
   fetchBoardsAction,
   fetchMessagesAction,
@@ -28,29 +28,45 @@ export default function ThreadPage({
   const [currentBoardId, setCurrentBoardId] = useState(initialBoardId);
   const [isLoadingInitial, setIsLoadingInitial] = useState(!initialBoards.length);
   const [messageOffset, setMessageOffset] = useState(0);
+  const [threadError, setThreadError] = useState<string | null>(null);
 
   // Initialize boards on mount
   useEffect(() => {
     const initializeBoards = async () => {
-      if (boards.length === 0) {
-        const result = await fetchBoardsAction();
-        if (result.success && result.data) {
-          setBoards(result.data);
+      try {
+        if (boards.length === 0) {
+          const result = await fetchBoardsAction();
+          if (result.success && result.data) {
+            setBoards(result.data);
+            setThreadError(null);
+          } else if (!result.success) {
+            setThreadError(result.error ?? 'Failed to load boards');
+          }
         }
+      } catch {
+        setThreadError('Failed to load boards');
+      } finally {
+        setIsLoadingInitial(false);
       }
-      setIsLoadingInitial(false);
     };
 
     initializeBoards();
-  }, []);
+  }, [boards.length]);
 
   // Load messages when board changes
   useEffect(() => {
     const loadMessages = async () => {
-      const result = await fetchMessagesAction(currentBoardId, 20, 0);
-      if (result.success && result.data) {
-        setMessages(result.data);
-        setMessageOffset(0);
+      try {
+        const result = await fetchMessagesAction(currentBoardId, 20, 0);
+        if (result.success && result.data) {
+          setMessages(result.data);
+          setMessageOffset(0);
+          setThreadError(null);
+        } else if (!result.success) {
+          setThreadError(result.error ?? 'Failed to load messages');
+        }
+      } catch {
+        setThreadError('Failed to load messages');
       }
     };
 
@@ -65,9 +81,12 @@ export default function ThreadPage({
       if (messagesResult.success && messagesResult.data) {
         setMessages(messagesResult.data);
         setMessageOffset(0);
+        setThreadError(null);
+      } else if (!messagesResult.success) {
+        throw new Error(messagesResult.error ?? 'Failed to reload messages');
       }
-    } else {
-      throw new Error(result.error || 'Failed to post message');
+    } else if (!result.success) {
+      throw new Error(result.error ?? 'Failed to post message');
     }
   };
 
@@ -75,19 +94,23 @@ export default function ThreadPage({
     const nextOffset = messageOffset + 20;
     const result = await fetchMessagesAction(boardId, 20, nextOffset);
     if (result.success && result.data) {
-      setMessages((prev) => [...prev, ...result.data!]);
+      setMessages((prev) => [...prev, ...result.data]);
       setMessageOffset(nextOffset);
+      setThreadError(null);
+    } else if (!result.success) {
+      throw new Error(result.error ?? 'Failed to load more messages');
     }
   };
 
   const handleCreateBoard = async (name: string, description: string) => {
     const result = await createBoardAction(name, description);
     if (result.success && result.data) {
-      setBoards((prev) => [...prev, result.data!]);
+      setBoards((prev) => [...prev, result.data]);
+      setThreadError(null);
       // Auto-switch to new board via routing
       router.push(`/thread/${result.data.id}`);
-    } else {
-      throw new Error(result.error || 'Failed to create board');
+    } else if (!result.success) {
+      throw new Error(result.error ?? 'Failed to create board');
     }
   };
 
@@ -109,14 +132,21 @@ export default function ThreadPage({
   }
 
   return (
-    <ThreadBoard
-      initialMessages={messages}
-      initialBoards={boards}
-      initialBoardId={currentBoardId}
-      onPostMessage={handlePostMessage}
-      onLoadMoreMessages={handleLoadMoreMessages}
-      onCreateBoard={handleCreateBoard}
-      onBoardSelect={handleBoardSelect}
-    />
+    <>
+      {threadError && (
+        <div className="mx-auto mt-4 w-full max-w-3xl rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {threadError}
+        </div>
+      )}
+      <ThreadBoard
+        initialMessages={messages}
+        initialBoards={boards}
+        initialBoardId={currentBoardId}
+        onPostMessage={handlePostMessage}
+        onLoadMoreMessages={handleLoadMoreMessages}
+        onCreateBoard={handleCreateBoard}
+        onBoardSelect={handleBoardSelect}
+      />
+    </>
   );
 }

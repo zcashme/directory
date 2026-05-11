@@ -2,11 +2,15 @@
 
 import { ThreadMessage, Board } from '@/lib/thread/types';
 
-interface ActionResponse<T> {
-  success: boolean;
-  data?: T;
-  error?: string;
-}
+type ActionResponse<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: string;
+    };
 
 /**
  * Fetch all boards
