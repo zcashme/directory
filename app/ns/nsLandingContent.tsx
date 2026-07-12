@@ -94,7 +94,7 @@ export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
     primaryAction: { href: "/ns/start", label: "Get started", hideIcon: true },
     secondaryAction: {
       href: "https://discord.com/channels/900827411917201418/1454104981320892591",
-      label: "Join the Discord",
+      label: "Join Discord",
       external: true,
       iconSrc: discordIconSrc,
     },
@@ -112,14 +112,23 @@ export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
     primaryAction: undefined,
     secondaryAction: undefined,
     stats: [
-      { label: "Step 1", value: "Download Zodl" },
+      {
+        label: "Step 1",
+        value: "Download Zodl",
+        action: {
+          href: "https://zodl.com/?utm_source=chatgpt.com",
+          label: "Get Zodl",
+          external: true,
+          iconSrc: "https://play-lh.googleusercontent.com/0tPoGDUdDKVQ-T4bpx9vo4X72827KtZySJdVmbbyaGu6CMG9v_7RgRTocvPHJAxdGuH3tLB07RPEd5eVUkUR=w480-h960-rw",
+        },
+      },
       { label: "Step 2", value: "Copy shielded address" },
       {
         label: "Step 3",
         value: "Post in Discord",
         action: {
           href: "https://discord.com/channels/900827411917201418/1454104981320892591",
-          label: "Join the Discord",
+          label: "Join Discord",
           external: true,
           iconSrc: discordIconSrc,
         },
@@ -160,7 +169,7 @@ export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
         points: [],
         action: {
           href: "https://discord.com/channels/900827411917201418/1454104981320892591",
-          label: "Join the Discord",
+          label: "Join Discord",
           external: true,
           iconSrc: discordIconSrc,
         },
@@ -171,7 +180,7 @@ export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
         body: "Go to `zcash.me/ns` or tap `Add your name` button on the top-right if you want a public profile, the ability to create payment links, and an easy way for people to recognize and pay you.",
         action: {
           href: "/ns",
-          label: "Add your name",
+          label: "+ Add your name",
           hideIcon: true,
         },
         points: [
