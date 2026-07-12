@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
+
+const discordIconSrc = typeof discordFavicon === "string" ? discordFavicon : discordFavicon.src;
 
 export type NsLandingPageKey =
   | "directory"
@@ -15,6 +18,7 @@ export interface NsLandingAction {
   label: string;
   external?: boolean;
   iconSrc?: string;
+  hideIcon?: boolean;
 }
 
 export interface NsLandingSection {
@@ -29,6 +33,7 @@ export interface NsLandingStep {
   title: string;
   body: string;
   points: string[];
+  action?: NsLandingAction;
 }
 
 export interface NsLandingWallet {
@@ -56,14 +61,15 @@ export interface NsLandingPageContent {
   eyebrow: string;
   headline: string;
   intro: string;
-  primaryAction: NsLandingAction;
+  primaryAction?: NsLandingAction;
   secondaryAction?: NsLandingAction;
-  stats: Array<{ label: string; value: string }>;
+  stats: Array<{ label: string; value: string; action?: NsLandingAction }>;
   sections: NsLandingSection[];
   onboardingSteps?: NsLandingStep[];
   wallets?: NsLandingWallet[];
   rewards?: NsLandingReward[];
   benefits?: NsLandingBenefit[];
+  hideExploreMore?: boolean;
 }
 
 export const nsLandingOrder: NsLandingPageKey[] = [
@@ -85,172 +91,154 @@ export const nsLandingPages: Record<NsLandingPageKey, NsLandingPageContent> = {
     headline: "The peer-to-peer electronic cash of The Network School",
     intro:
       "Discover who is already using Zcash, open profiles, and send shielded payments or messages directly from the directory.",
-    primaryAction: { href: "/ns/start", label: "Get started" },
-    secondaryAction: { href: "/ns/learn", label: "What is Zcash?" },
+    primaryAction: { href: "/ns/start", label: "Get started", hideIcon: true },
+    secondaryAction: {
+      href: "https://discord.com/channels/900827411917201418/1454104981320892591",
+      label: "Join the Discord",
+      external: true,
+      iconSrc: discordIconSrc,
+    },
     stats: [],
     sections: [],
   },
   start: {
     slug: "start",
     title: "Get Started with Zcash - Zcash.me",
-    description: "Learn the fastest path to create a profile, set up a wallet, and start using Zcash at Network School.",
+    description: "Learn the fastest path to get the Zcash airdrop at Network School.",
     eyebrow: "Get Started",
-    headline: "Start using Zcash in a single session",
+    headline: "How to get the Zcash airdrop",
     intro:
-      "Set up the basics, claim your profile, and get to the point where someone can pay you privately with confidence.",
-    primaryAction: { href: "/ns", label: "Browse directory" },
-    secondaryAction: { href: "/ns/office", label: "Join office hours" },
+      "Set up the basics, claim your airdrop, and get to the point where someone can pay you privately with any cryptocurrency.",
+    primaryAction: undefined,
+    secondaryAction: undefined,
     stats: [
-      { label: "Step 1", value: "Download wallet" },
-      { label: "Step 2", value: "Join with Discord" },
-      { label: "Step 3", value: "Finish profile" },
-    ],
-    sections: [
+      { label: "Step 1", value: "Download Zodl" },
+      { label: "Step 2", value: "Copy shielded address" },
       {
-        eyebrow: "Join Flow",
-        title: "Your first objective is a profile that can receive money",
-        body: "The shortest path is: install a wallet, copy your unified Zcash address, join the directory, and finish enough profile setup that other people can recognize and pay you.",
-        points: [
-          "Use a unified Zcash address, not a partial or outdated address type.",
-          "Go to `zcash.me/ns` and press `Add your name` to start the join flow.",
-          "After joining, open `zcash.me/{username}` and use `Menu > Edit profile` to add your picture and finish setup.",
-        ],
+        label: "Step 3",
+        value: "Post in Discord",
+        action: {
+          href: "https://discord.com/channels/900827411917201418/1454104981320892591",
+          label: "Join the Discord",
+          external: true,
+          iconSrc: discordIconSrc,
+        },
       },
       {
-        eyebrow: "Airdrop",
-        title: "Network School airdrop: do the minimum cleanly",
-        body: "The airdrop is simple if you treat it like a checklist. Complete the basics first, then improve your profile, then refer one other person.",
-        points: [
-          "Minimum join requirements: username or display name, unified address, and Discord sign-in.",
-          "Add a profile picture after joining so people can identify you quickly in the directory.",
-          "Refer one person and make sure they mention you when they complete the same flow.",
-        ],
+        label: "Optional",
+        value: "Join directory",
+        action: {
+          href: "/ns",
+          label: "Browse",
+        },
       },
     ],
+    sections: [],
     onboardingSteps: [
       {
         number: "1",
-        title: "Download a wallet",
-        body: "Pick a wallet first. If you skip this step, you have nowhere to receive the airdrop and nowhere to copy a usable address from.",
-        points: [
-          "Install one wallet from the list below.",
-          "Open the app and complete its initial setup and backup prompts.",
-          "Prefer a wallet that makes receiving a unified address obvious.",
-        ],
+        title: "Download the Zodl wallet",
+        body: "Download the Zodl wallet at `Zodl.com`. Zodl is the recommended first choice, but other wallets are listed below if you want alternatives.",
+        points: [],
+        action: {
+          href: "https://zodl.com/?utm_source=chatgpt.com",
+          label: "Get Zodl",
+          external: true,
+          iconSrc: "https://play-lh.googleusercontent.com/0tPoGDUdDKVQ-T4bpx9vo4X72827KtZySJdVmbbyaGu6CMG9v_7RgRTocvPHJAxdGuH3tLB07RPEd5eVUkUR=w480-h960-rw",
+        },
       },
       {
         number: "2",
-        title: "Press receive and copy your wallet address",
-        body: "Once your wallet is ready, go to the receive screen and copy your unified address. This is the address you will use when joining the directory.",
-        points: [
-          "Use the wallet's `Receive` screen, not a send screen or exchange deposit flow.",
-          "Copy the full unified address exactly as shown.",
-          "Keep it ready so you can paste it into the join form immediately.",
-        ],
+        title: "Find and copy your shielded wallet address",
+        body: "From the wallet home screen, tap `Receive`. Make sure you are viewing your shielded address, not the transparent address, then copy it to your clipboard.",
+        points: [],
       },
       {
         number: "3",
-        title: "Join the directory and sign in with Discord",
-        body: "Go to `zcash.me/ns` and press `Add your name`. Complete the join flow, including Discord sign-in, because that is part of the minimum airdrop requirement.",
-        points: [
-          "Enter a recognizable username or display name.",
-          "Paste your unified address into the form.",
-          "Finish Discord sign-in before you consider the join complete.",
-        ],
+        title: "Post your shielded address in Discord",
+        body: "Join the Zcash Network School Discord thread and paste your shielded wallet address as a comment. Once you have posted it, you are ready for the next airdrop.",
+        points: [],
+        action: {
+          href: "https://discord.com/channels/900827411917201418/1454104981320892591",
+          label: "Join the Discord",
+          external: true,
+          iconSrc: discordIconSrc,
+        },
       },
       {
         number: "4",
-        title: "Open your profile and finish setup",
-        body: "After joining, open `zcash.me/{username}`. Use the menu to edit your profile and add your picture so people can identify you and the airdrop checklist is satisfied.",
+        title: "Optional: join the directory and sign in with Discord",
+        body: "Go to `zcash.me/ns` or tap `Add your name` button on the top-right if you want a public profile, the ability to create payment links, and an easy way for people to recognize and pay you.",
+        action: {
+          href: "/ns",
+          label: "Add your name",
+          hideIcon: true,
+        },
         points: [
-          "Open your public profile directly after signup.",
-          "Tap `Menu > Edit profile`.",
-          "Add a profile picture as your minimum first improvement.",
+          "Enter a recognizable username or display name and paste your shielded address.",
+          "Finish Discord sign-in to connect your profile to the Network School community.",
+          "Add a profile picture after joining so people can identify you quickly in the directory.",
+          "Send Payment Requests from your profile instead of repeating an address in chat.",
+          "Share a link instead of an address.",
         ],
       },
     ],
     wallets: [
       {
+        name: "Zodl",
+        href: "https://zodl.com/",
+        summary: "Simple path into Zcash and private payments.",
+        strengths: [
+          "Recommended",
+          "Swap Tokens",
+          "Cross Pay",
+        ],
+      },
+      {
         name: "Edge",
         href: "https://edge.app/",
-        summary: "Good default for people who want a polished mainstream wallet experience.",
+        summary: "A strong mainstream option if you want a familiar multi-asset wallet.",
         strengths: [
-          "Simple onboarding and broad multi-asset support.",
-          "Good if you want one wallet that feels familiar quickly.",
+          "Network-level Privacy",
+          "Multi-Asset",
+          "Zcash Names",
         ],
       },
       {
         name: "Unstoppable",
         href: "https://unstoppable.money/",
-        summary: "Useful if you want a modern mobile wallet with strong multi-chain coverage.",
+        summary: "A modern mobile wallet if you want broader crypto coverage beyond Zcash.",
         strengths: [
-          "Clean mobile-first experience.",
-          "Good fit if you already use other crypto assets too.",
+          "Swap Tokens",
+          "Multi-Asset",
+          "Zcash Names",
         ],
       },
       {
         name: "Cake Wallet",
         href: "https://cakewallet.com/",
-        summary: "A common pick for privacy-focused users who want a wallet with a long track record.",
+        summary: "A long-running option for people who prefer a more established privacy-wallet brand.",
         strengths: [
-          "Well-known in privacy-coin circles.",
-          "Good if you want a more established mobile wallet option.",
+          "Swap Tokens",
+          "Multi-Asset",
+          "Local Contacts",
+          "Zcash Names",
         ],
       },
       {
         name: "Zingo",
         href: "https://zingolabs.org/zingo/legacy/",
-        summary: "Zcash-native orientation makes it easier to think in Zcash terms from the start.",
+        summary: "A Zcash-oriented option if you want a wallet centered more directly on the Zcash use case.",
         strengths: [
-          "Closer to the Zcash-specific use case.",
-          "Good if you want to focus on Zcash rather than general crypto management.",
-        ],
-      },
-      {
-        name: "ZODL",
-        href: "https://zodl.com/",
-        summary: "Another option if you want a Zcash-compatible wallet and prefer comparing interfaces yourself.",
-        strengths: [
-          "Worth testing if another wallet's UX does not click for you.",
-          "Good reminder that the right wallet is the one you will actually keep using.",
+          "Desktop Available",
+          "Local Contacts",
+          "Zcash Names",
         ],
       },
     ],
-    rewards: [
-      {
-        amount: "$2",
-        title: "Join the directory",
-        requirement: "Minimum: add a username or display name, add a unified Zcash address, and sign in with Discord.",
-      },
-      {
-        amount: "$2",
-        title: "Edit your profile",
-        requirement: "Minimum: add a profile picture so your listing is recognizable.",
-      },
-      {
-        amount: "$1",
-        title: "Refer another person",
-        requirement: "Have them complete the same flow and mention you as the referral.",
-      },
-    ],
-    benefits: [
-      {
-        title: "Accept from any currency",
-        body: "You can share your `zcash.me` link instead of manually managing address handoffs every time someone wants to pay you.",
-      },
-      {
-        title: "Pay to any currency",
-        body: "Once your profile and wallet are live, you are on-ramp ready for cross-currency flows instead of only direct ZEC-to-ZEC interactions.",
-      },
-      {
-        title: "Send invoices and payment requests",
-        body: "A profile link gives you a cleaner way to request payment in Zcash than repeating an address across side channels.",
-      },
-      {
-        title: "Share a link instead of an address",
-        body: "This helps when you do not have your wallet in front of you, do not want to paste an address into chat, or cannot show a QR code in person.",
-      },
-    ],
+    rewards: [],
+    benefits: [],
+    hideExploreMore: true,
   },
   office: {
     slug: "office",

@@ -2,12 +2,14 @@
 import { useState } from "react";
 import Link from "next/link";
 import znsFlag from "./assets/zns-flag.png";
-import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
-import { nsLandingOrder, nsLandingPages, type NsLandingAction } from "./nsLandingContent";
+import { type NsLandingAction } from "./nsLandingContent";
 import { getNsActionIconKeyFromHref, NsActionIcon } from "./nsActionIcons";
+import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
 
-interface NsHeaderProps {
+export interface NsHeaderProps {
+  mode?: "landing" | "directory" | "profile";
   onJoinClick: () => void;
+  activeSlug?: string;
 }
 
 export default function NsHeader({
@@ -16,10 +18,7 @@ export default function NsHeader({
   const [menuOpen, setMenuOpen] = useState(false);
   const menuLinks: NsLandingAction[] = [
     { href: "/ns", label: "Directory" },
-    ...nsLandingOrder.map((slug) => ({
-      href: `/ns/${slug}`,
-      label: nsLandingPages[slug].eyebrow,
-    })),
+    { href: "/ns/start", label: "Get Airdrop" },
     {
       href: "https://discord.com/channels/900827411917201418/1454104981320892591",
       label: "Join the Discord",
@@ -98,10 +97,7 @@ export default function NsHeader({
                         index < menuLinks.length - 1 ? "border-b border-gray-200" : ""
                       } sm:border-b sm:border-gray-200`}
                     >
-                      {link.iconSrc ? (
-                        <img src={link.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" />
-                      ) : null}
-                      {!link.iconSrc ? renderMenuIcon(link.href) : null}
+                      {renderMenuIcon(link.href)}
                       {link.label}
                     </a>
                   ) : (
@@ -112,11 +108,11 @@ export default function NsHeader({
                       className={`flex items-center gap-2 px-3 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-900 transition-colors hover:bg-[#fff3cc] ${
                         index < menuLinks.length - 1 ? "border-b border-gray-200" : ""
                       } sm:border-b sm:border-gray-200`}
-                  >
-                    {renderMenuIcon(link.href)}
-                    {link.label}
-                  </Link>
-                )
+                    >
+                      {renderMenuIcon(link.href)}
+                      {link.label}
+                    </Link>
+                  )
                 )}
               </div>
               <div className="border-t border-gray-900 p-3 sm:hidden">

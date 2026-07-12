@@ -40,10 +40,9 @@ import useNsFilters from "./useNsFilters";
 import useProfileModal from "./useProfileModal";
 import { getProfileTags, normalizeSlug } from "./directoryNsUtils";
 import { hasPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
-import { nsLandingOrder, nsLandingPages, type NsLandingAction } from "./nsLandingContent";
-import discordFavicon from "@/lib/profile/assets/favicons/favicon-discord-32.png";
+import { type NsLandingAction } from "./nsLandingContent";
 
-export default function DirectoryAlt({
+export default function DirectoryNS({
   initialProfiles = null,
   initialActiveUsername = null,
   initialSearch = "",
@@ -54,13 +53,10 @@ export default function DirectoryAlt({
 }) {
   const router = useRouter();
   const pathname = usePathname();
-  // Local state
   const [selectedAddress, setSelectedAddress] = useState<string | null>(null);
-  const [memo, setMemo] = useState('');
-  const [amount, setAmount] = useState('');
-  const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(
-    initialProfiles
-  );
+  const [memo, setMemo] = useState("");
+  const [amount, setAmount] = useState("");
+  const { profiles, loading, addProfile, linksByProfileId } = useNsDirectory(initialProfiles);
   const {
     search,
     setSearch,
@@ -130,18 +126,7 @@ export default function DirectoryAlt({
   const activeProfileSlug = normalizeSlug(activeProfileUsername);
   const activeProfileHref = activeProfileSlug ? `https://zcash.me/${activeProfileSlug}` : "";
 
-
-  const extraLandingActions: NsLandingAction[] = nsLandingOrder
-    .filter((slug) => slug !== "start" && slug !== "learn")
-    .map((slug) => nsLandingPages[slug].primaryAction.href === `/ns/${slug}`
-      ? { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow }
-      : { href: `/ns/${slug}`, label: nsLandingPages[slug].eyebrow });
-  extraLandingActions.push({
-    href: "https://discord.com/channels/900827411917201418/1454104981320892591",
-    label: "Join the Discord",
-    external: true,
-    iconSrc: typeof discordFavicon === "string" ? discordFavicon : discordFavicon.src,
-  });
+  const extraLandingActions: NsLandingAction[] = [];
 
   useEffect(() => {
     if (!initialActiveUsername || activeProfile) return;
@@ -301,7 +286,6 @@ export default function DirectoryAlt({
                               });
                               return;
                             } catch {
-                              // User cancelled or failed - fall through to clipboard
                             }
                           }
                           await navigator.clipboard.writeText(shareUrl);
@@ -324,40 +308,40 @@ export default function DirectoryAlt({
                       </button>
                     </div>
                   </div>
-                    <div className="mt-1 flex flex-wrap items-center gap-2">
-                      <a
-                        href={activeProfileHref}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <a
+                      href={activeProfileHref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide text-gray-500 hover:underline"
+                    >
+                      <span>Zcash.me/</span>
+                      <span>{activeProfileUsername}</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
                       >
-                        <span>Zcash.me/</span>
-                        <span>{activeProfileUsername}</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                          className="h-3.5 w-3.5"
-                          aria-hidden="true"
-                        >
-                          <path d="M12.5 3a.75.75 0 0 0 0 1.5h1.94L8.22 10.72a.75.75 0 1 0 1.06 1.06l6.22-6.22V7.5a.75.75 0 0 0 1.5 0V3.75A.75.75 0 0 0 16.25 3H12.5Z" />
-                          <path d="M5.5 4.25A2.25 2.25 0 0 0 3.25 6.5v8A2.25 2.25 0 0 0 5.5 16.75h8a2.25 2.25 0 0 0 2.25-2.25V11a.75.75 0 0 0-1.5 0v3.5c0 .414-.336.75-.75.75h-8a.75.75 0 0 1-.75-.75v-8c0-.414.336-.75.75-.75H9a.75.75 0 0 0 0-1.5H5.5Z" />
-                        </svg>
-                      </a>
-                    </div>
-                    <div className="mt-2">
-                      <SocialLinks
-                        links={activeLinks}
-                        onUnverifiedClick={setUnverifiedLink}
-                        stopPropagation
-                        prependLink={activeProfileHref ? {
-                          href: activeProfileHref,
-                          label: activeProfileUsername,
-                          title: "Zcash.me profile",
-                          iconSrc: "/assets/icons/zcashme-logo.svg",
-                        } : undefined}
-                      />
-                    </div>
+                        <path d="M12.5 3a.75.75 0 0 0 0 1.5h1.94L8.22 10.72a.75.75 0 1 0 1.06 1.06l6.22-6.22V7.5a.75.75 0 0 0 1.5 0V3.75A.75.75 0 0 0 16.25 3H12.5Z" />
+                        <path d="M5.5 4.25A2.25 2.25 0 0 0 3.25 6.5v8A2.25 2.25 0 0 0 5.5 16.75h8a.75.75 0 0 0 .75-.75V11a.75.75 0 0 0-1.5 0v3.5c0 .414-.336.75-.75.75h-8a.75.75 0 0 1-.75-.75v-8c0-.414.336-.75.75-.75H9a.75.75 0 0 0 0-1.5H5.5Z" />
+                      </svg>
+                    </a>
+                  </div>
+                  <div className="mt-2">
+                    <SocialLinks
+                      links={activeLinks}
+                      onUnverifiedClick={setUnverifiedLink}
+                      stopPropagation
+                      prependLink={activeProfileHref ? {
+                        href: activeProfileHref,
+                        label: activeProfileUsername,
+                        title: "Zcash.me profile",
+                        iconSrc: "/assets/icons/zcashme-logo.svg",
+                      } : undefined}
+                    />
+                  </div>
                 </div>
               </div>
 

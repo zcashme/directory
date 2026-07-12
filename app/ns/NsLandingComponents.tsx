@@ -15,7 +15,7 @@ import { FILTER_BASE } from "./directoryNsStyles";
 import { getNsActionIconKeyFromHref, NsActionIcon } from "./nsActionIcons";
 
 function NsActionLink({ action, primary = false }: { action: NsLandingAction; primary?: boolean }) {
-  const iconKey = getNsActionIconKeyFromHref(action.href);
+  const iconKey = action.hideIcon ? null : getNsActionIconKeyFromHref(action.href);
   const interactionClassName = `${FILTER_BASE} justify-center gap-2 tracking-[0.18em] md:hover:scale-[1.03] active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-gray-900`;
   const className = primary
     ? `${interactionClassName} bg-[#f6b223] text-gray-900 md:hover:bg-[#ffd36b] active:bg-[#efb63a]`
@@ -24,7 +24,7 @@ function NsActionLink({ action, primary = false }: { action: NsLandingAction; pr
   if (action.external) {
     return (
       <a href={action.href} target="_blank" rel="noopener noreferrer" className={className}>
-        {action.iconSrc ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
+        {action.iconSrc && !action.hideIcon ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
         {!action.iconSrc && iconKey ? <NsActionIcon iconKey={iconKey} /> : null}
         {action.label}
       </a>
@@ -33,11 +33,18 @@ function NsActionLink({ action, primary = false }: { action: NsLandingAction; pr
 
   return (
     <Link href={action.href} className={className}>
-      {action.iconSrc ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
+      {action.iconSrc && !action.hideIcon ? <img src={action.iconSrc} alt="" className="h-4 w-4" aria-hidden="true" /> : null}
       {!action.iconSrc && iconKey ? <NsActionIcon iconKey={iconKey} /> : null}
       {action.label}
     </Link>
   );
+}
+
+function requireAction(action: NsLandingAction | undefined, context: string): NsLandingAction {
+  if (!action) {
+    throw new Error(`Missing action for ${context}`);
+  }
+  return action;
 }
 
 export function NsPageFrame({ children }: { children: ReactNode }) {
@@ -60,10 +67,10 @@ export function NsHero({
   eyebrow: string;
   headline: string;
   intro: string;
-  primaryAction: NsLandingAction;
+  primaryAction?: NsLandingAction;
   secondaryAction?: NsLandingAction;
   extraActions?: NsLandingAction[];
-  stats: Array<{ label: string; value: string }>;
+  stats: Array<{ label: string; value: string; action?: NsLandingAction }>;
 }) {
   return (
     <section className="relative overflow-hidden border border-gray-900 bg-white px-5 py-8 sm:px-8 sm:py-10">
@@ -78,20 +85,25 @@ export function NsHero({
             {headline}
           </h1>
           <p className="mt-4 max-w-2xl text-sm leading-6 text-gray-700 sm:text-base">{intro}</p>
-          <div className="mt-6 flex flex-wrap gap-3">
-            <NsActionLink action={primaryAction} primary />
-            {secondaryAction ? <NsActionLink action={secondaryAction} /> : null}
-            {extraActions?.map((action) => (
-              <NsActionLink key={action.href} action={action} />
-            ))}
-          </div>
+          {primaryAction || secondaryAction || extraActions?.length ? (
+            <div className="mt-6 flex flex-wrap gap-3">
+              {primaryAction ? <NsActionLink action={primaryAction} primary /> : null}
+              {secondaryAction ? <NsActionLink action={secondaryAction} /> : null}
+              {extraActions?.map((action) => (
+                <NsActionLink key={action.href} action={action} />
+              ))}
+            </div>
+          ) : null}
         </div>
         {stats.length > 0 ? (
           <div className="grid gap-3 self-start">
             {stats.map((stat) => (
               <div key={stat.label} className="border border-gray-900 bg-[#f7f7f2] px-4 py-3">
                 <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-gray-500">{stat.label}</div>
-                <div className="mt-1 text-sm font-semibold uppercase tracking-wide text-gray-900">{stat.value}</div>
+                <div className="mt-1 flex items-center justify-between gap-3">
+                  <div className="text-sm font-semibold uppercase tracking-wide text-gray-900">{stat.value}</div>
+                  {stat.action ? <NsActionLink action={stat.action} /> : null}
+                </div>
               </div>
             ))}
           </div>
@@ -143,10 +155,30 @@ export function NsOnboardingSteps({ steps }: { steps: NsLandingStep[] }) {
                 </li>
               ))}
             </ul>
+            {step.action ? (
+              <div className="mt-4">
+                <NsActionLink action={step.action} />
+              </div>
+            ) : null}
           </article>
         ))}
       </div>
     </section>
+  );
+}
+
+function NsFeatureTags({ tags }: { tags: string[] }) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {tags.map((tag) => (
+        <span
+          key={tag}
+          className="border border-gray-900 bg-[#f7f7f2] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-gray-900"
+        >
+          {tag}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -169,14 +201,7 @@ export function NsWalletGrid({ wallets }: { wallets: NsLandingWallet[] }) {
               </a>
             </div>
             <p className="mt-3 text-sm leading-6 text-gray-700">{wallet.summary}</p>
-            <ul className="mt-4 space-y-2 text-sm leading-6 text-gray-800">
-              {wallet.strengths.map((strength) => (
-                <li key={strength} className="flex gap-2">
-                  <span className="mt-1 h-2 w-2 shrink-0 bg-[#f6b223]" aria-hidden="true" />
-                  <span>{strength}</span>
-                </li>
-              ))}
-            </ul>
+            <NsFeatureTags tags={wallet.strengths} />
           </article>
         ))}
       </div>
@@ -265,7 +290,7 @@ export function NsDirectoryHero({
           </h1>
           <div className="mt-4 max-w-2xl text-sm leading-6 text-gray-700">{countSummary}</div>
           <div className="mt-6 flex flex-wrap gap-3">
-            <NsActionLink action={directory.primaryAction} primary />
+            <NsActionLink action={requireAction(directory.primaryAction, "directory hero")} primary />
             {directory.secondaryAction ? <NsActionLink action={directory.secondaryAction} /> : null}
             {extraActions.map((action) => (
               <NsActionLink key={action.href} action={action} />

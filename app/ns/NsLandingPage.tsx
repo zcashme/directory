@@ -27,8 +27,8 @@ export default function NsLandingPage({ slug }: { slug: NsLandingPageKey }) {
       {page.wallets?.length ? <NsWalletGrid wallets={page.wallets} /> : null}
       {page.rewards?.length ? <NsRewardsGrid rewards={page.rewards} /> : null}
       {page.benefits?.length ? <NsBenefitsGrid benefits={page.benefits} /> : null}
-      <NsSectionGrid sections={page.sections} />
-      <NsExploreGrid currentSlug={slug} />
+      {page.sections.length ? <NsSectionGrid sections={page.sections} /> : null}
+      {!page.hideExploreMore ? <NsExploreGrid currentSlug={slug} /> : null}
     </NsStaticPageShell>
   );
 }
