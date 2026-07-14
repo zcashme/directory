@@ -1,0 +1,111 @@
+/**
+ * oidc-provider configuration.
+ *
+ * This is the heart of the auth service — it defines the issuer, clients,
+ * signing keys, token lifetimes, PKCE policy, and which features are enabled.
+ * oidc-provider handles all OIDC protocol (discovery, JWKS, token endpoint,
+ * PKCE verification, refresh tokens, JWT signing) automatically.
+ */
+
+import crypto from "node:crypto";
+import Provider from "oidc-provider";
+import PrismaAdapter from "./adapter.js";
+import { findAccount } from "./account.js";
+
+const issuer = process.env.ISSUER || `http://localhost:${process.env.PORT || 3001}`;
+
+/** Load RSA signing key from env var (JWK JSON) or generate ephemeral for dev. */
+function getJwks() {
+  const raw = process.env.JWKS_PRIVATE_KEY;
+  if (raw) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      console.error("JWKS_PRIVATE_KEY is not valid JSON, generating ephemeral key");
+    }
+  }
+  console.warn("No JWKS_PRIVATE_KEY set — generating ephemeral key (tokens won't survive restart)");
+  const { privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
+  return { keys: [privateKey.export({ format: "jwk" })] };
+}
+
+export function createProvider() {
+  const provider = new Provider(issuer, {
+    // ── Storage ──────────────────────────────────────────────
+    adapter: PrismaAdapter,
+
+    // ── Signing keys ─────────────────────────────────────────
+    jwks: getJwks(),
+
+    // ── Registered clients (apps that can use "Sign in with Zcash") ──
+    clients: [
+      {
+        client_id: "pgpz",
+        client_name: "PGPZ Community",
+        redirect_uris: [
+          "https://community.pgpforcrypto.org/api/auth/callback/zcashme",
+          "http://localhost:3000/api/auth/callback/zcashme",
+        ],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none", // PKCE only, no client_secret
+      },
+    ],
+
+    // ── Account lookup ───────────────────────────────────────
+    findAccount,
+
+    // ── Interaction URL (where to send users for login) ──────
+    interactions: {
+      url(_ctx: any, interaction: any) {
+        return `/interaction/${interaction.uid}`;
+      },
+    },
+
+    // ── PKCE required for all clients ───────────────────────
+    pkce: {
+      required() {
+        return true;
+      },
+    },
+
+    // ── Claims available per scope ───────────────────────────
+    claims: {
+      openid: ["sub"],
+      profile: ["name", "preferred_username", "picture", "address"],
+    },
+
+    // ── Supported scopes ─────────────────────────────────────
+    scopes: ["openid", "offline_access", "profile"],
+
+    // ── Token lifetimes (seconds) ───────────────────────────
+    ttl: {
+      AccessToken: 60 * 60,             // 1 hour
+      AuthorizationCode: 10 * 60,       // 10 minutes
+      IdToken: 5 * 60,                  // 5 minutes
+      RefreshToken: 30 * 24 * 60 * 60,  // 30 days
+      Interaction: 10 * 60,             // 10 minutes
+      Session: 14 * 24 * 60 * 60,       // 14 days
+      Grant: 14 * 24 * 60 * 60,         // 14 days
+    },
+
+    // ── Features ────────────────────────────────────────────
+    features: {
+      devInteractions: { enabled: false },   // MUST disable in production
+      userinfo: { enabled: true },
+      rpInitiatedLogout: { enabled: true },
+      revocation: { enabled: true },
+    },
+
+    // ── Cookies ─────────────────────────────────────────────
+    cookies: {
+      long: { httpOnly: true, sameSite: "lax" },
+      short: { httpOnly: true, sameSite: "lax" },
+    },
+  } as any);
+
+  // Trust Vercel's TLS-terminating proxy (X-Forwarded-Proto)
+  provider.proxy = true;
+
+  return provider;
+}
