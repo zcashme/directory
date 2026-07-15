@@ -3,11 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
-model OidcModel {
+model ZcashAuthState {
   id         String
   type       Int
   payload    Json
@@ -20,4 +21,15 @@ model OidcModel {
   @@id([id, type])
   @@index([grantId])
   @@index([uid])
+  @@map("zm_auth_state")
+}
+
+model ZcashOidcClient {
+  id        String   @id // client_id
+  name      String   // client_name (for easy viewing in Supabase)
+  payload   Json     // Full OIDC client metadata (redirect_uris, etc.)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("zm_auth_clients")
 }

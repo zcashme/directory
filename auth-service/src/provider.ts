@@ -37,20 +37,10 @@ export function createProvider() {
     // ── Signing keys ─────────────────────────────────────────
     jwks: getJwks(),
 
-    // ── Registered clients (apps that can use "Sign in with Zcash") ──
-    clients: [
-      {
-        client_id: "pgpz",
-        client_name: "PGPZ Community",
-        redirect_uris: [
-          "https://community.pgpforcrypto.org/api/auth/callback/zcashme",
-          "http://localhost:3000/api/auth/callback/zcashme",
-        ],
-        grant_types: ["authorization_code", "refresh_token"],
-        response_types: ["code"],
-        token_endpoint_auth_method: "none", // PKCE only, no client_secret
-      },
-    ],
+
+
+    // ── Registered clients (loaded dynamically from database) ──
+    clients: [],
 
     // ── Account lookup ───────────────────────────────────────
     findAccount,

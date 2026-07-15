@@ -13,8 +13,9 @@ import { setupInteraction } from "./interaction.js";
 const app = express();
 const port = process.env.PORT || 3001;
 
-// Parse JSON bodies (for interaction API endpoints)
+// Parse JSON and URL-encoded bodies
 app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 // Trust Vercel's TLS-terminating proxy (X-Forwarded-Proto)
 app.enable("trust proxy");

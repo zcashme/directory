@@ -59,7 +59,7 @@ export default class PrismaAdapter {
       expiresAt: expiresAt(expiresIn),
     };
 
-    await prisma.oidcModel.upsert({
+    await prisma.zcashAuthState.upsert({
       where: { id_type: { id, type: this.type } },
       update: data,
       create: { id, ...data },
@@ -67,7 +67,13 @@ export default class PrismaAdapter {
   }
 
   async find(id: string) {
-    const doc = await prisma.oidcModel.findUnique({
+    if (this.type === 7) {
+      const doc = await prisma.zcashOidcClient.findUnique({ where: { id } });
+      if (!doc) return undefined;
+      return doc.payload as Record<string, unknown>;
+    }
+
+    const doc = await prisma.zcashAuthState.findUnique({
       where: { id_type: { id, type: this.type } },
     });
     if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
@@ -75,31 +81,31 @@ export default class PrismaAdapter {
   }
 
   async findByUserCode(userCode: string) {
-    const doc = await prisma.oidcModel.findFirst({ where: { userCode } });
+    const doc = await prisma.zcashAuthState.findFirst({ where: { userCode } });
     if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
     return prepare(doc);
   }
 
   async findByUid(uid: string) {
-    const doc = await prisma.oidcModel.findFirst({ where: { uid } });
+    const doc = await prisma.zcashAuthState.findFirst({ where: { uid } });
     if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
     return prepare(doc);
   }
 
   async consume(id: string) {
-    await prisma.oidcModel.update({
+    await prisma.zcashAuthState.update({
       where: { id_type: { id, type: this.type } },
       data: { consumedAt: new Date() },
     });
   }
 
   async destroy(id: string) {
-    await prisma.oidcModel.delete({
+    await prisma.zcashAuthState.delete({
       where: { id_type: { id, type: this.type } },
     });
   }
 
   async revokeByGrantId(grantId: string) {
-    await prisma.oidcModel.deleteMany({ where: { grantId } });
+    await prisma.zcashAuthState.deleteMany({ where: { grantId } });
   }
 }
