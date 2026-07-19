@@ -7,26 +7,27 @@
  * PKCE verification, refresh tokens, JWT signing) automatically.
  */
 
-import crypto from "node:crypto";
 import Provider from "oidc-provider";
 import PrismaAdapter from "./adapter.js";
 import { findAccount } from "./account.js";
 
 const issuer = process.env.ISSUER || `http://localhost:${process.env.PORT || 3001}`;
 
-/** Load RSA signing key from env var (JWK JSON) or generate ephemeral for dev. */
+/** Load RSA signing key from env var (JWK JSON). Required — throws at startup if missing or invalid. */
 function getJwks() {
   const raw = process.env.JWKS_PRIVATE_KEY;
-  if (raw) {
-    try {
-      return JSON.parse(raw);
-    } catch {
-      console.error("JWKS_PRIVATE_KEY is not valid JSON, generating ephemeral key");
-    }
+  if (!raw) {
+    throw new Error(
+      "JWKS_PRIVATE_KEY is not set. Generate one with:\n" +
+      "  node -e \"const c=require('crypto');const k=c.generateKeyPairSync('rsa',{modulusLength:2048});console.log(JSON.stringify({keys:[k.privateKey.export({format:'jwk'})]}))\"\n" +
+      "Then add it to your .env file."
+    );
   }
-  console.warn("No JWKS_PRIVATE_KEY set — generating ephemeral key (tokens won't survive restart)");
-  const { privateKey } = crypto.generateKeyPairSync("rsa", { modulusLength: 2048 });
-  return { keys: [privateKey.export({ format: "jwk" })] };
+  try {
+    return JSON.parse(raw);
+  } catch {
+    throw new Error("JWKS_PRIVATE_KEY is not valid JSON — check your .env or Vercel env var.");
+  }
 }
 
 export function createProvider() {
@@ -62,7 +63,7 @@ export function createProvider() {
     // ── Claims available per scope ───────────────────────────
     claims: {
       openid: ["sub"],
-      profile: ["name", "preferred_username", "picture", "address"],
+      profile: ["name", "preferred_username", "picture", "zcash_address"],
     },
 
     // ── Supported scopes ─────────────────────────────────────

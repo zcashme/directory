@@ -28,7 +28,7 @@ export function parseZvsMemo(memo: string): { sessionId: string; userAddress: st
 // ── ZIP-321 URI ─────────────────────────────────────────────────
 
 export function buildZcashUri(address: string, amount: string, memo: string): string {
-  const base = `zcash:${address}`;
+  const base = `zcash:${address.trim()}`;
   const params: string[] = [];
   if (amount) params.push(`amount=${amount}`);
   if (memo) params.push(`memo=${Buffer.from(memo, "utf8").toString("base64url")}`);

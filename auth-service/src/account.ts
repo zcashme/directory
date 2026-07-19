@@ -55,7 +55,7 @@ export async function findAccount(_ctx: any, id: string) {
         name: profile?.name ?? profile?.display_name ?? null,
         preferred_username: profile?.name ?? null,
         picture: profile?.profile_image_url ?? null,
-        address: id,
+        zcash_address: id,
       };
     },
   };

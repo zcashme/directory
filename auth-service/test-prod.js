@@ -1,5 +1,4 @@
 import { randomBytes, createHash } from 'crypto';
-import fetch from 'node-fetch'; // Requires node-fetch or Node v18+
 
 // This script tests the full OIDC flow in production!
 const ISSUER = "https://auth.zcash.me";
