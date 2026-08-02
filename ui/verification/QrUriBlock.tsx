@@ -3,7 +3,6 @@ import ReactDOM from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import {
-  INLINE_ACTION_BUTTON_CLASSES,
   OUTLINE_ACTION_BUTTON_CLASSES,
 } from "@/ui/common/buttons/styles";
 

@@ -310,10 +310,8 @@ export default function TempZip321Page() {
                             uri={row.uri}
                             memoText={row.memo}
                             profileName={row.name}
-                            forceShowQR
-                            defaultShowQR
-                            defaultShowURI={false}
-                            qrHintText="Scan or Tap QR"
+                            bottomActionBar
+                            showParsedFieldsToggleAction
                           />
                         </div>
                       </td>

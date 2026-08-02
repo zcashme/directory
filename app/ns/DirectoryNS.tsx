@@ -399,10 +399,8 @@ export default function DirectoryNS({
                   uri={uri}
                   memoText={memo}
                   profileName={activeProfileName}
-                  defaultShowQR={false}
-                  defaultShowURI={false}
-                  actionButtonClassName="border border-gray-900 bg-white px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
-                  hideButtonClassName="bg-transparent px-2 py-1 text-xs font-semibold uppercase text-gray-900 rounded-none"
+                  bottomActionBar
+                  showParsedFieldsToggleAction
                 />
               </div>
             </div>
