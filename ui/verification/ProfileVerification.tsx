@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import type { ProfileEditsPayload } from "@/lib/api/types";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
@@ -6,7 +7,9 @@ import { OtpInput } from "@/ui/verification/OtpInput";
 import { generateMemoAction } from "@/lib/verification/generateMemoAction";
 import { confirmOtpAction } from "@/lib/verification/confirmOtpAction";
 import Alert from "@/ui/common/feedback/Alert";
-import { OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
+import {
+  OUTLINE_ACTION_BUTTON_CLASSES,
+} from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
 
 function isTruthyLikeMaxi(value: unknown): boolean {
@@ -221,6 +224,7 @@ export default function ProfileVerification({
   const [isGeneratingQr, setIsGeneratingQr] = useState(false);
   const [error, setError] = useState("");
   const [otpResult, setOtpResult] = useState<{ ok: boolean; message: string } | null>(null);
+  const [hasSentPayment, setHasSentPayment] = useState(false);
 
   // Memo + URI returned from the server
   const [currentMemo, setCurrentMemo] = useState("");
@@ -233,6 +237,13 @@ export default function ProfileVerification({
   const minAmountHint = isMaxi
     ? "No minimum amount required."
     : "Include a minimum of 0.002 ZEC.";
+  const shouldReduceMotion = useReducedMotion() ?? false;
+  const tapProps = shouldReduceMotion
+    ? {}
+    : {
+        whileTap: { scale: 0.94, y: 1, filter: "brightness(0.95)" },
+        transition: { type: "spring" as const, stiffness: 550, damping: 24, mass: 0.35 },
+      };
 
   // Generate QR - calls the server to create memo + URI
   const handleGenerateQr = useCallback(async () => {
@@ -246,6 +257,7 @@ export default function ProfileVerification({
     setOtpResult(null);
     setOtp("");
     setOtpAttemptsLeft(5);
+    setHasSentPayment(false);
 
     try {
       const result = await generateMemoAction(profile.id, verificationAmountZec);
@@ -343,6 +355,7 @@ export default function ProfileVerification({
             ok: false,
             message: "Too many attempts. Please generate a new QR code.",
           });
+          setHasSentPayment(false);
           setQrVisible(false);
         } else {
           setOtpResult({
@@ -389,63 +402,123 @@ export default function ProfileVerification({
       <div
         className={`w-full overflow-hidden transition-[max-height,opacity] duration-350 ease-out ${qrSectionClasses}`}
       >
-        <div className="flex justify-center mb-4">
-          <QrUriBlock
-            uri={currentUri}
-            memoText={currentMemo}
-            profileName={`${profile.name}-verification`}
-            qrTopHintText={"Send transaction to receive code.\n"}
-            qrTopHintDetails={[
-              minAmountHint,
-              "Do not leave the page before entering the code.",
-            ]}
-            qrTopHintToggleLabel="Help"
-            qrHintText="Scan or Tap QR"
-            compactTopSpacing
-          />
-        </div>
-
-        <div className="relative w-full max-w-[300px] mx-auto border border-gray-800 rounded-xl p-3 bg-transparent">
-          <div className="space-y-3">
-            <p className="text-center text-xs font-normal text-gray-700">
-              Code will be sent to address on profile.
-            </p>
-            <OtpInput
-              id="verification-otp"
-              value={otp}
-              onChange={handleOtpChange}
-              onSubmit={handleSubmitOtp}
-              placeholder="Enter 6-digit code"
-              hideLabel={true}
-              className="w-full"
-              disabled={isSubmitting}
-            />
-            <button
-              type="button"
-              onClick={handleSubmitOtp}
-              className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 hover:!text-white active:!text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
-              disabled={!isOtpComplete || isSubmitting}
+        <AnimatePresence initial={false}>
+          {!hasSentPayment && (
+            <motion.div
+              key="verification-qr-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0.1 }
+                  : { duration: 0.3, ease: "easeOut" }
+              }
+              className="overflow-hidden"
             >
-              {isSubmitting ? "Verifying..." : "Verify Code"}
-            </button>
-          </div>
+              <div className="flex justify-center mb-4">
+                <QrUriBlock
+                  uri={currentUri}
+                  memoText={currentMemo}
+                  profileName={`${profile.name}-verification`}
+                  qrTopHintText={"Send memo to receive code.\n"}
+                  qrTopHintDetails={[
+                    minAmountHint,
+                    "Do not leave the page before entering the code.",
+                  ]}
+                  qrTopHintToggleLabel="Help"
+                  compactTopSpacing
+                  bottomActionBar
+                  showParsedFieldsToggleAction
+                  showPaymentDetails={!hasSentPayment}
+                  onTogglePaymentDetails={(next) => setHasSentPayment(!next)}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          {/* Result message */}
-          {otpResult && (
-            <div
-              className={`mt-3 text-sm font-semibold ${
-                otpResult.ok ? "text-green-700" : "text-red-600"
-              }`}
+        <AnimatePresence initial={false}>
+          {hasSentPayment && (
+            <motion.div
+              key="otp-panel"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0.1 }
+                  : { duration: 0.3, ease: "easeOut" }
+              }
+              className="overflow-hidden"
             >
-              {otpResult.message}
-            </div>
-          )}
+              <div className="relative w-full max-w-[380px] mx-auto">
+                <motion.button
+                  type="button"
+                  onClick={() => setHasSentPayment(false)}
+                  {...tapProps}
+                  className="absolute left-0 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center text-gray-700 transition-all duration-200 hover:text-[var(--color-brand-blue)] active:text-[var(--color-brand-blue)]"
+                  aria-label="Back to payment details"
+                  title="Back to payment details"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.8}
+                      d="M15 18 9 12l6-6"
+                    />
+                  </svg>
+                </motion.button>
+                <div className="relative w-full max-w-[300px] mx-auto bg-transparent">
+                  <div className="space-y-3">
+                    <p className="text-center text-xs font-normal text-gray-700">
+                      Code will be sent to address on profile.
+                  </p>
+                  <OtpInput
+                    id="verification-otp"
+                    value={otp}
+                    onChange={handleOtpChange}
+                    onSubmit={handleSubmitOtp}
+                    placeholder="Enter 6-digit code"
+                    hideLabel={true}
+                    className="w-full"
+                    disabled={isSubmitting}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSubmitOtp}
+                    className={`${OUTLINE_ACTION_BUTTON_CLASSES} w-full justify-center px-3 py-2 bg-[var(--color-brand-blue)] border-[var(--color-brand-blue)] text-white hover:bg-[var(--color-brand-blue)]/90 hover:border-[var(--color-brand-blue)]/90 hover:!text-white active:!text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed`}
+                    disabled={!isOtpComplete || isSubmitting}
+                  >
+                    {isSubmitting ? "Verifying..." : "Verify Code"}
+                  </button>
+                </div>
 
-          {/* Error display */}
-          {error && (
-            <Alert variant="error" size="sm" message={error} className="mt-2" />
+                {otpResult && (
+                  <div
+                    className={`mt-3 text-sm font-semibold ${
+                      otpResult.ok ? "text-green-700" : "text-red-600"
+                    }`}
+                  >
+                    {otpResult.message}
+                  </div>
+                )}
+
+                {error && (
+                  <Alert variant="error" size="sm" message={error} className="mt-2" />
+                )}
+                </div>
+              </div>
+            </motion.div>
           )}
-        </div>
+        </AnimatePresence>
       </div>
     </div>
   );
