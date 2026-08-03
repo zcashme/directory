@@ -8,7 +8,7 @@
  */
 
 import Provider from "oidc-provider";
-import PrismaAdapter from "./adapter.js";
+import SupabaseAdapter from "./adapter.js";
 import { findAccount } from "./account.js";
 
 const issuer = process.env.ISSUER || `http://localhost:${process.env.PORT || 3001}`;
@@ -33,7 +33,7 @@ function getJwks() {
 export function createProvider() {
   const provider = new Provider(issuer, {
     // ── Storage ──────────────────────────────────────────────
-    adapter: PrismaAdapter,
+    adapter: SupabaseAdapter,
 
     // ── Signing keys ─────────────────────────────────────────
     jwks: getJwks(),

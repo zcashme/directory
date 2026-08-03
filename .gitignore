@@ -43,3 +43,4 @@ components/emails/BetaInviteEmail.tsx
 lib/beta/
 lib/email/beta-invite.ts
 sql/
+.vercel/

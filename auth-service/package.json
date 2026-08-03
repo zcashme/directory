@@ -4,16 +4,14 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "prisma generate && tsc",
+    "build": "tsc",
     "start": "node dist/index.js",
-    "db:push": "prisma db push",
-    "db:migrate": "prisma migrate dev --name init"
+    "seed": "tsx seed-client.ts"
   },
   "dependencies": {
-    "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.56.0",
     "express": "^4.21.0",
     "oidc-provider": "^9.0.0",
-    "pg": "^8.22.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
@@ -21,7 +19,6 @@
     "@types/node": "^22.10.0",
     "@types/oidc-provider": "^9.5.0",
     "@types/qrcode": "^1.5.5",
-    "prisma": "^5.22.0",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0"
   }

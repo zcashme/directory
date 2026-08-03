@@ -53,7 +53,11 @@ export async function verifyOtp(memo: string, providedOtp: string): Promise<bool
   const hash = crypto.createHmac("sha256", getSecretSeed()).update(message).digest();
   const code = (hash.readUInt32BE(0)) >>> 0;
   const expected = (code % 1000000).toString().padStart(6, "0");
-  return expected === providedOtp.trim();
+  // Constant-time comparison to prevent timing attacks on OTP characters.
+  const a = Buffer.from(expected, "utf8");
+  const b = Buffer.from(providedOtp.trim(), "utf8");
+  if (a.length !== b.length) return false;
+  return crypto.timingSafeEqual(a, b);
 }
 
 // ── Config ─────────────────────────────────────────────────────

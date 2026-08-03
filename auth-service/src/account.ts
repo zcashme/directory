@@ -1,11 +1,11 @@
 /**
- * findAccount + ZNS name resolution — both query the zcasher table
- * in Supabase Postgres via Prisma.
+ * Account lookup + Zcash name resolution.
+ *
+ * Both query the zcasher table in Supabase Postgres via the
+ * Supabase JS client — same database as the directory app.
  */
 
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { supabase } from "./supabase.js";
 
 interface ZcasherRow {
   address: string | null;
@@ -16,22 +16,27 @@ interface ZcasherRow {
 
 /**
  * Resolve a Zcash name to an address + profile.
- * Queries the zcasher table directly (case-insensitive name match).
+ * Queries the zcasher table (case-insensitive name match).
  * If the input looks like a Zcash address (u1, z, t1 prefix), returns it as-is.
  */
 export async function resolveName(input: string): Promise<ZcasherRow | null> {
-  // Direct address — skip ZNS lookup
+  // Direct address — skip lookup
   if (/^(u1|z|t1)/.test(input)) {
     return { address: input, name: null, display_name: null, profile_image_url: null };
   }
 
-  const rows = await prisma.$queryRaw<ZcasherRow[]>`
-    SELECT address, name, display_name, profile_image_url
-    FROM zcasher
-    WHERE LOWER(name) = LOWER(${input})
-    LIMIT 1
-  `;
-  return rows[0] ?? null;
+  // Escape ILIKE wildcards in the input for an exact case-insensitive match
+  const escaped = input.replace(/[%_]/g, "\\$&");
+
+  const { data, error } = await supabase
+    .from("zcasher")
+    .select("address,name,display_name,profile_image_url")
+    .ilike("name", escaped)
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw new Error(`resolveName failed: ${error.message}`);
+  return data ?? null;
 }
 
 /**
@@ -39,13 +44,13 @@ export async function resolveName(input: string): Promise<ZcasherRow | null> {
  * Returns claims from the zcasher table for ID tokens and userinfo.
  */
 export async function findAccount(_ctx: any, id: string) {
-  const rows = await prisma.$queryRaw<ZcasherRow[]>`
-    SELECT address, name, display_name, profile_image_url
-    FROM zcasher
-    WHERE address = ${id}
-    LIMIT 1
-  `;
-  const profile = rows[0];
+  const { data: profile, error } = await supabase
+    .from("zcasher")
+    .select("address,name,display_name,profile_image_url")
+    .eq("address", id)
+    .maybeSingle();
+
+  if (error) throw new Error(`findAccount failed: ${error.message}`);
 
   return {
     accountId: id,

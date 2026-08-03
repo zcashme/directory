@@ -18,6 +18,7 @@ import {
   buildZvsMemo,
   buildZcashUri,
   verifyOtp,
+  parseZvsMemo,
   SERVICE_ADDRESS,
   MIN_PAYMENT_ZEC,
 } from "./zvs.js";
@@ -122,11 +123,20 @@ export function setupInteraction(app: Express, provider: any) {
     if (req.body?.action === "verify") {
       const otp = (req.body?.otp ?? "").trim();
       const memo = (req.body?.memo ?? "").trim();
-      const address = (req.body?.address ?? "").trim();
 
-      if (!otp || !memo || !address) {
+      if (!otp || !memo) {
         return res.status(400).send("Missing fields");
       }
+
+    // The address used for the OIDC grant identity MUST come from the memo,
+    // which was cryptographically validated by the HMAC OTP.  Never trust a
+    // separate client-supplied address field — an attacker could get a valid
+    // OTP for their own address and then claim to be someone else.
+    const parsed = parseZvsMemo(memo);
+    if (!parsed) {
+      return res.status(400).send("Invalid memo format.");
+    }
+    const verifiedAddress = parsed.userAddress;
 
     const valid = await verifyOtp(memo, otp);
     if (!valid) {
@@ -139,7 +149,7 @@ export function setupInteraction(app: Express, provider: any) {
       const requestedScopes = (details.params.scope || "openid").split(" ");
 
       const grant = new provider.Grant({
-        accountId: address,
+        accountId: verifiedAddress,
         clientId: details.params.client_id as string,
       });
       grant.addOIDCScope(requestedScopes.join(" "));
@@ -147,7 +157,7 @@ export function setupInteraction(app: Express, provider: any) {
 
       // Tell oidc-provider the login succeeded — it issues the auth code
       const redirectTo = await provider.interactionResult(req, res, {
-        login: { accountId: address },
+        login: { accountId: verifiedAddress },
         consent: { grantId },
       });
 
@@ -179,9 +189,7 @@ export function setupInteraction(app: Express, provider: any) {
 
 function renderLoginPage(
   uid: string,
-  clientName: string = "ZcashMe",
-  error: string | null = null,
-  isProcessing: boolean = false
+  clientName: string = "ZcashMe"
 ) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -277,7 +285,7 @@ function renderLoginPage(
       <div class="mb-2 relative">
         <input id="name-input" type="text" placeholder="username or address"
           class="brand-input w-full rounded-xl px-5 py-3.5 text-sm text-center text-gray-900 placeholder-gray-400 font-medium" autocomplete="off" autofocus>
-        <div class="text-red-500 text-[11px] mt-2 h-4" id="error-identify">${escapeHtml(error || "")}</div>
+        <div class="text-red-500 text-[11px] mt-2 h-4" id="error-identify"></div>
       </div>
     </div>
 
@@ -387,7 +395,11 @@ function renderLoginPage(
       
       // Update UI
       if (data.profile_image_url) {
-        $("profile-initial").parentElement.innerHTML = \`<img class="w-full h-full object-cover" src="\${data.profile_image_url}" alt="Profile">\`;
+        const img = document.createElement('img');
+        img.className = "w-full h-full object-cover";
+        img.src = data.profile_image_url;
+        img.alt = "Profile";
+        $("profile-initial").parentElement.replaceChildren(img);
       } else {
         $("profile-initial").textContent = (data.name || name).charAt(0).toUpperCase();
       }
@@ -434,7 +446,6 @@ function renderLoginPage(
     // Submit natively via form to guarantee browser sends interaction cookie
     $("hidden-otp").value = otp;
     $("hidden-memo").value = memo;
-    $("hidden-address").value = currentAddress;
     $("verify-form").submit();
   }
 
@@ -450,7 +461,6 @@ function renderLoginPage(
   <input type="hidden" name="action" value="verify">
   <input type="hidden" name="otp" id="hidden-otp">
   <input type="hidden" name="memo" id="hidden-memo">
-  <input type="hidden" name="address" id="hidden-address">
 </form>
 </body>
 </html>`;
@@ -656,7 +666,11 @@ function renderDemoPage() {
       currentAddress = data.address;
       currentName = data.display_name || data.name || name;
       if (data.profile_image_url) {
-        $("profile-avatar").innerHTML = \`<img class="w-full h-full object-cover" src="\${data.profile_image_url}" alt="Profile">\`;
+        const img = document.createElement('img');
+        img.className = "w-full h-full object-cover";
+        img.src = data.profile_image_url;
+        img.alt = "Profile";
+        $("profile-avatar").replaceChildren(img);
       } else {
         $("profile-initial").textContent = currentName.charAt(0).toUpperCase();
       }

@@ -1,14 +1,15 @@
 /**
- * Prisma adapter for oidc-provider — copied from the contributed adapter.
- * https://github.com/panva/node-oidc-provider/blob/v8.x/example/adapters/contributed/prisma.ts
+ * Supabase adapter for oidc-provider.
  *
- * Stores all oidc-provider state (sessions, codes, tokens, grants, interactions)
- * in the OidcModel table in Supabase Postgres.
+ * Stores all oidc-provider state (sessions, codes, tokens, grants,
+ * interactions) in the zm_auth_state table in Supabase Postgres.
+ * OIDC clients are stored in zm_auth_clients.
+ *
+ * Replaces the original Prisma adapter — same interface, same tables,
+ * no query engine binary.
  */
 
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import { supabase } from "./supabase.js";
 
 const types: Record<string, number> = {
   Session: 1,
@@ -27,22 +28,32 @@ const types: Record<string, number> = {
   BackchannelAuthenticationRequest: 14,
 };
 
-function prepare(doc: { payload: unknown; consumedAt: Date | null }) {
-  const payload =
-    doc.payload && typeof doc.payload === "object" && !Array.isArray(doc.payload)
-      ? (doc.payload as Record<string, unknown>)
-      : {};
+function expiresAt(expiresIn?: number): string | null {
+  return expiresIn ? new Date(Date.now() + expiresIn * 1000).toISOString() : null;
+}
+
+/**
+ * Unpack a DB row into the shape oidc-provider expects: spread the
+ * JSON payload and add `consumed: true` if the row has a consumedAt.
+ */
+function prepare(row: { payload: Record<string, unknown>; consumedAt: string | null } | null | undefined) {
+  if (!row) return undefined;
   return {
-    ...payload,
-    ...(doc.consumedAt ? { consumed: true } : undefined),
+    ...row.payload,
+    ...(row.consumedAt ? { consumed: true } : undefined),
   };
 }
 
-function expiresAt(expiresIn?: number): Date | null {
-  return expiresIn ? new Date(Date.now() + expiresIn * 1000) : null;
+/**
+ * Check expiry — returns undefined if the row has expired or is null.
+ */
+function checkExpiry<T extends { expiresAt: string | null }>(row: T | null): T | undefined {
+  if (!row) return undefined;
+  if (row.expiresAt && new Date(row.expiresAt) < new Date()) return undefined;
+  return row;
 }
 
-export default class PrismaAdapter {
+export default class SupabaseAdapter {
   type: number;
 
   constructor(name: string) {
@@ -51,61 +62,92 @@ export default class PrismaAdapter {
 
   async upsert(id: string, payload: any, expiresIn?: number) {
     const data = {
+      id,
       type: this.type,
-      payload: payload as any,
+      payload: payload as Record<string, unknown>,
       grantId: payload.grantId ?? null,
       userCode: payload.userCode ?? null,
       uid: payload.uid ?? null,
       expiresAt: expiresAt(expiresIn),
     };
 
-    await prisma.zcashAuthState.upsert({
-      where: { id_type: { id, type: this.type } },
-      update: data,
-      create: { id, ...data },
-    });
+    const { error } = await supabase
+      .from("zm_auth_state")
+      .upsert(data, { onConflict: "id,type" });
+
+    if (error) throw new Error(`adapter upsert failed: ${error.message}`);
   }
 
   async find(id: string) {
     if (this.type === 7) {
-      const doc = await prisma.zcashOidcClient.findUnique({ where: { id } });
-      if (!doc) return undefined;
-      return doc.payload as Record<string, unknown>;
+      const { data, error } = await supabase
+        .from("zm_auth_clients")
+        .select("payload")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw new Error(`adapter find (client) failed: ${error.message}`);
+      return data?.payload as Record<string, unknown> | undefined;
     }
 
-    const doc = await prisma.zcashAuthState.findUnique({
-      where: { id_type: { id, type: this.type } },
-    });
-    if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
-    return prepare(doc);
+    const { data, error } = await supabase
+      .from("zm_auth_state")
+      .select("payload,consumedAt,expiresAt")
+      .eq("id", id)
+      .eq("type", this.type)
+      .maybeSingle();
+    if (error) throw new Error(`adapter find failed: ${error.message}`);
+
+    const row = checkExpiry(data);
+    return prepare(row);
   }
 
   async findByUserCode(userCode: string) {
-    const doc = await prisma.zcashAuthState.findFirst({ where: { userCode } });
-    if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
-    return prepare(doc);
+    const { data, error } = await supabase
+      .from("zm_auth_state")
+      .select("payload,consumedAt,expiresAt")
+      .eq("userCode", userCode)
+      .maybeSingle();
+    if (error) throw new Error(`adapter findByUserCode failed: ${error.message}`);
+
+    const row = checkExpiry(data);
+    return prepare(row);
   }
 
   async findByUid(uid: string) {
-    const doc = await prisma.zcashAuthState.findFirst({ where: { uid } });
-    if (!doc || (doc.expiresAt && doc.expiresAt < new Date())) return undefined;
-    return prepare(doc);
+    const { data, error } = await supabase
+      .from("zm_auth_state")
+      .select("payload,consumedAt,expiresAt")
+      .eq("uid", uid)
+      .maybeSingle();
+    if (error) throw new Error(`adapter findByUid failed: ${error.message}`);
+
+    const row = checkExpiry(data);
+    return prepare(row);
   }
 
   async consume(id: string) {
-    await prisma.zcashAuthState.update({
-      where: { id_type: { id, type: this.type } },
-      data: { consumedAt: new Date() },
-    });
+    const { error } = await supabase
+      .from("zm_auth_state")
+      .update({ consumedAt: new Date().toISOString() })
+      .eq("id", id)
+      .eq("type", this.type);
+    if (error) throw new Error(`adapter consume failed: ${error.message}`);
   }
 
   async destroy(id: string) {
-    await prisma.zcashAuthState.delete({
-      where: { id_type: { id, type: this.type } },
-    });
+    const { error } = await supabase
+      .from("zm_auth_state")
+      .delete()
+      .eq("id", id)
+      .eq("type", this.type);
+    if (error) throw new Error(`adapter destroy failed: ${error.message}`);
   }
 
   async revokeByGrantId(grantId: string) {
-    await prisma.zcashAuthState.deleteMany({ where: { grantId } });
+    const { error } = await supabase
+      .from("zm_auth_state")
+      .delete()
+      .eq("grantId", grantId);
+    if (error) throw new Error(`adapter revokeByGrantId failed: ${error.message}`);
   }
 }

@@ -84,7 +84,20 @@ async function generateOtp(memo: string): Promise<string> {
  * @param providedOtp - The OTP provided by the user
  * @returns true if the OTP matches
  */
+/**
+ * Constant-time string comparison to prevent timing attacks.
+ * Returns true iff the strings are equal.
+ */
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 export async function verifyOtp(memo: string, providedOtp: string): Promise<boolean> {
   const expectedOtp = await generateOtp(memo);
-  return expectedOtp === providedOtp.trim();
+  return constantTimeEqual(expectedOtp, providedOtp.trim());
 }
