@@ -584,18 +584,17 @@ export default function ProfileCard({
                   <button
                     type="button"
                     onClick={() => {
-                      if (!hasDesignAccess) {
-                        setIsUpgradeOpen(true);
-                        return;
-                      }
+                      if (!hasDesignAccess) return;
                       setShowDesignBack(true);
                     }}
+                    disabled={!hasDesignAccess}
+                    aria-disabled={!hasDesignAccess}
                     className={`inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all shadow-md ${
                       hasDesignAccess
                         ? "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                        : "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                        : "border-gray-300 bg-white/90 text-black opacity-60 cursor-not-allowed"
                     }`}
-                    aria-label="Design"
+                    aria-label={hasDesignAccess ? "Design" : "Design (Maxi required)"}
                     title={hasDesignAccess ? "Design" : "Design (Maxi required)"}
                   >
                     <svg
