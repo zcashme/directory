@@ -105,6 +105,7 @@ const SOCIAL_PLATFORMS = new Set<SocialPlatform>([
   "Mastodon",
   "Snapchat",
   "Telegram",
+  "PGPZ",
   "Other",
 ]);
 

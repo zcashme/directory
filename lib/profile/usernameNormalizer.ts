@@ -10,6 +10,7 @@ export type SocialPlatform =
   | "Mastodon"
   | "Snapchat"
   | "Telegram"
+  | "PGPZ"
   | "Other";
 
 export const HOSTS: Partial<Record<SocialPlatform, string[]>> = {

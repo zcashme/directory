@@ -1,3 +1,4 @@
+import faviconPGPZ from "@/lib/profile/assets/favicons/favicon-pgpz-32.png";
 import faviconZcashCommunity from "@/lib/profile/assets/favicons/favicon-zcashcommunity-32.png";
 import faviconYouTube from "@/lib/profile/assets/favicons/favicon-youtube-32.png";
 import faviconOdysee from "@/lib/profile/assets/favicons/favicon-odysee-32.png";
@@ -98,6 +99,8 @@ const KNOWN_DOMAINS: Record<string, DomainConfig> = {
   "gts.zebras.social": { label: "Zebras", icon: FALLBACK_ICON },
 
   "calendar.app.google": { label: "Google Calendar", icon: faviconGoogleCalendar },
+
+  "community.pgpz.org": { label: "PGPZ", icon: faviconPGPZ },
 } as const;
 
 
@@ -130,7 +133,7 @@ export const getLinkLabel = (url: string = ""): string => {
   return entry?.label ?? domain ?? "Link";
 };
 
-type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram";
+type SocialPlatform = "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram" | "PGPZ";
 
 const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "x.com": "X",
@@ -148,6 +151,7 @@ const PLATFORM_BY_DOMAIN: Record<string, SocialPlatform> = {
   "snapchat.com": "Snapchat",
   "t.me": "Telegram",
   "telegram.me": "Telegram",
+  "community.pgpz.org": "PGPZ",
 } as const;
 
 /**
