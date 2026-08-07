@@ -9,7 +9,7 @@
 
 import Provider from "oidc-provider";
 import SupabaseAdapter from "./adapter.js";
-import { findAccount } from "./account.js";
+import { findAccount } from "./profile/claims.js";
 
 const issuer = process.env.ISSUER || `http://localhost:${process.env.PORT || 3001}`;
 
@@ -40,8 +40,21 @@ export function createProvider() {
 
 
 
-    // ── Registered clients (loaded dynamically from database) ──
-    clients: [],
+    // ── Registered clients (hardcoded — adding a client requires redeploy) ──
+    clients: [
+      {
+        client_id: "pgpz",
+        client_name: "PGPZ Community",
+        client_uri: "https://community.pgpz.org",
+        redirect_uris: [
+          "https://community.pgpz.org/api/auth/callback/zcashme",
+          "http://localhost:3000/api/auth/callback/zcashme",
+        ],
+        grant_types: ["authorization_code", "refresh_token"],
+        response_types: ["code"],
+        token_endpoint_auth_method: "none", // PKCE only
+      },
+    ],
 
     // ── Account lookup ───────────────────────────────────────
     findAccount,
@@ -63,7 +76,7 @@ export function createProvider() {
     // ── Claims available per scope ───────────────────────────
     claims: {
       openid: ["sub"],
-      profile: ["name", "preferred_username", "picture", "zcash_address"],
+      profile: ["name", "preferred_username", "picture", "zcash_address", "zcashme_profile_url"],
     },
 
     // ── Supported scopes ─────────────────────────────────────
@@ -88,11 +101,19 @@ export function createProvider() {
       revocation: { enabled: true },
     },
 
-    // ── Cookies ─────────────────────────────────────────────
+    // ── Cookies (signed — prevents session hijacking via uid leakage) ──
     cookies: {
       long: { httpOnly: true, sameSite: "lax" },
       short: { httpOnly: true, sameSite: "lax" },
+      keys: process.env.COOKIE_SECRET ? [process.env.COOKIE_SECRET] : [],
     },
+
+    // ── Custom authorization request parameter ─────────────
+    // user_id is optional — apps send their identifier for the user
+    // (handle, email, verification code, referral code, etc.)
+    // If present, the auth-service adds a link to the user's ZcashMe profile.
+    // If absent, normal OIDC — no link inserted.
+    extraParams: ["user_id"],
   } as any);
 
   // Trust Vercel's TLS-terminating proxy (X-Forwarded-Proto)

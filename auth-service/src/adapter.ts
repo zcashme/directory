@@ -3,10 +3,7 @@
  *
  * Stores all oidc-provider state (sessions, codes, tokens, grants,
  * interactions) in the zm_auth_state table in Supabase Postgres.
- * OIDC clients are stored in zm_auth_clients.
- *
- * Replaces the original Prisma adapter — same interface, same tables,
- * no query engine binary.
+ * Clients are hardcoded in provider.ts — no DB lookup needed.
  */
 
 import { supabase } from "./supabase.js";
@@ -18,7 +15,6 @@ const types: Record<string, number> = {
   RefreshToken: 4,
   DeviceCode: 5,
   ClientCredentials: 6,
-  Client: 7,
   InitialAccessToken: 8,
   RegistrationAccessToken: 9,
   Interaction: 10,
@@ -79,16 +75,6 @@ export default class SupabaseAdapter {
   }
 
   async find(id: string) {
-    if (this.type === 7) {
-      const { data, error } = await supabase
-        .from("zm_auth_clients")
-        .select("payload")
-        .eq("id", id)
-        .maybeSingle();
-      if (error) throw new Error(`adapter find (client) failed: ${error.message}`);
-      return data?.payload as Record<string, unknown> | undefined;
-    }
-
     const { data, error } = await supabase
       .from("zm_auth_state")
       .select("payload,consumedAt,expiresAt")

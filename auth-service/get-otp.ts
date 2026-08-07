@@ -30,7 +30,7 @@ function getExpectedOtp(memo: string): string {
 
 const memo = process.argv[2];
 if (!memo) {
-  console.error("Usage: pnpm tsx get-otp.ts 'DO NOT MODIFY:{zvs/...}'");
+  console.error("Usage: npx tsx get-otp.ts 'DO NOT MODIFY:{zvs/...}'");
   process.exit(1);
 }
 
