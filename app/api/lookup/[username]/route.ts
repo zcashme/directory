@@ -29,7 +29,7 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
-    .select("id,name,display_name,address,address_verified,bio,location,profile_image_url,last_verified_at")
+    .select("id,name,display_name,address,address_verified,bio,nearest_city_name,profile_image_url,last_verified_at")
     .ilike("name", username)
     .order("id", { ascending: true })
     .limit(1)
@@ -66,7 +66,7 @@ export async function GET(
       address_verified: verified,
       last_verified_at: profile.last_verified_at || null,
       bio: profile.bio || null,
-      location: profile.location || null,
+      location: profile.nearest_city_name || null,
       profile_image_url: profile.profile_image_url || null,
       links: links || [],
     },
