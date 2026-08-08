@@ -8,7 +8,7 @@ export const INLINE_ACTION_BUTTON_CLASSES =
   "flex items-center gap-1 px-3 pl-0 py-2 text-md transition-all duration-200 text-gray-700 hover:text-[var(--color-brand-blue)] active:text-[var(--color-brand-blue)] whitespace-nowrap";
 
 export const PROFILE_CARD_MODAL_CHROME_CLASSES =
-  "rounded-[26px] border border-black/70 bg-white/90 backdrop-blur-md shadow-[0_16px_40px_rgba(17,24,39,0.18)] verified-card-hover hover:shadow-[0_0_10px_rgba(17,24,39,0.3)] focus-within:shadow-[0_0_10px_rgba(17,24,39,0.3)] transition-all";
+  "rounded-[26px] border border-black/70 bg-white/90 backdrop-blur-md shadow-[0_16px_40px_rgba(17,24,39,0.18)] transition-transform duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform hover:scale-[1.02] hover:shadow-[0_0_10px_rgba(17,24,39,0.3)] focus-within:shadow-[0_0_10px_rgba(17,24,39,0.3)]";
 
 export const PROFILE_CARD_ICON_BUTTON_CLASSES =
   "inline-flex h-9 w-9 items-center justify-center rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 transition-all hover:text-[var(--color-brand-blue)] hover:border-[var(--color-brand-blue)] hover:bg-[var(--color-brand-blue)]/10 active:text-[var(--color-brand-blue)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-brand-blue)]/35 focus-visible:ring-offset-1";

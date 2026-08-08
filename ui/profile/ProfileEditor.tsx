@@ -600,9 +600,9 @@ export default function ProfileEditor({
       btn.classList.remove("shake");
       void btn.offsetWidth;
       btn.classList.add("shake");
-      popup.classList.add("show");
+      popup.classList.add("opacity-100", "pointer-events-auto");
       clearTimeout((popup as any)._timer);
-      (popup as any)._timer = setTimeout(() => { popup.classList.remove("show"); }, 3000);
+      (popup as any)._timer = setTimeout(() => { popup.classList.remove("opacity-100", "pointer-events-auto"); }, 3000);
       return;
     }
     setDeletedField("address", nextDeleted);
@@ -747,7 +747,7 @@ export default function ProfileEditor({
           deleteDisabled={!profile.address_verified && !deletedFields.address}
           onDelete={toggleAddress}
           deletePopup={
-            <div className="absolute fade-popup z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
+            <div className="absolute opacity-0 transition-opacity duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] pointer-events-none z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
               Cannot change unverified address. <br /> Lost access? Create new profile.
             </div>
           }

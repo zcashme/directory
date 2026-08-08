@@ -1174,7 +1174,7 @@ export default function CreatePrefillUrlModal({
         className={`relative mx-auto w-full rounded-[26px] border p-3 text-center shadow-xs ${
           isWideLayout ? "mt-2 max-w-[300px] pt-8" : "mt-3 w-full max-w-[24rem] pt-8"
         } ${
-          qrCardTheme.borderColor ? "verified-card-custom-border" : "border-black/70"
+          qrCardTheme.borderColor ? "border-[var(--verified-card-border)] hover:shadow-[0_0_10px_var(--verified-card-glow)]" : "border-black/70"
         }`}
         style={{
           background: qrPreviewCardBackground,

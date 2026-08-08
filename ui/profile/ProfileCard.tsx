@@ -320,7 +320,7 @@ export default function ProfileCard({
           )}
 
           <div
-            className={`relative transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180" : ""}`}
+            className={`relative transition-transform duration-300 transform-3d ${showBack ? "rotate-y-180" : ""}`}
             style={{ transformOrigin: "top center", willChange: "transform" }}
           >
             <div
@@ -335,7 +335,7 @@ export default function ProfileCard({
               }
             >
               <div
-                className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
+                className={`absolute left-4 right-4 z-10 flex items-center justify-between transition-transform duration-300 transform-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 backface-hidden"}`}
                 style={{
                   top: `${ACTION_BUTTONS_TOP}px`,
                   left: `${actionInsetPx}px`,
@@ -354,7 +354,7 @@ export default function ProfileCard({
               </div>
 
               <div
-                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 transform-style-preserve-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
+                className={`absolute left-1/2 top-0 z-20 transition-all duration-300 transform-3d ${showBack ? "rotate-y-180 opacity-0 pointer-events-none" : "rotate-y-0 opacity-100"}`}
                 style={{ transform: `translate(-50%, calc(-50% - ${AVATAR_OVERLAP_Y}px))` }}
                 aria-hidden={showBack}
               >
@@ -615,7 +615,7 @@ export default function ProfileCard({
               </div>
 
               <div
-                className={`relative w-full transition-transform duration-300 transform-style-preserve-3d ${showDesignBack ? "rotate-y-neg-180" : "rotate-y-0"}`}
+                className={`relative w-full transition-transform duration-300 transform-3d ${showDesignBack ? "-rotate-y-180" : "rotate-y-0"}`}
                 style={{ transformOrigin: "center center", willChange: "transform" }}
               >
                 <div
@@ -641,7 +641,7 @@ export default function ProfileCard({
                     showBack && showDesignBack
                       ? "relative h-auto z-10 opacity-100 pointer-events-auto"
                       : "absolute inset-0 z-0 opacity-0 pointer-events-none"
-                  } rotate-y-neg-180 backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
+                  } -rotate-y-180 backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
                   {showBack && showDesignBack ? (
                     <ProfileCardDesignPanel profile={profile} onGenerateQr={onGenerateVerificationQr} />

@@ -112,17 +112,6 @@ body {
   animation: shake-x 0.35s ease;
 }
 
-.fade-popup {
-  opacity: 0;
-  transition: opacity 0.4s ease;
-  pointer-events: none;
-}
-
-.fade-popup.show {
-  opacity: 1;
-  pointer-events: auto;
-}
-
 @keyframes joinPulse {
   0%,
   100% {
@@ -291,25 +280,6 @@ body {
   color: #111 !important;
 }
 
-/* 3D flip utilities (ProfileCard) */
-.transform-style-preserve-3d {
-  transform-style: preserve-3d;
-  -webkit-transform-style: preserve-3d;
-}
-.backface-hidden {
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
-}
-.rotate-y-180 {
-  transform: rotateY(180deg);
-}
-.rotate-y-neg-180 {
-  transform: rotateY(-180deg);
-}
-.rotate-y-0 {
-  transform: rotateY(0deg);
-}
-
 /* Link loading shimmer (ProfileCard) */
 @keyframes link-tray-shimmer {
   0% { background-position: -200% 0; }
@@ -319,23 +289,6 @@ body {
   background: linear-gradient(90deg, rgba(243,244,246,0.95) 0%, rgba(29,78,216,0.18) 35%, rgba(249,115,22,0.2) 50%, rgba(34,197,94,0.18) 65%, rgba(243,244,246,0.95) 100%);
   background-size: 200% 100%;
   animation: link-tray-shimmer 1.2s ease-in-out infinite;
-}
-
-/* Verified card hover scale (replaces Framer Motion) */
-.verified-card-hover {
-  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  will-change: transform;
-}
-.verified-card-hover:hover {
-  transform: scale(1.02);
-}
-
-.verified-card-custom-border {
-  border-color: var(--verified-card-border);
-}
-
-.verified-card-custom-border:hover {
-  box-shadow: 0 0 10px var(--verified-card-glow);
 }
 
 /* Verified card shimmer animation (replaces Framer Motion) */

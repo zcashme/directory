@@ -43,7 +43,7 @@ export default function VerifiedCardWrapper({
   const surfaceStyle = unstyled ? "" : "bg-transparent";
   const defaultBorderStyle = unstyled ? "" : "border-black/70 hover:shadow-[0_0_8px_rgba(17,24,39,0.3)]";
   const borderStyle = hasCustomBorder
-    ? "verified-card-custom-border"
+    ? "border-[var(--verified-card-border)] hover:shadow-[0_0_10px_var(--verified-card-glow)]"
     : "";
   const mergedStyle: CSSProperties = hasCustomBorder
     ? {
@@ -56,7 +56,7 @@ export default function VerifiedCardWrapper({
   return (
     <div
       onClick={onClick}
-      className={`${baseStyle} ${clickStyle} ${unstyled ? "" : "verified-card-hover"} ${surfaceStyle} ${hasCustomBorder ? "" : defaultBorderStyle} ${borderStyle} ${className}`}
+      className={`${baseStyle} ${clickStyle} ${unstyled ? "" : "transition-transform duration-200 ease-[cubic-bezier(0.4,0,0.2,1)] will-change-transform hover:scale-[1.02]"} ${surfaceStyle} ${hasCustomBorder ? "" : defaultBorderStyle} ${borderStyle} ${className}`}
       style={mergedStyle}
     >
       {/* Foreground content */}
