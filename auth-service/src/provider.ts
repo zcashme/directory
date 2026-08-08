@@ -76,7 +76,7 @@ export function createProvider() {
     // ── Claims available per scope ───────────────────────────
     claims: {
       openid: ["sub"],
-      profile: ["name", "preferred_username", "picture", "zcash_address", "zcashme_profile_url"],
+      profile: ["name", "preferred_username", "picture", "zcash_unified_address"],
     },
 
     // ── Supported scopes ─────────────────────────────────────

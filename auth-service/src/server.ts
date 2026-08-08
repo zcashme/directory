@@ -19,7 +19,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.enable("trust proxy");
 
-// Serve built React app
+// Serve built React app (Vite outputs to public/)
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 const provider = createProvider();
@@ -28,8 +28,14 @@ setupAuthRoutes(app, provider);
 
 app.use(provider.callback());
 
-app.listen(Number(port), () => {
-  const issuer = process.env.ISSUER || `http://localhost:${port}`;
-  console.log(`ZcashMe Auth listening on port ${port}`);
-  console.log(`Discovery: ${issuer}/.well-known/openid-configuration`);
-});
+// Export for Vercel serverless deployment
+export default app;
+
+// Local development: start the server
+if (!process.env.VERCEL) {
+  app.listen(Number(port), () => {
+    const issuer = process.env.ISSUER || `http://localhost:${port}`;
+    console.log(`ZcashMe Auth listening on port ${port}`);
+    console.log(`Discovery: ${issuer}/.well-known/openid-configuration`);
+  });
+}

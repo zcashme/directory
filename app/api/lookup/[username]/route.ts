@@ -29,7 +29,7 @@ export async function GET(
 
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
-    .select("id,name,display_name,address,address_verified")
+    .select("id,name,display_name,address,address_verified,bio,location,profile_image_url,last_verified_at")
     .ilike("name", username)
     .order("id", { ascending: true })
     .limit(1)
@@ -52,12 +52,23 @@ export async function GET(
     ? profile.name
     : `${profile.name}-${profile.id}`;
 
+  const { data: links } = await supabase
+    .from("zcasher_links")
+    .select("platform,label,url")
+    .eq("zcasher_id", profile.id)
+    .eq("is_verified", true);
+
   return jsonResponse(
     {
       username: displayUsername,
       display_name: profile.display_name,
       address: profile.address,
       address_verified: verified,
+      last_verified_at: profile.last_verified_at || null,
+      bio: profile.bio || null,
+      location: profile.location || null,
+      profile_image_url: profile.profile_image_url || null,
+      links: links || [],
     },
     200,
     guard.cacheSeconds

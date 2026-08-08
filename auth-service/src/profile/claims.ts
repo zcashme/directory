@@ -22,11 +22,10 @@ export async function findAccount(_ctx: any, id: string) {
     async claims() {
       return {
         sub: id,
-        name: profile?.name ?? profile?.display_name ?? null,
+        name: profile?.display_name ?? null,
         preferred_username: profile?.name ?? null,
         picture: profile?.profile_image_url ?? null,
-        zcash_address: id,
-        zcashme_profile_url: profile?.name ? `zcash.me/${profile.name}` : null,
+        zcash_unified_address: id,
       };
     },
   };

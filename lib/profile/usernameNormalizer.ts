@@ -85,6 +85,7 @@ const PLATFORMS: Partial<Record<SocialPlatform, PlatformConfig>> = {
   Bluesky: { base: "https://bsky.app/profile/" },
   Snapchat: { base: "https://snapchat.com/add/" },
   Telegram: { base: "https://t.me/" },
+  PGPZ: { base: "https://community.pgpz.org/challenge/" },
 } as const;
 
 export function buildSocialUrl(platform: SocialPlatform, username: string): string | null {

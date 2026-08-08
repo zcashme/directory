@@ -18,6 +18,7 @@ const PLATFORM_OPTIONS = [
   { key: "Bluesky", label: "Bluesky" },
   { key: "Snapchat", label: "Snapchat" },
   { key: "Telegram", label: "Telegram" },
+  { key: "PGPZ", label: "PGPZ Code" },
   { key: "Other", label: "Other (custom URL)" },
 ];
 
