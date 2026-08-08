@@ -4,14 +4,67 @@
  */
 
 import type { Express } from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
 import { resolveName, loadLinks } from "../profile/lookup.js";
 import { applyProfileChanges } from "../profile/write.js";
 import { generateSessionId, buildZvsMemo, buildZcashUri, parseZvsMemo, SERVICE_ADDRESS, MIN_PAYMENT_ZEC } from "../zvs/memo.js";
 import { verifyOtp } from "../zvs/otp.js";
-import { renderLoginPage } from "./login.js";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export function setupAuthRoutes(app: Express, provider: any) {
+  // ── GET /demo — serve the React app without OIDC session ──
+  app.get("/demo", (req, res) => {
+    return res.sendFile(path.join(__dirname, "..", "..", "public", "index.html"));
+  });
+
+  // ── POST /demo — demo endpoints (mock resolve/verify) ──
+  app.post("/demo", async (req, res) => {
+    const action = req.body?.action;
+
+    if (action === "resolve") {
+      const name = (req.body?.name ?? "").trim();
+      if (!name) return res.json({ error: "Name is required" });
+      const result = await resolveName(name);
+      if (!result?.address) return res.json({ error: "Name not found" });
+
+      const sessionId = generateSessionId(16);
+      const memo = buildZvsMemo(sessionId, result.address);
+      const uri = buildZcashUri(SERVICE_ADDRESS, MIN_PAYMENT_ZEC, memo);
+      const qr = await QRCode.toDataURL(uri, { width: 240, margin: 1 });
+
+      return res.json({
+        address: result.address,
+        name: result.name,
+        display_name: result.display_name,
+        bio: result.bio,
+        profile_image_url: result.profile_image_url,
+        nearest_city_name: result.nearest_city_name,
+        address_verified: result.address_verified,
+        id: result.id,
+        links: result.id ? await loadLinks(result.id) : [],
+        memo,
+        qr,
+      });
+    }
+
+    if (action === "verify") {
+      const otp = (req.body?.otp ?? "").trim();
+      const memo = (req.body?.memo ?? "").trim();
+      if (!otp || !memo) return res.status(400).send("Missing fields");
+
+      const valid = await verifyOtp(memo, otp);
+      if (!valid) return res.status(400).send("Invalid verification code.");
+      
+      // Demo succeeds without writing to DB or returning OIDC grant
+      return res.json({ ok: true, isDemo: true });
+    }
+
+    return res.status(400).send("Invalid action");
+  });
+
   // ── GET /interaction/:uid — serve the login page ──────────
   app.get("/interaction/:uid", async (req, res) => {
     try {
@@ -29,7 +82,8 @@ export function setupAuthRoutes(app: Express, provider: any) {
       const appUri = client?.clientUri ?? "";
       const userId = details.params.user_id as string | undefined;
 
-      res.type("html").send(renderLoginPage(req.params.uid, appName, appUri, userId));
+      // Serve the React app — it reads uid from the URL path
+      return res.sendFile(path.join(__dirname, "..", "..", "public", "index.html"));
     } catch {
       res.status(400).send("<h1>Session expired</h1><p>Please restart the login.</p>");
     }
