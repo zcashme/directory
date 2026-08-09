@@ -3,7 +3,7 @@
  */
 
 import { supabase } from "../supabase.js";
-import type { ProfileLink } from "./lookup.js";
+import type { PgpzProofLink } from "../auth/pgpz.js";
 
 export interface ProfileEdits {
   display_name?: string | null;
@@ -16,7 +16,6 @@ export interface ProfileEdits {
     url: string;
     label: string;
     platform: string;
-    is_verified?: boolean;
     _delete?: boolean;
   }>;
 }
@@ -94,9 +93,54 @@ export async function applyProfileChanges(
         url: link.url,
         label: link.label,
         platform: link.platform,
-        is_verified: link.is_verified ?? false,
+        // Verification status is always server-owned. Browser-submitted links
+        // begin unverified; client-specific verified links use dedicated code.
+        is_verified: false,
       });
       if (error) throw new Error(`Link insert failed: ${error.message}`);
     }
   }
+}
+
+/**
+ * Publish the selected profile's one PGPZ proof link. The caller never
+ * supplies its URL, platform, or verified status; all three are derived from
+ * the registered PGPZ client's validated label.
+ */
+export async function ensurePgpzProofLink(
+  profileId: number,
+  proof: PgpzProofLink,
+): Promise<void> {
+  const { data: existing, error: findError } = await supabase
+    .from("zcasher_links")
+    .select("id")
+    .eq("zcasher_id", profileId)
+    .eq("platform", "PGPZ")
+    .limit(1)
+    .maybeSingle();
+
+  if (findError) throw new Error(`PGPZ proof lookup failed: ${findError.message}`);
+
+  const values = {
+    url: proof.url,
+    label: proof.label,
+    platform: proof.platform,
+    is_verified: true,
+  };
+
+  if (existing) {
+    const { error } = await supabase
+      .from("zcasher_links")
+      .update(values)
+      .eq("id", existing.id)
+      .eq("zcasher_id", profileId);
+    if (error) throw new Error(`PGPZ proof update failed: ${error.message}`);
+    return;
+  }
+
+  const { error } = await supabase.from("zcasher_links").insert({
+    zcasher_id: profileId,
+    ...values,
+  });
+  if (error) throw new Error(`PGPZ proof insert failed: ${error.message}`);
 }

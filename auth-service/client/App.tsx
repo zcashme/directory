@@ -96,6 +96,14 @@ interface ProfileData {
   links: ProfileLink[];
   memo: string;
   qr: string;
+  pendingProof?: PendingProof;
+}
+
+interface PendingProof {
+  platform: "PGPZ";
+  label: string;
+  url: string;
+  is_verified: true;
 }
 
 interface Edits {
@@ -553,6 +561,7 @@ function ChallengeForm({ profile, original, edits, setEdits, onVerify, onReset, 
                     onOtherUrlChange={otherUrl => updateLinkField(idx, { otherUrl })}
                   />
                 ))}
+                {profile.pendingProof && <PendingProofRow proof={profile.pendingProof} />}
                 <button
                   onClick={addLink}
                   className="text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors mt-1 text-left inline-flex items-center gap-1 w-max"
@@ -661,6 +670,24 @@ function ChallengeForm({ profile, original, edits, setEdits, onVerify, onReset, 
         </div>
       </div>
     </>
+  );
+}
+
+function PendingProofRow({ proof }: { proof: PendingProof }) {
+  const favicon = getFavicon(proof.platform, proof.url);
+  return (
+    <div className="flex items-center gap-2.5 rounded-lg border border-green-200 bg-green-50/70 px-2.5 py-2 text-left">
+      {favicon ? (
+        <img src={favicon} alt="" className="h-3.5 w-3.5 shrink-0 rounded-xs opacity-80" />
+      ) : (
+        <div className="h-3.5 w-3.5 shrink-0 rounded-xs bg-green-200" />
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-[13px] font-medium text-gray-800">PGPZ: {proof.label}</div>
+        <div className="truncate text-[11px] text-gray-500">Added after verification</div>
+      </div>
+      <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-semibold text-green-700">Required</span>
+    </div>
   );
 }
 

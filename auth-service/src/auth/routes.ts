@@ -10,7 +10,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import QRCode from "qrcode";
 import { loadLinks, resolveUsername, type ZcasherRow } from "../profile/lookup.js";
-import { applyProfileChanges, type ProfileEdits } from "../profile/write.js";
+import { applyProfileChanges, ensurePgpzProofLink, type ProfileEdits } from "../profile/write.js";
+import { getPgpzProofLink, type PgpzProofLink } from "./pgpz.js";
 import {
   consumePaymentSession,
   createPaymentSession,
@@ -28,7 +29,13 @@ import { verifyOtp } from "../zvs/otp.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-function profileResponse(profile: ZcasherRow, memo: string, qr: string, links: unknown[]) {
+function profileResponse(
+  profile: ZcasherRow,
+  memo: string,
+  qr: string,
+  links: unknown[],
+  pendingProof?: PgpzProofLink,
+) {
   return {
     id: profile.id,
     address: profile.address,
@@ -41,6 +48,7 @@ function profileResponse(profile: ZcasherRow, memo: string, qr: string, links: u
     links,
     memo,
     qr,
+    pendingProof,
   };
 }
 
@@ -62,7 +70,7 @@ function readProfileEdits(value: unknown): ProfileEdits {
 
 async function startProfileVerification(
   username: string,
-  context: { demo: boolean; interactionUid?: string },
+  context: { demo: boolean; interactionUid?: string; pgpzProof?: PgpzProofLink },
 ) {
   const profile = await resolveUsername(username.trim());
   if (!profile?.id || !profile.address) return null;
@@ -72,13 +80,14 @@ async function startProfileVerification(
     profileId: profile.id,
     interactionUid: context.interactionUid,
     demo: context.demo,
+    pgpzProof: context.pgpzProof,
   });
 
   const memo = buildZvsMemo(sessionId);
   const uri = buildZcashUri(SERVICE_ADDRESS, MIN_PAYMENT_ZEC, memo);
   const qr = await QRCode.toDataURL(uri, { width: 240, margin: 1 });
   const links = await loadLinks(profile.id);
-  return profileResponse(profile, memo, qr, links);
+  return profileResponse(profile, memo, qr, links, context.pgpzProof);
 }
 
 async function completeProfileVerification(
@@ -116,6 +125,9 @@ async function completeProfileVerification(
 
   try {
     await applyProfileChanges(paymentSession.profileId, readProfileEdits(req.body?.profile_edits));
+    if (paymentSession.pgpzProof) {
+      await ensurePgpzProofLink(paymentSession.profileId, paymentSession.pgpzProof);
+    }
     await consumePaymentSession(parsed.sessionId);
   } catch (error) {
     console.error("Profile verification write failed:", error);
@@ -190,9 +202,16 @@ export function setupAuthRoutes(app: Express, provider: any) {
 
       const username = String(req.body?.username ?? "").trim();
       if (!username) return res.status(400).json({ error: "Username is required" });
+      let pgpzProof: PgpzProofLink | undefined;
+      try {
+        pgpzProof = getPgpzProofLink(details.params.client_id, details.params.label);
+      } catch (error) {
+        return res.status(400).json({ error: error instanceof Error ? error.message : "Invalid proof request" });
+      }
       const result = await startProfileVerification(username, {
         demo: false,
         interactionUid: details.uid,
+        pgpzProof,
       });
       if (!result) return res.status(404).json({ error: "ZcashMe profile not found" });
       return res.json(result);

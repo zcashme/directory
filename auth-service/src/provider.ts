@@ -79,6 +79,10 @@ export function createProvider() {
       profile: ["name", "username", "picture", "zcash_unified_address"],
     },
 
+    // Optional PGPZ membership-proof code. Its meaning is enforced solely by
+    // the PGPZ client handler in auth/routes.ts.
+    extraParams: ["label"],
+
     // ── Supported scopes ─────────────────────────────────────
     scopes: ["openid", "offline_access", "profile"],
 

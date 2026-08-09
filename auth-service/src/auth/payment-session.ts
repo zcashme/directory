@@ -1,4 +1,5 @@
 import SupabaseAdapter from "../adapter.js";
+import type { PgpzProofLink } from "./pgpz.js";
 
 const paymentSessions = new SupabaseAdapter("PaymentSession");
 const PAYMENT_SESSION_TTL_SECONDS = 10 * 60;
@@ -7,6 +8,7 @@ export interface PaymentSession {
   profileId: number;
   interactionUid?: string;
   demo: boolean;
+  pgpzProof?: PgpzProofLink;
 }
 
 export async function createPaymentSession(
