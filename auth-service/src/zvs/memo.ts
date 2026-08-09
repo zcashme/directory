@@ -4,7 +4,11 @@
 
 import crypto from "node:crypto";
 
-export const SERVICE_ADDRESS =
+/** ZVS wallet that receives the verification payment and sends the OTP response. */
+export const ZVS_RECEIVER_ADDRESS =
+  process.env.ZVS_RECEIVER_ADDRESS ||
+  // Temporary compatibility for existing deployments; new configuration uses
+  // ZVS_RECEIVER_ADDRESS so its payment role is explicit.
   process.env.SERVICE_ADDRESS ||
   "u1gphl7vrklduuv96kpw4eetx4vrs8nnk7w9tuzvppyuuctw0tuskkpmfulrjapr05zh78p3chpxhx3tm28qau3uwd36k94vgucpxphyv5hkg36nhvr4axeljpz04acdhc7vskg9nsxfhylcl5lnspxtkrhjzn5xaedr2ae567ks3gz24u";
 

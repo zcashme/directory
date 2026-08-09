@@ -23,7 +23,7 @@ import {
   generateSessionId,
   MIN_PAYMENT_ZEC,
   parseZvsMemo,
-  SERVICE_ADDRESS,
+  ZVS_RECEIVER_ADDRESS,
 } from "../zvs/memo.js";
 import { verifyOtp } from "../zvs/otp.js";
 
@@ -48,7 +48,7 @@ function profileResponse(
     links,
     memo,
     qr,
-    payment_address: SERVICE_ADDRESS,
+    payment_address: ZVS_RECEIVER_ADDRESS,
     pendingProof,
   };
 }
@@ -85,7 +85,7 @@ async function startProfileVerification(
   });
 
   const memo = buildZvsMemo(sessionId, profile.address);
-  const uri = buildZcashUri(SERVICE_ADDRESS, MIN_PAYMENT_ZEC, memo);
+  const uri = buildZcashUri(ZVS_RECEIVER_ADDRESS, MIN_PAYMENT_ZEC, memo);
   const qr = await QRCode.toDataURL(uri, { width: 240, margin: 1 });
   const links = await loadLinks(profile.id);
   return profileResponse(profile, memo, qr, links, context.pgpzProof);
