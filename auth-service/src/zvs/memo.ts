@@ -18,14 +18,14 @@ export function generateSessionId(length = 16): string {
   return id;
 }
 
-export function buildZvsMemo(sessionId: string, address: string): string {
-  return `DO NOT MODIFY:{zvs/${sessionId},${address}}`;
+export function buildZvsMemo(sessionId: string): string {
+  return `DO NOT MODIFY:{zvs/${sessionId}}`;
 }
 
-export function parseZvsMemo(memo: string): { sessionId: string; userAddress: string } | null {
-  const match = memo.match(/\{zvs\/(\d{16}),(.+)\}/);
+export function parseZvsMemo(memo: string): { sessionId: string } | null {
+  const match = memo.match(/^DO NOT MODIFY:\{zvs\/(\d{16})\}$/);
   if (!match) return null;
-  return { sessionId: match[1], userAddress: match[2] };
+  return { sessionId: match[1] };
 }
 
 export function buildZcashUri(address: string, amount: string, memo: string): string {

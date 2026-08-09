@@ -9,9 +9,6 @@ const CARD_OFFSET_Y = 7;
 const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
-const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
-
-// Theme is now managed via standard Tailwind classes in index.css
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -37,22 +34,24 @@ interface ProfileData {
   qr: string;
 }
 
-type Step = "identify" | "editor" | "payment" | "redirecting";
-
 // ── App ────────────────────────────────────────────────────────────────────
 
 export default function App() {
   const uid = window.location.pathname.split("/").pop() || "";
-  const [step, setStep] = useState<Step>("identify");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+
+  // INFERRED STATE
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [edits, setEdits] = useState({
     display_name: "",
     bio: "",
     links: [] as ProfileLink[],
   });
-  const resolveName = useCallback(async (name: string) => {
+
+  const [isVerified, setIsVerified] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const resolveUsername = useCallback(async (username: string) => {
     setLoading(true);
     setError("");
     const endpoint = uid === "demo" ? "/demo" : `/interaction/${uid}`;
@@ -61,7 +60,7 @@ export default function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ action: "resolve", name }),
+        body: JSON.stringify({ action: "resolve", username }),
       });
       const data = await res.json();
       if (data.error) {
@@ -73,17 +72,13 @@ export default function App() {
       setEdits({
         display_name: data.display_name || "",
         bio: data.bio || "",
-        address: data.address || "",
         links: (data.links || []).map((l: ProfileLink) => ({ ...l })),
       });
-      setStep("editor");
-    } catch {
-      setError("Failed to resolve name.");
+    } catch (err: any) {
+      setError(`Error: ${err.message || err.toString()}`);
     }
     setLoading(false);
   }, [uid]);
-
-  const goToPayment = useCallback(() => setStep("payment"), []);
 
   const verifyOTP = useCallback(async (otp: string) => {
     setLoading(true);
@@ -98,11 +93,9 @@ export default function App() {
           action: "verify",
           otp,
           memo: profile?.memo || "",
-          address: profile?.address || "",
           profile_edits: JSON.stringify({
             display_name: edits.display_name.trim() || null,
             bio: edits.bio.trim() || null,
-            address: edits.address?.trim() || null,
             links: edits.links
               .filter(l => l.url.trim())
               .map(l => ({
@@ -124,39 +117,37 @@ export default function App() {
         setLoading(false);
         return;
       }
+
       const data = await res.json().catch(() => ({}));
+      setIsVerified(true);
+
       if (data.isDemo) {
-        setStep("redirecting");
-        setTimeout(() => {
-          window.location.href = "/demo";
-        }, 2500);
-        return;
+        setTimeout(() => { window.location.href = "/demo"; }, 2500);
       }
-      setStep("redirecting");
     } catch {
       setError("Verification failed.");
+      setLoading(false);
     }
-    setLoading(false);
   }, [uid, profile, edits]);
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden font-sans transition-colors duration-500 bg-[#faf6ed] flex flex-col pt-10">
       <div className="relative w-full max-w-[460px] mx-auto p-4 pb-24 flex flex-col">
-        {step === "identify" && (
-          <IdentifyStep onResolve={resolveName} loading={loading} error={error} isDemo={!uid} />
+        {!profile && !isVerified && (
+          <IdentifyStep onResolve={resolveUsername} loading={loading} error={error} isDemo={uid === "demo"} />
         )}
-        {step === "editor" && profile && (
-          <ProfileEditor
+        {profile && !isVerified && (
+          <ChallengeForm
             profile={profile}
             edits={edits}
             setEdits={setEdits}
             onVerify={verifyOTP}
-            onBack={() => setStep("identify")}
+            onReset={() => setProfile(null)}
             loading={loading}
             error={error}
           />
         )}
-        {step === "redirecting" && <RedirectingStep />}
+        {isVerified && <RedirectingStep />}
       </div>
     </div>
   );
@@ -170,16 +161,15 @@ function extractDomain(url: string): string {
   }
 }
 
-// ── Step 1: Identify ───────────────────────────────────────────────────────
+// ── Identify Step ──────────────────────────────────────────────────────────
 
 function IdentifyStep({ onResolve, loading, error, isDemo }: {
-  onResolve: (name: string) => void;
+  onResolve: (username: string) => void;
   loading: boolean;
   error: string;
   isDemo?: boolean;
 }) {
-  const [name, setName] = useState("");
-  
+  const [username, setUsername] = useState("");
   const title = isDemo ? "Try ZcashMe — Live Demo" : "Sign in";
 
   return (
@@ -196,19 +186,19 @@ function IdentifyStep({ onResolve, loading, error, isDemo }: {
       </div>
       <input
         type="text"
-        placeholder="username or address"
-        value={name}
-        onChange={e => setName(e.target.value)}
+        placeholder="username"
+        value={username}
+        onChange={e => setUsername(e.target.value)}
         className="w-full px-4 py-3.5 text-sm text-center font-medium border border-gray-300 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none transition-all shadow-inner"
         autoComplete="off"
         autoFocus
-        onKeyDown={e => e.key === "Enter" && onResolve(name)}
+        onKeyDown={e => e.key === "Enter" && onResolve(username)}
       />
       <div className="text-red-500 text-xs mt-2 h-4 font-medium">{error}</div>
       <button
         className="w-full bg-blue-700 text-white rounded-xl py-3.5 text-sm font-semibold mt-2 hover:bg-blue-800 transition-all disabled:opacity-50 shadow-md flex justify-center items-center h-12"
-        disabled={loading || !name.trim()}
-        onClick={() => onResolve(name)}
+        disabled={loading || !username.trim()}
+        onClick={() => onResolve(username)}
       >
         {loading ? <Spinner /> : "Continue"}
       </button>
@@ -222,14 +212,14 @@ function IdentifyStep({ onResolve, loading, error, isDemo }: {
   );
 }
 
-// ── Step 2: Profile Editor (directory-style card) ──────────────────────────
+// ── Challenge Form (Profile Editor + Verification) ─────────────────────────
 
-function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, error }: {
+function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, error }: {
   profile: ProfileData;
-  edits: { display_name: string; bio: string; address: string; links: ProfileLink[] };
+  edits: { display_name: string; bio: string; links: ProfileLink[] };
   setEdits: (fn: any) => void;
   onVerify: (otp: string) => void;
-  onBack: () => void;
+  onReset: () => void;
   loading: boolean;
   error: string;
 }) {
@@ -237,8 +227,6 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
   const [qrEnlarged, setQrEnlarged] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [copiedAddr, setCopiedAddr] = useState(false);
-  const [showVerification, setShowVerification] = useState(false);
-  const [hasSentPayment, setHasSentPayment] = useState(false);
 
   const handleCopyValue = async (field: string, value: string) => {
     try {
@@ -252,7 +240,7 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
 
   const copyAddress = async () => {
     try {
-      await navigator.clipboard.writeText(edits.address || profile.address || "");
+      await navigator.clipboard.writeText(profile.address || "");
       setCopiedAddr(true);
       setTimeout(() => setCopiedAddr(false), 2000);
     } catch (e) {
@@ -294,14 +282,15 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
             className="absolute z-10 flex items-center justify-between"
             style={{ top: ACTION_BUTTONS_TOP, left: 16, right: 16 }}
           >
-            <button 
-              onClick={onBack} 
+            <button
+              onClick={onReset}
               className="text-[10px] font-bold uppercase tracking-wider text-gray-500 hover:text-gray-900 transition-colors flex items-center gap-1"
+              title="Change Account"
             >
-              ← Back
+              ← Change
             </button>
             <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-              Edit Profile
+              Logging in as @{profile.name}
             </span>
           </div>
 
@@ -314,6 +303,7 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
 
           <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
 
+          {/* Profile Form */}
           <div className="mt-3 flex w-full flex-col items-center px-4">
             <div className="max-w-full text-center inline-flex items-center justify-center gap-2 flex-wrap">
               <input
@@ -326,7 +316,6 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
               />
               {profile.address_verified && <VerifiedBadge verified={true} />}
             </div>
-            <div className="text-sm font-medium mt-1 text-gray-400">/{profile.name}</div>
           </div>
 
           <div className="w-full px-6 mt-1.5 relative">
@@ -343,18 +332,13 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
             </div>
           </div>
 
-          <div className="mt-1.5 text-[11px] flex flex-wrap justify-center gap-x-1.5 gap-y-1 text-gray-500 font-medium px-4">
-            <span>Joined {profile.created_at ? new Date(profile.created_at).toLocaleString("default", { month: "short", year: "numeric" }) : "Recently"}</span>
-          </div>
-
           <div className="mt-2.5 flex items-center justify-center px-4 w-full">
             <div className="relative flex items-center gap-2 border border-gray-200 bg-gray-50 hover:bg-white transition-colors text-gray-700 font-mono text-[11px] rounded-full pl-3 pr-1 py-1 shadow-xs w-full max-w-[90%]">
               <input
                 type="text"
-                value={edits.address !== undefined ? edits.address : profile.address}
-                onChange={e => setEdits((prev: any) => ({ ...prev, address: e.target.value }))}
-                className="flex-1 bg-transparent border-none outline-none text-gray-600 truncate placeholder-gray-400"
-                placeholder="Unified Address (u1...)"
+                value={profile.address || ""}
+                readOnly
+                className="flex-1 bg-transparent border-none outline-none text-gray-600 truncate"
               />
               <button 
                 type="button"
@@ -395,118 +379,73 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
               </div>
             </div>
           </div>
-          
-          {/* Payment & Verification Section Inside Card */}
-          <div className="w-full mt-6 px-4">
-            {!showVerification ? (
-              <div className="w-full flex justify-center mb-6">
-                <button
-                  type="button"
-                  onClick={() => setShowVerification(true)}
-                  className="w-full bg-green-600 text-white rounded-xl py-3.5 text-sm font-semibold shadow-md hover:bg-green-700 transition-all flex items-center justify-center h-12 max-w-[404px]"
-                >
-                  Start Verification
-                </button>
-              </div>
-            ) : (
-              <div className="w-full flex flex-col items-center animate-fadeIn mb-6">
-                <div className="w-full h-px bg-gray-200 mb-4 max-w-[404px]" />
-                
-                <div className="flex flex-col items-center p-4 relative bg-[rgba(252,253,253,0.92)] border border-[rgba(34,36,38,0.12)] rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-[rgba(255,255,255,0.4)] backdrop-blur-md max-w-sm mx-auto w-full">
-                  {!hasSentPayment ? (
-                    <>
-                      <div 
-                        className="relative group p-4 rounded-xl bg-white shadow-sm border border-[rgba(34,36,38,0.06)] hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => setQrEnlarged(true)}
-                        title="Click to enlarge"
-                      >
-                        <img className="transition-all" src={profile.qr} alt="QR" style={{ width: 140, height: 140 }} />
-                        <div className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                          <span className="bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">Enlarge</span>
-                        </div>
-                      </div>
-                      
-                      <div className="w-full space-y-2 mt-4">
-                        <PaymentDetailRow
-                          label="Address"
-                          value={profile.address}
-                          title="No address"
-                          onCopy={() => handleCopyValue("address", profile.address)}
-                          copied={copiedField === "address"}
-                        />
-                        <PaymentDetailRow
-                          label="Amount"
-                          value="0.002 ZEC"
-                          title="No amount"
-                          onCopy={() => handleCopyValue("amount", "0.002")}
-                          copied={copiedField === "amount"}
-                        />
-                        <PaymentDetailRow
-                          label="Memo"
-                          value={profile.memo}
-                          title="No memo"
-                          onCopy={() => handleCopyValue("memo", profile.memo)}
-                          copied={copiedField === "memo"}
-                        />
-                      </div>
 
-                      <div className="text-[11px] text-gray-500 font-medium leading-relaxed mt-4 text-center">
-                        <p>Do not leave the page before entering the code.</p>
-                      </div>
+          {/* Challenge & Submit Section (Always Visible) */}
+          <div className="w-full mt-8 px-4 flex flex-col items-center">
+            <div className="w-full h-px bg-gray-200 mb-6 max-w-[404px]" />
+            <h3 className="text-md font-black text-gray-900 tracking-tight mb-4">Verify Identity</h3>
 
-                      <div className="w-full mt-4">
-                        <button
-                          type="button"
-                          onClick={() => setHasSentPayment(true)}
-                          className="w-full text-gray-800 bg-white border border-gray-300 rounded-xl py-3 text-sm font-semibold h-11 transition-all hover:bg-gray-50 flex items-center justify-center shadow-sm"
-                        >
-                          I Sent It!
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="relative w-full max-w-[300px] mx-auto py-2">
-                      <button
-                        type="button"
-                        onClick={() => setHasSentPayment(false)}
-                        className="absolute left-0 top-0 inline-flex h-8 w-8 -translate-x-3 -translate-y-1 items-center justify-center text-gray-500 transition-all duration-200 hover:text-blue-600 active:text-blue-700"
-                        title="Back to payment details"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 18 9 12l6-6" />
-                        </svg>
-                      </button>
-
-                      <div className="space-y-4 pt-1">
-                        <p className="text-center text-[11px] font-medium text-gray-600 px-6">
-                          Code will be sent to address on profile.
-                        </p>
-                        
-                        <div className="flex flex-col gap-3">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            maxLength={6}
-                            value={otp}
-                            onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
-                            placeholder="• • • • • •"
-                            className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] font-mono border border-[rgba(34,36,38,0.15)] rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none shadow-inner bg-white"
-                          />
-                          <div className="text-red-500 text-[11px] h-4 font-medium text-center">{error}</div>
-                          <button
-                            disabled={otp.length !== 6 || loading}
-                            onClick={() => onVerify(otp)}
-                            className="w-full text-white rounded-xl py-3 text-sm font-bold h-11 transition-all disabled:opacity-50 shadow-md flex justify-center items-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
-                          >
-                            {loading ? <Spinner /> : "Verify Code"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+            <div className="flex flex-col items-center p-4 relative bg-[rgba(252,253,253,0.92)] border border-[rgba(34,36,38,0.12)] rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-[rgba(255,255,255,0.4)] backdrop-blur-md max-w-sm mx-auto w-full">
+              <div
+                className="relative group p-4 rounded-xl bg-white shadow-sm border border-[rgba(34,36,38,0.06)] hover:shadow-md transition-shadow cursor-pointer"
+                onClick={() => setQrEnlarged(true)}
+                title="Click to enlarge"
+              >
+                <img className="transition-all" src={profile.qr} alt="QR" style={{ width: 140, height: 140 }} />
+                <div className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                  <span className="bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">Enlarge</span>
                 </div>
               </div>
-            )}
+
+              <div className="w-full space-y-2 mt-4">
+                <PaymentDetailRow
+                  label="Address"
+                  value={profile.address}
+                  title="No address"
+                  onCopy={() => handleCopyValue("address", profile.address)}
+                  copied={copiedField === "address"}
+                />
+                <PaymentDetailRow
+                  label="Amount"
+                  value="0.002 ZEC"
+                  title="No amount"
+                  onCopy={() => handleCopyValue("amount", "0.002")}
+                  copied={copiedField === "amount"}
+                />
+                <PaymentDetailRow
+                  label="Memo"
+                  value={profile.memo}
+                  title="No memo"
+                  onCopy={() => handleCopyValue("memo", profile.memo)}
+                  copied={copiedField === "memo"}
+                />
+              </div>
+
+              <div className="w-full mt-6 space-y-4 pt-4 border-t border-gray-100">
+                <p className="text-center text-[11px] font-medium text-gray-600 px-6">
+                  Send payment, then enter the 6-digit code.
+                </p>
+                <div className="flex flex-col gap-3">
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={otp}
+                    onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
+                    placeholder="• • • • • •"
+                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] font-mono border border-[rgba(34,36,38,0.15)] rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none shadow-inner bg-white"
+                  />
+                  <div className="text-red-500 text-[11px] h-4 font-medium text-center">{error}</div>
+                  <button
+                    disabled={otp.length !== 6 || loading}
+                    onClick={() => onVerify(otp)}
+                    className="w-full text-white rounded-xl py-3 text-sm font-bold h-11 transition-all disabled:opacity-50 shadow-md flex justify-center items-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+                  >
+                    {loading ? <Spinner /> : "Verify Code"}
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Expanded QR Modal */}
@@ -530,7 +469,7 @@ function ProfileEditor({ profile, edits, setEdits, onVerify, onBack, loading, er
   );
 }
 
-// ── Link Row (matches directory ProfileLinkRow) ────────────────────────────
+// ── Link Row ───────────────────────────────────────────────────────────────
 
 function LinkRow({ link, editable, onRemove, onUrlChange }: {
   link: ProfileLink;
@@ -596,7 +535,7 @@ function getFavicon(platform: string, url: string): string {
   return "";
 }
 
-// ── Profile Avatar (matches directory ProfileAvatar) ───────────────────────
+// ── Profile Avatar ─────────────────────────────────────────────────────────
 
 function ProfileAvatar({ profile, size, borderColor }: {
   profile: { profile_image_url?: string; name?: string };
@@ -633,7 +572,7 @@ function ProfileAvatar({ profile, size, borderColor }: {
   );
 }
 
-// ── Verified Badge (matches directory VerifiedBadge) ───────────────────────
+// ── Verified Badge ─────────────────────────────────────────────────────────
 
 function VerifiedBadge({ verified, label = "Verified" }: { verified: boolean; label?: string }) {
   if (!verified) return null;
@@ -652,9 +591,7 @@ function VerifiedBadge({ verified, label = "Verified" }: { verified: boolean; la
   );
 }
 
-// PaymentStep removed completely as it is now integrated into ProfileEditor
-
-// ── Step 4: Redirecting ────────────────────────────────────────────────────
+// ── Redirecting Step ───────────────────────────────────────────────────────
 
 function RedirectingStep() {
   return (

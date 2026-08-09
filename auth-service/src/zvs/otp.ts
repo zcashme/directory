@@ -14,11 +14,10 @@ function getSecretSeed(): Buffer {
 export async function verifyOtp(memo: string, providedOtp: string): Promise<boolean> {
   const parsed = parseZvsMemo(memo);
   if (!parsed) return false;
-  const message = Buffer.concat([
-    Buffer.from(parsed.sessionId, "utf8"),
-    Buffer.from(parsed.userAddress, "utf8"),
-  ]);
-  const hash = crypto.createHmac("sha256", getSecretSeed()).update(message).digest();
+  const hash = crypto
+    .createHmac("sha256", getSecretSeed())
+    .update(parsed.sessionId, "utf8")
+    .digest();
   const code = (hash.readUInt32BE(0)) >>> 0;
   const expected = (code % 1000000).toString().padStart(6, "0");
   const a = Buffer.from(expected, "utf8");

@@ -26,24 +26,9 @@ export interface ProfileLink {
 }
 
 /**
- * Resolve a ZcashMe username or address to a profile.
+ * Resolve an existing ZcashMe profile by username.
  */
-export async function resolveName(input: string): Promise<ZcasherRow | null> {
-  if (/^(u1|z|t1)/.test(input)) {
-    return {
-      id: null,
-      address: input,
-      name: null,
-      display_name: null,
-      bio: null,
-      profile_image_url: null,
-      address_verified: null,
-      nearest_city_name: null,
-      country: null,
-      iso2: null,
-    };
-  }
-
+export async function resolveUsername(input: string): Promise<ZcasherRow | null> {
   const escaped = input.replace(/[%_]/g, "\\$&");
 
   const { data, error } = await supabase
@@ -53,7 +38,7 @@ export async function resolveName(input: string): Promise<ZcasherRow | null> {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`resolveName failed: ${error.message}`);
+  if (error) throw new Error(`resolveUsername failed: ${error.message}`);
   return data ?? null;
 }
 

@@ -53,20 +53,9 @@ export async function markProfileVerified(profileId: number): Promise<void> {
  * Apply profile changes (display name, bio, city, links) to Supabase.
  */
 export async function applyProfileChanges(
-  address: string,
+  profileId: number,
   edits: ProfileEdits,
 ): Promise<void> {
-  const { data: profile, error: profileError } = await supabase
-    .from("zcasher")
-    .select("id")
-    .eq("address", address)
-    .maybeSingle();
-
-  if (profileError) throw new Error(`Profile lookup failed: ${profileError.message}`);
-  if (!profile) throw new Error("Profile not found");
-
-  const profileId = profile.id;
-
   await markProfileVerified(profileId);
 
   const updates: Record<string, any> = {};

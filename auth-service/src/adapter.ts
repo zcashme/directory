@@ -22,6 +22,7 @@ const types: Record<string, number> = {
   PushedAuthorizationRequest: 12,
   Grant: 13,
   BackchannelAuthenticationRequest: 14,
+  PaymentSession: 15,
 };
 
 function expiresAt(expiresIn?: number): string | null {

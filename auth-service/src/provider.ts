@@ -76,7 +76,7 @@ export function createProvider() {
     // ── Claims available per scope ───────────────────────────
     claims: {
       openid: ["sub"],
-      profile: ["name", "preferred_username", "picture", "zcash_unified_address"],
+      profile: ["name", "username", "picture", "zcash_unified_address"],
     },
 
     // ── Supported scopes ─────────────────────────────────────
@@ -107,13 +107,6 @@ export function createProvider() {
       short: { httpOnly: true, sameSite: "lax" },
       keys: process.env.COOKIE_SECRET ? [process.env.COOKIE_SECRET] : [],
     },
-
-    // ── Custom authorization request parameter ─────────────
-    // user_id is optional — apps send their identifier for the user
-    // (handle, email, verification code, referral code, etc.)
-    // If present, the auth-service adds a link to the user's ZcashMe profile.
-    // If absent, normal OIDC — no link inserted.
-    extraParams: ["user_id"],
   } as any);
 
   // Trust Vercel's TLS-terminating proxy (X-Forwarded-Proto)
