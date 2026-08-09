@@ -2,9 +2,9 @@ import crypto from "node:crypto";
 
 
 function parseZvsMemo(memo: string) {
-  const match = memo.match(/^DO NOT MODIFY:\{zvs\/(\d{16})\}$/);
+  const match = memo.match(/^DO NOT MODIFY:\{zvs\/(\d{16}),(.+)\}$/);
   if (!match) return null;
-  return { sessionId: match[1] };
+  return { sessionId: match[1], userAddress: match[2] };
 }
 
 function getExpectedOtp(memo: string): string {
@@ -15,12 +15,15 @@ function getExpectedOtp(memo: string): string {
   
   const parsed = parseZvsMemo(memo);
   if (!parsed) {
-    throw new Error("Invalid memo format. Make sure it matches 'DO NOT MODIFY:{zvs/1234567890123456}'");
+    throw new Error("Invalid memo format. Make sure it matches 'DO NOT MODIFY:{zvs/1234567890123456,u1...}'");
   }
 
   const hash = crypto
     .createHmac("sha256", Buffer.from(seedHex, "hex"))
-    .update(parsed.sessionId, "utf8")
+    .update(Buffer.concat([
+      Buffer.from(parsed.sessionId, "utf8"),
+      Buffer.from(parsed.userAddress, "utf8"),
+    ]))
     .digest();
   const code = hash.readUInt32BE(0) >>> 0;
   return (code % 1000000).toString().padStart(6, "0");

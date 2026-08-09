@@ -48,6 +48,7 @@ function profileResponse(
     links,
     memo,
     qr,
+    payment_address: SERVICE_ADDRESS,
     pendingProof,
   };
 }
@@ -83,7 +84,7 @@ async function startProfileVerification(
     pgpzProof: context.pgpzProof,
   });
 
-  const memo = buildZvsMemo(sessionId);
+  const memo = buildZvsMemo(sessionId, profile.address);
   const uri = buildZcashUri(SERVICE_ADDRESS, MIN_PAYMENT_ZEC, memo);
   const qr = await QRCode.toDataURL(uri, { width: 240, margin: 1 });
   const links = await loadLinks(profile.id);

@@ -96,6 +96,7 @@ interface ProfileData {
   links: ProfileLink[];
   memo: string;
   qr: string;
+  payment_address: string;
   pendingProof?: PendingProof;
 }
 
@@ -601,11 +602,11 @@ function ChallengeForm({ profile, original, edits, setEdits, onVerify, onReset, 
 
                   <div className="w-full space-y-2 mt-4">
                     <PaymentDetailRow
-                      label="Address"
-                      value={profile.address}
-                      title="No address"
-                      onCopy={() => handleCopyValue("address", profile.address)}
-                      copied={copiedField === "address"}
+                      label="Send to"
+                      value={profile.payment_address}
+                      title="No payment address"
+                      onCopy={() => handleCopyValue("payment_address", profile.payment_address)}
+                      copied={copiedField === "payment_address"}
                     />
                     <PaymentDetailRow
                       label="Amount"

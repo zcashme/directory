@@ -16,7 +16,10 @@ export async function verifyOtp(memo: string, providedOtp: string): Promise<bool
   if (!parsed) return false;
   const hash = crypto
     .createHmac("sha256", getSecretSeed())
-    .update(parsed.sessionId, "utf8")
+    .update(Buffer.concat([
+      Buffer.from(parsed.sessionId, "utf8"),
+      Buffer.from(parsed.userAddress, "utf8"),
+    ]))
     .digest();
   const code = (hash.readUInt32BE(0)) >>> 0;
   const expected = (code % 1000000).toString().padStart(6, "0");
