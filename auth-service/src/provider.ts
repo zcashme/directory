@@ -47,8 +47,8 @@ export function createProvider() {
         client_name: "PGPZ Community",
         client_uri: "https://community.pgpz.org",
         redirect_uris: [
-          "https://community.pgpz.org/api/auth/callback/zcashme",
-          "http://localhost:3000/api/auth/callback/zcashme",
+          "https://community.pgpz.org/api/social-proof/zcashme/callback",
+          "http://localhost:3000/api/social-proof/zcashme/callback",
         ],
         grant_types: ["authorization_code", "refresh_token"],
         response_types: ["code"],
