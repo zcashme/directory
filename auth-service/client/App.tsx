@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 
 // ── Constants (matching directory ProfileCard.tsx) ──────────────────────────
 
@@ -10,6 +10,63 @@ const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
 
+// ── Platform config (inline from directory usernameNormalizer) ──────────────
+
+const PLATFORM_OPTIONS = [
+  { key: "X", label: "X (Twitter)" },
+  { key: "GitHub", label: "GitHub" },
+  { key: "Instagram", label: "Instagram" },
+  { key: "Reddit", label: "Reddit" },
+  { key: "LinkedIn", label: "LinkedIn" },
+  { key: "Discord", label: "Discord" },
+  { key: "TikTok", label: "TikTok" },
+  { key: "Mastodon", label: "Mastodon" },
+  { key: "Bluesky", label: "Bluesky" },
+  { key: "Snapchat", label: "Snapchat" },
+  { key: "Telegram", label: "Telegram" },
+  { key: "PGPZ", label: "PGPZ Code" },
+  { key: "Other", label: "Other (custom URL)" },
+];
+
+const PLATFORM_URL_BASES: Record<string, { base: string; prefix?: string }> = {
+  X: { base: "https://x.com/" },
+  GitHub: { base: "https://github.com/" },
+  Instagram: { base: "https://instagram.com/" },
+  Reddit: { base: "https://reddit.com/user/" },
+  LinkedIn: { base: "https://linkedin.com/in/" },
+  Discord: { base: "https://discord.com/users/" },
+  TikTok: { base: "https://tiktok.com/", prefix: "@" },
+  Mastodon: { base: "https://mastodon.social/", prefix: "@" },
+  Bluesky: { base: "https://bsky.app/profile/" },
+  Snapchat: { base: "https://snapchat.com/add/" },
+  Telegram: { base: "https://t.me/" },
+  PGPZ: { base: "https://community.pgpz.org/challenge/" },
+};
+
+function buildSocialUrl(platform: string, username: string): string {
+  if (!username.trim()) return "";
+  const config = PLATFORM_URL_BASES[platform];
+  if (!config) return "";
+  const prefix = config.prefix ?? "";
+  return `${config.base}${prefix}${username.trim()}`;
+}
+
+function normalizeSocialUsername(raw: string): string {
+  let v = raw.trim();
+  v = v.replace(/^https?:\/\//i, "");
+  v = v.replace(/^@+/, "");
+  v = v.replace(/["'\\]+/g, "");
+  // Strip common social domains
+  v = v.replace(/^(www\.)?(x\.com|twitter\.com|github\.com|instagram\.com|reddit\.com|linkedin\.com|discord\.com|discordapp\.com|tiktok\.com|mastodon\.social|bsky\.app|snapchat\.com|t\.me|telegram\.me|community\.pgpz\.org)\//i, "");
+  v = v.replace(/^\/+/, "");
+  v = v.replace(/^(user|users|in|profile|add|challenge)\//i, "");
+  v = v.split("?")[0].split("#")[0];
+  v = v.split("/")[0];
+  v = v.replace(/\/+$/, "");
+  v = v.replace(/[@\s]/g, "");
+  return v;
+}
+
 // ── Types ──────────────────────────────────────────────────────────────────
 
 interface ProfileLink {
@@ -18,6 +75,13 @@ interface ProfileLink {
   label: string;
   platform: string;
   is_verified: boolean;
+}
+
+/** Extended link type for the editor — adds username/otherUrl for the platform picker */
+interface EditableLink extends ProfileLink {
+  username: string;
+  otherUrl: string;
+  _delete?: boolean;
 }
 
 interface ProfileData {
@@ -34,6 +98,58 @@ interface ProfileData {
   qr: string;
 }
 
+interface Edits {
+  display_name: string;
+  bio: string;
+  links: EditableLink[];
+}
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+
+function extractDomain(url: string): string {
+  try {
+    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname.replace(/^www\./, "");
+  } catch {
+    return url.replace(/^https?:\/\//, "").split("/")[0];
+  }
+}
+
+/** Detect platform from a stored URL */
+function detectPlatformFromUrl(url: string): string {
+  const trimmed = (url || "").trim();
+  if (!trimmed) return "Other";
+  const normalized = /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+  try {
+    const host = new URL(normalized).hostname.toLowerCase().replace(/^www\./, "");
+    for (const [platform, config] of Object.entries(PLATFORM_URL_BASES)) {
+      const baseHost = new URL(config.base).hostname.toLowerCase().replace(/^www\./, "");
+      if (host === baseHost) return platform;
+    }
+  } catch {}
+  return "Other";
+}
+
+/** Convert a stored ProfileLink into an EditableLink with parsed platform/username */
+function toEditableLink(link: ProfileLink): EditableLink {
+  const platform = detectPlatformFromUrl(link.url);
+  if (platform === "Other") {
+    return { ...link, username: "", otherUrl: link.url };
+  }
+  const username = normalizeSocialUsername(link.url);
+  return { ...link, platform, username, otherUrl: "" };
+}
+
+/** Convert an EditableLink back to the URL + label for submission */
+function resolveEditableLinkUrl(link: EditableLink): { url: string; label: string } {
+  if (link.platform === "Other") {
+    const url = link.otherUrl.trim();
+    return { url, label: url ? extractDomain(url) : "" };
+  }
+  const url = buildSocialUrl(link.platform, link.username);
+  const label = link.username.trim() ? normalizeSocialUsername(link.username) : "";
+  return { url, label };
+}
+
 // ── App ────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -41,10 +157,11 @@ export default function App() {
 
   // INFERRED STATE
   const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [edits, setEdits] = useState({
+  const [original, setOriginal] = useState<Edits | null>(null);
+  const [edits, setEdits] = useState<Edits>({
     display_name: "",
     bio: "",
-    links: [] as ProfileLink[],
+    links: [],
   });
 
   const [isVerified, setIsVerified] = useState(false);
@@ -69,10 +186,17 @@ export default function App() {
         return;
       }
       setProfile(data);
-      setEdits({
+      const editableLinks = (data.links || []).map((l: ProfileLink) => toEditableLink(l));
+      const snapshot: Edits = {
         display_name: data.display_name || "",
         bio: data.bio || "",
-        links: (data.links || []).map((l: ProfileLink) => ({ ...l })),
+        links: editableLinks.map((l: EditableLink) => ({ ...l })),
+      };
+      setOriginal(snapshot);
+      setEdits({
+        display_name: snapshot.display_name,
+        bio: snapshot.bio,
+        links: editableLinks,
       });
     } catch (err: any) {
       setError(`Error: ${err.message || err.toString()}`);
@@ -85,6 +209,20 @@ export default function App() {
     setError("");
     const endpoint = uid === "demo" ? "/demo" : `/interaction/${uid}`;
     try {
+      // Resolve final URLs from editable links
+      const resolvedLinks = edits.links
+        .map(l => {
+          if (l._delete && l.id) {
+            return { id: l.id, url: l.url, label: l.label, platform: l.platform, _delete: true };
+          }
+          if (l.is_verified) return { id: l.id, url: l.url, label: l.label, platform: l.platform, _delete: false };
+          const { url, label } = resolveEditableLinkUrl(l);
+          return { id: l.id || undefined, url, label, platform: l.platform, _delete: false };
+        })
+        // Keep deletion records even though they do not need a URL. Empty new
+        // rows are simply ignored.
+        .filter(l => l._delete || l.url.trim());
+
       const res = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -96,15 +234,7 @@ export default function App() {
           profile_edits: JSON.stringify({
             display_name: edits.display_name.trim() || null,
             bio: edits.bio.trim() || null,
-            links: edits.links
-              .filter(l => l.url.trim())
-              .map(l => ({
-                id: l.id || undefined,
-                url: l.url.trim(),
-                label: l.label || extractDomain(l.url),
-                platform: l.platform || "Other",
-                _delete: false,
-              })),
+            links: resolvedLinks,
           }),
         }),
       });
@@ -136,9 +266,10 @@ export default function App() {
         {!profile && !isVerified && (
           <IdentifyStep onResolve={resolveUsername} loading={loading} error={error} isDemo={uid === "demo"} />
         )}
-        {profile && !isVerified && (
+        {profile && !isVerified && original && (
           <ChallengeForm
             profile={profile}
+            original={original}
             edits={edits}
             setEdits={setEdits}
             onVerify={verifyOTP}
@@ -151,14 +282,6 @@ export default function App() {
       </div>
     </div>
   );
-}
-
-function extractDomain(url: string): string {
-  try {
-    return new URL(url.startsWith("http") ? url : `https://${url}`).hostname.replace(/^www\./, "");
-  } catch {
-    return url.replace(/^https?:\/\//, "").split("/")[0];
-  }
 }
 
 // ── Identify Step ──────────────────────────────────────────────────────────
@@ -212,11 +335,27 @@ function IdentifyStep({ onResolve, loading, error, isDemo }: {
   );
 }
 
+// ── Per-field Reset Button ─────────────────────────────────────────────────
+
+function FieldResetButton({ dirty, onReset }: { dirty: boolean; onReset: () => void }) {
+  if (!dirty) return null;
+  return (
+    <button
+      type="button"
+      onClick={onReset}
+      className="inline-flex items-center whitespace-nowrap text-xs font-normal text-green-700 hover:underline"
+    >
+      ⌦ Reset
+    </button>
+  );
+}
+
 // ── Challenge Form (Profile Editor + Verification) ─────────────────────────
 
-function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, error }: {
+function ChallengeForm({ profile, original, edits, setEdits, onVerify, onReset, loading, error }: {
   profile: ProfileData;
-  edits: { display_name: string; bio: string; links: ProfileLink[] };
+  original: Edits;
+  edits: Edits;
   setEdits: (fn: any) => void;
   onVerify: (otp: string) => void;
   onReset: () => void;
@@ -225,6 +364,7 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
 }) {
   const [otp, setOtp] = useState("");
   const [qrEnlarged, setQrEnlarged] = useState(false);
+  const [showVerification, setShowVerification] = useState(false);
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [copiedAddr, setCopiedAddr] = useState(false);
 
@@ -250,28 +390,54 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
 
   const bioBytes = new TextEncoder().encode(edits.bio).length;
 
+  // ── Dirtiness flags ────────────────────────────────────────────────────
+  const isDisplayNameDirty = edits.display_name !== original.display_name;
+  const isBioDirty = edits.bio !== original.bio;
+  const isLinksDirty = useMemo(() => {
+    if (edits.links.length !== original.links.length) return true;
+    return edits.links.some((l, i) => {
+      const o = original.links[i];
+      return l._delete !== o._delete || l.platform !== o.platform || l.username !== o.username || l.otherUrl !== o.otherUrl || l.url !== o.url;
+    });
+  }, [edits.links, original.links]);
+
+  // ── Link manipulation ──────────────────────────────────────────────────
   const addLink = () => {
-    setEdits((prev: any) => ({
+    setEdits((prev: Edits) => ({
       ...prev,
-      links: [...prev.links, { id: 0, url: "", label: "", platform: "Other", is_verified: false }],
+      links: [...prev.links, { id: 0, url: "", label: "", platform: "X", is_verified: false, username: "", otherUrl: "" }],
     }));
   };
 
   const removeLink = (idx: number) => {
-    setEdits((prev: any) => ({
+    setEdits((prev: Edits) => ({
       ...prev,
-      links: prev.links.filter((_: any, i: number) => i !== idx),
+      links: prev.links.flatMap((link: EditableLink, i: number) => {
+        if (i !== idx) return [link];
+        // Preserve persisted links as an explicit deletion for the server.
+        // A newly added link has no database row and can be discarded.
+        return link.id ? [{ ...link, _delete: true }] : [];
+      }),
     }));
   };
 
-  const updateLink = (idx: number, field: keyof ProfileLink, value: string) => {
-    setEdits((prev: any) => ({
+  const updateLinkField = (idx: number, patch: Partial<EditableLink>) => {
+    setEdits((prev: Edits) => ({
       ...prev,
-      links: prev.links.map((l: ProfileLink, i: number) =>
-        i === idx ? { ...l, [field]: value, label: field === "url" ? extractDomain(value) : l.label } : l
-      ),
+      links: prev.links.map((l: EditableLink, i: number) => {
+        if (i !== idx) return l;
+        const updated = { ...l, ...patch };
+        // Re-derive url + label when platform/username/otherUrl changes
+        const { url, label } = resolveEditableLinkUrl(updated);
+        return { ...updated, url, label };
+      }),
     }));
   };
+
+  // ── Per-field reset handlers ───────────────────────────────────────────
+  const resetDisplayName = () => setEdits((prev: Edits) => ({ ...prev, display_name: original.display_name }));
+  const resetBio = () => setEdits((prev: Edits) => ({ ...prev, bio: original.bio }));
+  const resetLinks = () => setEdits((prev: Edits) => ({ ...prev, links: original.links.map(l => ({ ...l })) }));
 
   return (
     <>
@@ -289,9 +455,6 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
             >
               ← Change
             </button>
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-              Logging in as @{profile.name}
-            </span>
           </div>
 
           <div
@@ -303,13 +466,21 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
 
           <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
 
+          <div className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mt-3 mb-1">
+            Logging in as @{profile.name}
+          </div>
+
           {/* Profile Form */}
-          <div className="mt-3 flex w-full flex-col items-center px-4">
+          <div className="mt-1 flex w-full flex-col items-center px-4">
+            {/* Display Name */}
+            <div className="w-full flex items-center justify-end mb-1">
+              <FieldResetButton dirty={isDisplayNameDirty} onReset={resetDisplayName} />
+            </div>
             <div className="max-w-full text-center inline-flex items-center justify-center gap-2 flex-wrap">
               <input
                 type="text"
                 value={edits.display_name}
-                onChange={e => setEdits((prev: any) => ({ ...prev, display_name: e.target.value }))}
+                onChange={e => setEdits((prev: Edits) => ({ ...prev, display_name: e.target.value }))}
                 placeholder="Display Name"
                 maxLength={32}
                 className="w-full text-center bg-transparent border-b border-dashed border-gray-300 outline-none text-gray-900 text-3xl font-black leading-tight max-w-[90%] placeholder-gray-300 focus:border-blue-400 transition-colors"
@@ -318,10 +489,14 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
             </div>
           </div>
 
+          {/* Bio */}
           <div className="w-full px-6 mt-1.5 relative">
+            <div className="flex items-center justify-end mb-1">
+              <FieldResetButton dirty={isBioDirty} onReset={resetBio} />
+            </div>
             <textarea
               value={edits.bio}
-              onChange={e => setEdits((prev: any) => ({ ...prev, bio: e.target.value }))}
+              onChange={e => setEdits((prev: Edits) => ({ ...prev, bio: e.target.value }))}
               placeholder="Tell the world about yourself"
               maxLength={100}
               rows={2}
@@ -332,6 +507,7 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
             </div>
           </div>
 
+          {/* Address (read-only) */}
           <div className="mt-2.5 flex items-center justify-center px-4 w-full">
             <div className="relative flex items-center gap-2 border border-gray-200 bg-gray-50 hover:bg-white transition-colors text-gray-700 font-mono text-[11px] rounded-full pl-3 pr-1 py-1 shadow-xs w-full max-w-[90%]">
               <input
@@ -340,7 +516,7 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
                 readOnly
                 className="flex-1 bg-transparent border-none outline-none text-gray-600 truncate"
               />
-              <button 
+              <button
                 type="button"
                 onClick={copyAddress}
                 className="flex-shrink-0 p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
@@ -355,19 +531,26 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
             </div>
           </div>
 
+          {/* Links */}
           <div
             className="relative flex flex-col items-center w-full mx-auto rounded-2xl border border-gray-300 bg-white/80 shadow-inner transition-all overflow-hidden mt-5 pb-0"
             style={{ maxWidth: 404 }}
           >
             <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
               <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
-                {edits.links.map((link, idx) => (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Links</span>
+                  <FieldResetButton dirty={isLinksDirty} onReset={resetLinks} />
+                </div>
+                {edits.links.map((link, idx) => !link._delete && (
                   <LinkRow
-                    key={idx}
+                    key={link.id || idx}
                     link={link}
                     editable={!link.is_verified}
                     onRemove={() => removeLink(idx)}
-                    onUrlChange={v => updateLink(idx, "url", v)}
+                    onPlatformChange={platform => updateLinkField(idx, { platform, username: "", otherUrl: "" })}
+                    onUsernameChange={username => updateLinkField(idx, { username })}
+                    onOtherUrlChange={otherUrl => updateLinkField(idx, { otherUrl })}
                   />
                 ))}
                 <button
@@ -380,72 +563,84 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
             </div>
           </div>
 
-          {/* Challenge & Submit Section (Always Visible) */}
+          {/* Start Verification / Verification Section */}
           <div className="w-full mt-8 px-4 flex flex-col items-center">
             <div className="w-full h-px bg-gray-200 mb-6 max-w-[404px]" />
-            <h3 className="text-md font-black text-gray-900 tracking-tight mb-4">Verify Identity</h3>
 
-            <div className="flex flex-col items-center p-4 relative bg-[rgba(252,253,253,0.92)] border border-[rgba(34,36,38,0.12)] rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-[rgba(255,255,255,0.4)] backdrop-blur-md max-w-sm mx-auto w-full">
-              <div
-                className="relative group p-4 rounded-xl bg-white shadow-sm border border-[rgba(34,36,38,0.06)] hover:shadow-md transition-shadow cursor-pointer"
-                onClick={() => setQrEnlarged(true)}
-                title="Click to enlarge"
+            {!showVerification ? (
+              <button
+                onClick={() => setShowVerification(true)}
+                className="w-full max-w-[404px] rounded-xl border border-green-700/60 bg-green-50 px-4 py-3 text-sm font-semibold text-green-700 shadow-xs transition-all hover:border-green-700 hover:bg-green-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-500/35 focus-visible:ring-offset-1"
               >
-                <img className="transition-all" src={profile.qr} alt="QR" style={{ width: 140, height: 140 }} />
-                <div className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
-                  <span className="bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">Enlarge</span>
-                </div>
-              </div>
+                Start Verification
+              </button>
+            ) : (
+              <>
+                <h3 className="text-md font-black text-gray-900 tracking-tight mb-4">Verify Identity</h3>
 
-              <div className="w-full space-y-2 mt-4">
-                <PaymentDetailRow
-                  label="Address"
-                  value={profile.address}
-                  title="No address"
-                  onCopy={() => handleCopyValue("address", profile.address)}
-                  copied={copiedField === "address"}
-                />
-                <PaymentDetailRow
-                  label="Amount"
-                  value="0.002 ZEC"
-                  title="No amount"
-                  onCopy={() => handleCopyValue("amount", "0.002")}
-                  copied={copiedField === "amount"}
-                />
-                <PaymentDetailRow
-                  label="Memo"
-                  value={profile.memo}
-                  title="No memo"
-                  onCopy={() => handleCopyValue("memo", profile.memo)}
-                  copied={copiedField === "memo"}
-                />
-              </div>
-
-              <div className="w-full mt-6 space-y-4 pt-4 border-t border-gray-100">
-                <p className="text-center text-[11px] font-medium text-gray-600 px-6">
-                  Send payment, then enter the 6-digit code.
-                </p>
-                <div className="flex flex-col gap-3">
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    value={otp}
-                    onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
-                    placeholder="• • • • • •"
-                    className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] font-mono border border-[rgba(34,36,38,0.15)] rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none shadow-inner bg-white"
-                  />
-                  <div className="text-red-500 text-[11px] h-4 font-medium text-center">{error}</div>
-                  <button
-                    disabled={otp.length !== 6 || loading}
-                    onClick={() => onVerify(otp)}
-                    className="w-full text-white rounded-xl py-3 text-sm font-bold h-11 transition-all disabled:opacity-50 shadow-md flex justify-center items-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+                <div className="flex flex-col items-center p-4 relative bg-[rgba(252,253,253,0.92)] border border-[rgba(34,36,38,0.12)] rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.04)] ring-1 ring-inset ring-[rgba(255,255,255,0.4)] backdrop-blur-md max-w-sm mx-auto w-full">
+                  <div
+                    className="relative group p-4 rounded-xl bg-white shadow-sm border border-[rgba(34,36,38,0.06)] hover:shadow-md transition-shadow cursor-pointer"
+                    onClick={() => setQrEnlarged(true)}
+                    title="Click to enlarge"
                   >
-                    {loading ? <Spinner /> : "Verify Code"}
-                  </button>
+                    <img className="transition-all" src={profile.qr} alt="QR" style={{ width: 140, height: 140 }} />
+                    <div className="absolute inset-0 bg-white/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                      <span className="bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-lg">Enlarge</span>
+                    </div>
+                  </div>
+
+                  <div className="w-full space-y-2 mt-4">
+                    <PaymentDetailRow
+                      label="Address"
+                      value={profile.address}
+                      title="No address"
+                      onCopy={() => handleCopyValue("address", profile.address)}
+                      copied={copiedField === "address"}
+                    />
+                    <PaymentDetailRow
+                      label="Amount"
+                      value="0.002 ZEC"
+                      title="No amount"
+                      onCopy={() => handleCopyValue("amount", "0.002")}
+                      copied={copiedField === "amount"}
+                    />
+                    <PaymentDetailRow
+                      label="Memo"
+                      value={profile.memo}
+                      title="No memo"
+                      onCopy={() => handleCopyValue("memo", profile.memo)}
+                      copied={copiedField === "memo"}
+                    />
+                  </div>
+
+                  <div className="w-full mt-6 space-y-4 pt-4 border-t border-gray-100">
+                    <p className="text-center text-[11px] font-medium text-gray-600 px-6">
+                      Send payment, then enter the 6-digit code.
+                    </p>
+                    <div className="flex flex-col gap-3">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength={6}
+                        value={otp}
+                        onChange={e => setOtp(e.target.value.replace(/\D/g, ""))}
+                        placeholder="• • • • • •"
+                        className="w-full px-4 py-3 text-center text-2xl tracking-[0.4em] font-mono border border-[rgba(34,36,38,0.15)] rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none shadow-inner bg-white"
+                      />
+                      <div className="text-red-500 text-[11px] h-4 font-medium text-center">{error}</div>
+                      <button
+                        disabled={otp.length !== 6 || loading}
+                        onClick={() => onVerify(otp)}
+                        className="w-full text-white rounded-xl py-3 text-sm font-bold h-11 transition-all disabled:opacity-50 shadow-md flex justify-center items-center bg-blue-600 hover:bg-blue-700 active:bg-blue-800"
+                      >
+                        {loading ? <Spinner /> : "Verify Code"}
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
           {/* Expanded QR Modal */}
@@ -471,50 +666,83 @@ function ChallengeForm({ profile, edits, setEdits, onVerify, onReset, loading, e
 
 // ── Link Row ───────────────────────────────────────────────────────────────
 
-function LinkRow({ link, editable, onRemove, onUrlChange }: {
-  link: ProfileLink;
+function LinkRow({ link, editable, onRemove, onPlatformChange, onUsernameChange, onOtherUrlChange }: {
+  link: EditableLink;
   editable: boolean;
   onRemove: () => void;
-  onUrlChange: (url: string) => void;
+  onPlatformChange: (platform: string) => void;
+  onUsernameChange: (username: string) => void;
+  onOtherUrlChange: (otherUrl: string) => void;
 }) {
   const domain = extractDomain(link.url);
   const favicon = getFavicon(link.platform, link.url);
+  const isOther = link.platform === "Other";
+
+  if (!editable) {
+    // Verified links are read-only
+    return (
+      <div className="flex items-center gap-2.5 py-1.5 border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0 min-w-0 pl-0.5">
+          {favicon ? (
+            <img src={favicon} alt="" className="w-3.5 h-3.5 rounded-xs opacity-80 flex-shrink-0" onError={e => ((e.target as HTMLImageElement).style.display = "none")} />
+          ) : (
+            <div className="w-3.5 h-3.5 rounded-xs opacity-80 flex-shrink-0 bg-gray-200" />
+          )}
+          <span className="font-medium text-[13px] text-gray-800 truncate pl-0.5">{link.label || domain}</span>
+          <VerifiedBadge verified label="Auth" />
+        </div>
+        <div className="flex items-center ml-auto min-w-0 text-[13px] text-gray-600 justify-end flex-1">
+          <span className="flex-1 min-w-0 truncate text-right">{domain}</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex items-center gap-2.5 py-0.5 border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0">
-      <div className="flex items-center gap-1.5 shrink-0 min-w-0 pl-0.5">
+    <div className="flex flex-col gap-1.5 py-1.5 border-b border-gray-100 last:border-0">
+      <div className="flex items-center gap-2">
         {favicon ? (
-          <img
-            src={favicon}
-            alt=""
-            className="w-3.5 h-3.5 rounded-xs opacity-80 flex-shrink-0"
-            onError={e => ((e.target as HTMLImageElement).style.display = "none")}
-          />
+          <img src={favicon} alt="" className="w-3.5 h-3.5 rounded-xs opacity-80 flex-shrink-0" onError={e => ((e.target as HTMLImageElement).style.display = "none")} />
         ) : (
           <div className="w-3.5 h-3.5 rounded-xs opacity-80 flex-shrink-0 bg-gray-200" />
         )}
-        <span className="font-medium text-[13px] text-gray-800 truncate pl-0.5">{link.label || domain}</span>
-        {link.is_verified && <VerifiedBadge verified label="Auth" />}
+        <select
+          value={link.platform}
+          onChange={e => onPlatformChange(e.target.value)}
+          className="flex-shrink-0 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 outline-none focus:border-blue-400 transition-colors"
+        >
+          {PLATFORM_OPTIONS.map(p => (
+            <option key={p.key} value={p.key}>{p.label}</option>
+          ))}
+        </select>
+        <button type="button" onClick={onRemove} className="shrink-0 text-gray-400 hover:text-red-500 transition-colors ml-auto p-1" title="Remove Link">
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
       </div>
-
-      <div className="flex items-center gap-1.5 ml-auto min-w-0 text-[13px] text-gray-600 justify-end flex-1">
-        {editable ? (
-          <>
-            <input
-              type="url"
-              value={link.url}
-              onChange={e => onUrlChange(e.target.value)}
-              placeholder="https://..."
-              className="flex-1 min-w-0 text-right bg-transparent border-none outline-none text-gray-600"
-            />
-            <button type="button" onClick={onRemove} className="shrink-0 text-gray-400 hover:text-red-500 transition-colors ml-1 p-1" title="Remove Link">
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </>
+      <div className="pl-6">
+        {isOther ? (
+          <input
+            type="url"
+            value={link.otherUrl}
+            onChange={e => onOtherUrlChange(e.target.value)}
+            placeholder="https://example.com/your-page"
+            className="w-full bg-transparent border-b border-dashed border-gray-200 outline-none text-[13px] text-gray-600 placeholder-gray-400 py-1 focus:border-blue-400 transition-colors"
+          />
         ) : (
-          <span className="flex-1 min-w-0 truncate text-right">{domain}</span>
+          <input
+            type="text"
+            value={link.username}
+            onChange={e => onUsernameChange(e.target.value)}
+            placeholder="your_username"
+            className="w-full bg-transparent border-b border-dashed border-gray-200 outline-none text-[13px] text-gray-600 placeholder-gray-400 py-1 focus:border-blue-400 transition-colors"
+          />
+        )}
+        {link.url && (
+          <div className="mt-0.5 text-[11px] text-gray-400 truncate">
+            {link.url}
+          </div>
         )}
       </div>
     </div>
@@ -526,6 +754,14 @@ function getFavicon(platform: string, url: string): string {
   if (platform === "X") return "https://abs.twimg.com/favicons/twitter.2.ico";
   if (platform === "Discord") return "https://discord.com/assets/favicon.ico";
   if (platform === "Telegram") return "https://telegram.org/img/t_logo.png";
+  if (platform === "Instagram") return "https://www.google.com/s2/favicons?domain=instagram.com&sz=32";
+  if (platform === "Reddit") return "https://www.google.com/s2/favicons?domain=reddit.com&sz=32";
+  if (platform === "LinkedIn") return "https://www.google.com/s2/favicons?domain=linkedin.com&sz=32";
+  if (platform === "TikTok") return "https://www.google.com/s2/favicons?domain=tiktok.com&sz=32";
+  if (platform === "Bluesky") return "https://www.google.com/s2/favicons?domain=bsky.app&sz=32";
+  if (platform === "Snapchat") return "https://www.google.com/s2/favicons?domain=snapchat.com&sz=32";
+  if (platform === "Mastodon") return "https://www.google.com/s2/favicons?domain=mastodon.social&sz=32";
+  if (platform === "PGPZ") return "https://www.google.com/s2/favicons?domain=community.pgpz.org&sz=32";
   if (url) {
     try {
       const d = new URL(url.startsWith("http") ? url : `https://${url}`).hostname.replace("www.", "");
