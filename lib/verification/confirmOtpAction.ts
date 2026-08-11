@@ -109,6 +109,36 @@ const SOCIAL_PLATFORMS = new Set<SocialPlatform>([
   "Other",
 ]);
 
+const PGPZ_LABEL_PATTERN = /^PGPZ-[0-9A-F]{10}$/;
+
+/**
+ * If the link is a PGPZ proof link with a valid challenge code, return the
+ * normalised label and isVerified=true so it is visible to the PGPZ lookup
+ * API.  The code may be supplied as the explicit label or embedded in the
+ * URL (e.g. https://community.pgpz.org/challenge/PGPZ-XXXXXXXXXX).
+ */
+function resolvePgpzLinkInput(link: {
+  url: string;
+  label?: string;
+  platform?: string;
+}): { label: string; isVerified: boolean } | null {
+  const resolvedPlatform = (link.platform ?? derivePlatform(link.url) ?? "Other").trim();
+  if (resolvedPlatform !== "PGPZ") return null;
+
+  const explicitLabel = (link.label ?? "").trim();
+  if (explicitLabel && PGPZ_LABEL_PATTERN.test(explicitLabel)) {
+    return { label: explicitLabel, isVerified: true };
+  }
+
+  const url = (link.url ?? "").trim();
+  const match = url.match(/PGPZ-[0-9A-F]{10}/);
+  if (match) {
+    return { label: match[0], isVerified: true };
+  }
+
+  return null;
+}
+
 function isSocialPlatform(value: string): value is SocialPlatform {
   return SOCIAL_PLATFORMS.has(value as SocialPlatform);
 }
@@ -571,24 +601,30 @@ export async function confirmOtpAction(
           if (delErr) linkErrors.push(`delete link ${link.id}: ${delErr.message}`);
         } else if (link.id) {
           const resolvedPlatform = link.platform ?? derivePlatform(link.url);
-          const resolvedLabel = deriveLinkLabelForSave({
+          const pgpzResult = resolvePgpzLinkInput(link);
+          const resolvedLabel = pgpzResult?.label ?? deriveLinkLabelForSave({
             url: link.url,
             label: link.label,
             platform: resolvedPlatform,
           });
+          const updatePayload: Record<string, unknown> = {
+            url: link.url,
+            label: resolvedLabel,
+            platform: resolvedPlatform,
+          };
+          if (pgpzResult) {
+            updatePayload.is_verified = pgpzResult.isVerified;
+          }
           const { error: updErr } = await supabase
             .from("zcasher_links")
-            .update({
-              url: link.url,
-              label: resolvedLabel,
-              platform: resolvedPlatform,
-            })
+            .update(updatePayload)
             .eq("id", link.id)
             .eq("zcasher_id", profileId);
           if (updErr) linkErrors.push(`update link ${link.id}: ${updErr.message}`);
         } else if (!link._delete) {
           const resolvedPlatform = link.platform ?? derivePlatform(link.url);
-          const resolvedLabel = deriveLinkLabelForSave({
+          const pgpzResult = resolvePgpzLinkInput(link);
+          const resolvedLabel = pgpzResult?.label ?? deriveLinkLabelForSave({
             url: link.url,
             label: link.label,
             platform: resolvedPlatform,
@@ -598,7 +634,7 @@ export async function confirmOtpAction(
             url: link.url,
             label: resolvedLabel,
             platform: resolvedPlatform,
-            is_verified: false,
+            is_verified: pgpzResult?.isVerified ?? false,
           });
           if (insErr) linkErrors.push(`insert link: ${insErr.message}`);
         }
