@@ -19,6 +19,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.enable("trust proxy");
 
+// Redirect root to demo
+app.get("/", (_req, res) => {
+  res.redirect("/demo");
+});
+
 // Serve built React app (Vite outputs to public/)
 app.use(express.static(path.join(__dirname, "..", "public")));
 

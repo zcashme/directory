@@ -14,6 +14,12 @@ export default defineConfig({
     port: 5173,
     proxy: {
       "/interaction": "http://127.0.0.1:3001",
+      "/demo": {
+        target: "http://127.0.0.1:3001",
+        bypass: (req) => {
+          if (req.method === "GET") return req.url;
+        }
+      }
     },
   },
 });
