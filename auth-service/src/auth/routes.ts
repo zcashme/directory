@@ -236,7 +236,11 @@ export function setupAuthRoutes(app: Express, provider: any) {
           login: { accountId },
           consent: { grantId },
         });
-        return res.redirect(redirectTo);
+        // This endpoint is called with fetch(). Returning a cross-origin
+        // redirect makes the browser follow it as an XHR request, which can
+        // fail CORS even though the OIDC interaction completed successfully.
+        // Let the client perform a top-level navigation instead.
+        return res.json({ redirectTo });
       } catch {
         return res
           .status(400)

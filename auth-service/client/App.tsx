@@ -247,10 +247,6 @@ export default function App() {
           }),
         }),
       });
-      if (res.redirected) {
-        window.location.href = res.url;
-        return;
-      }
       if (!res.ok) {
         setError(await res.text());
         setLoading(false);
@@ -258,6 +254,10 @@ export default function App() {
       }
 
       const data = await res.json().catch(() => ({}));
+      if (data.redirectTo) {
+        window.location.assign(data.redirectTo);
+        return;
+      }
       setIsVerified(true);
 
       if (data.isDemo) {
