@@ -318,7 +318,7 @@ function IdentifyStep({ onResolve, loading, error, isDemo }: {
       </div>
       <input
         type="text"
-        placeholder="username"
+        placeholder="Profile name or username"
         value={username}
         onChange={e => setUsername(e.target.value)}
         className="w-full px-4 py-3.5 text-sm text-center font-medium border border-gray-300 rounded-xl focus:border-blue-600 focus:ring-2 focus:ring-blue-200 outline-none transition-all shadow-inner"

@@ -1,7 +1,7 @@
 /**
  * OIDC interaction and demo routes.
  *
- * Both paths authenticate an existing ZcashMe profile selected by username.
+ * Both paths authenticate an existing ZcashMe profile selected by exact profile name or username.
  * A payment session binds that selected profile to the OTP flow server-side.
  */
 
@@ -73,7 +73,7 @@ async function startProfileVerification(
   username: string,
   context: { demo: boolean; interactionUid?: string; pgpzProof?: PgpzProofLink },
 ) {
-  const profile = await resolveUsername(username.trim());
+  const profile = await resolveUsername(username);
   if (!profile?.id || !profile.address) return null;
 
   const sessionId = generateSessionId(16);
@@ -148,8 +148,8 @@ export function setupAuthRoutes(app: Express, provider: any) {
     const action = req.body?.action;
 
     if (action === "resolve") {
-      const username = String(req.body?.username ?? "").trim();
-      if (!username) return res.status(400).json({ error: "Username is required" });
+      const username = String(req.body?.username ?? "");
+      if (!username) return res.status(400).json({ error: "Profile name or username is required" });
       const result = await startProfileVerification(username, { demo: true });
       if (!result) return res.status(404).json({ error: "ZcashMe profile not found" });
       return res.json(result);
@@ -201,8 +201,8 @@ export function setupAuthRoutes(app: Express, provider: any) {
         return res.status(403).json({ error: "Session expired" });
       }
 
-      const username = String(req.body?.username ?? "").trim();
-      if (!username) return res.status(400).json({ error: "Username is required" });
+      const username = String(req.body?.username ?? "");
+      if (!username) return res.status(400).json({ error: "Profile name or username is required" });
       let pgpzProof: PgpzProofLink | undefined;
       try {
         pgpzProof = getPgpzProofLink(details.params.client_id, details.params.label);

@@ -26,20 +26,23 @@ export interface ProfileLink {
 }
 
 /**
- * Resolve an existing ZcashMe profile by username.
+ * Resolve an existing ZcashMe profile by an exact username or profile name.
  */
 export async function resolveUsername(input: string): Promise<ZcasherRow | null> {
-  const escaped = input.replace(/[%_]/g, "\\$&");
+  const select = "id,address,name,display_name,bio,profile_image_url,address_verified,nearest_city_name,country,iso2";
+  const [usernameResult, displayNameResult] = await Promise.all([
+    supabase.from("zcasher").select(select).eq("name", input).limit(1).maybeSingle(),
+    supabase.from("zcasher").select(select).eq("display_name", input).limit(1).maybeSingle(),
+  ]);
 
-  const { data, error } = await supabase
-    .from("zcasher")
-    .select("id,address,name,display_name,bio,profile_image_url,address_verified,nearest_city_name,country,iso2")
-    .ilike("name", escaped)
-    .limit(1)
-    .maybeSingle();
+  if (usernameResult.error) throw new Error(`resolveUsername failed: ${usernameResult.error.message}`);
+  if (displayNameResult.error) throw new Error(`resolveUsername failed: ${displayNameResult.error.message}`);
 
-  if (error) throw new Error(`resolveUsername failed: ${error.message}`);
-  return data ?? null;
+  const matches = [usernameResult.data, displayNameResult.data]
+    .filter((profile): profile is ZcasherRow => profile !== null)
+    .filter((profile, index, profiles) => profiles.findIndex((candidate) => candidate.id === profile.id) === index);
+
+  return matches.length === 1 ? matches[0] : null;
 }
 
 /**
