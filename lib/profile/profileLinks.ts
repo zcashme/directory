@@ -185,6 +185,23 @@ export const getSocialDisplay = (link: ProfileLink): string => {
   return getSocialHandle(link.url ?? "", link.platform);
 };
 
+function getPgpzMemberDisplayName(rawUrl: string): string | null {
+  try {
+    const url = new URL(rawUrl);
+    if (url.hostname.toLowerCase() !== "community.pgpz.org") return null;
+
+    const match = url.pathname.match(/^\/members\/([a-z0-9]+(?:-[a-z0-9]+)*)\/?$/i);
+    if (!match) return null;
+
+    return match[1]
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  } catch {
+    return null;
+  }
+}
+
 
 /**
  * Enriches a raw link object with a resolved label and favicon icon.
@@ -193,6 +210,8 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   const domain = extractDomain(link.url);
   const dbLabel = (link.label ?? "").trim();
   const platform = link.platform ?? null;
+  const pgpzMemberName =
+    platform === "PGPZ" ? getPgpzMemberDisplayName(link.url) : null;
   const isCustomDomainLink = platform === "Other" || platform === null;
   const handle = getSocialHandle(link.url ?? "", link.platform);
   const normalizedDomain = (domain ?? "").toLowerCase();
@@ -216,7 +235,7 @@ export function enrichLink(link: ProfileLink): EnrichedProfileLink {
   if (KNOWN_DOMAINS[domain]) {
     return {
       ...link,
-      label: (shouldUseHandle ? handle : dbLabel) ?? KNOWN_DOMAINS[domain].label,
+      label: pgpzMemberName ?? (shouldUseHandle ? handle : dbLabel) ?? KNOWN_DOMAINS[domain].label,
       icon: KNOWN_DOMAINS[domain].icon,
       domain,
       handle,
