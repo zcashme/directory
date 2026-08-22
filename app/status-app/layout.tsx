@@ -6,7 +6,7 @@ export const metadata: Metadata = {
     default: "Zcash.me Status",
     template: "%s | Zcash.me Status",
   },
-  description: "Live service status and incident history for Zcash.me.",
+  description: "Live service health for Zcash.me.",
 };
 
 export default function StatusLayout({ children }: { children: ReactNode }) {

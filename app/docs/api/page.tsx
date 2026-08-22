@@ -130,14 +130,6 @@ export default function ApiDocsPage() {
                 </pre>
               </details>
             </div>
-
-            <div className="p-4 bg-white rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-gray-900 mb-2">
-                <span className="text-green-600 font-mono text-sm">GET</span>{" "}
-                <code className="text-sm bg-gray-100 px-2 py-1 rounded">/api/openstatus</code>
-              </h3>
-              <p className="text-sm text-gray-600 mb-3">External status page data from OpenStatus.</p>
-            </div>
           </div>
         </section>
 

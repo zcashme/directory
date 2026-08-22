@@ -35,8 +35,9 @@ at leaders.zcash.me/:username for individual referral breakdowns.
 Markdown-driven blog. Posts at blog.zcash.me/:slug.
 
 ### status.zcash.me — Status Page [live]
-Service health dashboard. Polls internal `/api/health` + OpenStatus API.
-Shows per-service latency and recent incidents.
+Service health dashboard. Polls internal `/api/health`.
+Shows per-service latency and an overall status banner. Links out to external
+OpenStatus monitoring.
 
 ### thread.zcash.me — Discussion Board [WIP]
 Public message board. Page exists but is a stub (no data fetching yet).
