@@ -1,9 +1,13 @@
 "use client";
 
 // ui/links/useConnectCallback.ts
-// Handles a one-shot OAuth verification result via onAuthStateChange.
+// Consumes the one-shot OAuth verification result after the redirect.
+// connectSocial() signs out any prior local session before redirecting, so a
+// pending {profileId, linkId} plus a session from getSession() can only mean
+// this exact OAuth round trip completed. Pulling once cannot miss the auth
+// events the previous subscription raced against during hydration.
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { getPendingConnect, clearPendingConnect } from "./connect";
 import { verifySocialLink } from "./verifyLink";
@@ -19,55 +23,28 @@ export function useConnectCallback({
   onVerified,
   onError,
 }: UseConnectCallbackOptions): void {
-  const processingRef = useRef(false);
-
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN") return;
-        if (processingRef.current) return;
+    const pending = getPendingConnect();
+    if (!pending || pending.profileId !== profileId) return;
 
-        const pending = getPendingConnect();
-        if (!pending) return;
-        if (pending.profileId !== profileId) return;
-
+    void (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          if (event === "INITIAL_SESSION") {
-            clearPendingConnect();
-            onError?.("Social authentication did not complete");
-          }
+          onError?.("Social authentication did not complete");
           return;
         }
 
-        processingRef.current = true;
-        const accessToken = session.access_token;
-
-        // Keep the auth event handler synchronous and perform the server round
-        // trip after Supabase has finished notifying its subscribers.
-        queueMicrotask(() => {
-          void (async () => {
-            try {
-              const result = await verifySocialLink(
-                pending.profileId,
-                pending.linkId,
-                accessToken,
-              );
-              if (!result.ok) {
-                onError?.(result.error ?? "Social link verification failed");
-                return;
-              }
-              onVerified?.(pending.linkId);
-            } catch (error) {
-              onError?.(error instanceof Error ? error.message : "Social link verification failed");
-            } finally {
-              clearPendingConnect();
-              await supabase.auth.signOut({ scope: "local" });
-            }
-          })();
-        });
+        const result = await verifySocialLink(pending.profileId, pending.linkId, session.access_token);
+        if (!result.ok) {
+          onError?.(result.error ?? "Social link verification failed");
+          return;
+        }
+        onVerified?.(pending.linkId);
+      } finally {
+        clearPendingConnect();
+        await supabase.auth.signOut({ scope: "local" });
       }
-    );
-
-    return () => subscription.unsubscribe();
+    })();
   }, [profileId, onVerified, onError]);
 }
