@@ -18,27 +18,30 @@ profiles can authenticate links.
 - Profile must have `address_verified = true` (enforced server-side in `verifyLink.ts`)
 - The link URL must match a supported provider (X, GitHub, Discord, or LinkedIn)
 
-### Avatar Auto-Import
-When a link is authenticated and the profile has no avatar, the OAuth avatar is automatically
-downloaded and stored in the Supabase bucket. Supported for X, GitHub, and Discord (LinkedIn
-has no avatar extraction).
-
 ## OAuth Flow
 
 ```
 User clicks "Not Authenticated" badge
-    -> connect.ts: connectSocial() stores pending state in sessionStorage
+    -> connect.ts: stores the challenged profileId + linkId in sessionStorage
     -> supabase.auth.signInWithOAuth() redirects to provider
     -> User authorizes
-    -> Provider redirects back with auth code
-    -> Supabase exchanges for token, creates session
-    -> useConnectCallback.ts: detects auth state change
-    -> Extracts handle from session.user.identities[]
-    -> Builds canonical URL from handle
-    -> verifyLink.ts (server action): validates token, checks handle matches,
-       checks address_verified, upserts zcasher_links with is_verified=true
+    -> Provider redirects back and Supabase establishes a temporary session
+    -> useConnectCallback.ts: sends profileId + linkId + access token to the server
+    -> verifyLink.ts: loads that exact existing row, validates the token with getUser(),
+       compares the provider identity with the stored URL, and changes only is_verified
+    -> Callback clears pending state and the local Supabase session
     -> Link badge updates to green
 ```
+
+## Verification Invariant
+
+OAuth proves control of one social account; it does not authorize profile edits. The server
+must bind the proof to the exact existing `zcasher_links` row selected before the redirect.
+
+The verification action may only change `is_verified` from `false` to `true`. It must never
+insert a link, find another row by platform, replace a URL or label, change a platform, or
+update the profile/avatar. Browser `sessionStorage` is untrusted correlation state; the
+database row supplies the authoritative URL, platform, ownership, and current status.
 
 ## Supported Providers
 
@@ -53,19 +56,19 @@ User clicks "Not Authenticated" badge
 
 | File | Feature |
 |------|---------|
-| `providers.ts` | Provider configs: handle extraction, URL building, avatar URLs, `detectProviderFromUrl()`, `extractHandleFromUrl()` |
-| `connect.ts` | Initiates OAuth via `supabase.auth.signInWithOAuth()`, stores pending state in sessionStorage |
-| `useConnectCallback.ts` | Client hook: listens for `onAuthStateChange`, extracts identity, calls `onConnected()` callback |
-| `verifyLink.ts` | Server action: validates OAuth token, checks handle match, enforces address verification, upserts link with `is_verified=true` |
+| `providers.ts` | Provider configs and strict stored-URL identity extraction |
+| `connect.ts` | Initiates OAuth and stores the challenged `profileId` + `linkId` |
+| `useConnectCallback.ts` | Processes one pending OAuth result and clears the temporary local session |
+| `verifyLink.ts` | Validates the OAuth identity against one exact existing row and conditionally flips `is_verified` |
 
 ## Database
 
 | Table | Access |
 |-------|--------|
-| `zcasher_links` | Write — upsert with `is_verified=true`, `platform` column |
-| `zcasher` | Read — check `address_verified`; Write — `profile_image_url` if avatar auto-imported |
+| `zcasher_links` | Read exact challenged row; Write only `is_verified=true` on that same row |
+| `zcasher` | Read — check `address_verified` |
 
 ## See Also
 - `ui/profile/AGENT.md` — profile card where auth badges appear and clicks originate
 - `lib/verification/AGENT.md` — ZVS address verification (prerequisite for link auth)
-- `lib/profile/AGENT.md` — avatar storage used for OAuth avatar import
+- `lib/profile/AGENT.md` — profile and stored-link data model

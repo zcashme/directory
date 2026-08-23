@@ -1,124 +1,102 @@
 "use server";
 
 // ui/links/verifyLink.ts
-// Server action: auto-persist a verified social link
-// Validates the OAuth session server-side before marking a link as verified.
+// Server action: verify one exact, existing social link.
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { getProviderByKey, detectProviderFromUrl, extractHandleFromUrl } from "./providers";
-import { downloadAndStoreAvatar } from "@/lib/profile/avatarStorage";
+import {
+  extractProviderHandleFromUrl,
+  getProviderByKey,
+  getProviderKeyForPlatform,
+} from "./providers";
 
-const PROVIDER_TO_PLATFORM: Record<string, string> = {
-  twitter: "X",
-  github: "GitHub",
-  discord: "Discord",
-  linkedin_oidc: "LinkedIn",
-};
+function handlesMatch(expected: string, actual: string): boolean {
+  return expected.toLocaleLowerCase("en-US") === actual.toLocaleLowerCase("en-US");
+}
 
-export async function upsertVerifiedLink(
+export async function verifySocialLink(
   profileId: number,
-  url: string,
+  linkId: number,
   accessToken: string,
-  username?: string,
-  avatarUrl?: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  if (!Number.isSafeInteger(profileId) || profileId <= 0) {
+    return { ok: false, error: "Invalid profile" };
+  }
+  if (!Number.isSafeInteger(linkId) || linkId <= 0) {
+    return { ok: false, error: "Invalid link" };
+  }
+  if (!accessToken) return { ok: false, error: "Invalid auth session" };
+
   const supabase = createSupabaseServerClient();
   if (!supabase) return { ok: false, error: "Supabase client not available" };
 
-  // Validate the OAuth session: verify the access token and extract identities
-  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
-  if (authError || !user) return { ok: false, error: "Invalid auth session" };
+  // The database row, not callback data, defines the challenged social claim.
+  const { data: storedLink, error: linkError } = await supabase
+    .from("zcasher_links")
+    .select("id, zcasher_id, url, platform, is_verified")
+    .eq("id", linkId)
+    .eq("zcasher_id", profileId)
+    .single();
 
-  // Match the claimed URL to a provider and verify the identity
-  const providerKey = detectProviderFromUrl(url);
-  if (!providerKey) return { ok: false, error: "Unsupported provider URL" };
+  if (linkError || !storedLink) return { ok: false, error: "Social link not found" };
+  if (storedLink.is_verified !== false) {
+    return { ok: false, error: "Social link is already verified" };
+  }
+
+  const providerKey = getProviderKeyForPlatform(storedLink.platform);
+  if (!providerKey) return { ok: false, error: "Unsupported social link platform" };
 
   const provider = getProviderByKey(providerKey);
   if (!provider) return { ok: false, error: "Unknown provider" };
 
-  const identity = user.identities?.find((i) => i.provider === provider.key);
-  if (!identity) return { ok: false, error: "No matching OAuth identity in session" };
-
-  const identityData = identity.identity_data as Record<string, unknown>;
-  const oauthHandle = provider.getHandle(identityData);
-  if (!oauthHandle) return { ok: false, error: "Could not extract handle from OAuth identity" };
-
-  // Verify the claimed URL matches the authenticated identity
-  const claimedHandle = extractHandleFromUrl(url);
-  if (!claimedHandle || oauthHandle.toLowerCase() !== claimedHandle.toLowerCase()) {
-    return { ok: false, error: "URL does not match authenticated identity" };
+  const expectedHandle = extractProviderHandleFromUrl(storedLink.url, providerKey);
+  if (!expectedHandle) {
+    return { ok: false, error: "Stored URL does not match its social platform" };
   }
 
-  // Only address-verified profiles can authenticate social links
+  // Only address-verified profiles can authenticate social links.
   const { data: profile, error: profileError } = await supabase
     .from("zcasher")
     .select("address_verified")
     .eq("id", profileId)
     .single();
 
-  if (profileError) return { ok: false, error: profileError.message };
-  if (!profile?.address_verified) return { ok: false, error: "Address must be verified first" };
+  if (profileError || !profile) return { ok: false, error: "Profile not found" };
+  if (!profile.address_verified) return { ok: false, error: "Address must be verified first" };
 
-  // Use the canonical URL built from the OAuth handle (not the client-provided URL)
-  const verifiedUrl = provider.buildUrl(oauthHandle);
-  const platform = PROVIDER_TO_PLATFORM[providerKey] ?? "Other";
+  // Ask Supabase to validate the returned session and identify the provider account.
+  const { data: { user }, error: authError } = await supabase.auth.getUser(accessToken);
+  if (authError || !user) return { ok: false, error: "Invalid auth session" };
 
-  // First try exact URL match, then fall back to any link from the same platform
-  const { data: exactMatch } = await supabase
+  const identity = user.identities?.find((i) => i.provider === provider.key);
+  if (!identity) return { ok: false, error: "No matching OAuth identity in session" };
+
+  const identityData = identity.identity_data as Record<string, unknown>;
+  const oauthIdentifiers = [
+    provider.getHandle(identityData),
+    provider.getUsername?.(identityData) ?? null,
+  ].filter((value): value is string => !!value);
+
+  if (!oauthIdentifiers.some((identifier) => handlesMatch(expectedHandle, identifier))) {
+    return { ok: false, error: "Stored social link does not match authenticated identity" };
+  }
+
+  // Reassert every challenged-row invariant in the update so a concurrent
+  // profile edit cannot redirect the proof to a changed or different row.
+  const { data: verifiedLink, error: updateError } = await supabase
     .from("zcasher_links")
-    .select("id")
+    .update({ is_verified: true })
+    .eq("id", linkId)
     .eq("zcasher_id", profileId)
-    .eq("url", verifiedUrl)
+    .eq("url", storedLink.url)
+    .eq("platform", storedLink.platform)
+    .eq("is_verified", false)
+    .select("id")
     .maybeSingle();
 
-  let existingId = exactMatch?.id ?? null;
-
-  if (!existingId) {
-    // Find any existing link from the same platform for this profile
-    // (e.g. user added discord.com/users/professorshaw but OAuth gives the numeric ID)
-    const { data: platformMatch } = await supabase
-      .from("zcasher_links")
-      .select("id")
-      .eq("zcasher_id", profileId)
-      .eq("platform", platform)
-      .maybeSingle();
-    existingId = platformMatch?.id ?? null;
-  }
-
-  // Use the OAuth username as the display label (e.g. "professorshaw" instead of numeric ID)
-  const label = username || provider.getUsername?.(identityData) || "";
-
-  if (existingId) {
-    const { error } = await supabase
-      .from("zcasher_links")
-      .update({ url: verifiedUrl, label, is_verified: true, platform, updated_at: new Date().toISOString() })
-      .eq("id", existingId);
-    if (error) return { ok: false, error: error.message };
-  } else {
-    const { error } = await supabase
-      .from("zcasher_links")
-      .insert({ zcasher_id: profileId, url: verifiedUrl, label, is_verified: true, platform, created_at: new Date().toISOString() });
-    if (error) return { ok: false, error: error.message };
-  }
-
-  // If an OAuth avatar URL was provided and the profile has no image yet,
-  // download it to the Supabase bucket and set profile_image_url.
-  if (avatarUrl) {
-    const { data: current } = await supabase
-      .from("zcasher")
-      .select("profile_image_url")
-      .eq("id", profileId)
-      .single();
-
-    if (!current?.profile_image_url) {
-      const dl = await downloadAndStoreAvatar(supabase, profileId, avatarUrl);
-      if (dl.ok) {
-        await supabase
-          .from("zcasher")
-          .update({ profile_image_url: dl.publicUrl })
-          .eq("id", profileId);
-      }
-    }
+  if (updateError) return { ok: false, error: updateError.message };
+  if (!verifiedLink) {
+    return { ok: false, error: "Social link changed during verification" };
   }
 
   return { ok: true };

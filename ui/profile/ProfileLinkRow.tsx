@@ -16,7 +16,8 @@ export default function ProfileLinkRow({
   onVerifyClick,
 }: ProfileLinkRowProps) {
   const isDiscord = link.platform === "Discord";
-  const canVerify = !link.is_verified && !!detectProviderFromUrl(link.url || "");
+  const hasPersistedId = Number.isSafeInteger(link.id) && Number(link.id) > 0;
+  const canVerify = hasPersistedId && !link.is_verified && !!detectProviderFromUrl(link.url || "");
   const canLinkLeft = !(isDiscord && !link.is_verified);
   const handleLinkClick = stopPropagation ? (event: React.MouseEvent) => event.stopPropagation() : undefined;
   const copyProps = { label: "Copy", copiedLabel: "Copied", size: classes.copySize };

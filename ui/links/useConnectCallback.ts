@@ -1,75 +1,73 @@
 "use client";
 
 // ui/links/useConnectCallback.ts
-// Handles OAuth callback via onAuthStateChange + sessionStorage
+// Handles a one-shot OAuth verification result via onAuthStateChange.
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
-import { getProviderByKey } from "./providers";
 import { getPendingConnect, clearPendingConnect } from "./connect";
-
-interface ConnectedLink {
-  url: string;
-  provider: string;
-  handle: string;
-  username?: string;
-  avatarUrl?: string | null;
-  accessToken: string;
-}
+import { verifySocialLink } from "./verifyLink";
 
 interface UseConnectCallbackOptions {
   profileId: number;
-  onConnected?: (link: ConnectedLink) => void;
+  onVerified?: (linkId: number) => void;
   onError?: (error: string) => void;
 }
 
 export function useConnectCallback({
   profileId,
-  onConnected,
+  onVerified,
   onError,
 }: UseConnectCallbackOptions): void {
+  const processingRef = useRef(false);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
+        if (event !== "INITIAL_SESSION" && event !== "SIGNED_IN") return;
+        if (processingRef.current) return;
+
         const pending = getPendingConnect();
         if (!pending) return;
         if (pending.profileId !== profileId) return;
-        if (!session) return;
 
-        const provider = getProviderByKey(pending.provider);
-        if (!provider) {
-          onError?.(`Unknown provider: ${pending.provider}`);
+        if (!session?.access_token) {
+          if (event === "INITIAL_SESSION") {
+            clearPendingConnect();
+            onError?.("Social authentication did not complete");
+          }
           return;
         }
 
-        const identity = session.user.identities?.find(
-          (i) => i.provider === provider.key
-        );
-        if (!identity) {
-          onError?.(`No ${provider.label} identity found in session`);
-          return;
-        }
+        processingRef.current = true;
+        const accessToken = session.access_token;
 
-        const data = identity.identity_data as Record<string, unknown>;
-        const handle = provider.getHandle(data);
-        if (!handle) {
-          onError?.(`Could not get handle from ${provider.label}`);
-          return;
-        }
-
-        const result = {
-          url: provider.buildUrl(handle),
-          provider: provider.key,
-          handle,
-          username: provider.getUsername?.(data) ?? handle,
-          avatarUrl: provider.getAvatarUrl?.(data) ?? null,
-          accessToken: session.access_token,
-        };
-        clearPendingConnect();
-        onConnected?.(result);
+        // Keep the auth event handler synchronous and perform the server round
+        // trip after Supabase has finished notifying its subscribers.
+        queueMicrotask(() => {
+          void (async () => {
+            try {
+              const result = await verifySocialLink(
+                pending.profileId,
+                pending.linkId,
+                accessToken,
+              );
+              if (!result.ok) {
+                onError?.(result.error ?? "Social link verification failed");
+                return;
+              }
+              onVerified?.(pending.linkId);
+            } catch (error) {
+              onError?.(error instanceof Error ? error.message : "Social link verification failed");
+            } finally {
+              clearPendingConnect();
+              await supabase.auth.signOut({ scope: "local" });
+            }
+          })();
+        });
       }
     );
 
     return () => subscription.unsubscribe();
-  }, [profileId, onConnected, onError]);
+  }, [profileId, onVerified, onError]);
 }

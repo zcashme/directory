@@ -7,10 +7,11 @@ interface Provider {
   buildUrl: (handle: string) => string;
   getHandle: (identityData: Record<string, unknown>) => string | null;
   getUsername?: (identityData: Record<string, unknown>) => string | null;
-  getAvatarUrl?: (identityData: Record<string, unknown>) => string | null;
 }
 
-export const PROVIDERS: Record<string, Provider> = {
+export type ProviderKey = "twitter" | "github" | "discord" | "linkedin_oidc";
+
+export const PROVIDERS: Record<ProviderKey, Provider> = {
   twitter: {
     key: "twitter",
     label: "X / Twitter",
@@ -21,21 +22,12 @@ export const PROVIDERS: Record<string, Provider> = {
       (data?.user_name as string) ??
       (data?.preferred_username as string) ??
       null,
-    getAvatarUrl: (data) => {
-      const url = data?.profile_image_url_https as string | undefined;
-      if (!url) return null;
-      // Upgrade to original size
-      return url
-        .replace(/_(normal|bigger|mini)(\.[a-z0-9]+)(\?.*)?$/i, "$2$3")
-        .replace(/([?&])name=normal\b/i, "$1name=original");
-    },
   },
   github: {
     key: "github",
     label: "GitHub",
     buildUrl: (handle) => `https://github.com/${handle}`,
     getHandle: (data) => (data?.user_name as string) ?? null,
-    getAvatarUrl: (data) => (data?.avatar_url as string) ?? null,
   },
   discord: {
     key: "discord",
@@ -48,12 +40,6 @@ export const PROVIDERS: Record<string, Provider> = {
       // full_name is clean: "professorshaw"
       return (data?.full_name as string) ?? null;
     },
-    getAvatarUrl: (data) => {
-      const id = (data?.sub as string) ?? (data?.provider_id as string) ?? (data?.id as string);
-      const avatar = data?.avatar as string | undefined;
-      if (!id || !avatar) return null;
-      return `https://cdn.discordapp.com/avatars/${id}/${avatar}.png?size=4096`;
-    },
   },
   linkedin_oidc: {
     key: "linkedin_oidc",
@@ -64,23 +50,91 @@ export const PROVIDERS: Record<string, Provider> = {
       (data?.preferred_username as string) ??
       null,
   },
-} as const;
+};
 
-export type ProviderKey = keyof typeof PROVIDERS;
+const PLATFORM_TO_PROVIDER: Partial<Record<string, ProviderKey>> = {
+  X: "twitter",
+  GitHub: "github",
+  Discord: "discord",
+  LinkedIn: "linkedin_oidc",
+};
 
 export function getProviderByKey(key: string): Provider | null {
-  return PROVIDERS[key] ?? Object.values(PROVIDERS).find((p) => p.key === key) ?? null;
+  return Object.values(PROVIDERS).find((provider) => provider.key === key) ?? null;
+}
+
+export function getProviderKeyForPlatform(platform: string | null | undefined): ProviderKey | null {
+  if (!platform) return null;
+  return PLATFORM_TO_PROVIDER[platform] ?? null;
+}
+
+function parseSocialUrl(url: string): URL | null {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" && parsed.protocol !== "http:") return null;
+    if (parsed.username || parsed.password || parsed.port) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function decodePathSegment(segment: string): string | null {
+  try {
+    const decoded = decodeURIComponent(segment);
+    return decoded && !decoded.includes("/") ? decoded : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Extract the account identifier represented by a URL for one expected
+ * provider. Hostname and path checks are exact because this function is used
+ * at the social-verification trust boundary.
+ */
+export function extractProviderHandleFromUrl(
+  url: string,
+  providerKey: ProviderKey,
+): string | null {
+  const parsed = parseSocialUrl(url);
+  if (!parsed || parsed.search || parsed.hash) return null;
+
+  const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  const segments = parsed.pathname.split("/").filter(Boolean);
+
+  if (providerKey === "twitter") {
+    if ((hostname !== "x.com" && hostname !== "twitter.com") || segments.length !== 1) return null;
+    return decodePathSegment(segments[0]);
+  }
+
+  if (providerKey === "github") {
+    if (hostname !== "github.com" || segments.length !== 1) return null;
+    return decodePathSegment(segments[0]);
+  }
+
+  if (providerKey === "discord") {
+    if ((hostname !== "discord.com" && hostname !== "discordapp.com") || segments.length !== 2) return null;
+    if (segments[0].toLowerCase() !== "users") return null;
+    return decodePathSegment(segments[1]);
+  }
+
+  if (providerKey === "linkedin_oidc") {
+    if (hostname !== "linkedin.com" || segments.length !== 2) return null;
+    if (segments[0].toLowerCase() !== "in") return null;
+    return decodePathSegment(segments[1]);
+  }
+
+  return null;
 }
 
 /**
  * Detect provider key from a URL.
  */
-export function detectProviderFromUrl(url: string): string | null {
-  const normalized = url.toLowerCase();
-  if (/(?:x\.com|twitter\.com)\//.test(normalized)) return "twitter";
-  if (/github\.com\//.test(normalized)) return "github";
-  if (/(?:discord\.com|discordapp\.com)\/users\//.test(normalized)) return "discord";
-  if (/linkedin\.com\/in\//.test(normalized)) return "linkedin_oidc";
+export function detectProviderFromUrl(url: string): ProviderKey | null {
+  for (const providerKey of Object.keys(PROVIDERS) as ProviderKey[]) {
+    if (extractProviderHandleFromUrl(url, providerKey)) return providerKey;
+  }
   return null;
 }
 
@@ -128,29 +182,4 @@ export function isDomainUrl(url: string): boolean {
   // Reject known OAuth provider hosts before normalizing.
   if (detectProviderFromUrl(url)) return false;
   return normalizeDomainUrl(url) !== null;
-}
-
-/**
- * Extract handle from a social URL.
- */
-export function extractHandleFromUrl(url: string): string | null {
-  const normalized = url.replace(/\/$/, "");
-
-  // Twitter/X
-  let m = normalized.match(/(?:x\.com|twitter\.com)\/([^/?#]+)/i);
-  if (m) return m[1];
-
-  // GitHub
-  m = normalized.match(/github\.com\/([^/?#]+)/i);
-  if (m) return m[1];
-
-  // Discord
-  m = normalized.match(/(?:discord\.com|discordapp\.com)\/users\/([^/?#]+)/i);
-  if (m) return decodeURIComponent(m[1]);
-
-  // LinkedIn
-  m = normalized.match(/linkedin\.com\/in\/([^/?#]+)/i);
-  if (m) return m[1];
-
-  return null;
 }

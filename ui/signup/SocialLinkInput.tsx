@@ -126,7 +126,7 @@ export default function SocialLinkInput({
   const isOther = current.platform === "Other";
   const showDiscordHelp = current.platform === "Discord" && !isOther;
   const discordHelpText =
-    "Your Discord username is used for authentication. After successful authentication, the link updates to your user ID.";
+    "Your Discord username is compared with the account returned by Discord. Authentication does not change the stored link.";
   const availablePlatformOptions = PLATFORM_OPTIONS.filter((p) => !excludePlatforms.includes(p.key));
 
   return (

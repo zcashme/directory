@@ -17,7 +17,6 @@ import { RedirectModal } from "@/ui/profile/editorModals";
 import UpgradeToMaxiModal from "@/ui/profile/UpgradeToMaxiModal";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
-import { upsertVerifiedLink } from "@/ui/links/verifyLink";
 import { detectProviderFromUrl, isDomainUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import DomainVerifyModal from "@/ui/links/DomainVerifyModal";
@@ -189,7 +188,7 @@ export default function ProfileCard({
     : 448;
   const selectedThemePackageLabel = selectedThemePackageId === "maxi_theme" ? "Maxi Theme" : "No Theme";
 
-  const handleVerifyClick = useCallback(async (link: { url: string }) => {
+  const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
     if (!profile.address_verified) return;
 
     if (isDomainUrl(link.url || "")) {
@@ -199,6 +198,7 @@ export default function ProfileCard({
 
     const providerKey = detectProviderFromUrl(link.url || "");
     if (!providerKey || !PROVIDERS[providerKey]) return;
+    if (!Number.isSafeInteger(link.id) || Number(link.id) <= 0) return;
 
     setShowRedirect(true);
     setRedirectLabel(PROVIDERS[providerKey].label);
@@ -206,6 +206,7 @@ export default function ProfileCard({
     try {
       await connectSocial(providerKey, {
         profileId: profile.id,
+        linkId: Number(link.id),
         returnPath: window.location.pathname,
       });
     } catch {
@@ -240,18 +241,15 @@ export default function ProfileCard({
     router.refresh();
   }, [setLinksArray, setEditsStore, router]);
 
-  const handleConnected = useCallback(async (link: { url: string; provider: string; handle: string; avatarUrl?: string | null; accessToken: string }) => {
+  const handleVerified = useCallback((linkId: number) => {
     setShowRedirect(false);
-    const result = await upsertVerifiedLink(profile.id, link.url, link.accessToken, undefined, link.avatarUrl ?? undefined);
-    if (result.ok) {
-      setLinksArray((prev) =>
-        prev.map((l) =>
-          l.url === link.url ? enrichLink({ ...l, is_verified: true }) : l
-        )
-      );
-      router.refresh();
-    }
-  }, [profile.id, setLinksArray, router]);
+    setLinksArray((prev) =>
+      prev.map((link) =>
+        link.id === linkId ? enrichLink({ ...link, is_verified: true }) : link
+      )
+    );
+    router.refresh();
+  }, [setLinksArray, router]);
 
   const handleConnectError = useCallback(() => {
     setShowRedirect(false);
@@ -259,7 +257,7 @@ export default function ProfileCard({
 
   useConnectCallback({
     profileId: profile.id,
-    onConnected: handleConnected,
+    onVerified: handleVerified,
     onError: handleConnectError,
   });
 
@@ -678,4 +676,3 @@ export default function ProfileCard({
     </div>
   );
 }
-
