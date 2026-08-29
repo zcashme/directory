@@ -576,6 +576,7 @@ export default function ProfilePage({
                   <SwapComposer
                     profile={initialProfile}
                     tokenOptions={tokens}
+                    selectedAsset={originTokenId ?? originSymbol}
                     originSymbol={originSymbol}
                     autoOpenFiatFromAmount={shouldSeedFiatFromInitialSwapAmount}
                     prefillFiatTicker={initialPrefill?.fiatTicker ?? ""}

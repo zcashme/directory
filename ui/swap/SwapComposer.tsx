@@ -27,6 +27,7 @@ interface SwapComposerProps {
   profile: Profile;
   // Token state
   tokenOptions: Token[];
+  selectedAsset: string;
   originSymbol: string;
   autoOpenFiatFromAmount?: boolean;
   prefillFiatTicker?: string;
@@ -74,6 +75,7 @@ export default function SwapComposer({
   profile,
   // Token state
   tokenOptions,
+  selectedAsset,
   originSymbol,
   autoOpenFiatFromAmount = false,
   prefillFiatTicker = "",
@@ -371,7 +373,8 @@ export default function SwapComposer({
           showUsdPill={true}
           fieldBackgroundClassName="bg-[var(--color-background)]"
           collapseUsdPillSignal={collapseFromFiatPillSignal}
-          asset={originSymbol}
+          asset={selectedAsset}
+          assetDisplayLabel={originSymbol}
           assetOptions={formattedTokenOptions}
           setAsset={handleTokenChange}
           initialAutoOpenFiatFromAmount={autoOpenFiatFromAmount}
