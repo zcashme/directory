@@ -84,6 +84,31 @@ function buildExpandedQrCaption({
   return `${payment} to ${recipient} (${addressSnippet})${memoDescription}`;
 }
 
+function wrapCanvasText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  return text.split("\n").flatMap((paragraph) => {
+    const words = paragraph.split(/\s+/).filter(Boolean);
+    const lines: string[] = [];
+    let line = "";
+
+    for (const word of words) {
+      const nextLine = line ? `${line} ${word}` : word;
+      if (line && context.measureText(nextLine).width > maxWidth) {
+        lines.push(line);
+        line = word;
+      } else {
+        line = nextLine;
+      }
+    }
+
+    if (line) lines.push(line);
+    return lines;
+  });
+}
+
 function ExpandIcon() {
   return (
     <svg
@@ -143,7 +168,7 @@ function DownloadIcon() {
   );
 }
 
-function CloseIcon() {
+function ShareIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -156,8 +181,11 @@ function CloseIcon() {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M18 6 6 18" />
-      <path d="m6 6 12 12" />
+      <circle cx="18" cy="5" r="3" />
+      <circle cx="6" cy="12" r="3" />
+      <circle cx="18" cy="19" r="3" />
+      <path d="m8.6 10.5 6.8-4" />
+      <path d="m8.6 13.5 6.8 4" />
     </svg>
   );
 }
@@ -241,14 +269,18 @@ function ExpandedQrModal({
   uri,
   onClose,
   onSave,
+  onShare,
   saved,
+  shared,
   tapProps,
   caption,
 }: {
   uri: string;
   onClose: () => void;
   onSave: () => void;
+  onShare: () => void;
   saved: boolean;
+  shared: boolean;
   tapProps: Record<string, unknown>;
   caption: string;
 }) {
@@ -346,13 +378,13 @@ function ExpandedQrModal({
               </motion.button>
               <motion.button
                 type="button"
-                onClick={onClose}
+                onClick={onShare}
                 {...tapProps}
                 className="inline-flex h-10 w-10 items-center justify-center text-gray-700 transition-all duration-200 hover:text-[var(--color-brand-blue)] active:text-[var(--color-brand-blue)]"
-                aria-label="Close modal"
-                title="Close modal"
+                aria-label={shared ? "QR shared" : "Share QR"}
+                title={shared ? "QR shared" : "Share QR"}
               >
-                <CloseIcon />
+                <ShareIcon />
               </motion.button>
             </div>
           </div>
@@ -454,6 +486,7 @@ export default function QrUriBlock({
     bottomActionBar && showPaymentDetails === true
   );
   const [saved, setSaved] = useState(false);
+  const [shared, setShared] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [copiedField, setCopiedField] = useState<CopyField | null>(null);
   const hasTopHintDetails = (qrTopHintDetails?.length ?? 0) > 0;
@@ -543,9 +576,19 @@ export default function QrUriBlock({
     }
   };
 
-  const handleSaveQR = async () => {
+  const safeName = (profileName ?? "recipient")
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-");
+  const amountFilenamePart = amountFromUri
+    ? `-${amountFromUri.replace(/\./g, "_")}_ZEC`
+    : "";
+  const memoFilenamePart = effectiveMemo ? "-with_memo" : "";
+  const qrFilename = `zm-qr-${safeName}${amountFilenamePart}${memoFilenamePart}.png`.toLowerCase();
+
+  const createQrImageBlob = async (): Promise<Blob | null> => {
     const svg = qrRef.current;
-    if (!svg) return;
+    if (!svg) return null;
 
     const clone = svg.cloneNode(true) as SVGSVGElement;
     const svgData = new XMLSerializer().serializeToString(clone);
@@ -553,15 +596,6 @@ export default function QrUriBlock({
       type: "image/svg+xml;charset=utf-8",
     });
     const svgUrl = URL.createObjectURL(svgBlob);
-
-    const safeName = (profileName ?? "recipient")
-      .trim()
-      .replace(/[^\w\s-]/g, "")
-      .replace(/\s+/g, "-");
-    const amountFilenamePart = amountFromUri
-      ? `-${amountFromUri.replace(/\./g, "_")}_ZEC`
-      : "";
-    const memoFilenamePart = effectiveMemo ? "-with_memo" : "";
 
     try {
       const image = new Image();
@@ -572,19 +606,39 @@ export default function QrUriBlock({
       });
 
       const exportSize = 2048;
+      const captionFontSize = 56;
+      const captionLineHeight = 72;
+      const captionTopPadding = 32;
+      const captionMaxWidth = exportSize - 96;
       const canvas = document.createElement("canvas");
       canvas.width = exportSize;
-      canvas.height = exportSize;
 
       const context = canvas.getContext("2d");
-      if (!context) return;
+      if (!context) return null;
+
+      context.font = `${captionFontSize}px sans-serif`;
+      const captionLines = wrapCanvasText(
+        context,
+        expandedQrCaption,
+        captionMaxWidth
+      );
+      const captionHeight = Math.max(
+        captionTopPadding + captionLines.length * captionLineHeight,
+        captionTopPadding
+      );
+      canvas.height = exportSize + captionHeight;
 
       context.fillStyle = "#ffffff";
-      context.fillRect(0, 0, exportSize, exportSize);
+      context.fillRect(0, 0, canvas.width, canvas.height);
       context.imageSmoothingEnabled = false;
-      context.drawImage(image, 0, 0, exportSize, exportSize);
+      context.drawImage(image, 0, captionHeight, exportSize, exportSize);
 
-      const imageData = context.getImageData(0, 0, exportSize, exportSize);
+      const imageData = context.getImageData(
+        0,
+        captionHeight,
+        exportSize,
+        exportSize
+      );
       const pixels = imageData.data;
       for (let i = 0; i < pixels.length; i += 4) {
         const blackOrWhite = pixels[i] < 128 ? 0 : 255;
@@ -593,26 +647,87 @@ export default function QrUriBlock({
         pixels[i + 2] = blackOrWhite;
         pixels[i + 3] = 255;
       }
-      context.putImageData(imageData, 0, 0);
+      context.putImageData(imageData, 0, captionHeight);
+
+      // Align the caption in the white space above the first black QR module.
+      let firstBlackQrPixelY = canvas.height;
+      for (let y = 0; y < exportSize; y += 1) {
+        for (let x = 0; x < exportSize; x += 1) {
+          if (pixels[(y * exportSize + x) * 4] < 128) {
+            firstBlackQrPixelY = captionHeight + y;
+            break;
+          }
+        }
+        if (firstBlackQrPixelY !== canvas.height) break;
+      }
+
+      context.fillStyle = "#374151";
+      context.font = `${captionFontSize}px sans-serif`;
+      context.textAlign = "center";
+      context.textBaseline = "alphabetic";
+      const textMetrics = context.measureText(captionLines[0] ?? "");
+      const textAscent = textMetrics.actualBoundingBoxAscent;
+      const textDescent = textMetrics.actualBoundingBoxDescent;
+      const captionTextHeight =
+        textAscent +
+        textDescent +
+        Math.max(0, captionLines.length - 1) * captionLineHeight;
+      const captionTextTop = Math.max(
+        0,
+        (firstBlackQrPixelY - captionTextHeight) / 2
+      );
+      const firstCaptionBaseline = captionTextTop + textAscent;
+      captionLines.forEach((line, index) => {
+        context.fillText(
+          line,
+          exportSize / 2,
+          firstCaptionBaseline + captionLineHeight * index
+        );
+      });
 
       const pngBlob = await new Promise<Blob | null>((resolve) =>
         canvas.toBlob(resolve, "image/png")
       );
-      if (!pngBlob) return;
-
-      const downloadUrl = URL.createObjectURL(pngBlob);
-      const link = document.createElement("a");
-      link.download = `zm-qr-${safeName}${amountFilenamePart}${memoFilenamePart}.png`;
-      link.href = downloadUrl;
-      link.click();
-      URL.revokeObjectURL(downloadUrl);
-
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1500);
+      return pngBlob;
     } catch {
-      // No-op: skip download if the browser cannot rasterize the SVG.
+      return null;
     } finally {
       URL.revokeObjectURL(svgUrl);
+    }
+  };
+
+  const handleSaveQR = async () => {
+    const pngBlob = await createQrImageBlob();
+    if (!pngBlob) return;
+
+    const downloadUrl = URL.createObjectURL(pngBlob);
+    const link = document.createElement("a");
+    link.download = qrFilename;
+    link.href = downloadUrl;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+
+    setSaved(true);
+    window.setTimeout(() => setSaved(false), 1500);
+  };
+
+  const handleShareQR = async () => {
+    const pngBlob = await createQrImageBlob();
+    if (!pngBlob || !navigator.share || !navigator.canShare) return;
+
+    const qrFile = new File([pngBlob], qrFilename, { type: "image/png" });
+    if (!navigator.canShare({ files: [qrFile] })) return;
+
+    try {
+      await navigator.share({
+        title: "Zcash payment QR",
+        text: expandedQrCaption,
+        files: [qrFile],
+      });
+      setShared(true);
+      window.setTimeout(() => setShared(false), 1500);
+    } catch {
+      // The user dismissed the share sheet or the browser could not share the image.
     }
   };
 
@@ -763,6 +878,16 @@ export default function QrUriBlock({
                       title={saved ? "QR saved" : "Save QR"}
                     >
                       <DownloadIcon />
+                    </motion.button>
+                    <motion.button
+                      type="button"
+                      onClick={handleShareQR}
+                      {...tapProps}
+                      className="inline-flex h-10 w-10 items-center justify-center text-gray-700 transition-all duration-200 hover:text-[var(--color-brand-blue)] active:text-[var(--color-brand-blue)]"
+                      aria-label={shared ? "QR shared" : "Share QR"}
+                      title={shared ? "QR shared" : "Share QR"}
+                    >
+                      <ShareIcon />
                     </motion.button>
                     {showParsedFieldsToggleAction && (
                       <motion.button
@@ -1056,7 +1181,9 @@ export default function QrUriBlock({
             uri={uri}
             onClose={() => setExpanded(false)}
             onSave={handleSaveQR}
+            onShare={handleShareQR}
             saved={saved}
+            shared={shared}
             tapProps={tapProps}
             caption={expandedQrCaption}
           />

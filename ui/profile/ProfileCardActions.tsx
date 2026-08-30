@@ -158,20 +158,23 @@ export default function ProfileCardActions({
         className="flex items-center justify-center w-9 h-9 rounded-full border border-gray-300 bg-white/80 shadow-xs text-gray-600 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] hover:border-[var(--color-brand-blue)] hover:border-[var(--profile-hover-color)] hover:bg-[var(--color-brand-blue)]/10 hover:bg-[var(--profile-hover-bg)] transition-all"
         title={`Share ${displayName}`}
       >
-        <span
-          aria-hidden
-          className="w-4 h-4 opacity-80 hover:opacity-100 transition-opacity bg-current"
-          style={{
-            WebkitMaskImage: "url('/assets/icons/share.svg')",
-            WebkitMaskRepeat: "no-repeat",
-            WebkitMaskPosition: "center",
-            WebkitMaskSize: "contain",
-            maskImage: "url('/assets/icons/share.svg')",
-            maskRepeat: "no-repeat",
-            maskPosition: "center",
-            maskSize: "contain",
-          }}
-        />
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          className="h-4 w-4 opacity-80 transition-opacity hover:opacity-100"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <circle cx="18" cy="5" r="3" />
+          <circle cx="6" cy="12" r="3" />
+          <circle cx="18" cy="19" r="3" />
+          <path d="m8.6 10.5 6.8-4" />
+          <path d="m8.6 13.5 6.8 4" />
+        </svg>
       </motion.button>
     </>
   );

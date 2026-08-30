@@ -85,7 +85,7 @@ export default function VerifiedBadge({
   );
 
   const resolvedVerifiedLabel = verifiedLabel ?? (
-    variant === "maxi" ? "Maxi Mode" : variant === "zcashName" ? "Zcash Name" : "Verified"
+    variant === "maxi" ? "Maxi Mode" : variant === "zcashName" ? "Zcash Names" : "Verified"
   );
   const verifiedLabelHoverMax =
     resolvedVerifiedLabel.length > 9
