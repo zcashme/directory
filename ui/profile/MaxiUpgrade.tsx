@@ -145,6 +145,8 @@ export default function MaxiUpgrade({ profile, onFlowExpandedChange, onRegisterC
             uri={currentUri}
             memoText={currentMemo}
             profileName="maxi-upgrade"
+            recipientDisplayName={profile.display_name}
+            recipientUsername={profile.name}
             qrTopHintText="Send to claim your name"
             qrTopHintDetails={[
               nameRegistrationHint,

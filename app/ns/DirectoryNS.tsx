@@ -399,6 +399,8 @@ export default function DirectoryNS({
                   uri={uri}
                   memoText={memo}
                   profileName={activeProfileName}
+                  recipientDisplayName={activeProfile.display_name}
+                  recipientUsername={activeProfile.name}
                   bottomActionBar
                   showParsedFieldsToggleAction
                 />

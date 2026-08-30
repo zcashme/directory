@@ -421,6 +421,8 @@ export default function ProfileVerification({
                   uri={currentUri}
                   memoText={currentMemo}
                   profileName={`${profile.name}-verification`}
+                  recipientDisplayName={profile.display_name}
+                  recipientUsername={profile.name}
                   qrTopHintText={"Send memo to receive code.\n"}
                   qrTopHintDetails={[
                     minAmountHint,

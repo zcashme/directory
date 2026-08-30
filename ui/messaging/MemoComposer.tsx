@@ -363,6 +363,8 @@ export default function MemoComposer({
             profile?.name ??
             "recipient"
           }
+          recipientDisplayName={profile?.display_name}
+          recipientUsername={profile?.name}
           forceShowQR={forceShowQR}
           bottomActionBar
           showParsedFieldsToggleAction

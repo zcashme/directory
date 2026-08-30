@@ -10,6 +10,8 @@ interface QrUriBlockProps {
   uri: string;
   memoText?: string;
   profileName?: string;
+  recipientDisplayName?: string;
+  recipientUsername?: string;
   qrTopHintText?: string;
   qrTopHintDetails?: string[];
   qrTopHintToggleLabel?: string;
@@ -41,6 +43,45 @@ function decodeBase64UrlToUtf8(value: string): string | null {
   } catch {
     return null;
   }
+}
+
+function buildExpandedQrCaption({
+  address,
+  amount,
+  memo,
+  recipientDisplayName,
+  recipientUsername,
+}: {
+  address: string | null;
+  amount: string | null;
+  memo: string;
+  recipientDisplayName?: string;
+  recipientUsername?: string;
+}): string {
+  const displayName = recipientDisplayName?.trim();
+  const username = recipientUsername?.trim();
+  let recipient = "recipient";
+  if (username) recipient = `zcash.me/${username}`;
+  if (displayName) recipient = displayName;
+  if (displayName && username) {
+    recipient = `${displayName} (zcash.me/${username})`;
+  }
+  const addressSnippet = address
+    ? `${address.slice(0, 6)}...${address.slice(-6)}`
+    : "address unavailable";
+  const memoWords = memo
+    .replace(/[^a-zA-Z0-9\s]/g, "")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  const memoSnippet = memoWords.slice(0, 4).join(" ");
+  const memoEllipsis = memoWords.length > 4 ? "..." : "";
+  const payment = amount ? `Send ${amount} ZEC` : "Send";
+  const memoDescription = memoSnippet
+    ? `\nMemo: \"${memoSnippet}${memoEllipsis}\"`
+    : "";
+
+  return `${payment} to ${recipient} (${addressSnippet})${memoDescription}`;
 }
 
 function ExpandIcon() {
@@ -202,12 +243,14 @@ function ExpandedQrModal({
   onSave,
   saved,
   tapProps,
+  caption,
 }: {
   uri: string;
   onClose: () => void;
   onSave: () => void;
   saved: boolean;
   tapProps: Record<string, unknown>;
+  caption: string;
 }) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -221,36 +264,55 @@ function ExpandedQrModal({
   if (typeof document === "undefined") return null;
 
   return ReactDOM.createPortal(
-    <div className="fixed inset-0 z-[10000] flex justify-center px-4 items-start sm:items-center pt-[10vh] sm:pt-0 overflow-y-auto">
-      <div
+    <motion.div
+      className="fixed inset-0 z-[10000] flex items-start justify-center overflow-y-auto px-4 pt-[10vh] sm:items-center sm:pt-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
+      <motion.div
         className="absolute inset-0 bg-black/60 backdrop-blur-xs"
         onClick={onClose}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
       />
-      <div
-        className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-full max-w-[calc(100vw-2rem)] items-center justify-center rounded-2xl animate-in fade-in zoom-in-95 duration-200"
+      <motion.div
+        className="relative my-4 flex max-h-[calc(100dvh-2rem)] w-fit max-w-[calc(100vw-2rem)] items-center justify-center rounded-2xl"
         style={{ backgroundColor: "var(--color-background)" }}
+        initial={{ opacity: 0, scale: 0.96, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.96, y: 8 }}
+        transition={{ duration: 0.2, ease: "easeOut" }}
       >
-        <div className="flex max-h-[calc(100dvh-2rem)] w-full flex-col items-center p-4 sm:p-5">
-          <div className="flex flex-col items-center gap-4">
-            <a
-              href={uri}
-              className="inline-flex max-h-[calc(100dvh-10rem)] max-w-full p-2 sm:p-4"
-              title="Open payment URI"
-              aria-label="Open payment URI"
-            >
-              <QRCodeSVG
-                value={uri}
-                size={640}
-                includeMargin={true}
-                bgColor="transparent"
-                fgColor="#000000"
-                style={{
-                  width: "min(calc(100vw - 5rem), calc(100dvh - 10rem), 640px)",
-                  height: "auto",
-                  maxHeight: "calc(100dvh - 10rem)",
-                }}
-              />
-            </a>
+        <div className="flex max-h-[calc(100dvh-2rem)] w-fit max-w-full flex-col items-center p-4 sm:p-5">
+          <div className="flex flex-col items-center gap-0">
+            <div className="flex flex-col items-center gap-0">
+              <p className="max-w-[min(36rem,calc(100vw-4rem))] whitespace-pre-line px-2 text-center text-sm leading-6 text-gray-700">
+                {caption}
+              </p>
+              <a
+                href={uri}
+                className="inline-flex max-h-[calc(100dvh-14rem)] max-w-full px-2 sm:px-4"
+                title="Open payment URI"
+                aria-label="Open payment URI"
+              >
+                <QRCodeSVG
+                  value={uri}
+                  size={640}
+                  includeMargin={true}
+                  bgColor="transparent"
+                  fgColor="#000000"
+                  style={{
+                    width: "min(calc(100vw - 5rem), calc(100dvh - 14rem), 640px)",
+                    height: "auto",
+                    maxHeight: "calc(100dvh - 14rem)",
+                  }}
+                />
+              </a>
+            </div>
             <div className="flex items-center justify-center gap-5">
               <motion.button
                 type="button"
@@ -295,8 +357,8 @@ function ExpandedQrModal({
             </div>
           </div>
         </div>
-      </div>
-    </div>,
+      </motion.div>
+    </motion.div>,
     document.body
   );
 }
@@ -351,6 +413,8 @@ export default function QrUriBlock({
   uri,
   memoText,
   profileName,
+  recipientDisplayName,
+  recipientUsername,
   qrTopHintText,
   qrTopHintDetails,
   qrTopHintToggleLabel,
@@ -453,6 +517,13 @@ export default function QrUriBlock({
       ? memoText.trim()
       : (memoFromUriDecoded ?? memoFromUriRaw ?? "");
   const amountDisplay = amountFromUri ? `${amountFromUri} ZEC` : "";
+  const expandedQrCaption = buildExpandedQrCaption({
+    address: addressFromUri,
+    amount: amountFromUri,
+    memo: effectiveMemo,
+    recipientDisplayName,
+    recipientUsername,
+  });
 
   const setCopiedState = (field: CopyField) => {
     setCopiedField(field);
@@ -487,6 +558,10 @@ export default function QrUriBlock({
       .trim()
       .replace(/[^\w\s-]/g, "")
       .replace(/\s+/g, "-");
+    const amountFilenamePart = amountFromUri
+      ? `-${amountFromUri.replace(/\./g, "_")}_ZEC`
+      : "";
+    const memoFilenamePart = effectiveMemo ? "-with_memo" : "";
 
     try {
       const image = new Image();
@@ -527,7 +602,7 @@ export default function QrUriBlock({
 
       const downloadUrl = URL.createObjectURL(pngBlob);
       const link = document.createElement("a");
-      link.download = `zcashme-${safeName}-qr.png`;
+      link.download = `zm-qr-${safeName}${amountFilenamePart}${memoFilenamePart}.png`;
       link.href = downloadUrl;
       link.click();
       URL.revokeObjectURL(downloadUrl);
@@ -983,6 +1058,7 @@ export default function QrUriBlock({
             onSave={handleSaveQR}
             saved={saved}
             tapProps={tapProps}
+            caption={expandedQrCaption}
           />
         )}
       </AnimatePresence>
