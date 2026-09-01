@@ -91,8 +91,9 @@
   .invest-actions { justify-content: flex-end; }
   .invest-paper { min-height: calc(100vh - 2rem); padding: 2rem 1.5rem; }
   .invest-document-footer-meta { align-items: flex-start; display: flex; flex-direction: column; gap: 0.6rem; }
-  .invest-document-footer-meta > :last-child { text-align: left; }
-  .invest-document-footer .invest-investment-link { align-self: center; }
+  .invest-document-footer-meta > :first-child { order: 1; }
+  .invest-document-footer-meta > :last-child { order: 2; text-align: left; }
+  .invest-document-footer .invest-investment-link { align-self: flex-start; order: 3; }
 }
 
 @media print {
