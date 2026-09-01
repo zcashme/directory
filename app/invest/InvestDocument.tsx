@@ -123,7 +123,12 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
   const supportingDetailReadMinutes = estimateReadMinutes(document.details.map((detail) => detail.bodyMarkdown).join(" "));
 
   function scrollTo(id: string) {
-    window.document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    const target = window.document.getElementById(id);
+    if (!target) return;
+
+    const headerHeight = window.document.querySelector<HTMLElement>("[data-global-header]")?.getBoundingClientRect().height ?? 0;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
+    window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
   }
 
   return (
@@ -149,7 +154,7 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
           </p>
         </header>
         <MarkdownBody markdown={document.bodyMarkdown} />
-        <div className="invest-top-action">
+        <div className="invest-top-action" id="invest-brief-end">
           <Button type="button" variant="ghost" size="xs" className="invest-top-button" onClick={() => scrollTo("invest-page-top")}>
             ^ Top
           </Button>
@@ -193,8 +198,8 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
             </div>
             {activeDetail ? (
               <div className="invest-top-action">
-                <Button type="button" variant="ghost" size="xs" className="invest-top-button" onClick={() => scrollTo("invest-supporting-detail")}>
-                  ^ Top
+                <Button type="button" variant="ghost" size="xs" className="invest-top-button" onClick={() => scrollTo("invest-brief-end")}>
+                  ^ More
                 </Button>
               </div>
             ) : null}
