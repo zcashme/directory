@@ -64,6 +64,7 @@
 .invest-detail-actions .invest-detail-trigger.is-active,
 .invest-detail-actions .invest-detail-trigger.is-active:hover { background: transparent; border-color: var(--color-brand-blue); color: var(--color-brand-blue); }
 .invest-top-action { display: flex; justify-content: flex-start; margin-top: 1rem; }
+#invest-brief-end { scroll-margin-top: 5rem; }
 .invest-top-button { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; letter-spacing: 0.04em; }
 .invest-detail-panel { border-left: 0.3rem solid transparent; display: grid; grid-template-rows: 0fr; margin: 0; opacity: 0; overflow: hidden; transition: border-color 220ms ease, grid-template-rows 280ms ease, margin 280ms ease, opacity 180ms ease; }
 .invest-detail-panel.is-open { border-left-color: var(--invest-accent); grid-template-rows: 1fr; margin-top: 1.5rem; opacity: 1; }

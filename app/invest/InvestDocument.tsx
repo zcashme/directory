@@ -125,10 +125,7 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
   function scrollTo(id: string) {
     const target = window.document.getElementById(id);
     if (!target) return;
-
-    const headerHeight = window.document.querySelector<HTMLElement>("[data-global-header]")?.getBoundingClientRect().height ?? 0;
-    const targetTop = target.getBoundingClientRect().top + window.scrollY - headerHeight - 16;
-    window.scrollTo({ top: Math.max(0, targetTop), behavior: "smooth" });
+    target.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   return (
