@@ -132,14 +132,6 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
     <main className="invest-shell" id="invest-page-top">
       <div className="invest-actions">
         <span>CONFIDENTIAL</span>
-        <a
-          className="invest-investment-link"
-          href="https://stack.angellist.com/s/3ckp9gznrw"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Direct Investment Link
-        </a>
       </div>
       <article className="invest-paper">
         <header className="invest-document-header">
@@ -205,16 +197,16 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
         <footer className="invest-document-footer">
           <div className="invest-document-footer-meta">
             <span>Confidential</span>
+            <a
+              className="invest-investment-link"
+              href="https://stack.angellist.com/s/3ckp9gznrw"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Direct Investment Link
+            </a>
             <span>Updated {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(document.updatedAt))}</span>
           </div>
-          <a
-            className="invest-investment-link"
-            href="https://stack.angellist.com/s/3ckp9gznrw"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Direct Investment Link
-          </a>
         </footer>
       </article>
     </main>
