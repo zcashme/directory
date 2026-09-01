@@ -145,7 +145,7 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
           <h1>{document.title}</h1>
           {document.subtitle ? <p className="invest-subtitle">{document.subtitle}</p> : null}
           <p className="invest-read-time">
-            {mainBriefReadMinutes} minute{mainBriefReadMinutes === 1 ? "" : "s"} brief <span aria-hidden="true">·</span> + {supportingDetailReadMinutes} minute{supportingDetailReadMinutes === 1 ? "" : "s"} details
+            {mainBriefReadMinutes} minute{mainBriefReadMinutes === 1 ? "" : "s"} brief + {supportingDetailReadMinutes} minute{supportingDetailReadMinutes === 1 ? "" : "s"} details
           </p>
         </header>
         <MarkdownBody markdown={document.bodyMarkdown} />
