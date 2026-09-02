@@ -113,7 +113,13 @@
 .invest-password-form input { background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(0, 0, 0, 0.3); border-radius: 1rem; font: 0.875rem/1.2 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; outline: none; padding: 0.5rem 0.75rem; transition: border-color 150ms ease, box-shadow 150ms ease; }
 .invest-password-form input:focus { border-color: var(--color-brand-blue); box-shadow: 0 0 0 2px rgba(29, 78, 216, 0.2); }
 .invest-password-form button { justify-self: start; margin-top: 0.4rem; }
+.invest-password-form button[disabled] { align-items: center; display: inline-flex; gap: 0.45rem; }
+.invest-button-spinner { animation: invest-button-spin 700ms linear infinite; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; display: inline-block; height: 0.85rem; width: 0.85rem; }
 .invest-form-error { color: #a22c20; font: 0.8rem/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; margin: 0; }
+
+@keyframes invest-button-spin {
+  to { transform: rotate(360deg); }
+}
 
 @media (max-width: 480px) {
   .invest-shell, .invest-gate-shell { padding: 1rem; }

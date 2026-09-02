@@ -26,7 +26,7 @@ function PasswordGate({ invalidPassword, route }: { invalidPassword: boolean; ro
     <main className="invest-gate-shell">
       <section className="invest-gate" aria-labelledby="invest-gate-title">
         <img className="invest-gate-logo" src="/assets/icons/zcashme-logo.svg" alt="ZcashMe" />
-        <p className="invest-eyebrow">ZcashMe / Confidential</p>
+        <p className="invest-eyebrow">ZcashMe, Inc / Confidential</p>
         <h1 id="invest-gate-title">Company brief</h1>
         <p>This material is available to invited recipients only.</p>
         <InvestPasswordForm action={unlockForRoute} invalidPassword={invalidPassword} />
