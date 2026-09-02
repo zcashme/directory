@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { InvestDetail, InvestDocument as InvestDocumentData } from "@/lib/invest/document";
+import { emitNavigationProgressFinish } from "@/lib/navigation/navigationProgress";
 import Button from "@/ui/common/buttons/Button";
 
 type InvestDocumentProps = {
@@ -63,6 +64,127 @@ function parseTableCells(line: string): string[] {
 function isTableSeparator(line: string): boolean {
   const cells = parseTableCells(line);
   return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
+function InvestFeedback() {
+  const [rating, setRating] = useState(0);
+  const [hoveredRating, setHoveredRating] = useState(0);
+  const [mode, setMode] = useState<"rating" | "comment">("rating");
+  const [comments, setComments] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [status, setStatus] = useState("");
+  const commentInputRef = useRef<HTMLTextAreaElement>(null);
+  const highlightedRating = hoveredRating || rating;
+
+  useEffect(() => {
+    if (mode === "comment") commentInputRef.current?.focus();
+  }, [mode]);
+
+  useEffect(() => {
+    if (status !== "Thanks!") return;
+    const timeout = window.setTimeout(() => setStatus(""), 2800);
+    return () => window.clearTimeout(timeout);
+  }, [status]);
+
+  async function saveFeedback(payload: { rating?: number; comments?: string }): Promise<boolean> {
+    setIsSaving(true);
+    setStatus("");
+    try {
+      const response = await fetch("/invest/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json().catch((): { error?: string } => ({}));
+      if (!response.ok) {
+        setStatus(result.error ?? "Feedback could not be saved.");
+        return false;
+      }
+      return true;
+    } catch {
+      setStatus("Feedback could not be saved.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  async function selectRating(nextRating: number) {
+    setRating(nextRating);
+    setStatus("");
+    if (await saveFeedback({ rating: nextRating })) setMode("comment");
+  }
+
+  async function submitComments(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!comments.trim()) return;
+    if (await saveFeedback({ comments })) {
+      setComments("");
+      setRating(0);
+      setMode("rating");
+      setStatus("Thanks!");
+    }
+  }
+
+  return (
+    <section className="invest-feedback" aria-label="Rate this investor brief">
+      {mode === "rating" ? (
+        <>
+          <span className="invest-feedback-label">Rate this brief</span>
+          <div className="invest-star-rating" onMouseLeave={() => setHoveredRating(0)}>
+            {[1, 2, 3, 4, 5].map((value) => (
+              <button
+                key={value}
+                type="button"
+                className={value <= highlightedRating ? "invest-star is-highlighted" : "invest-star"}
+                aria-label={`Rate ${value} out of 5`}
+                aria-pressed={rating === value}
+                disabled={isSaving}
+                onFocus={() => setHoveredRating(value)}
+                onBlur={() => setHoveredRating(0)}
+                onMouseEnter={() => setHoveredRating(value)}
+                onClick={() => void selectRating(value)}
+              >
+                {value <= highlightedRating ? "\u2605" : "\u2606"}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <form className="invest-comment-form" onSubmit={submitComments}>
+          <div className="invest-comment-entry">
+            <button
+              type="button"
+              className="invest-feedback-back"
+              aria-label="Change rating"
+              disabled={isSaving}
+              onClick={() => {
+                setComments("");
+                setMode("rating");
+                setStatus("");
+              }}
+            >
+              {"\u2190"}
+            </button>
+            <textarea
+              ref={commentInputRef}
+              className="invest-comment-input"
+              aria-label="Add comments"
+              value={comments}
+              placeholder="add comments"
+              rows={1}
+              disabled={isSaving}
+              onChange={(event) => setComments(event.target.value)}
+            />
+          </div>
+          <button type="submit" className="invest-feedback-submit" disabled={isSaving || !comments.trim()}>
+            Submit
+          </button>
+        </form>
+      )}
+      <p className={status === "Thanks!" ? "invest-feedback-status is-thanks" : "invest-feedback-status"} aria-live="polite">{status}</p>
+    </section>
+  );
 }
 
 export function MarkdownBody({ markdown }: { markdown: string }) {
@@ -161,6 +283,10 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
 }
 
 export default function InvestDocument({ document }: InvestDocumentProps) {
+  useEffect(() => {
+    emitNavigationProgressFinish();
+  }, []);
+
   const [activeDetail, setActiveDetail] = useState<InvestDetail | null>(null);
   const mainBriefReadMinutes = estimateReadMinutes(document.bodyMarkdown);
   const supportingDetailReadMinutes = estimateReadMinutes(document.details.map((detail) => detail.bodyMarkdown).join(" "));
@@ -239,21 +365,26 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
         ) : null}
         <footer className="invest-document-footer">
           <div className="invest-document-footer-meta">
-            <span>Confidential</span>
-            <a
-              className="invest-investment-link"
-              href="https://stack.angellist.com/s/3ckp9gznrw"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Direct Investment Link
-            </a>
-            <span>Updated {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(document.updatedAt))}</span>
+            <div className="invest-document-footer-status">
+              <span>Confidential</span>
+              <span>Updated {new Intl.DateTimeFormat("en", { dateStyle: "medium" }).format(new Date(document.updatedAt))}</span>
+            </div>
+            <InvestFeedback />
           </div>
         </footer>
       </article>
-      <div className="invest-contact">
-        <a className="invest-contact-link" href="mailto:James@Zcash.me">Contact James@Zcash.me</a>
+      <div className="invest-underpaper">
+        <a
+          className="invest-investment-link"
+          href="https://stack.angellist.com/s/3ckp9gznrw"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Direct Investment Link
+        </a>
+        <div className="invest-contact">
+          <a className="invest-investment-link invest-contact-link" href="mailto:James@Zcash.me">Contact James@Zcash.me</a>
+        </div>
       </div>
     </main>
   );

@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import InvestDocument from "./InvestDocument";
 import { authenticateInvestPassword, getInvestSession } from "@/lib/invest/auth";
 import { getInvestDocument } from "@/lib/invest/document";
-import Button from "@/ui/common/buttons/Button";
+import InvestPasswordForm from "./InvestPasswordForm";
 import "./invest.css";
 
 export const dynamic = "force-dynamic";
@@ -29,15 +29,10 @@ function PasswordGate({ invalidPassword }: { invalidPassword: boolean }) {
     <main className="invest-gate-shell">
       <section className="invest-gate" aria-labelledby="invest-gate-title">
         <img className="invest-gate-logo" src="/assets/icons/zcashme-logo.svg" alt="ZcashMe" />
-        <p className="invest-eyebrow">ZcashMe / Private</p>
+        <p className="invest-eyebrow">ZcashMe / Confidential</p>
         <h1 id="invest-gate-title">Investor brief</h1>
         <p>This material is available to invited recipients only.</p>
-        <form action={unlockInvest} className="invest-password-form">
-          <label htmlFor="invest-password">Access password</label>
-          <input id="invest-password" name="password" type="password" autoComplete="current-password" required autoFocus />
-          {invalidPassword ? <p className="invest-form-error" role="alert">That password was not recognized.</p> : null}
-          <Button type="submit" variant="primary" size="md">Open brief</Button>
-        </form>
+        <InvestPasswordForm action={unlockInvest} invalidPassword={invalidPassword} />
       </section>
     </main>
   );
@@ -52,7 +47,7 @@ export default async function InvestPage({ searchParams }: InvestPageProps) {
     return (
       <main className="invest-gate-shell">
         <section className="invest-gate">
-          <p className="invest-eyebrow">ZcashMe / Private</p>
+          <p className="invest-eyebrow">ZcashMe / Confidential</p>
           <h1>Brief unavailable</h1>
           <p>The investor document has not been published yet. Please contact the sender.</p>
         </section>

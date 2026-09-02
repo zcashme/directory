@@ -8,7 +8,10 @@ import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 
 import { useJoinModal } from "@/ui/signup/JoinModalContext";
 import { buildSlug } from "@/lib/profile/profileUtils";
-import { NAVIGATION_PROGRESS_START_EVENT } from "@/lib/navigation/navigationProgress";
+import {
+  NAVIGATION_PROGRESS_FINISH_EVENT,
+  NAVIGATION_PROGRESS_START_EVENT,
+} from "@/lib/navigation/navigationProgress";
 
 interface ProfileHeaderProps {
   profileCount?: number;
@@ -131,12 +134,17 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     const handleNavigationProgressStart = () => {
       startRouteNavigationProgress(lastResolvedPathnameRef.current);
     };
+    const handleNavigationProgressFinish = () => {
+      finishRouteNavigationProgress();
+    };
 
     window.addEventListener(NAVIGATION_PROGRESS_START_EVENT, handleNavigationProgressStart);
+    window.addEventListener(NAVIGATION_PROGRESS_FINISH_EVENT, handleNavigationProgressFinish);
     return () => {
       window.removeEventListener(NAVIGATION_PROGRESS_START_EVENT, handleNavigationProgressStart);
+      window.removeEventListener(NAVIGATION_PROGRESS_FINISH_EVENT, handleNavigationProgressFinish);
     };
-  }, [startRouteNavigationProgress]);
+  }, [finishRouteNavigationProgress, startRouteNavigationProgress]);
 
   useEffect(() => {
     const handleDocumentClick = (event: MouseEvent) => {

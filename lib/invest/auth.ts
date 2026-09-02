@@ -9,6 +9,7 @@ const SESSION_TTL_SECONDS = 60 * 60 * 12;
 
 type InvestSession = {
   passwordId: string;
+  accessEventId: number | null;
   expiresAt: number;
 };
 
@@ -32,18 +33,19 @@ export async function getInvestSession(): Promise<InvestSession | null> {
   const raw = (await cookies()).get(SESSION_COOKIE)?.value;
   if (!secret || !raw) return null;
 
-  const [version, passwordId, expiresAtText, signature] = raw.split(".");
-  if (version !== "v1" || !passwordId || !expiresAtText || !signature) return null;
+  const [version, passwordId, accessEventIdText, expiresAtText, signature] = raw.split(".");
+  if (version !== "v2" || !passwordId || !accessEventIdText || !expiresAtText || !signature) return null;
 
   const expiresAt = Number(expiresAtText);
-  if (!Number.isSafeInteger(expiresAt) || expiresAt <= Math.floor(Date.now() / 1000)) {
+  const accessEventId = Number(accessEventIdText);
+  if (!Number.isSafeInteger(expiresAt) || !Number.isSafeInteger(accessEventId) || accessEventId <= 0 || expiresAt <= Math.floor(Date.now() / 1000)) {
     return null;
   }
 
-  const value = `${version}.${passwordId}.${expiresAtText}`;
+  const value = `${version}.${passwordId}.${accessEventIdText}.${expiresAtText}`;
   if (!isValidSignature(value, signature, secret)) return null;
 
-  return { passwordId, expiresAt };
+  return { passwordId, accessEventId, expiresAt };
 }
 
 export async function authenticateInvestPassword(password: string): Promise<boolean> {
@@ -58,17 +60,18 @@ export async function authenticateInvestPassword(password: string): Promise<bool
   const ipAddress = /^[0-9a-fA-F:.]+$/.test(candidateIp) ? candidateIp : null;
   const userAgent = requestHeaders.get("user-agent")?.slice(0, 512) || null;
 
-  // The RPC compares the password in Postgres and logs only the matched password ID.
-  const { data, error } = await supabase.rpc("validate_and_log_invest_access", {
+  // The RPC compares the password in Postgres and returns the logged access event.
+  const { data, error } = await supabase.rpc("validate_and_log_invest_access_v2", {
     candidate_password: password,
     access_ip: ipAddress,
     access_user_agent: userAgent,
   });
-  const passwordId = typeof data === "string" ? data : null;
-  if (error || !passwordId) return false;
+  const passwordId = typeof data?.password_id === "string" ? data.password_id : null;
+  const accessEventId = typeof data?.access_event_id === "number" ? data.access_event_id : null;
+  if (error || !passwordId || !Number.isSafeInteger(accessEventId) || accessEventId <= 0) return false;
 
   const expiresAt = Math.floor(Date.now() / 1000) + SESSION_TTL_SECONDS;
-  const value = `v1.${passwordId}.${expiresAt}`;
+  const value = `v2.${passwordId}.${accessEventId}.${expiresAt}`;
   const sessionCookie = `${value}.${sign(value, secret)}`;
 
   (await cookies()).set(SESSION_COOKIE, sessionCookie, {
