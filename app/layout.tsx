@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import ProfileHeader from "@/ui/profile/ProfileHeader";
 import FloatingSidebarMenu from "@/ui/common/layout/FloatingSidebarMenu";
+import RouteAwareFooter from "@/ui/common/layout/RouteAwareFooter";
 import { JoinModalProvider } from "@/ui/signup/JoinModalContext";
 import JoinModal from "@/ui/signup/JoinModal";
 import { getProfileCount } from "@/lib/profile/profileQueries";
@@ -49,6 +50,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
           {SHOW_FLOATING_SIDEBAR_MENU ? <FloatingSidebarMenu /> : null}
           <div className="flex-1">{children}</div>
           <JoinModal />
+        <RouteAwareFooter>
         <footer className="relative border-t border-gray-200" style={{ backgroundColor: "var(--color-background)" }}>
           <div className="w-full h-12 flex items-stretch">
             <div className="hidden sm:flex w-12 h-12 flex-shrink-0 items-center justify-center">
@@ -107,6 +109,7 @@ export default async function RootLayout({ children }: RootLayoutProps) {
             <div className="hidden sm:block w-12 h-12 flex-shrink-0 border-l border-gray-200/50" />
           </div>
         </footer>
+        </RouteAwareFooter>
         </JoinModalProvider>
       </body>
     </html>

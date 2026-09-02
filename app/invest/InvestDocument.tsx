@@ -304,7 +304,7 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
       </div>
       <article className="invest-paper">
         <header className="invest-document-header">
-          <p className="invest-eyebrow">ZcashMe, Inc. / Investor Brief</p>
+          <p className="invest-eyebrow">ZcashMe, Inc. / Company Brief</p>
           <h1>{document.title}</h1>
           {document.subtitle ? <p className="invest-subtitle">{document.subtitle}</p> : null}
           <p className="invest-read-time">
