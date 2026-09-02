@@ -56,6 +56,15 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   });
 }
 
+function parseTableCells(line: string): string[] {
+  return line.trim().replace(/^\|/, "").replace(/\|$/, "").split("|").map((cell) => cell.trim());
+}
+
+function isTableSeparator(line: string): boolean {
+  const cells = parseTableCells(line);
+  return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+}
+
 export function MarkdownBody({ markdown }: { markdown: string }) {
   const blocks: React.ReactNode[] = [];
   const lines = markdown.replace(/\r\n/g, "\n").split("\n");
@@ -79,6 +88,40 @@ export function MarkdownBody({ markdown }: { markdown: string }) {
       currentHeading = heading[2].trim().toLowerCase();
       blocks.push(<Tag key={`heading-${index}`}>{renderInline(heading[2], `heading-${index}`)}</Tag>);
       index += 1;
+      continue;
+    }
+    if (line.includes("|") && index + 1 < lines.length && isTableSeparator(lines[index + 1])) {
+      const headers = parseTableCells(line);
+      const rows: string[][] = [];
+      index += 2;
+
+      while (index < lines.length && lines[index].trim().includes("|")) {
+        rows.push(parseTableCells(lines[index]));
+        index += 1;
+      }
+
+      blocks.push(
+        <div key={`table-${index}`} className="invest-table-wrap">
+          <table className="invest-table">
+            <thead>
+              <tr>
+                {headers.map((header, cellIndex) => (
+                  <th key={`header-${cellIndex}`} scope="col">{renderInline(header, `table-header-${index}-${cellIndex}`)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, rowIndex) => (
+                <tr key={`row-${rowIndex}`}>
+                  {headers.map((_, cellIndex) => (
+                    <td key={`cell-${rowIndex}-${cellIndex}`}>{renderInline(row[cellIndex] ?? "", `table-cell-${index}-${rowIndex}-${cellIndex}`)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
       continue;
     }
     if (line.startsWith("- ")) {
@@ -209,6 +252,9 @@ export default function InvestDocument({ document }: InvestDocumentProps) {
           </div>
         </footer>
       </article>
+      <div className="invest-contact">
+        <a className="invest-contact-link" href="mailto:James@Zcash.me">Contact James@Zcash.me</a>
+      </div>
     </main>
   );
 }
