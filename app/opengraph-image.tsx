@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { ImageResponse } from "next/og";
+import satori from "satori";
+import { Resvg } from "@resvg/resvg-js";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -248,7 +249,7 @@ function TrayFrame() {
       height={TRAY_FRAME_HEIGHT}
       viewBox={`0 0 ${CARD_WIDTH - 56} ${TRAY_FRAME_HEIGHT}`}
       fill="none"
-      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}
     >
       <rect
         x="0.5"
@@ -271,7 +272,7 @@ function WarningFrame() {
       height="40"
       viewBox="0 0 252 40"
       fill="none"
-      style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
+      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none" }}
     >
       <rect
         x="0.5"
@@ -299,7 +300,7 @@ function CardFrame() {
       height={CARD_HEIGHT}
       viewBox={`0 0 ${CARD_WIDTH} ${CARD_HEIGHT}`}
       fill="none"
-      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", zIndex: 8 }}
+      style={{ position: "absolute", left: 0, top: 0, pointerEvents: "none", flexShrink: 0 }}
     >
       <path
         d={[
@@ -569,6 +570,7 @@ function OpenGraphCard() {
         paddingBottom: 24,
       }}
     >
+      <CardFrame />
       <div
         style={{
           position: "absolute",
@@ -580,7 +582,6 @@ function OpenGraphCard() {
           borderBottomLeftRadius: 999,
           borderBottomRightRadius: 999,
           background: PREVIEW_BACKGROUND,
-          zIndex: 11,
         }}
       />
 
@@ -594,7 +595,6 @@ function OpenGraphCard() {
           transform: `translate(-50%, -${AVATAR_TRANSFORM_Y - AVATAR_SHIFT_DOWN + 11}px)`,
           borderRadius: 999,
           background: PREVIEW_BACKGROUND,
-          zIndex: 11,
         }}
       />
 
@@ -607,7 +607,6 @@ function OpenGraphCard() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          zIndex: 10,
         }}
       >
         <ControlButton kind="menu" />
@@ -630,7 +629,6 @@ function OpenGraphCard() {
           alignItems: "center",
           justifyContent: "center",
           boxShadow: "0 1px 2px rgba(0,0,0,0.08)",
-          zIndex: 12,
         }}
       >
         <AvaAvatarArt />
@@ -744,8 +742,6 @@ function OpenGraphCard() {
           <ProfileTrayArt />
         </div>
       </div>
-
-      <CardFrame />
     </div>
   );
 }
@@ -757,7 +753,9 @@ export default async function OpenGraphImage() {
     seguiBlack,
   ]);
 
-  return new ImageResponse(
+  // Render embedded SVG artwork with Resvg; the Node ImageResponse Sharp path
+  // can omit nested SVG images. Keep the output independent of that backend.
+  const svg = await satori(
     (
       <div
         style={{
@@ -879,4 +877,12 @@ export default async function OpenGraphImage() {
       ],
     }
   );
+
+  const png = new Resvg(svg).render().asPng();
+  return new Response(new Uint8Array(png), {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "no-cache, no-store",
+    },
+  });
 }
