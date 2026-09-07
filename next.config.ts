@@ -5,6 +5,7 @@ const BUILD_VERSION = new Date().toISOString();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ["@resvg/resvg-js"],
   turbopack: {},
   images: {
     remotePatterns: [
