@@ -5,7 +5,16 @@ const BUILD_VERSION = new Date().toISOString();
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ["@resvg/resvg-js"],
+  // Keep these unbundled so Turbopack does not rewrite harfbuzzjs/resvg
+  // native+wasm paths to a /ROOT/... location that does not exist on Vercel.
+  serverExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs"],
+  outputFileTracingIncludes: {
+    "/opengraph-image": [
+      "./public/og-*.ttf",
+      "./node_modules/harfbuzzjs/hb.wasm",
+      "./node_modules/.pnpm/harfbuzzjs@*/node_modules/harfbuzzjs/hb.wasm",
+    ],
+  },
   turbopack: {},
   images: {
     remotePatterns: [

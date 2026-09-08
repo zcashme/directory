@@ -41,6 +41,9 @@ importers:
       gray-matter:
         specifier: ^4.0.3
         version: 4.0.3
+      harfbuzzjs:
+        specifier: 0.10.0
+        version: 0.10.0
       multichain-address-validator:
         specifier: ^0.8.0
         version: 0.8.5

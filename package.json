@@ -21,6 +21,7 @@
     "emojilib": "^4.0.0",
     "framer-motion": "^12.23.24",
     "gray-matter": "^4.0.3",
+    "harfbuzzjs": "0.10.0",
     "multichain-address-validator": "^0.8.0",
     "next": "16.3.2",
     "next-mdx-remote": "^6.0.0",
