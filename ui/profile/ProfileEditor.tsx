@@ -391,7 +391,13 @@ export default function ProfileEditor({
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailabilityAction(candidate, profile.id);
       if (cancelled) return;
-      if (result.ok && result.taken_by_other_verified) {
+      if (result.ok && result.zns_owned) {
+        setUsernameConflict("This Zcash Name has already been claimed. Choose another username.");
+        setUsernameStatus("taken");
+        if (form.name !== lastValidUsername) {
+          handleChange("name", lastValidUsername);
+        }
+      } else if (result.ok && result.taken_by_other_verified) {
         setUsernameConflict("That username is already used by another verified profile.");
         setUsernameStatus("taken");
         if (form.name !== lastValidUsername) {
@@ -771,8 +777,8 @@ export default function ProfileEditor({
           htmlFor="name"
           helpText={
             usernameLockedSuffix
-              ? `Your unique handle on Zcash.me. Start verification to remove ${usernameLockedSuffix}`
-              : "Your unique handle on Zcash.me."
+              ? `Your unique handle on Zcash.me. Canonical URL stays Zcash.me/${usernameInput || "username"}${usernameLockedSuffix} until this name is claimed on Zcash Names and bound to this address.`
+              : "Your unique handle on Zcash.me. The unsuffixed URL becomes canonical after this name is claimed on Zcash Names and bound to this address."
           }
           isDeleted={deletedFields.name}
           deleteDisabled={!originals.name}

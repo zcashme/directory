@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
+import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 
 interface RouteParams {
   username: string;
@@ -21,36 +22,43 @@ export async function GET(
     return jsonResponse({ error: "invalid_username" }, 400);
   }
 
-  const supabase = createSupabaseServerClient();
+  const resolved = await resolveProfileSlug(username);
 
-  if (!supabase) {
-    return jsonResponse({ error: "service_unavailable" }, 503);
+  if (resolved.kind === "zns-identity") {
+    return jsonResponse(
+      {
+        username: resolved.name,
+        display_name: resolved.name,
+        address: resolved.registration.address,
+        address_verified: true,
+        last_verified_at: null,
+        bio: null,
+        location: null,
+        profile_image_url: null,
+        links: [],
+        zns: true,
+      },
+      200,
+      guard.cacheSeconds
+    );
   }
 
-  const { data: profile, error: profileError } = await supabase
-    .from("zcasher")
-    .select("id,name,display_name,address,address_verified,bio,nearest_city_name,profile_image_url,last_verified_at")
-    .ilike("name", username)
-    .order("id", { ascending: true })
-    .limit(1)
-    .maybeSingle();
-
-  if (profileError) {
-    return jsonResponse({ error: "lookup_failed" }, 500);
-  }
-
-  if (!profile) {
+  if (resolved.kind !== "profile") {
     return jsonResponse({ error: "not_found" }, 404);
   }
 
+  const profile = resolved.profile;
   if (!profile.address) {
     return jsonResponse({ error: "no_address" }, 404);
   }
 
+  const supabase = createSupabaseServerClient();
+  if (!supabase) {
+    return jsonResponse({ error: "service_unavailable" }, 503);
+  }
+
   const verified = !!profile.address_verified;
-  const displayUsername = verified
-    ? profile.name
-    : `${profile.name}-${profile.id}`;
+  const displayUsername = buildCanonicalSlug(profile, resolved.znsBound);
 
   const { data: links } = await supabase
     .from("zcasher_links")

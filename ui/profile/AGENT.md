@@ -22,7 +22,8 @@ tint for 1, gray for 0.
 Clicking "Edit Profile" flips the card with a 3D animation. The back shows editable fields:
 - **Avatar**: File upload (JPG/PNG, max 2 MB) with preview
 - **Zcash Address**: Text input with validation
-- **Username**: Real-time availability check (debounced 250ms), locked suffix if unverified
+- **Username**: Real-time availability check (debounced 250ms), including Zcash Names ownership
+- **Reserve Name**: Card-back explainer + pricing. Start Reservation uses the same bottom ZIP-321 QR (5 icons) as Start Verification; the composer is hidden while the card is flipped.
 - **Display Name**: Text input with deletion support
 - **Bio**: Textarea with 100-byte limit and visual progress ring
 - **City**: Autocomplete dropdown
@@ -65,6 +66,8 @@ not yet implemented.
 | `profileCardTypes.ts` | TypeScript interfaces for card components |
 | `profileCardUtils.ts` | `formatUsername()`, `resolveIconSrc()` |
 | `ProfileEditor.tsx` | Full edit interface: all fields, link management, avatar upload, bio counter |
+| `ProfileReserve.tsx` | Card-back Reserve Name explainer, pricing table, Start Reservation |
+| `ProfileReservationQr.tsx` | Bottom ZIP-321 reservation QR (same 5-icon bar as Start Verification) |
 | `ProfileField.tsx` | Reusable field wrapper with label, help tooltip, delete/reset button |
 | `ProfileAvatar.tsx` | Avatar image with animated smiley fallback (blinking eyes, random look-around) |
 | `ProfileHeader.tsx` | Sticky nav header with search + Join button |

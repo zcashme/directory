@@ -1,9 +1,7 @@
 "use server";
 
 import { createProfile, insertProfileLinks, insertVerifiedProfileLink, checkAddressTaken } from "@/lib/signup/createProfile";
-import {
-  getUsernameAvailability,
-} from "@/lib/profile/profileQueries";
+import { getUsernameJoinAvailability } from "@/lib/zns/availability";
 import type {
   CreateProfileResponse,
   CheckAddressTakenResponse,
@@ -19,6 +17,20 @@ import type { VoidActionResult } from "@/lib/actions/types";
  */
 export async function createProfileAction(profileData: CreateProfilePayload): Promise<CreateProfileResponse> {
   try {
+    const joinAvailability = await getUsernameJoinAvailability(profileData.name);
+    if (joinAvailability.znsOwned) {
+      return {
+        ok: false,
+        error: "This Zcash Name has already been claimed. Choose another username.",
+      };
+    }
+    if (joinAvailability.takenByOtherVerified) {
+      return {
+        ok: false,
+        error: "That name is already used by a verified profile.",
+      };
+    }
+
     const { data, error } = await createProfile(profileData);
 
     if (error) {
@@ -103,15 +115,23 @@ export async function checkUsernameAvailabilityAction(
         exists: false,
         verified_exists: false,
         taken_by_other_verified: false,
+        zns_owned: false,
+        waitlist_count: 0,
+        valid: false,
+        normalized: "",
       };
     }
 
-    const availability = await getUsernameAvailability(username, currentProfileId);
+    const availability = await getUsernameJoinAvailability(username, currentProfileId);
     return {
       ok: true,
       exists: availability.exists,
       verified_exists: availability.verifiedExists,
       taken_by_other_verified: availability.takenByOtherVerified,
+      zns_owned: availability.znsOwned,
+      waitlist_count: availability.waitlistCount,
+      valid: availability.valid,
+      normalized: availability.normalized,
     };
   } catch (error) {
     return {
@@ -120,6 +140,10 @@ export async function checkUsernameAvailabilityAction(
       exists: false,
       verified_exists: false,
       taken_by_other_verified: false,
+      zns_owned: false,
+      waitlist_count: 0,
+      valid: false,
+      normalized: "",
     };
   }
 }

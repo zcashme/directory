@@ -94,6 +94,10 @@ export interface CheckUsernameAvailabilityResponse {
   exists: boolean;
   verified_exists: boolean;
   taken_by_other_verified: boolean;
+  zns_owned?: boolean;
+  waitlist_count?: number;
+  valid?: boolean;
+  normalized?: string;
   error?: string;
 }
 

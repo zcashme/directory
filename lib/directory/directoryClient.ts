@@ -24,6 +24,7 @@ export interface DirectoryApiResponse {
   results: DirectoryApiResult[];
   next_cursor: string | null;
   exists?: boolean;
+  zns_owned?: boolean;
 }
 
 // ---------------------------------------------------------------------------

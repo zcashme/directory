@@ -13,8 +13,9 @@ interface ProfileCardActionsProps {
   showStats: boolean;
   onToggleStats: () => void;
   onEdit: () => void;
+  onReserve: () => void;
   onCreatePrefillUrl: () => void;
-  onUpgrade: () => void;
+  onUpgrade?: () => void;
 }
 
 export default function ProfileCardActions({
@@ -23,8 +24,8 @@ export default function ProfileCardActions({
   showStats,
   onToggleStats,
   onEdit,
+  onReserve,
   onCreatePrefillUrl,
-  onUpgrade,
 }: ProfileCardActionsProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
@@ -97,7 +98,7 @@ export default function ProfileCardActions({
         <div
           aria-hidden={!menuOpen}
           className={`absolute left-0 mt-2 inline-flex w-max flex-col items-stretch origin-top-left rounded-xl border border-gray-300 bg-white shadow-lg overflow-visible z-50 text-sm text-gray-700 transition-all ${dur} ${
-            menuOpen ? "max-h-64 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
+            menuOpen ? "max-h-80 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
           }`}
         >
           {menuItem("\u2B54", showStats ? "Hide Awards" : "Show Awards", onToggleStats, !showStats && !hasAwards)}
@@ -107,6 +108,13 @@ export default function ProfileCardActions({
             </span>,
             "Edit Profile",
             onEdit
+          )}
+          {menuItem(
+            <span className="inline-flex scale-[0.78] origin-left">
+              <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
+            </span>,
+            "Reserve Name",
+            onReserve
           )}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
           {menuItem("\u2934", "Share Refer Link", async () => {
@@ -126,14 +134,6 @@ export default function ProfileCardActions({
             await navigator.clipboard.writeText(referUrl);
             alert("Referral link copied to clipboard!");
           })}
-          {menuItem(
-            <span className="inline-flex scale-[0.78] origin-left">
-              <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
-            </span>,
-            "Claim Name",
-            onUpgrade,
-            true
-          )}
         </div>
       </div>
 

@@ -1,6 +1,9 @@
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
 import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
+import { normalizeUsernameForCompare } from "@/lib/profile/usernamePolicy";
+import { resolveZnsName } from "@/lib/zns/client";
+import { isValidZnsName, normalizeZnsName } from "@/lib/zns/name";
 
 interface DirectoryProfile {
   id: number;
@@ -59,6 +62,7 @@ interface DirectoryResponse extends Record<string, unknown> {
   results: DirectoryResult[];
   next_cursor: string | null;
   exists?: boolean;
+  zns_owned?: boolean;
 }
 
 // Fields to select from zcasher_searchable
@@ -129,7 +133,7 @@ function computeRankTier(profile: DirectoryProfile, query: string): number {
 }
 
 export async function GET(request: Request): Promise<Response> {
-  const guard = await enforceApiGuard(request, { cacheSeconds: 30 });
+  const guard = await enforceApiGuard(request, { cacheSeconds: 30, public: true });
   if (guard instanceof Response) return guard;
   const cacheSeconds = guard.cacheSeconds;
 
@@ -302,28 +306,41 @@ export async function GET(request: Request): Promise<Response> {
     };
   });
 
-  // Check if exact username exists (for availability checks)
-  // Only check when there's a search query
+  // Exact username existence for the header "is available" banner.
   let exists: boolean | undefined;
+  let znsOwned: boolean | undefined;
   if (q) {
-    // First check if it's in the results we already have
+    const compareTarget = normalizeUsernameForCompare(q);
     const exactMatchInResults = resultsToReturn.some(
-      (p) => p.name.toLowerCase() === q.toLowerCase()
+      (p) => normalizeUsernameForCompare(p.name) === compareTarget
     );
     if (exactMatchInResults) {
       exists = true;
     } else {
-      // Query the database for exact match
-      const { data: exactMatch } = await supabase
+      const { data: exactRows } = await supabase
         .from("zcasher_searchable")
-        .select("id")
+        .select("id,name")
         .ilike("name", q)
-        .limit(1)
-        .maybeSingle();
-      exists = !!exactMatch;
+        .limit(20);
+      exists = (exactRows ?? []).some(
+        (row: { name?: string }) => normalizeUsernameForCompare(row.name ?? "") === compareTarget
+      );
+    }
+
+    const znsName = normalizeZnsName(q);
+    if (isValidZnsName(znsName)) {
+      const registration = await resolveZnsName(znsName);
+      znsOwned = Boolean(registration?.address);
+    } else {
+      znsOwned = false;
     }
   }
 
-  const responseBody: DirectoryResponse = { results, next_cursor: nextCursor, exists };
+  const responseBody: DirectoryResponse = {
+    results,
+    next_cursor: nextCursor,
+    exists,
+    zns_owned: znsOwned,
+  };
   return jsonResponse(responseBody, 200, cacheSeconds);
 }

@@ -81,6 +81,7 @@ export default function ProfileSearchDropdown({
   const [results, setResults] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
+  const [usernameClaimed, setUsernameClaimed] = useState<string | null>(null);
   const [mobileDropdownStyle, setMobileDropdownStyle] = useState<CSSProperties | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -99,6 +100,7 @@ export default function ProfileSearchDropdown({
       setResults([]);
       setLoading(false);
       setUsernameAvailable(null);
+      setUsernameClaimed(null);
       return;
     }
 
@@ -110,26 +112,38 @@ export default function ProfileSearchDropdown({
       signal: controller.signal,
       headers: { "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "" },
     })
-      .then((res) => (res.ok ? res.json() : { results: [], next_cursor: null }))
-      .then((api: DirectoryApiResponse) => {
+      .then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`directory_${res.status}`);
+        }
+        return res.json() as Promise<DirectoryApiResponse>;
+      })
+      .then((api) => {
         if (controller.signal.aborted) return;
 
-        const profiles = api.results.map(toProfile);
-        const exists = api.exists ?? false;
+        const profiles = (api.results ?? []).map(toProfile);
+        const exists = api.exists === true;
+        const znsOwned = api.zns_owned === true;
 
         setResults(profiles);
         setLoading(false);
 
-        if (showUsernameAvailability && !exists) {
+        if (showUsernameAvailability && znsOwned) {
+          setUsernameAvailable(null);
+          setUsernameClaimed(query);
+        } else if (showUsernameAvailability && !exists && !znsOwned) {
           setUsernameAvailable(query);
+          setUsernameClaimed(null);
         } else {
           setUsernameAvailable(null);
+          setUsernameClaimed(null);
         }
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
         setLoading(false);
         setUsernameAvailable(null);
+        setUsernameClaimed(null);
       });
 
     return () => controller.abort();
@@ -243,6 +257,13 @@ export default function ProfileSearchDropdown({
                 )}
 
                 {/* Username availability banner */}
+                {usernameClaimed && (
+                  <div className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 bg-amber-50/70">
+                    <span className="font-semibold text-amber-800">/{usernameClaimed}</span>{" "}
+                    is already claimed on Zcash Names.
+                  </div>
+                )}
+
                 {usernameAvailable && (
                   <Command.Item
                     value="available"
@@ -256,7 +277,7 @@ export default function ProfileSearchDropdown({
                 )}
 
                 {/* Empty state */}
-                {!loading && results.length === 0 && !usernameAvailable && (
+                {!loading && results.length === 0 && !usernameAvailable && !usernameClaimed && (
                   <div className="px-3 py-3 text-sm text-gray-400 text-center">No results</div>
                 )}
 

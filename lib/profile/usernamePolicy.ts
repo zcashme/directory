@@ -1,4 +1,9 @@
+import { sanitizeZnsUsernameInput } from "@/lib/zns/name";
+
 export const sanitizeUsernameInput = (raw: string): string =>
+  sanitizeZnsUsernameInput(raw);
+
+export const sanitizeLegacyUsernameInput = (raw: string): string =>
   (raw ?? "")
     .normalize("NFKC")
     .trim()
@@ -6,7 +11,7 @@ export const sanitizeUsernameInput = (raw: string): string =>
     .replace(/[^A-Za-z0-9_]/g, "");
 
 export const normalizeUsernameForCompare = (value: string): string =>
-  sanitizeUsernameInput(value).toLowerCase();
+  sanitizeLegacyUsernameInput(value).toLowerCase();
 
 export const normalizeUsernameForSlug = (value: string): string =>
-  sanitizeUsernameInput(value).toLowerCase();
+  sanitizeUsernameInput(value) || sanitizeLegacyUsernameInput(value).toLowerCase();

@@ -9,6 +9,7 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
+import ProfileReserve from "@/ui/profile/ProfileReserve";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
@@ -81,10 +82,18 @@ export default function ProfileCard({
   tokens,
   fullView = false,
   duplicateNameCount = 0,
+  waitlistPosition = 1,
   onShowQR,
   onEditorModeChange,
+  onBackModeChange,
   onGenerateVerificationQr,
   isVerificationGenerating = false,
+  onStartReservation,
+  isReservationGenerating = false,
+  reservationReserved = false,
+  reservationStarted = false,
+  reservationReferralCode = "",
+  reservationError = "",
   onDesignPanelBackgroundChange,
   cardWidthPx,
 }: ProfileCardProps) {
@@ -94,6 +103,7 @@ export default function ProfileCard({
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
+  const [backMode, setBackMode] = useState<"edit" | "reserve">("edit");
   const [showDesignBack, setShowDesignBack] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
@@ -261,7 +271,10 @@ export default function ProfileCard({
     onError: handleConnectError,
   });
 
-  useEffect(() => { onEditorModeChange?.(showBack); }, [showBack, onEditorModeChange]);
+  useEffect(() => {
+    onEditorModeChange?.(showBack);
+    onBackModeChange?.(showBack ? backMode : null);
+  }, [showBack, backMode, onEditorModeChange, onBackModeChange]);
   useEffect(() => {
     if (!showBack) setShowDesignBack(false);
   }, [showBack]);
@@ -345,7 +358,14 @@ export default function ProfileCard({
                   hasAwards={hasAwards}
                   showStats={showStats}
                   onToggleStats={() => setShowStats((p) => !p)}
-                  onEdit={() => setShowBack(true)}
+                  onEdit={() => {
+                    setBackMode("edit");
+                    setShowBack(true);
+                  }}
+                  onReserve={() => {
+                    setBackMode("reserve");
+                    setShowBack(true);
+                  }}
                   onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
                   onUpgrade={() => setIsUpgradeOpen(true)}
                 />
@@ -525,7 +545,9 @@ export default function ProfileCard({
                 >
                   {"\u21BA"}
                 </button>
-                {showDesignBack ? (
+                {backMode === "reserve" ? (
+                  <span />
+                ) : showDesignBack ? (
                   <div ref={themeMenuRef} className="relative">
                     <button
                       type="button"
@@ -623,7 +645,18 @@ export default function ProfileCard({
                       : "relative h-auto z-10 opacity-100 pointer-events-auto"
                   } backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
-                  {showBack ? (
+                  {showBack && backMode === "reserve" ? (
+                    <ProfileReserve
+                      profile={profile}
+                      waitlistPosition={waitlistPosition}
+                      onStartReservation={onStartReservation}
+                      isReservationGenerating={isReservationGenerating}
+                      reserved={reservationReserved}
+                      started={reservationStarted}
+                      referralCode={reservationReferralCode}
+                      error={reservationError}
+                    />
+                  ) : showBack ? (
                     <ProfileEditor
                       profile={profile}
                       links={linksArray}

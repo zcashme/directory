@@ -1,10 +1,13 @@
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ProfilePage from "./ProfilePage";
-import { fetchProfileForSlug } from "@/lib/profile/profileFetcher";
+import ZnsIdentityPage from "./ZnsIdentityPage";
 import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
-import { buildSlug, getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
+import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
+import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 import { getSwapTokens } from "@/lib/swap/oneClick";
+import { getWaitlistQueuePosition } from "@/lib/zns/availability";
+import { getWaitlistReservationStatusAction } from "@/lib/zns/reserve";
 
 type SearchParamValue = string | string[] | undefined;
 type SearchParamsMap = Record<string, SearchParamValue>;
@@ -78,23 +81,6 @@ function normalizeBaseLayerParam(rawValue: string): string {
   return rawValue.trim().toLowerCase();
 }
 
-function buildQuerySuffix(searchParams: SearchParamsMap): string {
-  const params = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(searchParams)) {
-    if (Array.isArray(value)) {
-      value.forEach((item) => {
-        if (item) params.append(key, item);
-      });
-      continue;
-    }
-    if (value) params.append(key, value);
-  }
-
-  const encoded = params.toString();
-  return encoded ? `?${encoded}` : "";
-}
-
 function parseComposerPrefill(searchParams: SearchParamsMap): ComposerPrefill {
   const memoRaw = getFirstNonEmptyParam(searchParams, ["memo", "m"]);
   const memo = fitToMaxBytes(memoRaw, MAX_MEMO_BYTES);
@@ -160,15 +146,23 @@ function parseComposerPrefill(searchParams: SearchParamsMap): ComposerPrefill {
 
 export async function generateMetadata({ params }: PageParamsProps): Promise<Metadata> {
   const { slug } = await params;
-  const profile = await fetchProfileForSlug(slug);
+  const resolved = await resolveProfileSlug(slug);
 
-  if (!profile) {
+  if (resolved.kind === "zns-identity") {
+    return {
+      title: `${resolved.name} | Zcash Name`,
+      description: `On-chain Zcash Name ${resolved.name}`,
+    };
+  }
+
+  if (resolved.kind !== "profile") {
     return {
       title: "Profile Not Found",
       description: "The requested profile could not be found.",
     };
   }
 
+  const profile = resolved.profile;
   const username = getUsernameWithDiscriminator(profile);
   const visibleName = profile.display_name || username || slug;
 
@@ -178,27 +172,38 @@ export async function generateMetadata({ params }: PageParamsProps): Promise<Met
     icons: {
       icon: profile.profile_image_url || "/favicon.ico",
     },
+    alternates: {
+      canonical: `/${buildCanonicalSlug(profile, resolved.znsBound)}`,
+    },
   };
 }
 
 export default async function Page({ params, searchParams }: PageProps) {
   const [{ slug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-  const profile = await fetchProfileForSlug(slug);
+  const resolved = await resolveProfileSlug(slug);
 
-  if (!profile) {
+  if (resolved.kind === "zns-identity") {
+    return (
+      <ZnsIdentityPage
+        name={resolved.name}
+        address={resolved.registration.address}
+        txid={resolved.registration.txid}
+      />
+    );
+  }
+
+  if (resolved.kind !== "profile") {
     notFound();
   }
 
-  const canonicalSlug = buildSlug(profile);
-  const requestedSlug = decodeURIComponent(slug || "").trim().toLowerCase();
-  if (canonicalSlug && requestedSlug !== canonicalSlug.toLowerCase()) {
-    redirect(`/${canonicalSlug}${buildQuerySuffix(resolvedSearchParams)}`);
-  }
+  const profile = resolved.profile;
 
-  const [duplicateNameCount, tokensResult] = await Promise.all([
+  const [duplicateNameCount, tokensResult, waitlistPosition, initialReservationSession] = await Promise.all([
     profile.name ? getDuplicateNameCount(profile.name) : 0,
     getSwapTokens(),
+    profile.name ? getWaitlistQueuePosition(profile.name, profile.id) : 1,
+    getWaitlistReservationStatusAction(profile.id),
   ]);
 
   const tokens = tokensResult.ok ? tokensResult.data : [];
@@ -208,6 +213,8 @@ export default async function Page({ params, searchParams }: PageProps) {
     <ProfilePage
       initialProfile={profile}
       duplicateNameCount={duplicateNameCount}
+      waitlistPosition={waitlistPosition}
+      initialReservationSession={initialReservationSession}
       tokens={tokens}
       initialPrefill={initialPrefill}
     />

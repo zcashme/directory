@@ -336,6 +336,15 @@ export default function AddUserForm({
 
       if (!active) return;
 
+      if (availabilityResult.ok && availabilityResult.zns_owned) {
+        setNameConflict({
+          type: "error",
+          text: "This Zcash Name has already been claimed. Choose another username.",
+        });
+        setNameHelp("Username unavailable");
+        return;
+      }
+
       if (availabilityResult.ok && availabilityResult.exists) {
         if (availabilityResult.verified_exists) {
           setNameConflict({
@@ -345,14 +354,26 @@ export default function AddUserForm({
         } else {
           setNameConflict({
             type: "info",
-            text: "That name is used by an unverified profile(s). You can still proceed. Verify to secure this Zcash.me name for yourself.",
+            text: "That name is used by an unverified profile(s). You can still proceed.",
           });
         }
       } else {
         setNameConflict(null);
       }
 
-      setNameHelp(`Shared as: Zcash.me/${normalizeUsernameForSlug(trimmedName)}`);
+      const slug = normalizeUsernameForSlug(trimmedName);
+      const waitlistCount = availabilityResult.waitlist_count ?? 0;
+      if (availabilityResult.ok && !availabilityResult.zns_owned && !availabilityResult.verified_exists) {
+        if (waitlistCount === 0) {
+          setNameHelp(`Be the first to join the waitlist. Profile URL: Zcash.me/${slug}-[id]`);
+        } else {
+          setNameHelp(
+            `${waitlistCount} ${waitlistCount === 1 ? "person is" : "people are"} already waiting for this Zcash Name. Profile URL: Zcash.me/${slug}-[id]`
+          );
+        }
+      } else {
+        setNameHelp(`Profile URL: Zcash.me/${slug}-[id]`);
+      }
     };
 
     const timer = setTimeout(checkName, 300);
@@ -599,9 +620,14 @@ export default function AddUserForm({
     const trimmedName = sanitizeUsernameInput(name);
     const usernameAvailabilityResult = await checkUsernameAvailabilityAction(trimmedName);
 
+    if (usernameAvailabilityResult.ok && usernameAvailabilityResult.zns_owned) {
+      setError("This Zcash Name has already been claimed. Choose another username.");
+      return;
+    }
+
     if (usernameAvailabilityResult.ok && usernameAvailabilityResult.verified_exists) {
       setError(
-        'That name is already used by a verified profile. Spaces are treated as underscores and casing is ignored.'
+        "That name is already used by a verified profile."
       );
       return;
     }
@@ -786,7 +812,7 @@ export default function AddUserForm({
       >
         {nameConflict?.text
           ? nameConflict.text
-          : nameHelp || "Use letters, numbers, or underscores. Spaces become underscores."}
+          : nameHelp || "Use lowercase letters and numbers only, 1–62 characters."}
       </p>
       {addressConflict && (
         <p

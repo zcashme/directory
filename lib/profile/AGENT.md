@@ -9,8 +9,9 @@ Powers the profile page (zcash.me/:username) and appears in search, directory, a
 ### Viewing a Profile
 When someone visits zcash.me/:username, the server fetches the profile from `zcasher_searchable`,
 joins rank data from the leaderboard tables, and fetches the user's links. The profile slug
-supports three lookup strategies: exact slug match, username-discriminator pattern (e.g. `zooko-132`
-for unverified profiles), and normalized username fallback.
+supports suffixed `{name}-{id}` lookup, ZNS-bound unsuffixed lookup when the on-chain name and
+address match the profile, a ZNS identity page when the name is owned by a different address,
+and the existing verified-first / lowest-id name fallback.
 
 ### Usernames & Slugs
 Verified profiles get a clean slug (`/zooko`). Unverified profiles get a discriminator suffix

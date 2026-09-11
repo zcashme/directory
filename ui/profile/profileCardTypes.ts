@@ -70,15 +70,25 @@ export interface ProfileCardContentProps {
   showDisplayNameVerifiedBadge?: boolean;
 }
 
+export type ProfileCardBackMode = "edit" | "reserve";
+
 export interface ProfileCardProps {
   profile: Profile;
   tokens: Token[];
   fullView?: boolean;
   duplicateNameCount?: number;
+  waitlistPosition?: number;
   onShowQR?: () => void;
   onEditorModeChange?: (isEditorOpen: boolean) => void;
+  onBackModeChange?: (mode: ProfileCardBackMode | null) => void;
   onGenerateVerificationQr?: () => void;
   isVerificationGenerating?: boolean;
+  onStartReservation?: () => void;
+  isReservationGenerating?: boolean;
+  reservationReserved?: boolean;
+  reservationStarted?: boolean;
+  reservationReferralCode?: string;
+  reservationError?: string;
   onDesignPanelBackgroundChange?: (backgroundColor: string | null) => void;
   cardWidthPx?: number;
 }
