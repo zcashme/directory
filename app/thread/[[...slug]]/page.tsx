@@ -10,15 +10,16 @@ export const metadata: Metadata = {
 export const revalidate = 30; // ISR - revalidate every 30 seconds
 
 interface PageProps {
-  params: {
+  params: Promise<{
     slug?: string[];
-  };
+  }>;
 }
 
 export default async function Page({ params }: PageProps) {
+  const { slug } = await params;
   // Extract boardId from slug (first element)
   // If no slug provided, use default board ID
-  const boardId = params.slug?.[0] || 'general';
+  const boardId = slug?.[0] || 'general';
 
   // TODO: Fetch initial data from database
   // For now, return empty arrays - client will fetch on mount
