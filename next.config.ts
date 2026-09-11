@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Keep these unbundled so Turbopack does not rewrite harfbuzzjs/resvg
   // native+wasm paths to a /ROOT/... location that does not exist on Vercel.
+  // Production builds use `next build --webpack` (package.json): Vercel CLI 59
+  // rejects Turbopack serverless packages that contain hashed symlink aliases.
   serverExternalPackages: ["@resvg/resvg-js", "satori", "harfbuzzjs"],
   outputFileTracingIncludes: {
     "/opengraph-image": [
