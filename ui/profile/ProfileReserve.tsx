@@ -104,6 +104,7 @@ interface ProfileReserveProps {
   isReservationGenerating?: boolean;
   reserved?: boolean;
   started?: boolean;
+  priority?: boolean;
   referralCode?: string;
   error?: string;
 }
@@ -115,6 +116,7 @@ export default function ProfileReserve({
   isReservationGenerating = false,
   reserved = false,
   started = false,
+  priority = false,
   referralCode = "",
   error = "",
 }: ProfileReserveProps) {
@@ -128,6 +130,7 @@ export default function ProfileReserve({
   const username = name || "username";
   const zcasherId = profile.id;
   const dur = shouldReduceMotion ? "duration-100" : "duration-300 ease-in-out";
+  const normalizedReferralCode = referralCode.trim();
 
   const togglePrices = () => {
     if (pricesExpanded) {
@@ -165,14 +168,61 @@ export default function ProfileReserve({
     setAppLoginsOpen(true);
   };
 
+  if (priority) {
+    const referralUrl = normalizedReferralCode
+      ? `https://www.zcashnames.com/sharekit?ref=${encodeURIComponent(normalizedReferralCode)}`
+      : "";
+    const leadersRefUrl = normalizedReferralCode
+      ? `https://zcashnames.com/leaders/ref/${encodeURIComponent(normalizedReferralCode)}`
+      : "";
+
+    return (
+      <div className="w-full text-left text-sm text-gray-800">
+        <h2 className="text-center text-lg font-semibold">{username} is protected</h2>
+        <p className="mt-3 text-gray-600">
+          No reservation needed.
+          <br />
+          Because you verified your Zcash.me profile before May 2026, we&apos;ll send an access code to your shielded
+          address before Early Access.
+        </p>
+        <p className="mt-3 text-gray-600">
+          Use the code to claim your Zcash Name on-chain before others can.
+        </p>
+        {referralUrl && leadersRefUrl ? (
+        <p className="mt-3 text-gray-600">
+          In the meantime,{" "}
+          <a
+            href={referralUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[var(--color-brand-blue)] hover:underline"
+          >
+            share your referral link
+          </a>{" "}
+          and{" "}
+          <a
+            href={leadersRefUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-bold text-[var(--color-brand-blue)] hover:underline"
+          >
+            earn ZEC
+          </a>{" "}
+          when your referrals claim their Zcash Name.
+        </p>
+        ) : null}
+      </div>
+    );
+  }
+
   if (reserved) {
     const abbreviatedAddress = abbreviateAlphanumeric(profile.address || "");
     const waitlistUrl = `https://zcashnames.com/waitlist/view?search=${encodeURIComponent(username)}`;
-    const referralUrl = referralCode
-      ? `https://www.zcashnames.com/sharekit?ref=${encodeURIComponent(referralCode)}`
+    const referralUrl = normalizedReferralCode
+      ? `https://www.zcashnames.com/sharekit?ref=${encodeURIComponent(normalizedReferralCode)}`
       : "";
-    const leadersRefUrl = referralCode
-      ? `https://zcashnames.com/leaders/ref/${encodeURIComponent(referralCode)}`
+    const leadersRefUrl = normalizedReferralCode
+      ? `https://zcashnames.com/leaders/ref/${encodeURIComponent(normalizedReferralCode)}`
       : "";
     return (
       <div className="w-full text-left text-sm text-gray-800">
@@ -237,7 +287,7 @@ export default function ProfileReserve({
         You could be #{waitlistPosition} in line for this Zcash Name.
       </p>
       <p className="mt-3 text-gray-600">
-        Reserve to receive a code sent to the shielded address on your profile before Early Access begins.
+        Reserve to receive a code before Early Access begins.
         Use your code to purchase the Zcash Name on-chain before others get a chance.
       </p>
 
@@ -341,14 +391,14 @@ export default function ProfileReserve({
               <ExpandableSublist open={walletsOpen} dur={dur} items={ZCASH_WALLET_APPS} />
             </li>
             <li>
-              Let people <span className="font-bold">check your profile</span> before sending you Zcash
+              People can <span className="font-bold"> check your profile</span> before sending to your Zcash Name in wallets
             </li>
             <li>
               Customize your profile with{" "}
               <span className="font-bold">card colors, backgrounds, and patterns</span>
             </li>
             <li>
-              <span className="font-bold">Log in to ZcashMe</span> and edit your profile without OTP verification
+              <span className="font-bold">Login with ZNS</span> and edit your profile without OTP verification
             </li>
             <li>
               Get a <span className="font-bold">Zcash Names badge</span> next to your display name
@@ -366,7 +416,7 @@ export default function ProfileReserve({
                     toggleAppLogins();
                   }}
                 >
-                  Zcash app logins
+                  login with ZNS
                 </button>
               </span>
               , and more
@@ -380,7 +430,7 @@ export default function ProfileReserve({
         type="button"
         onClick={toggleBenefits}
         aria-expanded={benefitsOpen}
-        className="mt-4 block w-full text-center font-normal text-[var(--color-brand-blue)] hover:underline"
+        className={`${benefitsOpen ? "mt-4" : "mt-8"} block w-full text-center font-normal text-[var(--color-brand-blue)] hover:underline`}
       >
         {benefitsOpen ? "Hide Benefits" : "See Benefits"}
       </button>

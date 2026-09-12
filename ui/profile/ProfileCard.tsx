@@ -92,6 +92,7 @@ export default function ProfileCard({
   isReservationGenerating = false,
   reservationReserved = false,
   reservationStarted = false,
+  reservationPriority = false,
   reservationReferralCode = "",
   reservationError = "",
   onDesignPanelBackgroundChange,
@@ -653,6 +654,7 @@ export default function ProfileCard({
                       isReservationGenerating={isReservationGenerating}
                       reserved={reservationReserved}
                       started={reservationStarted}
+                      priority={reservationPriority}
                       referralCode={reservationReferralCode}
                       error={reservationError}
                     />

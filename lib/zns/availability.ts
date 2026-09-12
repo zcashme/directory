@@ -15,6 +15,18 @@ export interface UsernameJoinAvailability {
   waitlistCount: number;
 }
 
+export interface ZmPriorityProtectedNameInfo {
+  protected: boolean;
+  referralCode: string | null;
+}
+
+function getPreferredReferralCode(row: {
+  referral_code?: string | null;
+  human_referral_code?: string | null;
+}): string {
+  return (row.human_referral_code ?? "").trim() || (row.referral_code ?? "").trim();
+}
+
 export async function getWaitlistCountForName(name: string): Promise<number> {
   const normalized = normalizeZnsName(name);
   if (!normalized) return 0;
@@ -60,6 +72,48 @@ export async function getWaitlistQueuePosition(
   });
 
   return 1 + others.length;
+}
+
+export async function getZmPriorityProtectedNameInfo(name: string): Promise<ZmPriorityProtectedNameInfo> {
+  const normalized = normalizeZnsName(name);
+  if (!normalized) return { protected: false, referralCode: null };
+
+  const supabase = createSupabaseServerClient();
+  if (!supabase) return { protected: false, referralCode: null };
+
+  const { data, error } = await supabase
+    .from("zn_protected_names")
+    .select("normalized_name, parent_name")
+    .eq("normalized_name", normalized)
+    .eq("status", "protected")
+    .eq("zm_priority_claim", true)
+    .maybeSingle();
+
+  if (error || !data?.normalized_name) {
+    return { protected: false, referralCode: null };
+  }
+
+  const familyRootName = String(data.parent_name ?? data.normalized_name).trim().toLowerCase();
+  if (!familyRootName) return { protected: true, referralCode: null };
+
+  const { data: referralData, error: referralError } = await supabase
+    .from("zn_protected_family_referrals")
+    .select("referral_code, human_referral_code")
+    .eq("family_root_name", familyRootName)
+    .maybeSingle();
+
+  if (referralError || !referralData?.referral_code) {
+    return { protected: true, referralCode: null };
+  }
+
+  return {
+    protected: true,
+    referralCode: getPreferredReferralCode(referralData) || null,
+  };
+}
+
+export async function isZmPriorityProtectedName(name: string): Promise<boolean> {
+  return (await getZmPriorityProtectedNameInfo(name)).protected;
 }
 
 export async function getUsernameJoinAvailability(

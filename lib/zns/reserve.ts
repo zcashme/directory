@@ -2,6 +2,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { normalizeZnsName, isValidZnsName, buildWaitlistReserveMemo, zip321Uri } from "@/lib/zns/name";
+import { getZmPriorityProtectedNameInfo, type ZmPriorityProtectedNameInfo } from "@/lib/zns/availability";
 
 const DEFAULT_RESERVE_ADDRESS =
   "u1lgqp0jc6efr7fj43emg66wc4x500c8ylesuv0mcsa87ua0qc9qcgyxe9hk2840knvc28gtce42hlerhwsuds5lpll7n7cfmqj9ccsmzskjel859w434ayvlnvhmmsg0wmdyf3nsppzqpsl54vq9n6599glgxlgtag03a92fekglk2fqhekd3ft306khvvwfzsjw56xr9hxfdkz4qxgc";
@@ -62,7 +63,8 @@ async function generateUniqueReferralCode(
   return generateReferralCode();
 }
 
-const WAITLIST_ROW_COLUMNS = "id, name, name_reserved, name_reserved_at, name_reserved_txid, zcasher_id, referral_code";
+const WAITLIST_ROW_COLUMNS =
+  "id, name, name_reserved, name_reserved_at, name_reserved_txid, zcasher_id, referral_code";
 
 type WaitlistRow = {
   id: string;
@@ -129,6 +131,11 @@ export async function ensureWaitlistReservationAction(profileId: number): Promis
       return { ok: false, error: "This username cannot be reserved as a Zcash Name." };
     }
 
+    const protectedNameInfo = await getZmPriorityProtectedNameInfo(name);
+    if (protectedNameInfo.protected) {
+      return { ok: true, name, referralCode: protectedNameInfo.referralCode };
+    }
+
     const linkedWaitlistId = typeof profile.zns_waitlist_id === "string" ? profile.zns_waitlist_id : "";
     const existing = await findWaitlistRow(supabase, profileId, linkedWaitlistId);
     if (existing?.id) {
@@ -168,6 +175,10 @@ export async function ensureWaitlistReservationAction(profileId: number): Promis
   } catch (error) {
     return { ok: false, error: String((error as Error)?.message || error) };
   }
+}
+
+export async function getZmPriorityProtectedNameAction(name: string): Promise<ZmPriorityProtectedNameInfo> {
+  return getZmPriorityProtectedNameInfo(name);
 }
 
 export async function getWaitlistReservationStatusAction(profileId: number): Promise<ReserveSession | null> {

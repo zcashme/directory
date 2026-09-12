@@ -87,6 +87,7 @@ export interface ProfileCardProps {
   isReservationGenerating?: boolean;
   reservationReserved?: boolean;
   reservationStarted?: boolean;
+  reservationPriority?: boolean;
   reservationReferralCode?: string;
   reservationError?: string;
   onDesignPanelBackgroundChange?: (backgroundColor: string | null) => void;

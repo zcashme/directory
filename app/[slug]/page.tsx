@@ -6,7 +6,7 @@ import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 import { getSwapTokens } from "@/lib/swap/oneClick";
-import { getWaitlistQueuePosition } from "@/lib/zns/availability";
+import { getWaitlistQueuePosition, getZmPriorityProtectedNameInfo } from "@/lib/zns/availability";
 import { getWaitlistReservationStatusAction } from "@/lib/zns/reserve";
 
 type SearchParamValue = string | string[] | undefined;
@@ -199,12 +199,14 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   const profile = resolved.profile;
 
-  const [duplicateNameCount, tokensResult, waitlistPosition, initialReservationSession] = await Promise.all([
-    profile.name ? getDuplicateNameCount(profile.name) : 0,
-    getSwapTokens(),
-    profile.name ? getWaitlistQueuePosition(profile.name, profile.id) : 1,
-    getWaitlistReservationStatusAction(profile.id),
-  ]);
+  const [duplicateNameCount, tokensResult, waitlistPosition, initialReservationSession, initialNameProtection] =
+    await Promise.all([
+      profile.name ? getDuplicateNameCount(profile.name) : 0,
+      getSwapTokens(),
+      profile.name ? getWaitlistQueuePosition(profile.name, profile.id) : 1,
+      getWaitlistReservationStatusAction(profile.id),
+      profile.name ? getZmPriorityProtectedNameInfo(profile.name) : { protected: false, referralCode: null },
+    ]);
 
   const tokens = tokensResult.ok ? tokensResult.data : [];
   const initialPrefill = parseComposerPrefill(resolvedSearchParams);
@@ -215,6 +217,8 @@ export default async function Page({ params, searchParams }: PageProps) {
       duplicateNameCount={duplicateNameCount}
       waitlistPosition={waitlistPosition}
       initialReservationSession={initialReservationSession}
+      initialNameProtected={initialNameProtection.protected}
+      initialProtectedReferralCode={initialNameProtection.referralCode}
       tokens={tokens}
       initialPrefill={initialPrefill}
     />
