@@ -11,6 +11,11 @@ export interface ZnsRegistration {
   height?: number | null;
 }
 
+export interface ResolveZnsNameOptions {
+  signal?: AbortSignal;
+  cache?: RequestCache;
+}
+
 const NETWORK_URLS: Record<ZnsNetwork, string> = {
   testnet: "https://light.zcash.me/zns-testnet",
   mainnet: "https://light.zcash.me/zns-mainnet",
@@ -58,7 +63,10 @@ function normalizeRegistration(raw: unknown): ZnsRegistration | null {
   };
 }
 
-export async function resolveZnsName(rawName: string): Promise<ZnsRegistration | null> {
+export async function resolveZnsName(
+  rawName: string,
+  options: ResolveZnsNameOptions = {}
+): Promise<ZnsRegistration | null> {
   const name = normalizeZnsName(rawName);
   if (!isValidZnsName(name)) return null;
 
@@ -69,19 +77,23 @@ export async function resolveZnsName(rawName: string): Promise<ZnsRegistration |
     const response = await fetch(url, {
       method: "POST",
       headers: { "content-type": "application/json" },
+      signal: options.signal,
       body: JSON.stringify({
         jsonrpc: "2.0",
         id: 1,
         method: "resolve",
         params: { query: name },
       }),
-      cache: "no-store",
+      cache: options.cache ?? "no-store",
     });
     if (!response.ok) return null;
     const payload = await response.json() as { result?: unknown; error?: { message?: string } };
     if (payload?.error) return null;
     return normalizeRegistration(payload?.result);
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.name === "AbortError") {
+      throw error;
+    }
     return null;
   }
 }

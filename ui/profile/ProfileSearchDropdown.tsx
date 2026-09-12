@@ -7,7 +7,6 @@ import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { toProfile, type DirectoryApiResponse } from "@/lib/directory/directoryClient";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
-import Spinner from "@/ui/common/feedback/Spinner";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 import { isTruthyProfileFlag } from "./profileCardUtils";
@@ -40,6 +39,27 @@ function Highlight({ text, query }: { text: string; query: string }) {
       <span className="font-semibold underline underline-offset-2">{text.slice(i, i + query.length)}</span>
       {text.slice(i + query.length)}
     </>
+  );
+}
+
+function SearchingStatus() {
+  const [dotCount, setDotCount] = useState(1);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setDotCount((current) => (current >= 3 ? 1 : current + 1));
+    }, 350);
+
+    return () => window.clearInterval(intervalId);
+  }, []);
+
+  return (
+    <div
+      aria-label="Searching"
+      className="px-3 py-3 text-center text-sm font-medium text-gray-500"
+    >
+      Searching<span aria-hidden="true" className="inline-block w-4 text-left">{".".repeat(dotCount)}</span>
+    </div>
   );
 }
 
@@ -108,7 +128,7 @@ export default function ProfileSearchDropdown({
     abortRef.current = controller;
     setLoading(true);
 
-    fetch(`/api/directory?q=${encodeURIComponent(query)}&limit=5`, {
+    fetch(`/api/directory?q=${encodeURIComponent(query)}&limit=5&mode=header`, {
       signal: controller.signal,
       headers: { "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "" },
     })
@@ -124,6 +144,7 @@ export default function ProfileSearchDropdown({
         const profiles = (api.results ?? []).map(toProfile);
         const exists = api.exists === true;
         const znsOwned = api.zns_owned === true;
+        const znsChecked = typeof api.zns_owned === "boolean";
 
         setResults(profiles);
         setLoading(false);
@@ -131,7 +152,7 @@ export default function ProfileSearchDropdown({
         if (showUsernameAvailability && znsOwned) {
           setUsernameAvailable(null);
           setUsernameClaimed(query);
-        } else if (showUsernameAvailability && !exists && !znsOwned) {
+        } else if (showUsernameAvailability && !exists && znsChecked && !znsOwned) {
           setUsernameAvailable(query);
           setUsernameClaimed(null);
         } else {
@@ -251,9 +272,7 @@ export default function ProfileSearchDropdown({
 
                 {/* Loading indicator */}
                 {loading && (
-                  <div className="flex items-center justify-center py-3">
-                    <Spinner size="xs" color="gray" />
-                  </div>
+                  <SearchingStatus />
                 )}
 
                 {/* Username availability banner */}

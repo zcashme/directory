@@ -65,6 +65,11 @@ interface DirectoryResponse extends Record<string, unknown> {
   zns_owned?: boolean;
 }
 
+interface ZnsOwnershipCacheEntry {
+  owned: boolean;
+  expiresAt: number;
+}
+
 // Fields to select from zcasher_searchable
 const PROFILE_FIELDS = [
   "id",
@@ -80,6 +85,10 @@ const PROFILE_FIELDS = [
   "link_search_text",
 ].join(",");
 
+const ZNS_LOOKUP_TIMEOUT_MS = 1_200;
+const ZNS_OWNERSHIP_CACHE_TTL_MS = 30_000;
+const znsOwnershipCache = new Map<string, ZnsOwnershipCacheEntry>();
+
 const encodeCursor = (lastName: string, lastId: number): string =>
   Buffer.from(JSON.stringify({ name: lastName, id: lastId })).toString("base64");
 
@@ -94,6 +103,32 @@ const decodeCursor = (cursor: string): { name: string; id: number } | null => {
     return null;
   }
 };
+
+async function resolveZnsOwnershipForAvailability(name: string): Promise<boolean | undefined> {
+  const znsName = normalizeZnsName(name);
+  if (!isValidZnsName(znsName)) return false;
+
+  const now = Date.now();
+  const cached = znsOwnershipCache.get(znsName);
+  if (cached && cached.expiresAt > now) return cached.owned;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), ZNS_LOOKUP_TIMEOUT_MS);
+
+  try {
+    const registration = await resolveZnsName(znsName, { signal: controller.signal });
+    const owned = Boolean(registration?.address);
+    znsOwnershipCache.set(znsName, {
+      owned,
+      expiresAt: now + ZNS_OWNERSHIP_CACHE_TTL_MS,
+    });
+    return owned;
+  } catch {
+    return undefined;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Compute ranking tier for a profile based on the query.
@@ -142,6 +177,7 @@ export async function GET(request: Request): Promise<Response> {
   const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "25", 10), 1), 100);
   const cursor = searchParams.get("cursor") || null;
   const verifiedOnly = searchParams.get("verified_only") === "true";
+  const headerMode = searchParams.get("mode") === "header";
 
   const supabase = createSupabaseServerClient();
 
@@ -151,7 +187,11 @@ export async function GET(request: Request): Promise<Response> {
 
   // Build query - fetch more than needed for ranking, then slice
   // When ranking, we need to fetch extra to ensure we get enough after sorting
-  const fetchLimit = q ? Math.min(Math.max(limit * 12, 60), 200) : limit + 1;
+  const fetchLimit = q
+    ? headerMode
+      ? Math.min(Math.max(limit * 6, 30), 80)
+      : Math.min(Math.max(limit * 12, 60), 200)
+    : limit + 1;
 
   let queryBuilder = supabase
     .from("zcasher_searchable")
@@ -327,12 +367,10 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
 
-    const znsName = normalizeZnsName(q);
-    if (isValidZnsName(znsName)) {
-      const registration = await resolveZnsName(znsName);
-      znsOwned = Boolean(registration?.address);
-    } else {
+    if (exists) {
       znsOwned = false;
+    } else {
+      znsOwned = await resolveZnsOwnershipForAvailability(q);
     }
   }
 
