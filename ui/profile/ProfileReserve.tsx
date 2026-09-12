@@ -180,10 +180,10 @@ export default function ProfileReserve({
       <div className="w-full text-left text-sm text-gray-800">
         <h2 className="text-center text-lg font-semibold">{username} is protected</h2>
         <p className="mt-3 text-gray-600">
-          No reservation needed.
-          <br />
-          Because you verified your Zcash.me profile before May 2026, we&apos;ll send an access code to your shielded
-          address before Early Access.
+          Because you verified your Zcash.me profile before May 2026, no reservation is needed.
+        </p>
+        <p className="mt-3 text-gray-600">
+          We&apos;ll send an access code to your shielded address before Early Access.
         </p>
         <p className="mt-3 text-gray-600">
           Use the code to claim your Zcash Name on-chain before others can.
@@ -199,7 +199,7 @@ export default function ProfileReserve({
           >
             share your referral link
           </a>{" "}
-          and{" "}
+          to{" "}
           <a
             href={leadersRefUrl}
             target="_blank"
@@ -261,7 +261,7 @@ export default function ProfileReserve({
           ) : (
             <span className="font-bold">share your referral link</span>
           )}{" "}
-          and{" "}
+          to{" "}
           {leadersRefUrl ? (
             <a
               href={leadersRefUrl}
