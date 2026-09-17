@@ -233,7 +233,7 @@ export default function ProfileVerification({
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
   const lastShowQrSectionRef = useRef(false);
   const isMaxi = isTruthyLikeMaxi(profile?.is_maxi);
-  const verificationAmountZec = isMaxi ? "0" : "0.004";
+  const verificationAmountZec = isMaxi ? "0" : "0.002";
   const minAmountHint = isMaxi
     ? "No minimum amount required."
     : "Include a minimum of 0.002 ZEC.";
