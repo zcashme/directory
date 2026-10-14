@@ -102,6 +102,7 @@ export default function ProfileSearchDropdown({
   const [loading, setLoading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState<string | null>(null);
   const [usernameClaimed, setUsernameClaimed] = useState<string | null>(null);
+  const [usernameProtected, setUsernameProtected] = useState<string | null>(null);
   const [mobileDropdownStyle, setMobileDropdownStyle] = useState<CSSProperties | undefined>(undefined);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
@@ -121,6 +122,7 @@ export default function ProfileSearchDropdown({
       setLoading(false);
       setUsernameAvailable(null);
       setUsernameClaimed(null);
+      setUsernameProtected(null);
       return;
     }
 
@@ -145,19 +147,27 @@ export default function ProfileSearchDropdown({
         const exists = api.exists === true;
         const znsOwned = api.zns_owned === true;
         const znsChecked = typeof api.zns_owned === "boolean";
+        const nameProtected = api.name_protected === true;
 
         setResults(profiles);
         setLoading(false);
 
-        if (showUsernameAvailability && znsOwned) {
+        if (showUsernameAvailability && nameProtected) {
+          setUsernameAvailable(null);
+          setUsernameClaimed(null);
+          setUsernameProtected(query);
+        } else if (showUsernameAvailability && znsOwned) {
           setUsernameAvailable(null);
           setUsernameClaimed(query);
+          setUsernameProtected(null);
         } else if (showUsernameAvailability && !exists && znsChecked && !znsOwned) {
           setUsernameAvailable(query);
           setUsernameClaimed(null);
+          setUsernameProtected(null);
         } else {
           setUsernameAvailable(null);
           setUsernameClaimed(null);
+          setUsernameProtected(null);
         }
       })
       .catch((err) => {
@@ -165,6 +175,7 @@ export default function ProfileSearchDropdown({
         setLoading(false);
         setUsernameAvailable(null);
         setUsernameClaimed(null);
+        setUsernameProtected(null);
       });
 
     return () => controller.abort();
@@ -276,6 +287,13 @@ export default function ProfileSearchDropdown({
                 )}
 
                 {/* Username availability banner */}
+                {usernameProtected && (
+                  <div className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 bg-amber-50/70">
+                    <span className="font-semibold text-amber-800">/{usernameProtected}</span>{" "}
+                    is protected and cannot be used.
+                  </div>
+                )}
+
                 {usernameClaimed && (
                   <div className="px-3 py-2 text-sm text-gray-800 font-medium border-b border-gray-100 bg-amber-50/70">
                     <span className="font-semibold text-amber-800">/{usernameClaimed}</span>{" "}
@@ -296,7 +314,7 @@ export default function ProfileSearchDropdown({
                 )}
 
                 {/* Empty state */}
-                {!loading && results.length === 0 && !usernameAvailable && !usernameClaimed && (
+                {!loading && results.length === 0 && !usernameAvailable && !usernameClaimed && !usernameProtected && (
                   <div className="px-3 py-3 text-sm text-gray-400 text-center">No results</div>
                 )}
 

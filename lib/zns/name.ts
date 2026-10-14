@@ -2,6 +2,12 @@ const NAME_RE = /^[a-z0-9]{1,62}$/;
 
 export const ZNS_NAME_MAX_LENGTH = 62;
 
+export const PROTECTED_NAME_SIGNUP_ERROR =
+  "This name is protected and cannot be used as a Zcash.me username.";
+
+export const PROTECTED_NAME_RESERVE_ERROR =
+  "This name is protected and cannot be reserved.";
+
 export function normalizeZnsName(raw: string): string {
   return (raw ?? "")
     .normalize("NFKC")

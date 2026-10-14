@@ -105,6 +105,7 @@ interface ProfileReserveProps {
   reserved?: boolean;
   started?: boolean;
   priority?: boolean;
+  blocked?: boolean;
   referralCode?: string;
   error?: string;
 }
@@ -117,6 +118,7 @@ export default function ProfileReserve({
   reserved = false,
   started = false,
   priority = false,
+  blocked = false,
   referralCode = "",
   error = "",
 }: ProfileReserveProps) {
@@ -167,6 +169,18 @@ export default function ProfileReserve({
     setWalletsOpen(false);
     setAppLoginsOpen(true);
   };
+
+  if (blocked) {
+    return (
+      <div className="w-full text-left text-sm text-gray-800">
+        <h2 className="text-center text-lg font-semibold">{username} is protected</h2>
+        <p className="mt-3 text-gray-600">
+          This Zcash Name is protected and cannot be reserved from Zcash.me.
+        </p>
+        {error ? <p className="mt-3 text-center text-xs text-red-600">{error}</p> : null}
+      </div>
+    );
+  }
 
   if (priority) {
     const referralUrl = normalizedReferralCode

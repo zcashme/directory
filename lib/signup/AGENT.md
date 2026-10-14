@@ -8,7 +8,7 @@ in `/ui/signup/AddUserForm.tsx`.
 When a user fills out the signup modal and hits "Add Name", this is what
 runs on the server:
 
-1. Validates username is not taken by a verified profile
+1. Validates username is not a protected Zcash Name (`zn_protected_names.status=protected`) and is not taken by a verified profile
 2. Validates Zcash address is not already associated with another profile
 3. Inserts a row into the `zcasher` table (profile starts unverified)
 4. Inserts links into `zcasher_links` (all start unverified)

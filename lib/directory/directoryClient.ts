@@ -25,6 +25,7 @@ export interface DirectoryApiResponse {
   next_cursor: string | null;
   exists?: boolean;
   zns_owned?: boolean;
+  name_protected?: boolean;
 }
 
 // ---------------------------------------------------------------------------

@@ -13,6 +13,14 @@ export interface UsernameJoinAvailability {
   verifiedExists: boolean;
   takenByOtherVerified: boolean;
   waitlistCount: number;
+  protected: boolean;
+}
+
+export type ProtectedNameKind = "none" | "protected" | "zm_priority";
+
+export interface ProtectedNameInfo {
+  kind: ProtectedNameKind;
+  referralCode: string | null;
 }
 
 export interface ZmPriorityProtectedNameInfo {
@@ -74,27 +82,32 @@ export async function getWaitlistQueuePosition(
   return 1 + others.length;
 }
 
-export async function getZmPriorityProtectedNameInfo(name: string): Promise<ZmPriorityProtectedNameInfo> {
+export async function getProtectedNameInfo(name: string): Promise<ProtectedNameInfo> {
   const normalized = normalizeZnsName(name);
-  if (!normalized) return { protected: false, referralCode: null };
+  if (!normalized) return { kind: "none", referralCode: null };
 
   const supabase = createSupabaseServerClient();
-  if (!supabase) return { protected: false, referralCode: null };
+  if (!supabase) return { kind: "none", referralCode: null };
 
   const { data, error } = await supabase
     .from("zn_protected_names")
-    .select("normalized_name, parent_name")
+    .select("normalized_name, parent_name, zm_priority_claim")
     .eq("normalized_name", normalized)
     .eq("status", "protected")
-    .eq("zm_priority_claim", true)
+    .limit(1)
     .maybeSingle();
 
   if (error || !data?.normalized_name) {
-    return { protected: false, referralCode: null };
+    return { kind: "none", referralCode: null };
+  }
+
+  const kind: ProtectedNameKind = data.zm_priority_claim === true ? "zm_priority" : "protected";
+  if (kind !== "zm_priority") {
+    return { kind, referralCode: null };
   }
 
   const familyRootName = String(data.parent_name ?? data.normalized_name).trim().toLowerCase();
-  if (!familyRootName) return { protected: true, referralCode: null };
+  if (!familyRootName) return { kind, referralCode: null };
 
   const { data: referralData, error: referralError } = await supabase
     .from("zn_protected_family_referrals")
@@ -103,13 +116,21 @@ export async function getZmPriorityProtectedNameInfo(name: string): Promise<ZmPr
     .maybeSingle();
 
   if (referralError || !referralData?.referral_code) {
-    return { protected: true, referralCode: null };
+    return { kind, referralCode: null };
   }
 
   return {
-    protected: true,
+    kind,
     referralCode: getPreferredReferralCode(referralData) || null,
   };
+}
+
+export async function getZmPriorityProtectedNameInfo(name: string): Promise<ZmPriorityProtectedNameInfo> {
+  const info = await getProtectedNameInfo(name);
+  if (info.kind !== "zm_priority") {
+    return { protected: false, referralCode: null };
+  }
+  return { protected: true, referralCode: info.referralCode };
 }
 
 export async function isZmPriorityProtectedName(name: string): Promise<boolean> {
@@ -130,13 +151,15 @@ export async function getUsernameJoinAvailability(
       verifiedExists: false,
       takenByOtherVerified: false,
       waitlistCount: 0,
+      protected: false,
     };
   }
 
-  const [zns, zcashers, waitlistCount] = await Promise.all([
+  const [zns, zcashers, waitlistCount, protectedName] = await Promise.all([
     resolveZnsName(normalized),
     getUsernameAvailability(username, currentProfileId),
     getWaitlistCountForName(normalized),
+    getProtectedNameInfo(normalized),
   ]);
 
   return {
@@ -147,5 +170,6 @@ export async function getUsernameJoinAvailability(
     verifiedExists: zcashers.verifiedExists,
     takenByOtherVerified: zcashers.takenByOtherVerified,
     waitlistCount,
+    protected: protectedName.kind !== "none",
   };
 }

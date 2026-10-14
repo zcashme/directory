@@ -6,7 +6,7 @@ import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 import { getSwapTokens } from "@/lib/swap/oneClick";
-import { getWaitlistQueuePosition, getZmPriorityProtectedNameInfo } from "@/lib/zns/availability";
+import { getWaitlistQueuePosition, getProtectedNameInfo } from "@/lib/zns/availability";
 import { getWaitlistReservationStatusAction } from "@/lib/zns/reserve";
 
 type SearchParamValue = string | string[] | undefined;
@@ -205,7 +205,7 @@ export default async function Page({ params, searchParams }: PageProps) {
       getSwapTokens(),
       profile.name ? getWaitlistQueuePosition(profile.name, profile.id) : 1,
       getWaitlistReservationStatusAction(profile.id),
-      profile.name ? getZmPriorityProtectedNameInfo(profile.name) : { protected: false, referralCode: null },
+      profile.name ? getProtectedNameInfo(profile.name) : { kind: "none" as const, referralCode: null },
     ]);
 
   const tokens = tokensResult.ok ? tokensResult.data : [];
@@ -217,7 +217,8 @@ export default async function Page({ params, searchParams }: PageProps) {
       duplicateNameCount={duplicateNameCount}
       waitlistPosition={waitlistPosition}
       initialReservationSession={initialReservationSession}
-      initialNameProtected={initialNameProtection.protected}
+      initialNameProtected={initialNameProtection.kind === "zm_priority"}
+      initialNameReservationBlocked={initialNameProtection.kind === "protected"}
       initialProtectedReferralCode={initialNameProtection.referralCode}
       tokens={tokens}
       initialPrefill={initialPrefill}

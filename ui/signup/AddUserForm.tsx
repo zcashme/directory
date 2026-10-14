@@ -35,6 +35,7 @@ import { isValidUrl, normalizeUrl } from "@/lib/profile/urlValidation";
 import { normalizeSocialUsername, buildSocialUrl } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { sanitizeUsernameInput, normalizeUsernameForSlug } from "@/lib/profile/usernamePolicy";
+import { PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
 import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import {
   PROFILE_CARD_ICON_BUTTON_CLASSES,
@@ -336,6 +337,15 @@ export default function AddUserForm({
 
       if (!active) return;
 
+      if (availabilityResult.ok && availabilityResult.protected) {
+        setNameConflict({
+          type: "error",
+          text: PROTECTED_NAME_SIGNUP_ERROR,
+        });
+        setNameHelp("Username unavailable");
+        return;
+      }
+
       if (availabilityResult.ok && availabilityResult.zns_owned) {
         setNameConflict({
           type: "error",
@@ -363,7 +373,12 @@ export default function AddUserForm({
 
       const slug = normalizeUsernameForSlug(trimmedName);
       const waitlistCount = availabilityResult.waitlist_count ?? 0;
-      if (availabilityResult.ok && !availabilityResult.zns_owned && !availabilityResult.verified_exists) {
+      if (
+        availabilityResult.ok &&
+        !availabilityResult.protected &&
+        !availabilityResult.zns_owned &&
+        !availabilityResult.verified_exists
+      ) {
         if (waitlistCount === 0) {
           setNameHelp(`Be the first to join the waitlist. Profile URL: Zcash.me/${slug}-[id]`);
         } else {
@@ -619,6 +634,11 @@ export default function AddUserForm({
 
     const trimmedName = sanitizeUsernameInput(name);
     const usernameAvailabilityResult = await checkUsernameAvailabilityAction(trimmedName);
+
+    if (usernameAvailabilityResult.ok && usernameAvailabilityResult.protected) {
+      setError(PROTECTED_NAME_SIGNUP_ERROR);
+      return;
+    }
 
     if (usernameAvailabilityResult.ok && usernameAvailabilityResult.zns_owned) {
       setError("This Zcash Name has already been claimed. Choose another username.");

@@ -5,6 +5,7 @@ import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl, normalizeSocialUsername, HOSTS } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
+import { PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
@@ -391,7 +392,13 @@ export default function ProfileEditor({
     const timer = setTimeout(async () => {
       const result = await checkUsernameAvailabilityAction(candidate, profile.id);
       if (cancelled) return;
-      if (result.ok && result.zns_owned) {
+      if (result.ok && result.protected) {
+        setUsernameConflict(PROTECTED_NAME_SIGNUP_ERROR);
+        setUsernameStatus("taken");
+        if (form.name !== lastValidUsername) {
+          handleChange("name", lastValidUsername);
+        }
+      } else if (result.ok && result.zns_owned) {
         setUsernameConflict("This Zcash Name has already been claimed. Choose another username.");
         setUsernameStatus("taken");
         if (form.name !== lastValidUsername) {

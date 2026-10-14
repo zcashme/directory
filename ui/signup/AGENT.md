@@ -10,7 +10,7 @@ opens the modal automatically with the referrer pre-filled). The modal
 walks through 6 steps:
 
 1. **Username + Display Name** — username shows as `Zcash.me/username`,
-   live-checks Zcash Names SDK ownership, waitlist count, and verified zcashers profiles.
+   live-checks protected names, Zcash Names SDK ownership, waitlist count, and verified zcashers profiles.
    New usernames are lowercase letters and numbers only (1–62).
 2. **Zcash Address** — validates address type, blocks transparent/tex/viewing
    keys, checks if address is already taken

@@ -98,6 +98,7 @@ export interface CheckUsernameAvailabilityResponse {
   waitlist_count?: number;
   valid?: boolean;
   normalized?: string;
+  protected?: boolean;
   error?: string;
 }
 

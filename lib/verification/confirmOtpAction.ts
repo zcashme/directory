@@ -4,6 +4,8 @@ import { verifyOtp } from "@/lib/verification/otp";
 import { parseZvsMemo, parseMaxiOtpZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
+import { getProtectedNameInfo } from "@/lib/zns/availability";
+import { normalizeZnsName, PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
@@ -368,7 +370,21 @@ export async function confirmOtpAction(
         }
         profileUpdate.address = normalizedAddress;
       }
-      if (edits.name !== undefined) profileUpdate.name = edits.name;
+      if (edits.name !== undefined) {
+        const nextName = normalizeZnsName(String(edits.name ?? ""));
+        const currentName = normalizeZnsName(String(profile.name ?? ""));
+        if (nextName && nextName !== currentName) {
+          const protectedName = await getProtectedNameInfo(nextName);
+          if (protectedName.kind !== "none") {
+            return {
+              ok: false,
+              error: PROTECTED_NAME_SIGNUP_ERROR,
+              data: { status: "invalid" },
+            };
+          }
+        }
+        profileUpdate.name = edits.name;
+      }
       if (edits.display_name !== undefined) profileUpdate.display_name = edits.display_name;
       if (edits.bio !== undefined) profileUpdate.bio = edits.bio;
       const currentThemePackageSelection = normalizeProfileThemePackageSelectionId(profile.profile_theme_package);

@@ -2,6 +2,7 @@
 
 import { createProfile, insertProfileLinks, insertVerifiedProfileLink, checkAddressTaken } from "@/lib/signup/createProfile";
 import { getUsernameJoinAvailability } from "@/lib/zns/availability";
+import { PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
 import type {
   CreateProfileResponse,
   CheckAddressTakenResponse,
@@ -18,6 +19,12 @@ import type { VoidActionResult } from "@/lib/actions/types";
 export async function createProfileAction(profileData: CreateProfilePayload): Promise<CreateProfileResponse> {
   try {
     const joinAvailability = await getUsernameJoinAvailability(profileData.name);
+    if (joinAvailability.protected) {
+      return {
+        ok: false,
+        error: PROTECTED_NAME_SIGNUP_ERROR,
+      };
+    }
     if (joinAvailability.znsOwned) {
       return {
         ok: false,
@@ -119,6 +126,7 @@ export async function checkUsernameAvailabilityAction(
         waitlist_count: 0,
         valid: false,
         normalized: "",
+        protected: false,
       };
     }
 
@@ -132,6 +140,7 @@ export async function checkUsernameAvailabilityAction(
       waitlist_count: availability.waitlistCount,
       valid: availability.valid,
       normalized: availability.normalized,
+      protected: availability.protected,
     };
   } catch (error) {
     return {
@@ -144,6 +153,7 @@ export async function checkUsernameAvailabilityAction(
       waitlist_count: 0,
       valid: false,
       normalized: "",
+      protected: false,
     };
   }
 }

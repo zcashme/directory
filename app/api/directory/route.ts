@@ -4,6 +4,7 @@ import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
 import { normalizeUsernameForCompare } from "@/lib/profile/usernamePolicy";
 import { resolveZnsName } from "@/lib/zns/client";
 import { isValidZnsName, normalizeZnsName } from "@/lib/zns/name";
+import { getProtectedNameInfo } from "@/lib/zns/availability";
 
 interface DirectoryProfile {
   id: number;
@@ -63,6 +64,7 @@ interface DirectoryResponse extends Record<string, unknown> {
   next_cursor: string | null;
   exists?: boolean;
   zns_owned?: boolean;
+  name_protected?: boolean;
 }
 
 interface ZnsOwnershipCacheEntry {
@@ -349,6 +351,7 @@ export async function GET(request: Request): Promise<Response> {
   // Exact username existence for the header "is available" banner.
   let exists: boolean | undefined;
   let znsOwned: boolean | undefined;
+  let nameProtected: boolean | undefined;
   if (q) {
     const compareTarget = normalizeUsernameForCompare(q);
     const exactMatchInResults = resultsToReturn.some(
@@ -367,7 +370,10 @@ export async function GET(request: Request): Promise<Response> {
       );
     }
 
-    if (exists) {
+    const protectedInfo = await getProtectedNameInfo(q);
+    nameProtected = protectedInfo.kind !== "none";
+
+    if (exists || nameProtected) {
       znsOwned = false;
     } else {
       znsOwned = await resolveZnsOwnershipForAvailability(q);
@@ -379,6 +385,7 @@ export async function GET(request: Request): Promise<Response> {
     next_cursor: nextCursor,
     exists,
     zns_owned: znsOwned,
+    name_protected: nameProtected,
   };
   return jsonResponse(responseBody, 200, cacheSeconds);
 }

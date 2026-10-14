@@ -1,8 +1,19 @@
 "use server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
-import { normalizeZnsName, isValidZnsName, buildWaitlistReserveMemo, zip321Uri } from "@/lib/zns/name";
-import { getZmPriorityProtectedNameInfo, type ZmPriorityProtectedNameInfo } from "@/lib/zns/availability";
+import {
+  normalizeZnsName,
+  isValidZnsName,
+  buildWaitlistReserveMemo,
+  zip321Uri,
+  PROTECTED_NAME_RESERVE_ERROR,
+} from "@/lib/zns/name";
+import {
+  getProtectedNameInfo,
+  getZmPriorityProtectedNameInfo,
+  type ProtectedNameInfo,
+  type ZmPriorityProtectedNameInfo,
+} from "@/lib/zns/availability";
 
 const DEFAULT_RESERVE_ADDRESS =
   "u1lgqp0jc6efr7fj43emg66wc4x500c8ylesuv0mcsa87ua0qc9qcgyxe9hk2840knvc28gtce42hlerhwsuds5lpll7n7cfmqj9ccsmzskjel859w434ayvlnvhmmsg0wmdyf3nsppzqpsl54vq9n6599glgxlgtag03a92fekglk2fqhekd3ft306khvvwfzsjw56xr9hxfdkz4qxgc";
@@ -131,9 +142,12 @@ export async function ensureWaitlistReservationAction(profileId: number): Promis
       return { ok: false, error: "This username cannot be reserved as a Zcash Name." };
     }
 
-    const protectedNameInfo = await getZmPriorityProtectedNameInfo(name);
-    if (protectedNameInfo.protected) {
+    const protectedNameInfo = await getProtectedNameInfo(name);
+    if (protectedNameInfo.kind === "zm_priority") {
       return { ok: true, name, referralCode: protectedNameInfo.referralCode };
+    }
+    if (protectedNameInfo.kind === "protected") {
+      return { ok: false, name, error: PROTECTED_NAME_RESERVE_ERROR };
     }
 
     const linkedWaitlistId = typeof profile.zns_waitlist_id === "string" ? profile.zns_waitlist_id : "";
@@ -181,10 +195,17 @@ export async function getZmPriorityProtectedNameAction(name: string): Promise<Zm
   return getZmPriorityProtectedNameInfo(name);
 }
 
+export async function getProtectedNameAction(name: string): Promise<ProtectedNameInfo> {
+  return getProtectedNameInfo(name);
+}
+
 export async function getWaitlistReservationStatusAction(profileId: number): Promise<ReserveSession | null> {
   try {
     const { supabase, profile } = await loadProfile(profileId);
     if (!supabase || !profile) return null;
+
+    const protectedNameInfo = await getProtectedNameInfo(profile.name ?? "");
+    if (protectedNameInfo.kind === "protected") return null;
 
     const linkedWaitlistId = typeof profile.zns_waitlist_id === "string" ? profile.zns_waitlist_id : "";
     const existing = await findWaitlistRow(supabase, profileId, linkedWaitlistId);
