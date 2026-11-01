@@ -563,6 +563,7 @@ type ReferrerStillActiveFlag = "YES" | "NO" | "N/A";
 export interface ReferrerReferralRow {
   id: number;
   username: string;
+  slug?: string | null;
   displayName: string;
   profileImageUrl: string | null;
   addressVerified: boolean;

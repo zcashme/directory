@@ -126,12 +126,17 @@ async function hydrateProfile(
     "maxi_source",
   ].join(",");
 
-  let { data: extra } = await supabase
+  const extraResult = await supabase
     .from("zcasher")
     .select(extraSelect)
     .eq("id", profile.id)
     .limit(1)
     .maybeSingle();
+
+  let extra: Record<string, unknown> | null =
+    extraResult.data && typeof extraResult.data === "object"
+      ? extraResult.data as unknown as Record<string, unknown>
+      : null;
 
   if (!extra) {
     const fallback = await supabase
@@ -140,11 +145,14 @@ async function hydrateProfile(
       .eq("id", profile.id)
       .limit(1)
       .maybeSingle();
-    extra = fallback.data;
+    extra =
+      fallback.data && typeof fallback.data === "object"
+        ? fallback.data as unknown as Record<string, unknown>
+        : null;
   }
 
   if (extra) {
-    const row = extra as Record<string, unknown>;
+    const row = extra;
     profile.is_maxi = row.is_maxi as Profile["is_maxi"];
     profile.profile_card_theme = row.profile_card_theme as Profile["profile_card_theme"];
     profile.profile_page_bkgd = row.profile_page_bkgd as Profile["profile_page_bkgd"];

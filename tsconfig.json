@@ -35,7 +35,8 @@
     "node_modules",
     "verification-service",
     "lint",
-    "auth-service"
+    "auth-service",
+    "**/*.test.ts"
   ],
   "include": [
     "next-env.d.ts",

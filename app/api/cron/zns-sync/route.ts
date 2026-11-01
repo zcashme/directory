@@ -18,5 +18,15 @@ export async function GET(request: NextRequest): Promise<Response> {
   }
 
   const result = await syncZnsRegistry();
-  return jsonResponse(result, result.ok ? 200 : 503);
+  return jsonResponse(
+    {
+      ok: result.ok,
+      network: result.network,
+      events: result.events,
+      backfilled: result.backfilled,
+      lastHeight: result.lastHeight,
+      ...(result.error ? { error: result.error } : {}),
+    },
+    result.ok ? 200 : 503
+  );
 }

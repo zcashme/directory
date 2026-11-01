@@ -33,8 +33,11 @@ export interface ResolveZnsNameOptions {
 
 export class ZnsUnavailableError extends Error {
   constructor(message: string, options?: { cause?: unknown }) {
-    super(message, options);
+    super(message);
     this.name = "ZnsUnavailableError";
+    if (options && "cause" in options) {
+      (this as Error & { cause?: unknown }).cause = options.cause;
+    }
   }
 }
 

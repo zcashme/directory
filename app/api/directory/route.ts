@@ -154,7 +154,7 @@ async function fetchExactZcasherMatches(
     .or(`name.eq.${name},slug.eq.${name},zns_name.eq.${name}`)
     .limit(10);
   return (data ?? [])
-    .map((row) => toDirectoryProfile(row as Record<string, unknown>))
+    .map((row) => toDirectoryProfile(row as unknown as Record<string, unknown>))
     .filter((row): row is DirectoryProfile => Boolean(row));
 }
 
@@ -167,7 +167,7 @@ async function fetchZcasherDirectoryProfile(
     .select(ZCASHER_PROFILE_FIELDS)
     .eq("id", id)
     .maybeSingle();
-  return data ? toDirectoryProfile(data as Record<string, unknown>) : null;
+  return data ? toDirectoryProfile(data as unknown as Record<string, unknown>) : null;
 }
 
 async function ensureDirectoryZnsProfile(name: string) {
@@ -396,18 +396,21 @@ export async function GET(request: Request): Promise<Response> {
     }
     linksById.forEach((links, id) => linksMap.set(id, links as ZcasherLink[]));
 
-    let { data: maxiRows, error: maxiError } = await supabase
+    const styled = await supabase
       .from("zcasher")
       .select("id,is_ns,is_maxi,slug,zns_active,zns_name")
       .in("id", profileIds);
+
+    let maxiError = styled.error;
+    let maxiRows: ZcasherStyleRow[] | null = (styled.data ?? null) as ZcasherStyleRow[] | null;
 
     if (maxiError) {
       const fallback = await supabase
         .from("zcasher")
         .select("id,is_ns,is_maxi,slug")
         .in("id", profileIds);
-      maxiRows = fallback.data;
       maxiError = fallback.error;
+      maxiRows = (fallback.data ?? null) as ZcasherStyleRow[] | null;
     }
 
     if (maxiError) {

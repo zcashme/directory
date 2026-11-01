@@ -102,7 +102,7 @@ export async function resolveProfileSlug(rawSlug: string): Promise<SlugResolutio
     if (profile) {
       return {
         kind: "profile",
-        profile: withResolution(profile, isZnsActiveProfile(profile) ? "ok" : "inactive"),
+        profile: withResolution(profile, isZnsActiveProfile(profile) ? "ok" : "unregistered"),
         znsBound: isZnsActiveProfile(profile),
       };
     }

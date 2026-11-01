@@ -104,7 +104,7 @@ async function loadCandidates(
 
   const byId = new Map<number, MatchCandidate>();
   for (const row of [...(byName ?? []), ...(byBinding ?? [])]) {
-    const candidate = toCandidate(row as Record<string, unknown>);
+    const candidate = toCandidate(row as unknown as Record<string, unknown>);
     if (!candidate.id) continue;
     if (
       znsNamesMatch(candidate.name, name)
@@ -201,8 +201,6 @@ async function createBoundProfile(
     .from("zcasher")
     .insert({
       name: registration.name,
-      slug: registration.name,
-      address: registration.address,
       address_verified: false,
       created_at: now,
       ...bindingPatch(registration),
