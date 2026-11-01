@@ -5,12 +5,12 @@ import SocialLinkInput from "@/ui/signup/SocialLinkInput";
 import { buildSocialUrl, normalizeSocialUsername, HOSTS } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
 import { checkUsernameAvailabilityAction } from "@/lib/signup/createProfileAction";
-import { PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
+import { PROTECTED_NAME_SIGNUP_ERROR, znsUpdateHref } from "@/lib/zns/name";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import HelpIcon from "@/ui/common/HelpIcon";
 import ProfileField, { DeleteActionButton } from "@/ui/profile/ProfileField";
 import { isValidUrl, normalizeUrl } from "@/lib/profile/urlValidation";
-import { isUsernameVerified } from "@/lib/profile/profileUtils";
+import { isUsernameVerified, isZnsActiveProfile } from "@/lib/profile/profileUtils";
 import { sanitizeUsernameInput } from "@/lib/profile/usernamePolicy";
 import { useEditsStore, type ParsedLink, type FormState } from "@/ui/profile/store";
 import type { Profile, EnrichedProfileLink } from "@/lib/profile/types";
@@ -336,11 +336,13 @@ export default function ProfileEditor({
     }),
     [profile]
   );
+  const isZnsActive = isZnsActiveProfile(profile);
+  const znsManageHref = znsUpdateHref(profile.zns_name || profile.name || "");
   const usernameLockedSuffix = useMemo(() => {
-    if (isUsernameVerified(profile)) return "";
+    if (isZnsActiveProfile(profile) || isUsernameVerified(profile)) return "";
     if (typeof profile.id !== "number") return "";
     return `-${profile.id}`;
-  }, [profile.address_verified, profile.id]);
+  }, [profile.address_verified, profile.id, profile.zns_active]);
   const [usernameInput, setUsernameInput] = useState(form.name ?? "");
   const [usernameConflict, setUsernameConflict] = useState<string | null>(null);
   const [usernameTouched, setUsernameTouched] = useState(false);
@@ -463,7 +465,7 @@ export default function ProfileEditor({
     if (addressValidation.type === "transparent") return "Transparent addresses are not supported for verification. Use a z- or u-address.";
     return null;
   };
-  const addressFieldError = getAddressFieldError();
+  const addressFieldError = isZnsActive ? null : getAddressFieldError();
   const hasInvalidLinks = useMemo(() => {
     return form.links.some((row) => {
       const isVerified = !!row.is_verified;
@@ -752,43 +754,68 @@ export default function ProfileEditor({
         </ProfileField>
 
         {/* ZCASH ADDRESS */}
-        <ProfileField
-          label="Zcash Address"
-          htmlFor="addr"
-          helpText="One-time passcodes are sent to your current address on file, not to a newly requested address change."
-          isDeleted={deletedFields.address}
-          deleteDisabled={!profile.address_verified && !deletedFields.address}
-          onDelete={toggleAddress}
-          deletePopup={
-            <div className="absolute opacity-0 transition-opacity duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] pointer-events-none z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
-              Cannot change unverified address. <br /> Lost access? Create new profile.
-            </div>
-          }
-        >
-          <input
-            id="addr"
-            type="text"
-            value={form.address}
-            placeholder={originals.address}
-            onChange={(e) => handleChange("address", e.target.value)}
-            className={`${FIELD_CLASS} font-mono ${addressFieldError ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
-          />
-          {addressFieldError && (
-            <p className="mt-1 text-xs text-red-600">{addressFieldError}</p>
-          )}
-        </ProfileField>
+        {isZnsActive ? (
+          <ProfileField
+            label="Zcash Address"
+            htmlFor="addr"
+            helpText="This payment address is controlled by the Zcash Name registration."
+            deleteDisabled
+          >
+            <p className="text-sm text-gray-700 leading-relaxed">
+              Update this address at{" "}
+              <a
+                id="addr"
+                href={znsManageHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-[var(--color-brand-blue)] underline underline-offset-2"
+              >
+                zcashnames.com/update/{profile.zns_name || profile.name}
+              </a>
+              .
+            </p>
+          </ProfileField>
+        ) : (
+          <ProfileField
+            label="Zcash Address"
+            htmlFor="addr"
+            helpText="One-time passcodes are sent to your current address on file, not to a newly requested address change."
+            isDeleted={deletedFields.address}
+            deleteDisabled={!profile.address_verified && !deletedFields.address}
+            onDelete={toggleAddress}
+            deletePopup={
+              <div className="absolute opacity-0 transition-opacity duration-[400ms] ease-[cubic-bezier(0.25,0.1,0.25,1)] pointer-events-none z-50 w-90 bg-white border border-gray-300 rounded-lg shadow-lg p-3 text-xs right-0 bottom-full mb-1">
+                Cannot change unverified address. <br /> Lost access? Create new profile.
+              </div>
+            }
+          >
+            <input
+              id="addr"
+              type="text"
+              value={form.address}
+              placeholder={originals.address}
+              onChange={(e) => handleChange("address", e.target.value)}
+              className={`${FIELD_CLASS} font-mono ${addressFieldError ? withFieldBorderState("border-[#0a1126]/60", true) : ""}`}
+            />
+            {addressFieldError && (
+              <p className="mt-1 text-xs text-red-600">{addressFieldError}</p>
+            )}
+          </ProfileField>
+        )}
 
         {/* USERNAME */}
         <ProfileField
           label="Username"
           htmlFor="name"
           helpText={
-            usernameLockedSuffix
+            isZnsActive
+              ? `This username is bound to the Zcash Name ${profile.zns_name || profile.name}.`
+              : usernameLockedSuffix
               ? `Your unique handle on Zcash.me. Canonical URL stays Zcash.me/${usernameInput || "username"}${usernameLockedSuffix} until this name is claimed on Zcash Names and bound to this address.`
               : "Your unique handle on Zcash.me. The unsuffixed URL becomes canonical after this name is claimed on Zcash Names and bound to this address."
           }
           isDeleted={deletedFields.name}
-          deleteDisabled={!originals.name}
+          deleteDisabled={isZnsActive || !originals.name}
           onDelete={toggleNameDelete}
         >
           <div className="relative">
@@ -800,7 +827,9 @@ export default function ProfileEditor({
               type="text"
               value={displayedUsername}
               placeholder={originals.name}
+              readOnly={isZnsActive}
               onChange={(e) => {
+                if (isZnsActive) return;
                 let raw = e.target.value ?? "";
                 if (usernameLockedSuffix) {
                   raw = raw.replace(new RegExp(escapeRegex(usernameLockedSuffix), "g"), "");

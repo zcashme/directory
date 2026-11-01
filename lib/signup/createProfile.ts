@@ -11,6 +11,7 @@ export async function checkAddressTaken(address: string): Promise<boolean> {
     .from("zcasher")
     .select("id")
     .or(`address.eq.${address.trim()},address.ilike.${address.trim()}`)
+    .is("zns_name", null)
     .limit(1);
   return !error && data && data.length > 0;
 }

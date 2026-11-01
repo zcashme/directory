@@ -1,5 +1,6 @@
 import { useMemo, useRef, useEffect, useCallback, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import type { Profile } from "@/lib/profile/types";
+import { getPublicPaymentAddress } from "@/lib/profile/profileUtils";
 import useEmojiAutocomplete from "@/ui/messaging/useEmojiAutocomplete";
 import AmountAndWallet from "@/ui/verification/AmountAndWallet";
 import QrUriBlock from "@/ui/verification/QrUriBlock";
@@ -187,9 +188,10 @@ export default function MemoComposer({
     setMemo(fitToMaxBytes(value, MAX_MEMO_BYTES));
   }, [setMemo]);
 
+  const paymentAddress = getPublicPaymentAddress(profile) ?? "";
   const uri = useMemo(() =>
-    buildZcashUri(profile.address, amount || "0", memo || ""),
-    [profile.address, amount, memo]
+    buildZcashUri(paymentAddress, amount || "0", memo || ""),
+    [paymentAddress, amount, memo]
   );
 
   const openWallet = () => {

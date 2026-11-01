@@ -26,7 +26,7 @@ import {
 import type { ProfileCardBackMode } from "@/ui/profile/profileCardTypes";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import { useJoinModal } from "@/ui/signup/JoinModalContext";
-import { buildSlug } from "@/lib/profile/profileUtils";
+import { buildSlug, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
 import { PROTECTED_NAME_RESERVE_ERROR } from "@/lib/zns/name";
 
 interface ProfilePageProps {
@@ -69,15 +69,6 @@ const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
   eth: 2,
   sol: 3,
 };
-
-function isTruthyLikeAddressVerified(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
-}
 
 function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
   const chain = (blockchain ?? "").toLowerCase();
@@ -149,17 +140,17 @@ export default function ProfilePage({
   initialProtectedReferralCode = null,
   initialPrefill,
 }: ProfilePageProps) {
-  const isMaxi = isTruthyLikeAddressVerified(initialProfile.is_maxi);
+  const hasDesignAccess = hasProfileDesignAccess(initialProfile);
   const pageBackground = useMemo(
     () => resolveProfileVisualTheme({
-      isMaxi,
+      hasDesignAccess,
       profileThemePackage: initialProfile.profile_theme_package,
       profileCardTheme: initialProfile.profile_card_theme,
       profilePageBackground: initialProfile.profile_page_bkgd,
       profileCardBorder: initialProfile.profile_card_border,
     }).pageBackground,
     [
-      isMaxi,
+      hasDesignAccess,
       initialProfile.profile_theme_package,
       initialProfile.profile_card_theme,
       initialProfile.profile_page_bkgd,

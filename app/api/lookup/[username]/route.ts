@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
+import { getPublicPaymentAddress } from "@/lib/profile/profileUtils";
 import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 
 interface RouteParams {
@@ -24,31 +25,16 @@ export async function GET(
 
   const resolved = await resolveProfileSlug(username);
 
-  if (resolved.kind === "zns-identity") {
-    return jsonResponse(
-      {
-        username: resolved.name,
-        display_name: resolved.name,
-        address: resolved.registration.address,
-        address_verified: true,
-        last_verified_at: null,
-        bio: null,
-        location: null,
-        profile_image_url: null,
-        links: [],
-        zns: true,
-      },
-      200,
-      guard.cacheSeconds
-    );
-  }
-
   if (resolved.kind !== "profile") {
     return jsonResponse({ error: "not_found" }, 404);
   }
 
   const profile = resolved.profile;
-  if (!profile.address) {
+  if (profile.zns_resolution === "unavailable") {
+    return jsonResponse({ error: "zns_unavailable", username: profile.name, zns_resolution: "unavailable" }, 503);
+  }
+  const paymentAddress = getPublicPaymentAddress(profile);
+  if (!paymentAddress) {
     return jsonResponse({ error: "no_address" }, 404);
   }
 
@@ -70,8 +56,9 @@ export async function GET(
     {
       username: displayUsername,
       display_name: profile.display_name,
-      address: profile.address,
+      address: paymentAddress,
       address_verified: verified,
+      zns_active: resolved.znsBound,
       last_verified_at: profile.last_verified_at || null,
       bio: profile.bio || null,
       location: profile.nearest_city_name || null,

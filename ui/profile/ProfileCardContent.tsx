@@ -1,14 +1,11 @@
 "use client";
 
-import { getLastVerifiedLabel } from "@/lib/profile/profileUtils";
+import { getLastVerifiedLabel, getPublicPaymentAddress } from "@/lib/profile/profileUtils";
 import CopyButton from "@/ui/common/buttons/CopyButton";
-import VerifiedBadge from "@/ui/profile/VerifiedBadge";
-import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
+import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import ProfileLinkRow from "./ProfileLinkRow";
 import type { ProfileCardContentProps, LinkRowClasses } from "./profileCardTypes";
-import { formatUsername, isTruthyProfileFlag } from "./profileCardUtils";
-
-const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
+import { formatUsername } from "./profileCardUtils";
 
 export default function ProfileCardContent({
   profile,
@@ -27,8 +24,7 @@ export default function ProfileCardContent({
   textColors,
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
-  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-  const isNs = isTruthyProfileFlag(profile.is_ns);
+  const paymentAddress = getPublicPaymentAddress(profile);
 
   const sizes = {
     mobile: {
@@ -157,22 +153,14 @@ export default function ProfileCardContent({
         >
           {profile.display_name || profile.name}
         </span>
-        {isNs && showDisplayNameVerifiedBadge && (
+        {showDisplayNameVerifiedBadge ? (
           <span
             className="flex-shrink-0 origin-center"
             style={{ transform: `scale(${0.6 * scale.verifiedBadge})` }}
           >
-            <NetworkSchoolBadge href={NETWORK_STATE_HREF} />
+            <ProfileIdentityBadges profile={profile} />
           </span>
-        )}
-        {isVerified && showDisplayNameVerifiedBadge && (
-          <span
-            className="flex-shrink-0 origin-center"
-            style={{ transform: `scale(${0.6 * scale.verifiedBadge})` }}
-          >
-            <VerifiedBadge verified={true} />
-          </span>
-        )}
+        ) : null}
       </div>
 
       {/* Username */}
@@ -233,15 +221,15 @@ export default function ProfileCardContent({
       )}
 
       {/* Address with copy button */}
-      {showAddress && profile.address && (
+      {showAddress && paymentAddress && (
         <div className="mt-2 flex items-center justify-center relative z-10">
           <div
             className={`relative overflow-hidden flex items-center gap-2 border text-gray-700 font-mono ${s.address} rounded-full ${s.addressPadding} shadow-inner w-fit max-w-[90%] border-gray-300 bg-white/80`}
             style={{ fontSize: `${(basePx.address * scale.address).toFixed(1)}px` }}
           >
             <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
-            <span className="select-all pl-0.5" title={profile.address}>
-              {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+            <span className="select-all pl-0.5" title={paymentAddress}>
+              {paymentAddress.slice(0, 6)}...{paymentAddress.slice(-6)}
             </span>
             {showQRButton && onQRClick ? (
               <div className="flex items-center gap-1 whitespace-nowrap">
@@ -259,7 +247,7 @@ export default function ProfileCardContent({
                   className="inline-flex items-center justify-center"
                   style={{ transform: `scale(${scale.addressCopy})`, transformOrigin: "center right" }}
                 >
-                  <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={copyButtonSize} />
+                  <CopyButton text={paymentAddress} label="Copy" copiedLabel="Copied" size={copyButtonSize} />
                 </div>
               </div>
             ) : (
@@ -267,7 +255,7 @@ export default function ProfileCardContent({
                 className="inline-flex items-center justify-center"
                 style={{ transform: `scale(${scale.addressCopy})`, transformOrigin: "center right" }}
               >
-                <CopyButton text={profile.address} label="Copy" copiedLabel="Copied" size={copyButtonSize} />
+                <CopyButton text={paymentAddress} label="Copy" copiedLabel="Copied" size={copyButtonSize} />
               </div>
             )}
           </div>

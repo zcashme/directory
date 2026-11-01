@@ -16,6 +16,7 @@ export type StillActiveFlag = "YES" | "NO" | "N/A";
 export interface ReferralRow {
   id: number;
   username: string;
+  slug?: string | null;
   displayName: string;
   profileImageUrl: string | null;
   addressVerified: boolean;
@@ -36,6 +37,7 @@ export interface ReferralRow {
 export interface ReferrerProfile {
   id: number;
   username: string;
+  slug?: string | null;
   displayName: string;
   profileImageUrl: string | null;
   addressVerified: boolean;
@@ -109,8 +111,8 @@ export async function getReferrerStatsAction(
     const normalized = sanitizeUsernameInput(username);
     const { data: referrerRow, error: referrerError } = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, address_verified")
-      .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}"`)
+      .select("id, name, display_name, profile_image_url, address_verified, slug")
+      .or(`name.eq."${normalized}",name.eq."${normalized.replace(/_/g, " ")}",slug.eq."${normalized}"`)
       .limit(1)
       .single();
 
@@ -121,6 +123,7 @@ export async function getReferrerStatsAction(
     const referrer: ReferrerProfile = {
       id: referrerRow.id,
       username: referrerRow.name ?? `user${referrerRow.id}`,
+      slug: referrerRow.slug ?? null,
       displayName: referrerRow.display_name ?? referrerRow.name ?? `User ${referrerRow.id}`,
       profileImageUrl: referrerRow.profile_image_url ?? null,
       addressVerified: !!referrerRow.address_verified,
@@ -131,7 +134,7 @@ export async function getReferrerStatsAction(
 
     const referredPromise = supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, address_verified, created_at, first_verified_at")
+      .select("id, name, display_name, profile_image_url, address_verified, created_at, first_verified_at, slug")
       .eq("referred_by_zcasher_id", referrer.id)
       .neq("id", referrer.id)
       .order("created_at", { ascending: false });
@@ -267,6 +270,7 @@ export async function getReferrerStatsAction(
       return {
         id: u.id,
         username: u.name ?? `user${u.id}`,
+        slug: u.slug ?? null,
         displayName: u.display_name ?? u.name ?? `User ${u.id}`,
         profileImageUrl: u.profile_image_url ?? null,
         addressVerified: isVerified,

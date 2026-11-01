@@ -340,14 +340,9 @@ body {
   background: transparent;
 }
 
-body.is-not-found [data-global-header] {
-  display: none !important;
-}
-
 html.is-not-found,
 body.is-not-found {
   height: 100%;
-  overflow: hidden !important;
   overscroll-behavior: none;
 }
 

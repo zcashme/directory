@@ -32,6 +32,15 @@ export interface Profile {
   is_ns_core?: boolean | string | number;
   is_ns_longterm?: boolean | string | number;
   is_maxi?: boolean | string | number;
+  zns_name?: string | null;
+  zns_active?: boolean | string | number | null;
+  zns_claim_txid?: string | null;
+  zns_bound_height?: number | null;
+  zns_last_action?: string | null;
+  zns_expires_at?: string | null;
+  zns_address_height?: number | null;
+  maxi_source?: "paid" | "zns" | null;
+  zns_resolution?: "ok" | "unregistered" | "unavailable" | "inactive" | null;
   profile_theme_package?: string | null;
   profile_card_theme?: string | null;
   profile_page_bkgd?: string | null;

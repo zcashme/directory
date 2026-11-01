@@ -62,7 +62,7 @@ export const PROFILE_CARD_THEMES: readonly ProfileCardThemeDefinition[] = [
 export const PROFILE_THEME_PACKAGES: readonly ProfileThemePackageDefinition[] = [
   {
     id: "maxi_theme",
-    label: "Maxi Theme",
+    label: "Zcash Theme",
     cardSurface:
       "linear-gradient(155deg, rgba(12,112,65,0.96) 0%, rgba(14,145,89,0.95) 44%, rgba(176,173,33,0.86) 100%)",
     cardSurfaceSolid: "#11824f",
@@ -73,7 +73,7 @@ export const PROFILE_THEME_PACKAGES: readonly ProfileThemePackageDefinition[] = 
   },
 ] as const;
 
-export const DEFAULT_PROFILE_CARD_BACKGROUND = "#ffffff";
+export const DEFAULT_PROFILE_CARD_BACKGROUND = "transparent";
 export const DEFAULT_PROFILE_CARD_TEXT = "#111827";
 export const DEFAULT_PROFILE_PAGE_BACKGROUND = "#faf6ed";
 
@@ -180,14 +180,6 @@ export function resolveProfileCardColors(value: unknown): {
   background: string;
   text: string;
 } {
-  const normalized = normalizeProfileCardThemeSelectionId(value);
-  if (normalized === "none") {
-    return {
-      theme: null,
-      background: "transparent",
-      text: DEFAULT_PROFILE_CARD_TEXT,
-    };
-  }
   const theme = getProfileCardTheme(value);
   if (!theme) {
     return {
@@ -230,7 +222,7 @@ export function resolveProfilePageBackgroundColor(value: unknown): {
 }
 
 interface ResolveProfileVisualThemeInput {
-  isMaxi: boolean;
+  hasDesignAccess: boolean;
   profileThemePackage?: unknown;
   profileCardTheme?: unknown;
   profilePageBackground?: unknown;
@@ -238,13 +230,13 @@ interface ResolveProfileVisualThemeInput {
 }
 
 export function resolveProfileVisualTheme({
-  isMaxi,
+  hasDesignAccess,
   profileThemePackage,
   profileCardTheme,
   profilePageBackground,
   profileCardBorder,
 }: ResolveProfileVisualThemeInput): ResolvedProfileVisualTheme {
-  if (isMaxi) {
+  if (hasDesignAccess) {
     const themePackage = getProfileThemePackage(profileThemePackage);
     if (themePackage) {
       return {
@@ -260,9 +252,9 @@ export function resolveProfileVisualTheme({
     }
   }
 
-  const cardTheme = resolveProfileCardColors(isMaxi ? profileCardTheme : "none");
-  const pageTheme = resolveProfilePageBackgroundColor(isMaxi ? profilePageBackground : "none");
-  const borderColor = getProfileCardBorder(isMaxi ? profileCardBorder : null)?.color ?? null;
+  const cardTheme = resolveProfileCardColors(hasDesignAccess ? profileCardTheme : "none");
+  const pageTheme = resolveProfilePageBackgroundColor(hasDesignAccess ? profilePageBackground : "none");
+  const borderColor = getProfileCardBorder(hasDesignAccess ? profileCardBorder : null)?.color ?? null;
   const cardSurface = cardTheme.background;
 
   return {

@@ -157,11 +157,12 @@ export default async function ReferrerStatsPage({ params }: PageProps) {
   const profileSlug = buildSlug({
     id: referrer.id,
     name: referrer.username,
+    slug: referrer.slug ?? undefined,
     address_verified: referrer.addressVerified,
   });
   const profileHref = `${profileOrigin}/${profileSlug || sanitizeUsernameInput(referrer.username)}`;
   const referralUrl = `${profileOrigin}/${sanitizeUsernameInput(referrer.username)}/refer`;
-  const displayUsername = referrer.addressVerified ? referrer.username : `${referrer.username}-${referrer.id}`;
+  const displayUsername = referrer.slug || (referrer.addressVerified ? referrer.username : `${referrer.username}-${referrer.id}`);
   const awards = [
     { id: "alltime", rank: referrer.rankAlltime, period: "all" as const },
     { id: "weekly", rank: referrer.rankWeekly, period: "weekly" as const },

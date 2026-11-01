@@ -510,7 +510,7 @@ export function SortableLeaderboard({
         )}
       >
         {sortedEntries.map((entry, index) => {
-          const safeUsername = sanitizeUsernameInput(entry.referrerUsername);
+          const safeUsername = sanitizeUsernameInput(entry.referrerSlug || entry.referrerUsername);
           const displayRank = index + 1;
 
           return (
@@ -541,7 +541,7 @@ export function SortableLeaderboard({
                   {entry.referrerDisplayName}
                 </span>
                 <span className="block w-fit text-[10px] text-gray-500 truncate">
-                  /{entry.referrerUsername}
+                  /{entry.referrerSlug || entry.referrerUsername}
                 </span>
               </div>
 
@@ -997,13 +997,14 @@ export function ReferrerReferralsTable({ referrals }: { referrals: ReferrerRefer
             const profileSlug = buildSlug({
               id: row.id,
               name: row.username,
+              slug: row.slug ?? undefined,
               address_verified: row.addressVerified,
             });
             const userHref = `${PROFILE_ORIGIN}/${profileSlug || sanitizeUsernameInput(row.username)}`;
             const displayIndex = index + 1;
-            const usernameWithDiscriminator = row.addressVerified
+            const usernameWithDiscriminator = row.slug || (row.addressVerified
               ? row.username
-              : `${row.username}-${row.id}`;
+              : `${row.username}-${row.id}`);
             const nowTs = Date.now();
             const eligibleState = getEligibleState(row, nowTs);
             const activeUntilLabel = row.activationExpiryDate

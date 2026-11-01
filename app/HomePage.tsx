@@ -7,7 +7,7 @@ import type { Profile } from "@/lib/profile/types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileCardContent from "@/ui/profile/ProfileCardContent";
-import { buildSlug } from "@/lib/profile/profileUtils";
+import { buildSlug, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
@@ -88,9 +88,9 @@ function FannedCard({
   const [tilt, setTilt] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState<boolean>(false);
   const { linksArray } = parseProfileLinks(profile);
-  const isMaxi = profile.is_maxi === true || profile.is_maxi === 1 || String(profile.is_maxi ?? "").toLowerCase() === "true";
+  const hasDesignAccess = hasProfileDesignAccess(profile);
   const resolvedTheme = resolveProfileVisualTheme({
-    isMaxi,
+    hasDesignAccess,
     profileThemePackage: profile.profile_theme_package,
     profileCardTheme: profile.profile_card_theme,
     profilePageBackground: profile.profile_page_bkgd,

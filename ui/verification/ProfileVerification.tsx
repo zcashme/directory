@@ -11,15 +11,7 @@ import {
   OUTLINE_ACTION_BUTTON_CLASSES,
 } from "@/ui/common/buttons/styles";
 import { useEditsStore } from "@/ui/profile/store";
-
-function isTruthyLikeMaxi(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
-}
+import { isZnsActiveProfile } from "@/lib/profile/profileUtils";
 
 interface ProfileVerificationProps {
   profile: Profile;
@@ -54,13 +46,14 @@ export default function ProfileVerification({
     let hasChanges = false;
     const nextAddress = form.address.trim();
     const originalAddress = original.address.trim();
+    const znsLocked = isZnsActiveProfile(profile);
 
     // Compare scalar fields
-    if (nextAddress !== originalAddress) {
+    if (!znsLocked && nextAddress !== originalAddress) {
       edits.address = nextAddress;
       hasChanges = true;
     }
-    if (form.name !== original.name) {
+    if (!znsLocked && form.name !== original.name) {
       edits.name = form.name;
       hasChanges = true;
     }
@@ -145,7 +138,7 @@ export default function ProfileVerification({
     }
 
     return hasChanges ? edits : undefined;
-  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload]);
+  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload, profile]);
 
   const buildEditsSummary = useCallback((): string[] => {
     const summary: string[] = [];
@@ -153,7 +146,7 @@ export default function ProfileVerification({
     if (form.name !== original.name) summary.push("Username");
     if (form.display_name !== original.display_name) summary.push("Display name");
     if (form.bio !== original.bio) summary.push("Bio");
-    if (form.address !== original.address) summary.push("Address");
+    if (!isZnsActiveProfile(profile) && form.address !== original.address) summary.push("Address");
     if (
       form.nearest_city_name !== original.nearest_city_name ||
       form.country !== original.country ||
@@ -215,7 +208,7 @@ export default function ProfileVerification({
     if (removedSummary) summary.push(removedSummary);
 
     return summary;
-  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload]);
+  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload, profile]);
 
   // Local UI state
   const [qrVisible, setQrVisible] = useState(false);
@@ -232,9 +225,9 @@ export default function ProfileVerification({
   const [otpAttemptsLeft, setOtpAttemptsLeft] = useState(5);
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
   const lastShowQrSectionRef = useRef(false);
-  const isMaxi = isTruthyLikeMaxi(profile?.is_maxi);
-  const verificationAmountZec = isMaxi ? "0" : "0.002";
-  const minAmountHint = isMaxi
+  const hasZeroFeeOtp = isZnsActiveProfile(profile);
+  const verificationAmountZec = hasZeroFeeOtp ? "0" : "0.002";
+  const minAmountHint = hasZeroFeeOtp
     ? "No minimum amount required."
     : "Include a minimum of 0.002 ZEC.";
   const shouldReduceMotion = useReducedMotion() ?? false;

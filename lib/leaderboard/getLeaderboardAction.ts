@@ -27,6 +27,7 @@ export interface LeaderboardEntry {
   rank: number;
   referrerId: number;
   referrerUsername: string;
+  referrerSlug?: string;
   referrerDisplayName: string;
   referrerName: string;
   referrerProfileImageUrl: string | null;
@@ -115,6 +116,7 @@ function toZecFromZats(value: unknown): number {
 
 interface ReferralStats {
   username: string;
+  slug?: string;
   displayName: string;
   profileImageUrl: string | null;
   total: number;
@@ -202,11 +204,11 @@ export async function getLeaderboardAction(
 
     const referrersWithDisplay = await supabase
       .from("zcasher")
-      .select("id, name, display_name, profile_image_url, bio, nearest_city_name")
+      .select("id, name, display_name, profile_image_url, bio, nearest_city_name, slug")
       .in("id", referrerIds);
 
     let referrers = referrersWithDisplay.data as
-      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null; bio?: string | null; nearest_city_name?: string | null }>
+      | Array<{ id: number; name: string | null; display_name?: string | null; profile_image_url?: string | null; bio?: string | null; nearest_city_name?: string | null; slug?: string | null }>
       | null;
 
     if (referrersWithDisplay.error) {
@@ -215,7 +217,7 @@ export async function getLeaderboardAction(
         .select("id, name, profile_image_url")
         .in("id", referrerIds);
       referrers = (referrersFallback.data as Array<{ id: number; name: string | null; profile_image_url?: string | null }> | null)
-        ?.map((r) => ({ ...r, display_name: null, bio: null, nearest_city_name: null })) ?? null;
+        ?.map((r) => ({ ...r, display_name: null, bio: null, nearest_city_name: null, slug: null })) ?? null;
     }
 
     const [
@@ -231,6 +233,7 @@ export async function getLeaderboardAction(
     // Build referrer identity map (includes profile completeness flags)
     const referrerIdentity = new Map<number, {
       username: string;
+      slug?: string;
       displayName: string;
       profileImageUrl: string | null;
       hasProfileImage: boolean;
@@ -241,6 +244,7 @@ export async function getLeaderboardAction(
         r.id,
         {
           username: r.name || `user${r.id}`,
+          slug: r.slug || undefined,
           displayName: r.display_name || r.name || `User ${r.id}`,
           profileImageUrl: r.profile_image_url || null,
           hasProfileImage: !!r.profile_image_url,
@@ -337,6 +341,7 @@ export async function getLeaderboardAction(
 
       const current = referrerStats.get(referrerId) || {
         username: identity?.username || `user${referrerId}`,
+        slug: identity?.slug,
         displayName: identity?.displayName || `User ${referrerId}`,
         profileImageUrl: identity?.profileImageUrl || null,
         total: 0,
@@ -457,6 +462,7 @@ export async function getLeaderboardAction(
           rank: 0,
           referrerId,
           referrerUsername: stats.username,
+          referrerSlug: stats.slug,
           referrerDisplayName: stats.displayName,
           referrerName: stats.username,
           referrerProfileImageUrl: stats.profileImageUrl,

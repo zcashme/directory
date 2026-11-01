@@ -16,6 +16,9 @@ interface DirectoryApiResult {
   verified_at: string | null;
   is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
+  slug?: string | null;
+  zns_active?: boolean | string | number | null;
+  zns_name?: string | null;
   authenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
   unauthenticated_links: { id: number; label: string; url: string; is_verified: boolean }[];
 }
@@ -37,6 +40,7 @@ export function toProfile(r: DirectoryApiResult): Profile {
     id: r.id,
     name: r.username,
     display_name: r.display_name ?? undefined,
+    slug: r.slug ?? undefined,
     profile_image_url: r.profile_image_url ?? undefined,
     bio: r.bio ?? undefined,
     nearest_city_name: r.nearest_city_name ?? undefined,
@@ -44,6 +48,8 @@ export function toProfile(r: DirectoryApiResult): Profile {
     address_verified: r.address_verified,
     is_ns: r.is_ns ?? undefined,
     is_maxi: r.is_maxi ?? undefined,
+    zns_active: r.zns_active ?? undefined,
+    zns_name: r.zns_name ?? undefined,
     last_verified_at: r.verified_at ?? undefined,
     verified_links_count: r.authenticated_links.length,
     links: [...r.authenticated_links, ...r.unauthenticated_links],

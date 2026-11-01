@@ -5,7 +5,8 @@ import { parseZvsMemo, parseMaxiOtpZvsMemo } from "@/lib/verification/session";
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import type { ConfirmOtpResponse, ProfileEditsPayload } from "@/lib/api/types";
 import { getProtectedNameInfo } from "@/lib/zns/availability";
-import { normalizeZnsName, PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
+import { normalizeZnsName, PROTECTED_NAME_SIGNUP_ERROR, znsUpdateHref } from "@/lib/zns/name";
+import { resolveZnsName, ZnsUnavailableError } from "@/lib/zns/client";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 import { normalizeSocialUsername } from "@/lib/profile/usernameNormalizer";
 import type { SocialPlatform } from "@/lib/profile/usernameNormalizer";
@@ -244,7 +245,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, is_maxi, profile_theme_package")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, profile_theme_package, zns_active, zns_name")
       .eq("id", profileId)
       .single();
 
@@ -252,7 +253,32 @@ export async function confirmOtpAction(
       return { ok: false, error: "Profile not found", data: { status: "error" } };
     }
 
-    if (parsed.userAddress !== profile.address) {
+    const znsActive = isTruthyLikeAddressVerified(profile.zns_active);
+    let expectedAddress = profile.address as string;
+    if (znsActive || profile.zns_name) {
+      try {
+        const live = await resolveZnsName(String(profile.zns_name || profile.name || ""));
+        if (!live?.address) {
+          return {
+            ok: false,
+            error: "This Zcash Name is not currently registered.",
+            data: { status: "invalid" },
+          };
+        }
+        expectedAddress = live.address;
+      } catch (error) {
+        if (error instanceof ZnsUnavailableError) {
+          return {
+            ok: false,
+            error: "Cannot verify this profile while Zcash Names is unavailable.",
+            data: { status: "error" },
+          };
+        }
+        throw error;
+      }
+    }
+
+    if (parsed.userAddress !== expectedAddress) {
       return {
         ok: false,
         error: "Address mismatch. The verification memo does not match this profile.",
@@ -262,18 +288,11 @@ export async function confirmOtpAction(
 
     // --- Apply profile update -----------------------------------------------
     const now = new Date().toISOString();
-    const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
     const profileUpdate: Record<string, unknown> = {
       address_verified: true,
       last_verified_at: now,
       ...(profile.first_verified_at ? {} : { first_verified_at: now }),
     };
-    if (!isMaxi) {
-      profileUpdate.profile_theme_package = null;
-      profileUpdate.profile_card_theme = null;
-      profileUpdate.profile_page_bkgd = null;
-      profileUpdate.profile_card_border = null;
-    }
     let uploadedAvatarUrl: string | null = null;
     const removeProfileImage = edits?.remove_profile_image === true;
 
@@ -360,6 +379,13 @@ export async function confirmOtpAction(
 
     if (edits) {
       if (edits.address !== undefined) {
+        if (znsActive) {
+          return {
+            ok: false,
+            error: `This payment address is controlled by Zcash Names. Update it at ${znsUpdateHref(String(profile.zns_name || profile.name || ""))}.`,
+            data: { status: "invalid" },
+          };
+        }
         const normalizedAddress = edits.address.trim();
         if (!normalizedAddress) {
           return {
@@ -371,6 +397,13 @@ export async function confirmOtpAction(
         profileUpdate.address = normalizedAddress;
       }
       if (edits.name !== undefined) {
+        if (znsActive) {
+          return {
+            ok: false,
+            error: "This username is bound to a Zcash Name and cannot be changed here.",
+            data: { status: "invalid" },
+          };
+        }
         const nextName = normalizeZnsName(String(edits.name ?? ""));
         const currentName = normalizeZnsName(String(profile.name ?? ""));
         if (nextName && nextName !== currentName) {
@@ -390,7 +423,7 @@ export async function confirmOtpAction(
       const currentThemePackageSelection = normalizeProfileThemePackageSelectionId(profile.profile_theme_package);
       let activeThemePackage: "maxi_theme" | null = currentThemePackageSelection === "maxi_theme" ? "maxi_theme" : null;
 
-      if (isMaxi && edits.profile_theme_package !== undefined) {
+      if (znsActive && edits.profile_theme_package !== undefined) {
         const normalizedThemePackage = normalizeProfileThemePackageSelectionId(edits.profile_theme_package);
         if (!normalizedThemePackage && edits.profile_theme_package !== "") {
           return {
@@ -408,13 +441,13 @@ export async function confirmOtpAction(
         }
       }
 
-      if (activeThemePackage === "maxi_theme") {
+      if (znsActive && activeThemePackage === "maxi_theme") {
         profileUpdate.profile_card_theme = null;
         profileUpdate.profile_page_bkgd = null;
         profileUpdate.profile_card_border = null;
       }
 
-      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_card_theme !== undefined) {
+      if (znsActive && activeThemePackage !== "maxi_theme" && edits.profile_card_theme !== undefined) {
         const normalizedThemeId = normalizeProfileCardThemeSelectionId(edits.profile_card_theme);
         if (!normalizedThemeId && edits.profile_card_theme !== "") {
           return {
@@ -430,7 +463,7 @@ export async function confirmOtpAction(
           profileUpdate.profile_card_theme = selectedTheme?.id ?? null;
         }
       }
-      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_page_bkgd !== undefined) {
+      if (znsActive && activeThemePackage !== "maxi_theme" && edits.profile_page_bkgd !== undefined) {
         const normalizedBackgroundId = normalizeProfilePageBackgroundId(edits.profile_page_bkgd);
         if (!normalizedBackgroundId && edits.profile_page_bkgd !== "") {
           return {
@@ -446,7 +479,7 @@ export async function confirmOtpAction(
           profileUpdate.profile_page_bkgd = selectedBackground?.id ?? null;
         }
       }
-      if (isMaxi && activeThemePackage !== "maxi_theme" && edits.profile_card_border !== undefined) {
+      if (znsActive && activeThemePackage !== "maxi_theme" && edits.profile_card_border !== undefined) {
         const normalizedBorderId = normalizeProfileCardBorderId(edits.profile_card_border);
         if (!normalizedBorderId && edits.profile_card_border !== "") {
           return {

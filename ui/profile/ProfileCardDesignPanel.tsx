@@ -14,7 +14,7 @@ import {
   normalizeProfileThemePackageSelectionId,
   resolveProfileVisualTheme,
 } from "@/lib/profile/profileCardTheme";
-import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
+import { getProfileTrust, getWarningConfig, getLastVerifiedLabel, getPublicPaymentAddress, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -22,12 +22,11 @@ import ProfileCardActions from "@/ui/profile/ProfileCardActions";
 import ProfileCardWarning from "@/ui/profile/ProfileCardWarning";
 import ProfileLinkRow from "@/ui/profile/ProfileLinkRow";
 import CopyButton from "@/ui/common/buttons/CopyButton";
-import VerifiedBadge from "@/ui/profile/VerifiedBadge";
-import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
+import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import { AnimatePresence, motion } from "framer-motion";
 import type { LinkRowClasses } from "@/ui/profile/profileCardTypes";
-import { formatUsername, isTruthyProfileFlag } from "@/ui/profile/profileCardUtils";
+import { formatUsername } from "@/ui/profile/profileCardUtils";
 
 interface ProfileCardDesignPanelProps {
   profile: Profile;
@@ -42,8 +41,6 @@ const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTI
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
-const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
-const ZCASH_NAMES_HREF = "https://zcashnames.com";
 type RankPeriod = (typeof RANK_PERIODS)[number];
 type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 
@@ -57,15 +54,6 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
   domain: "flex-1 min-w-0 truncate text-right",
   copyWrapper: "shrink-0",
 };
-
-function isTruthyLikeAddressVerified(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
-}
 
 function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
   return links
@@ -231,12 +219,11 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     return typeof rank === "number" && rank > 0 && rank <= 10;
   });
   const displayName = previewProfile.display_name || previewProfile.name || "";
-  const isVerified = previewProfile.address_verified || (previewProfile.verified_links_count ?? 0) > 0;
-  const isNs = isTruthyProfileFlag(previewProfile.is_ns);
+  const paymentAddress = getPublicPaymentAddress(previewProfile);
 
-  const isMaxi = isTruthyLikeAddressVerified(previewProfile.is_maxi);
+  const hasDesignAccess = hasProfileDesignAccess(previewProfile);
   const resolvedPreviewTheme = resolveProfileVisualTheme({
-    isMaxi,
+    hasDesignAccess,
     profileThemePackage: selectedThemePackageId,
     profileCardTheme: selectedCardThemeId,
     profilePageBackground: selectedPageBackgroundId,
@@ -250,9 +237,9 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
   const cardSubtleTextColor = resolvedPreviewTheme.cardIsDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
   const profileHoverBackgroundColor = resolvedPreviewTheme.cardIsDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
   const linkRowClasses = LINK_ROW_CLASSES;
-  const selectedBorderColor = resolvedPreviewTheme.borderColor;
-  const hasMaxiPackage = resolvedPreviewTheme.packageId === "maxi_theme";
-  const wrapperBackground = hasMaxiPackage
+  const selectedBorderColor = resolvedPreviewTheme.borderColor ?? "#111827";
+  const hasThemePackage = resolvedPreviewTheme.packageId === "maxi_theme";
+  const wrapperBackground = hasThemePackage
     ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${activeCardBackground}`
     : activeCardBackground;
 
@@ -414,7 +401,6 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       onEdit={() => {}}
                       onReserve={() => {}}
                       onCreatePrefillUrl={() => {}}
-                      onUpgrade={() => {}}
                     />
                   </div>
 
@@ -458,8 +444,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                       style={{ color: activeCardText }}
                     >
                       <span>{displayName}</span>
-                      {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
-                      {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />}
+                      <ProfileIdentityBadges profile={previewProfile} />
                     </h2>
                     <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                       /{formatUsername(previewProfile)}
@@ -496,14 +481,14 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                     )}
                   </p>
 
-                  {previewProfile.address ? (
+                  {paymentAddress ? (
                     <div className="mt-2 flex items-center justify-center">
                       <div
                         className="relative overflow-hidden flex items-center gap-2 border border-gray-300 bg-white/80 text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
                       >
                         <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
-                        <span className="select-all" title={previewProfile.address}>
-                          {previewProfile.address.slice(0, 6)}...{previewProfile.address.slice(-6)}
+                        <span className="select-all" title={paymentAddress}>
+                          {paymentAddress.slice(0, 6)}...{paymentAddress.slice(-6)}
                         </span>
                         <div className="flex items-center gap-1 whitespace-nowrap">
                           <button
@@ -516,7 +501,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                             QR
                           </button>
                           <CopyButton
-                            text={previewProfile.address}
+                            text={paymentAddress}
                             label="Copy"
                             copiedLabel="Copied"
                             hoverColor="var(--color-brand-blue)"
@@ -561,12 +546,12 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
           <div className="mt-3">
           {isThemePackageLocked && (
             <div className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-900">
-              Maxi Theme is a fixed package. Select <strong>No Theme</strong> in the Themes dropdown to re-enable individual color controls.
+              Zcash Theme is a fixed package. Select <strong>No Theme</strong> in the Themes dropdown to re-enable individual color controls.
             </div>
           )}
           {renderPaletteSection({
             title: "Card Foreground",
-            resetAction: () => updateField("profile_card_theme", profile.profile_card_theme ?? ""),
+            resetAction: () => updateField("profile_card_theme", ""),
             resetLabel: "Reset card foreground",
             resetAria: "Reset card foreground theme",
             selectedId: selectedCardThemeId,
@@ -577,7 +562,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
 
           {renderPaletteSection({
             title: "Page Background",
-            resetAction: () => updateField("profile_page_bkgd", profile.profile_page_bkgd ?? ""),
+            resetAction: () => updateField("profile_page_bkgd", ""),
             resetLabel: "Reset page background",
             resetAria: "Reset page background",
             selectedId: selectedPageBackgroundId,
@@ -588,7 +573,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
 
           {renderPaletteSection({
             title: "Card Border",
-            resetAction: () => updateField("profile_card_border", profile.profile_card_border ?? ""),
+            resetAction: () => updateField("profile_card_border", ""),
             resetLabel: "Reset card border",
             resetAria: "Reset card border",
             selectedId: selectedCardBorderId,

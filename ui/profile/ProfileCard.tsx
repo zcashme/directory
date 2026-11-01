@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { getProfileTrust, getWarningConfig, getLastVerifiedLabel } from "@/lib/profile/profileUtils";
+import { getProfileTrust, getWarningConfig, getLastVerifiedLabel, getPublicPaymentAddress, hasProfileDesignAccess, buildSlug } from "@/lib/profile/profileUtils";
+import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import CopyButton from "@/ui/common/buttons/CopyButton";
-import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
@@ -15,13 +15,11 @@ import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
 import CreatePrefillUrlModal from "@/ui/profile/CreatePrefillUrlModal";
 import { RedirectModal } from "@/ui/profile/editorModals";
-import UpgradeToMaxiModal from "@/ui/profile/UpgradeToMaxiModal";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
 import { detectProviderFromUrl, isDomainUrl } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import DomainVerifyModal from "@/ui/links/DomainVerifyModal";
-import { buildSlug } from "@/lib/profile/profileUtils";
 import { enrichLink } from "@/lib/profile/profileLinks";
 import {
   normalizeProfileThemePackageSelectionId,
@@ -36,9 +34,7 @@ import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
 import { AnimatePresence, motion } from "framer-motion";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
-import { formatUsername, isTruthyProfileFlag } from "./profileCardUtils";
-import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
-
+import { formatUsername } from "./profileCardUtils";
 export type { ProfileCardTextScale } from "./profileCardTypes";
 
 const AVATAR_SIZE = 120;
@@ -49,8 +45,7 @@ const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
-const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
-const ZCASH_NAMES_HREF = "https://zcashnames.com";
+
 
 const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 type RankPeriod = (typeof RANK_PERIODS)[number];
@@ -67,15 +62,6 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
   domain: "flex-1 min-w-0 truncate text-right",
   copyWrapper: "shrink-0",
 };
-
-function isTruthyLikeAddressVerified(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
-}
 
 export default function ProfileCard({
   profile,
@@ -102,7 +88,6 @@ export default function ProfileCard({
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
-  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [backMode, setBackMode] = useState<"edit" | "reserve">("edit");
@@ -131,10 +116,8 @@ export default function ProfileCard({
     return rank > 0 && rank <= 10;
   });
   const displayName = profile.display_name || profile.name || "";
-  const isVerified = profile.address_verified || (profile.verified_links_count ?? 0) > 0;
-  const isNs = isTruthyProfileFlag(profile.is_ns);
-  const isMaxi = isTruthyLikeAddressVerified(profile.is_maxi);
-  const hasDesignAccess = isMaxi;
+  const paymentAddress = getPublicPaymentAddress(profile);
+  const hasDesignAccess = hasProfileDesignAccess(profile);
   const selectedThemePackageId = useMemo(() => {
     const hasThemePackageEdit = form.profile_theme_package !== original.profile_theme_package;
     const sourceValue = hasThemePackageEdit ? form.profile_theme_package : profile.profile_theme_package;
@@ -146,13 +129,13 @@ export default function ProfileCard({
   ]);
 
   const persistedTheme = useMemo(() => resolveProfileVisualTheme({
-    isMaxi,
+    hasDesignAccess,
     profileThemePackage: profile.profile_theme_package,
     profileCardTheme: profile.profile_card_theme,
     profilePageBackground: profile.profile_page_bkgd,
     profileCardBorder: profile.profile_card_border,
   }), [
-    isMaxi,
+    hasDesignAccess,
     profile.profile_theme_package,
     profile.profile_card_theme,
     profile.profile_page_bkgd,
@@ -160,13 +143,13 @@ export default function ProfileCard({
   ]);
 
   const editingTheme = useMemo(() => resolveProfileVisualTheme({
-    isMaxi,
+    hasDesignAccess,
     profileThemePackage: selectedThemePackageId,
     profileCardTheme: form.profile_card_theme,
     profilePageBackground: form.profile_page_bkgd,
     profileCardBorder: form.profile_card_border,
   }), [
-    isMaxi,
+    hasDesignAccess,
     selectedThemePackageId,
     form.profile_card_theme,
     form.profile_page_bkgd,
@@ -181,10 +164,10 @@ export default function ProfileCard({
   const cardSubtleTextColor = persistedTheme.cardIsDark ? "rgba(229, 231, 235, 0.78)" : "rgba(75, 85, 99, 0.85)";
   const profileHoverBackgroundColor = persistedTheme.cardIsDark ? "rgba(229, 231, 235, 0.14)" : "rgba(17, 24, 39, 0.08)";
   const designSideBackground = showBack ? editingTheme.pageBackground : persistedTheme.pageBackground;
-  const hasMaxiPackage = persistedTheme.packageId === "maxi_theme";
+  const hasThemePackage = persistedTheme.packageId === "maxi_theme";
   const wrapperBackground = showDesignBack
     ? designSideBackground
-    : hasMaxiPackage
+    : hasThemePackage
       ? `repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.12) 0px, rgba(255, 255, 255, 0.12) 1px, transparent 1px, transparent 9px), ${activeCardBackground}`
       : activeCardBackground;
   const linkRowClasses = LINK_ROW_CLASSES;
@@ -198,7 +181,7 @@ export default function ProfileCard({
   const linkTrayMaxWidthPx = resolvedCardWidth
     ? Math.max(240, Math.round(resolvedCardWidth - 56))
     : 448;
-  const selectedThemePackageLabel = selectedThemePackageId === "maxi_theme" ? "Maxi Theme" : "No Theme";
+  const selectedThemePackageLabel = selectedThemePackageId === "maxi_theme" ? "Zcash Theme" : "No Theme";
 
   const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
     if (!profile.address_verified) return;
@@ -319,7 +302,7 @@ export default function ProfileCard({
             color: activeCardText,
           }}
           data-active-profile
-          data-address={profile.address}
+          data-address={paymentAddress ?? ""}
         >
           {!showDesignBack && (
             <div
@@ -369,7 +352,6 @@ export default function ProfileCard({
                     setShowBack(true);
                   }}
                   onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
-                  onUpgrade={() => setIsUpgradeOpen(true)}
                 />
               </div>
 
@@ -414,8 +396,7 @@ export default function ProfileCard({
                   style={{ color: activeCardText }}
                 >
                   <span>{displayName}</span>
-                  {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
-                  {isVerified && <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />}
+                  <ProfileIdentityBadges profile={profile} />
                 </h2>
                 <div className="text-base font-medium mt-1" style={{ color: cardSubtleTextColor }}>
                   /{formatUsername(profile)}
@@ -452,14 +433,14 @@ export default function ProfileCard({
                 )}
               </p>
 
-              {profile.address ? (
+              {paymentAddress ? (
                 <div className="mt-2 flex items-center justify-center">
                   <div
                     className="relative overflow-hidden flex items-center gap-2 border border-gray-300 bg-white/80 text-gray-700 font-mono text-sm rounded-full px-3 py-1.5 shadow-inner w-fit max-w-[90%]"
                   >
                     <span className="pointer-events-none absolute left-[6%] right-[6%] top-0 h-[5px] rounded-full bg-linear-to-b from-gray-200/55 to-transparent" aria-hidden />
-                    <span className="select-all" title={profile.address}>
-                      {profile.address.slice(0, 6)}...{profile.address.slice(-6)}
+                    <span className="select-all" title={paymentAddress}>
+                      {paymentAddress.slice(0, 6)}...{paymentAddress.slice(-6)}
                     </span>
                     <div className="flex items-center gap-1 whitespace-nowrap">
                       <button
@@ -471,7 +452,7 @@ export default function ProfileCard({
                         QR
                       </button>
                       <CopyButton
-                        text={profile.address}
+                        text={paymentAddress}
                         label="Copy"
                         copiedLabel="Copied"
                         hoverColor="var(--color-brand-blue)"
@@ -585,7 +566,7 @@ export default function ProfileCard({
                           selectedThemePackageId === "maxi_theme" ? "bg-[var(--color-brand-blue)]/10 font-semibold" : ""
                         }`}
                       >
-                        Maxi Theme
+                        Zcash Theme
                       </button>
                       <button
                         type="button"
@@ -602,22 +583,13 @@ export default function ProfileCard({
                       </button>
                     </div>
                   </div>
-                ) : (
+                ) : hasDesignAccess ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (!hasDesignAccess) return;
-                      setShowDesignBack(true);
-                    }}
-                    disabled={!hasDesignAccess}
-                    aria-disabled={!hasDesignAccess}
-                    className={`inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all shadow-md ${
-                      hasDesignAccess
-                        ? "border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
-                        : "border-gray-300 bg-white/90 text-black opacity-60 cursor-not-allowed"
-                    }`}
-                    aria-label={hasDesignAccess ? "Design" : "Design (Maxi required)"}
-                    title={hasDesignAccess ? "Design" : "Design (Maxi required)"}
+                    onClick={() => setShowDesignBack(true)}
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-full border transition-all shadow-md border-gray-300 bg-white/90 text-black hover:border-[var(--color-brand-blue)] hover:text-[var(--color-brand-blue)]"
+                    aria-label="Design"
+                    title="Design"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -633,6 +605,8 @@ export default function ProfileCard({
                       />
                     </svg>
                   </button>
+                ) : (
+                  <span />
                 )}
               </div>
 
@@ -697,7 +671,6 @@ export default function ProfileCard({
             />
           )}
           <RedirectModal isOpen={showRedirect} label={redirectLabel} />
-          <UpgradeToMaxiModal isOpen={isUpgradeOpen} onClose={() => setIsUpgradeOpen(false)} profile={profile} />
           {domainModalUrl && (
             <DomainVerifyModal
               isOpen={!!domainModalUrl}

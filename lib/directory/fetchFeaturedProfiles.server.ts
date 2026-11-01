@@ -40,15 +40,23 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
     profile_page_bkgd: Profile["profile_page_bkgd"];
     profile_card_border: Profile["profile_card_border"];
     profile_theme_package: Profile["profile_theme_package"];
+    slug?: Profile["slug"];
+    zns_active?: Profile["zns_active"];
+    zns_name?: Profile["zns_name"];
   }> = {};
   if (profileIds.length > 0) {
-    const [{ data: linksById }, { data: styleData }] = await Promise.all([
+    const extraSelect = "id,is_maxi,profile_card_theme,profile_page_bkgd,profile_card_border,profile_theme_package,slug,zns_active,zns_name";
+    const fallbackSelect = "id,is_maxi,profile_card_theme,profile_page_bkgd,profile_card_border,profile_theme_package,slug";
+    const [{ data: linksById }, styleResult] = await Promise.all([
       fetchLinksByProfileIds(supabase, profileIds),
       supabase
         .from("zcasher")
-        .select("id,is_maxi,profile_card_theme,profile_page_bkgd,profile_card_border,profile_theme_package")
+        .select(extraSelect)
         .in("id", profileIds),
     ]);
+    const styleData = styleResult.error
+      ? (await supabase.from("zcasher").select(fallbackSelect).in("id", profileIds)).data
+      : styleResult.data;
 
     linksById.forEach((links, id) => {
       linksByProfileId[id] = links.map(enrichLink);
@@ -62,6 +70,9 @@ export async function fetchFeaturedProfilesServer(limit: number = 6): Promise<Pr
           profile_page_bkgd: styleRow.profile_page_bkgd as Profile["profile_page_bkgd"],
           profile_card_border: styleRow.profile_card_border as Profile["profile_card_border"],
           profile_theme_package: styleRow.profile_theme_package as Profile["profile_theme_package"],
+          slug: typeof styleRow.slug === "string" ? styleRow.slug : undefined,
+          zns_active: (styleRow as { zns_active?: Profile["zns_active"] }).zns_active,
+          zns_name: (styleRow as { zns_name?: Profile["zns_name"] }).zns_name,
         };
       });
     }

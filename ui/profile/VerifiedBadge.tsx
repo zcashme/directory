@@ -84,6 +84,24 @@ export default function VerifiedBadge({
     </span>
   );
 
+  const renderX = (color: string) => (
+    <span className="relative flex items-center">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        className={`h-3.5 w-3.5 ${color} drop-shadow-xs`}
+        viewBox="0 0 20 20"
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        <path
+          fillRule="evenodd"
+          d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+          clipRule="evenodd"
+        />
+      </svg>
+    </span>
+  );
+
   const resolvedVerifiedLabel = verifiedLabel ?? (
     variant === "maxi" ? "Maxi Mode" : variant === "zcashName" ? "Zcash Names" : "Verified"
   );
@@ -159,7 +177,6 @@ export default function VerifiedBadge({
     );
   }
 
-  // Unverified unchanged
   return (
     <span
       onClick={handleBadgeClick}
@@ -167,18 +184,11 @@ export default function VerifiedBadge({
       onMouseLeave={() => setHovered(false)}
       aria-label={unverifiedLabel}
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
-      text-gray-600 bg-gray-100 border-gray-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick || href ? " cursor-pointer" : ""}`}
+      text-red-800 bg-linear-to-r from-red-100 to-red-200 border-red-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick || href ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
     >
       <div className={`flex items-center justify-center ${collapsedOnly ? "gap-0" : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300"}`}>
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-3.5 w-3.5 text-gray-400"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path d="M10 2a8 8 0 100 16 8 8 0 000-16zM9 5h2v6H9V5zm0 8h2v2H9v-2z" />
-        </svg>
+        {renderX("text-red-600")}
         <span
           className={`
             overflow-hidden inline-block ease-in-out whitespace-nowrap

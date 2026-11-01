@@ -71,6 +71,9 @@ importers:
       world-cities-json:
         specifier: ^1.0.1
         version: 1.0.1
+      zcashname-sdk:
+        specifier: 0.15.0-rc.1
+        version: 0.15.0-rc.1
       zustand:
         specifier: ^5.0.11
         version: 5.0.12(@types/react@19.2.14)(react@19.2.5)
@@ -2616,6 +2619,9 @@ packages:
 
   yoga-layout@3.2.1:
     resolution: {integrity: sha512-0LPOt3AxKqMdFBZA3HBAt/t/8vIKq7VaQYbuA8WxCgung+p9TVyKRYdpvCb80HcdTN2NkbIKbhNwKUfm3tQywQ==}
+
+  zcashname-sdk@0.15.0-rc.1:
+    resolution: {integrity: sha512-RQSDaDUQhOy8pjdTbGNPlLTj3xtPNfAzCdAd/bwari2x/nssmwIRpymLpvsJotkjVY45FKbx3uqpoWEaB/jRUw==}
 
   zustand@5.0.12:
     resolution: {integrity: sha512-i77ae3aZq4dhMlRhJVCYgMLKuSiZAaUPAct2AksxQ+gOtimhGMdXljRT21P5BNpeT4kXlLIckvkPM029OljD7g==}
@@ -5538,6 +5544,10 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   yoga-layout@3.2.1: {}
+
+  zcashname-sdk@0.15.0-rc.1:
+    dependencies:
+      bech32: 2.0.0
 
   zustand@5.0.12(@types/react@19.2.14)(react@19.2.5):
     optionalDependencies:

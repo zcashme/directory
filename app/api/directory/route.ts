@@ -2,9 +2,9 @@ import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import { enforceApiGuard, jsonResponse } from "@/lib/api/guard";
 import { fetchLinksByProfileIds } from "@/lib/profile/linksRepository";
 import { normalizeUsernameForCompare } from "@/lib/profile/usernamePolicy";
-import { resolveZnsName } from "@/lib/zns/client";
 import { isValidZnsName, normalizeZnsName } from "@/lib/zns/name";
 import { getProtectedNameInfo } from "@/lib/zns/availability";
+import { ensureZnsName } from "@/lib/zns/ensure";
 
 interface DirectoryProfile {
   id: number;
@@ -33,6 +33,9 @@ interface ZcasherStyleRow {
   id: number;
   is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
+  slug?: string | null;
+  zns_active?: boolean | string | number | null;
+  zns_name?: string | null;
 }
 
 interface LinkOutput {
@@ -55,6 +58,9 @@ interface DirectoryResult {
   verified_at: string | null;
   is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
+  slug?: string | null;
+  zns_active?: boolean | string | number | null;
+  zns_name?: string | null;
   authenticated_links: LinkOutput[];
   unauthenticated_links: LinkOutput[];
 }
@@ -65,11 +71,6 @@ interface DirectoryResponse extends Record<string, unknown> {
   exists?: boolean;
   zns_owned?: boolean;
   name_protected?: boolean;
-}
-
-interface ZnsOwnershipCacheEntry {
-  owned: boolean;
-  expiresAt: number;
 }
 
 // Fields to select from zcasher_searchable
@@ -87,9 +88,20 @@ const PROFILE_FIELDS = [
   "link_search_text",
 ].join(",");
 
-const ZNS_LOOKUP_TIMEOUT_MS = 1_200;
-const ZNS_OWNERSHIP_CACHE_TTL_MS = 30_000;
-const znsOwnershipCache = new Map<string, ZnsOwnershipCacheEntry>();
+const ZNS_ENSURE_TIMEOUT_MS = 5_000;
+
+const ZCASHER_PROFILE_FIELDS = [
+  "id",
+  "name",
+  "display_name",
+  "address",
+  "address_verified",
+  "is_ns",
+  "profile_image_url",
+  "bio",
+  "nearest_city_name",
+  "last_verified_at",
+].join(",");
 
 const encodeCursor = (lastName: string, lastId: number): string =>
   Buffer.from(JSON.stringify({ name: lastName, id: lastId })).toString("base64");
@@ -106,29 +118,68 @@ const decodeCursor = (cursor: string): { name: string; id: number } | null => {
   }
 };
 
-async function resolveZnsOwnershipForAvailability(name: string): Promise<boolean | undefined> {
+function toDirectoryProfile(row: Record<string, unknown>): DirectoryProfile | null {
+  const id = Number(row.id);
+  const name = typeof row.name === "string" ? row.name : "";
+  if (!Number.isSafeInteger(id) || id <= 0 || !name) return null;
+  return {
+    id,
+    name,
+    display_name: typeof row.display_name === "string" ? row.display_name : null,
+    address: typeof row.address === "string" ? row.address : null,
+    address_verified: row.address_verified === true,
+    is_ns: (row.is_ns as DirectoryProfile["is_ns"]) ?? null,
+    profile_image_url: typeof row.profile_image_url === "string" ? row.profile_image_url : null,
+    bio: typeof row.bio === "string" ? row.bio : null,
+    nearest_city_name: typeof row.nearest_city_name === "string" ? row.nearest_city_name : null,
+    last_verified_at: typeof row.last_verified_at === "string" ? row.last_verified_at : null,
+    link_search_text: typeof row.link_search_text === "string" ? row.link_search_text : null,
+  };
+}
+
+function prependUnique(primary: DirectoryProfile[], extra: DirectoryProfile[]): DirectoryProfile[] {
+  const seen = new Set(extra.map((profile) => profile.id));
+  return [...extra, ...primary.filter((profile) => !seen.has(profile.id))];
+}
+
+async function fetchExactZcasherMatches(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
+  query: string
+): Promise<DirectoryProfile[]> {
+  const name = normalizeZnsName(query) || query.trim().toLowerCase();
+  if (!name) return [];
+  const { data } = await supabase
+    .from("zcasher")
+    .select(ZCASHER_PROFILE_FIELDS)
+    .or(`name.eq.${name},slug.eq.${name},zns_name.eq.${name}`)
+    .limit(10);
+  return (data ?? [])
+    .map((row) => toDirectoryProfile(row as Record<string, unknown>))
+    .filter((row): row is DirectoryProfile => Boolean(row));
+}
+
+async function fetchZcasherDirectoryProfile(
+  supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
+  id: number
+): Promise<DirectoryProfile | null> {
+  const { data } = await supabase
+    .from("zcasher")
+    .select(ZCASHER_PROFILE_FIELDS)
+    .eq("id", id)
+    .maybeSingle();
+  return data ? toDirectoryProfile(data as Record<string, unknown>) : null;
+}
+
+async function ensureDirectoryZnsProfile(name: string) {
   const znsName = normalizeZnsName(name);
-  if (!isValidZnsName(znsName)) return false;
-
-  const now = Date.now();
-  const cached = znsOwnershipCache.get(znsName);
-  if (cached && cached.expiresAt > now) return cached.owned;
-
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), ZNS_LOOKUP_TIMEOUT_MS);
-
+  if (!isValidZnsName(znsName)) return null;
   try {
-    const registration = await resolveZnsName(znsName, { signal: controller.signal });
-    const owned = Boolean(registration?.address);
-    znsOwnershipCache.set(znsName, {
-      owned,
-      expiresAt: now + ZNS_OWNERSHIP_CACHE_TTL_MS,
-    });
-    return owned;
+    return await Promise.race([
+      ensureZnsName(znsName),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), ZNS_ENSURE_TIMEOUT_MS)),
+    ]);
   } catch {
-    return undefined;
-  } finally {
-    clearTimeout(timeoutId);
+    return null;
   }
 }
 
@@ -283,6 +334,45 @@ export async function GET(request: Request): Promise<Response> {
     }
   }
 
+  let exists: boolean | undefined;
+  let znsOwned: boolean | undefined;
+  let nameProtected: boolean | undefined;
+  if (q) {
+    const compareTarget = normalizeUsernameForCompare(q);
+    const exactMatches = await fetchExactZcasherMatches(supabase, q);
+    if (exactMatches.length > 0) {
+      profiles = prependUnique(profiles, exactMatches);
+    }
+
+    exists = profiles.some(
+      (profile) => normalizeUsernameForCompare(profile.name) === compareTarget
+    );
+    const protectedInfo = await getProtectedNameInfo(q);
+    nameProtected = protectedInfo.kind !== "none";
+
+    if (exists || nameProtected) {
+      znsOwned = false;
+    } else {
+      const ensured = await ensureDirectoryZnsProfile(q);
+      if (ensured?.resolution === "ok" && ensured.boundId) {
+        const created = await fetchZcasherDirectoryProfile(supabase, ensured.boundId);
+        if (created) {
+          profiles = prependUnique(profiles, [created]);
+          exists = true;
+          znsOwned = false;
+        } else {
+          znsOwned = true;
+        }
+      } else if (ensured?.resolution === "ok") {
+        znsOwned = true;
+      } else if (ensured?.resolution === "unregistered") {
+        znsOwned = false;
+      } else {
+        znsOwned = undefined;
+      }
+    }
+  }
+
   // Check if there's a next page
   const hasMore = profiles.length > limit;
   const resultsToReturn = profiles.slice(0, limit);
@@ -306,10 +396,19 @@ export async function GET(request: Request): Promise<Response> {
     }
     linksById.forEach((links, id) => linksMap.set(id, links as ZcasherLink[]));
 
-    const { data: maxiRows, error: maxiError } = await supabase
+    let { data: maxiRows, error: maxiError } = await supabase
       .from("zcasher")
-      .select("id,is_ns,is_maxi")
+      .select("id,is_ns,is_maxi,slug,zns_active,zns_name")
       .in("id", profileIds);
+
+    if (maxiError) {
+      const fallback = await supabase
+        .from("zcasher")
+        .select("id,is_ns,is_maxi,slug")
+        .in("id", profileIds);
+      maxiRows = fallback.data;
+      maxiError = fallback.error;
+    }
 
     if (maxiError) {
       return jsonResponse({ error: "maxi_lookup_failed" }, 500);
@@ -343,42 +442,13 @@ export async function GET(request: Request): Promise<Response> {
       verified_at: p.last_verified_at,
       is_ns: styleRow?.is_ns ?? p.is_ns ?? null,
       is_maxi: styleRow?.is_maxi ?? null,
+      slug: styleRow?.slug ?? null,
+      zns_active: styleRow?.zns_active ?? null,
+      zns_name: styleRow?.zns_name ?? null,
       authenticated_links,
       unauthenticated_links,
     };
   });
-
-  // Exact username existence for the header "is available" banner.
-  let exists: boolean | undefined;
-  let znsOwned: boolean | undefined;
-  let nameProtected: boolean | undefined;
-  if (q) {
-    const compareTarget = normalizeUsernameForCompare(q);
-    const exactMatchInResults = resultsToReturn.some(
-      (p) => normalizeUsernameForCompare(p.name) === compareTarget
-    );
-    if (exactMatchInResults) {
-      exists = true;
-    } else {
-      const { data: exactRows } = await supabase
-        .from("zcasher_searchable")
-        .select("id,name")
-        .ilike("name", q)
-        .limit(20);
-      exists = (exactRows ?? []).some(
-        (row: { name?: string }) => normalizeUsernameForCompare(row.name ?? "") === compareTarget
-      );
-    }
-
-    const protectedInfo = await getProtectedNameInfo(q);
-    nameProtected = protectedInfo.kind !== "none";
-
-    if (exists || nameProtected) {
-      znsOwned = false;
-    } else {
-      znsOwned = await resolveZnsOwnershipForAvailability(q);
-    }
-  }
 
   const responseBody: DirectoryResponse = {
     results,

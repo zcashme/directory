@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
+import { getPublicPaymentAddress } from "@/lib/profile/profileUtils";
 import type {
   SwapConfirmData,
   SwapContextQuoteData,
@@ -107,6 +108,7 @@ export default function SwapComposer({
 
   const rootRef = useRef<HTMLDivElement | null>(null);
   const recipientName = profile?.display_name ?? profile?.name ?? "Recipient";
+  const paymentAddress = getPublicPaymentAddress(profile) ?? "";
   const confirmedQuote = isConfirmSuccess(quoteData) ? quoteData : null;
   const depositAmountDecimal = confirmedQuote?.data?.deposit?.amountDecimal ?? "";
   const [isRefundAddressValid, setIsRefundAddressValid] = useState(false);
@@ -145,6 +147,7 @@ export default function SwapComposer({
       Number.isFinite(parsedAmount) &&
       parsedAmount > 0 &&
       !!trimmedRefundAddress &&
+      !!paymentAddress &&
       !statusKey?.depositAddress;
 
     if (!canAutoQuote) {
@@ -156,7 +159,7 @@ export default function SwapComposer({
       swapAmount,
       trimmedRefundAddress,
       slippageTolerance,
-      profile?.address ?? "",
+      paymentAddress,
     ].join("|");
 
     if (autoQuoteKeyRef.current === nextQuoteKey || isGettingQuote) {
@@ -166,7 +169,7 @@ export default function SwapComposer({
     autoQuoteKeyRef.current = nextQuoteKey;
     void getQuote({
       amountIn: swapAmount,
-      destAddress: profile?.address ?? "",
+      destAddress: paymentAddress,
       refund: trimmedRefundAddress,
       slippage: slippageTolerance,
     });
@@ -175,7 +178,7 @@ export default function SwapComposer({
     swapAmount,
     refundAddress,
     slippageTolerance,
-    profile?.address,
+    paymentAddress,
     statusKey?.depositAddress,
     isGettingQuote,
     getQuote,
@@ -187,6 +190,7 @@ export default function SwapComposer({
       !!quotePreview &&
       isRefundAddressValid &&
       !!trimmedRefundAddress &&
+      !!paymentAddress &&
       !isGettingQuote &&
       !isConfirming &&
       !statusKey?.depositAddress;
@@ -200,7 +204,7 @@ export default function SwapComposer({
       swapAmount,
       trimmedRefundAddress,
       slippageTolerance,
-      profile?.address ?? "",
+      paymentAddress,
     ].join("|");
 
     if (autoConfirmKeyRef.current === nextConfirmKey) return;
@@ -208,7 +212,7 @@ export default function SwapComposer({
 
     void confirmSwap({
       amountIn: swapAmount,
-      destAddress: profile?.address ?? "",
+      destAddress: paymentAddress,
       refund: trimmedRefundAddress,
       slippage: slippageTolerance,
     });
@@ -221,7 +225,7 @@ export default function SwapComposer({
     statusKey?.depositAddress,
     swapAmount,
     slippageTolerance,
-    profile?.address,
+    paymentAddress,
     confirmSwap,
   ]);
 

@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { ReactNode } from "react";
-import { buildShareUrl } from "@/lib/profile/profileUtils";
+import { buildShareUrl, isZnsActiveProfile } from "@/lib/profile/profileUtils";
+import { znsExplorerHref } from "@/lib/zns/name";
 import { motion, useReducedMotion } from "framer-motion";
 import type { Profile } from "@/lib/profile/types";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
@@ -15,7 +16,6 @@ interface ProfileCardActionsProps {
   onEdit: () => void;
   onReserve: () => void;
   onCreatePrefillUrl: () => void;
-  onUpgrade?: () => void;
 }
 
 export default function ProfileCardActions({
@@ -31,7 +31,8 @@ export default function ProfileCardActions({
   const shouldReduceMotion = useReducedMotion();
   const [menuOpen, setMenuOpen] = useState(false);
   const displayName = profile.display_name || profile.name || "";
-  const referDisplayName = (profile.display_name || profile.name || "a friend").trim();
+  const isZnsActive = isZnsActiveProfile(profile);
+  const znsManageHref = znsExplorerHref(profile.zns_name || profile.name || "");
   const tapProps = shouldReduceMotion
     ? {}
     : {
@@ -109,31 +110,26 @@ export default function ProfileCardActions({
             "Edit Profile",
             onEdit
           )}
-          {menuItem(
-            <span className="inline-flex scale-[0.78] origin-left">
-              <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
-            </span>,
-            "Reserve Name",
-            onReserve
-          )}
+          {isZnsActive
+            ? menuItem(
+                <span className="inline-flex scale-[0.78] origin-left">
+                  <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
+                </span>,
+                "Manage Name",
+                () => {
+                  if (typeof window !== "undefined") {
+                    window.open(znsManageHref, "_blank", "noopener,noreferrer");
+                  }
+                }
+              )
+            : menuItem(
+                <span className="inline-flex scale-[0.78] origin-left">
+                  <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
+                </span>,
+                "Reserve Name",
+                onReserve
+              )}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
-          {menuItem("\u2934", "Share Refer Link", async () => {
-            const baseUrl = buildShareUrl(profile);
-            const referUrl = `${baseUrl}/refer`;
-            const referTitle = `Invited by ${referDisplayName} to Zcash.me`;
-            if (navigator.share) {
-              try {
-                await navigator.share({
-                  title: referTitle,
-                  text: referTitle,
-                  url: referUrl,
-                });
-                return;
-              } catch {}
-            }
-            await navigator.clipboard.writeText(referUrl);
-            alert("Referral link copied to clipboard!");
-          })}
         </div>
       </div>
 

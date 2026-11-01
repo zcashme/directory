@@ -169,11 +169,33 @@ export const normalizeSlug = (value: string = ""): string =>
     .replace(/\s+/g, "_")
     .replace(/[^a-z0-9_-]/g, "");
 
+export const isZnsActiveProfile = (profile: Partial<Profile> | null | undefined): boolean => {
+  const value = profile?.zns_active;
+  if (value === true || value === 1) return true;
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
+  }
+  return false;
+};
+
+export const hasProfileDesignAccess = (profile: Partial<Profile> | null | undefined): boolean =>
+  isZnsActiveProfile(profile);
+
+export const getPublicPaymentAddress = (
+  profile: Partial<Profile> | null | undefined
+): string | null => {
+  const address = (profile?.address ?? "").trim();
+  if (!address) return null;
+  if (isZnsActiveProfile(profile) && profile?.zns_resolution === "unavailable") return null;
+  return address;
+};
+
 /**
  * Returns true only when the profile's username is explicitly verified.
  */
 export const isUsernameVerified = (profile: Partial<Profile> | null | undefined): boolean =>
-  profile?.address_verified === true;
+  isZnsActiveProfile(profile) || profile?.address_verified === true;
 
 /**
  * Returns the username display value with discriminator for unverified names.
@@ -181,6 +203,7 @@ export const isUsernameVerified = (profile: Partial<Profile> | null | undefined)
 export const getUsernameWithDiscriminator = (
   profile: Partial<Profile> | null | undefined
 ): string => {
+  if (profile?.slug) return profile.slug;
   const base = (profile?.name || "").trim();
   if (!base) return "";
   if (isUsernameVerified(profile)) return base;
@@ -191,12 +214,11 @@ export const getUsernameWithDiscriminator = (
  * Returns the canonical profile slug using username + discriminator rule.
  */
 export const buildSlug = (profile: Partial<Profile> | null | undefined): string => {
+  if (profile?.slug) return profile.slug;
   if (!profile?.name) return "";
   const base = normalizeSlug((profile.name || "").trim());
   if (!base) return "";
-  if (isUsernameVerified(profile)) {
-    return profile.slug || base;
-  }
+  if (isUsernameVerified(profile)) return base;
   return typeof profile.id === "number" ? `${base}-${profile.id}` : base;
 };
 

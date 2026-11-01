@@ -1,19 +1,41 @@
 import "server-only";
 
+import { ZNS } from "zcashname-sdk";
 import { isValidZnsName, normalizeZnsName } from "@/lib/zns/name";
 
 export type ZnsNetwork = "testnet" | "mainnet";
 
+export type ZnsLastAction = "claim" | "update" | "release";
+
 export interface ZnsRegistration {
   name: string;
   address: string;
-  txid?: string | null;
-  height?: number | null;
+  txid: string | null;
+  height: number | null;
+  lastAction: ZnsLastAction | null;
+  expiresAt: string | null;
+}
+
+export interface ZnsEvent {
+  id: number;
+  name: string;
+  action: ZnsLastAction;
+  txid: string;
+  height: number;
+  actionIndex: number;
+  address: string;
+  expiresAt: string | null;
 }
 
 export interface ResolveZnsNameOptions {
   signal?: AbortSignal;
-  cache?: RequestCache;
+}
+
+export class ZnsUnavailableError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = "ZnsUnavailableError";
+  }
 }
 
 const NETWORK_URLS: Record<ZnsNetwork, string> = {
@@ -21,9 +43,9 @@ const NETWORK_URLS: Record<ZnsNetwork, string> = {
   mainnet: "https://light.zcash.me/zns-mainnet",
 };
 
-function resolveNetwork(): ZnsNetwork {
-  const raw = (process.env.ZNS_NETWORK ?? "testnet").trim().toLowerCase();
-  return raw === "mainnet" ? "mainnet" : "testnet";
+export function resolveZnsNetwork(): ZnsNetwork {
+  const raw = (process.env.ZNS_NETWORK ?? "mainnet").trim().toLowerCase();
+  return raw === "testnet" ? "testnet" : "mainnet";
 }
 
 function resolveRpcUrl(network: ZnsNetwork): string {
@@ -33,34 +55,53 @@ function resolveRpcUrl(network: ZnsNetwork): string {
   return process.env.ZNS_TESTNET_RPC_URL?.trim() || NETWORK_URLS.testnet;
 }
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  return value as Record<string, unknown>;
+function getClient(): ZNS {
+  const network = resolveZnsNetwork();
+  return new ZNS({
+    network,
+    url: resolveRpcUrl(network),
+    timeout: 8_000,
+  });
 }
 
-function pickString(record: Record<string, unknown>, ...keys: string[]): string | null {
-  for (const key of keys) {
-    const value = record[key];
-    if (typeof value === "string" && value.trim()) return value.trim();
-  }
-  return null;
+function mapExpiresAt(value: string | null | undefined): string | null {
+  if (!value || value === "none") return null;
+  return value;
 }
 
-function normalizeRegistration(raw: unknown): ZnsRegistration | null {
-  const record = asRecord(raw);
-  if (!record) return null;
-  const fromList = Array.isArray(record.registrations) ? asRecord(record.registrations[0]) : null;
-  const nested = asRecord(record.registration) ?? fromList ?? record;
-  if (!nested) return null;
-  const name = pickString(nested, "name");
-  const address = pickString(nested, "address");
-  if (!name || !address) return null;
+function mapRegistration(raw: {
+  name: string;
+  address: string;
+  txid: string;
+  height: number;
+  lastAction: ZnsLastAction;
+  expiresAt: string;
+}): ZnsRegistration {
   return {
-    name,
-    address,
-    txid: pickString(nested, "txid"),
-    height: typeof nested.height === "number" ? nested.height : null,
+    name: normalizeZnsName(raw.name),
+    address: raw.address,
+    txid: raw.txid || null,
+    height: Number.isFinite(raw.height) ? raw.height : null,
+    lastAction: raw.lastAction ?? null,
+    expiresAt: mapExpiresAt(raw.expiresAt),
   };
+}
+
+function asUnavailable(error: unknown, fallback: string): ZnsUnavailableError {
+  if (error instanceof ZnsUnavailableError) return error;
+  if (error instanceof Error && error.name === "AbortError") {
+    return new ZnsUnavailableError("ZNS resolver request aborted", { cause: error });
+  }
+  const message = error instanceof Error && error.message ? error.message : fallback;
+  return new ZnsUnavailableError(message, { cause: error });
+}
+
+export async function verifyZnsResolver(signal?: AbortSignal): Promise<void> {
+  try {
+    await getClient().verify(signal);
+  } catch (error) {
+    throw asUnavailable(error, "ZNS resolver verification failed");
+  }
 }
 
 export async function resolveZnsName(
@@ -70,30 +111,64 @@ export async function resolveZnsName(
   const name = normalizeZnsName(rawName);
   if (!isValidZnsName(name)) return null;
 
-  const network = resolveNetwork();
-  const url = resolveRpcUrl(network);
-
   try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      signal: options.signal,
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: 1,
-        method: "resolve",
-        params: { query: name },
-      }),
-      cache: options.cache ?? "no-store",
-    });
-    if (!response.ok) return null;
-    const payload = await response.json() as { result?: unknown; error?: { message?: string } };
-    if (payload?.error) return null;
-    return normalizeRegistration(payload?.result);
+    const raw = await getClient().resolveName(name, options.signal);
+    if (!raw?.name || !raw.address) return null;
+    return mapRegistration(raw);
   } catch (error) {
-    if (error instanceof Error && error.name === "AbortError") {
-      throw error;
-    }
-    return null;
+    throw asUnavailable(error, "ZNS resolver unavailable");
+  }
+}
+
+export async function listZnsRegistrations(
+  limit = 500,
+  offset = 0,
+  signal?: AbortSignal
+): Promise<ZnsRegistration[]> {
+  try {
+    const page = await getClient().listAllRegistrations(limit, offset, signal);
+    return page.map(mapRegistration);
+  } catch (error) {
+    throw asUnavailable(error, "ZNS list_names unavailable");
+  }
+}
+
+export async function listZnsEvents(options: {
+  sinceHeight?: number;
+  name?: string;
+  action?: ZnsLastAction;
+  limit?: number;
+  offset?: number;
+  signal?: AbortSignal;
+} = {}): Promise<ZnsEvent[]> {
+  try {
+    const result = await getClient().events({
+      sinceHeight: options.sinceHeight,
+      name: options.name,
+      action: options.action,
+      limit: options.limit,
+      offset: options.offset,
+    }, options.signal);
+    return (result.events ?? []).map((event) => ({
+      id: event.id,
+      name: normalizeZnsName(event.name),
+      action: event.action,
+      txid: event.txid,
+      height: event.height,
+      actionIndex: event.actionIndex,
+      address: event.address,
+      expiresAt: mapExpiresAt(event.expiresAt),
+    }));
+  } catch (error) {
+    throw asUnavailable(error, "ZNS events unavailable");
+  }
+}
+
+export async function getZnsSyncedHeight(signal?: AbortSignal): Promise<number> {
+  try {
+    const status = await getClient().status(signal);
+    return status.syncedHeight;
+  } catch (error) {
+    throw asUnavailable(error, "ZNS status unavailable");
   }
 }

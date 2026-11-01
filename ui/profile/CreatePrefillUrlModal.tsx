@@ -5,7 +5,7 @@ import type { CSSProperties } from "react";
 import ReactDOM from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { buildShareUrl } from "@/lib/profile/profileUtils";
+import { buildShareUrl, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
 import { DEFAULT_PROFILE_PAGE_BACKGROUND, resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { Profile } from "@/lib/profile/types";
 import type { Token } from "@/lib/swap/types";
@@ -125,15 +125,6 @@ function formatQrInlineText(text: string, maxChars: number): string {
   const normalized = text.replace(/\s+/g, " ").trim();
   if (normalized.length <= maxChars) return normalized;
   return `${normalized.slice(0, Math.max(1, maxChars - 3)).trimEnd()}...`;
-}
-
-function isTruthyLike(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
 }
 
 function MemoLeftIcon({ text }: MemoLeftIconProps) {
@@ -619,15 +610,15 @@ export default function CreatePrefillUrlModal({
     fiatAmountValue,
   ]);
 
-  const isMaxi = useMemo(() => isTruthyLike(profile.is_maxi), [profile.is_maxi]);
+  const hasDesignAccess = hasProfileDesignAccess(profile);
   const qrCardTheme = useMemo(() => resolveProfileVisualTheme({
-    isMaxi,
+    hasDesignAccess,
     profileThemePackage: profile.profile_theme_package,
     profileCardTheme: profile.profile_card_theme,
     profilePageBackground: profile.profile_page_bkgd,
     profileCardBorder: profile.profile_card_border,
   }), [
-    isMaxi,
+    hasDesignAccess,
     profile.profile_theme_package,
     profile.profile_card_theme,
     profile.profile_page_bkgd,

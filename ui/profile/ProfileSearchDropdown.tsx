@@ -5,28 +5,15 @@ import { useDebounce } from "use-debounce";
 import type { Profile } from "@/lib/profile/types";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { toProfile, type DirectoryApiResponse } from "@/lib/directory/directoryClient";
-import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
-import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
-import { isTruthyProfileFlag } from "./profileCardUtils";
+import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 
 const fmtUsername = (p: Partial<Profile>) =>
   getUsernameWithDiscriminator(p).replace(/\s+/g, "_");
 
 const displayName = (p: Partial<Profile>) =>
   p.display_name || p.name || "";
-const NETWORK_STATE_HREF = "https://ns.com/zcashusersgroup/apply";
-const ZCASH_NAMES_HREF = "https://zcashnames.com";
-
-function isTruthyLikeMaxi(value: unknown): boolean {
-  if (value === true || value === 1) return true;
-  if (typeof value === "string") {
-    const normalized = value.trim().toLowerCase();
-    return normalized === "true" || normalized === "yes" || normalized === "1" || normalized === "y" || normalized === "t";
-  }
-  return false;
-}
 
 /** Highlight the first occurrence of `query` inside `text` (case-insensitive). */
 function Highlight({ text, query }: { text: string; query: string }) {
@@ -148,19 +135,26 @@ export default function ProfileSearchDropdown({
         const znsOwned = api.zns_owned === true;
         const znsChecked = typeof api.zns_owned === "boolean";
         const nameProtected = api.name_protected === true;
+        const queryKey = query.trim().toLowerCase();
+        const hasExactProfile = profiles.some((profile) => {
+          const name = (profile.name || "").trim().toLowerCase();
+          const slug = (profile.slug || "").trim().toLowerCase();
+          const znsName = (profile.zns_name || "").trim().toLowerCase();
+          return name === queryKey || slug === queryKey || znsName === queryKey;
+        });
 
         setResults(profiles);
         setLoading(false);
 
-        if (showUsernameAvailability && nameProtected) {
+        if (showUsernameAvailability && nameProtected && !hasExactProfile) {
           setUsernameAvailable(null);
           setUsernameClaimed(null);
           setUsernameProtected(query);
-        } else if (showUsernameAvailability && znsOwned) {
+        } else if (showUsernameAvailability && znsOwned && !hasExactProfile) {
           setUsernameAvailable(null);
           setUsernameClaimed(query);
           setUsernameProtected(null);
-        } else if (showUsernameAvailability && !exists && znsChecked && !znsOwned) {
+        } else if (showUsernameAvailability && !exists && znsChecked && !znsOwned && !hasExactProfile) {
           setUsernameAvailable(query);
           setUsernameClaimed(null);
           setUsernameProtected(null);
@@ -320,8 +314,6 @@ export default function ProfileSearchDropdown({
 
                 {/* Results */}
                 {results.map((p) => {
-                  const isMaxi = isTruthyLikeMaxi(p.is_maxi);
-                  const isNs = isTruthyProfileFlag(p.is_ns);
                   return (
                     <Command.Item
                       key={`${p.name}-${p.id}`}
@@ -336,10 +328,7 @@ export default function ProfileSearchDropdown({
                           <Highlight text={displayName(p)} query={query} />
                         </span>
 
-                        {isNs && <NetworkSchoolBadge href={NETWORK_STATE_HREF} />}
-                        {(p.address_verified || isMaxi) && (
-                          <VerifiedBadge verified variant={isMaxi ? "zcashName" : "verified"} href={isMaxi ? ZCASH_NAMES_HREF : undefined} />
-                        )}
+                        <ProfileIdentityBadges profile={p} />
 
                         <span className="text-xs opacity-60 whitespace-nowrap truncate shrink-0 ml-auto">
                           /<Highlight text={fmtUsername(p)} query={query} />

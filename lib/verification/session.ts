@@ -1,6 +1,7 @@
 /**
  * Generate an ASCII session ID for ZVS verification.
- * Default 16 digits for standard verification, 24 digits for Maxi upgrade.
+ * Default 16 digits for standard verification, 24 digits for Maxi upgrade,
+ * 48 digits for zero-fee OTP (ZNS-backed profiles, former Maxi path).
  * Uses crypto.getRandomValues for secure random number generation.
  */
 export function generateSessionId(length: number = 16): string {
@@ -54,7 +55,8 @@ export function parseMaxiZvsMemo(memo: string): { sessionId: string; userAddress
 }
 
 /**
- * Parse a Maxi OTP ZVS memo string (48-digit session ID)
+ * Parse a zero-fee OTP memo string (48-digit session ID).
+ * Used by ZNS-backed profiles; formerly Maxi OTP.
  * Returns null if the memo format is invalid
  */
 export function parseMaxiOtpZvsMemo(memo: string): { sessionId: string; userAddress: string } | null {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { verifyZnsResolver } from "@/lib/zns/client";
 
 export const revalidate = 600; // cache GET for 10 minutes
 
@@ -56,6 +57,16 @@ async function checkServices() {
 
   // App is up if this endpoint responds
   results.zcashme = { status: "ok", latency_ms: 0 };
+
+  {
+    const start = Date.now();
+    try {
+      await verifyZnsResolver(AbortSignal.timeout(5000));
+      results.zns = { status: "ok", latency_ms: Date.now() - start };
+    } catch {
+      results.zns = { status: "down", latency_ms: Date.now() - start };
+    }
+  }
 
   return results;
 }

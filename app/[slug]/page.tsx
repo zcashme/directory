@@ -1,13 +1,14 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import ProfilePage from "./ProfilePage";
-import ZnsIdentityPage from "./ZnsIdentityPage";
 import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 import { getSwapTokens } from "@/lib/swap/oneClick";
 import { getWaitlistQueuePosition, getProtectedNameInfo } from "@/lib/zns/availability";
 import { getWaitlistReservationStatusAction } from "@/lib/zns/reserve";
+
+export const dynamic = "force-dynamic";
 
 type SearchParamValue = string | string[] | undefined;
 type SearchParamsMap = Record<string, SearchParamValue>;
@@ -148,13 +149,6 @@ export async function generateMetadata({ params }: PageParamsProps): Promise<Met
   const { slug } = await params;
   const resolved = await resolveProfileSlug(slug);
 
-  if (resolved.kind === "zns-identity") {
-    return {
-      title: `${resolved.name} | Zcash Name`,
-      description: `On-chain Zcash Name ${resolved.name}`,
-    };
-  }
-
   if (resolved.kind !== "profile") {
     return {
       title: "Profile Not Found",
@@ -182,16 +176,6 @@ export default async function Page({ params, searchParams }: PageProps) {
   const [{ slug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
   const resolved = await resolveProfileSlug(slug);
-
-  if (resolved.kind === "zns-identity") {
-    return (
-      <ZnsIdentityPage
-        name={resolved.name}
-        address={resolved.registration.address}
-        txid={resolved.registration.txid}
-      />
-    );
-  }
 
   if (resolved.kind !== "profile") {
     notFound();
