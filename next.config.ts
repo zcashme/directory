@@ -16,6 +16,7 @@ const nextConfig: NextConfig = {
       "./node_modules/harfbuzzjs/hb.wasm",
       "./node_modules/.pnpm/harfbuzzjs@*/node_modules/harfbuzzjs/hb.wasm",
     ],
+    "/*": ["./data/world-cities.json"],
   },
   turbopack: {},
   images: {

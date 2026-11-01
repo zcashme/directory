@@ -68,9 +68,6 @@ importers:
       use-debounce:
         specifier: ^10.1.0
         version: 10.1.1(react@19.2.5)
-      world-cities-json:
-        specifier: ^1.0.1
-        version: 1.0.1
       zcashname-sdk:
         specifier: 0.15.0-rc.1
         version: 0.15.0-rc.1
@@ -2604,9 +2601,6 @@ packages:
   word-wrap@1.2.5:
     resolution: {integrity: sha512-BN22B5eaMMI9UMtjrGd5g5eCYPpCPDUy0FJXbYsaT5zYxjFOckS53SQDE3pWkVoWpHXVb3BrYcEN4Twa55B5cA==}
     engines: {node: '>=0.10.0'}
-
-  world-cities-json@1.0.1:
-    resolution: {integrity: sha512-mUM3bCqAkYfUhIs/MSWbQblsqh9DAsBZgJEyy0JiASHtwbeeMuANFmgwClLUXUCStt+eYbNiB4EOeN4sIdL3pQ==}
 
   yaml@2.8.3:
     resolution: {integrity: sha512-AvbaCLOO2Otw/lW5bmh9d/WEdcDFdQp2Z2ZUH3pX9U2ihyUY0nvLv7J6TrWowklRGPYbB/IuIMfYgxaCPg5Bpg==}
@@ -5536,8 +5530,6 @@ snapshots:
       isexe: 2.0.0
 
   word-wrap@1.2.5: {}
-
-  world-cities-json@1.0.1: {}
 
   yaml@2.8.3: {}
 

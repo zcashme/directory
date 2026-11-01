@@ -30,7 +30,6 @@
     "react-dom": "^19.0.0",
     "satori": "^0.33.4",
     "use-debounce": "^10.1.0",
-    "world-cities-json": "^1.0.1",
     "zcashname-sdk": "0.15.0-rc.1",
     "zustand": "^5.0.11"
   },

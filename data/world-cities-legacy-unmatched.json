@@ -1,0 +1,986 @@
+[
+  {
+    "old_label": "Dengtalu, Henan, China",
+    "city": "Dengtalu",
+    "iso2": "CN",
+    "id": "1156202014"
+  },
+  {
+    "old_label": "Erer Sata, Sumalē, Ethiopia",
+    "city": "Erer Sata",
+    "iso2": "ET",
+    "id": "1231563638"
+  },
+  {
+    "old_label": "Suoluntun, Jilin, China",
+    "city": "Suoluntun",
+    "iso2": "CN",
+    "id": "1156764587"
+  },
+  {
+    "old_label": "Jiangjiafan, Hubei, China",
+    "city": "Jiangjiafan",
+    "iso2": "CN",
+    "id": "1156352568"
+  },
+  {
+    "old_label": "Hongzhai, Gansu, China",
+    "city": "Hongzhai",
+    "iso2": "CN",
+    "id": "1156905289"
+  },
+  {
+    "old_label": "Yingmen, Gansu, China",
+    "city": "Yingmen",
+    "iso2": "CN",
+    "id": "1156386711"
+  },
+  {
+    "old_label": "Chaedok, Hambuk, North Korea",
+    "city": "Chaedok",
+    "iso2": "KP",
+    "id": "1408001232"
+  },
+  {
+    "old_label": "Horad Barysaw, Minskaya Voblasts’, Belarus",
+    "city": "Horad Barysaw",
+    "iso2": "BY",
+    "id": "1112659163"
+  },
+  {
+    "old_label": "Hoeryong, Hambuk, North Korea",
+    "city": "Hoeryong",
+    "iso2": "KP",
+    "id": "1408656165"
+  },
+  {
+    "old_label": "Ferfer, Sumalē, Ethiopia",
+    "city": "Ferfer",
+    "iso2": "ET",
+    "id": "1231764818"
+  },
+  {
+    "old_label": "Manpo, Chagang, North Korea",
+    "city": "Manpo",
+    "iso2": "KP",
+    "id": "1408334845"
+  },
+  {
+    "old_label": "Kirkwall, Orkney Islands, United Kingdom",
+    "city": "Kirkwall",
+    "iso2": "GB",
+    "id": "1826208698"
+  },
+  {
+    "old_label": "Lerwick, Shetland Islands, United Kingdom",
+    "city": "Lerwick",
+    "iso2": "GB",
+    "id": "1826896340"
+  },
+  {
+    "old_label": "Bangolo, Montagnes, Côte d'Ivoire",
+    "city": "Bangolo",
+    "iso2": "CI",
+    "id": "1384048438"
+  },
+  {
+    "old_label": "Bhararisain, Uttarākhand, India",
+    "city": "Bhararisain",
+    "iso2": "IN",
+    "id": "1356002563"
+  },
+  {
+    "old_label": "Kindamba, Pool, Congo (Brazzaville)",
+    "city": "Kindamba",
+    "iso2": "CG",
+    "id": "1178489323"
+  },
+  {
+    "old_label": "Sunshi, Hebei, China",
+    "city": "Sunshi",
+    "iso2": "CN",
+    "id": "1156870769"
+  },
+  {
+    "old_label": "Liushi, Hebei, China",
+    "city": "Liushi",
+    "iso2": "CN",
+    "id": "1156768081"
+  },
+  {
+    "old_label": "Metema, Āmara, Ethiopia",
+    "city": "Metema",
+    "iso2": "ET",
+    "id": "1231471612"
+  },
+  {
+    "old_label": "Zhujiacun, Yunnan, China",
+    "city": "Zhujiacun",
+    "iso2": "CN",
+    "id": "1156062221"
+  },
+  {
+    "old_label": "Wangtan, Hebei, China",
+    "city": "Wangtan",
+    "iso2": "CN",
+    "id": "1156210973"
+  },
+  {
+    "old_label": "Sinanpasa, Afyonkarahisar, Turkey",
+    "city": "Sinanpasa",
+    "iso2": "TR",
+    "id": "1792852826"
+  },
+  {
+    "old_label": "Pingxiangcheng, Hebei, China",
+    "city": "Pingxiangcheng",
+    "iso2": "CN",
+    "id": "1156803828"
+  },
+  {
+    "old_label": "Nazerabad, Yazd, Iran",
+    "city": "Nazerabad",
+    "iso2": "IR",
+    "id": "1364306000"
+  },
+  {
+    "old_label": "Pervari, Siirt, Turkey",
+    "city": "Pervari",
+    "iso2": "TR",
+    "id": "1792426838"
+  },
+  {
+    "old_label": "Yildizeli, Sivas, Turkey",
+    "city": "Yildizeli",
+    "iso2": "TR",
+    "id": "1792870647"
+  },
+  {
+    "old_label": "Maleme Hodar, Kaffrine, Senegal",
+    "city": "Maleme Hodar",
+    "iso2": "SN",
+    "id": "1686577434"
+  },
+  {
+    "old_label": "Ihsaniye, Afyonkarahisar, Turkey",
+    "city": "Ihsaniye",
+    "iso2": "TR",
+    "id": "1792841421"
+  },
+  {
+    "old_label": "Ciftlik, Niğde, Turkey",
+    "city": "Ciftlik",
+    "iso2": "TR",
+    "id": "1792535198"
+  },
+  {
+    "old_label": "Liushuquan, Hebei, China",
+    "city": "Liushuquan",
+    "iso2": "CN",
+    "id": "1156255440"
+  },
+  {
+    "old_label": "Baykan, Siirt, Turkey",
+    "city": "Baykan",
+    "iso2": "TR",
+    "id": "1792353918"
+  },
+  {
+    "old_label": "Gole, Ardahan, Turkey",
+    "city": "Gole",
+    "iso2": "TR",
+    "id": "1792802514"
+  },
+  {
+    "old_label": "Doctor Mora, Guanajuato, Mexico",
+    "city": "Doctor Mora",
+    "iso2": "MX",
+    "id": "1484329164"
+  },
+  {
+    "old_label": "Ulukisla, Niğde, Turkey",
+    "city": "Ulukisla",
+    "iso2": "TR",
+    "id": "1792654631"
+  },
+  {
+    "old_label": "Sirvan, Siirt, Turkey",
+    "city": "Sirvan",
+    "iso2": "TR",
+    "id": "1792671782"
+  },
+  {
+    "old_label": "Digor, Kars, Turkey",
+    "city": "Digor",
+    "iso2": "TR",
+    "id": "1792355056"
+  },
+  {
+    "old_label": "Aralik, Adıyaman, Turkey",
+    "city": "Aralik",
+    "iso2": "TR",
+    "id": "1792704359"
+  },
+  {
+    "old_label": "Baskil, Elazığ, Turkey",
+    "city": "Baskil",
+    "iso2": "TR",
+    "id": "1792261115"
+  },
+  {
+    "old_label": "Taslicay, Ağrı, Turkey",
+    "city": "Taslicay",
+    "iso2": "TR",
+    "id": "1792445598"
+  },
+  {
+    "old_label": "Jubbah, Ḩā’il, Saudi Arabia",
+    "city": "Jubbah",
+    "iso2": "SA",
+    "id": "1682817897"
+  },
+  {
+    "old_label": "Yusufeli, Artvin, Turkey",
+    "city": "Yusufeli",
+    "iso2": "TR",
+    "id": "1792772140"
+  },
+  {
+    "old_label": "Gulagac, Aksaray, Turkey",
+    "city": "Gulagac",
+    "iso2": "TR",
+    "id": "1792759356"
+  },
+  {
+    "old_label": "Arac, Kastamonu, Turkey",
+    "city": "Arac",
+    "iso2": "TR",
+    "id": "1792161933"
+  },
+  {
+    "old_label": "Yoboki, Dikhil, Djibouti",
+    "city": "Yoboki",
+    "iso2": "DJ",
+    "id": "1262096912"
+  },
+  {
+    "old_label": "Savsat, Artvin, Turkey",
+    "city": "Savsat",
+    "iso2": "TR",
+    "id": "1792545473"
+  },
+  {
+    "old_label": "Arpacay, Kars, Turkey",
+    "city": "Arpacay",
+    "iso2": "TR",
+    "id": "1792082484"
+  },
+  {
+    "old_label": "Altintas, Kütahya, Turkey",
+    "city": "Altintas",
+    "iso2": "TR",
+    "id": "1792043886"
+  },
+  {
+    "old_label": "Tracadie, New Brunswick, Canada",
+    "city": "Tracadie",
+    "iso2": "CA",
+    "id": "1124362021"
+  },
+  {
+    "old_label": "Fishvar, Fārs, Iran",
+    "city": "Fishvar",
+    "iso2": "IR",
+    "id": "1364755324"
+  },
+  {
+    "old_label": "Mecitozu, Çorum, Turkey",
+    "city": "Mecitozu",
+    "iso2": "TR",
+    "id": "1792194107"
+  },
+  {
+    "old_label": "Yesilova, Burdur, Turkey",
+    "city": "Yesilova",
+    "iso2": "TR",
+    "id": "1792622787"
+  },
+  {
+    "old_label": "Salyan, Nepal",
+    "city": "Salyan",
+    "iso2": "NP",
+    "id": "1524828921"
+  },
+  {
+    "old_label": "Domanic, Kütahya, Turkey",
+    "city": "Domanic",
+    "iso2": "TR",
+    "id": "1792195942"
+  },
+  {
+    "old_label": "Maravilla Tenejapa, Chiapas, Mexico",
+    "city": "Maravilla Tenejapa",
+    "iso2": "MX",
+    "id": "1484598932"
+  },
+  {
+    "old_label": "Orikhiv, Zaporizka Oblast, Ukraine",
+    "city": "Orikhiv",
+    "iso2": "UA",
+    "id": "1804862588"
+  },
+  {
+    "old_label": "Sanpozhen, Hebei, China",
+    "city": "Sanpozhen",
+    "iso2": "CN",
+    "id": "1156196003"
+  },
+  {
+    "old_label": "Cristopolis, Bahia, Brazil",
+    "city": "Cristopolis",
+    "iso2": "BR",
+    "id": "1076513995"
+  },
+  {
+    "old_label": "Saraykent, Yozgat, Turkey",
+    "city": "Saraykent",
+    "iso2": "TR",
+    "id": "1792706620"
+  },
+  {
+    "old_label": "Zherdevka, Tambovskaya Oblast’, Russia",
+    "city": "Zherdevka",
+    "iso2": "RU",
+    "id": "1643603288"
+  },
+  {
+    "old_label": "Baianopolis, Bahia, Brazil",
+    "city": "Baianopolis",
+    "iso2": "BR",
+    "id": "1076531349"
+  },
+  {
+    "old_label": "Cayiralan, Yozgat, Turkey",
+    "city": "Cayiralan",
+    "iso2": "TR",
+    "id": "1792865323"
+  },
+  {
+    "old_label": "Clinton, Connecticut, United States",
+    "city": "Clinton",
+    "iso2": "US",
+    "id": "1840034364"
+  },
+  {
+    "old_label": "Camardi, Niğde, Turkey",
+    "city": "Camardi",
+    "iso2": "TR",
+    "id": "1792093929"
+  },
+  {
+    "old_label": "Sariveliler, Karaman, Turkey",
+    "city": "Sariveliler",
+    "iso2": "TR",
+    "id": "1792137897"
+  },
+  {
+    "old_label": "Pecos, Texas, United States",
+    "city": "Pecos",
+    "iso2": "US",
+    "id": "1840020806"
+  },
+  {
+    "old_label": "Refahiye, Erzincan, Turkey",
+    "city": "Refahiye",
+    "iso2": "TR",
+    "id": "1792768598"
+  },
+  {
+    "old_label": "Bayanauyl, Kazakhstan",
+    "city": "Bayanauyl",
+    "iso2": "KZ",
+    "id": "1398025624"
+  },
+  {
+    "old_label": "Alucra, Giresun, Turkey",
+    "city": "Alucra",
+    "iso2": "TR",
+    "id": "1792565216"
+  },
+  {
+    "old_label": "Bilovodsk, Luhanska Oblast, Ukraine",
+    "city": "Bilovodsk",
+    "iso2": "UA",
+    "id": "1804703237"
+  },
+  {
+    "old_label": "Senirkent, Isparta, Turkey",
+    "city": "Senirkent",
+    "iso2": "TR",
+    "id": "1792298436"
+  },
+  {
+    "old_label": "Santa Cruz Itundujia, Oaxaca, Mexico",
+    "city": "Santa Cruz Itundujia",
+    "iso2": "MX",
+    "id": "1484802157"
+  },
+  {
+    "old_label": "Likhoslavl, Tverskaya Oblast’, Russia",
+    "city": "Likhoslavl",
+    "iso2": "RU",
+    "id": "1643616895"
+  },
+  {
+    "old_label": "Nelson Bay, New South Wales, Australia",
+    "city": "Nelson Bay",
+    "iso2": "AU",
+    "id": "1036777604"
+  },
+  {
+    "old_label": "Chikha, Chin State, Myanmar",
+    "city": "Chikha",
+    "iso2": "MM",
+    "id": "1104924225"
+  },
+  {
+    "old_label": "Bolkhov, Orlovskaya Oblast’, Russia",
+    "city": "Bolkhov",
+    "iso2": "RU",
+    "id": "1643585692"
+  },
+  {
+    "old_label": "Altamira do Maranhao, Maranhão, Brazil",
+    "city": "Altamira do Maranhao",
+    "iso2": "BR",
+    "id": "1076746584"
+  },
+  {
+    "old_label": "Akyaka, Kars, Turkey",
+    "city": "Akyaka",
+    "iso2": "TR",
+    "id": "1792979414"
+  },
+  {
+    "old_label": "Enez, Edirne, Turkey",
+    "city": "Enez",
+    "iso2": "TR",
+    "id": "1792411883"
+  },
+  {
+    "old_label": "Sutculer, Isparta, Turkey",
+    "city": "Sutculer",
+    "iso2": "TR",
+    "id": "1792320344"
+  },
+  {
+    "old_label": "Goynucek, Amasya, Turkey",
+    "city": "Goynucek",
+    "iso2": "TR",
+    "id": "1792275285"
+  },
+  {
+    "old_label": "Brejolandia, Bahia, Brazil",
+    "city": "Brejolandia",
+    "iso2": "BR",
+    "id": "1076943254"
+  },
+  {
+    "old_label": "Golpazari, Bilecik, Turkey",
+    "city": "Golpazari",
+    "iso2": "TR",
+    "id": "1792001027"
+  },
+  {
+    "old_label": "Modisi, Sulawesi Utara, Indonesia",
+    "city": "Modisi",
+    "iso2": "ID",
+    "id": "1360013481"
+  },
+  {
+    "old_label": "Sortland, Nordland, Norway",
+    "city": "Sortland",
+    "iso2": "NO",
+    "id": "1578250336"
+  },
+  {
+    "old_label": "Pitkyaranta, Kareliya, Russia",
+    "city": "Pitkyaranta",
+    "iso2": "RU",
+    "id": "1643011862"
+  },
+  {
+    "old_label": "Irineopolis, Santa Catarina, Brazil",
+    "city": "Irineopolis",
+    "iso2": "BR",
+    "id": "1076790066"
+  },
+  {
+    "old_label": "Baraclandia, Tocantins, Brazil",
+    "city": "Baraclandia",
+    "iso2": "BR",
+    "id": "1076591909"
+  },
+  {
+    "old_label": "Kursunlu, Çankırı, Turkey",
+    "city": "Kursunlu",
+    "iso2": "TR",
+    "id": "1792599229"
+  },
+  {
+    "old_label": "Oster, Chernihivska Oblast, Ukraine",
+    "city": "Oster",
+    "iso2": "UA",
+    "id": "1804570315"
+  },
+  {
+    "old_label": "Tefenni, Burdur, Turkey",
+    "city": "Tefenni",
+    "iso2": "TR",
+    "id": "1792992048"
+  },
+  {
+    "old_label": "Kosh-Agach, Altay, Russia",
+    "city": "Kosh-Agach",
+    "iso2": "RU",
+    "id": "1643465238"
+  },
+  {
+    "old_label": "Basmakci, Afyonkarahisar, Turkey",
+    "city": "Basmakci",
+    "iso2": "TR",
+    "id": "1792537292"
+  },
+  {
+    "old_label": "Puigcerda, Catalonia, Spain",
+    "city": "Puigcerda",
+    "iso2": "ES",
+    "id": "1724441850"
+  },
+  {
+    "old_label": "Zaozersk, Murmanskaya Oblast’, Russia",
+    "city": "Zaozersk",
+    "iso2": "RU",
+    "id": "1643823652"
+  },
+  {
+    "old_label": "Urzhum, Kirovskaya Oblast’, Russia",
+    "city": "Urzhum",
+    "iso2": "RU",
+    "id": "1643578582"
+  },
+  {
+    "old_label": "Jilotlan de los Dolores, Jalisco, Mexico",
+    "city": "Jilotlan de los Dolores",
+    "iso2": "MX",
+    "id": "1484298923"
+  },
+  {
+    "old_label": "Cildir, Ardahan, Turkey",
+    "city": "Cildir",
+    "iso2": "TR",
+    "id": "1792346814"
+  },
+  {
+    "old_label": "Otocac, Ličko-Senjska Županija, Croatia",
+    "city": "Otocac",
+    "iso2": "HR",
+    "id": "1191233258"
+  },
+  {
+    "old_label": "Camoluk, Giresun, Turkey",
+    "city": "Camoluk",
+    "iso2": "TR",
+    "id": "1792490056"
+  },
+  {
+    "old_label": "Nolinsk, Kirovskaya Oblast’, Russia",
+    "city": "Nolinsk",
+    "iso2": "RU",
+    "id": "1643468029"
+  },
+  {
+    "old_label": "Shchuchye, Kurganskaya Oblast’, Russia",
+    "city": "Shchuchye",
+    "iso2": "RU",
+    "id": "1643139853"
+  },
+  {
+    "old_label": "Ulas, Sivas, Turkey",
+    "city": "Ulas",
+    "iso2": "TR",
+    "id": "1792065344"
+  },
+  {
+    "old_label": "Mogadouro, Bragança, Portugal",
+    "city": "Mogadouro",
+    "iso2": "PT",
+    "id": "1620447198"
+  },
+  {
+    "old_label": "Rudnya, Smolenskaya Oblast’, Russia",
+    "city": "Rudnya",
+    "iso2": "RU",
+    "id": "1643921469"
+  },
+  {
+    "old_label": "Huedin, Cluj, Romania",
+    "city": "Huedin",
+    "iso2": "RO",
+    "id": "1642303721"
+  },
+  {
+    "old_label": "Adakli, Bingöl, Turkey",
+    "city": "Adakli",
+    "iso2": "TR",
+    "id": "1792013897"
+  },
+  {
+    "old_label": "Altinyayla, Sivas, Turkey",
+    "city": "Altinyayla",
+    "iso2": "TR",
+    "id": "1792888799"
+  },
+  {
+    "old_label": "Nizhniye Sergi, Sverdlovskaya Oblast’, Russia",
+    "city": "Nizhniye Sergi",
+    "iso2": "RU",
+    "id": "1643721871"
+  },
+  {
+    "old_label": "Aslanapa, Kütahya, Turkey",
+    "city": "Aslanapa",
+    "iso2": "TR",
+    "id": "1792565930"
+  },
+  {
+    "old_label": "Villa Chalcatongo de Hidalgo, Oaxaca, Mexico",
+    "city": "Villa Chalcatongo de Hidalgo",
+    "iso2": "MX",
+    "id": "1484341732"
+  },
+  {
+    "old_label": "Coronel Murta, Minas Gerais, Brazil",
+    "city": "Coronel Murta",
+    "iso2": "BR",
+    "id": "1076166627"
+  },
+  {
+    "old_label": "Big Rapids, Michigan, United States",
+    "city": "Big Rapids",
+    "iso2": "US",
+    "id": "1840002678"
+  },
+  {
+    "old_label": "Kharovsk, Vologodskaya Oblast’, Russia",
+    "city": "Kharovsk",
+    "iso2": "RU",
+    "id": "1643046840"
+  },
+  {
+    "old_label": "Fort Irwin, California, United States",
+    "city": "Fort Irwin",
+    "iso2": "US",
+    "id": "1840025802"
+  },
+  {
+    "old_label": "Cayirli, Erzincan, Turkey",
+    "city": "Cayirli",
+    "iso2": "TR",
+    "id": "1792113760"
+  },
+  {
+    "old_label": "Yelnya, Smolenskaya Oblast’, Russia",
+    "city": "Yelnya",
+    "iso2": "RU",
+    "id": "1643873845"
+  },
+  {
+    "old_label": "Szentgotthard, Vas, Hungary",
+    "city": "Szentgotthard",
+    "iso2": "HU",
+    "id": "1348047105"
+  },
+  {
+    "old_label": "Emirgazi, Konya, Turkey",
+    "city": "Emirgazi",
+    "iso2": "TR",
+    "id": "1792817663"
+  },
+  {
+    "old_label": "Frei Inocencio, Minas Gerais, Brazil",
+    "city": "Frei Inocencio",
+    "iso2": "BR",
+    "id": "1076063892"
+  },
+  {
+    "old_label": "Taxkorgan, Xinjiang, China",
+    "city": "Taxkorgan",
+    "iso2": "CN",
+    "id": "1156209546"
+  },
+  {
+    "old_label": "Ilic, Erzincan, Turkey",
+    "city": "Ilic",
+    "iso2": "TR",
+    "id": "1792262442"
+  },
+  {
+    "old_label": "Suoyarvi, Kareliya, Russia",
+    "city": "Suoyarvi",
+    "iso2": "RU",
+    "id": "1643031731"
+  },
+  {
+    "old_label": "Topchikha, Altayskiy Kray, Russia",
+    "city": "Topchikha",
+    "iso2": "RU",
+    "id": "1643939856"
+  },
+  {
+    "old_label": "Pudozh, Kareliya, Russia",
+    "city": "Pudozh",
+    "iso2": "RU",
+    "id": "1643479302"
+  },
+  {
+    "old_label": "Anaurilandia, Mato Grosso do Sul, Brazil",
+    "city": "Anaurilandia",
+    "iso2": "BR",
+    "id": "1076668503"
+  },
+  {
+    "old_label": "Neya, Kostromskaya Oblast’, Russia",
+    "city": "Neya",
+    "iso2": "RU",
+    "id": "1643055534"
+  },
+  {
+    "old_label": "Murzzuschlag, Steiermark, Austria",
+    "city": "Murzzuschlag",
+    "iso2": "AT",
+    "id": "1040974582"
+  },
+  {
+    "old_label": "Pol-e Sefid, Māzandarān, Iran",
+    "city": "Pol-e Sefid",
+    "iso2": "IR",
+    "id": "1364370217"
+  },
+  {
+    "old_label": "Gorodoviki, Kalmykiya, Russia",
+    "city": "Gorodoviki",
+    "iso2": "RU",
+    "id": "1643422244"
+  },
+  {
+    "old_label": "Soltsy, Novgorodskaya Oblast’, Russia",
+    "city": "Soltsy",
+    "iso2": "RU",
+    "id": "1643041908"
+  },
+  {
+    "old_label": "Meshkan, Fārs, Iran",
+    "city": "Meshkan",
+    "iso2": "IR",
+    "id": "1364304938"
+  },
+  {
+    "old_label": "Agnita, Sibiu, Romania",
+    "city": "Agnita",
+    "iso2": "RO",
+    "id": "1642697925"
+  },
+  {
+    "old_label": "Kuhmo, Kainuu, Finland",
+    "city": "Kuhmo",
+    "iso2": "FI",
+    "id": "1246485252"
+  },
+  {
+    "old_label": "Tiqqi, Souss-Massa, Morocco",
+    "city": "Tiqqi",
+    "iso2": "MA",
+    "id": "1504073397"
+  },
+  {
+    "old_label": "Belozersk, Vologodskaya Oblast’, Russia",
+    "city": "Belozersk",
+    "iso2": "RU",
+    "id": "1643349305"
+  },
+  {
+    "old_label": "Porkhov, Pskovskaya Oblast’, Russia",
+    "city": "Porkhov",
+    "iso2": "RU",
+    "id": "1643988613"
+  },
+  {
+    "old_label": "Tuba City, Arizona, United States",
+    "city": "Tuba City",
+    "iso2": "US",
+    "id": "1840018972"
+  },
+  {
+    "old_label": "Gremyachinsk, Permskiy Kray, Russia",
+    "city": "Gremyachinsk",
+    "iso2": "RU",
+    "id": "1643585361"
+  },
+  {
+    "old_label": "Atmore, Alabama, United States",
+    "city": "Atmore",
+    "iso2": "US",
+    "id": "1840013888"
+  },
+  {
+    "old_label": "Ortakoy, Çorum, Turkey",
+    "city": "Ortakoy",
+    "iso2": "TR",
+    "id": "1792266546"
+  },
+  {
+    "old_label": "Baraolt, Covasna, Romania",
+    "city": "Baraolt",
+    "iso2": "RO",
+    "id": "1642011195"
+  },
+  {
+    "old_label": "Taft, California, United States",
+    "city": "Taft",
+    "iso2": "US",
+    "id": "1840021736"
+  },
+  {
+    "old_label": "Camliyayla, Mersin, Turkey",
+    "city": "Camliyayla",
+    "iso2": "TR",
+    "id": "1792698507"
+  },
+  {
+    "old_label": "Lamesa, Texas, United States",
+    "city": "Lamesa",
+    "iso2": "US",
+    "id": "1840020725"
+  },
+  {
+    "old_label": "Demirozu, Bayburt, Turkey",
+    "city": "Demirozu",
+    "iso2": "TR",
+    "id": "1792751073"
+  },
+  {
+    "old_label": "Andrushivka, Zhytomyrska Oblast, Ukraine",
+    "city": "Andrushivka",
+    "iso2": "UA",
+    "id": "1804544646"
+  },
+  {
+    "old_label": "Ustyuzhna, Vologodskaya Oblast’, Russia",
+    "city": "Ustyuzhna",
+    "iso2": "RU",
+    "id": "1643553144"
+  },
+  {
+    "old_label": "Clinton, Oklahoma, United States",
+    "city": "Clinton",
+    "iso2": "US",
+    "id": "1840019108"
+  },
+  {
+    "old_label": "Francisco Santos, Piauí, Brazil",
+    "city": "Francisco Santos",
+    "iso2": "BR",
+    "id": "1076258810"
+  },
+  {
+    "old_label": "Kiuruvesi, Pohjois-Savo, Finland",
+    "city": "Kiuruvesi",
+    "iso2": "FI",
+    "id": "1246969515"
+  },
+  {
+    "old_label": "Jauru, Mato Grosso, Brazil",
+    "city": "Jauru",
+    "iso2": "BR",
+    "id": "1076111334"
+  },
+  {
+    "old_label": "Verkhniy Mamon, Voronezhskaya Oblast’, Russia",
+    "city": "Verkhniy Mamon",
+    "iso2": "RU",
+    "id": "1643662881"
+  },
+  {
+    "old_label": "Joia, Rio Grande do Sul, Brazil",
+    "city": "Joia",
+    "iso2": "BR",
+    "id": "1076448822"
+  },
+  {
+    "old_label": "Toro, Castille-Leon, Spain",
+    "city": "Toro",
+    "iso2": "ES",
+    "id": "1724525468"
+  },
+  {
+    "old_label": "Pochinok, Smolenskaya Oblast’, Russia",
+    "city": "Pochinok",
+    "iso2": "RU",
+    "id": "1643214179"
+  },
+  {
+    "old_label": "Paris, Illinois, United States",
+    "city": "Paris",
+    "iso2": "US",
+    "id": "1840009542"
+  },
+  {
+    "old_label": "Krupki, Minskaya Voblasts’, Belarus",
+    "city": "Krupki",
+    "iso2": "BY",
+    "id": "1112668114"
+  },
+  {
+    "old_label": "Sulakyurt, Kırıkkale, Turkey",
+    "city": "Sulakyurt",
+    "iso2": "TR",
+    "id": "1792056675"
+  },
+  {
+    "old_label": "Sitka, Alaska, United States",
+    "city": "Sitka",
+    "iso2": "US",
+    "id": "1840023319"
+  },
+  {
+    "old_label": "Lewistown, Pennsylvania, United States",
+    "city": "Lewistown",
+    "iso2": "US",
+    "id": "1840003592"
+  },
+  {
+    "old_label": "Barton, New York, United States",
+    "city": "Barton",
+    "iso2": "US",
+    "id": "1840057223"
+  },
+  {
+    "old_label": "Ch'osan-up, Chagang, North Korea",
+    "city": "Ch'osan-up",
+    "iso2": "KP",
+    "id": "1408838898"
+  },
+  {
+    "old_label": "Strelka, Magadanskaya Oblast’, Russia",
+    "city": "Strelka",
+    "iso2": "RU",
+    "id": "1643297872"
+  },
+  {
+    "old_label": "Khakhar, Khabarovskiy Kray, Russia",
+    "city": "Khakhar",
+    "iso2": "RU",
+    "id": "1643315253"
+  }
+]
