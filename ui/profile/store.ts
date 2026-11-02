@@ -10,6 +10,7 @@ export interface ParsedLink {
   valid: boolean;
   reason: string | null;
   is_verified: boolean;
+  verified_at?: string | null;
   verification_expires_at?: string;
   _uid: string;
   platform?: "X" | "GitHub" | "Instagram" | "Reddit" | "LinkedIn" | "Discord" | "TikTok" | "Bluesky" | "Mastodon" | "Snapchat" | "Telegram" | "Other";

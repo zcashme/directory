@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { MouseEventHandler } from "react";
+import type { KeyboardEvent, MouseEventHandler } from "react";
 
 interface VerifiedBadgeProps {
   verified?: boolean;
@@ -9,6 +9,8 @@ interface VerifiedBadgeProps {
   unverifiedLabel?: string;
   onClick?: MouseEventHandler<HTMLSpanElement>;
   href?: string;
+  expanded?: boolean;
+  detailsId?: string;
 }
 
 export default function VerifiedBadge({
@@ -19,6 +21,8 @@ export default function VerifiedBadge({
   unverifiedLabel = "Unverified",
   onClick,
   href,
+  expanded,
+  detailsId,
 }: VerifiedBadgeProps) {
   // Always start closed; open only via hover or click when allowed.
   const [open, setOpen] = useState(false);
@@ -132,6 +136,26 @@ export default function VerifiedBadge({
     }
   };
 
+  const handleBadgeKeyDown = (event: KeyboardEvent<HTMLSpanElement>) => {
+    if (!onClick) return;
+    if (event.key !== "Enter" && event.key !== " ") return;
+    event.preventDefault();
+    event.currentTarget.click();
+  };
+
+  const interactiveProps = onClick
+    ? {
+        role: "button" as const,
+        tabIndex: 0,
+        onKeyDown: handleBadgeKeyDown,
+        "aria-expanded": expanded,
+        "aria-controls": detailsId,
+      }
+    : {
+        "aria-expanded": expanded,
+        "aria-controls": detailsId,
+      };
+
   if (verified) {
     const gapClasses = collapsedOnly
       ? "gap-0"
@@ -153,6 +177,7 @@ export default function VerifiedBadge({
       className={`${baseClasses} group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
       ${verifiedClasses}${onClick || href ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
+      {...interactiveProps}
     >
         <div className={`flex items-center justify-center ${gapClasses}`}>
 
@@ -186,6 +211,7 @@ export default function VerifiedBadge({
       className={`${baseClasses} leading-none group/badge inline-flex items-center justify-center rounded-full border text-xs font-medium transition-all duration-300
       text-red-800 bg-linear-to-r from-red-100 to-red-200 border-red-300 shadow-xs px-[0.2rem] py-[0.1rem]${collapsedOnly ? "" : " hover:px-[0.5rem]"}${onClick || href ? " cursor-pointer" : ""}`}
       style={{ fontFamily: "inherit" }}
+      {...interactiveProps}
     >
       <div className={`flex items-center justify-center ${collapsedOnly ? "gap-0" : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300"}`}>
         {renderX("text-red-600")}

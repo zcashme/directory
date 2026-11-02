@@ -16,7 +16,7 @@ Prefers service role key (bypasses RLS), falls back to anon key. Sessions not pe
 | Table | Purpose |
 |-------|---------|
 | `zcasher` | Profile records (id, name, slug, address, address_verified, bio, profile_image_url, etc.) |
-| `zcasher_links` | Profile social links (url, platform, is_verified, label) |
+| `zcasher_links` | Profile social links (url, platform, is_verified, verified_at, label) |
 | `zcasher_searchable` | Denormalized view for fast search/directory queries |
 | `zcasher_verifications` | Append-only verification event log (reward snapshots) |
 | `referrer_ranked_alltime/weekly/monthly` | Pre-computed leaderboard rankings (materialized views) |

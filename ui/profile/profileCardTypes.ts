@@ -7,6 +7,7 @@ type LinkVariant = "default" | "simple";
 
 export interface LinkRowClasses {
   row: string;
+  section?: string;
   left: string;
   leftLink: string;
   right: string;
@@ -28,6 +29,8 @@ export interface ProfileLinkRowProps {
   badgeLabels?: { verified: string; unverified: string };
   stopPropagation?: boolean;
   onVerifyClick?: (link: EnrichedProfileLink) => void;
+  expanded?: boolean;
+  onToggleAuthDetails?: () => void;
 }
 
 export interface ProfileCardTextScale {

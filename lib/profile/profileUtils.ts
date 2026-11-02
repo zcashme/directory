@@ -159,6 +159,18 @@ export function getLastVerifiedLabel(input: string | number | Profile | null | u
 }
 
 /**
+ * Month label for a social link's authentication timestamp.
+ * Matches the "Joined {Mon YYYY}" style on the profile card.
+ */
+export function getLinkAuthenticatedLabel(verifiedAt?: string | number | null): string {
+  if (verifiedAt === null || verifiedAt === undefined || verifiedAt === "") return "Authenticated";
+  const date = new Date(verifiedAt);
+  if (Number.isNaN(date.getTime())) return "Authenticated";
+  const month = date.toLocaleString("default", { month: "short", year: "numeric" });
+  return `Authenticated ${month}`;
+}
+
+/**
  * Normalizes a string value into a URL-friendly slug format.
  */
 export const normalizeSlug = (value: string = ""): string =>

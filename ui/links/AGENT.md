@@ -8,11 +8,15 @@ profiles can authenticate links.
 ## What the User Sees
 
 ### Authenticating a Link
-1. User clicks the gray "Not Authenticated" badge on a social link in their profile card
-2. Browser redirects to the provider's OAuth consent screen (via Supabase Auth)
-3. User authorizes on the provider
-4. Browser returns to the profile page
-5. The link badge turns green ("Authenticated") — persisted immediately, no OTP required
+1. User taps the red X on an unauthenticated social link in the profile card links pane
+2. A warning expands under that row; Authenticate starts the OAuth (or domain) flow
+3. Browser redirects to the provider's OAuth consent screen (via Supabase Auth)
+4. User authorizes on the provider
+5. Browser returns to the profile page
+6. The link badge turns green ("Authenticated") — persisted immediately, no OTP required
+
+Tapping a green check expands the month that link was authenticated. Tapping the same
+check or X collapses the section. Only one link section is open at a time.
 
 ### Prerequisites
 - Profile must have `address_verified = true` (enforced server-side in `verifyLink.ts`)
@@ -21,14 +25,14 @@ profiles can authenticate links.
 ## OAuth Flow
 
 ```
-User clicks "Not Authenticated" badge
+User taps Authenticate in the expanded unauthenticated-link warning
     -> connect.ts: stores the challenged profileId + linkId in sessionStorage
     -> supabase.auth.signInWithOAuth() redirects to provider
     -> User authorizes
     -> Provider redirects back and Supabase establishes a temporary session
     -> useConnectCallback.ts: sends profileId + linkId + access token to the server
     -> verifyLink.ts: loads that exact existing row, validates the token with getUser(),
-       compares the provider identity with the stored URL, and changes only is_verified
+       compares the provider identity with the stored URL, and sets is_verified plus verified_at
     -> Callback clears pending state and the local Supabase session
     -> Link badge updates to green
 ```
@@ -65,7 +69,7 @@ database row supplies the authoritative URL, platform, ownership, and current st
 
 | Table | Access |
 |-------|--------|
-| `zcasher_links` | Read exact challenged row; Write only `is_verified=true` on that same row |
+| `zcasher_links` | Read exact challenged row; Write `is_verified=true` and `verified_at` on that same row |
 | `zcasher` | Read — check `address_verified` |
 
 ## See Also

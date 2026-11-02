@@ -43,7 +43,7 @@ based on verification status, duplicate usernames, and link counts.
 | Table | Access |
 |-------|--------|
 | `zcasher_searchable` | Read — profile fetching, username availability, profile count |
-| `zcasher_links` | Read — links for profile display and batch fetching |
+| `zcasher_links` | Read — links for profile display and batch fetching (`verified_at` is the auth month) |
 | `referrer_ranked_alltime` | Read — leaderboard rank joined to profile |
 | `referrer_ranked_weekly` | Read — weekly rank |
 | `referrer_ranked_monthly` | Read — monthly rank |
@@ -55,7 +55,7 @@ based on verification status, duplicate usernames, and link counts.
 | `types.ts` | Core interfaces: `Profile`, `ProfileLink`, `EnrichedProfileLink`, `ProfileTrust`, `ProfileTrustWarning` |
 | `profileFetcher.ts` | `fetchProfileForSlug()` — cached server function, slug lookup with fallbacks, rank + link joins |
 | `profileQueries.ts` | `getProfileCount()`, `getUsernameAvailability()`, `getDuplicateNameCount()` |
-| `profileUtils.ts` | Trust/warning state (`getProfileTrust`, `getWarningConfig`), slug building, share URLs, last-verified labels |
+| `profileUtils.ts` | Trust/warning state (`getProfileTrust`, `getWarningConfig`), slug building, share URLs, last-verified and link-auth month labels |
 | `profileLinks.ts` | Link enrichment: 24-domain favicon map, platform detection, handle extraction, `enrichLink()` |
 | `usernamePolicy.ts` | Username sanitization and normalization for comparison/slugs |
 | `usernameNormalizer.ts` | Social username extraction per platform (X, GitHub, Instagram, etc.) and canonical URL building |

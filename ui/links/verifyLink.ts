@@ -85,7 +85,7 @@ export async function verifySocialLink(
   // profile edit cannot redirect the proof to a changed or different row.
   const { data: verifiedLink, error: updateError } = await supabase
     .from("zcasher_links")
-    .update({ is_verified: true })
+    .update({ is_verified: true, verified_at: new Date().toISOString() })
     .eq("id", linkId)
     .eq("zcasher_id", profileId)
     .eq("url", storedLink.url)

@@ -31,6 +31,7 @@ import ProfileCardActions from "./ProfileCardActions";
 import ProfileCardWarning from "./ProfileCardWarning";
 import ProfileLinkRow from "./ProfileLinkRow";
 import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
+import useExclusiveLinkExpand, { linkAuthKey } from "./useExclusiveLinkExpand";
 import { AnimatePresence, motion } from "framer-motion";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
@@ -53,7 +54,8 @@ type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 type WindowWithSkipFeedback = Window & { skipZcashFeedbackScroll?: boolean };
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
-  row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
+  section: "border-b border-gray-100 last:border-0 min-w-0",
+  row: "flex items-center gap-3 py-1 min-w-0",
   left: "flex items-center gap-2 shrink-0",
   leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
   right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1",
@@ -100,6 +102,7 @@ export default function ProfileCard({
   const { form, original, updateField } = useEditsStore();
   const setEditsStore = useEditsStore.setState;
   const { linksArray, setLinksArray } = useProfileLinks({ profile });
+  const { expandedKey, toggle: toggleLinkAuthDetails } = useExclusiveLinkExpand();
 
   const { verifiedAddress, verifiedLinks } = getProfileTrust(profile);
   const totalLinks = profile.total_links ?? linksArray.length;
@@ -212,7 +215,7 @@ export default function ProfileCard({
   const handleDomainVerified = useCallback((verifiedUrl: string) => {
     setLinksArray((prev) =>
       prev.map((l) =>
-        l.url === verifiedUrl ? enrichLink({ ...l, is_verified: true, platform: "Domain" }) : l
+        l.url === verifiedUrl ? enrichLink({ ...l, is_verified: true, platform: "Domain", verified_at: l.verified_at ?? new Date().toISOString() }) : l
       )
     );
     // Flip the matching row in BOTH form and original so the editor's
@@ -223,13 +226,13 @@ export default function ProfileCard({
       form: {
         ...state.form,
         links: state.form.links.map((l) =>
-          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const } : l
+          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const, verified_at: l.verified_at ?? new Date().toISOString() } : l
         ),
       },
       original: {
         ...state.original,
         links: state.original.links.map((l) =>
-          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const } : l
+          l.url === verifiedUrl ? { ...l, is_verified: true, platform: "Other" as const, verified_at: l.verified_at ?? new Date().toISOString() } : l
         ),
       },
     }));
@@ -240,7 +243,7 @@ export default function ProfileCard({
     setShowRedirect(false);
     setLinksArray((prev) =>
       prev.map((link) =>
-        link.id === linkId ? enrichLink({ ...link, is_verified: true }) : link
+        link.id === linkId ? enrichLink({ ...link, is_verified: true, verified_at: link.verified_at ?? new Date().toISOString() }) : link
       )
     );
     router.refresh();
@@ -474,7 +477,19 @@ export default function ProfileCard({
                 <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
                   <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                     {linksArray.length > 0
-                      ? linksArray.map((link: EnrichedProfileLink) => <ProfileLinkRow key={link.id || link.url} link={link} classes={linkRowClasses} onVerifyClick={profile.address_verified ? handleVerifyClick : undefined} />)
+                      ? linksArray.map((link: EnrichedProfileLink) => {
+                          const key = linkAuthKey(link);
+                          return (
+                            <ProfileLinkRow
+                              key={link.id || link.url}
+                              link={link}
+                              classes={linkRowClasses}
+                              onVerifyClick={profile.address_verified ? handleVerifyClick : undefined}
+                              expanded={expandedKey === key}
+                              onToggleAuthDetails={() => toggleLinkAuthDetails(key)}
+                            />
+                          );
+                        })
                       : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                   </div>
                 </div>

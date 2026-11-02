@@ -82,6 +82,7 @@ export interface ProfileLink {
   label?: string;
   platform?: string | null;
   is_verified: boolean;
+  verified_at?: string | null;
   verification_expires_at?: string;
   zcasher_id?: number;
 }

@@ -136,6 +136,7 @@ export async function verifyDomainDns(
       is_verified: true,
       platform: "Domain",
       updated_at: new Date().toISOString(),
+      verified_at: new Date().toISOString(),
     })
     .eq("id", link.id);
   if (updateError) return { ok: false, error: "internal-error", details: updateError.message };

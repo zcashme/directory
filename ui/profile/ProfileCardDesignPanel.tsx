@@ -21,6 +21,7 @@ import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import ProfileCardActions from "@/ui/profile/ProfileCardActions";
 import ProfileCardWarning from "@/ui/profile/ProfileCardWarning";
 import ProfileLinkRow from "@/ui/profile/ProfileLinkRow";
+import useExclusiveLinkExpand, { linkAuthKey } from "@/ui/profile/useExclusiveLinkExpand";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
@@ -45,7 +46,8 @@ type RankPeriod = (typeof RANK_PERIODS)[number];
 type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
-  row: "flex items-center gap-3 py-1 border-b border-gray-100 last:border-0 min-w-0",
+  section: "border-b border-gray-100 last:border-0 min-w-0",
+  row: "flex items-center gap-3 py-1 min-w-0",
   left: "flex items-center gap-2 shrink-0",
   leftLink: "flex items-center gap-2 shrink-0 hover:text-[var(--color-brand-blue)] hover:text-[var(--profile-hover-color)] transition-colors",
   right: "flex items-center gap-2 ml-auto min-w-0 text-sm text-gray-600 justify-end flex-1",
@@ -66,6 +68,7 @@ function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
         label: (link.label || link.username || link.platform || url).trim(),
         platform: link.platform ?? null,
         is_verified: Boolean(link.is_verified),
+        verified_at: link.verified_at ?? null,
         verification_expires_at: link.verification_expires_at,
       };
     });
@@ -74,6 +77,7 @@ function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
 export default function ProfileCardDesignPanel({ profile, onGenerateQr }: ProfileCardDesignPanelProps) {
   const { form, original, deletedFields, pendingAvatarUpload, updateField } = useEditsStore();
   const [showStats, setShowStats] = useState(false);
+  const { expandedKey, toggle: toggleLinkAuthDetails } = useExclusiveLinkExpand();
 
   const hasStoreValues = useMemo(() => {
     return (
@@ -523,13 +527,18 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                     <div className="w-full text-sm text-gray-700 transition-all duration-300 overflow-hidden">
                       <div className="px-4 pt-2 pb-3 bg-transparent/70 border-t border-gray-200 flex flex-col gap-2">
                         {linksArray.length > 0
-                          ? linksArray.map((link) => (
-                            <ProfileLinkRow
-                              key={link.id || link.url}
-                              link={link}
-                              classes={linkRowClasses}
-                            />
-                          ))
+                          ? linksArray.map((link) => {
+                              const key = linkAuthKey(link);
+                              return (
+                                <ProfileLinkRow
+                                  key={link.id || link.url}
+                                  link={link}
+                                  classes={linkRowClasses}
+                                  expanded={expandedKey === key}
+                                  onToggleAuthDetails={() => toggleLinkAuthDetails(key)}
+                                />
+                              );
+                            })
                           : <p className="italic text-gray-500 text-center">No contributed links yet.</p>}
                       </div>
                     </div>

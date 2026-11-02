@@ -314,6 +314,7 @@ export default function ProfileEditor({
         valid: true,
         reason: null,
         is_verified: !!l.is_verified,
+        verified_at: l.verified_at ?? null,
         verification_expires_at: l.verification_expires_at,
         _uid: crypto.randomUUID()
       } as ParsedLink;

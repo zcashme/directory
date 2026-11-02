@@ -663,6 +663,9 @@ export async function confirmOtpAction(
           };
           if (pgpzResult) {
             updatePayload.is_verified = pgpzResult.isVerified;
+            if (pgpzResult.isVerified) {
+              updatePayload.verified_at = new Date().toISOString();
+            }
           }
           const { error: updErr } = await supabase
             .from("zcasher_links")
@@ -684,6 +687,7 @@ export async function confirmOtpAction(
             label: resolvedLabel,
             platform: resolvedPlatform,
             is_verified: pgpzResult?.isVerified ?? false,
+            ...(pgpzResult?.isVerified ? { verified_at: new Date().toISOString() } : {}),
           });
           if (insErr) linkErrors.push(`insert link: ${insErr.message}`);
         }

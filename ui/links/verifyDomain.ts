@@ -98,6 +98,7 @@ export async function verifyDomainLink(
       is_verified: true,
       platform: "Domain",
       updated_at: new Date().toISOString(),
+      verified_at: new Date().toISOString(),
     })
     .eq("id", link.id);
 

@@ -6,6 +6,7 @@ import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import ProfileLinkRow from "./ProfileLinkRow";
 import type { ProfileCardContentProps, LinkRowClasses } from "./profileCardTypes";
 import { formatUsername } from "./profileCardUtils";
+import useExclusiveLinkExpand, { linkAuthKey } from "./useExclusiveLinkExpand";
 
 export default function ProfileCardContent({
   profile,
@@ -25,6 +26,7 @@ export default function ProfileCardContent({
   showDisplayNameVerifiedBadge = true,
 }: ProfileCardContentProps) {
   const paymentAddress = getPublicPaymentAddress(profile);
+  const { expandedKey, toggle: toggleLinkAuthDetails } = useExclusiveLinkExpand();
 
   const sizes = {
     mobile: {
@@ -126,7 +128,8 @@ export default function ProfileCardContent({
   };
   const copyButtonSize = "xs";
   const linkRowClasses: LinkRowClasses = {
-    row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0`,
+    section: "border-b border-gray-100 last:border-0 min-w-0 flex-shrink-0",
+    row: `flex items-center ${s.linkRowGap} ${s.linkRowPadding} min-w-0`,
     left: `flex items-center ${s.linkGap} shrink-0 min-w-0 pl-0.5`,
     leftLink: `flex items-center ${s.linkGap} shrink-0 hover:text-[var(--color-brand-blue)] transition-colors min-w-0`,
     right: `flex items-center ${s.linkGap} ml-auto min-w-0 text-gray-600 justify-end flex-1`,
@@ -267,16 +270,21 @@ export default function ProfileCardContent({
         <div className={`mt-5 flex-1 min-h-0 w-full relative z-10 flex flex-col flex-grow`}>
           <div className="rounded-2xl border border-gray-300 bg-gray-50/50 shadow-inner transition-all overflow-hidden flex-1 min-h-0 flex flex-col">
             <div className={`${s.linkPadding} flex flex-col ${s.linkGap} flex-1 min-h-0 overflow-y-auto`}>
-              {linksArray.slice(0, 3).map((link, i) => (
-                <ProfileLinkRow
-                  key={link.id || i}
-                  link={link}
-                  classes={linkRowClasses}
-                  hideBadge={hideLinkBadges}
-                  badgeLabels={badgeLabels}
-                  stopPropagation
-                />
-              ))}
+              {linksArray.slice(0, 3).map((link, i) => {
+                const key = linkAuthKey(link);
+                return (
+                  <ProfileLinkRow
+                    key={link.id || i}
+                    link={link}
+                    classes={linkRowClasses}
+                    hideBadge={hideLinkBadges}
+                    badgeLabels={badgeLabels}
+                    stopPropagation
+                    expanded={expandedKey === key}
+                    onToggleAuthDetails={hideLinkBadges ? undefined : () => toggleLinkAuthDetails(key)}
+                  />
+                );
+              })}
               {linksArray.length > 3 && (
                 <span
                   className={`${s.linkDomain} text-gray-500 text-center pt-1`}

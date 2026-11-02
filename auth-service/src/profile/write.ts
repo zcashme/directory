@@ -113,7 +113,7 @@ export async function ensurePgpzProofLink(
 ): Promise<void> {
   const { data: existing, error: findError } = await supabase
     .from("zcasher_links")
-    .select("id")
+    .select("id, is_verified")
     .eq("zcasher_id", profileId)
     .eq("platform", "PGPZ")
     .limit(1)
@@ -121,12 +121,23 @@ export async function ensurePgpzProofLink(
 
   if (findError) throw new Error(`PGPZ proof lookup failed: ${findError.message}`);
 
-  const values = {
+  const now = new Date().toISOString();
+  const values: {
+    url: string;
+    label: string;
+    platform: string;
+    is_verified: boolean;
+    verified_at?: string;
+  } = {
     url: proof.url,
     label: proof.label,
     platform: proof.platform,
     is_verified: true,
   };
+
+  if (!existing?.is_verified) {
+    values.verified_at = now;
+  }
 
   if (existing) {
     const { error } = await supabase

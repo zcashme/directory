@@ -10,7 +10,9 @@ Zcash address, and flips to reveal a full editor on the back.
 ### Profile Card (Front)
 A card showing: avatar (or animated smiley fallback with blinking eyes), display name
 with verified badge, username, bio (2-line clamp), Zcash address with copy + QR buttons,
-and social links with authentication badges. A three-dot menu offers: Show/Hide Awards,
+and social links with authentication badges. Tapping a check or X on a link reveals the
+authentication month or an unauthenticated warning under that row; only one link section
+is open at a time. A three-dot menu offers: Show/Hide Awards,
 Edit Profile, Verify Profile, Upgrade to Maxi, Copy Referral Link, Share Profile.
 
 Below the links, a trust warning banner may appear (red/yellow/green/neutral) based on
@@ -72,7 +74,8 @@ not yet implemented.
 | `ProfileAvatar.tsx` | Avatar image with animated smiley fallback (blinking eyes, random look-around) |
 | `ProfileHeader.tsx` | Sticky nav header with search + Join button |
 | `ProfileSearchDropdown.tsx` | `cmdk`-based search with live results, username availability banner |
-| `ProfileLinkRow.tsx` | Single link row with icon, label, auth badge, click-to-verify |
+| `ProfileLinkRow.tsx` | Single link row with icon, label, auth badge, expandable month/warning details |
+| `useExclusiveLinkExpand.ts` | Accordion state: only one social-link detail section open at a time |
 | `VerifiedBadge.tsx` | Expandable checkmark badge (green=verified, gray=unverified), auto-collapse |
 | `VerifiedCardWrapper.tsx` | Tier-based card background (gold/green shimmer/blue/gray) |
 | `store.ts` | Zustand store for profile edits (form, original, deletedFields, pendingAvatarUpload) |
