@@ -18,6 +18,9 @@ interface DirectoryProfile {
   nearest_city_name: string | null;
   last_verified_at: string | null;
   link_search_text: string | null;
+  slug?: string | null;
+  zns_active?: boolean | string | number | null;
+  zns_name?: string | null;
 }
 
 interface ZcasherLink {
@@ -101,6 +104,9 @@ const ZCASHER_PROFILE_FIELDS = [
   "bio",
   "nearest_city_name",
   "last_verified_at",
+  "slug",
+  "zns_active",
+  "zns_name",
 ].join(",");
 
 const encodeCursor = (lastName: string, lastId: number): string =>
@@ -134,6 +140,9 @@ function toDirectoryProfile(row: Record<string, unknown>): DirectoryProfile | nu
     nearest_city_name: typeof row.nearest_city_name === "string" ? row.nearest_city_name : null,
     last_verified_at: typeof row.last_verified_at === "string" ? row.last_verified_at : null,
     link_search_text: typeof row.link_search_text === "string" ? row.link_search_text : null,
+    slug: typeof row.slug === "string" ? row.slug : null,
+    zns_active: (row.zns_active as DirectoryProfile["zns_active"]) ?? null,
+    zns_name: typeof row.zns_name === "string" ? row.zns_name : null,
   };
 }
 
@@ -349,8 +358,21 @@ export async function GET(request: Request): Promise<Response> {
     );
     const protectedInfo = await getProtectedNameInfo(q);
     nameProtected = protectedInfo.kind !== "none";
+    const znsName = normalizeZnsName(q);
+    const hasZnsExact = profiles.some((profile) => {
+      const active = profile.zns_active === true || profile.zns_active === 1
+        || (typeof profile.zns_active === "string" && ["true", "yes", "1", "y", "t"].includes(profile.zns_active.trim().toLowerCase()));
+      if (!active) return false;
+      return (
+        normalizeUsernameForCompare(profile.name) === compareTarget
+        || normalizeZnsName(profile.slug ?? "") === znsName
+        || normalizeZnsName(profile.zns_name ?? "") === znsName
+      );
+    });
 
-    if (exists || nameProtected) {
+    if (nameProtected) {
+      znsOwned = false;
+    } else if (hasZnsExact) {
       znsOwned = false;
     } else {
       const ensured = await ensureDirectoryZnsProfile(q);

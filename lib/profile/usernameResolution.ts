@@ -74,14 +74,12 @@ export async function resolveProfileSlug(rawSlug: string): Promise<SlugResolutio
     }
 
     if (ensured?.resolution === "ok" && ensured.registration) {
-      const profile =
-        (ensured.boundId != null ? await fetchProfileForId(ensured.boundId) : null)
-        ?? await fetchProfileForSlug(znsName);
+      const profile = ensured.boundId != null ? await fetchProfileForId(ensured.boundId) : null;
       if (profile) {
         return {
           kind: "profile",
           profile: withResolution(profile, "ok", ensured.registration.address),
-          znsBound: true,
+          znsBound: isZnsActiveProfile(profile) || znsNamesMatch(profile.zns_name, ensured.registration.name),
         };
       }
     }

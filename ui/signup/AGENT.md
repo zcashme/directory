@@ -13,7 +13,7 @@ walks through 6 steps:
    live-checks protected names, Zcash Names SDK ownership, waitlist count, and verified zcashers profiles.
    New usernames are lowercase letters and numbers only (1–62).
 2. **Zcash Address** — validates address type, blocks transparent/tex/viewing
-   keys, checks if address is already taken
+   keys. Multiple profiles and ZNS names may share a UA.
 3. **Social Links** — add links from supported platforms (X, GitHub, Discord,
    etc.) or custom URLs. All start unverified
 4. **City** — optional, autocomplete dropdown searching `city-timezones`

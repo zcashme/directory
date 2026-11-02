@@ -4,7 +4,16 @@ export function preferredSuffixSlug(name: string, id: number): string {
   return `${name}-${id}`;
 }
 
-export function allocateSuffixSlug(name: string, id: number, taken: Set<string>): string {
+export function allocateSuffixSlug(
+  name: string,
+  id: number,
+  taken: Set<string>,
+  currentSlug?: string | null
+): string {
+  if (currentSlug && currentSlug !== name) {
+    const parsed = parseProfileSuffixSlug(currentSlug);
+    if (parsed && parsed.base === name && parsed.id === id) return currentSlug;
+  }
   const preferred = preferredSuffixSlug(name, id);
   if (!taken.has(preferred)) return preferred;
   let n = 2;

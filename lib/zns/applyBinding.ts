@@ -70,6 +70,7 @@ function bindingPatch(
 ) {
   const keepClaim = registration.lastAction === "update" && existing.zns_claim_txid;
   return {
+    name: registration.name,
     zns_name: registration.name,
     zns_active: true,
     zns_claim_txid: keepClaim ? existing.zns_claim_txid : registration.txid,
@@ -93,24 +94,32 @@ function toMatchRegistration(registration: ZnsRegistration): MatchRegistration {
   };
 }
 
+function orQuote(value: string): string {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
+
 async function loadCandidates(
   supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
   name: string
 ): Promise<MatchCandidate[]> {
-  const [{ data: byName }, { data: byBinding }] = await Promise.all([
+  const results = await Promise.all([
     supabase.from("zcasher").select(CANDIDATE_FIELDS).ilike("name", name).limit(100),
     supabase.from("zcasher").select(CANDIDATE_FIELDS).eq("zns_name", name).limit(100),
+    supabase.from("zcasher").select(CANDIDATE_FIELDS).eq("slug", name).limit(100),
   ]);
 
   const byId = new Map<number, MatchCandidate>();
-  for (const row of [...(byName ?? []), ...(byBinding ?? [])]) {
-    const candidate = toCandidate(row as unknown as Record<string, unknown>);
-    if (!candidate.id) continue;
-    if (
-      znsNamesMatch(candidate.name, name)
-      || (candidate.zns_name && znsNamesMatch(candidate.zns_name, name))
-    ) {
-      byId.set(candidate.id, candidate);
+  for (const result of results) {
+    for (const row of result.data ?? []) {
+      const candidate = toCandidate(row as unknown as Record<string, unknown>);
+      if (!candidate.id) continue;
+      if (
+        znsNamesMatch(candidate.name, name)
+        || (candidate.zns_name && znsNamesMatch(candidate.zns_name, name))
+        || candidate.slug === name
+      ) {
+        byId.set(candidate.id, candidate);
+      }
     }
   }
   return [...byId.values()].sort((a, b) => a.id - b.id);
@@ -123,7 +132,7 @@ async function loadTakenSlugs(
   const { data } = await supabase
     .from("zcasher")
     .select("slug")
-    .or(`slug.eq.${name},slug.like.${name}-%`)
+    .or(`slug.eq.${orQuote(name)},slug.like.${orQuote(`${name}-%`)}`)
     .limit(500);
   return new Set(
     (data ?? [])
@@ -149,7 +158,7 @@ async function displaceProfile(
   name: string,
   taken: Set<string>
 ): Promise<string> {
-  const nextSlug = allocateSuffixSlug(name, profile.id, taken);
+  const nextSlug = allocateSuffixSlug(name, profile.id, taken, profile.slug);
   const patch: Record<string, unknown> = {
     slug: nextSlug,
     zns_active: false,
@@ -200,7 +209,6 @@ async function createBoundProfile(
   const { data, error } = await supabase
     .from("zcasher")
     .insert({
-      name: registration.name,
       address_verified: false,
       created_at: now,
       ...bindingPatch(registration),
@@ -230,6 +238,16 @@ async function applyUnbound(
   if (decision.kind === "create") {
     const boundId = await createBoundProfile(supabase, registration);
     return { boundId, displacedId: null, created: true, deactivated: false };
+  }
+
+  if (decision.kind === "displace_and_upgrade") {
+    const displace = candidates.find((candidate) => candidate.id === decision.displaceId);
+    const profile = candidates.find((candidate) => candidate.id === decision.profileId);
+    if (!displace) throw new Error("Displace target missing");
+    if (!profile) throw new Error("Upgrade target missing");
+    await displaceProfile(supabase, displace, registration.name, taken);
+    await bindExisting(supabase, profile, registration);
+    return { boundId: profile.id, displacedId: displace.id, created: false, deactivated: false };
   }
 
   const displace = candidates.find((candidate) => candidate.id === decision.displaceId);

@@ -28,7 +28,8 @@ export interface MatchRegistration {
 export type UnboundDecision =
   | { kind: "upgrade"; profileId: number }
   | { kind: "create" }
-  | { kind: "displace_and_create"; displaceId: number };
+  | { kind: "displace_and_create"; displaceId: number }
+  | { kind: "displace_and_upgrade"; displaceId: number; profileId: number };
 
 export type MatchDecision =
   | { kind: "sync"; boundId: number }
@@ -45,6 +46,13 @@ function isBoundToName(profile: MatchCandidate, name: string): boolean {
   return Boolean(profile.zns_name && znsNamesMatch(profile.zns_name, name));
 }
 
+function occupantOfCanonicalUrl(profiles: MatchCandidate[], name: string): MatchCandidate | null {
+  return profiles
+    .filter((profile) => holdsCanonicalSlug(profile, name) || profile.slug === name)
+    .slice()
+    .sort((a, b) => a.id - b.id)[0] ?? null;
+}
+
 function sameNameUnbound(profiles: MatchCandidate[], name: string, excludeId?: number): MatchCandidate[] {
   return profiles
     .filter((profile) => profile.id !== excludeId)
@@ -54,41 +62,25 @@ function sameNameUnbound(profiles: MatchCandidate[], name: string, excludeId?: n
     .sort((a, b) => a.id - b.id);
 }
 
-function occupantOfCanonicalUrl(profiles: MatchCandidate[], name: string): MatchCandidate | null {
-  const sameName = profiles
-    .filter((profile) => znsNamesMatch(profile.name, name))
-    .slice()
-    .sort((a, b) => a.id - b.id);
-  return sameName.find((profile) => holdsCanonicalSlug(profile, name)) ?? null;
-}
-
 export function classifyUnboundMatch(
   registration: MatchRegistration,
   profiles: MatchCandidate[]
 ): UnboundDecision {
   const sameName = sameNameUnbound(profiles, registration.name);
-  const verifiedSameAddress = sameName.find(
-    (profile) =>
-      profile.address_verified === true
-      && addressesMatch(profile.address, registration.address)
-      && !isBoundToName(profile, registration.name)
-  );
-  if (verifiedSameAddress) {
-    return { kind: "upgrade", profileId: verifiedSameAddress.id };
+  const sameNameSameAddress = sameName.find((profile) =>
+    addressesMatch(profile.address, registration.address)
+  ) ?? null;
+  const occupant = occupantOfCanonicalUrl(profiles, registration.name);
+
+  if (sameNameSameAddress) {
+    if (occupant && occupant.id !== sameNameSameAddress.id) {
+      return { kind: "displace_and_upgrade", displaceId: occupant.id, profileId: sameNameSameAddress.id };
+    }
+    return { kind: "upgrade", profileId: sameNameSameAddress.id };
   }
 
-  const occupant = occupantOfCanonicalUrl(sameName, registration.name);
   if (occupant) {
     return { kind: "displace_and_create", displaceId: occupant.id };
-  }
-
-  const unverifiedSameAddress = sameName.find(
-    (profile) =>
-      profile.address_verified !== true
-      && addressesMatch(profile.address, registration.address)
-  );
-  if (unverifiedSameAddress) {
-    return { kind: "displace_and_create", displaceId: unverifiedSameAddress.id };
   }
 
   return { kind: "create" };

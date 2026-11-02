@@ -88,8 +88,8 @@ export async function insertVerifiedSignupDiscordLinkAction(zcasherId: number, l
 }
 
 /**
- * Server Action for checking if address is taken
- * Used by AddUserForm component for real-time validation
+ * Server Action kept for callers that still check UA uniqueness.
+ * Multiple profiles and ZNS names may share an address, so this is always false.
  */
 export async function checkAddressTakenAction(address: string): Promise<CheckAddressTakenResponse> {
   try {

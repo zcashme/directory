@@ -3,17 +3,8 @@ import type { Profile } from "@/lib/profile/types";
 import type { CreateProfilePayload, ProfileLinkInput } from "@/lib/api/types";
 import { derivePlatform } from "@/lib/profile/profileLinks";
 
-export async function checkAddressTaken(address: string): Promise<boolean> {
-  const supabase = createSupabaseServerClient();
-  if (!supabase) return false;
-
-  const { data, error } = await supabase
-    .from("zcasher")
-    .select("id")
-    .or(`address.eq.${address.trim()},address.ilike.${address.trim()}`)
-    .is("zns_name", null)
-    .limit(1);
-  return !error && data && data.length > 0;
+export async function checkAddressTaken(_address: string): Promise<boolean> {
+  return false;
 }
 
 interface CreateProfileResult {
@@ -55,5 +46,6 @@ export async function insertVerifiedProfileLink(zcasherId: number, link: Profile
     url: link.url,
     platform: link.platform ?? derivePlatform(link.url),
     is_verified: true,
+    verified_at: new Date().toISOString(),
   }]);
 }

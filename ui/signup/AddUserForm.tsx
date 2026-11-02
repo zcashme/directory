@@ -13,7 +13,6 @@ import {
   createProfileAction,
   insertProfileLinksAction,
   insertVerifiedSignupDiscordLinkAction,
-  checkAddressTakenAction,
   checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -409,62 +408,36 @@ export default function AddUserForm({
       return;
     }
 
-    let active = true;
-
-    const checkAddr = async () => {
-      const result = await checkAddressTakenAction(address);
-
-      if (!active) return;
-
-      if (result.ok && result.taken) {
-        setAddressConflict({
-          type: "error",
-          text: "That Zcash address is already associated with an existing profile. Generate a new one — it's free — and try again.",
-        });
-        setAddressHelp("");
-        return;
-      } else {
-        setAddressConflict(null);
-      }
-
-      if (!res.valid) {
-        setAddressHelp(
-          "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
-        );
-        setAddressConflict(null);
-        return;
-      }
-
-      if (res.type === "tex") {
-        setAddressHelp(
-          "That's a TEX (transparent-source-only) address defined in ZIP 320. It can't receive from shielded senders. Use a z- or u- address instead."
-        );
-        setAddressConflict({
-          type: "info",
-          text: "TEX addresses are valid but not supported for shielded transactions.",
-        });
-        return;
-      }
-
-      const label =
-        res.type === "transparent"
-          ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
-          : res.type === "sapling"
-            ? "Sapling address ✓"
-            : res.type === "unified"
-              ? "Looks good — valid Unified address ✓"
-              : "Valid address ✓";
-
-      setAddressHelp(label);
+    if (!res.valid) {
+      setAddressHelp(
+        "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
+      );
       setAddressConflict(null);
-    };
+      return;
+    }
 
-    const timer = setTimeout(checkAddr, 300);
+    if (res.type === "tex") {
+      setAddressHelp(
+        "That's a TEX (transparent-source-only) address defined in ZIP 320. It can't receive from shielded senders. Use a z- or u- address instead."
+      );
+      setAddressConflict({
+        type: "info",
+        text: "TEX addresses are valid but not supported for shielded transactions.",
+      });
+      return;
+    }
 
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
+    const label =
+      res.type === "transparent"
+        ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
+        : res.type === "sapling"
+          ? "Sapling address ✓"
+          : res.type === "unified"
+            ? "Looks good — valid Unified address ✓"
+            : "Valid address ✓";
+
+    setAddressHelp(label);
+    setAddressConflict(null);
   }, [address]);
 
   useEffect(() => {
@@ -652,14 +625,6 @@ export default function AddUserForm({
       return;
     }
 
-    const addr = address.trim().toLowerCase();
-    const addressTakenResult = await checkAddressTakenAction(addr);
-
-    if (addressTakenResult.ok && addressTakenResult.taken) {
-      setError("That address is already associated with an existing profile.");
-      return;
-    }
-
     const toPrettyDomain = (rawUrl: string) => {
       const trimmed = (rawUrl || "").trim();
       if (!trimmed) return "";
@@ -777,7 +742,7 @@ export default function AddUserForm({
     } catch (err: any) {
       const errorMessage = err?.message || String(err);
       if (errorMessage.includes("duplicate key value") || errorMessage.includes("already exists")) {
-        setError("That address or name already exists. Please choose a unique one.");
+        setError("That username is already taken. Please choose a unique one.");
       } else {
         setError(errorMessage || "Failed to add name.");
       }
@@ -834,18 +799,6 @@ export default function AddUserForm({
           ? nameConflict.text
           : nameHelp || "Use lowercase letters and numbers only, 1–62 characters."}
       </p>
-      {addressConflict && (
-        <p
-          className={`mt-1 text-xs ${addressConflict?.type === "error"
-            ? "text-red-600"
-            : addressConflict?.type === "info"
-              ? "text-green-600"
-              : "text-gray-700"
-            }`}
-        >
-          {addressConflict?.text || ""}
-        </p>
-      )}
 
       {/* Display Name */}
       <label htmlFor="displayName" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1 mt-4">
