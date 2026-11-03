@@ -6,6 +6,7 @@
 
 import { createSupabaseServerClient } from "@/lib/supabase/supabase-server";
 import {
+  detectProviderFromUrl,
   extractProviderHandleFromUrl,
   getProviderByKey,
   getProviderKeyForPlatform,
@@ -60,7 +61,8 @@ export async function verifySocialLink(
     return { ok: false, error: "Social link is not verified" };
   }
 
-  const providerKey = getProviderKeyForPlatform(storedLink.platform);
+  const providerKey =
+    getProviderKeyForPlatform(storedLink.platform) ?? detectProviderFromUrl(storedLink.url);
   if (!providerKey) return { ok: false, error: "Unsupported social link platform" };
 
   const provider = getProviderByKey(providerKey);
@@ -88,7 +90,10 @@ export async function verifySocialLink(
   const identity = user.identities?.find((i) => i.provider === provider.key);
   if (!identity) return { ok: false, error: "No matching OAuth identity in session" };
 
-  const identityData = identity.identity_data as Record<string, unknown>;
+  const identityData = {
+    ...((user.user_metadata ?? {}) as Record<string, unknown>),
+    ...((identity.identity_data ?? {}) as Record<string, unknown>),
+  };
   const oauthIdentifiers = [
     provider.getHandle(identityData),
     provider.getUsername?.(identityData) ?? null,

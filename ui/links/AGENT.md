@@ -2,7 +2,7 @@
 
 ## Purpose
 OAuth-based social link verification. Users connect social accounts (X, GitHub, Discord,
-LinkedIn) to prove ownership. Requires ZVS address verification first — only wallet-verified
+LinkedIn, Telegram) to prove ownership. Requires ZVS address verification first — only wallet-verified
 profiles can authenticate links.
 
 ## What the User Sees
@@ -20,7 +20,7 @@ check or X collapses the section. Only one link section is open at a time.
 
 ### Prerequisites
 - Profile must have `address_verified = true` (enforced server-side in `verifyLink.ts`)
-- The link URL must match a supported provider (X, GitHub, Discord, or LinkedIn)
+- The link URL must match a supported provider (X, GitHub, Discord, LinkedIn, or Telegram)
 
 ## OAuth Flow
 
@@ -55,6 +55,7 @@ database row supplies the authoritative URL, platform, ownership, and current st
 | GitHub | `github` | `user_name` | `https://github.com/{handle}` |
 | Discord | `discord` | numeric `id` | `https://discord.com/users/{id}` |
 | LinkedIn | `linkedin_oidc` | `vanityName` | `https://linkedin.com/in/{handle}` |
+| Telegram | `custom:telegram` | `preferred_username` | `https://t.me/{handle}` |
 
 ## File -> Feature Map
 

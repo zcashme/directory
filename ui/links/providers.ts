@@ -9,7 +9,12 @@ interface Provider {
   getUsername?: (identityData: Record<string, unknown>) => string | null;
 }
 
-export type ProviderKey = "twitter" | "github" | "discord" | "linkedin_oidc";
+export type ProviderKey =
+  | "twitter"
+  | "github"
+  | "discord"
+  | "linkedin_oidc"
+  | "custom:telegram";
 
 export type SocialLinkAuthIntent = "verify" | "reverify" | "unverify";
 
@@ -57,6 +62,18 @@ export const PROVIDERS: Record<ProviderKey, Provider> = {
       (data?.preferred_username as string) ??
       null,
   },
+  "custom:telegram": {
+    key: "custom:telegram",
+    label: "Telegram",
+    buildUrl: (handle) => `https://t.me/${handle}`,
+    getHandle: (data) => {
+      const raw =
+        stringClaim(data?.preferred_username) ??
+        stringClaim(data?.username) ??
+        stringClaim(data?.user_name);
+      return raw ? raw.replace(/^@+/, "") : null;
+    },
+  },
 };
 
 const PLATFORM_TO_PROVIDER: Partial<Record<string, ProviderKey>> = {
@@ -64,7 +81,35 @@ const PLATFORM_TO_PROVIDER: Partial<Record<string, ProviderKey>> = {
   GitHub: "github",
   Discord: "discord",
   LinkedIn: "linkedin_oidc",
+  Telegram: "custom:telegram",
 };
+
+function stringClaim(value: unknown): string | null {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+const TELEGRAM_RESERVED_PATHS = new Set([
+  "joinchat",
+  "addstickers",
+  "addemoji",
+  "addtheme",
+  "addlist",
+  "proxy",
+  "socks",
+  "share",
+  "iv",
+  "login",
+  "setlanguage",
+  "boost",
+  "giftcode",
+  "invoice",
+  "contact",
+]);
+
+function isTelegramUsername(handle: string): boolean {
+  if (TELEGRAM_RESERVED_PATHS.has(handle.toLowerCase())) return false;
+  return /^[A-Za-z][A-Za-z0-9_]{4,31}$/.test(handle);
+}
 
 export function getProviderByKey(key: string): Provider | null {
   return Object.values(PROVIDERS).find((provider) => provider.key === key) ?? null;
@@ -130,6 +175,13 @@ export function extractProviderHandleFromUrl(
     if (hostname !== "linkedin.com" || segments.length !== 2) return null;
     if (segments[0].toLowerCase() !== "in") return null;
     return decodePathSegment(segments[1]);
+  }
+
+  if (providerKey === "custom:telegram") {
+    if ((hostname !== "t.me" && hostname !== "telegram.me") || segments.length !== 1) return null;
+    const handle = decodePathSegment(segments[0])?.replace(/^@+/, "") ?? null;
+    if (!handle || handle.startsWith("+") || !isTelegramUsername(handle)) return null;
+    return handle;
   }
 
   return null;
