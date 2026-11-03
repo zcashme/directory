@@ -277,6 +277,7 @@ export default function ProfileCardContent({
                     key={link.id || i}
                     link={link}
                     classes={linkRowClasses}
+                    ownerName={profile.display_name || profile.name}
                     hideBadge={hideLinkBadges}
                     badgeLabels={badgeLabels}
                     stopPropagation

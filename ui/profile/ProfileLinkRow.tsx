@@ -3,32 +3,25 @@
 import { useId, type MouseEvent } from "react";
 import { useReducedMotion } from "framer-motion";
 import CopyButton from "@/ui/common/buttons/CopyButton";
-import Button from "@/ui/common/buttons/Button";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { extractDomain } from "@/lib/profile/profileLinks";
-import { getLinkAuthenticatedLabel } from "@/lib/profile/profileUtils";
-import { detectProviderFromUrl, isDomainUrl } from "@/ui/links/providers";
+import { getLinkAuthenticatedLabel, stripLinkProtocol } from "@/lib/profile/profileUtils";
 import type { ProfileLinkRowProps } from "./profileCardTypes";
 import { resolveIconSrc } from "./profileCardUtils";
 
 export default function ProfileLinkRow({
   link,
   classes,
+  ownerName,
   hideBadge = false,
   badgeLabels = { verified: "Authenticated", unverified: "Not Authenticated" },
   stopPropagation = false,
-  onVerifyClick,
   expanded = false,
   onToggleAuthDetails,
 }: ProfileLinkRowProps) {
   const detailsId = useId();
   const shouldReduceMotion = useReducedMotion();
   const isDiscord = link.platform === "Discord";
-  const hasPersistedId = Number.isSafeInteger(link.id) && Number(link.id) > 0;
-  const canVerify =
-    hasPersistedId &&
-    !link.is_verified &&
-    (!!detectProviderFromUrl(link.url || "") || isDomainUrl(link.url || ""));
   const canLinkLeft = !(isDiscord && !link.is_verified);
   const showAuthDetails = !hideBadge && !!onToggleAuthDetails;
   const handleLinkClick = stopPropagation ? (event: MouseEvent) => event.stopPropagation() : undefined;
@@ -66,13 +59,11 @@ export default function ProfileLinkRow({
         event.stopPropagation();
         onToggleAuthDetails();
       }
-    : canVerify && onVerifyClick
-      ? () => onVerifyClick(link)
-      : undefined;
+    : undefined;
 
-  const warningText = isDiscord
-    ? "This username is not authenticated. It may not belong to the person you are expecting."
-    : "This link is not authenticated. It may not belong to the person you are expecting.";
+  const displayUrl = stripLinkProtocol(link.url || "");
+  const unauthOwner = (ownerName ?? "").trim() || "this person";
+  const unauthWarning = `Not authenticated. It may not belong to ${unauthOwner}.`;
 
   return (
     <div className={classes.section ?? "border-b border-gray-100 last:border-0 min-w-0"}>
@@ -136,28 +127,18 @@ export default function ProfileLinkRow({
         >
           <div className="min-h-0 overflow-hidden">
             {link.is_verified ? (
-              <p className="px-0.5 text-[11px] leading-snug text-green-800">
-                {getLinkAuthenticatedLabel(link.verified_at)}
-              </p>
-            ) : (
-              <div className="rounded-md border border-yellow-200 bg-yellow-50 px-2 py-1.5 text-[11px] leading-snug text-yellow-900">
-                <p>{warningText}</p>
-                {canVerify && onVerifyClick ? (
-                  <Button
-                    type="button"
-                    variant="primary"
-                    size="xs"
-                    className="mt-1.5"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      onVerifyClick(link);
-                    }}
-                  >
-                    Authenticate
-                  </Button>
+              <div className="flex items-start justify-between gap-3 px-0.5 text-[11px] leading-snug text-green-800">
+                <p className="shrink-0 text-left">{getLinkAuthenticatedLabel(link.verified_at)}</p>
+                {displayUrl ? (
+                  <p className="min-w-0 truncate text-right" title={displayUrl}>
+                    {displayUrl}
+                  </p>
                 ) : null}
               </div>
+            ) : (
+              <p className="px-0.5 text-left text-[11px] leading-snug text-red-600">
+                {unauthWarning}
+              </p>
             )}
           </div>
         </div>

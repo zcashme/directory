@@ -17,7 +17,7 @@ import CreatePrefillUrlModal from "@/ui/profile/CreatePrefillUrlModal";
 import { RedirectModal } from "@/ui/profile/editorModals";
 import { connectSocial } from "@/ui/links/connect";
 import { useConnectCallback } from "@/ui/links/useConnectCallback";
-import { detectProviderFromUrl, isDomainUrl } from "@/ui/links/providers";
+import { detectProviderFromUrl, isDomainUrl, type SocialLinkAuthIntent } from "@/ui/links/providers";
 import { PROVIDERS } from "@/ui/links/providers";
 import DomainVerifyModal from "@/ui/links/DomainVerifyModal";
 import { enrichLink } from "@/lib/profile/profileLinks";
@@ -186,10 +186,13 @@ export default function ProfileCard({
     : 448;
   const selectedThemePackageLabel = selectedThemePackageId === "maxi_theme" ? "Zcash Theme" : "No Theme";
 
-  const handleVerifyClick = useCallback(async (link: EnrichedProfileLink) => {
+  const handleVerifyClick = useCallback(async (
+    link: EnrichedProfileLink,
+    intent: SocialLinkAuthIntent = "verify",
+  ) => {
     if (!profile.address_verified) return;
 
-    if (isDomainUrl(link.url || "")) {
+    if (intent === "verify" && isDomainUrl(link.url || "")) {
       setDomainModalUrl(link.url);
       return;
     }
@@ -206,6 +209,7 @@ export default function ProfileCard({
         profileId: profile.id,
         linkId: Number(link.id),
         returnPath: window.location.pathname,
+        intent,
       });
     } catch {
       setShowRedirect(false);
@@ -239,15 +243,37 @@ export default function ProfileCard({
     router.refresh();
   }, [setLinksArray, setEditsStore, router]);
 
-  const handleVerified = useCallback((linkId: number) => {
+  const handleVerified = useCallback((
+    linkId: number,
+    result?: { is_verified: boolean; verified_at: string | null },
+  ) => {
     setShowRedirect(false);
+    const isVerified = result?.is_verified ?? true;
+    const verifiedAt = isVerified
+      ? (result?.verified_at ?? new Date().toISOString())
+      : null;
+    const patch = { is_verified: isVerified, verified_at: verifiedAt };
     setLinksArray((prev) =>
       prev.map((link) =>
-        link.id === linkId ? enrichLink({ ...link, is_verified: true, verified_at: link.verified_at ?? new Date().toISOString() }) : link
+        link.id === linkId ? enrichLink({ ...link, ...patch }) : link
       )
     );
+    setEditsStore((state) => ({
+      form: {
+        ...state.form,
+        links: state.form.links.map((l) =>
+          l.id === linkId ? { ...l, ...patch } : l
+        ),
+      },
+      original: {
+        ...state.original,
+        links: state.original.links.map((l) =>
+          l.id === linkId ? { ...l, ...patch } : l
+        ),
+      },
+    }));
     router.refresh();
-  }, [setLinksArray, router]);
+  }, [setLinksArray, setEditsStore, router]);
 
   const handleConnectError = useCallback(() => {
     setShowRedirect(false);
@@ -484,7 +510,7 @@ export default function ProfileCard({
                               key={link.id || link.url}
                               link={link}
                               classes={linkRowClasses}
-                              onVerifyClick={profile.address_verified ? handleVerifyClick : undefined}
+                              ownerName={displayName}
                               expanded={expandedKey === key}
                               onToggleAuthDetails={() => toggleLinkAuthDetails(key)}
                             />
@@ -653,7 +679,7 @@ export default function ProfileCard({
                     <ProfileEditor
                       profile={profile}
                       links={linksArray}
-                      onAuthenticateLink={profile.address_verified ? (link) => handleVerifyClick(link as EnrichedProfileLink) : undefined}
+                      onAuthenticateLink={profile.address_verified ? (link, intent) => handleVerifyClick(link as EnrichedProfileLink, intent) : undefined}
                       onGenerateQr={onGenerateVerificationQr}
                       isVerificationGenerating={isVerificationGenerating}
                     />

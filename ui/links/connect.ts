@@ -3,13 +3,19 @@
 
 import { supabase } from "@/lib/supabase/supabase-client";
 import type { Provider as SupabaseOAuthProvider } from "@supabase/supabase-js";
-import { PROVIDERS, type ProviderKey } from "./providers";
+import {
+  PROVIDERS,
+  parseSocialLinkAuthIntent,
+  type ProviderKey,
+  type SocialLinkAuthIntent,
+} from "./providers";
 
 const PENDING_CONNECT_KEY = "pendingConnect";
 
 interface PendingConnect {
   profileId: number;
   linkId: number;
+  intent: SocialLinkAuthIntent;
 }
 
 export function getPendingConnect(): PendingConnect | null {
@@ -26,7 +32,11 @@ export function getPendingConnect(): PendingConnect | null {
       clearPendingConnect();
       return null;
     }
-    return { profileId: Number(value.profileId), linkId: Number(value.linkId) };
+    return {
+      profileId: Number(value.profileId),
+      linkId: Number(value.linkId),
+      intent: parseSocialLinkAuthIntent(value.intent) ?? "verify",
+    };
   } catch {
     clearPendingConnect();
     return null;
@@ -39,11 +49,22 @@ export function clearPendingConnect(): void {
 
 export async function connectSocial(
   provider: ProviderKey,
-  { profileId, linkId, returnPath }: { profileId: number; linkId: number; returnPath: string }
+  {
+    profileId,
+    linkId,
+    returnPath,
+    intent = "verify",
+  }: {
+    profileId: number;
+    linkId: number;
+    returnPath: string;
+    intent?: SocialLinkAuthIntent;
+  }
 ): Promise<void> {
   if (!PROVIDERS[provider]) throw new Error(`Unknown provider: ${provider}`);
   if (!Number.isSafeInteger(profileId) || profileId <= 0) throw new Error("Invalid profile");
   if (!Number.isSafeInteger(linkId) || linkId <= 0) throw new Error("Invalid link");
+  const resolvedIntent = parseSocialLinkAuthIntent(intent) ?? "verify";
 
   clearPendingConnect();
 
@@ -52,7 +73,7 @@ export async function connectSocial(
   const { error: signOutError } = await supabase.auth.signOut({ scope: "local" });
   if (signOutError) throw signOutError;
 
-  const pending: PendingConnect = { profileId, linkId };
+  const pending: PendingConnect = { profileId, linkId, intent: resolvedIntent };
   sessionStorage.setItem(PENDING_CONNECT_KEY, JSON.stringify(pending));
 
   const { error } = await supabase.auth.signInWithOAuth({

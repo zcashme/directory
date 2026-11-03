@@ -14,7 +14,7 @@ import { verifySocialLink } from "./verifyLink";
 
 interface UseConnectCallbackOptions {
   profileId: number;
-  onVerified?: (linkId: number) => void;
+  onVerified?: (linkId: number, result?: { is_verified: boolean; verified_at: string | null }) => void;
   onError?: (error: string) => void;
 }
 
@@ -35,12 +35,20 @@ export function useConnectCallback({
           return;
         }
 
-        const result = await verifySocialLink(pending.profileId, pending.linkId, session.access_token);
+        const result = await verifySocialLink(
+          pending.profileId,
+          pending.linkId,
+          session.access_token,
+          pending.intent,
+        );
         if (!result.ok) {
           onError?.(result.error ?? "Social link verification failed");
           return;
         }
-        onVerified?.(pending.linkId);
+        onVerified?.(pending.linkId, {
+          is_verified: result.is_verified ?? pending.intent !== "unverify",
+          verified_at: result.verified_at ?? (pending.intent === "unverify" ? null : new Date().toISOString()),
+        });
       } finally {
         clearPendingConnect();
         await supabase.auth.signOut({ scope: "local" });

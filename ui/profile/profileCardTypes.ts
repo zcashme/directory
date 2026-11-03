@@ -25,10 +25,10 @@ export interface LinkRowClasses {
 export interface ProfileLinkRowProps {
   link: EnrichedProfileLink;
   classes: LinkRowClasses;
+  ownerName?: string;
   hideBadge?: boolean;
   badgeLabels?: { verified: string; unverified: string };
   stopPropagation?: boolean;
-  onVerifyClick?: (link: EnrichedProfileLink) => void;
   expanded?: boolean;
   onToggleAuthDetails?: () => void;
 }

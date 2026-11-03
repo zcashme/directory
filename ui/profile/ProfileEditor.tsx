@@ -18,6 +18,7 @@ import Alert from "@/ui/common/feedback/Alert";
 import Button from "@/ui/common/buttons/Button";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 import { validateZcashAddress } from "@/ui/signup/zcashAddress";
+import { detectProviderFromUrl, type SocialLinkAuthIntent } from "@/ui/links/providers";
 
 const MAX_DISPLAY_NAME_LENGTH = 32;
 
@@ -254,7 +255,10 @@ function VerifyHint({ show }: { show: boolean }) {
 interface ProfileEditorProps {
   profile: Profile;
   links?: EnrichedProfileLink[];
-  onAuthenticateLink?: (link: { url: string }) => void;
+  onAuthenticateLink?: (
+    link: { id?: number | null; url: string },
+    intent?: SocialLinkAuthIntent,
+  ) => void;
   onGenerateQr?: () => void;
   isVerificationGenerating?: boolean;
 }
@@ -1018,7 +1022,7 @@ export default function ProfileEditor({
               >
                 Reset
               </Button>
-              <HelpIcon text="Authenticated links cannot be changed. Links can only be authenticated after verifying your address via OTP" />
+              <HelpIcon text="Authenticated links cannot be edited. Re-Authenticate or Remove authentication by signing in to that social account. Links can only be authenticated after verifying your address via OTP." />
             </div>
           </div>
         </div>
@@ -1054,11 +1058,17 @@ export default function ProfileEditor({
             rowConflict ? withFieldBorderState("border-[#0a1126]/60", true) : ""
           }`;
 
+          const canManageOauthAuth =
+            isVerified &&
+            !isMarkedForDeletion &&
+            row.id !== null &&
+            !!detectProviderFromUrl(currentUrl);
+
           const linkActions = (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {isVerified ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Button
                       type="button"
                       disabled
@@ -1068,6 +1078,26 @@ export default function ProfileEditor({
                     >
                       Authenticated
                     </Button>
+                    {canManageOauthAuth && profile.address_verified && onAuthenticateLink ? (
+                      <>
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="xs"
+                          onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "reverify")}
+                        >
+                          Re-Authenticate
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="xs"
+                          onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "unverify")}
+                        >
+                          Remove authentication
+                        </Button>
+                      </>
+                    ) : null}
                   </div>
                 ) : isLinkDirty ? (
                   <span className="text-xs italic text-gray-500">
@@ -1093,7 +1123,7 @@ export default function ProfileEditor({
                       type="button"
                       variant="primary"
                       size="xs"
-                      onClick={() => onAuthenticateLink({ url: row.url })}
+                      onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "verify")}
                     >
                       Authenticate
                     </Button>

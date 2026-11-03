@@ -171,6 +171,25 @@ export function getLinkAuthenticatedLabel(verifiedAt?: string | number | null): 
 }
 
 /**
+ * Full link for compact display: host + path, without https:// or a leading www.
+ */
+export function stripLinkProtocol(url: string = ""): string {
+  const trimmed = (url ?? "").trim();
+  if (!trimmed) return "";
+  try {
+    const parsed = new URL(trimmed);
+    const host = decodeURIComponent(parsed.hostname).replace(/^www\./i, "");
+    const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/+$/, "");
+    return `${host}${path}${parsed.search}${parsed.hash}`;
+  } catch {
+    return trimmed
+      .replace(/^https?:\/\//i, "")
+      .replace(/^www\./i, "")
+      .replace(/\/+$/, "");
+  }
+}
+
+/**
  * Normalizes a string value into a URL-friendly slug format.
  */
 export const normalizeSlug = (value: string = ""): string =>

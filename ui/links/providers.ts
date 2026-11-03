@@ -11,6 +11,13 @@ interface Provider {
 
 export type ProviderKey = "twitter" | "github" | "discord" | "linkedin_oidc";
 
+export type SocialLinkAuthIntent = "verify" | "reverify" | "unverify";
+
+export function parseSocialLinkAuthIntent(value: unknown): SocialLinkAuthIntent | null {
+  if (value === "verify" || value === "reverify" || value === "unverify") return value;
+  return null;
+}
+
 export const PROVIDERS: Record<ProviderKey, Provider> = {
   twitter: {
     key: "twitter",

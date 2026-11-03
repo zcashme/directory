@@ -534,6 +534,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                                   key={link.id || link.url}
                                   link={link}
                                   classes={linkRowClasses}
+                                  ownerName={displayName}
                                   expanded={expandedKey === key}
                                   onToggleAuthDetails={() => toggleLinkAuthDetails(key)}
                                 />
