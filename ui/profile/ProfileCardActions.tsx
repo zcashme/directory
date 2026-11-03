@@ -10,9 +10,6 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
 interface ProfileCardActionsProps {
   profile: Profile;
-  hasAwards: boolean;
-  showStats: boolean;
-  onToggleStats: () => void;
   onEdit: () => void;
   onReserve: () => void;
   onCreatePrefillUrl: () => void;
@@ -20,9 +17,6 @@ interface ProfileCardActionsProps {
 
 export default function ProfileCardActions({
   profile,
-  hasAwards,
-  showStats,
-  onToggleStats,
   onEdit,
   onReserve,
   onCreatePrefillUrl,
@@ -51,18 +45,13 @@ export default function ProfileCardActions({
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [menuOpen]);
 
-  const menuItem = (icon: ReactNode, label: string, onClick: () => void, disabled = false) => (
+  const menuItem = (icon: ReactNode, label: string, onClick: () => void) => (
     <button
       onClick={() => {
         onClick();
         setMenuOpen(false);
       }}
-      disabled={disabled}
-      className={`w-full whitespace-nowrap text-left px-3 py-2 transition-colors ${
-        disabled
-          ? "text-gray-400 cursor-not-allowed opacity-60"
-          : "hover:bg-[var(--color-brand-blue)]/10 text-gray-800"
-      }`}
+      className="w-full whitespace-nowrap text-left px-3 py-2 transition-colors hover:bg-[var(--color-brand-blue)]/10 text-gray-800"
     >
       <span className="flex items-center gap-2">
         <span aria-hidden className="inline-flex w-4 shrink-0 justify-center overflow-visible">
@@ -102,7 +91,6 @@ export default function ProfileCardActions({
             menuOpen ? "max-h-80 opacity-100 translate-y-0" : "max-h-0 opacity-0 -translate-y-1 pointer-events-none"
           }`}
         >
-          {menuItem("\u2B54", showStats ? "Hide Awards" : "Show Awards", onToggleStats, !showStats && !hasAwards)}
           {menuItem(
             <span className="inline-flex scale-[0.78] pointer-events-none">
               <VerifiedBadge verified collapsedOnly />
@@ -115,7 +103,7 @@ export default function ProfileCardActions({
                 <span className="inline-flex scale-[0.78] origin-left">
                   <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
                 </span>,
-                "Manage Name",
+                "View Name",
                 () => {
                   if (typeof window !== "undefined") {
                     window.open(znsManageHref, "_blank", "noopener,noreferrer");

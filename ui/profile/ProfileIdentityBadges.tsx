@@ -1,6 +1,6 @@
 import type { Profile } from "@/lib/profile/types";
 import { isZnsActiveProfile } from "@/lib/profile/profileUtils";
-import { znsExplorerHref } from "@/lib/zns/name";
+import { formatZnsZecLabel, znsExplorerHref } from "@/lib/zns/name";
 import NetworkSchoolBadge from "@/ui/profile/NetworkSchoolBadge";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import { isTruthyProfileFlag } from "@/ui/profile/profileCardUtils";
@@ -28,6 +28,7 @@ export default function ProfileIdentityBadges({
         <VerifiedBadge
           verified
           variant="zcashName"
+          verifiedLabel={formatZnsZecLabel(znsName)}
           collapsedOnly={collapsedOnly}
           href={znsExplorerHref(znsName)}
         />

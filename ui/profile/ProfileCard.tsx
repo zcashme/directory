@@ -7,7 +7,6 @@ import { getProfileTrust, getWarningConfig, getLastVerifiedLabel, getPublicPayme
 import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
-import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
 import ProfileReserve from "@/ui/profile/ProfileReserve";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
@@ -32,7 +31,6 @@ import ProfileCardWarning from "./ProfileCardWarning";
 import ProfileLinkRow from "./ProfileLinkRow";
 import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
 import useExclusiveLinkExpand, { linkAuthKey } from "./useExclusiveLinkExpand";
-import { AnimatePresence, motion } from "framer-motion";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
 import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
 import { formatUsername } from "./profileCardUtils";
@@ -48,9 +46,6 @@ const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTI
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
 
 
-const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
-type RankPeriod = (typeof RANK_PERIODS)[number];
-type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 type WindowWithSkipFeedback = Window & { skipZcashFeedbackScroll?: boolean };
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
@@ -90,7 +85,6 @@ export default function ProfileCard({
   const router = useRouter();
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
-  const [showStats, setShowStats] = useState(false);
   const [showBack, setShowBack] = useState(false);
   const [backMode, setBackMode] = useState<"edit" | "reserve">("edit");
   const [showDesignBack, setShowDesignBack] = useState(false);
@@ -113,10 +107,6 @@ export default function ProfileCard({
     verifiedLinks,
     totalLinks,
     hasDuplicateNames: duplicateNameCount > 1,
-  });
-  const hasAwards = RANK_PERIODS.some((p) => {
-    const rank = profile[`rank_${p}`] ?? 0;
-    return rank > 0 && rank <= 10;
   });
   const displayName = profile.display_name || profile.name || "";
   const paymentAddress = getPublicPaymentAddress(profile);
@@ -369,9 +359,6 @@ export default function ProfileCard({
               >
                 <ProfileCardActions
                   profile={profile}
-                  hasAwards={hasAwards}
-                  showStats={showStats}
-                  onToggleStats={() => setShowStats((p) => !p)}
                   onEdit={() => {
                     setBackMode("edit");
                     setShowBack(true);
@@ -398,26 +385,6 @@ export default function ProfileCard({
                 />
               </div>
               <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
-
-              <AnimatePresence>
-                {showStats && (
-                  <motion.div
-                    key="awards"
-                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                    transition={{ type: "spring", stiffness: 220, damping: 20, mass: 0.8 }}
-                    className="flex flex-wrap justify-center gap-2 mt-3 mb-1"
-                  >
-                    {RANK_PERIODS.map((period) => {
-                      const rank = profile[`rank_${period}`];
-                      if (!rank || rank <= 0) return null;
-                      const badgePeriod: RankBadgePeriod = period === "alltime" ? "all" : period;
-                      return <ReferRankBadgeMulti key={period} rank={rank} period={badgePeriod} alwaysOpen />;
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               <div className="mt-3 flex w-full flex-col items-center">
                 <h2

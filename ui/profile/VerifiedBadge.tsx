@@ -109,12 +109,7 @@ export default function VerifiedBadge({
   const resolvedVerifiedLabel = verifiedLabel ?? (
     variant === "maxi" ? "Maxi Mode" : variant === "zcashName" ? "Zcash Names" : "Verified"
   );
-  const verifiedLabelHoverMax =
-    resolvedVerifiedLabel.length > 9
-      ? "group-hover/badge:max-w-[120px]"
-      : "group-hover/badge:max-w-[70px]";
-  const verifiedLabelMax =
-    resolvedVerifiedLabel.length > 9 ? "max-w-[120px]" : "max-w-[70px]";
+  const verifiedLabelMax = `${Math.min(Math.max(resolvedVerifiedLabel.length, 8), 40)}ch`;
   const unverifiedLabelHoverMax =
     unverifiedLabel.length > 11
       ? "group-hover/badge:max-w-[140px]"
@@ -160,11 +155,7 @@ export default function VerifiedBadge({
     const gapClasses = collapsedOnly
       ? "gap-0"
       : "gap-0 group-hover/badge:gap-1 transition-[gap] duration-300";
-    const verifiedRevealClasses = collapsedOnly
-      ? "max-w-0 opacity-0"
-      : open
-        ? `${verifiedLabelMax} opacity-100`
-        : `max-w-0 opacity-0 ${verifiedLabelHoverMax} group-hover/badge:opacity-100`;
+    const verifiedRevealClasses = isExpanded ? "opacity-100" : "opacity-0";
     const verifiedClasses = variant === "maxi" || variant === "zcashName"
       ? `text-amber-900 bg-linear-to-r from-amber-100 to-yellow-200 border-amber-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`
       : `text-green-800 bg-linear-to-r from-green-100 to-green-200 border-green-300 shadow-xs px-[0.2rem] py-[0.1rem] ${collapsedOnly ? "" : "hover:px-[0.5rem]"}`;
@@ -193,6 +184,7 @@ export default function VerifiedBadge({
     transition-all duration-300
     ${verifiedRevealClasses}
   `}
+            style={{ maxWidth: isExpanded ? verifiedLabelMax : 0 }}
           >
             {resolvedVerifiedLabel}
           </span>

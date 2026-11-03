@@ -46,6 +46,11 @@ export function addressesMatch(left: string | null | undefined, right: string | 
   return Boolean(a && b && a === b);
 }
 
+export function formatZnsZecLabel(name: string): string {
+  const normalized = normalizeZnsName(name);
+  return normalized ? `${normalized}.zec` : "";
+}
+
 export function znsExplorerHref(name: string): string {
   const normalized = normalizeZnsName(name);
   return `${ZCASH_NAMES_ORIGIN}/explorer?name=${encodeURIComponent(normalized)}`;

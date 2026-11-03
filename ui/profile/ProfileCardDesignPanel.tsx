@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { CSSProperties } from "react";
 import type { Profile, EnrichedProfileLink, ProfileLink } from "@/lib/profile/types";
 import { useEditsStore, type ParsedLink } from "@/ui/profile/store";
@@ -24,8 +24,6 @@ import ProfileLinkRow from "@/ui/profile/ProfileLinkRow";
 import useExclusiveLinkExpand, { linkAuthKey } from "@/ui/profile/useExclusiveLinkExpand";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
-import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
-import { AnimatePresence, motion } from "framer-motion";
 import type { LinkRowClasses } from "@/ui/profile/profileCardTypes";
 import { formatUsername } from "@/ui/profile/profileCardUtils";
 
@@ -40,10 +38,6 @@ const ACTION_BUTTONS_TOP = 16;
 const ACTION_BUTTONS_HEIGHT = 36;
 const AVATAR_OVERLAP_Y = Math.round(AVATAR_SIZE / 2 - (ACTION_BUTTONS_TOP + ACTION_BUTTONS_HEIGHT));
 const AVATAR_BORDER_MASK_WIDTH = AVATAR_SIZE + 18;
-
-const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
-type RankPeriod = (typeof RANK_PERIODS)[number];
-type RankBadgePeriod = "all" | Exclude<RankPeriod, "alltime">;
 
 const LINK_ROW_CLASSES: LinkRowClasses = {
   section: "border-b border-gray-100 last:border-0 min-w-0",
@@ -76,7 +70,6 @@ function mapFormLinksToProfileLinks(links: ParsedLink[]): ProfileLink[] {
 
 export default function ProfileCardDesignPanel({ profile, onGenerateQr }: ProfileCardDesignPanelProps) {
   const { form, original, deletedFields, pendingAvatarUpload, updateField } = useEditsStore();
-  const [showStats, setShowStats] = useState(false);
   const { expandedKey, toggle: toggleLinkAuthDetails } = useExclusiveLinkExpand();
 
   const hasStoreValues = useMemo(() => {
@@ -217,10 +210,6 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
     verifiedLinks,
     totalLinks,
     hasDuplicateNames: false,
-  });
-  const hasAwards = RANK_PERIODS.some((period) => {
-    const rank = previewProfile[`rank_${period}`];
-    return typeof rank === "number" && rank > 0 && rank <= 10;
   });
   const displayName = previewProfile.display_name || previewProfile.name || "";
   const paymentAddress = getPublicPaymentAddress(previewProfile);
@@ -399,9 +388,6 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                   >
                     <ProfileCardActions
                       profile={previewProfile}
-                      hasAwards={hasAwards}
-                      showStats={showStats}
-                      onToggleStats={() => setShowStats((prev) => !prev)}
                       onEdit={() => {}}
                       onReserve={() => {}}
                       onCreatePrefillUrl={() => {}}
@@ -421,26 +407,6 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                     />
                   </div>
                   <div style={{ paddingTop: `${AVATAR_SPACER}px` }} aria-hidden />
-
-                  <AnimatePresence>
-                    {showStats && (
-                      <motion.div
-                        key="awards"
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ type: "spring", stiffness: 220, damping: 20, mass: 0.8 }}
-                        className="flex flex-wrap justify-center gap-2 mt-3 mb-1"
-                      >
-                        {RANK_PERIODS.map((period) => {
-                          const rank = previewProfile[`rank_${period}`];
-                          if (!rank || rank <= 0) return null;
-                          const badgePeriod: RankBadgePeriod = period === "alltime" ? "all" : period;
-                          return <ReferRankBadgeMulti key={period} rank={rank} period={badgePeriod} alwaysOpen />;
-                        })}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   <div className="mt-3 flex w-full flex-col items-center">
                     <h2
