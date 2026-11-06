@@ -92,6 +92,10 @@ export default function ProfileCard({
   const [showRedirect, setShowRedirect] = useState(false);
   const [redirectLabel, setRedirectLabel] = useState("");
   const [domainModalUrl, setDomainModalUrl] = useState<string | null>(null);
+  const [linkAuthenticationError, setLinkAuthenticationError] = useState<{
+    linkId: number;
+    message: string;
+  } | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const { form, original, updateField } = useEditsStore();
   const setEditsStore = useEditsStore.setState;
@@ -191,6 +195,7 @@ export default function ProfileCard({
     if (!providerKey || !PROVIDERS[providerKey]) return;
     if (!Number.isSafeInteger(link.id) || Number(link.id) <= 0) return;
 
+    setLinkAuthenticationError(null);
     setShowRedirect(true);
     setRedirectLabel(PROVIDERS[providerKey].label);
 
@@ -203,6 +208,10 @@ export default function ProfileCard({
       });
     } catch {
       setShowRedirect(false);
+      setLinkAuthenticationError({
+        linkId: Number(link.id),
+        message: "Could not start social authentication. Please try again.",
+      });
     }
   }, [profile.address_verified, profile.id]);
 
@@ -238,6 +247,7 @@ export default function ProfileCard({
     result?: { is_verified: boolean; verified_at: string | null },
   ) => {
     setShowRedirect(false);
+    setLinkAuthenticationError(null);
     const isVerified = result?.is_verified ?? true;
     const verifiedAt = isVerified
       ? (result?.verified_at ?? new Date().toISOString())
@@ -265,8 +275,11 @@ export default function ProfileCard({
     router.refresh();
   }, [setLinksArray, setEditsStore, router]);
 
-  const handleConnectError = useCallback(() => {
+  const handleConnectError = useCallback((error: string, linkId: number) => {
     setShowRedirect(false);
+    setBackMode("edit");
+    setShowBack(true);
+    setLinkAuthenticationError({ linkId, message: error });
   }, []);
 
   useConnectCallback({
@@ -646,6 +659,7 @@ export default function ProfileCard({
                     <ProfileEditor
                       profile={profile}
                       links={linksArray}
+                      linkAuthenticationError={linkAuthenticationError}
                       onAuthenticateLink={profile.address_verified ? (link, intent) => handleVerifyClick(link as EnrichedProfileLink, intent) : undefined}
                       onGenerateQr={onGenerateVerificationQr}
                       isVerificationGenerating={isVerificationGenerating}

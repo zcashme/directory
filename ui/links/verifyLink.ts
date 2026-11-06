@@ -13,6 +13,10 @@ import {
   parseSocialLinkAuthIntent,
   type SocialLinkAuthIntent,
 } from "./providers";
+import {
+  expectedCurrentVerificationState,
+  isSocialLinkVerified,
+} from "./verificationState";
 
 function handlesMatch(expected: string, actual: string): boolean {
   return expected.toLocaleLowerCase("en-US") === actual.toLocaleLowerCase("en-US");
@@ -53,7 +57,7 @@ export async function verifySocialLink(
 
   if (linkError || !storedLink) return { ok: false, error: "Social link not found" };
 
-  const currentlyVerified = storedLink.is_verified !== false;
+  const currentlyVerified = isSocialLinkVerified(storedLink.is_verified);
   if (resolvedIntent === "verify" && currentlyVerified) {
     return { ok: false, error: "Social link is already verified" };
   }
@@ -106,7 +110,7 @@ export async function verifySocialLink(
   const now = new Date().toISOString();
   const nextVerified = resolvedIntent !== "unverify";
   const nextVerifiedAt = resolvedIntent === "unverify" ? null : now;
-  const expectedCurrentVerified = resolvedIntent === "verify" ? false : true;
+  const expectedCurrentVerified = expectedCurrentVerificationState(resolvedIntent);
 
   // Reassert every challenged-row invariant in the update so a concurrent
   // profile edit cannot redirect the proof to a changed or different row.

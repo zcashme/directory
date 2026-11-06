@@ -259,6 +259,7 @@ interface ProfileEditorProps {
     link: { id?: number | null; url: string },
     intent?: SocialLinkAuthIntent,
   ) => void;
+  linkAuthenticationError?: { linkId: number; message: string } | null;
   onGenerateQr?: () => void;
   isVerificationGenerating?: boolean;
 }
@@ -271,6 +272,7 @@ export default function ProfileEditor({
   profile,
   links,
   onAuthenticateLink,
+  linkAuthenticationError = null,
   onGenerateQr,
   isVerificationGenerating = false,
 }: ProfileEditorProps) {
@@ -288,6 +290,7 @@ export default function ProfileEditor({
   } = useEditsStore();
   const [avatarUploadError, setAvatarUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const linkAuthenticationErrorRef = useRef<HTMLParagraphElement | null>(null);
   const pendingAvatarPreviewSrc = useMemo(() => {
     if (!pendingAvatarUpload) return "";
     return `data:${pendingAvatarUpload.mimeType};base64,${pendingAvatarUpload.base64Data}`;
@@ -330,6 +333,18 @@ export default function ProfileEditor({
     initializeForm(profile, originalLinks);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.id]); // Only re-initialize if profile ID changes
+
+  useEffect(() => {
+    if (!linkAuthenticationError) return;
+    const frame = window.requestAnimationFrame(() => {
+      linkAuthenticationErrorRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [linkAuthenticationError]);
 
   const originals = useMemo(
     () => ({
@@ -1063,89 +1078,105 @@ export default function ProfileEditor({
             !isMarkedForDeletion &&
             row.id !== null &&
             !!detectProviderFromUrl(currentUrl);
+          const authenticationError = row.id !== null && linkAuthenticationError?.linkId === row.id
+            ? linkAuthenticationError.message
+            : null;
 
           const linkActions = (
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-wrap">
-                {isVerified ? (
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Button
-                      type="button"
-                      disabled
-                      variant="primary"
-                      size="xs"
-                      className="!text-green-700 !border-green-400"
-                    >
-                      Authenticated
-                    </Button>
-                    {canManageOauthAuth && profile.address_verified && onAuthenticateLink ? (
-                      <>
+            <>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {isVerified ? (
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Button
+                        type="button"
+                        disabled
+                        variant="primary"
+                        size="xs"
+                        className="!text-green-700 !border-green-400"
+                      >
+                        Authenticated
+                      </Button>
+                      {canManageOauthAuth && profile.address_verified && onAuthenticateLink ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="xs"
+                            onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "reverify")}
+                          >
+                            Re-Authenticate
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="danger"
+                            size="xs"
+                            onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "unverify")}
+                          >
+                            Remove authentication
+                          </Button>
+                        </>
+                      ) : null}
+                    </div>
+                  ) : isLinkDirty ? (
+                    <span className="text-xs italic text-gray-500">
+                      Verify to apply changes
+                    </span>
+                  ) : row.id !== null && !isMarkedForDeletion ? (
+                    !isValidUrl(currentUrl).valid ? (
+                      <div className="flex items-center gap-2">
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="primary"
                           size="xs"
-                          onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "reverify")}
+                          disabled
                         >
-                          Re-Authenticate
+                          Authenticate
                         </Button>
-                        <Button
-                          type="button"
-                          variant="danger"
-                          size="xs"
-                          onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "unverify")}
-                        >
-                          Remove authentication
-                        </Button>
-                      </>
-                    ) : null}
-                  </div>
-                ) : isLinkDirty ? (
-                  <span className="text-xs italic text-gray-500">
-                    Verify to apply changes
-                  </span>
-                ) : row.id !== null && !isMarkedForDeletion ? (
-                  !isValidUrl(currentUrl).valid ? (
-                    <div className="flex items-center gap-2">
+                        <span className="text-xs text-red-600">
+                          Not a valid URL
+                        </span>
+                      </div>
+                    ) : profile.address_verified && onAuthenticateLink ? (
                       <Button
                         type="button"
                         variant="primary"
                         size="xs"
-                        disabled
+                        onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "verify")}
                       >
                         Authenticate
                       </Button>
-                      <span className="text-xs text-red-600">
-                        Not a valid URL
-                      </span>
-                    </div>
-                  ) : profile.address_verified && onAuthenticateLink ? (
-                    <Button
-                      type="button"
-                      variant="primary"
-                      size="xs"
-                      onClick={() => onAuthenticateLink({ id: row.id, url: row.url }, "verify")}
-                    >
-                      Authenticate
-                    </Button>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <Button
+                          type="button"
+                          variant="primary"
+                          size="xs"
+                          disabled
+                        >
+                          Authenticate
+                        </Button>
+                        <span className="text-xs text-gray-500">
+                          Only verified profiles can authenticate links
+                        </span>
+                      </div>
+                    )
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <Button
-                        type="button"
-                        variant="primary"
-                        size="xs"
-                        disabled
-                      >
-                        Authenticate
-                      </Button>
-                      <span className="text-xs text-gray-500">
-                        Only verified profiles can authenticate links
-                      </span>
-                    </div>
-                  )
-                ) : null}
+                    null
+                  )}
+                </div>
+                <DeleteActionButton onClick={() => removeLink(row._uid)} isDeleted={isMarkedForDeletion} />
               </div>
-              <DeleteActionButton onClick={() => removeLink(row._uid)} isDeleted={isMarkedForDeletion} />
-            </div>
+              {authenticationError ? (
+                <p
+                  ref={linkAuthenticationErrorRef}
+                  className="mt-2 w-full text-center text-xs text-red-600"
+                  role="alert"
+                >
+                  {authenticationError}
+                </p>
+              ) : null}
+            </>
           );
 
           return (
