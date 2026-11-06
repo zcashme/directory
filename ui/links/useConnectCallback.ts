@@ -11,6 +11,7 @@ import { useEffect } from "react";
 import { supabase } from "@/lib/supabase/supabase-client";
 import { getPendingConnect, clearPendingConnect } from "./connect";
 import { verifySocialLink } from "./verifyLink";
+import { getOAuthCallbackError } from "./oauthCallbackError";
 
 interface UseConnectCallbackOptions {
   profileId: number;
@@ -26,12 +27,16 @@ export function useConnectCallback({
   useEffect(() => {
     const pending = getPendingConnect();
     if (!pending || pending.profileId !== profileId) return;
+    const callbackError = getOAuthCallbackError(window.location.search, window.location.hash);
 
     void (async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.access_token) {
-          onError?.("Social authentication did not complete. Please try again.", pending.linkId);
+          onError?.(
+            callbackError ?? "Social authentication did not complete. Please try again.",
+            pending.linkId,
+          );
           return;
         }
 
