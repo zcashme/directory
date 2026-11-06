@@ -226,9 +226,9 @@ export default function ProfileVerification({
   const lastGenerateTriggerRef = useRef(generateQrTrigger);
   const lastShowQrSectionRef = useRef(false);
   const hasZeroFeeOtp = isZnsActiveProfile(profile);
-  const verificationAmountZec = hasZeroFeeOtp ? "0" : "0.002";
+  const verificationAmountZec = hasZeroFeeOtp ? "0.0001" : "0.002";
   const minAmountHint = hasZeroFeeOtp
-    ? "No minimum amount required."
+    ? "Include a minimum of 0.0001 ZEC (10,000 zats)."
     : "Include a minimum of 0.002 ZEC.";
   const shouldReduceMotion = useReducedMotion() ?? false;
   const tapProps = shouldReduceMotion
