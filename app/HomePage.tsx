@@ -7,7 +7,7 @@ import type { Profile } from "@/lib/profile/types";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 import ProfileCardContent from "@/ui/profile/ProfileCardContent";
-import { buildSlug, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
+import { buildSlug, hasProfileDesignAccess, isZnsActiveProfile } from "@/lib/profile/profileUtils";
 import { parseProfileLinks } from "@/lib/profile/profileLinks";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import type { ProfileCardTextScale } from "@/ui/profile/ProfileCard";
@@ -26,6 +26,7 @@ interface FannedCardAvatarProps {
 
 function FannedCardAvatar({ profile, size, isHighlighted, verifiedBadgeScale = 1 }: FannedCardAvatarProps) {
   const isVerified = !!(profile.address_verified || (profile.verified_links_count ?? 0) > 0);
+  const isZns = isZnsActiveProfile(profile);
   return (
     <div className={`absolute ${size === 80 ? "-top-10" : "-top-12"} left-1/2 -translate-x-1/2 z-20`}>
       <div className="relative rounded-full border border-black p-0.5 bg-[var(--color-background)]" style={{ transform: isHighlighted ? "scale(1.1)" : "scale(1)", transition: "transform 0.3s ease-out" }}>
@@ -37,7 +38,7 @@ function FannedCardAvatar({ profile, size, isHighlighted, verifiedBadgeScale = 1
             className="absolute right-[1%] bottom-[1%] z-30 origin-center pointer-events-auto"
             style={{ transform: `translate(8%, 8%) scale(${verifiedBadgeScale})` }}
           >
-            <VerifiedBadge verified={true} />
+            <VerifiedBadge verified variant={isZns ? "zcashName" : "verified"} />
           </span>
         )}
       </div>
