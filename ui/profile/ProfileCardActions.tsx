@@ -45,13 +45,15 @@ export default function ProfileCardActions({
     return () => document.removeEventListener("pointerdown", onPointer);
   }, [menuOpen]);
 
-  const menuItem = (icon: ReactNode, label: string, onClick: () => void) => (
+  const menuItem = (icon: ReactNode, label: string, onClick: () => void, disabled = false) => (
     <button
+      disabled={disabled}
       onClick={() => {
+        if (disabled) return;
         onClick();
         setMenuOpen(false);
       }}
-      className="w-full whitespace-nowrap text-left px-3 py-2 transition-colors hover:bg-[var(--color-brand-blue)]/10 text-gray-800"
+      className="w-full whitespace-nowrap text-left px-3 py-2 transition-colors text-gray-800 hover:bg-[var(--color-brand-blue)]/10 disabled:cursor-not-allowed disabled:text-gray-400 disabled:hover:bg-transparent"
     >
       <span className="flex items-center gap-2">
         <span aria-hidden className="inline-flex w-4 shrink-0 justify-center overflow-visible">
@@ -115,7 +117,8 @@ export default function ProfileCardActions({
                   <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
                 </span>,
                 "Reserve Name",
-                onReserve
+                onReserve,
+                true
               )}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
         </div>
