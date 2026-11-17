@@ -5,7 +5,7 @@ import { isValidZnsName, normalizeZnsName } from "@/lib/zns/name";
 
 export type ZnsNetwork = "testnet" | "mainnet";
 
-export type ZnsLastAction = "claim" | "update" | "release";
+export type ZnsLastAction = NonNullable<Awaited<ReturnType<ZNS["resolveName"]>>>["lastAction"];
 
 export interface ZnsRegistration {
   name: string;
@@ -120,6 +120,16 @@ export async function resolveZnsName(
     return mapRegistration(raw);
   } catch (error) {
     throw asUnavailable(error, "ZNS resolver unavailable");
+  }
+}
+
+export async function isZnsNameAvailable(rawName: string): Promise<boolean> {
+  const name = normalizeZnsName(rawName);
+  if (!isValidZnsName(name)) return false;
+  try {
+    return await getClient().isAvailable(name);
+  } catch (error) {
+    throw asUnavailable(error, "ZNS availability check failed");
   }
 }
 

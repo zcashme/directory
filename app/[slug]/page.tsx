@@ -5,8 +5,6 @@ import { getDuplicateNameCount } from "@/lib/profile/profileQueries";
 import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
 import { buildCanonicalSlug, resolveProfileSlug } from "@/lib/profile/usernameResolution";
 import { getSwapTokens } from "@/lib/swap/oneClick";
-import { getWaitlistQueuePosition, getProtectedNameInfo } from "@/lib/zns/availability";
-import { getWaitlistReservationStatusAction } from "@/lib/zns/reserve";
 
 export const dynamic = "force-dynamic";
 
@@ -183,13 +181,10 @@ export default async function Page({ params, searchParams }: PageProps) {
 
   const profile = resolved.profile;
 
-  const [duplicateNameCount, tokensResult, waitlistPosition, initialReservationSession, initialNameProtection] =
+  const [duplicateNameCount, tokensResult] =
     await Promise.all([
       profile.name ? getDuplicateNameCount(profile.name) : 0,
       getSwapTokens(),
-      profile.name ? getWaitlistQueuePosition(profile.name, profile.id) : 1,
-      getWaitlistReservationStatusAction(profile.id),
-      profile.name ? getProtectedNameInfo(profile.name) : { kind: "none" as const, referralCode: null },
     ]);
 
   const tokens = tokensResult.ok ? tokensResult.data : [];
@@ -199,11 +194,6 @@ export default async function Page({ params, searchParams }: PageProps) {
     <ProfilePage
       initialProfile={profile}
       duplicateNameCount={duplicateNameCount}
-      waitlistPosition={waitlistPosition}
-      initialReservationSession={initialReservationSession}
-      initialNameProtected={initialNameProtection.kind === "zm_priority"}
-      initialNameReservationBlocked={initialNameProtection.kind === "protected"}
-      initialProtectedReferralCode={initialNameProtection.referralCode}
       tokens={tokens}
       initialPrefill={initialPrefill}
     />

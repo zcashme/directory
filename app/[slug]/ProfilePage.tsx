@@ -15,29 +15,16 @@ import { getSwapQuote, confirmSwap } from "@/lib/swap/oneClick";
 import ProfileCard from "@/ui/profile/ProfileCard";
 import MemoComposer from "@/ui/messaging/MemoComposer";
 import ProfileVerification from "@/ui/verification/ProfileVerification";
-import ProfileReservationQr from "@/ui/profile/ProfileReservationQr";
 import SwapComposer from "@/ui/swap/SwapComposer";
-import {
-  ensureWaitlistReservationAction,
-  getWaitlistReservationStatusAction,
-  getProtectedNameAction,
-  type ReserveSession,
-} from "@/lib/zns/reserve";
 import type { ProfileCardBackMode } from "@/ui/profile/profileCardTypes";
 import { resolveProfileVisualTheme } from "@/lib/profile/profileCardTheme";
 import { useJoinModal } from "@/ui/signup/JoinModalContext";
 import { buildSlug, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
-import { PROTECTED_NAME_RESERVE_ERROR } from "@/lib/zns/name";
 
 interface ProfilePageProps {
   initialProfile: Profile;
   tokens: Token[];
   duplicateNameCount?: number;
-  waitlistPosition?: number;
-  initialReservationSession?: ReserveSession | null;
-  initialNameProtected?: boolean;
-  initialNameReservationBlocked?: boolean;
-  initialProtectedReferralCode?: string | null;
   initialPrefill?: {
     memo: string;
     donateAmount: string;
@@ -133,11 +120,6 @@ export default function ProfilePage({
   initialProfile,
   tokens,
   duplicateNameCount,
-  waitlistPosition = 1,
-  initialReservationSession = null,
-  initialNameProtected = false,
-  initialNameReservationBlocked = false,
-  initialProtectedReferralCode = null,
   initialPrefill,
 }: ProfilePageProps) {
   const hasDesignAccess = hasProfileDesignAccess(initialProfile);
@@ -216,13 +198,6 @@ export default function ProfilePage({
   const [forceShowQR, setForceShowQR] = useState(false);
   const [isProfileEditing, setIsProfileEditing] = useState(false);
   const [cardBackMode, setCardBackMode] = useState<ProfileCardBackMode | null>(null);
-  const [reservationSession, setReservationSession] = useState<ReserveSession | null>(initialReservationSession);
-  const [nameProtected, setNameProtected] = useState(initialNameProtected);
-  const [nameReservationBlocked, setNameReservationBlocked] = useState(initialNameReservationBlocked);
-  const [protectedReferralCode, setProtectedReferralCode] = useState(initialProtectedReferralCode ?? "");
-  const [isReservationGenerating, setIsReservationGenerating] = useState(false);
-  const [reservationError, setReservationError] = useState("");
-  const [pendingReservationScroll, setPendingReservationScroll] = useState(false);
 
   const { justCreatedSlug, clearJustCreated } = useJoinModal();
   const [showVerificationBanner, setShowVerificationBanner] = useState(
@@ -257,22 +232,12 @@ export default function ProfilePage({
     !selectedToken ||
     (selectedToken.symbol.toUpperCase() === "ZEC" &&
       selectedToken.blockchain.toLowerCase().includes("zec"));
-  const reservationPriority = nameProtected;
-  const reservationBlocked = nameReservationBlocked;
-  const reservationReferralCode = reservationPriority
-    ? protectedReferralCode
-    : reservationSession?.referralCode ?? "";
-  const mode: "donate" | "swap" | "verification" | "reservation" | "hidden" =
-    cardBackMode === "reserve" && Boolean(reservationSession?.uri) && !reservationPriority && !reservationBlocked
-      ? "reservation"
-      : cardBackMode === "edit"
-        ? "verification"
-        : cardBackMode === "reserve" || isProfileEditing
-          ? "hidden"
-          : isZecSelection
-            ? "donate"
-            : "swap";
-  const hideComposerForProtectedReserve = cardBackMode === "reserve" && (reservationPriority || reservationBlocked);
+  const mode: "donate" | "swap" | "verification" | "hidden" =
+    cardBackMode === "edit"
+      ? "verification"
+      : cardBackMode === "claim" || isProfileEditing
+        ? "hidden"
+        : isZecSelection ? "donate" : "swap";
   const memoAssetOptions = useMemo(() => {
     const allowed = tokens
       .map((token) => {
@@ -333,85 +298,6 @@ export default function ProfilePage({
     setPendingVerificationScroll(false);
   }, [pendingVerificationScroll, runMultiPassScroll]);
 
-  const handleStartReservation = useCallback(async () => {
-    if (isReservationGenerating) return;
-    setReservationError("");
-    setIsReservationGenerating(true);
-    setPendingReservationScroll(true);
-    try {
-      const next = await ensureWaitlistReservationAction(initialProfile.id);
-      if (!next.ok) {
-        if (next.error === PROTECTED_NAME_RESERVE_ERROR) {
-          setNameReservationBlocked(true);
-        }
-        setReservationError(next.error || "Could not start reservation.");
-        setPendingReservationScroll(false);
-        return;
-      }
-      setReservationSession(next);
-      if (!next.waitlistId && !next.uri) {
-        setNameProtected(true);
-        setProtectedReferralCode(next.referralCode ?? "");
-      }
-      if (next.reserved || !next.uri) {
-        setPendingReservationScroll(false);
-      }
-    } catch {
-      setReservationError("Could not start reservation.");
-      setPendingReservationScroll(false);
-    } finally {
-      setIsReservationGenerating(false);
-    }
-  }, [initialProfile.id, isReservationGenerating]);
-
-  const handleReservationQrReady = useCallback(() => {
-    if (!pendingReservationScroll) return;
-    runMultiPassScroll(() => {
-      const el = document.getElementById("zcash-feedback");
-      if (!el) return;
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    });
-    setPendingReservationScroll(false);
-  }, [pendingReservationScroll, runMultiPassScroll]);
-
-  const handleReservationSessionChange = useCallback((next: ReserveSession) => {
-    setReservationSession(next);
-  }, []);
-
-  useEffect(() => {
-    if (cardBackMode !== "reserve") return;
-    if (nameProtected || nameReservationBlocked) return;
-    if (reservationSession?.reserved) return;
-    let cancelled = false;
-    void getWaitlistReservationStatusAction(initialProfile.id).then((status) => {
-      if (cancelled || !status?.reserved) return;
-      setReservationSession(status);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [cardBackMode, initialProfile.id, nameProtected, nameReservationBlocked, reservationSession?.reserved]);
-
-  useEffect(() => {
-    if (cardBackMode !== "reserve") return;
-    if (nameProtected || nameReservationBlocked) return;
-    let cancelled = false;
-    void getProtectedNameAction(initialProfile.name || "").then((protectedNameInfo) => {
-      if (cancelled) return;
-      if (protectedNameInfo.kind === "zm_priority") {
-        setNameProtected(true);
-        setProtectedReferralCode(protectedNameInfo.referralCode ?? "");
-        return;
-      }
-      if (protectedNameInfo.kind === "protected") {
-        setNameReservationBlocked(true);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [cardBackMode, initialProfile.name, nameProtected, nameReservationBlocked]);
-
   const handleVerificationLoadingStateChange = useCallback((isLoading: boolean) => {
     setIsVerificationGenerating(isLoading);
   }, []);
@@ -420,9 +306,6 @@ export default function ProfilePage({
     if (mode !== "verification") {
       setIsVerificationGenerating(false);
       setPendingVerificationScroll(false);
-    }
-    if (mode !== "reservation") {
-      setPendingReservationScroll(false);
     }
   }, [mode]);
 
@@ -657,30 +540,15 @@ export default function ProfilePage({
           tokens={tokens}
           fullView
           duplicateNameCount={duplicateNameCount}
-          waitlistPosition={waitlistPosition}
           onShowQR={handleShowQR}
           onEditorModeChange={setIsProfileEditing}
           onBackModeChange={setCardBackMode}
           onDesignPanelBackgroundChange={setDesignPanelBackgroundPreview}
           onGenerateVerificationQr={handleGenerateVerificationQr}
           isVerificationGenerating={isVerificationGenerating}
-          onStartReservation={handleStartReservation}
-          isReservationGenerating={isReservationGenerating}
-          reservationReserved={reservationSession?.reserved === true}
-          reservationStarted={
-            Boolean(reservationSession?.uri) &&
-            reservationSession?.reserved !== true &&
-            !reservationPriority &&
-            !reservationBlocked
-          }
-          reservationPriority={reservationPriority}
-          reservationBlocked={reservationBlocked}
-          reservationReferralCode={reservationReferralCode}
-          reservationError={reservationError}
           cardWidthPx={PROFILE_CARD_DESKTOP_WIDTH_PX}
         />
 
-        {hideComposerForProtectedReserve ? null : (
         <div
           id="zcash-feedback"
           className="border-t"
@@ -697,13 +565,6 @@ export default function ProfilePage({
                   generateQrTrigger={verificationGenerateQrTrigger}
                   onLoadingStateChange={handleVerificationLoadingStateChange}
                   onQrReady={handleVerificationQrReady}
-                />
-              ) : mode === "reservation" && reservationSession ? (
-                <ProfileReservationQr
-                  profile={initialProfile}
-                  session={reservationSession}
-                  onSessionChange={handleReservationSessionChange}
-                  onQrReady={handleReservationQrReady}
                 />
               ) : mode === "hidden" ? null : mode === "swap" ? (
                 <div className="p-0">
@@ -755,7 +616,6 @@ export default function ProfilePage({
             </div>
           </div>
         </div>
-        )}
         <div ref={pageBottomSentinelRef} aria-hidden />
       </div>
     </div>

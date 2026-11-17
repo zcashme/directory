@@ -8,9 +8,6 @@ export const ZCASH_NAMES_ORIGIN = "https://zcashnames.com";
 export const PROTECTED_NAME_SIGNUP_ERROR =
   "This name is protected and cannot be used as a Zcash.me username.";
 
-export const PROTECTED_NAME_RESERVE_ERROR =
-  "This name is protected and cannot be reserved.";
-
 /**
  * Trim, lowercase, and strip one trailing .zcash / .zec suffix.
  * Does not strip other characters — `alice_bob` is not `alicebob`.
@@ -61,12 +58,12 @@ export function znsUpdateHref(name: string): string {
   return `${ZCASH_NAMES_ORIGIN}/update/${encodeURIComponent(normalized)}`;
 }
 
-export function buildWaitlistReserveMemo(name: string, waitlistId: string): string {
-  const normalizedName = name.trim();
-  if (!normalizedName) {
-    throw new Error(`Waitlist row ${waitlistId} is missing a usable name.`);
-  }
-  return `ZNS:RESERVE|Name::${normalizedName}|UUID::${waitlistId}`;
+export function znsClaimHref(name: string, address?: string | null): string {
+  const normalized = normalizeZnsName(name);
+  const href = `${ZCASH_NAMES_ORIGIN}/claim/${encodeURIComponent(normalized)}`;
+  const trimmedAddress = (address ?? "").trim();
+  if (!trimmedAddress) return href;
+  return `${href}?address=${encodeURIComponent(trimmedAddress)}`;
 }
 
 export function zip321Uri(address: string, amount: string = "0", memo: string = ""): string {

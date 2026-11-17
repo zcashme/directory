@@ -30,7 +30,7 @@
     "react-dom": "^19.0.0",
     "satori": "^0.33.4",
     "use-debounce": "^10.1.0",
-    "zcashname-sdk": "0.15.0-rc.1",
+    "zcashname-sdk": "0.18.0",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

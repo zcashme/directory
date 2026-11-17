@@ -8,7 +8,7 @@ import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
 import ProfileEditor from "@/ui/profile/ProfileEditor";
-import ProfileReserve from "@/ui/profile/ProfileReserve";
+import ProfileClaim from "@/ui/profile/ProfileClaim";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import useProfileLinks from "@/ui/profile/useProfileLinks";
 import VerifyProfileModal from "@/ui/verification/VerifyProfileModal";
@@ -32,7 +32,7 @@ import ProfileLinkRow from "./ProfileLinkRow";
 import ProfileCardDesignPanel from "./ProfileCardDesignPanel";
 import useExclusiveLinkExpand, { linkAuthKey } from "./useExclusiveLinkExpand";
 import type { EnrichedProfileLink } from "@/lib/profile/types";
-import type { ProfileCardProps, LinkRowClasses } from "./profileCardTypes";
+import type { ProfileCardProps, ProfileCardBackMode, LinkRowClasses } from "./profileCardTypes";
 import { formatUsername } from "./profileCardUtils";
 export type { ProfileCardTextScale } from "./profileCardTypes";
 
@@ -65,20 +65,11 @@ export default function ProfileCard({
   tokens,
   fullView = false,
   duplicateNameCount = 0,
-  waitlistPosition = 1,
   onShowQR,
   onEditorModeChange,
   onBackModeChange,
   onGenerateVerificationQr,
   isVerificationGenerating = false,
-  onStartReservation,
-  isReservationGenerating = false,
-  reservationReserved = false,
-  reservationStarted = false,
-  reservationPriority = false,
-  reservationBlocked = false,
-  reservationReferralCode = "",
-  reservationError = "",
   onDesignPanelBackgroundChange,
   cardWidthPx,
 }: ProfileCardProps) {
@@ -86,7 +77,7 @@ export default function ProfileCard({
   const [isVerifyOpen, setIsVerifyOpen] = useState(false);
   const [isPrefillUrlOpen, setIsPrefillUrlOpen] = useState(false);
   const [showBack, setShowBack] = useState(false);
-  const [backMode, setBackMode] = useState<"edit" | "reserve">("edit");
+  const [backMode, setBackMode] = useState<ProfileCardBackMode>("edit");
   const [showDesignBack, setShowDesignBack] = useState(false);
   const [themeMenuOpen, setThemeMenuOpen] = useState(false);
   const [showRedirect, setShowRedirect] = useState(false);
@@ -376,8 +367,8 @@ export default function ProfileCard({
                     setBackMode("edit");
                     setShowBack(true);
                   }}
-                  onReserve={() => {
-                    setBackMode("reserve");
+                  onClaim={() => {
+                    setBackMode("claim");
                     setShowBack(true);
                   }}
                   onCreatePrefillUrl={() => setIsPrefillUrlOpen(true)}
@@ -549,7 +540,7 @@ export default function ProfileCard({
                 >
                   {"\u21BA"}
                 </button>
-                {backMode === "reserve" ? (
+                {backMode !== "edit" ? (
                   <span />
                 ) : showDesignBack ? (
                   <div ref={themeMenuRef} className="relative">
@@ -642,18 +633,13 @@ export default function ProfileCard({
                       : "relative h-auto z-10 opacity-100 pointer-events-auto"
                   } backface-hidden top-0 left-0 w-full transition-opacity duration-200`}
                 >
-                  {showBack && backMode === "reserve" ? (
-                    <ProfileReserve
+                  {showBack && backMode === "claim" ? (
+                    <ProfileClaim
                       profile={profile}
-                      waitlistPosition={waitlistPosition}
-                      onStartReservation={onStartReservation}
-                      isReservationGenerating={isReservationGenerating}
-                      reserved={reservationReserved}
-                      started={reservationStarted}
-                      priority={reservationPriority}
-                      blocked={reservationBlocked}
-                      referralCode={reservationReferralCode}
-                      error={reservationError}
+                      onGoBack={() => {
+                        (window as WindowWithSkipFeedback).skipZcashFeedbackScroll = true;
+                        setShowBack(false);
+                      }}
                     />
                   ) : showBack ? (
                     <ProfileEditor

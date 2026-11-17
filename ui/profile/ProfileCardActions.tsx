@@ -11,14 +11,14 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 interface ProfileCardActionsProps {
   profile: Profile;
   onEdit: () => void;
-  onReserve: () => void;
+  onClaim: () => void;
   onCreatePrefillUrl: () => void;
 }
 
 export default function ProfileCardActions({
   profile,
   onEdit,
-  onReserve,
+  onClaim,
   onCreatePrefillUrl,
 }: ProfileCardActionsProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -100,8 +100,7 @@ export default function ProfileCardActions({
             "Edit Profile",
             onEdit
           )}
-          {isZnsActive
-            ? menuItem(
+          {isZnsActive && menuItem(
                 <span className="inline-flex scale-[0.78] origin-left">
                   <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
                 </span>,
@@ -111,15 +110,14 @@ export default function ProfileCardActions({
                     window.open(znsManageHref, "_blank", "noopener,noreferrer");
                   }
                 }
-              )
-            : menuItem(
-                <span className="inline-flex scale-[0.78] origin-left">
-                  <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
-                </span>,
-                "Reserve Name",
-                onReserve,
-                true
               )}
+          {!isZnsActive && menuItem(
+            <span className="inline-flex scale-[0.78] origin-left">
+              <VerifiedBadge verified variant="zcashName" verifiedLabel="Zcash Name" collapsedOnly />
+            </span>,
+            "Claim Name",
+            onClaim
+          )}
           {menuItem("\u26D3", "Create Paylink", onCreatePrefillUrl)}
         </div>
       </div>

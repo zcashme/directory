@@ -389,7 +389,7 @@ export default function ProfileCardDesignPanel({ profile, onGenerateQr }: Profil
                     <ProfileCardActions
                       profile={previewProfile}
                       onEdit={() => {}}
-                      onReserve={() => {}}
+                      onClaim={() => {}}
                       onCreatePrefillUrl={() => {}}
                     />
                   </div>

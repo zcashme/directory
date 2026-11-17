@@ -51,37 +51,6 @@ export async function getWaitlistCountForName(name: string): Promise<number> {
   return count ?? 0;
 }
 
-/**
- * Queue position if this profile reserved now: 1 + others already in line.
- * In-line means zn_waitlist.email_verified or a completed Zcash.me reservation
- * (name_reserved). The current profile is excluded from "others".
- */
-export async function getWaitlistQueuePosition(
-  name: string,
-  excludeZcasherId?: number
-): Promise<number> {
-  const normalized = normalizeZnsName(name);
-  if (!normalized) return 1;
-
-  const supabase = createSupabaseServerClient();
-  if (!supabase) return 1;
-
-  const { data, error } = await supabase
-    .from("zn_waitlist")
-    .select("zcasher_id")
-    .eq("name", normalized)
-    .or("email_verified.eq.true,name_reserved.eq.true");
-
-  if (error) return 1;
-
-  const others = (data ?? []).filter((row) => {
-    if (excludeZcasherId == null) return true;
-    return Number(row.zcasher_id) !== Number(excludeZcasherId);
-  });
-
-  return 1 + others.length;
-}
-
 export async function getProtectedNameInfo(name: string): Promise<ProtectedNameInfo> {
   const normalized = normalizeZnsName(name);
   if (!normalized) return { kind: "none", referralCode: null };
