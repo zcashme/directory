@@ -100,12 +100,12 @@ export default function ProfileClaim({ profile, onGoBack }: ProfileClaimProps) {
       <div id={detailsId} inert={!keepProfileOpen} aria-hidden={!keepProfileOpen} className={`grid transition-[grid-template-rows,opacity] ${reducedMotion ? "duration-100" : "duration-300 ease-in-out"} ${keepProfileOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
         <div className="min-h-0 overflow-hidden">
           {isUnavailable ? (
-            <p className="mt-3 text-gray-600">Claiming a different name will create another Zcash.me profile for that name. This profile and its contents will stay here.</p>
+            <p className="mt-3 text-center text-gray-600">Claiming a different name will create another Zcash.me profile for that name. This profile and its contents will stay here.</p>
           ) : (
           <>
-          <p className="mt-3 text-gray-600">Claim {zecLabel} using the address already associated with it:</p>
+          <p className="mt-3 text-center text-gray-600">Claim {zecLabel} using the address on your profile:</p>
           <p className="mt-3 rounded-xl border border-gray-200 bg-gray-50 p-3 font-mono text-xs break-all select-all">{address || "No address on this profile"}</p>
-          <p className="mt-3 text-gray-600">Using another address will create a new profile at {claimedUrl}.</p>
+          <p className="mt-3 text-center text-gray-600">Using another address will create a new profile at {claimedUrl}.</p>
           </>
           )}
         </div>
