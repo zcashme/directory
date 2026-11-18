@@ -10,6 +10,7 @@ import VerifiedBadge from "@/ui/profile/VerifiedBadge";
 
 interface ProfileCardActionsProps {
   profile: Profile;
+  initialMenuOpen?: boolean;
   onEdit: () => void;
   onClaim: () => void;
   onCreatePrefillUrl: () => void;
@@ -17,13 +18,14 @@ interface ProfileCardActionsProps {
 
 export default function ProfileCardActions({
   profile,
+  initialMenuOpen = false,
   onEdit,
   onClaim,
   onCreatePrefillUrl,
 }: ProfileCardActionsProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(initialMenuOpen);
   const displayName = profile.display_name || profile.name || "";
   const isZnsActive = isZnsActiveProfile(profile);
   const znsManageHref = znsExplorerHref(profile.zns_name || profile.name || "");

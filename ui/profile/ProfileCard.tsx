@@ -62,6 +62,7 @@ const LINK_ROW_CLASSES: LinkRowClasses = {
 
 export default function ProfileCard({
   profile,
+  initialMenuOpen = false,
   tokens,
   fullView = false,
   duplicateNameCount = 0,
@@ -363,6 +364,7 @@ export default function ProfileCard({
               >
                 <ProfileCardActions
                   profile={profile}
+                  initialMenuOpen={initialMenuOpen}
                   onEdit={() => {
                     setBackMode("edit");
                     setShowBack(true);

@@ -196,6 +196,7 @@ export default async function Page({ params, searchParams }: PageProps) {
       duplicateNameCount={duplicateNameCount}
       tokens={tokens}
       initialPrefill={initialPrefill}
+      initialMenuOpen={getFirstNonEmptyParam(resolvedSearchParams, ["menu"]) === "open"}
     />
   );
 }

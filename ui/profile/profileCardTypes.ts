@@ -77,6 +77,7 @@ export type ProfileCardBackMode = "edit" | "claim";
 
 export interface ProfileCardProps {
   profile: Profile;
+  initialMenuOpen?: boolean;
   tokens: Token[];
   fullView?: boolean;
   duplicateNameCount?: number;

@@ -23,6 +23,7 @@ import { buildSlug, hasProfileDesignAccess } from "@/lib/profile/profileUtils";
 
 interface ProfilePageProps {
   initialProfile: Profile;
+  initialMenuOpen?: boolean;
   tokens: Token[];
   duplicateNameCount?: number;
   initialPrefill?: {
@@ -121,6 +122,7 @@ export default function ProfilePage({
   tokens,
   duplicateNameCount,
   initialPrefill,
+  initialMenuOpen = false,
 }: ProfilePageProps) {
   const hasDesignAccess = hasProfileDesignAccess(initialProfile);
   const pageBackground = useMemo(
@@ -537,6 +539,7 @@ export default function ProfilePage({
 
         <ProfileCard
           profile={initialProfile}
+          initialMenuOpen={initialMenuOpen}
           tokens={tokens}
           fullView
           duplicateNameCount={duplicateNameCount}
