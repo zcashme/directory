@@ -2,13 +2,11 @@
 
 import { isNewProfile } from "@/lib/profile/profileUtils";
 import VerifiedCardWrapper from "@/ui/profile/VerifiedCardWrapper";
-import ReferRankBadgeMulti from "@/ui/ns-directory/ReferRankBadgeMulti";
 import ProfileAvatar from "@/ui/profile/ProfileAvatar";
 import ProfileIdentityBadges from "@/ui/profile/ProfileIdentityBadges";
 import type { Profile } from "@/lib/profile/types";
 import { formatUsername } from "./profileCardUtils";
 
-const RANK_PERIODS = ["alltime", "weekly", "monthly"] as const;
 
 interface ProfileCardListViewProps {
   profile: Profile;
@@ -35,29 +33,8 @@ export default function ProfileCardListView({ profile }: ProfileCardListViewProp
             )}
           </span>
           <span className="text-xs font-medium text-gray-500 leading-tight">/{formatUsername(profile)}</span>
-          <RankBadges profile={profile} />
         </div>
       </div>
     </VerifiedCardWrapper>
-  );
-}
-
-function RankBadges({ profile }: { profile: Profile }) {
-  const hasAwards = RANK_PERIODS.some((p) => {
-    const rank = profile[`rank_${p}`] ?? 0;
-    return rank > 0 && rank <= 10;
-  });
-  if (!hasAwards) return null;
-
-  return (
-    <div className="text-sm text-gray-500 flex flex-col items-start gap-1 leading-snug mt-1">
-      <div className="flex flex-wrap justify-start gap-x-2 gap-y-0.5">
-        {RANK_PERIODS.map((period) => {
-          const rank = profile[`rank_${period}`];
-          if (!rank || rank <= 0) return null;
-          return <ReferRankBadgeMulti key={period} rank={rank} period={period === "alltime" ? "all" : period as any} />;
-        })}
-      </div>
-    </div>
   );
 }

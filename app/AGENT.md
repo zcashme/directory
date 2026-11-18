@@ -14,10 +14,7 @@ from `/lib`. Uses Next.js App Router with React Server Components by default.
 |---------------|---------------|-------------|--------|
 | `/` | zcash.me | Homepage with featured profiles carousel | [live] |
 | `/[slug]` | zcash.me/:username | Profile page with card, payment composer, swap | [live] |
-| `/ns` | zcash.me/ns | Network School directory (custom layout + favicon) | [live] |
 | `/swap-app` | swap.zcash.me | Cross-chain swap form (1Click/Defuse SDK) | [live] |
-| `/leader-app` | leaders.zcash.me | Referral leaderboard with podium, FAQ, period filters | [live] |
-| `/leader-app/[username]` | leaders.zcash.me/:username | Individual referrer stats + referral table | [live] |
 | `/blog-app` | blog.zcash.me | Blog post listing | [live] |
 | `/blog-app/[slug]` | blog.zcash.me/:slug | Individual blog post | [live] |
 | `/status-app` | status.zcash.me | Service health dashboard (polls /api/health) | [live] |
@@ -44,11 +41,9 @@ is public and uses Next.js `revalidate` instead.
 
 ## Subdomain Routing (`proxy.ts`)
 - Subdomains rewrite to internal `/app` paths (e.g. `swap.zcash.me` -> `/swap-app`)
-- Aliases redirect: `leader` -> `leaders`, `swaps` -> `swap` (308)
-- `/:slug/refer` redirects to `/:slug?join=1&referred_by=...` (307)
-- `/NS` or `/Ns` normalizes to `/ns` (308)
+- Aliases redirect: `swaps` -> `swap` (308)
 - Direct access to internal paths like `/swap-app` without subdomain returns 404
-- Reserved roots (never treated as usernames): all sub-app paths, `/api`, `/ns`, `/design-system`, `/privacy`, `/terms`
+- Reserved roots (never treated as usernames): all sub-app paths, `/api`, `/design-system`, `/privacy`, `/terms`
 
 ## See Also
 - Every page imports from `/ui` (components) and `/lib` (server logic)

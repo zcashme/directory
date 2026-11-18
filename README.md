@@ -28,7 +28,6 @@ Register your address, share `zcash.me/yourname`, and anyone can send you ZEC. N
 - Shareable profile pages with QR codes (`zcash.me/yourname`)
 - Verify address ownership via one-time passcode (OTP)
 - Edit your profile and add social links after verification
-- Network School directory at [`/ns`](https://zcash.me/ns)
 - Privacy-first — no analytics, no cookies, no tracking
 
 ## Contributing

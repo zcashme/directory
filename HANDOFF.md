@@ -9,10 +9,10 @@ After a user creates a new profile, show a blue banner on their profile page rem
 ## Steps
 
 ### Step 1 — Lift Join Modal State out of ProfileHeader ✅ Done
-Modal state (`isJoinOpen`, `prefillUsername`, `prefillReferrer`) moved into `JoinModalContext`. `AddUserForm` moved to root layout. ProfileHeader now only calls `openJoin()`.
+Modal state (`isJoinOpen`, `prefillUsername`) moved into `JoinModalContext`. `AddUserForm` moved to root layout. ProfileHeader now only calls `openJoin()`.
 
-### Step 2 — Server-Side Referral Validation ✅ Done
-`app/page.tsx` reads `searchParams` server-side (lines 24-48). Validates that the referrer exists in the DB. Passes clean, trusted referral data down to `HomePage` → `openJoin()`.
+### Step 2 ? Direct Join Links
+`app/page.tsx` reads the `join=1` query flag and opens the standard signup modal.
 
 ### Step 3 — Replace `window.location.assign()` with `router.push()` ✅ Done
 `AddUserForm.tsx` line 478 uses `router.push()` for navigation to the new profile page. React state is preserved during navigation so context survives the redirect.
@@ -65,7 +65,7 @@ Modal state (`isJoinOpen`, `prefillUsername`, `prefillReferrer`) moved into `Joi
 | `ui/signup/JoinModalContext.tsx` | Holds modal state + `justCreatedSlug` signal |
 | `ui/signup/JoinModal.tsx` | Bridge: passes `notifyCreated` callback to form |
 | `ui/signup/AddUserForm.tsx` | Calls `onUserAdded`, display name validation (32 chars max) |
-| `app/page.tsx` | Server-side referral validation from `searchParams` |
+| `app/page.tsx` | Direct join flag from `searchParams` |
 | `app/HomePage.tsx` | Consumes `initialJoinParams`, calls `openJoin()` |
 | `app/[slug]/ProfilePage.tsx` | Reads `justCreatedSlug`, renders verification banner |
 | `app/layout.tsx` | Wraps app in `JoinModalProvider`, renders `<JoinModal />` |
@@ -75,7 +75,7 @@ Modal state (`isJoinOpen`, `prefillUsername`, `prefillReferrer`) moved into `Joi
 
 ## Flow Summary
 
-1. User visits `/?join=1&referred_by_id=123` → server validates referrer → `HomePage` opens join modal with prefill
+1. User visits `/?join=1` and `HomePage` opens the standard join modal.
 2. User completes 6-step signup form → `AddUserForm` calls `createProfileAction` → success
 3. `onUserAdded` callback → `notifyCreated(slug)` → `justCreatedSlug` stored in context → modal closes
 4. `router.push(/${slug})` navigates to new profile page

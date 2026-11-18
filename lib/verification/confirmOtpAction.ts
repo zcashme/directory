@@ -30,14 +30,6 @@ import {
   removeExistingAvatar,
   downloadAndStoreAvatar,
 } from "@/lib/profile/avatarStorage";
-import {
-  ELIGIBILITY_WINDOW_WEEKS,
-  REWARD_DURATION_MONTHS,
-  VERIFICATION_FEE_ZEC,
-  addMonths,
-  addWeeks,
-  calculateCommissionRate,
-} from "@/lib/leaderboard/rewardProgram";
 
 const AVATAR_HISTORY_FOLDER = "avatar_history";
 
@@ -245,7 +237,7 @@ export async function confirmOtpAction(
     // Verify address matches profile
     const { data: profile, error: fetchError } = await supabase
       .from("zcasher")
-      .select("address, name, display_name, bio, slug, nearest_city_name, category, referred_by_zcasher_id, iso2, country, first_verified_at, created_at, profile_theme_package, zns_active, zns_name")
+      .select("address, name, display_name, bio, slug, nearest_city_name, category, iso2, country, first_verified_at, created_at, profile_theme_package, zns_active, zns_name")
       .eq("id", profileId)
       .single();
 
@@ -284,6 +276,38 @@ export async function confirmOtpAction(
         error: "Address mismatch. The verification memo does not match this profile.",
         data: { status: "invalid" },
       };
+    }
+
+    // An explicitly cleared username means profile deletion, as promised by
+    // the editor. Never perform this before proving ownership of its address.
+    if (edits?.name !== undefined && edits.name.trim() === "") {
+      if (znsActive || profile.zns_name) {
+        return {
+          ok: false,
+          error: "This username is bound to a Zcash Name and cannot be deleted here.",
+          data: { status: "invalid" },
+        };
+      }
+
+      // Delete the source row, rather than blanking fields or hiding only a
+      // search result. The database handles dependent records transactionally.
+      const { data: deleted, error: deleteError } = await supabase
+        .from("zcasher")
+        .delete()
+        .eq("id", profileId)
+        .eq("address", expectedAddress)
+        .select("id")
+        .single();
+
+      if (deleteError || !deleted) {
+        return {
+          ok: false,
+          error: "Could not delete your profile. Please try again.",
+          data: { status: "error" },
+        };
+      }
+
+      return { ok: true, data: { status: "deleted" } };
     }
 
     // --- Apply profile update -----------------------------------------------
@@ -568,49 +592,7 @@ export async function confirmOtpAction(
       .select("url, label, platform, is_verified")
       .eq("zcasher_id", profileId);
 
-    let referrerProfile: {
-      profile_image_url: string | null;
-      bio: string | null;
-      nearest_city_name: string | null;
-    } | null = null;
-    if (profile.referred_by_zcasher_id) {
-      const { data } = await supabase
-        .from("zcasher")
-        .select("profile_image_url, bio, nearest_city_name")
-        .eq("id", profile.referred_by_zcasher_id)
-        .limit(1)
-        .maybeSingle();
-      referrerProfile = data ?? null;
-    }
-
-    const verifiedAtDate = new Date(now);
-    const createdAtDate = profile.created_at ? new Date(profile.created_at) : verifiedAtDate;
-    const firstVerifiedAtDate = profile.first_verified_at
-      ? new Date(profile.first_verified_at)
-      : verifiedAtDate;
-    const eligibilityDeadline = addWeeks(createdAtDate, ELIGIBILITY_WINDOW_WEEKS);
-    const rewardsActivated = firstVerifiedAtDate <= eligibilityDeadline;
-    const activeUntilAtVerification = rewardsActivated
-      ? addMonths(firstVerifiedAtDate, REWARD_DURATION_MONTHS)
-      : null;
     const verifiedLinksCountAtVerification = (currentLinks ?? []).filter((link) => link.is_verified).length;
-    const countsForCommission = Boolean(
-      profile.referred_by_zcasher_id &&
-      activeUntilAtVerification &&
-      verifiedAtDate >= firstVerifiedAtDate &&
-      verifiedAtDate <= activeUntilAtVerification,
-    );
-    const commissionRateAtVerification = countsForCommission
-      ? calculateCommissionRate({
-          verifiedLinksCount: verifiedLinksCountAtVerification,
-          hasProfileImage: !!referrerProfile?.profile_image_url,
-          hasBio: !!referrerProfile?.bio,
-          hasLocation: !!referrerProfile?.nearest_city_name,
-        })
-      : 0;
-    const rewardZats = countsForCommission
-      ? Math.round(VERIFICATION_FEE_ZEC * commissionRateAtVerification * 1e8)
-      : 0;
     const linksSnapshot = (currentLinks ?? []).map((link) => ({
       url: link.url,
       label: link.label,
@@ -626,15 +608,15 @@ export async function confirmOtpAction(
       slug: profile.slug,
       nearest_city_name: profile.nearest_city_name,
       category: profile.category,
-      referred_by_zcasher_id: profile.referred_by_zcasher_id,
       iso2: profile.iso2,
       country: profile.country,
       links: linksSnapshot,
-      commission_rate_at_verification: commissionRateAtVerification,
-      reward_zats: rewardZats,
-      counts_for_commission: countsForCommission,
+      // Preserve the audit schema without accruing rewards for new events.
+      commission_rate_at_verification: 0,
+      reward_zats: 0,
+      counts_for_commission: false,
       verified_links_count_at_verification: verifiedLinksCountAtVerification,
-      active_until_at_verification: activeUntilAtVerification?.toISOString() ?? null,
+      active_until_at_verification: null,
     });
 
     // --- Apply link edits ---------------------------------------------------

@@ -20,19 +20,6 @@ export type ProtectedNameKind = "none" | "protected" | "zm_priority";
 
 export interface ProtectedNameInfo {
   kind: ProtectedNameKind;
-  referralCode: string | null;
-}
-
-export interface ZmPriorityProtectedNameInfo {
-  protected: boolean;
-  referralCode: string | null;
-}
-
-function getPreferredReferralCode(row: {
-  referral_code?: string | null;
-  human_referral_code?: string | null;
-}): string {
-  return (row.human_referral_code ?? "").trim() || (row.referral_code ?? "").trim();
 }
 
 export async function getWaitlistCountForName(name: string): Promise<number> {
@@ -53,57 +40,25 @@ export async function getWaitlistCountForName(name: string): Promise<number> {
 
 export async function getProtectedNameInfo(name: string): Promise<ProtectedNameInfo> {
   const normalized = normalizeZnsName(name);
-  if (!normalized) return { kind: "none", referralCode: null };
+  if (!normalized) return { kind: "none" };
 
   const supabase = createSupabaseServerClient();
-  if (!supabase) return { kind: "none", referralCode: null };
+  if (!supabase) return { kind: "none" };
 
   const { data, error } = await supabase
     .from("zn_protected_names")
-    .select("normalized_name, parent_name, zm_priority_claim")
+    .select("normalized_name, zm_priority_claim")
     .eq("normalized_name", normalized)
     .eq("status", "protected")
     .limit(1)
     .maybeSingle();
 
   if (error || !data?.normalized_name) {
-    return { kind: "none", referralCode: null };
+    return { kind: "none" };
   }
 
   const kind: ProtectedNameKind = data.zm_priority_claim === true ? "zm_priority" : "protected";
-  if (kind !== "zm_priority") {
-    return { kind, referralCode: null };
-  }
-
-  const familyRootName = String(data.parent_name ?? data.normalized_name).trim().toLowerCase();
-  if (!familyRootName) return { kind, referralCode: null };
-
-  const { data: referralData, error: referralError } = await supabase
-    .from("zn_protected_family_referrals")
-    .select("referral_code, human_referral_code")
-    .eq("family_root_name", familyRootName)
-    .maybeSingle();
-
-  if (referralError || !referralData?.referral_code) {
-    return { kind, referralCode: null };
-  }
-
-  return {
-    kind,
-    referralCode: getPreferredReferralCode(referralData) || null,
-  };
-}
-
-export async function getZmPriorityProtectedNameInfo(name: string): Promise<ZmPriorityProtectedNameInfo> {
-  const info = await getProtectedNameInfo(name);
-  if (info.kind !== "zm_priority") {
-    return { protected: false, referralCode: null };
-  }
-  return { protected: true, referralCode: info.referralCode };
-}
-
-export async function isZmPriorityProtectedName(name: string): Promise<boolean> {
-  return (await getZmPriorityProtectedNameInfo(name)).protected;
+  return { kind };
 }
 
 export async function getUsernameJoinAvailability(

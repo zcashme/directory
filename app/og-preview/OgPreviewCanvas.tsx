@@ -52,7 +52,6 @@ const sampleProfile: Profile = {
   created_at: "2025-08-01T00:00:00.000Z",
   last_verified_at: "2026-05-01T00:00:00.000Z",
   featured: false,
-  is_ns: false,
   is_maxi: false,
   profile_theme_package: null,
   profile_card_theme: null,

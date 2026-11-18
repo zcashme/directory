@@ -32,11 +32,6 @@ export type GetProfileLinksBatchResponse = APIResponse<
 >;
 
 /**
- * NS profiles response
- */
-export type GetNsProfilesResponse = APIResponse<Profile[]>;
-
-/**
  * OTP confirmation API response
  */
 interface OTPConfirmResponse {
@@ -60,9 +55,6 @@ export interface CreateProfilePayload {
   nearest_city_name?: string;
   country?: string;
   iso2?: string;
-  referred_by?: string;
-  referred_by_zcasher_id?: number;
-  is_ns?: boolean;
   created_at?: string;
 }
 

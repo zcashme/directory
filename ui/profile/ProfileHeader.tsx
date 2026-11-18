@@ -231,7 +231,7 @@ export default function ProfileHeader({ profileCount = 0 }: ProfileHeaderProps) 
     [clearRouteNavigationAnimation]
   );
 
-  const isChromeFreeRoute = pathname === "/brief" || pathname === "/invest" || pathname === "/ns" || pathname?.startsWith("/ns/");
+  const isChromeFreeRoute = pathname === "/brief" || pathname === "/invest";
   if (isChromeFreeRoute) {
     return null;
   }

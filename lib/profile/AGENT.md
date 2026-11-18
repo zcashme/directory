@@ -2,13 +2,13 @@
 
 ## Purpose
 Server-side profile types, fetching, validation, link enrichment, and avatar storage.
-Powers the profile page (zcash.me/:username) and appears in search, directory, and leaderboard views.
+Powers the profile page (zcash.me/:username) and appears in search and directory views.
 
 ## What the User Experiences
 
 ### Viewing a Profile
 When someone visits zcash.me/:username, the server fetches the profile from `zcasher_searchable`,
-joins rank data from the leaderboard tables, and fetches the user's links. The profile slug
+fetches the user's links and profile design settings. The profile slug
 supports suffixed `{name}-{id}` lookup, ZNS-bound unsuffixed lookup when the on-chain name and
 address match the profile, a ZNS identity page when the name is owned by a different address,
 and the existing verified-first / lowest-id name fallback.
@@ -44,9 +44,6 @@ based on verification status, duplicate usernames, and link counts.
 |-------|--------|
 | `zcasher_searchable` | Read — profile fetching, username availability, profile count |
 | `zcasher_links` | Read — links for profile display and batch fetching (`verified_at` is the auth month) |
-| `referrer_ranked_alltime` | Read — leaderboard rank joined to profile |
-| `referrer_ranked_weekly` | Read — weekly rank |
-| `referrer_ranked_monthly` | Read — monthly rank |
 
 ## File -> Feature Map
 

@@ -13,7 +13,7 @@ with verified badge, username, bio (2-line clamp), Zcash address with copy + QR 
 and social links with authentication badges. Tapping a check or X on a link reveals the
 authentication month or an unauthenticated warning under that row; only one link section
 is open at a time. A three-dot menu offers: Show/Hide Awards,
-Edit Profile, Verify Profile, Upgrade to Maxi, Copy Referral Link, Share Profile.
+Edit Profile, Verify Profile, Upgrade to Maxi, Share Profile.
 
 Below the links, a trust warning banner may appear (red/yellow/green/neutral) based on
 verification status, duplicate names, and link counts. The card background has tier-based
@@ -37,16 +37,14 @@ flow (see `ui/verification/AGENT.md`).
 ### Navigation Header
 Sticky header on every page with: logo, live search dropdown (debounced 150ms, `cmdk` library),
 and "Join" button. Search shows results with avatars and verified badges. The Join button
-opens the signup form, supporting referral pre-fill via URL params (`join=1`, `referred_by`).
-Hidden on `/ns` routes.
+opens the signup form, supporting direct opening via `?join=1`.
 
 ### Compact Views
-`ProfileCardContent` — reusable card renderer for directory/leaderboard contexts (3 size variants).
+`ProfileCardContent` — reusable card renderer for directory contexts (3 size variants).
 `ProfileCardListView` — single-row list item for rankings with avatar, name, badges, and rank.
 
 ### Maxi Upgrade [WIP]
-Premium tier promotion modal listing features (priority placement, gold badge, referral
-commissions, custom themes) at 1 ZEC. Payment flow (QR + OTP) is stubbed — server actions
+Premium tier promotion modal listing features (priority placement, gold badge, custom themes) at 1 ZEC. Payment flow (QR + OTP) is stubbed — server actions
 not yet implemented.
 
 ## State Management
@@ -61,9 +59,9 @@ not yet implemented.
 | File | Feature |
 |------|---------|
 | `ProfileCard.tsx` | Main card with 3D flip between display/edit, menu, modals |
-| `ProfileCardContent.tsx` | Reusable card body for directory/leaderboard views (mobile/default/compact) |
+| `ProfileCardContent.tsx` | Reusable card body for directory views (mobile/default/compact) |
 | `ProfileCardActions.tsx` | Three-dot menu with profile actions |
-| `ProfileCardListView.tsx` | Compact list item for directory/leaderboard rankings |
+| `ProfileCardListView.tsx` | Compact list item for directory rankings |
 | `ProfileCardWarning.tsx` | Expandable trust warning banner (tone-based: red/yellow/green/neutral) |
 | `profileCardTypes.ts` | TypeScript interfaces for card components |
 | `profileCardUtils.ts` | `formatUsername()`, `resolveIconSrc()` |

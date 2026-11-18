@@ -47,12 +47,11 @@ DO NOT MODIFY:{zvs/{session_id},{user_address}}
 |-------|--------|
 | `zcasher` | Read address for memo generation; Write `address_verified`, `last_verified_at`, `first_verified_at`, profile fields, avatar |
 | `zcasher_links` | Write — create/update/delete links on successful verification |
-| `zcasher_verifications` | Write — append-only verification snapshot (audit trail + reward calculations) |
+| `zcasher_verifications` | Write — append-only verification snapshot (audit trail) |
 
-### Reward Snapshot
-On successful verification, `confirmOtpAction` also records a verification snapshot for the
-referral reward program: referrer ID, commission rate at verification time, verified link count,
-and reward amount in zats. The commission rate is locked at this moment (not recalculated later).
+### Verification Snapshot
+Successful verification appends profile and link details to the audit log. Legacy reward
+columns are recorded as zero, false, or null; new events do not accrue rewards.
 
 ## File -> Feature Map
 
@@ -61,7 +60,7 @@ and reward amount in zats. The commission rate is locked at this moment (not rec
 | `session.ts` | `generateSessionId()` (16 or 24 digits), `buildZvsMemo()`, `parseZvsMemo()`, `parseMaxiZvsMemo()` |
 | `otp.ts` | `generateOtp()` and `verifyOtp()` — HMAC-SHA256 OTP generation/verification |
 | `generateMemoAction.ts` | Server action: generates memo + `zcash:` URI for a profile (min 0.002 ZEC) |
-| `confirmOtpAction.ts` | Server action: verifies OTP, applies profile edits (fields + avatar + links), records reward snapshot |
+| `confirmOtpAction.ts` | Server action: verifies OTP, applies profile edits (fields + avatar + links), records verification snapshot |
 
 ## See Also
 - `ui/verification/AGENT.md` — QR code display, OTP input, attempt tracking UI

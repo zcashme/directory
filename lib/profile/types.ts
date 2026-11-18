@@ -24,13 +24,6 @@ export interface Profile {
   last_verified_at?: string;
   last_verified?: string;
   featured?: boolean;
-  rank_alltime?: number;
-  rank_weekly?: number;
-  rank_monthly?: number;
-  rank_daily?: number;
-  is_ns?: boolean | string | number;
-  is_ns_core?: boolean | string | number;
-  is_ns_longterm?: boolean | string | number;
   is_maxi?: boolean | string | number;
   zns_name?: string | null;
   zns_active?: boolean | string | number | null;

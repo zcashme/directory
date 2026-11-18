@@ -21,7 +21,7 @@ API routes.
 
 Domain-specific response types: `ConfirmOtpResponse`, `CreateProfileResponse`,
 `CheckUsernameAvailabilityResponse`, `CheckAddressTakenResponse`,
-`GetProfileLinksBatchResponse`, `GetNsProfilesResponse`, `ExchangeRate`.
+`GetProfileLinksBatchResponse`, `ExchangeRate`.
 
 Payload types: `CreateProfilePayload`, `ProfileEditsPayload` (with base64 avatar upload),
 `AvatarUploadPayload`, `ProfileLinkEdit` (with `_delete` flag), `ProfileLinkInput`.

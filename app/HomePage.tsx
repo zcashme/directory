@@ -905,16 +905,16 @@ function FeaturedCardsSection({ profiles, onCardClick }: FeaturedCardsSectionPro
 
 interface HomePageProps {
   initialFeaturedProfiles: Profile[];
-  initialJoinParams?: { prefillReferrer: string; prefillReferrerId: number } | null;
+  initialJoinOpen?: boolean;
 }
 
-export default function HomePage({ initialFeaturedProfiles, initialJoinParams }: HomePageProps) {
+export default function HomePage({ initialFeaturedProfiles, initialJoinOpen = false }: HomePageProps) {
   const router = useRouter();
   const { openJoin } = useJoinModal();
 
   useEffect(() => {
-    if (initialJoinParams) {
-      openJoin(initialJoinParams);
+    if (initialJoinOpen) {
+      openJoin();
       router.replace("/");
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

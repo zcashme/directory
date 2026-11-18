@@ -12,7 +12,6 @@ interface DirectoryProfile {
   display_name: string | null;
   address: string | null;
   address_verified: boolean;
-  is_ns: boolean | string | number | null;
   profile_image_url: string | null;
   bio: string | null;
   nearest_city_name: string | null;
@@ -34,7 +33,6 @@ interface ZcasherLink {
 
 interface ZcasherStyleRow {
   id: number;
-  is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
   slug?: string | null;
   zns_active?: boolean | string | number | null;
@@ -59,7 +57,6 @@ interface DirectoryResult {
   address: string | null;
   address_verified: boolean;
   verified_at: string | null;
-  is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
   slug?: string | null;
   zns_active?: boolean | string | number | null;
@@ -83,7 +80,6 @@ const PROFILE_FIELDS = [
   "display_name",
   "address",
   "address_verified",
-  "is_ns",
   "profile_image_url",
   "bio",
   "nearest_city_name",
@@ -99,7 +95,6 @@ const ZCASHER_PROFILE_FIELDS = [
   "display_name",
   "address",
   "address_verified",
-  "is_ns",
   "profile_image_url",
   "bio",
   "nearest_city_name",
@@ -134,7 +129,6 @@ function toDirectoryProfile(row: Record<string, unknown>): DirectoryProfile | nu
     display_name: typeof row.display_name === "string" ? row.display_name : null,
     address: typeof row.address === "string" ? row.address : null,
     address_verified: row.address_verified === true,
-    is_ns: (row.is_ns as DirectoryProfile["is_ns"]) ?? null,
     profile_image_url: typeof row.profile_image_url === "string" ? row.profile_image_url : null,
     bio: typeof row.bio === "string" ? row.bio : null,
     nearest_city_name: typeof row.nearest_city_name === "string" ? row.nearest_city_name : null,
@@ -420,7 +414,7 @@ export async function GET(request: Request): Promise<Response> {
 
     const styled = await supabase
       .from("zcasher")
-      .select("id,is_ns,is_maxi,slug,zns_active,zns_name")
+      .select("id,is_maxi,slug,zns_active,zns_name")
       .in("id", profileIds);
 
     let maxiError = styled.error;
@@ -429,7 +423,7 @@ export async function GET(request: Request): Promise<Response> {
     if (maxiError) {
       const fallback = await supabase
         .from("zcasher")
-        .select("id,is_ns,is_maxi,slug")
+        .select("id,is_maxi,slug")
         .in("id", profileIds);
       maxiError = fallback.error;
       maxiRows = (fallback.data ?? null) as ZcasherStyleRow[] | null;
@@ -465,7 +459,6 @@ export async function GET(request: Request): Promise<Response> {
       address: p.address,
       address_verified: p.address_verified,
       verified_at: p.last_verified_at,
-      is_ns: styleRow?.is_ns ?? p.is_ns ?? null,
       is_maxi: styleRow?.is_maxi ?? null,
       slug: styleRow?.slug ?? null,
       zns_active: styleRow?.zns_active ?? null,

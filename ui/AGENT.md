@@ -10,7 +10,7 @@ components. Server actions and types come from `/lib`.
 |--------|---------|-----|
 | `common/` | Design system: buttons, forms, modals, layout, feedback, tooltips | `ui/common/AGENT.md` |
 | `profile/` | Profile card (3D flip), editor, avatar, badges, search dropdown, header, Maxi upgrade [WIP] | `ui/profile/AGENT.md` |
-| `signup/` | 6-step signup modal (username, address, links, city, referrer, review) | `ui/signup/AGENT.md` |
+| `signup/` | 5-step signup modal (username, address, links, city, review) | `ui/signup/AGENT.md` |
 | `verification/` | QR code display, OTP input, verification modal | `ui/verification/AGENT.md` |
 | `links/` | OAuth social link authentication (X, GitHub, Discord, LinkedIn) | `ui/links/AGENT.md` |
 | `swap/` | Swap composer with auto-flow, deposit display, slippage control | `ui/swap/AGENT.md` |

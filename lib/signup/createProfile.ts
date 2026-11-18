@@ -18,7 +18,16 @@ export async function createProfile(profileData: CreateProfilePayload): Promise<
     return { data: null, error: new Error("Supabase client not available") };
   }
 
-  return supabase.from("zcasher").insert([profileData]).select().single();
+  return supabase.from("zcasher").insert([{
+    name: profileData.name,
+    display_name: profileData.display_name,
+    bio: profileData.bio,
+    address: profileData.address,
+    nearest_city_name: profileData.nearest_city_name,
+    country: profileData.country,
+    iso2: profileData.iso2,
+    created_at: profileData.created_at,
+  }]).select().single();
 }
 
 export async function insertProfileLinks(zcasherId: number, links: ProfileLinkInput[]): Promise<void> {
@@ -34,18 +43,4 @@ export async function insertProfileLinks(zcasherId: number, links: ProfileLinkIn
       is_verified: false,
     }]);
   }
-}
-
-export async function insertVerifiedProfileLink(zcasherId: number, link: ProfileLinkInput): Promise<void> {
-  const supabase = createSupabaseServerClient();
-  if (!supabase) return;
-
-  await supabase.from("zcasher_links").insert([{
-    zcasher_id: zcasherId,
-    label: link.label,
-    url: link.url,
-    platform: link.platform ?? derivePlatform(link.url),
-    is_verified: true,
-    verified_at: new Date().toISOString(),
-  }]);
 }

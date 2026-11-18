@@ -26,11 +26,6 @@ swaps (send ETH/BTC/etc, recipient gets ZEC).
 Standalone swap tool (OneClick/Defuse SDK). Swap any supported token into
 ZEC to a deposit address. Can be pre-filled via `?depositAddress=`.
 
-### leaders.zcash.me — Leaderboard [live]
-Referral leaderboard. Rankings by verified referrals, commission earned
-(in zats), period filters (daily/weekly/monthly/all-time). Detail page
-at leaders.zcash.me/:username for individual referral breakdowns.
-
 ### blog.zcash.me — Blog [live]
 Markdown-driven blog. Posts at blog.zcash.me/:slug.
 
@@ -49,7 +44,6 @@ Registered in `proxy.ts` but has no page yet.
 `proxy.ts` rewrites subdomains to internal `/app` paths.
 Aliases redirect automatically (`leader` → `leaders`, `swaps` → `swap`).
 Direct access to internal paths like `/swap-app` without the subdomain returns 404.
-`/:username/refer` links redirect to the profile page with the join modal open.
 
 ## Codebase Structure
 ```

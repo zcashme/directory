@@ -31,10 +31,6 @@ dropdown searches vendored SimpleMaps World Cities Basic data
 (`data/world-cities.json`) as they type, returning up to 20 matching
 cities with country and province info.
 
-## Network School Directory
-The `/ns` page shows a filtered view of profiles who are Network School
-members, filtered by `is_ns`, `is_ns_core`, and `is_ns_longterm` flags.
-
 ## File → Feature Map
 
 | File | Feature |
@@ -43,4 +39,3 @@ members, filtered by `is_ns`, `is_ns_core`, and `is_ns_longterm` flags.
 | `directoryClient.ts` | Directory search — response types for `/api/directory` + `toProfile()` transform |
 | `searchCities.ts` | Pure city search over SimpleMaps Basic JSON |
 | `searchCitiesAction.ts` | City search — server action powering the signup/profile city dropdown |
-| `getNsProfilesAction.ts` | NS directory — server action fetching Network School profiles |

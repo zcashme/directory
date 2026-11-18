@@ -8,7 +8,7 @@ in `/ui/signup/AddUserForm.tsx`.
 When a user fills out the signup modal and hits "Add Name", this is what
 runs on the server:
 
-1. Validates username is not a protected Zcash Name (`zn_protected_names.status=protected`) and is not taken by a verified profile
+1. Requires a valid Unified Zcash address and validates username is not a protected Zcash Name (`zn_protected_names.status=protected`) and is not taken by a verified profile
 2. Inserts a row into the `zcasher` table (profile starts unverified)
 3. Inserts links into `zcasher_links` (all start unverified)
 4. Returns the new profile — the client redirects to `/:slug`
@@ -22,7 +22,7 @@ The signup form calls these server actions as the user types, before submit:
 - `checkAddressTakenAction` — always false; multiple profiles and ZNS names may share a UA
 
 ## Database
-- `zcasher` — profile row (name, display_name, address, nearest_city_name, referred_by)
+- `zcasher` — profile row (name, display_name, address, nearest_city_name)
 - `zcasher_links` — one row per link (url, label, platform, is_verified=false)
 
 ## File → Feature Map
@@ -33,4 +33,4 @@ The signup form calls these server actions as the user types, before submit:
 | `createProfile.ts` | Core DB operations: insert into `zcasher` and `zcasher_links` |
 
 ## See Also
-- `/ui/signup/AGENT.md` — the 6-step form UI that calls these actions
+- `/ui/signup/AGENT.md` — the 5-step form UI that calls these actions

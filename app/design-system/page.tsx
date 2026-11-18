@@ -68,7 +68,7 @@ export default function DesignSystemPage() {
       details: [
         "Teach the meaning of profile badges.",
         "Show how to open a profile and verify links.",
-        "Call out referral and community discovery features.",
+        "Call out profile and community discovery features.",
       ],
       videoUrl: "https://www.youtube.com/embed/jNQXAC9IVRw",
       videoTitle: "Directory walkthrough",

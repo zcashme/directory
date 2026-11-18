@@ -14,7 +14,6 @@ interface DirectoryApiResult {
   address: string | null;
   address_verified: boolean;
   verified_at: string | null;
-  is_ns: boolean | string | number | null;
   is_maxi: boolean | string | number | null;
   slug?: string | null;
   zns_active?: boolean | string | number | null;
@@ -46,7 +45,6 @@ export function toProfile(r: DirectoryApiResult): Profile {
     nearest_city_name: r.nearest_city_name ?? undefined,
     address: r.address ?? "",
     address_verified: r.address_verified,
-    is_ns: r.is_ns ?? undefined,
     is_maxi: r.is_maxi ?? undefined,
     zns_active: r.zns_active ?? undefined,
     zns_name: r.zns_name ?? undefined,

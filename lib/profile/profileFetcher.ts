@@ -12,19 +12,6 @@ const normalize = (value: string = ""): string =>
     .replace(/\s+/g, "_")
     .replace(/[^a-z0-9_-]/g, "");
 
-interface RankData {
-  rank_alltime: number;
-  rank_weekly: number;
-  rank_monthly: number;
-}
-
-const mergeRanks = (profile: Profile, ranks: RankData): Profile => ({
-  ...profile,
-  rank_alltime: ranks.rank_alltime ?? 0,
-  rank_weekly: ranks.rank_weekly ?? 0,
-  rank_monthly: ranks.rank_monthly ?? 0,
-});
-
 function pickNameMatch(candidates: Profile[], name: string): Profile | null {
   const matching = candidates.filter(
     (p) => normalize(p.name ?? "") === normalize(name) || normalize(p.slug ?? "") === normalize(name)
@@ -77,36 +64,7 @@ async function hydrateProfile(
   supabase: NonNullable<ReturnType<typeof createSupabaseServerClient>>,
   profile: Profile
 ): Promise<Profile> {
-  const idKey = String(profile.id);
-
-  const [alltime, weekly, monthly, { data: profileLinks }] = await Promise.all([
-    supabase
-      .from("referrer_ranked_alltime")
-      .select("rank_alltime")
-      .eq("referred_by_zcasher_id", idKey)
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("referrer_ranked_weekly")
-      .select("rank_weekly")
-      .eq("referred_by_zcasher_id", idKey)
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("referrer_ranked_monthly")
-      .select("rank_monthly")
-      .eq("referred_by_zcasher_id", idKey)
-      .limit(1)
-      .maybeSingle(),
-    fetchLinksForProfileId(supabase, profile.id),
-  ]);
-
-  const ranks: RankData = {
-    rank_alltime: alltime?.data?.rank_alltime ?? 0,
-    rank_weekly: weekly?.data?.rank_weekly ?? 0,
-    rank_monthly: monthly?.data?.rank_monthly ?? 0,
-  };
-
+  const { data: profileLinks } = await fetchLinksForProfileId(supabase, profile.id);
   profile.links = profileLinks;
 
   const extraSelect = [
@@ -169,7 +127,7 @@ async function hydrateProfile(
     }
   }
 
-  return mergeRanks(profile, ranks);
+  return profile;
 }
 
 export const fetchProfileForId = cache(async function fetchProfileForId(id: number): Promise<Profile | null> {

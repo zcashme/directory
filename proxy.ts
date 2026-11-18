@@ -15,7 +15,6 @@ const apps: Record<string, { path: string; aliases?: string[] }> = {
   swap:    { path: '/swap-app', aliases: ['swaps'] },
   donate:  { path: '/donate-app' },
   thread:  { path: '/thread' },
-  leaders: { path: '/leader-app', aliases: ['leader'] },
   blog:    { path: '/blog-app' },
   status:  { path: '/status-app' },
 };
@@ -34,14 +33,6 @@ for (const [sub, cfg] of Object.entries(apps)) {
 
 // Internal paths that should 404 when accessed without a subdomain
 const blockedPaths = Object.values(apps).map(a => a.path);
-
-// Reserved roots that should never be treated as usernames in referral links
-const reservedRoots = new Set([
-  ...Object.keys(apps),
-  ...Object.values(apps).map(a => a.path.slice(1)),
-  ...Object.values(apps).flatMap(a => a.aliases ?? []),
-  'api', 'ns', 'design-system', 'privacy', 'terms',
-]);
 
 export function proxy(request: NextRequest) {
   const url = request.nextUrl.clone();
@@ -66,30 +57,6 @@ export function proxy(request: NextRequest) {
     .trim()
     .toLowerCase();
 
-  // Canonicalize /ns route casing so /NS and /Ns resolve to /ns.
-  const nsPrefixMatch = pathname.match(/^\/ns(?=\/|$)/i);
-  if (nsPrefixMatch && !pathname.startsWith('/ns')) {
-    url.pathname = `/ns${pathname.slice(nsPrefixMatch[0].length)}`;
-    return NextResponse.redirect(url, 308);
-  }
-
-  // Support /:slug/refer links by opening join flow on the target profile page.
-  const referMatch = pathname.match(/^\/([^/]+)\/refer\/?$/);
-  if (referMatch) {
-    const slug = referMatch[1];
-    if (!reservedRoots.has(slug.toLowerCase())) {
-      const referredBy = url.searchParams.get("referred_by") ?? slug;
-      const referredById = url.searchParams.get("referred_by_id");
-      url.pathname = `/${slug}`;
-      url.searchParams.set("join", "1");
-      url.searchParams.set("referred_by", referredBy);
-      if (referredById) {
-        url.searchParams.set("referred_by_id", referredById);
-      }
-      return NextResponse.redirect(url, 307);
-    }
-  }
-
   // Extract subdomain (handle both localhost and production domains)
   const parts = hostname.split('.');
   let subdomain: string | null = null;
@@ -105,8 +72,13 @@ export function proxy(request: NextRequest) {
     }
   }
 
+  // Retired leaderboard hosts no longer serve an application.
+  if (subdomain === "leaders" || subdomain === "leader") {
+    return new NextResponse(null, { status: 404 });
+  }
+
   // Redirect alias subdomains to their canonical subdomain.
-  // Example: leader.zcash.me -> leaders.zcash.me
+  // Example: swaps.zcash.me -> swap.zcash.me
   if (subdomain) {
     const canonicalSubdomain = aliasToCanonicalMap.get(subdomain);
     if (canonicalSubdomain && hostname.startsWith(`${subdomain}.`)) {

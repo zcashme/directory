@@ -14,7 +14,6 @@ defined here.
 | `signup/` | Profile creation server actions, real-time username/address validation | `lib/signup/AGENT.md` |
 | `verification/` | ZVS address verification (HMAC OTP), profile edit persistence, reward snapshots | `lib/verification/AGENT.md` |
 | `swap/` | 1Click/Defuse SDK integration for cross-chain swaps | `lib/swap/AGENT.md` |
-| `leaderboard/` | Referral commission calculations, leaderboard rankings, referrer stats | `lib/leaderboard/AGENT.md` |
 | `thread/` | Discussion board server actions [WIP — all stubbed] | `lib/thread/AGENT.md` |
 | `supabase/` | Database client initialization (server + client) | `lib/supabase/AGENT.md` |
 | `api/` | API guard (key validation + caching), standardized response types | `lib/api/AGENT.md` |
@@ -26,11 +25,9 @@ defined here.
 | `createProfileAction` | `signup/createProfileAction.ts` | Creates new profile with links |
 | `confirmOtpAction` | `verification/confirmOtpAction.ts` | Verifies OTP, applies profile edits, records reward snapshot |
 | `generateMemoAction` | `verification/generateMemoAction.ts` | Generates memo + zcash: URI for verification |
-| `getLeaderboardAction` | `leaderboard/getLeaderboardAction.ts` | Ranked leaderboard with earnings and period filters |
-| `getReferrerStatsAction` | `leaderboard/getReferrerStatsAction.ts` | Per-referrer detail page data |
 | `getSwapTokens` / `getSwapQuote` / `confirmSwap` | `swap/oneClick.ts` | Token discovery, quotes, deposit addresses |
 | `getProfileLinksBatchAction` | `profile/getProfileLinksBatchAction.ts` | Batch-fetch links by profile IDs |
 
 ## Database Access
 All queries go through Supabase clients in `lib/supabase/`. Main tables: `zcasher`,
-`zcasher_links`, `zcasher_searchable`, `zcasher_verifications`, `referrer_ranked_*`.
+`zcasher_links`, `zcasher_searchable`, `zcasher_verifications`.

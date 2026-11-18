@@ -53,8 +53,8 @@ export default function ProfileVerification({
       edits.address = nextAddress;
       hasChanges = true;
     }
-    if (!znsLocked && form.name !== original.name) {
-      edits.name = form.name;
+    if (!znsLocked && (deletedFields.name || form.name !== original.name)) {
+      edits.name = deletedFields.name ? "" : form.name;
       hasChanges = true;
     }
     if (form.display_name !== original.display_name) {
@@ -138,7 +138,7 @@ export default function ProfileVerification({
     }
 
     return hasChanges ? edits : undefined;
-  }, [form, original, deletedFields.profile_image_url, pendingAvatarUpload, profile]);
+  }, [form, original, deletedFields.name, deletedFields.profile_image_url, pendingAvatarUpload, profile]);
 
   const buildEditsSummary = useCallback((): string[] => {
     const summary: string[] = [];
@@ -304,6 +304,12 @@ export default function ProfileVerification({
       const response = await confirmOtpAction(profile.id, otpValue, currentMemo, edits);
 
       if (response.ok) {
+        if (response.data.status === "deleted") {
+          clearPendingAvatarUpload();
+          setOtpResult({ ok: true, message: "Your profile has been deleted. Returning to Zcash.me..." });
+          setTimeout(() => { window.location.assign("/"); }, 1000);
+          return;
+        }
         const responseData = response.data as Record<string, unknown> | undefined;
         const nextProfileImageUrl =
           typeof responseData?.profile_image_url === "string"

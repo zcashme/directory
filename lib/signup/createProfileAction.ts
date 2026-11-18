@@ -1,6 +1,6 @@
 "use server";
 
-import { createProfile, insertProfileLinks, insertVerifiedProfileLink, checkAddressTaken } from "@/lib/signup/createProfile";
+import { createProfile, insertProfileLinks, checkAddressTaken } from "@/lib/signup/createProfile";
 import { getUsernameJoinAvailability } from "@/lib/zns/availability";
 import { PROTECTED_NAME_SIGNUP_ERROR } from "@/lib/zns/name";
 import type {
@@ -11,6 +11,7 @@ import type {
   ProfileLinkInput,
 } from "@/lib/api/types";
 import type { VoidActionResult } from "@/lib/actions/types";
+import { isValidSignupAddress, SIGNUP_ADDRESS_ERROR } from "./addressValidation";
 
 /**
  * Server Action for creating a new profile
@@ -18,6 +19,9 @@ import type { VoidActionResult } from "@/lib/actions/types";
  */
 export async function createProfileAction(profileData: CreateProfilePayload): Promise<CreateProfileResponse> {
   try {
+    if (!isValidSignupAddress(profileData.address)) {
+      return { ok: false, error: SIGNUP_ADDRESS_ERROR };
+    }
     const joinAvailability = await getUsernameJoinAvailability(profileData.name);
     if (joinAvailability.protected) {
       return {
@@ -66,18 +70,6 @@ export async function createProfileAction(profileData: CreateProfilePayload): Pr
 export async function insertProfileLinksAction(zcasherId: number, links: ProfileLinkInput[]): Promise<VoidActionResult> {
   try {
     await insertProfileLinks(zcasherId, links);
-    return { ok: true };
-  } catch (error) {
-    return {
-      ok: false,
-      error: String((error as Error)?.message || error),
-    };
-  }
-}
-
-export async function insertVerifiedSignupDiscordLinkAction(zcasherId: number, link: ProfileLinkInput): Promise<VoidActionResult> {
-  try {
-    await insertVerifiedProfileLink(zcasherId, link);
     return { ok: true };
   } catch (error) {
     return {

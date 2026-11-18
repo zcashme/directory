@@ -36,10 +36,6 @@ const COMPARISON_ROWS = [
     title: "Customize your profile",
     description: ".zcash name owners can add themes and badges after sign-in or verification.",
   },
-  {
-    title: "Earn from referring others",
-    description: "Get commission when others mention your name while claiming their own.",
-  },
 ];
 
 const AVATAR_SIZE = 120;

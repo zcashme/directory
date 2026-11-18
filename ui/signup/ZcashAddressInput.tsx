@@ -1,5 +1,4 @@
-import { useState, useEffect } from "react";
-import { validateZcashAddress, getZcashAddressHint } from "./zcashAddress";
+import { isValidSignupAddress, SIGNUP_ADDRESS_ERROR } from "@/lib/signup/addressValidation";
 import FormField from "@/ui/common/forms/FormField";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 
@@ -18,12 +17,8 @@ export default function ZcashAddressInput({
   id = "zcash-address",
   hasConflict = false,
 }: ZcashAddressInputProps) {
-  const [help, setHelp] = useState(getZcashAddressHint(value));
-  const isValid = validateZcashAddress(value).valid;
-
-  useEffect(() => {
-    setHelp(getZcashAddressHint(value));
-  }, [value]);
+  const isValid = isValidSignupAddress(value);
+  const help = !value.trim() ? "Enter your Unified Zcash address (u1…)." : isValid ? "Looks good — valid Unified address ✓" : SIGNUP_ADDRESS_ERROR;
 
   return (
     <FormField
@@ -36,11 +31,11 @@ export default function ZcashAddressInput({
         id={id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="zs1... or u1..."
+        placeholder="u1..."
         className={`w-full rounded-2xl border px-3 py-2 text-sm font-mono outline-hidden bg-transparent ${withFieldBorderState("border-black/30", hasConflict || !isValid)}`}
         autoComplete="off"
       />
-      <p className={`mt-1 text-xs ${isValid ? "text-green-600" : "text-gray-500"}`}>{help}</p>
+      <p className={`mt-1 text-xs ${isValid ? "text-green-600" : value.trim() ? "text-red-600" : "text-gray-500"}`}>{help}</p>
     </FormField>
   );
 }

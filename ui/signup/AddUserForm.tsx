@@ -5,18 +5,16 @@ import { createPortal } from "react-dom";
 
 import type { Profile } from "@/lib/profile/types";
 import type { City } from "@/lib/directory/searchCitiesAction";
-import { validateZcashAddress } from "./zcashAddress";
+import { isValidSignupAddress, SIGNUP_ADDRESS_ERROR } from "@/lib/signup/addressValidation";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { SVGProps, FormEvent } from "react";
 import {
   createProfileAction,
   insertProfileLinksAction,
-  insertVerifiedSignupDiscordLinkAction,
   checkUsernameAvailabilityAction,
 } from "@/lib/signup/createProfileAction";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import ProfileSearchDropdown from "@/ui/profile/ProfileSearchDropdown";
 import CitySearchDropdown from "@/ui/signup/CitySearchDropdown";
 import StepContainer from "@/ui/signup/StepContainer";
 import FormField from "@/ui/common/forms/FormField";
@@ -44,9 +42,6 @@ import {
   getProfileCardTapMotionProps,
 } from "@/ui/common/buttons/styles";
 import { withFieldBorderState, withFieldFocusWithinBorderState } from "@/ui/common/forms/styles";
-import { supabase } from "@/lib/supabase/supabase-client";
-import { connectDiscordForNsSignup, clearPendingNsSignupDiscord, getPendingNsSignupDiscord } from "@/ui/links/nsSignupDiscord";
-import { getProviderByKey } from "@/ui/links/providers";
 
 const MAX_DISPLAY_NAME_LENGTH = 32;
 
@@ -65,11 +60,6 @@ function validateDisplayName(value: string): { valid: boolean; error?: string } 
   return { valid: true };
 }
 
-interface Referrer {
-  id: number;
-  name: string;
-}
-
 interface SocialLink {
   platform: string;
   username: string;
@@ -82,56 +72,11 @@ interface ConflictInfo {
   text: string;
 }
 
-interface DiscordSignupIdentity {
-  userId: string;
-  label: string;
-  url: string;
-}
-
-interface NsSignupDraft {
-  step: number;
-  name: string;
-  displayName: string;
-  address: string;
-  referrer: Referrer | string;
-  nearestCity: City | null;
-  nearestCityInput: string;
-  links: SocialLink[];
-  discordIdentity: DiscordSignupIdentity | null;
-}
-
-const NS_SIGNUP_DRAFT_KEY = "nsSignupJoinDraft";
-
-function loadNsSignupDraft(): NsSignupDraft | null {
-  if (typeof window === "undefined") return null;
-  const raw = sessionStorage.getItem(NS_SIGNUP_DRAFT_KEY);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as NsSignupDraft;
-  } catch {
-    sessionStorage.removeItem(NS_SIGNUP_DRAFT_KEY);
-    return null;
-  }
-}
-
-function saveNsSignupDraft(draft: NsSignupDraft): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.setItem(NS_SIGNUP_DRAFT_KEY, JSON.stringify(draft));
-}
-
-function clearNsSignupDraft(): void {
-  if (typeof window === "undefined") return;
-  sessionStorage.removeItem(NS_SIGNUP_DRAFT_KEY);
-}
-
 interface AddUserFormProps {
   isOpen: boolean;
   onClose: () => void;
   onUserAdded?: (_profile: Profile) => void;
   prefillUsername?: string | null;
-  prefillReferrer?: string | null;
-  prefillReferrerId?: number | null;
-  isNsSignup?: boolean;
 }
 
 export default function AddUserForm({
@@ -139,9 +84,6 @@ export default function AddUserForm({
   onClose,
   onUserAdded,
   prefillUsername = null,
-  prefillReferrer = null,
-  prefillReferrerId = null,
-  isNsSignup = false,
 }: AddUserFormProps) {
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
@@ -151,175 +93,40 @@ export default function AddUserForm({
   const [nameHelp, setNameHelp] = useState("");
   const [nameConflict, setNameConflict] = useState<ConflictInfo | null>(null);
   const [address, setAddress] = useState("");
-  const [addressHelp, setAddressHelp] = useState("");
-  const [addressConflict, setAddressConflict] = useState<ConflictInfo | null>(null);
-  const [referrerConflict, setReferrerConflict] = useState<ConflictInfo | null>(null);
 
-  const [referrer, setReferrer] = useState<Referrer | string>("");
 
   const [nearestCity, setNearestCity] = useState<City | null>(null);
   const [nearestCityInput, setNearestCityInput] = useState("");
 
   const [links, setLinks] = useState<SocialLink[]>([{ platform: "X", username: "", otherUrl: "", valid: true }]);
-  const [discordIdentity, setDiscordIdentity] = useState<DiscordSignupIdentity | null>(null);
-  const [isDiscordAuthLoading, setIsDiscordAuthLoading] = useState(false);
-  const [discordAuthError, setDiscordAuthError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
   const shouldReduceMotion = useReducedMotion() ?? false;
   const tapProps = getProfileCardTapMotionProps(shouldReduceMotion);
-  const totalSteps = isNsSignup ? 7 : 6;
+  const totalSteps = 5;
   const addressStepIndex = 1;
-  const discordStepIndex = isNsSignup ? 2 : -1;
-  const linksStepIndex = isNsSignup ? 3 : 2;
-  const cityStepIndex = isNsSignup ? 4 : 3;
-  const referrerStepIndex = isNsSignup ? 5 : 4;
-  const reviewStepIndex = isNsSignup ? 6 : 5;
+  const linksStepIndex = 2;
+  const cityStepIndex = 3;
+  const reviewStepIndex = 4;
 
 
 
   useEffect(() => {
     if (!isOpen) return;
-    (async () => {
-      const nsDraft = isNsSignup ? loadNsSignupDraft() : null;
-      if (nsDraft) {
-        setStep(Math.min(reviewStepIndex, Math.max(0, nsDraft.step || 0)));
-        setDir(1);
-        setName(nsDraft.name || "");
-        setDisplayName(nsDraft.displayName || "");
-        setNameHelp("");
-        setNameConflict(null);
-        setAddress(nsDraft.address || "");
-        setAddressHelp("");
-        setAddressConflict(null);
-        setReferrer(nsDraft.referrer || "");
-        setReferrerConflict(null);
-        setNearestCity(nsDraft.nearestCity || null);
-        setNearestCityInput(nsDraft.nearestCityInput || "");
-        setLinks(nsDraft.links?.length ? nsDraft.links : [{ platform: "X", username: "", otherUrl: "", valid: true }]);
-        setDiscordIdentity(nsDraft.discordIdentity || null);
-        setDiscordAuthError(null);
-        setIsDiscordAuthLoading(false);
-        setError("");
-        setIsLoading(false);
-        return;
-      }
-
-      setStep(0);
-      setDir(1);
-      setName(prefillUsername || "");
-      setDisplayName("");
-      setNameHelp("");
-      setNameConflict(null);
-      setAddress("");
-      setAddressHelp("");
-      setAddressConflict(null);
-      if (prefillReferrerId && prefillReferrer) {
-        setReferrer({ id: prefillReferrerId, name: prefillReferrer });
-      } else {
-        setReferrer(prefillReferrer || "");
-      }
-      setReferrerConflict(null);
-      setNearestCity(null);
-      setNearestCityInput("");
-      setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
-      setDiscordIdentity(null);
-      setDiscordAuthError(null);
-      setIsDiscordAuthLoading(false);
-      setError("");
-      setIsLoading(false);
-    })();
-  }, [isOpen, isNsSignup, prefillReferrer, prefillReferrerId, prefillUsername, reviewStepIndex]);
-
-  useEffect(() => {
-    if (!isOpen || !isNsSignup) return;
-    saveNsSignupDraft({
-      step,
-      name,
-      displayName,
-      address,
-      referrer,
-      nearestCity,
-      nearestCityInput,
-      links,
-      discordIdentity,
-    });
-  }, [isOpen, isNsSignup, step, name, displayName, address, referrer, nearestCity, nearestCityInput, links, discordIdentity]);
-
-  useEffect(() => {
-    if (!isOpen || !isNsSignup) return;
-    if (!getPendingNsSignupDiscord()) return;
-
-    const discordProvider = getProviderByKey("discord");
-    if (!discordProvider) {
-      setDiscordAuthError("Discord login is temporarily unavailable.");
-      setIsDiscordAuthLoading(false);
-      return;
-    }
-
-    let active = true;
-    const resolveDiscordIdentity = async () => {
-      const { data } = await supabase.auth.getSession();
-      if (!active) return;
-      const session = data.session;
-      if (!session) {
-        setIsDiscordAuthLoading(false);
-        return;
-      }
-
-      const identity = session.user.identities?.find((item) => item.provider === discordProvider.key);
-      const identityData = identity?.identity_data as Record<string, unknown> | undefined;
-      const userId = identityData ? discordProvider.getHandle(identityData) : null;
-      if (!userId) {
-        setDiscordAuthError("Discord login did not return a usable account. Try again.");
-        setIsDiscordAuthLoading(false);
-        return;
-      }
-
-      const label =
-        (identityData ? discordProvider.getUsername?.(identityData) : null) ||
-        (identityData?.full_name as string | undefined) ||
-        userId;
-
-      setDiscordIdentity({
-        userId,
-        label,
-        url: discordProvider.buildUrl(userId),
-      });
-      setDiscordAuthError(null);
-      setIsDiscordAuthLoading(false);
-      clearPendingNsSignupDiscord();
-    };
-
-    setIsDiscordAuthLoading(true);
-    void resolveDiscordIdentity();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!active || !session) return;
-      const identity = session.user.identities?.find((item) => item.provider === discordProvider.key);
-      const identityData = identity?.identity_data as Record<string, unknown> | undefined;
-      const userId = identityData ? discordProvider.getHandle(identityData) : null;
-      if (!userId) return;
-      const label =
-        (identityData ? discordProvider.getUsername?.(identityData) : null) ||
-        (identityData?.full_name as string | undefined) ||
-        userId;
-      setDiscordIdentity({
-        userId,
-        label,
-        url: discordProvider.buildUrl(userId),
-      });
-      setDiscordAuthError(null);
-      setIsDiscordAuthLoading(false);
-      clearPendingNsSignupDiscord();
-    });
-
-    return () => {
-      active = false;
-      subscription.unsubscribe();
-    };
-  }, [isOpen, isNsSignup]);
+    setStep(0);
+    setDir(1);
+    setName(prefillUsername || "");
+    setDisplayName("");
+    setNameHelp("");
+    setNameConflict(null);
+    setAddress("");
+    setNearestCity(null);
+    setNearestCityInput("");
+    setLinks([{ platform: "X", username: "", otherUrl: "", valid: true }]);
+    setError("");
+    setIsLoading(false);
+  }, [isOpen, prefillUsername]);
 
   useEffect(() => {
     if (!name) {
@@ -379,7 +186,7 @@ export default function AddUserForm({
         !availabilityResult.verified_exists
       ) {
         if (waitlistCount === 0) {
-          setNameHelp(`Be the first to join the waitlist. Profile URL: Zcash.me/${slug}-[id]`);
+          setNameHelp(`Profile URL: Zcash.me/${slug}-[id]`);
         } else {
           setNameHelp(
             `${waitlistCount} ${waitlistCount === 1 ? "person is" : "people are"} already waiting for this Zcash Name. Profile URL: Zcash.me/${slug}-[id]`
@@ -398,91 +205,10 @@ export default function AddUserForm({
     };
   }, [name]);
 
-  useEffect(() => {
-    const addrNorm = address.trim().toLowerCase();
-    const res = validateZcashAddress(addrNorm);
-
-    if (!address) {
-      setAddressHelp("Enter your Zcash address (t1…, zs1…, or u1…).");
-      setAddressConflict(null);
-      return;
-    }
-
-    if (!res.valid) {
-      setAddressHelp(
-        "Invalid address. Must be transparent (t1…), Sapling (zs1…), or Unified (u1…)."
-      );
-      setAddressConflict(null);
-      return;
-    }
-
-    if (res.type === "tex") {
-      setAddressHelp(
-        "That's a TEX (transparent-source-only) address defined in ZIP 320. It can't receive from shielded senders. Use a z- or u- address instead."
-      );
-      setAddressConflict({
-        type: "info",
-        text: "TEX addresses are valid but not supported for shielded transactions.",
-      });
-      return;
-    }
-
-    const label =
-      res.type === "transparent"
-        ? "Transparent address ✓ (Note: exposes sender, receiver, and amount on-chain)"
-        : res.type === "sapling"
-          ? "Sapling address ✓"
-          : res.type === "unified"
-            ? "Looks good — valid Unified address ✓"
-            : "Valid address ✓";
-
-    setAddressHelp(label);
-    setAddressConflict(null);
-  }, [address]);
-
-  useEffect(() => {
-    if (typeof referrer === "object") {
-      setReferrerConflict(null);
-      return;
-    }
-
-    const query = (referrer || "").trim();
-    if (!query) {
-      setReferrerConflict(null);
-      return;
-    }
-
-    let active = true;
-    const timer = setTimeout(async () => {
-      const result = await checkUsernameAvailabilityAction(query);
-      if (!active) return;
-      if (result.ok && !result.exists) {
-        setReferrerConflict({
-          type: "error",
-          text: "No matching username found. Select a valid referrer or clear this field.",
-        });
-      } else {
-        setReferrerConflict(null);
-      }
-    }, 300);
-
-    return () => {
-      active = false;
-      clearTimeout(timer);
-    };
-  }, [referrer]);
-
   if (!isOpen) return null;
   if (typeof document === "undefined") return null;
 
   function handleClose() {
-    if (isNsSignup) {
-      clearNsSignupDraft();
-      clearPendingNsSignupDiscord();
-      setDiscordIdentity(null);
-      setDiscordAuthError(null);
-      setIsDiscordAuthLoading(false);
-    }
     onClose();
   }
 
@@ -503,9 +229,7 @@ export default function AddUserForm({
   }
 
   const reviewLinks = [
-    ...(discordIdentity ? [discordIdentity.url] : []),
     ...links
-      .filter((l) => !(isNsSignup && l.platform === "Discord"))
       .map((l) => {
         if (l.platform === "Other") {
           return l.otherUrl?.trim() || "";
@@ -520,77 +244,29 @@ export default function AddUserForm({
   ];
 
   const stepIsValid = (() => {
-    switch (step) {
-      case 0: {
-        const displayNameValidation = validateDisplayName(displayName);
-        return !!name.trim() && displayNameValidation.valid && (!nameConflict || nameConflict.type !== "error");
-      }
-
-
-      case 1: {
-        const res = validateZcashAddress(address.trim());
-        if (addressConflict?.type === "error") return false;
-        if (res.type === "tex" || res.type === "transparent") return false;
-        return !!address.trim() && res.valid;
-      }
-
-
-      case 2:
-        if (isNsSignup) return !!discordIdentity && !isDiscordAuthLoading;
-        return links.every((l) => l.valid !== false);
-      case 3:
-        if (isNsSignup) return links.every((l) => l.valid !== false);
-        return true;
-      case 4:
-        return true;
-      case 5: {
-        if (isNsSignup) return true;
-        const res = validateZcashAddress(address.trim());
-        return (
-          !!name.trim() &&
-          !!address.trim() &&
-          (!nameConflict || nameConflict.type !== "error") &&
-          (!addressConflict || addressConflict.type !== "error") &&
-          res.valid &&
-          res.type !== "tex" &&
-          res.type !== "transparent"
-        );
-      }
-      case 6: {
-        const res = validateZcashAddress(address.trim());
-        return (
-          !!discordIdentity &&
-          !!name.trim() &&
-          !!address.trim() &&
-          (!nameConflict || nameConflict.type !== "error") &&
-          (!addressConflict || addressConflict.type !== "error") &&
-          res.valid &&
-          res.type !== "tex" &&
-          res.type !== "transparent"
-        );
-      }
-
-
-
-      default:
-        return false;
+    if (step === 0) {
+      return !!name.trim() && validateDisplayName(displayName).valid && nameConflict?.type !== "error";
     }
+    if (step === addressStepIndex) return isValidSignupAddress(address);
+    if (step === linksStepIndex) return links.every((link) => link.valid !== false);
+    if (step === cityStepIndex) return true;
+    if (step === reviewStepIndex) {
+      return !!name.trim() && validateDisplayName(displayName).valid &&
+        isValidSignupAddress(address) && nameConflict?.type !== "error";
+    }
+    return false;
   })();
-
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (isNsSignup && !discordIdentity) {
-      setError("Log in with Discord to continue.");
+    if (!isValidSignupAddress(address)) {
+      setError(SIGNUP_ADDRESS_ERROR);
       return;
     }
 
     const invalid = links.some((l) => {
-      if (isNsSignup && l.platform === "Discord") {
-        return false;
-      }
       if (l.platform === "Other") {
         return l.otherUrl && !isValidUrl(l.otherUrl.trim());
       } else {
@@ -652,9 +328,6 @@ export default function AddUserForm({
 
     const finalLinkEntries = links
       .map((l) => {
-        if (isNsSignup && l.platform === "Discord") {
-          return null;
-        }
         if (l.platform === "Other") {
           const rawUrl = l.otherUrl?.trim() || "";
           const res = isValidUrl(rawUrl);
@@ -691,12 +364,6 @@ export default function AddUserForm({
           : undefined,
         country: nearestCity?.country || undefined,
         iso2: nearestCity?.iso2 || undefined,
-        referred_by:
-          typeof referrer === "object"
-            ? referrer?.name || undefined
-            : (referrer || "").trim() || undefined,
-        referred_by_zcasher_id: typeof referrer === "object" ? referrer?.id || undefined : undefined,
-        is_ns: isNsSignup || undefined,
         created_at: new Date().toISOString(),
       });
 
@@ -707,14 +374,6 @@ export default function AddUserForm({
       }
 
       const profile = profileResult.data;
-
-      if (isNsSignup && discordIdentity) {
-        await insertVerifiedSignupDiscordLinkAction(profile.id, {
-          url: discordIdentity.url,
-          label: discordIdentity.label,
-          platform: "Discord",
-        });
-      }
 
       const linksResult = await insertProfileLinksAction(profile.id, finalLinkEntries);
       if (!linksResult.ok) {
@@ -728,10 +387,6 @@ export default function AddUserForm({
       const slug = `${slugBase}-${profile.id}`;
 
       onUserAdded?.(profile);
-      if (isNsSignup) {
-        clearNsSignupDraft();
-        clearPendingNsSignupDiscord();
-      }
       onClose?.();
 
       router.push(`/${slug}`);
@@ -759,8 +414,6 @@ export default function AddUserForm({
   const goBack = () => {
     setDir(-1);
     setStep((s) => Math.max(0, s - 1));
-
-    setAddressConflict(null);
   };
 
   const StepName = (
@@ -846,24 +499,7 @@ export default function AddUserForm({
       <ZcashAddressInput
         value={address}
         onChange={setAddress}
-        hasConflict={addressConflict?.type === "error"}
       />
-      {(addressConflict || addressHelp) && (
-        <p
-          className={`mt-1 text-xs ${addressConflict?.type === "error"
-            ? "text-red-600"
-            : addressConflict?.type === "info"
-              ? "text-green-600"
-              : "text-gray-700"
-            }`}
-        >
-          {typeof addressConflict === "object"
-            ? addressConflict?.text
-            : typeof addressConflict === "string"
-              ? addressConflict
-              : addressHelp}
-        </p>
-      )}
 
 
       <p className="mt-4 text-xs text-gray-600">
@@ -906,107 +542,10 @@ export default function AddUserForm({
     </StepContainer>
   );
 
-  const StepDiscord = isNsSignup ? (
-    <StepContainer stepKey="step-discord" dir={dir}>
-      <label className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
-        Log in with Discord
-      </label>
-      <p className="text-sm text-gray-700">
-        Network School signup requires Discord verification before optional socials.
-      </p>
-      <div className="mt-4 rounded-2xl border border-black/20 bg-white/70 p-4">
-        {discordIdentity ? (
-          <div className="space-y-2 text-sm">
-            <p className="font-semibold text-green-700">Discord connected</p>
-            <p>
-              <span className="font-semibold text-gray-800">Display name:</span>{" "}
-              <span className="font-mono">{discordIdentity.label}</span>
-            </p>
-            <p>
-              <span className="font-semibold text-gray-800">User ID:</span>{" "}
-              <span className="font-mono break-all">{discordIdentity.userId}</span>
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3 text-sm text-gray-700">
-            <p>
-              This adds your canonical Discord profile link and marks it authenticated during signup.
-            </p>
-            <motion.button
-              type="button"
-              onClick={async () => {
-                setDiscordAuthError(null);
-                setIsDiscordAuthLoading(true);
-                try {
-                  await connectDiscordForNsSignup("/ns");
-                } catch (err: any) {
-                  setDiscordAuthError(err?.message || "Discord login failed. Try again.");
-                  setIsDiscordAuthLoading(false);
-                }
-              }}
-              disabled={isDiscordAuthLoading}
-              {...tapProps}
-              className={"w-full " + PROFILE_CARD_PRIMARY_GREEN_ACTION_BUTTON_CLASSES}
-            >
-              {isDiscordAuthLoading ? "Connecting..." : "Log in with Discord"}
-            </motion.button>
-          </div>
-        )}
-        {discordAuthError && (
-          <p className="mt-3 text-xs text-red-600">{discordAuthError}</p>
-        )}
-        {!discordIdentity && !discordAuthError && (
-          <p className="mt-3 text-xs text-gray-600">
-            If the Discord redirect is cancelled, reopen this step and try again.
-          </p>
-        )}
-      </div>
-    </StepContainer>
-  ) : null;
-
-  const StepReferrer = (
-    <StepContainer stepKey="step-ref" dir={dir}>
-      <label htmlFor="referrer" className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">
-        Referred by Zcash.me/
-      </label>
-
-      <div
-        className={`relative flex items-center w-full rounded-2xl border overflow-visible bg-transparent ${
-          withFieldFocusWithinBorderState("border-black/30", referrerConflict?.type === "error")
-        }`}
-      >
-        <span className="pl-3 pr-1 text-sm text-gray-600 select-none whitespace-nowrap">Zcash.me/</span>
-        <div className="relative flex-1">
-          <ProfileSearchDropdown
-            value={typeof referrer === "object" ? referrer?.name || "" : referrer || ""}
-            onChange={(v) => {
-              setReferrer(v);
-              if (typeof v === "object") {
-                setReferrerConflict(null);
-              }
-            }}
-            placeholder="username"
-            showUsernameAvailability={false}
-            className="w-full px-1 py-2 text-sm outline-hidden bg-transparent"
-          />
-        </div>
-      </div>
-
-      <p className={`mt-1 text-xs ${referrerConflict?.type === "error" ? "text-red-600" : "text-gray-600"}`}>
-        {referrerConflict?.text || "Optional. Helps us reward members who refer new members."}
-      </p>
-    </StepContainer>
-  );
-
   const StepLinks = (
     <StepContainer stepKey="step-links" dir={dir}>
       <label className="block text-xs font-medium uppercase tracking-wide text-gray-700 mb-1">Add social links to help others identify you</label>
 
-      {isNsSignup && discordIdentity && (
-        <div className="mb-3 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-xs text-green-800">
-          Discord is already added. Feel free to add another.
-        </div>
-      )}
 
       {links.map((link, index) => (
         <SocialLinkInput
@@ -1015,7 +554,6 @@ export default function AddUserForm({
           onChange={(nextValue) => updateLink(index, nextValue)}
           allowRemove={links.length > 1}
           onRemove={() => removeLinkField(index)}
-          excludePlatforms={isNsSignup ? ["Discord"] : []}
         />
       ))}
       <button type="button" onClick={addLinkField} className="text-sm font-semibold text-green-700 hover:underline mt-1">
@@ -1048,10 +586,6 @@ export default function AddUserForm({
           <span className="font-semibold text-gray-800">Nearest City:</span>{" "}
           <span>{nearestCity?.city_ascii || nearestCity?.city || "—"}</span>
 
-        </div>
-        <div>
-          <span className="font-semibold text-gray-800">Referred by:</span>{" "}
-          <span>{typeof referrer === "object" ? referrer?.name || "—" : "—"}</span>
         </div>
         <div>
           <span className="font-semibold text-gray-800">Links:</span>
@@ -1143,10 +677,8 @@ export default function AddUserForm({
           <AnimatePresence mode="popLayout" initial={false} custom={dir}>
             {step === 0 && StepName}
             {step === addressStepIndex && StepAddress}
-            {isNsSignup && step === discordStepIndex && StepDiscord}
             {step === linksStepIndex && StepLinks}
             {step === cityStepIndex && StepCity}
-            {step === referrerStepIndex && StepReferrer}
             {step === reviewStepIndex && StepReview}
           </AnimatePresence>
         </form>
