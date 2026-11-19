@@ -1,5 +1,7 @@
 "use client";
 
+import { BASE_LAYER_LABELS, BASE_LAYER_SORT_ORDER, getProfileTokenNetwork, type BaseLayerKey } from "@/lib/swap/tokenNetworks";
+
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import type { Profile } from "@/lib/profile/types";
 import type { Token, SwapContextQuoteData, SwapQuoteDisplay } from "@/lib/swap/types";
@@ -36,37 +38,11 @@ interface ProfilePageProps {
     fiatAmount: string;
   };
 }
-
-type BaseLayerKey = "zec" | "btc" | "eth" | "sol";
 const COMPOSER_MAX_WIDTH_PX = 512;
 const PROFILE_CARD_DESKTOP_WIDTH_RATIO = 460 / COMPOSER_MAX_WIDTH_PX;
 const PROFILE_CARD_DESKTOP_WIDTH_PX = Math.round(
   COMPOSER_MAX_WIDTH_PX * PROFILE_CARD_DESKTOP_WIDTH_RATIO
 );
-
-const BASE_LAYER_LABELS: Record<BaseLayerKey, string> = {
-  zec: "Zcash",
-  btc: "Bitcoin",
-  eth: "Ethereum",
-  sol: "Solana",
-};
-
-const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
-  zec: 0,
-  btc: 1,
-  eth: 2,
-  sol: 3,
-};
-
-function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
-  const chain = (blockchain ?? "").toLowerCase();
-  if (chain.includes("zec") || chain.includes("zcash")) return "zec";
-  if (chain.includes("btc") || chain.includes("bitcoin")) return "btc";
-  if (chain.includes("eth") || chain.includes("ethereum")) return "eth";
-  if (chain.includes("sol") || chain.includes("solana")) return "sol";
-  return null;
-}
-
 function normalizeBaseLayerKey(value: string): string {
   const normalized = value.trim().toLowerCase().replace(/[_\s./-]+/g, "");
   if (!normalized) return "";
@@ -243,7 +219,7 @@ export default function ProfilePage({
   const memoAssetOptions = useMemo(() => {
     const allowed = tokens
       .map((token) => {
-        const baseLayer = getBaseLayerKey(token.blockchain);
+        const baseLayer = getProfileTokenNetwork(token.symbol, token.blockchain);
         if (!baseLayer) return null;
 
         return {
@@ -258,7 +234,7 @@ export default function ProfilePage({
         id: string;
         symbol: string;
         logo: string | undefined;
-        chain: string;
+        chain: (typeof BASE_LAYER_LABELS)[BaseLayerKey];
         baseLayer: BaseLayerKey;
       } => Boolean(token && token.id && token.symbol));
 

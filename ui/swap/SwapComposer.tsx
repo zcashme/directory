@@ -478,6 +478,7 @@ export default function SwapComposer({
                   depositAddress={statusKey?.depositAddress}
                   amountDecimal={depositAmountDecimal}
                   originSymbol={originSymbol}
+                  originBlockchain={tokenOptions.find((token) => getTokenId(token) === selectedAsset)?.blockchain}
                   recipientName={recipientName}
                   receivedAmount={quotePreview?.amountOutFormatted}
                   receivedSymbol={quotePreview?.toSymbol ?? "ZEC"}

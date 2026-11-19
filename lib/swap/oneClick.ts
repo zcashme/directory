@@ -16,6 +16,7 @@ import type {
   SwapStatusData,
 } from "./types";
 import { findToken, toBaseUnits, baseUnitsToDecimal } from "./utils";
+import { buildBasePaymentUri } from "./paymentUri";
 import type { Result } from "@/lib/actions/types";
 
 // Configure SDK
@@ -66,6 +67,7 @@ function toToken(t: TokenResponse): Token {
     symbol: t.symbol,
     decimals: t.decimals,
     blockchain: t.blockchain,
+    contractAddress: t.contractAddress,
   };
 }
 
@@ -236,10 +238,7 @@ function buildQuoteRequest(
  * Fetch available swap tokens
  */
 export async function getSwapTokens(): Promise<Result<Token[]>> {
-  if (!OpenAPI.TOKEN) {
-    return { ok: false, error: "1Click API key not configured. Please contact support." };
-  }
-
+  // Token discovery is public; only swap operations require our partner key.
   try {
     const allTokens = await OneClickService.getTokens();
 
@@ -250,6 +249,7 @@ export async function getSwapTokens(): Promise<Result<Token[]>> {
       "ETH",
       "USDC",
       "USDT",
+      "USDT0",
       "SOL",
       "AVAX",
       "BNB",
@@ -257,18 +257,9 @@ export async function getSwapTokens(): Promise<Result<Token[]>> {
       "DASH",
       "DOGE",
       "EURE",
-      "INX",
-      "KNC",
-      "LINK",
       "NEAR",
-      "PENGU",
-      "PEPE",
       "RHEA",
-      "SHIB",
-      "STRK",
       "TON",
-      "TRUMP",
-      "MELANIA",
       "TRX",
       "UNI",
       "XLM",
@@ -421,7 +412,9 @@ export async function confirmSwap(params: SwapParams): Promise<Result<SwapConfir
 
     if (blockchain.includes("btc") || blockchain.includes("bitcoin")) {
       paymentUri = `bitcoin:${response.quote.depositAddress}?amount=${baseUnitsToDecimal(amountBase, originToken.decimals)}`;
-    } else if (blockchain.includes("eth") || blockchain.includes("ethereum") || blockchain.includes("arb") || blockchain.includes("base")) {
+    } else if (blockchain === "base") {
+      paymentUri = buildBasePaymentUri(originToken, response.quote.depositAddress, amountBase);
+    } else if (blockchain.includes("eth") || blockchain.includes("ethereum") || blockchain.includes("arb")) {
       paymentUri = `ethereum:${response.quote.depositAddress}@1?value=${amountBase}`;
     } else if (blockchain.includes("sol") || blockchain.includes("solana")) {
       paymentUri = `solana:${response.quote.depositAddress}?amount=${baseUnitsToDecimal(amountBase, originToken.decimals)}`;

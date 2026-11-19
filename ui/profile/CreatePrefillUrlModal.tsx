@@ -1,5 +1,7 @@
 "use client";
 
+import { BASE_LAYER_LABELS, BASE_LAYER_SORT_ORDER, getProfileTokenNetwork, type BaseLayerKey } from "@/lib/swap/tokenNetworks";
+
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import ReactDOM from "react-dom";
@@ -29,7 +31,6 @@ interface CreatePrefillUrlModalProps {
 }
 
 type LastModifiedField = "crypto" | "fiat";
-type BaseLayerKey = "zec" | "btc" | "eth" | "sol";
 
 interface CryptoOption {
   key: string;
@@ -44,20 +45,8 @@ interface MemoLeftIconProps {
 
 const MAX_MEMO_BYTES = 512;
 const ZEC_TICKER = "ZEC";
-const SUPPORTED_TICKERS = ["ZEC", "BTC", "ETH", "SOL", "USDC", "USDT"];
-const BASE_LAYER_LABELS: Record<BaseLayerKey, string> = {
-  zec: "Zcash",
-  btc: "Bitcoin",
-  eth: "Ethereum",
-  sol: "Solana",
-};
-const BASE_LAYER_SORT_ORDER: Record<BaseLayerKey, number> = {
-  zec: 0,
-  btc: 1,
-  eth: 2,
-  sol: 3,
-};
-const NATIVE_TICKER_BY_BASE_LAYER: Record<BaseLayerKey, string> = {
+const SUPPORTED_TICKERS = ["ZEC", "BTC", "ETH", "SOL", "USDC", "USDT", "USDT0"];
+const NATIVE_TICKER_BY_BASE_LAYER: Partial<Record<BaseLayerKey, string>> = {
   zec: "ZEC",
   btc: "BTC",
   eth: "ETH",
@@ -103,16 +92,6 @@ function sanitizeDecimalAmount(rawValue: string, maxDecimals: number): string {
 
   return normalized;
 }
-
-function getBaseLayerKey(blockchain?: string): BaseLayerKey | null {
-  const chain = (blockchain ?? "").toLowerCase();
-  if (chain.includes("zec") || chain.includes("zcash")) return "zec";
-  if (chain.includes("btc") || chain.includes("bitcoin")) return "btc";
-  if (chain.includes("eth") || chain.includes("ethereum")) return "eth";
-  if (chain.includes("sol") || chain.includes("solana")) return "sol";
-  return null;
-}
-
 function formatFiatAmount(value: number): string {
   return value.toFixed(2);
 }
@@ -199,7 +178,7 @@ export default function CreatePrefillUrlModal({
       const ticker = token.symbol.toUpperCase();
       if (!SUPPORTED_TICKERS.includes(ticker)) return;
 
-      const baseLayer = getBaseLayerKey(token.blockchain);
+      const baseLayer = getProfileTokenNetwork(token.symbol, token.blockchain);
       if (!baseLayer) return;
 
       const key = `${ticker}:${baseLayer}`;

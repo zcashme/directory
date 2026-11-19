@@ -15,6 +15,7 @@ import {
   getSwapStatus,
 } from "@/lib/swap/oneClick";
 import { parseTokenSymbol } from "@/lib/swap/utils";
+import { BASE_LAYER_LABELS, getBaseLayerKey } from "@/lib/swap/tokenNetworks";
 import SwapCurrencyPair, { TokenIcon } from "@/ui/swap/SwapCurrencyPair";
 import type {
   Token,
@@ -43,6 +44,8 @@ function toProperCaseLabel(value: string): string {
 }
 
 function getBaseLayerLabel(blockchain?: string): string {
+  const network = getBaseLayerKey(blockchain);
+  if (network) return BASE_LAYER_LABELS[network];
   const chain = (blockchain ?? "").trim().toLowerCase();
   if (!chain) return "";
   if (chain.includes("zec") || chain.includes("zcash")) return "Zcash";
@@ -73,7 +76,9 @@ function resolveValidationChain(assetSymbol: string, chainHint: string): string 
     chain.includes("optimism") ||
     chain.includes("avalanche") ||
     chain.includes("bsc") ||
-    chain.includes("binance")
+    chain.includes("binance") ||
+    chain.includes("polygon") ||
+    ["pol", "avax", "monad", "bnb"].includes(chain)
   ) {
     return "ethereum";
   }
@@ -1163,6 +1168,7 @@ export default function SwapAppClient({
                     depositAddress={statusKey?.depositAddress}
                     amountDecimal={depositAmountDecimal}
                     originSymbol={fromToken?.symbol || ""}
+                    originBlockchain={fromToken?.blockchain}
                     receivedAmount={quote?.amountOutFormatted}
                     receivedSymbol={quote?.toSymbol || "ZEC"}
                     minimumReceived={quote?.minAmountOut}

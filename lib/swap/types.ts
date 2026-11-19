@@ -9,6 +9,7 @@ export interface Token {
   symbol: string;
   decimals: number;
   blockchain: string;
+  contractAddress?: string;
   logo?: string;
 }
 

@@ -1,12 +1,14 @@
 import { QRCodeSVG } from "qrcode.react";
 import CopyButton from "@/ui/common/buttons/CopyButton";
 import { getSwapUrl } from "@/lib/swap/utils";
+import { BASE_LAYER_LABELS, getBaseLayerKey } from "@/lib/swap/tokenNetworks";
 
 interface SwapDepositDisplayProps {
   depositUri: string;
   depositAddress?: string;
   amountDecimal?: string;
   originSymbol: string;
+  originBlockchain?: string;
   recipientName?: string;
   receivedAmount?: string;
   receivedSymbol?: string;
@@ -21,6 +23,7 @@ export default function SwapDepositDisplay({
   depositAddress,
   amountDecimal,
   originSymbol,
+  originBlockchain,
   recipientName,
   receivedAmount,
   receivedSymbol = "ZEC",
@@ -35,6 +38,8 @@ export default function SwapDepositDisplay({
   // Detect payment URI (BTC) vs address-only
   const hasPaymentUri = depositUri?.includes(":");
   const qrValue = hasPaymentUri ? depositUri : depositAddress;
+  const networkKey = getBaseLayerKey(originBlockchain);
+  const networkLabel = networkKey ? BASE_LAYER_LABELS[networkKey] : originBlockchain;
 
   const handleGoToSwapStatus = () => {
     if (onSentFunds) {
@@ -48,6 +53,7 @@ export default function SwapDepositDisplay({
   return (
     <div className="p-4 animate-fadeIn" style={{ backgroundColor: "var(--color-background)" }}>
       <div className="mb-3 space-y-2 text-center">
+        {networkLabel && <p className="text-sm font-semibold text-gray-900">Send {originSymbol} on {networkLabel}</p>}
         <div className="flex flex-wrap items-center justify-center gap-2">
           <p className="text-lg font-bold text-gray-900">Send</p>
           <div

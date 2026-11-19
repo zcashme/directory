@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useMemo, type KeyboardEvent as ReactKeyboa
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { validate as validateMultichainAddress } from "multichain-address-validator";
 import { getRateAction } from "@/lib/rates/getRateAction";
+import { BASE_LAYER_LABELS, getBaseLayerKey, getProfileTokenNetwork } from "@/lib/swap/tokenNetworks";
 import { INLINE_SELECTOR_TRIGGER_CLASSES, OUTLINE_ACTION_BUTTON_CLASSES } from "@/ui/common/buttons/styles";
 import { withFieldBorderState } from "@/ui/common/forms/styles";
 
@@ -93,6 +94,7 @@ interface TokenOption {
 }
 
 const isAllowedTokenBaseLayer = (token: TokenOption) => {
+  if (getProfileTokenNetwork(token.symbol ?? token.ticker ?? "", token.chain)) return true;
   const rawChain = (token.chain ?? "").toLowerCase().trim();
   if (!rawChain) return false;
 
@@ -109,6 +111,8 @@ const isAllowedTokenBaseLayer = (token: TokenOption) => {
 };
 
 function getBaseLayerLabel(chainHint?: string): string {
+  const network = getBaseLayerKey(chainHint);
+  if (network) return BASE_LAYER_LABELS[network];
   const raw = (chainHint ?? "").trim();
   if (!raw) return "";
 
@@ -184,7 +188,9 @@ function resolveValidationChain(assetSymbol: string, chainHint: string): string 
     chain.includes("optimism") ||
     chain.includes("avalanche") ||
     chain.includes("bsc") ||
-    chain.includes("binance")
+    chain.includes("binance") ||
+    chain.includes("polygon") ||
+    ["pol", "avax", "monad", "bnb"].includes(chain)
   ) {
     return "ethereum";
   }
@@ -639,13 +645,23 @@ export default function AmountAndWallet({
       ),
     [assetOptions, asset]
   );
+  // Legacy callers may pass a ticker directly; internal IDs must never be UI labels.
+  const assetSymbol =
+    selectedToken?.symbol ||
+    selectedToken?.ticker ||
+    assetDisplayLabel ||
+    (/^[a-z][a-z0-9]{0,11}$/i.test(asset) ? asset : "Selected asset");
+  const refundAssetNetwork = getBaseLayerLabel(selectedToken?.chain);
+  const refundAssetLabel = refundAssetNetwork
+    ? `${assetSymbol} on ${refundAssetNetwork}`
+    : assetSymbol;
   const refundValidationChain = useMemo(
     () => resolveValidationChain(asset, selectedToken?.chain ?? ""),
     [asset, selectedToken?.chain]
   );
   const refundValidationLabel = useMemo(
-    () => getBaseLayerLabel(selectedToken?.chain) || asset,
-    [selectedToken?.chain, asset]
+    () => getBaseLayerLabel(selectedToken?.chain) || assetSymbol,
+    [selectedToken?.chain, assetSymbol]
   );
   const refundValidation = useMemo(() => {
     const trimmed = (refundAddress ?? "").trim();
@@ -658,7 +674,7 @@ export default function AmountAndWallet({
       return {
         isValid: valid,
         message: valid
-          ? `${asset} refund address looks valid.`
+          ? `${refundAssetLabel} refund address looks valid.`
           : `${refundValidationLabel} refund address is not valid.`,
       };
     } catch {
@@ -667,7 +683,7 @@ export default function AmountAndWallet({
         message: `${refundValidationLabel} refund address is not valid.`,
       };
     }
-  }, [refundAddress, showRefund, refundValidationChain, asset, refundValidationLabel]);
+  }, [refundAddress, showRefund, refundValidationChain, refundAssetLabel, refundValidationLabel]);
 
   useEffect(() => {
     onRefundValidationChange?.(refundValidation.isValid);
@@ -914,18 +930,20 @@ export default function AmountAndWallet({
                 tokenSelectorAlign === "left" ? "left-3 md:left-4" : "right-3 md:right-4"
               }`}
             >
-              {setAsset && assetOptions.length > 0 ? (
+              {setAsset ? (
                 <div className="pointer-events-auto">
                   <button
                     ref={tokenTriggerRef}
                     type="button"
+                    aria-label="Select token"
+                    aria-expanded={isTokenDropdownOpen}
                     onClick={() => {
                       setIsTokenDropdownOpen(!isTokenDropdownOpen);
                     }}
                     onKeyDown={handleTokenDropdownKeyDown}
                     className="flex items-center gap-1 hover:text-[var(--color-brand-blue)] cursor-pointer"
                   >
-                    <span>{assetDisplayLabel ?? asset}</span>
+                    <span>{assetSymbol}</span>
                     <span
                       className={`inline-block transition-transform ${
                         shouldReduceMotion
@@ -938,11 +956,11 @@ export default function AmountAndWallet({
                   </button>
                 </div>
               ) : (
-                <div className="select-none cursor-not-allowed">{asset}</div>
+                <div className="select-none cursor-not-allowed">{assetSymbol}</div>
               )}
             </div>
             <AnimatePresence>
-              {setAsset && assetOptions.length > 0 && isTokenDropdownOpen && (
+              {setAsset && isTokenDropdownOpen && (
                 <motion.div
                   {...getDropdownMotion(tokenDropdownPlacement)}
                   onKeyDown={handleTokenDropdownKeyDown}
@@ -964,6 +982,11 @@ export default function AmountAndWallet({
                     </div>
                   )}
                   <div className="py-1 max-h-60 overflow-y-auto">
+                    {assetOptions.length === 0 && (
+                      <p className="px-3 py-2 text-sm text-gray-500" role="status">
+                        Tokens are unavailable. Refresh the page to try again.
+                      </p>
+                    )}
                     {displayTokenOptions
                       .map((token, tokenIndex) => {
                         const isRowActive = highlightedTokenIndex === tokenIndex;
@@ -1297,7 +1320,7 @@ export default function AmountAndWallet({
                   }
                   className="block text-sm font-medium text-gray-700 mb-1 overflow-hidden"
                 >
-                  {asset} is returned to you if swap fails ({recipientName} does not receive ZEC).
+                  {refundAssetLabel} is returned to you if swap fails ({recipientName} does not receive ZEC).
                 </motion.label>
               )}
             </AnimatePresence>
