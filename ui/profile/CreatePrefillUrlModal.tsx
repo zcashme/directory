@@ -205,9 +205,9 @@ export default function CreatePrefillUrlModal({
     return options.sort((a, b) => {
       if (a.ticker === ZEC_TICKER && b.ticker !== ZEC_TICKER) return -1;
       if (b.ticker === ZEC_TICKER && a.ticker !== ZEC_TICKER) return 1;
-      const layerDiff = BASE_LAYER_SORT_ORDER[a.baseLayer] - BASE_LAYER_SORT_ORDER[b.baseLayer];
-      if (layerDiff !== 0) return layerDiff;
-      return a.ticker.localeCompare(b.ticker);
+      const tickerDiff = a.ticker.localeCompare(b.ticker);
+      if (tickerDiff !== 0) return tickerDiff;
+      return BASE_LAYER_SORT_ORDER[a.baseLayer] - BASE_LAYER_SORT_ORDER[b.baseLayer];
     });
   }, [tokens]);
 

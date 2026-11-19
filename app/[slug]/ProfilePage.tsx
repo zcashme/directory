@@ -245,11 +245,10 @@ export default function ProfilePage({
       if (aSymbol === "ZEC" && bSymbol !== "ZEC") return -1;
       if (bSymbol === "ZEC" && aSymbol !== "ZEC") return 1;
 
-      const layerDiff =
-        BASE_LAYER_SORT_ORDER[a.baseLayer] - BASE_LAYER_SORT_ORDER[b.baseLayer];
-      if (layerDiff !== 0) return layerDiff;
+      const symbolDiff = aSymbol.localeCompare(bSymbol);
+      if (symbolDiff !== 0) return symbolDiff;
 
-      return aSymbol.localeCompare(bSymbol);
+      return BASE_LAYER_SORT_ORDER[a.baseLayer] - BASE_LAYER_SORT_ORDER[b.baseLayer];
     });
   }, [tokens]);
 
