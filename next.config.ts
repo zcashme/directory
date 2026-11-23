@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
       "./node_modules/harfbuzzjs/hb.wasm",
       "./node_modules/.pnpm/harfbuzzjs@*/node_modules/harfbuzzjs/hb.wasm",
     ],
+    "/[slug]/opengraph-image": [
+      "./public/og-*.ttf",
+      "./node_modules/harfbuzzjs/hb.wasm",
+      "./node_modules/.pnpm/harfbuzzjs@*/node_modules/harfbuzzjs/hb.wasm",
+    ],
     "/*": ["./data/world-cities.json"],
   },
   turbopack: {},
