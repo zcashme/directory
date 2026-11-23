@@ -59,6 +59,8 @@ export interface OgTrayRow {
   domain: string;
 }
 
+export type OgNameBadge = "zcash-name" | "verified" | "none";
+
 export interface OgCardModel {
   displayName: string;
   handle: string;
@@ -67,6 +69,10 @@ export interface OgCardModel {
   address: string;
   /** Image data URI. Null draws a letter from the display name. */
   avatarSrc: string | null;
+  /** Mark beside the display name. Unverified profiles use "none". */
+  nameBadge: OgNameBadge;
+  /** Green checks on the sample link rows. Hidden when the profile is unverified. */
+  showLinkChecks: boolean;
   tray: readonly OgTrayRow[];
 }
 
@@ -109,6 +115,8 @@ export const OG_SAMPLE: OgCardModel = {
   meta: "Near NYC \u2022 Joined Jul 2025 \u2022 Active <2 weeks ago",
   address: "u1qk7m0p9z8y7x6w5v4u3t2s1r0q",
   avatarSrc: AVATAR_ART_SRC,
+  nameBadge: "verified",
+  showLinkChecks: true,
   tray: [
     { kind: "x", label: "anakamoto", domain: "x.com" },
     { kind: "github", label: "anakamoto", domain: "github.com" },
@@ -119,6 +127,7 @@ const SHIELD_ICON_SRC = svgUri(`<svg width="42" height="42" viewBox="0 0 24 24" 
 const COIN_ICON_SRC = svgUri(`<svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#2563eb" stroke-width="1.8"/><path d="M8.6 12.1L10.8 14.3L15.4 9.7" stroke="#2563eb" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
 const ZEC_ICON_SRC = svgUri(`<svg width="42" height="42" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9" stroke="#2563eb" stroke-width="1.8"/><g transform="translate(24 0) scale(-1 1)"><path d="M8.5 8.4H15.5V10H10.6L15.5 13.6V15.3H8.5V13.7H13.4L8.5 10.1V8.4Z" fill="#2563eb"/><path d="M11.3 6.6H12.7V8.6H11.3V6.6Z" fill="#2563eb"/><path d="M11.3 15.4H12.7V17.4H11.3V15.4Z" fill="#2563eb"/></g></svg>`);
 const VERIFIED_ICON_SRC = svgUri(`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="9.8" fill="#dcfce7" stroke="#86efac" stroke-width="1.4"/><path d="M7.4 11.3L9.6 13.5L14.5 8.4" stroke="#16a34a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`);
+const ZCASH_NAME_ICON_SRC = svgUri(`<svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="11" cy="11" r="9.8" fill="#fde68a" stroke="#fcd34d" stroke-width="1.4"/><g transform="translate(11 11) scale(-0.7 0.7) rotate(90) translate(-10 -10)" fill="#78350f"><path d="M4 4.6h12v2H7.2l8.8 6.6v2.2H4v-2h8.8L4 6.8V4.6z"/><path d="M9.2 2.5h1.6v3H9.2zm0 12h1.6v3H9.2z"/></g></svg>`);
 const CTRL_MENU_SRC = svgUri(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 4.25H12" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/><path d="M4 8H12" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/><path d="M4 11.75H12" stroke="#64748b" stroke-width="1.5" stroke-linecap="round"/></svg>`);
 const CTRL_SHARE_SRC = svgUri(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 10.75V3.5" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/><path d="M5.5 6L8 3.5L10.5 6" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4.75 9.25V11.25C4.75 11.6642 5.08579 12 5.5 12H10.5C10.9142 12 11.25 11.6642 11.25 11.25V9.25" stroke="#9ca3af" stroke-width="1.5" stroke-linecap="round"/></svg>`);
 const GITHUB_ICON_SRC = svgUri(`<svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 1.7C4.52 1.7 1.7 4.52 1.7 8C1.7 10.78 3.5 13.13 6 13.96C6.31 14.02 6.43 13.83 6.43 13.67V12.67C4.67 13.05 4.3 11.92 4.3 11.92C4.01 11.18 3.59 10.99 3.59 10.99C3 10.6 3.63 10.61 3.63 10.61C4.28 10.66 4.62 11.28 4.62 11.28C5.2 12.26 6.15 11.98 6.52 11.81C6.58 11.39 6.75 11.11 6.94 10.95C5.54 10.79 4.08 10.25 4.08 7.86C4.08 7.18 4.32 6.63 4.73 6.21C4.67 6.05 4.46 5.41 4.79 4.55C4.79 4.55 5.33 4.38 6.42 5.12C6.93 4.98 7.48 4.91 8.03 4.91C8.58 4.91 9.13 4.98 9.64 5.12C10.73 4.38 11.27 4.55 11.27 4.55C11.6 5.41 11.39 6.05 11.33 6.21C11.74 6.63 11.98 7.18 11.98 7.86C11.98 10.25 10.51 10.78 9.11 10.95C9.36 11.16 9.58 11.58 9.58 12.23V13.67C9.58 13.84 9.7 14.02 10.02 13.96C12.51 13.12 14.3 10.78 14.3 8C14.3 4.52 11.48 1.7 8 1.7Z" fill="#4b5563"/></svg>`);
@@ -184,8 +193,16 @@ function ControlButton({ kind }: { kind: "menu" | "share" }) {
   );
 }
 
-function VerifiedIcon() {
-  return <img src={VERIFIED_ICON_SRC} width={22} height={22} style={{ flexShrink: 0 }} />;
+function NameBadge({ kind }: { kind: OgNameBadge }) {
+  if (kind === "none") return null;
+  return (
+    <img
+      src={kind === "zcash-name" ? ZCASH_NAME_ICON_SRC : VERIFIED_ICON_SRC}
+      width={22}
+      height={22}
+      style={{ flexShrink: 0 }}
+    />
+  );
 }
 
 // Removed dead CopyIcon helper.
@@ -376,11 +393,13 @@ function LinkRow({
   label,
   domain,
   isLast = false,
+  showCheck = true,
 }: {
   kind: OgTrayKind;
   label: string;
   domain: string;
   isLast?: boolean;
+  showCheck?: boolean;
 }) {
   return (
     <div
@@ -417,7 +436,7 @@ function LinkRow({
         >
           {label}
         </div>
-        <LinkVerifiedIcon />
+        {showCheck ? <LinkVerifiedIcon /> : null}
       </div>
 
       <div
@@ -553,7 +572,13 @@ function AddressPill({ address }: { address: string }) {
   );
 }
 
-function ProfileTrayArt({ tray }: { tray: readonly OgTrayRow[] }) {
+function ProfileTrayArt({
+  tray,
+  showLinkChecks,
+}: {
+  tray: readonly OgTrayRow[];
+  showLinkChecks: boolean;
+}) {
   return (
     <div
       style={{
@@ -587,6 +612,7 @@ function ProfileTrayArt({ tray }: { tray: readonly OgTrayRow[] }) {
             label={limitChars(row.label, TRAY_LABEL_MAX_CHARS)}
             domain={limitChars(row.domain, TRAY_DOMAIN_MAX_CHARS)}
             isLast={index === tray.length - 1}
+            showCheck={showLinkChecks}
           />
         ))}
       </div>
@@ -754,7 +780,7 @@ function OpenGraphCard({ card }: { card: OgCardModel }) {
             >
               {card.displayName}
             </div>
-            <VerifiedIcon />
+            <NameBadge kind={card.nameBadge} />
           </div>
 
           <div
@@ -818,7 +844,7 @@ function OpenGraphCard({ card }: { card: OgCardModel }) {
             width: "100%",
           }}
         >
-          <ProfileTrayArt tray={card.tray} />
+          <ProfileTrayArt tray={card.tray} showLinkChecks={card.showLinkChecks} />
         </div>
       </div>
     </div>

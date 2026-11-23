@@ -1,8 +1,8 @@
 import "server-only";
 
 import type { Profile } from "@/lib/profile/types";
-import { getUsernameWithDiscriminator } from "@/lib/profile/profileUtils";
-import { OG_SAMPLE, type OgCardModel } from "@/lib/og/renderProfileOg";
+import { getUsernameWithDiscriminator, isZnsActiveProfile } from "@/lib/profile/profileUtils";
+import { OG_SAMPLE, type OgCardModel, type OgNameBadge } from "@/lib/og/renderProfileOg";
 
 const KNOWN_AVATAR_HOSTS = ["id.zcash.me", "fpwrazvgrmatlajjzdiq.supabase.co"];
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024;
@@ -63,10 +63,20 @@ export async function loadOgAvatar(url: string | null | undefined): Promise<stri
   }
 }
 
+function nameBadgeFor(profile: Profile): OgNameBadge {
+  if (isZnsActiveProfile(profile)) return "zcash-name";
+  const verifiedLinks = typeof profile.verified_links_count === "number"
+    ? profile.verified_links_count
+    : (profile.links?.filter((link) => link.is_verified).length ?? 0);
+  if (profile.address_verified || verifiedLinks > 0) return "verified";
+  return "none";
+}
+
 export async function ogCardForProfile(profile: Profile, slug: string): Promise<OgCardModel> {
   const username = getUsernameWithDiscriminator(profile).replace(/\s+/g, "_").trim() || slug.trim();
   const displayName = profile.display_name?.trim() || profile.name?.trim() || username;
   const avatarSrc = await loadOgAvatar(profile.profile_image_url);
+  const nameBadge = nameBadgeFor(profile);
 
   return {
     displayName,
@@ -75,6 +85,8 @@ export async function ogCardForProfile(profile: Profile, slug: string): Promise<
     meta: OG_SAMPLE.meta,
     address: (profile.address || "").trim(),
     avatarSrc,
+    nameBadge,
+    showLinkChecks: nameBadge !== "none",
     tray: [
       { kind: "x", label: username, domain: "x.com" },
       { kind: "github", label: username, domain: "github.com" },
